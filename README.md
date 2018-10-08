@@ -1,2 +1,2 @@
 # ranciliopid
-http://rancilio-pid.de/
+Rancilio-Silvia PID für Arduino http://rancilio-pid.de
