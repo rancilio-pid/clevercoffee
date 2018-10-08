@@ -62,7 +62,7 @@ float boilerVolume = 300; // Grams
 unsigned int windowSize = 1000 / 1;
 unsigned long windowStartTime;
 double acceleration = 1;
-double setPoint, Input, Output, Input2,setPointTemp,Coldstart;
+double setPoint, Input, Output, Input2, setPointTemp, Coldstart;
 
 double aggKp = 55 / acceleration;
 double aggKi = 0.5 / acceleration;
@@ -97,50 +97,38 @@ BLYNK_CONNECTED() {
 }
 
 
-BLYNK_WRITE(V4)
-{
-  aggKp = param.asDouble(); // assigning incoming value from pin V1 to a variable
+BLYNK_WRITE(V4) {
+  aggKp = param.asDouble();
 }
 
-BLYNK_WRITE(V5)
-{
-  aggKi = param.asDouble(); // assigning incoming value from pin V1 to a variable
+BLYNK_WRITE(V5) {
+  aggKi = param.asDouble();
+}
+BLYNK_WRITE(V6) {
+  aggKd =  param.asDouble();
 }
 
-BLYNK_WRITE(V6)
-{
-  aggKd =  param.asDouble(); // assigning incoming value from pin V1 to a variable
+BLYNK_WRITE(V7) {
+  setPoint = param.asDouble();
 }
 
-BLYNK_WRITE(V7)
-{
-  setPoint = param.asDouble(); // assigning incoming value from pin V1 to a variable
+BLYNK_WRITE(V8) {
+  brewtime = param.asDouble() * 1000;
 }
 
-BLYNK_WRITE(V8)
-{
-  brewtime = param.asDouble() * 1000; // assigning incoming value from pin V1 to a variable
-
+BLYNK_WRITE(V9) {
+  preinfusion = param.asDouble() * 1000;
 }
 
-BLYNK_WRITE(V9)
-{
-  preinfusion = param.asDouble() * 1000; // assigning incoming value from pin V1 to a variable
-
-}
-
-BLYNK_WRITE(V10)
-{
-  preinfusionpause = param.asDouble() * 1000; // assigning incoming value from pin V1 to a variable
-
+BLYNK_WRITE(V10) {
+  preinfusionpause = param.asDouble() * 1000;
 }
 
 
 
 void setup() {
 
-
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   /********************************************************
     DISPLAY
@@ -158,18 +146,16 @@ void setup() {
      BLYNK
   ******************************************************/
 
- Blynk.begin(auth, ssid, pass, "blynk.remoteapp.de", 8080);
- //Blynk.begin(auth, ssid, pass, "blynk.rancilio-pid.de", 8080);
-
-
+  Blynk.begin(auth, ssid, pass, "blynk.remoteapp.de", 8080);
+  //Blynk.begin(auth, ssid, pass, "blynk.rancilio-pid.de", 8080);
 
   pinMode(pinRelayHeater, OUTPUT);
   Input = 20.0;
   windowStartTime = millis();
-  setPoint = 96.0; 
-  Coldstart=1;
+  setPoint = 96.0;
+  Coldstart = 1;
 
-  setPointTemp=setPoint;
+  setPointTemp = setPoint;
   bPID.SetSampleTime(windowSize);
   bPID.SetOutputLimits(0, windowSize);
   bPID.SetMode(AUTOMATIC);
@@ -192,15 +178,6 @@ void loop() {
   brewswitch = analogRead(analogPin);
   unsigned long startZeit = millis();
 
-  //Serial.print("zeit: "); Serial.println(startZeit - aktuelleZeit);
-  //Serial.print("brewcounter: "); Serial.println(brewcounter);
-
-
-  //Wenn der Schalter aus ist und der Counter > 0
-  //Wird der Counter zurückgesetzt
-
-  //preinfusion
-  //preinfusionpause
 
   if (brewswitch > 1000 && startZeit - aktuelleZeit > totalbrewtime && brewcounter == 0) {
     aktuelleZeit = millis();
@@ -211,7 +188,7 @@ void loop() {
   //Serial.println(brewcounter);
   if (brewswitch > 1000 && startZeit - aktuelleZeit < totalbrewtime && brewcounter >= 1) {
     if (startZeit - aktuelleZeit < preinfusion) {
-     // Serial.println("preinfusion");
+      // Serial.println("preinfusion");
       digitalWrite(pinRelayVentil, HIGH);
       digitalWrite(pinRelayPumpe, HIGH);
       digitalWrite(pinRelayHeater, HIGH);
@@ -223,12 +200,12 @@ void loop() {
       digitalWrite(pinRelayHeater, LOW);
     }
     if (startZeit - aktuelleZeit > preinfusion + preinfusionpause) {
-     // Serial.println("Brew");
+      // Serial.println("Brew");
       digitalWrite(pinRelayVentil, HIGH);
       digitalWrite(pinRelayPumpe, HIGH);
       digitalWrite(pinRelayHeater, HIGH);
     }
-    
+
 
   } else {
     digitalWrite(pinRelayVentil, LOW);
@@ -246,29 +223,29 @@ void loop() {
   Input = sensors.getTempCByIndex(0);
 
 
-// wenn Maschine kalt ist setpoint reduzieren um Overshoot zu vermeiden
+  // wenn Maschine kalt ist setpoint reduzieren um Overshoot zu vermeiden
 
-if (Input < 65 && Coldstart >= 1) {
-  setPoint= (setPoint * 0.82);
-  Coldstart =0;
-  Serial.println(setPoint);
-  Serial.println("setPoint für Kaltstart");
-}
-if (Input>= setPoint && setPointTemp >0 ) {
-  Serial.println(setPoint);
-  Serial.println(setPointTemp);
-  Serial.println("Alte werte oben neue unten nach 15sec einschwingpause jetzt AUS + PAUSE");
-  digitalWrite(pinRelayHeater, LOW);
-  delay (15000);
-  //Überschwingen abwarten
-  setPoint = setPointTemp;
-  // auf original Setpoint setzen
-  Serial.println(setPoint);
-  Serial.println(setPointTemp);
-  setPointTemp = 0;
-}
+  if (Input < 65 && Coldstart >= 1) {
+    setPoint = (setPoint * 0.82);
+    Coldstart = 0;
+    Serial.println(setPoint);
+    Serial.println("setPoint für Kaltstart");
+  }
+  if (Input >= setPoint && setPointTemp > 0 ) {
+    Serial.println(setPoint);
+    Serial.println(setPointTemp);
+    Serial.println("Alte werte oben neue unten nach 15sec einschwingpause jetzt AUS + PAUSE");
+    digitalWrite(pinRelayHeater, LOW);
+    delay (15000);
+    //Überschwingen abwarten
+    setPoint = setPointTemp;
+    // auf original Setpoint setzen
+    Serial.println(setPoint);
+    Serial.println(setPointTemp);
+    setPointTemp = 0;
+  }
 
-// NORMALE PID
+  // NORMALE PID
 
   bPID.Compute();
   if (millis() - windowStartTime > windowSize) {
@@ -281,13 +258,6 @@ if (Input>= setPoint && setPointTemp >0 ) {
     Blynk.virtualWrite(V3, setPoint);
     Blynk.syncVirtual(V3);
 
-    // Serial.print(millis());
-   // Serial.print(setPoint);
-   // Serial.print(","); Serial.print(Input);
-    //Serial.print(","); Serial.print(Output,0);
-   // Serial.print(","); Serial.print(bPID.GetKp(), 3);
-   // Serial.print(","); Serial.print(bPID.GetKi(), 3);
-   // Serial.print(","); Serial.println(bPID.GetKd(), 3);
 
     /********************************************************
        DISPLAY AUSGABE
@@ -309,17 +279,17 @@ if (Input>= setPoint && setPointTemp >0 ) {
 
     // Serial.println(digitalRead(pinRelayHeater));
     windowStartTime += windowSize;
-    Input = Input + ((boilerPower / (4.184 * boilerVolume) * (Output / windowSize)));
-    Input = Input + ((0.0004375 * (20 - Input)));
+    // Input = Input + ((boilerPower / (4.184 * boilerVolume) * (Output / windowSize)));
+    // Input = Input + ((0.0004375 * (20 - Input)));
 
   }
   if (Output < millis() - windowStartTime) {
-          digitalWrite(pinRelayHeater, LOW);
-          //Serial.println("Power off!");
+    digitalWrite(pinRelayHeater, LOW);
+    //Serial.println("Power off!");
   } else {
-      if(Input <= setPoint+0.2 ){
-          digitalWrite(pinRelayHeater, HIGH);
-          //Serial.println("Power on!");        
-      }
+    if (Input <= setPoint + 0.2 ) {
+      digitalWrite(pinRelayHeater, HIGH);
+      //Serial.println("Power on!");
+    }
   }
 }
