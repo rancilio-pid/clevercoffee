@@ -1,5 +1,5 @@
 /********************************************************
-   Version 1.0.2
+   Version 1.0.3
 ******************************************************/
 #include "Arduino.h"
 
@@ -190,9 +190,9 @@ void loop() {
 
   brewswitch = analogRead(analogPin);
 
-/********************************************************
-  PreInfusion
-******************************************************/
+  /********************************************************
+    PreInfusion
+  ******************************************************/
   unsigned long startZeit = millis();
   if (OnlyPID == 0) {
     if (brewswitch > 1000 && startZeit - aktuelleZeit > totalbrewtime && brewcounter == 0) {
@@ -213,7 +213,7 @@ void loop() {
         //Serial.println("Pause");
         digitalWrite(pinRelayVentil, HIGH);
         digitalWrite(pinRelayPumpe, LOW);
-        digitalWrite(pinRelayHeater, HIGH);
+        //digitalWrite(pinRelayHeater, HIGH);
       }
       if (startZeit - aktuelleZeit > preinfusion + preinfusionpause) {
         // Serial.println("Brew");
@@ -265,9 +265,9 @@ void loop() {
   }
 
 
-/********************************************************
-Sendet Daten zur App
-******************************************************/
+  /********************************************************
+    Sendet Daten zur App
+  ******************************************************/
   unsigned long currentMillis = millis();
   if (currentMillis - previousMillis >= interval) {
     previousMillis = currentMillis;
@@ -277,25 +277,19 @@ Sendet Daten zur App
     Blynk.virtualWrite(V3, setPoint);
     Blynk.syncVirtual(V3);
 
-    Serial.print(aggKp);
+    bPID.SetTunings(aggKp, aggKi, aggKd);
+
+    Serial.print(bPID.GetKp());
     Serial.print(",");
-    Serial.print(aggKi);
+    Serial.print(bPID.GetKi());
     Serial.print(",");
-    Serial.print(aggKd);
+    Serial.print(bPID.GetKd());
+    Serial.print(",");
+    Serial.print(Output);
     Serial.print(",");
     Serial.print(setPoint);
     Serial.print(",");
     Serial.println(Input);
-    
-  }
-
-/********************************************************
-PID
-******************************************************/
-  bPID.Compute();
-
-  if (millis() - windowStartTime > windowSize) {
-    bPID.SetTunings(aggKp, aggKi, aggKd);
 
     if (Display == 1) {
       /********************************************************
@@ -317,6 +311,15 @@ PID
       u8x8.print(setPoint);
     }
 
+  }
+
+  /********************************************************
+    PID
+  ******************************************************/
+  bPID.Compute();
+
+  if (millis() - windowStartTime > windowSize) {
+
     windowStartTime += windowSize;
     // Input = Input + ((boilerPower / (4.184 * boilerVolume) * (Output / windowSize)));
     // Input = Input + ((0.0004375 * (20 - Input)));
@@ -327,8 +330,8 @@ PID
     //Serial.println("Power off!");
   } else {
     //if (Input <= setPoint + 0.2 ) {
-      digitalWrite(pinRelayHeater, HIGH);
-      //Serial.println("Power on!");
-   // }
+    digitalWrite(pinRelayHeater, HIGH);
+    //Serial.println("Power on!");
+    // }
   }
 }
