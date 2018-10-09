@@ -1,5 +1,5 @@
 /********************************************************
-   Version 1.0.3
+   Version 1.0.4
 ******************************************************/
 #include "Arduino.h"
 
@@ -73,9 +73,9 @@ unsigned long windowStartTime;
 double acceleration = 1;
 double setPoint, Input, Output, Input2, setPointTemp, Coldstart;
 
-double aggKp = 55 / acceleration;
-double aggKi = 0.5 / acceleration;
-double aggKd = 35 / acceleration;
+double aggKp = 21 / acceleration;
+double aggKi = 0.1 / acceleration;
+double aggKd = 21 / acceleration;
 
 PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, DIRECT);
 
@@ -158,7 +158,6 @@ void setup() {
   ******************************************************/
 
   Blynk.begin(auth, ssid, pass, "blynk.remoteapp.de", 8080);
-  //Blynk.begin(auth, ssid, pass, "blynk.rancilio-pid.de", 8080);
 
   pinMode(pinRelayHeater, OUTPUT);
   Input = 20.0;
@@ -179,14 +178,6 @@ void setup() {
 }
 
 void loop() {
-
-  /********************************************************
-    BLYNK
-  ******************************************************/
-  Blynk.run();
-  timer.run();
-
-
 
   brewswitch = analogRead(analogPin);
 
@@ -270,6 +261,9 @@ void loop() {
   ******************************************************/
   unsigned long currentMillis = millis();
   if (currentMillis - previousMillis >= interval) {
+
+    Blynk.run();
+    
     previousMillis = currentMillis;
     Blynk.virtualWrite(V2, Input);
     Blynk.syncVirtual(V2);
@@ -324,6 +318,11 @@ void loop() {
     // Input = Input + ((boilerPower / (4.184 * boilerVolume) * (Output / windowSize)));
     // Input = Input + ((0.0004375 * (20 - Input)));
 
+  }
+  if(Output < windowSize/2.5){
+    Output = Output;
+  }else{
+    Output = windowSize/2.5;
   }
   if (Output < millis() - windowStartTime) {
     digitalWrite(pinRelayHeater, LOW);
