@@ -16,7 +16,7 @@ unsigned long previousMillisSwing = 0;
 int Kaltstart = 1;  // 1=Aktiviert, 0=Deaktiviert
 int Display = 0;    // 1=U8x8libm, 0=Deaktiviert
 int OnlyPID = 0;    // 1=Nur PID ohne Preinfussion, 0=PID + Preinfussion
-int brueherkennung = 0 // 1=Aktiv; 0=aus (EXPERIMENTELL)
+int brueherkennung = 1; // 1=Aktiv; 0=aus (EXPERIMENTELL)
 
 char auth[] = "";
 char ssid[] = "";
