@@ -267,7 +267,7 @@ void loop() {
     Minimierung des überschwingers... erst aktiv nach 6 Minuten...
   ******************************************************/
   if (brueherkennung == 1) {
-    if (Kaltstart == 0 && millis() > 60000 && Input <= setPoint - 3 && bruehvorganggestartet == 0 || Kaltstart == 0 && millis() > 60000 && Input >= setPoint + 0.2 && bruehvorganggestartet == 0) {
+    if (Kaltstart == 0 && millis() > 360000 && Input <= setPoint - 3 && bruehvorganggestartet == 0 || Kaltstart == 0 && millis() > 60000 && Input >= setPoint + 0.2 && bruehvorganggestartet == 0) {
       bruehvorganggestartet = 1;
     }
     if (bruehvorganggestartet == 1) {
