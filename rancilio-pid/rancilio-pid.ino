@@ -1,11 +1,14 @@
 /********************************************************
-   Version 1.0.5
+   Version 1.0.6
 ******************************************************/
 #include "Arduino.h"
 unsigned long previousMillisColdstart = 0;
 unsigned long previousMillisColdstartPause = 0;
 unsigned long ColdstartPause = 0;
 unsigned long KaltstartPause = 0;
+unsigned long bruehvorganggestartet = 0;
+unsigned long warmstart = 0;
+unsigned long previousMillisSwing = 0;
 
 /********************************************************
    Vorab-Konfig
@@ -234,23 +237,60 @@ void loop() {
   Input = sensors.getTempCByIndex(0);
 
   /********************************************************
-    PID
+    Abfangen ob Warmstart vorhanden?
   ******************************************************/
-  if(ColdstartPause == 0 && Coldstart == 0 && Kaltstart == 0){
-      bPID.Compute();
-    }
-
-
-  if (millis() - windowStartTime > windowSize) {
-    windowStartTime += windowSize;
+  if (millis() < 5000 && Input >= setPoint - 5 || millis() < 5000 && Input <= setPoint - 5) {
+    Kaltstart = 0;
+    Serial.println("Warmstart");
   }
 
-  if (Output < millis() - windowStartTime) {
-    digitalWrite(pinRelayHeater, LOW);
-    //Serial.println("Power off!");
-  } else {
-    digitalWrite(pinRelayHeater, HIGH);
-    //Serial.println("Power on!");
+  /********************************************************
+    PID (erst nach dem Kaltstart o. bei deaktiviertem Kaltstart
+  ******************************************************/
+  if (Kaltstart == 0 && bruehvorganggestartet == 0) {
+    bPID.SetTunings(aggKp, aggKi, aggKd);
+    bPID.Compute();
+    if (millis() - windowStartTime > windowSize) {
+      windowStartTime += windowSize;
+    }
+    if (Output < millis() - windowStartTime) {
+      digitalWrite(pinRelayHeater, LOW);
+      //Serial.println("Power off!");
+    } else {
+      digitalWrite(pinRelayHeater, HIGH);
+      //Serial.println("Power on!");
+    }
+  }
+
+  /********************************************************
+    Minimierung des überschwingers... erst aktiv nach 6 Minuten...
+  ******************************************************/
+
+  if (Kaltstart == 0 && millis() > 60000 && Input <= setPoint - 3 && bruehvorganggestartet == 0 || Kaltstart == 0 && millis() > 60000 && Input >= setPoint + 0.2 && bruehvorganggestartet == 0) {
+    bruehvorganggestartet = 1;
+  }
+  if (bruehvorganggestartet == 1) {
+    if (Input <= setPoint - 7) {
+      Serial.println("Brühvorgang: Heizung ein ...");
+      bPID.SetTunings(aggKp, aggKi, aggKd);
+      bPID.Compute();
+      if (millis() - windowStartTime > windowSize) {
+        windowStartTime += windowSize;
+      }
+      if (Output < millis() - windowStartTime) {
+        digitalWrite(pinRelayHeater, LOW);
+        //Serial.println("Power off!");
+      } else {
+        digitalWrite(pinRelayHeater, HIGH);
+        //Serial.println("Power on!");
+      }
+
+    } else {
+      digitalWrite(pinRelayHeater, LOW);
+      Serial.println("Brühvorgang: Heizung aus ...");
+      bruehvorganggestartet = 0;
+      bPID.Compute();
+    }
   }
 
 
@@ -260,8 +300,7 @@ void loop() {
   if (Kaltstart == 1) {
 
     if (Input < 80) {
-      Serial.println("Kaltstart Programm ...");
-      Serial.println("Heizung an ...");
+      Serial.println("Kaltstart: Heizung an ...");
       digitalWrite(pinRelayHeater, HIGH);
     }
     else {
@@ -270,7 +309,7 @@ void loop() {
 
 
     if (ColdstartPause == 1 && Coldstart >= 1 && KaltstartPause <= 15) {
-      Serial.println("Heizung aus ...");
+      Serial.println("Kaltstart: Heizung aus ...");
       digitalWrite(pinRelayHeater, LOW);
       //Zählt jede Sekunde
       unsigned long currentMillisColdstartPause = millis();
@@ -288,6 +327,7 @@ void loop() {
   }
 
 
+
   /********************************************************
     Sendet Daten zur App
   ******************************************************/
@@ -302,8 +342,6 @@ void loop() {
     // Send date to the App
     Blynk.virtualWrite(V3, setPoint);
     Blynk.syncVirtual(V3);
-
-    bPID.SetTunings(aggKp, aggKi, aggKd);
 
     Serial.print(bPID.GetKp());
     Serial.print(",");
