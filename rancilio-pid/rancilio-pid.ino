@@ -16,6 +16,7 @@ unsigned long previousMillisSwing = 0;
 int Kaltstart = 1;  // 1=Aktiviert, 0=Deaktiviert
 int Display = 0;    // 1=U8x8libm, 0=Deaktiviert
 int OnlyPID = 0;    // 1=Nur PID ohne Preinfussion, 0=PID + Preinfussion
+int brueherkennung = 0 // 1=Aktiv; 0=aus (EXPERIMENTELL)
 
 char auth[] = "";
 char ssid[] = "";
@@ -265,31 +266,32 @@ void loop() {
   /********************************************************
     Minimierung des überschwingers... erst aktiv nach 6 Minuten...
   ******************************************************/
+  if (brueherkennung == 1) {
+    if (Kaltstart == 0 && millis() > 60000 && Input <= setPoint - 3 && bruehvorganggestartet == 0 || Kaltstart == 0 && millis() > 60000 && Input >= setPoint + 0.2 && bruehvorganggestartet == 0) {
+      bruehvorganggestartet = 1;
+    }
+    if (bruehvorganggestartet == 1) {
+      if (Input <= setPoint - 7) {
+        Serial.println("Brühvorgang: Heizung ein ...");
+        bPID.SetTunings(aggKp, aggKi, aggKd);
+        bPID.Compute();
+        if (millis() - windowStartTime > windowSize) {
+          windowStartTime += windowSize;
+        }
+        if (Output < millis() - windowStartTime) {
+          digitalWrite(pinRelayHeater, LOW);
+          //Serial.println("Power off!");
+        } else {
+          digitalWrite(pinRelayHeater, HIGH);
+          //Serial.println("Power on!");
+        }
 
-  if (Kaltstart == 0 && millis() > 60000 && Input <= setPoint - 3 && bruehvorganggestartet == 0 || Kaltstart == 0 && millis() > 60000 && Input >= setPoint + 0.2 && bruehvorganggestartet == 0) {
-    bruehvorganggestartet = 1;
-  }
-  if (bruehvorganggestartet == 1) {
-    if (Input <= setPoint - 7) {
-      Serial.println("Brühvorgang: Heizung ein ...");
-      bPID.SetTunings(aggKp, aggKi, aggKd);
-      bPID.Compute();
-      if (millis() - windowStartTime > windowSize) {
-        windowStartTime += windowSize;
-      }
-      if (Output < millis() - windowStartTime) {
-        digitalWrite(pinRelayHeater, LOW);
-        //Serial.println("Power off!");
       } else {
-        digitalWrite(pinRelayHeater, HIGH);
-        //Serial.println("Power on!");
+        digitalWrite(pinRelayHeater, LOW);
+        Serial.println("Brühvorgang: Heizung aus ...");
+        bruehvorganggestartet = 0;
+        bPID.Compute();
       }
-
-    } else {
-      digitalWrite(pinRelayHeater, LOW);
-      Serial.println("Brühvorgang: Heizung aus ...");
-      bruehvorganggestartet = 0;
-      bPID.Compute();
     }
   }
 
