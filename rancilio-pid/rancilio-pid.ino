@@ -1,19 +1,23 @@
 /********************************************************
-   Version 1.0.4
+   Version 1.0.5
 ******************************************************/
 #include "Arduino.h"
-
+unsigned long previousMillisColdstart = 0;
+unsigned long previousMillisColdstartPause = 0;
+unsigned long ColdstartPause = 0;
+unsigned long KaltstartPause = 0;
 
 /********************************************************
    Vorab-Konfig
 ******************************************************/
-int Kaltstart = 0;  // 1=Aktiviert, 0=Deaktiviert
+int Kaltstart = 1;  // 1=Aktiviert, 0=Deaktiviert
 int Display = 0;    // 1=U8x8libm, 0=Deaktiviert
 int OnlyPID = 0;    // 1=Nur PID ohne Preinfussion, 0=PID + Preinfussion
 
 char auth[] = "";
 char ssid[] = "";
 char pass[] = "";
+
 
 /********************************************************
    BLYNK
@@ -230,28 +234,56 @@ void loop() {
   Input = sensors.getTempCByIndex(0);
 
   /********************************************************
+    PID
+  ******************************************************/
+  if(ColdstartPause == 0 && Coldstart == 0 && Kaltstart == 0){
+      bPID.Compute();
+    }
+
+
+  if (millis() - windowStartTime > windowSize) {
+    windowStartTime += windowSize;
+  }
+
+  if (Output < millis() - windowStartTime) {
+    digitalWrite(pinRelayHeater, LOW);
+    //Serial.println("Power off!");
+  } else {
+    digitalWrite(pinRelayHeater, HIGH);
+    //Serial.println("Power on!");
+  }
+
+
+  /********************************************************
     Kaltstart
   ******************************************************/
   if (Kaltstart == 1) {
-    if (Input < 65 && Coldstart >= 1) {
-      setPoint = (setPoint * 0.82);
-      Coldstart = 0;
-      Serial.println(setPoint);
-      Serial.println("setPoint für Kaltstart");
+
+    if (Input < 80) {
+      Serial.println("Kaltstart Programm ...");
+      Serial.println("Heizung an ...");
+      digitalWrite(pinRelayHeater, HIGH);
     }
-    if (Input >= setPoint && setPointTemp > 0 ) {
-      Serial.println(setPoint);
-      Serial.println(setPointTemp);
-      Serial.println("Alte werte oben neue unten nach 15sec einschwingpause jetzt AUS + PAUSE");
+    else {
+      ColdstartPause = 1;
+    }
+
+
+    if (ColdstartPause == 1 && Coldstart >= 1 && KaltstartPause <= 15) {
+      Serial.println("Heizung aus ...");
       digitalWrite(pinRelayHeater, LOW);
-      delay (15000);
-      //Überschwingen abwarten
-      Blynk.syncAll();
-      //setPoint = setPointTemp;
-      // auf original Setpoint setzen
-      Serial.println(setPoint);
-      Serial.println(setPointTemp);
-      setPointTemp = 0;
+      //Zählt jede Sekunde
+      unsigned long currentMillisColdstartPause = millis();
+      if (currentMillisColdstartPause - previousMillisColdstartPause >= 1000) {
+        KaltstartPause = KaltstartPause + 1;
+        previousMillisColdstartPause = currentMillisColdstartPause;
+      }
+    }
+    if (ColdstartPause == 1 && Coldstart && KaltstartPause > 15) {
+      Serial.println("Kaltstart beendet ...");
+      ColdstartPause = 0;
+      Coldstart = 0;
+      Kaltstart = 0;
     }
   }
 
@@ -263,7 +295,7 @@ void loop() {
   if (currentMillis - previousMillis >= interval) {
 
     Blynk.run();
-    
+
     previousMillis = currentMillis;
     Blynk.virtualWrite(V2, Input);
     Blynk.syncVirtual(V2);
@@ -279,8 +311,8 @@ void loop() {
     Serial.print(",");
     Serial.print(bPID.GetKd());
     Serial.print(",");
-    Serial.print(Output);
-    Serial.print(",");
+    //Serial.print(Output);
+    //Serial.print(",");
     Serial.print(setPoint);
     Serial.print(",");
     Serial.println(Input);
@@ -307,30 +339,4 @@ void loop() {
 
   }
 
-  /********************************************************
-    PID
-  ******************************************************/
-  bPID.Compute();
-
-  if (millis() - windowStartTime > windowSize) {
-
-    windowStartTime += windowSize;
-    // Input = Input + ((boilerPower / (4.184 * boilerVolume) * (Output / windowSize)));
-    // Input = Input + ((0.0004375 * (20 - Input)));
-
-  }
-  if(Output < windowSize/2.5){
-    Output = Output;
-  }else{
-    Output = windowSize/2.5;
-  }
-  if (Output < millis() - windowStartTime) {
-    digitalWrite(pinRelayHeater, LOW);
-    //Serial.println("Power off!");
-  } else {
-    //if (Input <= setPoint + 0.2 ) {
-    digitalWrite(pinRelayHeater, HIGH);
-    //Serial.println("Power on!");
-    // }
-  }
 }
