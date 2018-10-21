@@ -1,5 +1,5 @@
 /********************************************************
-   Version 1.0.6
+   Version 1.1.0
 ******************************************************/
 #include "Arduino.h"
 unsigned long previousMillisColdstart = 0;
@@ -14,7 +14,7 @@ unsigned long previousMillisSwing = 0;
    Vorab-Konfig
 ******************************************************/
 int Kaltstart = 1;  // 1=Aktiviert, 0=Deaktiviert
-int Display = 0;    // 1=U8x8libm, 0=Deaktiviert
+int Display = 2;    // 1=U8x8libm, 0=Deaktiviert, 2=Externes 128x64 Display
 int OnlyPID = 0;    // 1=Nur PID ohne Preinfussion, 0=PID + Preinfussion
 int brueherkennung = 1; // 1=Aktiv; 0=aus (EXPERIMENTELL)
 
@@ -55,7 +55,7 @@ int preinfusion = 2;
 int preinfusionpause = 5;
 
 #define pinRelayVentil    12
-#define pinRelayPumpe     2
+#define pinRelayPumpe     13
 
 /********************************************************
    DISPLAY
@@ -67,11 +67,27 @@ int preinfusionpause = 5;
 #endif
 U8X8_SSD1306_128X32_UNIVISION_SW_I2C u8x8(/* clock=*/ 5, /* data=*/ 4, /* reset=*/ 16);   //Display initalisieren
 
+// Display 128x64
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#define OLED_RESET 16
+Adafruit_SSD1306 display(OLED_RESET);
+#define XPOS 0
+#define YPOS 1
+#define DELTAY 2
+
+
+#if (SSD1306_LCDHEIGHT != 64)
+#error("Height incorrect, please fix Adafruit_SSD1306.h!");
+#endif
+
+
 /********************************************************
    PID
 ******************************************************/
 #include "PID_v1.h"
-#define pinRelayHeater    15
+#define pinRelayHeater    14
 
 int boilerPower = 1000; // Watts
 float boilerVolume = 300; // Grams
@@ -94,7 +110,7 @@ PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, DIRECT);
 #include <OneWire.h>
 #include <DallasTemperature.h>
 // Data wire is plugged into port 2 on the Arduino
-#define ONE_WIRE_BUS 13
+#define ONE_WIRE_BUS 2
 // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
 OneWire oneWire(ONE_WIRE_BUS);
 // Pass our oneWire reference to Dallas Temperature.
@@ -149,10 +165,17 @@ void setup() {
 
   if (Display == 1) {
     /********************************************************
-      DISPLAY
+      DISPLAY Intern
     ******************************************************/
     u8x8.begin();
     u8x8.setPowerSave(0);
+  }
+  if (Display == 2) {
+    /********************************************************
+      DISPLAY 128x64
+    ******************************************************/
+    display.begin(SSD1306_SWITCHCAPVCC, 0x3D);  // initialize with the I2C addr 0x3D (for the 128x64)
+    display.clearDisplay();
   }
 
   /********************************************************
@@ -204,27 +227,27 @@ void loop() {
     if (brewswitch > 1000 && startZeit - aktuelleZeit < totalbrewtime && brewcounter >= 1) {
       if (startZeit - aktuelleZeit < preinfusion) {
         // Serial.println("preinfusion");
-        digitalWrite(pinRelayVentil, HIGH);
-        digitalWrite(pinRelayPumpe, HIGH);
-        digitalWrite(pinRelayHeater, HIGH);
+        digitalWrite(pinRelayVentil, LOW);
+        digitalWrite(pinRelayPumpe, LOW);
+        //digitalWrite(pinRelayHeater, HIGH);
       }
       if (startZeit - aktuelleZeit > preinfusion && startZeit - aktuelleZeit < preinfusion + preinfusionpause) {
         //Serial.println("Pause");
-        digitalWrite(pinRelayVentil, HIGH);
-        digitalWrite(pinRelayPumpe, LOW);
+        digitalWrite(pinRelayVentil, LOW);
+        digitalWrite(pinRelayPumpe, HIGH);
         //digitalWrite(pinRelayHeater, HIGH);
       }
       if (startZeit - aktuelleZeit > preinfusion + preinfusionpause) {
         // Serial.println("Brew");
-        digitalWrite(pinRelayVentil, HIGH);
-        digitalWrite(pinRelayPumpe, HIGH);
+        digitalWrite(pinRelayVentil, LOW);
+        digitalWrite(pinRelayPumpe, LOW);
         digitalWrite(pinRelayHeater, LOW);
       }
 
 
     } else {
-      digitalWrite(pinRelayVentil, LOW);
-      digitalWrite(pinRelayPumpe, LOW);
+      digitalWrite(pinRelayVentil, HIGH);
+      digitalWrite(pinRelayPumpe, HIGH);
       //Serial.println("aus");
     }
 
@@ -237,146 +260,198 @@ void loop() {
   sensors.requestTemperatures();
   Input = sensors.getTempCByIndex(0);
 
-  /********************************************************
-    Abfangen ob Warmstart vorhanden?
-  ******************************************************/
-  if (millis() < 5000 && Input >= setPoint - 5 || millis() < 5000 && Input <= setPoint - 5) {
-    Kaltstart = 0;
-    Serial.println("Warmstart");
-  }
 
-  /********************************************************
-    PID (erst nach dem Kaltstart o. bei deaktiviertem Kaltstart
-  ******************************************************/
-  if (Kaltstart == 0 && bruehvorganggestartet == 0) {
-    bPID.SetTunings(aggKp, aggKi, aggKd);
-    bPID.Compute();
-    if (millis() - windowStartTime > windowSize) {
-      windowStartTime += windowSize;
-    }
-    if (Output < millis() - windowStartTime) {
-      digitalWrite(pinRelayHeater, LOW);
-      //Serial.println("Power off!");
-    } else {
-      digitalWrite(pinRelayHeater, HIGH);
-      //Serial.println("Power on!");
-    }
-  }
-
-  /********************************************************
-    Minimierung des überschwingers... erst aktiv nach 6 Minuten...
-  ******************************************************/
-  if (brueherkennung == 1) {
-    if (Kaltstart == 0 && millis() > 360000 && Input <= setPoint - 3 && bruehvorganggestartet == 0 || Kaltstart == 0 && millis() > 60000 && Input >= setPoint + 0.2 && bruehvorganggestartet == 0) {
-      bruehvorganggestartet = 1;
-    }
-    if (bruehvorganggestartet == 1) {
-      if (Input <= setPoint - 7) {
-        Serial.println("Brühvorgang: Heizung ein ...");
-        bPID.SetTunings(aggKp, aggKi, aggKd);
-        bPID.Compute();
-        if (millis() - windowStartTime > windowSize) {
-          windowStartTime += windowSize;
-        }
-        if (Output < millis() - windowStartTime) {
-          digitalWrite(pinRelayHeater, LOW);
-          //Serial.println("Power off!");
-        } else {
-          digitalWrite(pinRelayHeater, HIGH);
-          //Serial.println("Power on!");
-        }
-
-      } else {
-        digitalWrite(pinRelayHeater, LOW);
-        Serial.println("Brühvorgang: Heizung aus ...");
-        bruehvorganggestartet = 0;
-        bPID.Compute();
-      }
-    }
-  }
+  if (Input >= 0) {
 
 
-  /********************************************************
-    Kaltstart
-  ******************************************************/
-  if (Kaltstart == 1) {
 
-    if (Input < 80) {
-      Serial.println("Kaltstart: Heizung an ...");
-      digitalWrite(pinRelayHeater, HIGH);
-    }
-    else {
-      ColdstartPause = 1;
-    }
-
-
-    if (ColdstartPause == 1 && Coldstart >= 1 && KaltstartPause <= 15) {
-      Serial.println("Kaltstart: Heizung aus ...");
-      digitalWrite(pinRelayHeater, LOW);
-      //Zählt jede Sekunde
-      unsigned long currentMillisColdstartPause = millis();
-      if (currentMillisColdstartPause - previousMillisColdstartPause >= 1000) {
-        KaltstartPause = KaltstartPause + 1;
-        previousMillisColdstartPause = currentMillisColdstartPause;
-      }
-    }
-    if (ColdstartPause == 1 && Coldstart && KaltstartPause > 15) {
-      Serial.println("Kaltstart beendet ...");
-      ColdstartPause = 0;
-      Coldstart = 0;
+    /********************************************************
+      Abfangen ob Warmstart vorhanden?
+    ******************************************************/
+    if (millis() < 5000 && Input >= setPoint - 5 || millis() < 5000 && Input <= setPoint - 5) {
       Kaltstart = 0;
-    }
-  }
-
-
-
-  /********************************************************
-    Sendet Daten zur App
-  ******************************************************/
-  unsigned long currentMillis = millis();
-  if (currentMillis - previousMillis >= interval) {
-
-    Blynk.run();
-
-    previousMillis = currentMillis;
-    Blynk.virtualWrite(V2, Input);
-    Blynk.syncVirtual(V2);
-    // Send date to the App
-    Blynk.virtualWrite(V3, setPoint);
-    Blynk.syncVirtual(V3);
-
-    Serial.print(bPID.GetKp());
-    Serial.print(",");
-    Serial.print(bPID.GetKi());
-    Serial.print(",");
-    Serial.print(bPID.GetKd());
-    Serial.print(",");
-    //Serial.print(Output);
-    //Serial.print(",");
-    Serial.print(setPoint);
-    Serial.print(",");
-    Serial.println(Input);
-
-    if (Display == 1) {
-      /********************************************************
-         DISPLAY AUSGABE
-      ******************************************************/
-      u8x8.setFont(u8x8_font_chroma48medium8_r);  //Ausgabe vom aktuellen Wert im Display
-      u8x8.setCursor(0, 1);
-      u8x8.print("IstTemp:");
-      u8x8.setCursor(9, 1);
-      u8x8.print("   ");
-      u8x8.setCursor(9, 1);
-      u8x8.print(Input);
-
-      u8x8.setCursor(0, 2);
-      u8x8.print("SetPoint:");
-      u8x8.setCursor(10, 2);
-      u8x8.print("   ");
-      u8x8.setCursor(10, 2);
-      u8x8.print(setPoint);
+      Serial.println("Warmstart");
     }
 
+    /********************************************************
+      PID (erst nach dem Kaltstart o. bei deaktiviertem Kaltstart
+    ******************************************************/
+    if (Kaltstart == 0 && bruehvorganggestartet == 0) {
+      bPID.SetTunings(aggKp, aggKi, aggKd);
+      bPID.Compute();
+      if (millis() - windowStartTime > windowSize) {
+        windowStartTime += windowSize;
+      }
+      if (Output < millis() - windowStartTime) {
+        digitalWrite(pinRelayHeater, LOW);
+        //Serial.println("Power off!");
+      } else {
+        digitalWrite(pinRelayHeater, HIGH);
+        //Serial.println("Power on!");
+      }
+    }
+
+    /********************************************************
+      Minimierung des überschwingers... erst aktiv nach 6 Minuten...
+    ******************************************************/
+    if (brueherkennung == 1) {
+      if (Kaltstart == 0 && millis() > 360000 && Input <= setPoint - 3 && bruehvorganggestartet == 0 || Kaltstart == 0 && millis() > 60000 && Input >= setPoint + 0.2 && bruehvorganggestartet == 0) {
+        bruehvorganggestartet = 1;
+      }
+      if (bruehvorganggestartet == 1) {
+        if (Input <= setPoint - 7) {
+          Serial.println("Brühvorgang: Heizung ein ...");
+          bPID.SetTunings(aggKp, aggKi, aggKd);
+          bPID.Compute();
+          if (millis() - windowStartTime > windowSize) {
+            windowStartTime += windowSize;
+          }
+          if (Output < millis() - windowStartTime) {
+            digitalWrite(pinRelayHeater, LOW);
+            //Serial.println("Power off!");
+          } else {
+            digitalWrite(pinRelayHeater, HIGH);
+            //Serial.println("Power on!");
+          }
+
+        } else {
+          digitalWrite(pinRelayHeater, LOW);
+          Serial.println("Brühvorgang: Heizung aus ...");
+          bruehvorganggestartet = 0;
+          bPID.Compute();
+        }
+      }
+    }
+
+
+    /********************************************************
+      Kaltstart
+    ******************************************************/
+    if (Kaltstart == 1) {
+
+      if (Input < 80) {
+        Serial.println("Kaltstart: Heizung an ...");
+        digitalWrite(pinRelayHeater, HIGH);
+      }
+      else {
+        ColdstartPause = 1;
+      }
+
+
+      if (ColdstartPause == 1 && Coldstart >= 1 && KaltstartPause <= 15) {
+        Serial.println("Kaltstart: Heizung aus ...");
+        digitalWrite(pinRelayHeater, LOW);
+        //Zählt jede Sekunde
+        unsigned long currentMillisColdstartPause = millis();
+        if (currentMillisColdstartPause - previousMillisColdstartPause >= 1000) {
+          KaltstartPause = KaltstartPause + 1;
+          previousMillisColdstartPause = currentMillisColdstartPause;
+        }
+      }
+      if (ColdstartPause == 1 && Coldstart && KaltstartPause > 15) {
+        Serial.println("Kaltstart beendet ...");
+        ColdstartPause = 0;
+        Coldstart = 0;
+        Kaltstart = 0;
+      }
+    }
+
+
+    /********************************************************
+      Sendet Daten zur App
+    ******************************************************/
+    unsigned long currentMillis = millis();
+    if (currentMillis - previousMillis >= interval) {
+
+      Blynk.run();
+
+      previousMillis = currentMillis;
+      Blynk.virtualWrite(V2, Input);
+      Blynk.syncVirtual(V2);
+      // Send date to the App
+      Blynk.virtualWrite(V3, setPoint);
+      Blynk.syncVirtual(V3);
+
+      Serial.print(bPID.GetKp());
+      Serial.print(",");
+      Serial.print(bPID.GetKi());
+      Serial.print(",");
+      Serial.print(bPID.GetKd());
+      Serial.print(",");
+      //Serial.print(Output);
+      //Serial.print(",");
+      Serial.print(setPoint);
+      Serial.print(",");
+      Serial.println(Input);
+
+      if (Display == 1) {
+        /********************************************************
+           DISPLAY AUSGABE
+        ******************************************************/
+        u8x8.setFont(u8x8_font_chroma48medium8_r);  //Ausgabe vom aktuellen Wert im Display
+        u8x8.setCursor(0, 1);
+        u8x8.print("IstTemp:");
+        u8x8.setCursor(9, 1);
+        u8x8.print("   ");
+        u8x8.setCursor(9, 1);
+        u8x8.print(Input);
+
+        u8x8.setCursor(0, 2);
+        u8x8.print("SetPoint:");
+        u8x8.setCursor(10, 2);
+        u8x8.print("   ");
+        u8x8.setCursor(10, 2);
+        u8x8.print(setPoint);
+      }
+      if (Display == 2) {
+        /********************************************************
+           DISPLAY AUSGABE
+        ******************************************************/
+        display.setTextSize(1);
+        display.setTextColor(WHITE);
+
+        display.clearDisplay();
+        display.setCursor(0, 0);
+        display.print("Ist-Temp:");
+        display.print("  ");
+        display.println(Input);
+        display.print("Soll-Temp:");
+        display.print(" ");
+        display.println(setPoint);
+        display.print("PID:");
+        display.print(" ");
+        display.print(bPID.GetKp());
+        display.print(",");
+        display.print(bPID.GetKi());
+        display.print(",");
+        display.println(bPID.GetKd());  
+        display.println(" ");    
+        display.setTextSize(3);
+        display.setTextColor(WHITE);
+        
+        display.print(round((Input*100)/setPoint));
+        display.println("%");
+        display.display();
+      }
+    }
+
+  }else{
+       if (Display == 2) {
+        /********************************************************
+           DISPLAY AUSGABE
+        ******************************************************/
+        display.setTextSize(1);
+        display.setTextColor(WHITE);
+
+        display.clearDisplay();
+        display.setCursor(0, 0);
+        display.print("Error:");
+        display.print("  ");
+        display.println(Input);
+        display.print("Check Temp. Sensor!");
+        display.display();
+
+      }     
   }
 
 }
