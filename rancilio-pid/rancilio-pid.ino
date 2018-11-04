@@ -14,8 +14,8 @@ unsigned long previousMillisSwing = 0;
    Vorab-Konfig
 ******************************************************/
 int Kaltstart = 1;  // 1=Aktiviert, 0=Deaktiviert
-int Display = 2;    // 1=U8x8libm, 0=Deaktiviert, 2=Externes 128x64 Display
-int OnlyPID = 0;    // 1=Nur PID ohne Preinfussion, 0=PID + Preinfussion
+int Display = 0;    // 1=U8x8libm, 0=Deaktiviert, 2=Externes 128x64 Display
+int OnlyPID = 1;    // 1=Nur PID ohne Preinfussion, 0=PID + Preinfussion
 int brueherkennung = 1; // 1=Aktiv; 0=aus (EXPERIMENTELL)
 
 char auth[] = "";
@@ -97,9 +97,9 @@ unsigned long windowStartTime;
 double acceleration = 1;
 double setPoint, Input, Output, Input2, setPointTemp, Coldstart;
 
-double aggKp = 21 / acceleration;
-double aggKi = 0.1 / acceleration;
-double aggKd = 21 / acceleration;
+double aggKp = 17.5 / acceleration;
+double aggKi = 0.14 / acceleration;
+double aggKd = 10 / acceleration;
 
 PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, DIRECT);
 
@@ -117,7 +117,7 @@ OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
 
-
+  
 /********************************************************
    BLYNK WERTE EINLESEN
 ******************************************************/
@@ -329,28 +329,23 @@ void loop() {
     ******************************************************/
     if (Kaltstart == 1) {
 
-      if (Input < 80) {
-        Serial.println("Kaltstart: Heizung an ...");
-        digitalWrite(pinRelayHeater, HIGH);
-      }
-      else {
-        ColdstartPause = 1;
-      }
-
-
-      if (ColdstartPause == 1 && Coldstart >= 1 && KaltstartPause <= 15) {
-        Serial.println("Kaltstart: Heizung aus ...");
-        digitalWrite(pinRelayHeater, LOW);
-        //Zählt jede Sekunde
-        unsigned long currentMillisColdstartPause = millis();
-        if (currentMillisColdstartPause - previousMillisColdstartPause >= 1000) {
-          KaltstartPause = KaltstartPause + 1;
-          previousMillisColdstartPause = currentMillisColdstartPause;
+      if (Input < 90) {
+        bPID.SetTunings(aggKp, 0, aggKd);
+        bPID.Compute();
+        if (millis() - windowStartTime > windowSize) {
+          windowStartTime += windowSize;
+        }
+        if (Output < millis() - windowStartTime) {
+          digitalWrite(pinRelayHeater, LOW);
+          //Serial.println("Power off!");
+        } else {
+          digitalWrite(pinRelayHeater, HIGH);
+          //Serial.println("Power on!");
         }
       }
+
       if (ColdstartPause == 1 && Coldstart && KaltstartPause > 15) {
         Serial.println("Kaltstart beendet ...");
-        ColdstartPause = 0;
         Coldstart = 0;
         Kaltstart = 0;
       }
