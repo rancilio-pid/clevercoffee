@@ -117,7 +117,7 @@ OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
 
-  
+
 /********************************************************
    BLYNK WERTE EINLESEN
 ******************************************************/
@@ -260,24 +260,14 @@ void loop() {
   sensors.requestTemperatures();
   Input = sensors.getTempCByIndex(0);
 
-
+//Sicherheitsabfrage
   if (Input >= 0) {
 
-
-
     /********************************************************
-      Abfangen ob Warmstart vorhanden?
+      PID
     ******************************************************/
-    if (millis() < 5000 && Input >= setPoint - 5 || millis() < 5000 && Input <= setPoint - 5) {
-      Kaltstart = 0;
-      Serial.println("Warmstart");
-    }
-
-    /********************************************************
-      PID (erst nach dem Kaltstart o. bei deaktiviertem Kaltstart
-    ******************************************************/
-    if (Kaltstart == 0 && bruehvorganggestartet == 0) {
-      bPID.SetTunings(aggKp, aggKi, aggKd);
+    if (Input < 90) {
+      bPID.SetTunings(aggKp, 0, aggKd);
       bPID.Compute();
       if (millis() - windowStartTime > windowSize) {
         windowStartTime += windowSize;
@@ -289,66 +279,9 @@ void loop() {
         digitalWrite(pinRelayHeater, HIGH);
         //Serial.println("Power on!");
       }
-    }
-
-    /********************************************************
-      Minimierung des überschwingers... erst aktiv nach 6 Minuten...
-    ******************************************************/
-    if (brueherkennung == 1) {
-      if (Kaltstart == 0 && millis() > 360000 && Input <= setPoint - 3 && bruehvorganggestartet == 0 || Kaltstart == 0 && millis() > 60000 && Input >= setPoint + 0.2 && bruehvorganggestartet == 0) {
-        bruehvorganggestartet = 1;
-      }
-      if (bruehvorganggestartet == 1) {
-        if (Input <= setPoint - 7) {
-          Serial.println("Brühvorgang: Heizung ein ...");
-          bPID.SetTunings(aggKp, aggKi, aggKd);
-          bPID.Compute();
-          if (millis() - windowStartTime > windowSize) {
-            windowStartTime += windowSize;
-          }
-          if (Output < millis() - windowStartTime) {
-            digitalWrite(pinRelayHeater, LOW);
-            //Serial.println("Power off!");
-          } else {
-            digitalWrite(pinRelayHeater, HIGH);
-            //Serial.println("Power on!");
-          }
-
-        } else {
-          digitalWrite(pinRelayHeater, LOW);
-          Serial.println("Brühvorgang: Heizung aus ...");
-          bruehvorganggestartet = 0;
-          bPID.Compute();
-        }
-      }
-    }
-
-
-    /********************************************************
-      Kaltstart
-    ******************************************************/
-    if (Kaltstart == 1) {
-
-      if (Input < 90) {
-        bPID.SetTunings(aggKp, 0, aggKd);
-        bPID.Compute();
-        if (millis() - windowStartTime > windowSize) {
-          windowStartTime += windowSize;
-        }
-        if (Output < millis() - windowStartTime) {
-          digitalWrite(pinRelayHeater, LOW);
-          //Serial.println("Power off!");
-        } else {
-          digitalWrite(pinRelayHeater, HIGH);
-          //Serial.println("Power on!");
-        }
-      }
-
-      if (ColdstartPause == 1 && Coldstart && KaltstartPause > 15) {
-        Serial.println("Kaltstart beendet ...");
-        Coldstart = 0;
-        Kaltstart = 0;
-      }
+    } else {
+      bPID.SetTunings(aggKp, aggKi, aggKd);
+      bPID.Compute();
     }
 
 
@@ -419,34 +352,34 @@ void loop() {
         display.print(",");
         display.print(bPID.GetKi());
         display.print(",");
-        display.println(bPID.GetKd());  
-        display.println(" ");    
+        display.println(bPID.GetKd());
+        display.println(" ");
         display.setTextSize(3);
         display.setTextColor(WHITE);
-        
-        display.print(round((Input*100)/setPoint));
+
+        display.print(round((Input * 100) / setPoint));
         display.println("%");
         display.display();
       }
     }
 
-  }else{
-       if (Display == 2) {
-        /********************************************************
-           DISPLAY AUSGABE
-        ******************************************************/
-        display.setTextSize(1);
-        display.setTextColor(WHITE);
+  } else {
+    if (Display == 2) {
+      /********************************************************
+         DISPLAY AUSGABE
+      ******************************************************/
+      display.setTextSize(1);
+      display.setTextColor(WHITE);
 
-        display.clearDisplay();
-        display.setCursor(0, 0);
-        display.print("Error:");
-        display.print("  ");
-        display.println(Input);
-        display.print("Check Temp. Sensor!");
-        display.display();
+      display.clearDisplay();
+      display.setCursor(0, 0);
+      display.print("Error:");
+      display.print("  ");
+      display.println(Input);
+      display.print("Check Temp. Sensor!");
+      display.display();
 
-      }     
+    }
   }
 
 }
