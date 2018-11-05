@@ -100,6 +100,8 @@ double setPoint, Input, Output, Input2, setPointTemp, Coldstart;
 double aggKp = 17.5 / acceleration;
 double aggKi = 0.14 / acceleration;
 double aggKd = 10 / acceleration;
+double startKp = 0;
+double starttemp = 90;
 
 PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, DIRECT);
 
@@ -156,7 +158,12 @@ BLYNK_WRITE(V9) {
 BLYNK_WRITE(V10) {
   preinfusionpause = param.asDouble() * 1000;
 }
-
+BLYNK_WRITE(V11) {
+  startKp = param.asDouble();
+}
+BLYNK_WRITE(V12) {
+  starttemp = param.asDouble();
+}
 
 
 void setup() {
@@ -260,29 +267,29 @@ void loop() {
   sensors.requestTemperatures();
   Input = sensors.getTempCByIndex(0);
 
-//Sicherheitsabfrage
+  //Sicherheitsabfrage
   if (Input >= 0) {
 
     /********************************************************
       PID
     ******************************************************/
-    if (Input < 90) {
-      bPID.SetTunings(aggKp, 0, aggKd);
-      bPID.Compute();
-      if (millis() - windowStartTime > windowSize) {
-        windowStartTime += windowSize;
-      }
-      if (Output < millis() - windowStartTime) {
-        digitalWrite(pinRelayHeater, LOW);
-        //Serial.println("Power off!");
+    if (millis() - windowStartTime > windowSize) {
+      if (Input < starttemp) {
+        bPID.SetTunings(aggKp, startKp, aggKd);
       } else {
-        digitalWrite(pinRelayHeater, HIGH);
-        //Serial.println("Power on!");
+        bPID.SetTunings(aggKp, aggKi, aggKd);
       }
-    } else {
-      bPID.SetTunings(aggKp, aggKi, aggKd);
       bPID.Compute();
+      windowStartTime += windowSize;
     }
+    if (Output < millis() - windowStartTime) {
+      digitalWrite(pinRelayHeater, LOW);
+      //Serial.println("Power off!");
+    } else {
+      digitalWrite(pinRelayHeater, HIGH);
+      //Serial.println("Power on!");
+    }
+
 
 
     /********************************************************
