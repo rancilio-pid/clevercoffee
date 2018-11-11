@@ -36,7 +36,7 @@ WidgetBridge bridge1(V1);
 
 //Update Intervall zur App
 unsigned long previousMillis = 0;
-const long interval = 1000;
+const long interval = 5000;
 
 /********************************************************
    Analog Schalter Read
@@ -90,7 +90,7 @@ Adafruit_SSD1306 display(OLED_RESET);
 int boilerPower = 1000; // Watts
 float boilerVolume = 300; // Grams
 
-unsigned int windowSize = 800;
+unsigned int windowSize = 1000;
 unsigned long windowStartTime;
 double acceleration = 1;
 double setPoint, Input, Output, Input2, setPointTemp, Coldstart;
@@ -266,18 +266,21 @@ void loop() {
   Input = sensors.getTempCByIndex(0);
 
   //Sicherheitsabfrage
+  Serial.println("Schritt 1:");
+  Serial.println(Input);
   if (Input >= 0) {
 
     /********************************************************
       PID
     ******************************************************/
+    bPID.Compute();
     if (millis() - windowStartTime > windowSize) {
+
       if (Input < starttemp) {
         bPID.SetTunings(aggKp, startKp, aggKd);
       } else {
         bPID.SetTunings(aggKp, aggKi, aggKd);
       }
-      bPID.Compute();
       windowStartTime += windowSize;
     }
     if (Output < millis() - windowStartTime) {
@@ -306,12 +309,20 @@ void loop() {
       Blynk.syncVirtual(V3);
 
       Serial.print(bPID.GetKp());
+      Blynk.virtualWrite(V20, bPID.GetKp());
+      Blynk.syncVirtual(V20);
       Serial.print(",");
       Serial.print(bPID.GetKi());
+      Blynk.virtualWrite(V21, bPID.GetKi());
+      Blynk.syncVirtual(V21);
       Serial.print(",");
       Serial.print(bPID.GetKd());
+      Blynk.virtualWrite(V22, bPID.GetKd());
+      Blynk.syncVirtual(V22);
       Serial.print(",");
       //Serial.print(Output);
+      Blynk.virtualWrite(V23, Output);
+      Blynk.syncVirtual(V23);
       //Serial.print(",");
       Serial.print(setPoint);
       Serial.print(",");
@@ -366,6 +377,10 @@ void loop() {
         display.println("%");
         display.display();
       }
+
+
+
+
     }
 
   } else {
