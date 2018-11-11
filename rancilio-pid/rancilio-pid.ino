@@ -20,7 +20,6 @@ char auth[] = "";
 char ssid[] = "";
 char pass[] = "";
 
-
 /********************************************************
    BLYNK
 ******************************************************/
@@ -164,6 +163,8 @@ BLYNK_WRITE(V12) {
 }
 
 
+  
+
 void setup() {
 
   Serial.begin(115200);
@@ -196,9 +197,8 @@ void setup() {
   Blynk.begin(auth, ssid, pass, "blynk.remoteapp.de", 8080);
 
   pinMode(pinRelayHeater, OUTPUT);
-  Input = 20.0;
+
   windowStartTime = millis();
-  setPoint = 96.0;
   Coldstart = 1;
 
   setPointTemp = setPoint;
