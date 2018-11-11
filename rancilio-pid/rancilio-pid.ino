@@ -266,8 +266,6 @@ void loop() {
   Input = sensors.getTempCByIndex(0);
 
   //Sicherheitsabfrage
-  Serial.println("Schritt 1:");
-  Serial.println(Input);
   if (Input >= 0) {
 
     /********************************************************
