@@ -9,6 +9,7 @@ unsigned long KaltstartPause = 0;
 unsigned long bruehvorganggestartet = 0;
 unsigned long warmstart = 0;
 unsigned long previousMillisSwing = 0;
+double Onoff=0 ;
 
 /********************************************************
    Vorab-Konfig
@@ -161,9 +162,12 @@ BLYNK_WRITE(V11) {
 BLYNK_WRITE(V12) {
   starttemp = param.asDouble();
 }
+BLYNK_WRITE(V13)
+{
+  Onoff = param.asInt();
+}
 
 
-  
 
 void setup() {
 
@@ -267,23 +271,25 @@ void loop() {
 
   //Sicherheitsabfrage
   if (Input >= 0) {
+    if (Onoff == 1) {
 
-    /********************************************************
-      PID
-    ******************************************************/
-    bPID.Compute();
-    if (millis() - windowStartTime > windowSize) {
+      /********************************************************
+        PID
+      ******************************************************/
+      bPID.Compute();
+      if (millis() - windowStartTime > windowSize) {
 
-      if (Input < starttemp) {
-        bPID.SetTunings(aggKp, startKp, aggKd);
-      } else {
-        bPID.SetTunings(aggKp, aggKi, aggKd);
+        if (Input < starttemp) {
+          bPID.SetTunings(aggKp, startKp, aggKd);
+        } else {
+          bPID.SetTunings(aggKp, aggKi, aggKd);
+        }
+        windowStartTime += windowSize;
       }
-      windowStartTime += windowSize;
-    }
-    if (Output < millis() - windowStartTime) {
-      digitalWrite(pinRelayHeater, LOW);
-      //Serial.println("Power off!");
+      if (Output < millis() - windowStartTime) {
+        digitalWrite(pinRelayHeater, LOW);
+        //Serial.println("Power off!");
+      }
     } else {
       digitalWrite(pinRelayHeater, HIGH);
       //Serial.println("Power on!");
