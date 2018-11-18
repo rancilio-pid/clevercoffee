@@ -9,12 +9,12 @@ unsigned long KaltstartPause = 0;
 unsigned long bruehvorganggestartet = 0;
 unsigned long warmstart = 0;
 unsigned long previousMillisSwing = 0;
-double Onoff=0 ;
+double Onoff = 0 ;
 
 /********************************************************
    Vorab-Konfig
 ******************************************************/
-int Display = 0;    // 1=U8x8libm, 0=Deaktiviert, 2=Externes 128x64 Display
+int Display = 1;    // 1=U8x8libm, 0=Deaktiviert, 2=Externes 128x64 Display
 int OnlyPID = 1;    // 1=Nur PID ohne Preinfussion, 0=PID + Preinfussion
 
 char auth[] = "";
@@ -382,9 +382,6 @@ void loop() {
         display.display();
       }
 
-
-
-
     }
 
   } else {
@@ -402,7 +399,16 @@ void loop() {
       display.println(Input);
       display.print("Check Temp. Sensor!");
       display.display();
-
+    }
+    if (Display == 1) {
+      /********************************************************
+         DISPLAY AUSGABE
+      ******************************************************/
+      u8x8.setFont(u8x8_font_chroma48medium8_r);  //Ausgabe vom aktuellen Wert im Display
+      u8x8.setCursor(0, 1);
+      u8x8.print("Error: Temp.");
+      u8x8.setCursor(0, 2);
+      u8x8.print(Input);
     }
   }
 
