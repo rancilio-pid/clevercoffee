@@ -16,11 +16,11 @@ double Onoff = 0 ;
 ******************************************************/
 int Display = 1;    // 1=U8x8libm, 0=Deaktiviert, 2=Externes 128x64 Display
 int OnlyPID = 1;    // 1=Nur PID ohne Preinfussion, 0=PID + Preinfussion
+int TempSensor = 2; // 1=DS19B20; 2=TSIC306
 
 char auth[] = "";
 char ssid[] = "";
 char pass[] = "";
-
 /********************************************************
    BLYNK
 ******************************************************/
@@ -116,7 +116,13 @@ OneWire oneWire(ONE_WIRE_BUS);
 // Pass our oneWire reference to Dallas Temperature.
 DallasTemperature sensors(&oneWire);
 
-
+/********************************************************
+   B+B Sensors TSIC 306
+******************************************************/
+#include "TSIC.h"       // include the library
+TSIC Sensor1(2);    // only Signalpin, VCCpin unused by default
+uint16_t temperature = 0;
+float Temperatur_C = 0;
 
 /********************************************************
    BLYNK WERTE EINLESEN
@@ -213,17 +219,38 @@ void setup() {
   /********************************************************
      TEMP SENSOR
   ******************************************************/
-  sensors.begin();
-  sensors.requestTemperatures();
+  if (TempSensor == 1) {
+    sensors.begin();
+    sensors.requestTemperatures();
+  }
 }
 
 void loop() {
 
-  brewswitch = analogRead(analogPin);
+  /********************************************************
+    Temp. Request
+  ******************************************************/
+  if (TempSensor == 1) {
+    sensors.requestTemperatures();
+    Input = sensors.getTempCByIndex(0);
+  }
+  if (TempSensor == 2) {
+    temperature = 0;
+    Sensor1.getTemperature(&temperature);
+    Temperatur_C = Sensor1.calc_Celsius(&temperature);
+    Input = Temperatur_C;
+    //Serial.print(Temperatur_C);
+  }
+  //Serial.println(Input);
+
+
 
   /********************************************************
     PreInfusion
   ******************************************************/
+
+  brewswitch = analogRead(analogPin);
+
   unsigned long startZeit = millis();
   if (OnlyPID == 0) {
     if (brewswitch > 1000 && startZeit - aktuelleZeit > totalbrewtime && brewcounter == 0) {
@@ -265,9 +292,6 @@ void loop() {
       aktuelleZeit = 0;
     }
   }
-
-  sensors.requestTemperatures();
-  Input = sensors.getTempCByIndex(0);
 
   //Sicherheitsabfrage
   if (Input >= 0) {
@@ -324,21 +348,43 @@ void loop() {
       Blynk.virtualWrite(V22, bPID.GetKd());
       Blynk.syncVirtual(V22);
       Serial.print(",");
-      //Serial.print(Output);
+      Serial.print(Output);
       Blynk.virtualWrite(V23, Output);
       Blynk.syncVirtual(V23);
-      //Serial.print(",");
+      Serial.print(",");
       Serial.print(setPoint);
       Serial.print(",");
       Serial.println(Input);
 
       if (Display == 1) {
+
         /********************************************************
            DISPLAY AUSGABE
         ******************************************************/
         u8x8.setFont(u8x8_font_chroma48medium8_r);  //Ausgabe vom aktuellen Wert im Display
+
+        u8x8.setCursor(0, 0);
+        u8x8.print("               ");
         u8x8.setCursor(0, 1);
-        u8x8.print("IstTemp:");
+        u8x8.print("               ");
+        u8x8.setCursor(0, 2);
+        u8x8.print("               ");
+
+        u8x8.setCursor(0, 0);
+        u8x8.print(".");
+        u8x8.setCursor(1, 0);
+        u8x8.print(bPID.GetKp());
+        u8x8.setCursor(6, 0);
+        u8x8.print(",");
+        u8x8.setCursor(7, 0);
+        u8x8.print(bPID.GetKi());
+        u8x8.setCursor(11, 0);
+        u8x8.print(",");
+        u8x8.setCursor(12, 0);
+        u8x8.print(bPID.GetKd());
+
+        u8x8.setCursor(0, 1);
+        u8x8.print("Input:");
         u8x8.setCursor(9, 1);
         u8x8.print("   ");
         u8x8.setCursor(9, 1);
@@ -350,6 +396,15 @@ void loop() {
         u8x8.print("   ");
         u8x8.setCursor(10, 2);
         u8x8.print(setPoint);
+
+        u8x8.setCursor(0, 3);
+        u8x8.print(round((Input * 100) / setPoint));
+        u8x8.setCursor(4, 3);
+        u8x8.print("%");
+        u8x8.setCursor(6, 3);
+        u8x8.print(Output);
+
+
       }
       if (Display == 2) {
         /********************************************************
@@ -405,6 +460,14 @@ void loop() {
          DISPLAY AUSGABE
       ******************************************************/
       u8x8.setFont(u8x8_font_chroma48medium8_r);  //Ausgabe vom aktuellen Wert im Display
+      u8x8.setCursor(0, 0);
+      u8x8.print("               ");
+      u8x8.setCursor(0, 1);
+      u8x8.print("               ");
+      u8x8.setCursor(0, 2);
+      u8x8.print("               ");
+
+
       u8x8.setCursor(0, 1);
       u8x8.print("Error: Temp.");
       u8x8.setCursor(0, 2);
