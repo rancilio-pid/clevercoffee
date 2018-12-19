@@ -314,7 +314,7 @@ void loop() {
         digitalWrite(pinRelayHeater, LOW);
         //Serial.println("Power off!");
       }
-    } else {
+     else {
       digitalWrite(pinRelayHeater, HIGH);
       //Serial.println("Power on!");
     }
@@ -438,7 +438,7 @@ void loop() {
       }
 
     }
-
+    }
   } else {
     if (Display == 2) {
       /********************************************************
