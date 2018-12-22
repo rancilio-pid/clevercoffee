@@ -294,6 +294,8 @@ void loop() {
   }
 
   //Sicherheitsabfrage
+  Serial.println("Schritt 1:");
+  Serial.println(Input);
   if (Input >= 0) {
     if (Onoff == 1) {
 
