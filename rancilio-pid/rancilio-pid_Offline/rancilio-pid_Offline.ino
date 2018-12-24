@@ -34,7 +34,7 @@ int brewtime = 25000;
 long aktuelleZeit = 0;
 int totalbrewtime = 0;
 int preinfusion = 2000;
-int preinfusionpause = 5000;
+int preinfusionpause = 3000;
 
 #define pinRelayVentil    12
 #define pinRelayPumpe     13
@@ -48,7 +48,7 @@ int preinfusionpause = 5000;
 #include <Adafruit_SSD1306.h>
 #define OLED_RESET 16
 Adafruit_SSD1306 display(OLED_RESET);
-#define XPOS 0
+#define XPOS 0  
 #define YPOS 1
 #define DELTAY 2
 
@@ -73,9 +73,16 @@ unsigned long windowStartTime;
 double acceleration = 1;
 double setPoint, Input, Output, Input2, setPointTemp, Coldstart;
 
+/*
 double aggKp = 17.5 / acceleration;
 double aggKi = 0.14 / acceleration;
 double aggKd = 10 / acceleration;
+*/
+
+double aggKp = 28 / acceleration;
+double aggKi = 0.07 / acceleration;
+double aggKd = 0 / acceleration;
+
 double startKp = 0;
 double starttemp = 90;
 
@@ -92,8 +99,9 @@ float Temperatur_C = 0;
 
 void setup() {
 
-  Serial.begin(115200);
-
+  //Serial.begin(115200);
+  Serial.begin(2000000);
+  
   if (Display == 2) {
     /********************************************************
       DISPLAY 128x64
@@ -112,7 +120,7 @@ void setup() {
   pinMode(pinRelayHeater, OUTPUT);
 
   windowStartTime = millis();
-  setPoint = 95;
+  setPoint = 96;
   setPointTemp = setPoint;
 
   bPID.SetSampleTime(windowSize);
