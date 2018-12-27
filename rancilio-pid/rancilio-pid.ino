@@ -19,9 +19,9 @@ double Onoff = 1 ; // default 1
 /********************************************************
    Vorab-Konfig
 ******************************************************/
-int Offlinemodus = 1;       // 0=Blynk und WLAN wird benötigt 1=OfflineModus (ACHTUNG EINSTELLUNGEN NUR DIREKT IM CODE MÖGLICH)
+int Offlinemodus = 0;       // 0=Blynk und WLAN wird benötigt 1=OfflineModus (ACHTUNG EINSTELLUNGEN NUR DIREKT IM CODE MÖGLICH)
 int debugmodus = 1;         // 0=Keine Seriellen Debug Werte 1=SeriellenDebug aktiv
-int Display = 1;            // 1=U8x8libm, 0=Deaktiviert, 2=Externes 128x64 Display
+int Display = 2;            // 1=U8x8libm, 0=Deaktiviert, 2=Externes 128x64 Display
 int OnlyPID = 0;            // 1=Nur PID ohne Preinfussion, 0=PID + Preinfussion
 int TempSensor = 2;         // 1=DS19B20; 2=TSIC306
 int Brewdetection = 1 ;     // 0=off ,1=Software
@@ -84,6 +84,10 @@ WidgetBridge bridge1(V1);
 //Update Intervall zur App
 unsigned long previousMillis = 0;
 const long interval = 5000;
+
+//Update für Display
+unsigned long previousMillisDisplay = 0;
+const long intervalDisplay = 500;
 
 /********************************************************
    Analog Schalter Read
@@ -389,8 +393,8 @@ void loop() {
         if (heatrateaveragemin > heatrateaverage) {
           heatrateaveragemin = heatrateaverage ;
         }
-        Serial.print(heatrateaveragemin, 4);
-        Serial.print(",");
+        //Serial.print(heatrateaveragemin, 4);
+        //Serial.print(",");
         Serial.print(heatrateaverage, 4);
         Serial.print(",");
         if (readIndex >= numReadings) {
@@ -500,45 +504,13 @@ void loop() {
       digitalWrite(pinRelayHeater, HIGH);
       //Serial.println("Power on!");
     }
+
     /********************************************************
-      Sendet Daten zur App
+      Sendet Daten ans Display
     ******************************************************/
-    unsigned long currentMillis = millis();
-    if (currentMillis - previousMillis >= interval) {
-      previousMillis = currentMillis;
-      //  Serial.print("runblynk");
-      if (Offlinemodus == 0) {
-        Blynk.run();
-        Blynk.virtualWrite(V2, Input);
-        Blynk.syncVirtual(V2);
-        Blynk.virtualWrite(V3, setPoint);
-        Blynk.syncVirtual(V3);
-        Blynk.virtualWrite(V20, bPID.GetKp());
-        Blynk.syncVirtual(V20);
-        Blynk.virtualWrite(V21, bPID.GetKi());
-        Blynk.syncVirtual(V21);
-        Blynk.virtualWrite(V22, bPID.GetKd());
-        Blynk.syncVirtual(V22);
-        Blynk.virtualWrite(V23, Output);
-        Blynk.syncVirtual(V23);
-        Blynk.virtualWrite(V35, heatrateaverage);
-        Blynk.syncVirtual(V35);
-        Blynk.virtualWrite(V36, heatrateaveragemin);
-        Blynk.syncVirtual(V36);
-      }
-
-      //  Serial.print(bPID.GetKp());
-      //  Serial.print(",");
-      //  Serial.print(bPID.GetKi());
-      //  Serial.print(",");
-      //  Serial.print(bPID.GetKd());
-      //  Serial.print(",");
-      //  Serial.print(Output);
-      //  Serial.print(",");
-      //  Serial.print(setPoint);
-      //  Serial.print(",");
-      //  Serial.println(Input);
-
+    unsigned long currentMillisDisplay = millis();
+    if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
+      previousMillisDisplay = currentMillisDisplay;
 
       if (Display == 1) {
 
@@ -609,6 +581,35 @@ void loop() {
         display.print(round((Input * 100) / setPoint));
         display.println("%");
         display.display();
+      }
+
+    }
+    /********************************************************
+      Sendet Daten zur App
+    ******************************************************/
+
+    unsigned long currentMillis = millis();
+    if (currentMillis - previousMillis >= interval) {
+      previousMillis = currentMillis;
+      //  Serial.print("runblynk");
+      if (Offlinemodus == 0) {
+        Blynk.run();
+        Blynk.virtualWrite(V2, Input);
+        Blynk.syncVirtual(V2);
+        Blynk.virtualWrite(V3, setPoint);
+        Blynk.syncVirtual(V3);
+        Blynk.virtualWrite(V20, bPID.GetKp());
+        Blynk.syncVirtual(V20);
+        Blynk.virtualWrite(V21, bPID.GetKi());
+        Blynk.syncVirtual(V21);
+        Blynk.virtualWrite(V22, bPID.GetKd());
+        Blynk.syncVirtual(V22);
+        Blynk.virtualWrite(V23, Output);
+        Blynk.syncVirtual(V23);
+        Blynk.virtualWrite(V35, heatrateaverage);
+        Blynk.syncVirtual(V35);
+        Blynk.virtualWrite(V36, heatrateaveragemin);
+        Blynk.syncVirtual(V36);
       }
     }
   } else {
