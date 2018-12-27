@@ -3,7 +3,7 @@
    Version 1.5.0 Master (27.12.2018)
   Key facts: MASTER VERSION OF THE SOFTWARE DETECTION!
   - Check the PIN Ports in the CODE! Not the default from MASTER
-  - Find your changerate of the machine, can be wrong, test it! 
+  - Find your changerate of the machine, can be wrong, test it!
 
 ******************************************************/
 #include "Arduino.h"
@@ -19,8 +19,10 @@ double Onoff = 1 ; // default 1
 /********************************************************
    Vorab-Konfig
 ******************************************************/
-int Display = 2;            // 1=U8x8libm, 0=Deaktiviert, 2=Externes 128x64 Display
-int OnlyPID = 1;            // 1=Nur PID ohne Preinfussion, 0=PID + Preinfussion
+int Offlinemodus = 1;       // 0=Blynk und WLAN wird benötigt 1=OfflineModus (ACHTUNG EINSTELLUNGEN NUR DIREKT IM CODE MÖGLICH)
+int debugmodus = 1;         // 0=Keine Seriellen Debug Werte 1=SeriellenDebug aktiv
+int Display = 1;            // 1=U8x8libm, 0=Deaktiviert, 2=Externes 128x64 Display
+int OnlyPID = 0;            // 1=Nur PID ohne Preinfussion, 0=PID + Preinfussion
 int TempSensor = 2;         // 1=DS19B20; 2=TSIC306
 int Brewdetection = 1 ;     // 0=off ,1=Software
 int standby = 0 ;           // 0: Old rancilio not needed, 1: new one , E or V5 with standy, not used in the moment
@@ -35,7 +37,7 @@ char pass[] = "";
 const int numReadings = 15;           // number of values per Array
 float readingstemp[numReadings];       // the readings from Temp
 float readingstime[numReadings];       // the readings from time
-float readingchangerate[numReadings];    
+float readingchangerate[numReadings];
 
 int readIndex = 1;             // the index of the current reading
 double total = 0;              // the running
@@ -192,8 +194,11 @@ float Temperatur_C = 0;
 //beim starten soll einmalig der gespeicherte Wert aus dem EEPROM 0 in die virtelle
 //Variable geschrieben werden
 BLYNK_CONNECTED() {
-  Blynk.syncAll();
-  rtc.begin();
+  if (Offlinemodus == 0) {
+    Blynk.syncAll();
+    rtc.begin();
+  }
+
 }
 
 BLYNK_WRITE(V4) {
@@ -279,19 +284,21 @@ void setup() {
   /********************************************************
      BLYNK
   ******************************************************/
-
-  Blynk.begin(auth, ssid, pass, "blynk.remoteapp.de", 8080);
-  //Blynk.begin(auth,ssid,pass,"raspberrypi.local",8080);
-
+  if (Offlinemodus == 0) {
+    Blynk.begin(auth, ssid, pass, "blynk.remoteapp.de", 8080);
+    //Blynk.begin(auth,ssid,pass,"raspberrypi.local",8080);
+  }
   pinMode(pinRelayHeater, OUTPUT);
 
   windowStartTime = millis();
   Coldstart = 1;
 
   setPointTemp = setPoint;
-  bPID.SetSampleTime(windowSize);
-  bPID.SetOutputLimits(0, windowSize);
-  bPID.SetMode(AUTOMATIC);
+  if (Offlinemodus == 0) {
+    bPID.SetSampleTime(windowSize);
+    bPID.SetOutputLimits(0, windowSize);
+    bPID.SetMode(AUTOMATIC);
+  }
 
   /********************************************************
      TEMP SENSOR
@@ -347,7 +354,7 @@ void loop() {
       // Serial.print(previousMillistemp);
       // Serial.print(";");
       // Serial.print(Temperatur_C);
-      // Serial.print(";");      
+      // Serial.print(";");
       Serial.print(setPoint);
       Serial.print(",");
       Serial.print(Input);
@@ -382,7 +389,7 @@ void loop() {
         if (heatrateaveragemin > heatrateaverage) {
           heatrateaveragemin = heatrateaverage ;
         }
-        Serial.print(heatrateaveragemin,4);
+        Serial.print(heatrateaveragemin, 4);
         Serial.print(",");
         Serial.print(heatrateaverage, 4);
         Serial.print(",");
@@ -500,37 +507,38 @@ void loop() {
     if (currentMillis - previousMillis >= interval) {
       previousMillis = currentMillis;
       //  Serial.print("runblynk");
-      Blynk.run();
-
-      Blynk.virtualWrite(V2, Input);
-      //   Blynk.syncVirtual(V2);
-      // Send date to the App
-      Blynk.virtualWrite(V3, setPoint);
-      Blynk.syncVirtual(V3);
+      if (Offlinemodus == 0) {
+        Blynk.run();
+        Blynk.virtualWrite(V2, Input);
+        Blynk.syncVirtual(V2);
+        Blynk.virtualWrite(V3, setPoint);
+        Blynk.syncVirtual(V3);
+        Blynk.virtualWrite(V20, bPID.GetKp());
+        Blynk.syncVirtual(V20);
+        Blynk.virtualWrite(V21, bPID.GetKi());
+        Blynk.syncVirtual(V21);
+        Blynk.virtualWrite(V22, bPID.GetKd());
+        Blynk.syncVirtual(V22);
+        Blynk.virtualWrite(V23, Output);
+        Blynk.syncVirtual(V23);
+        Blynk.virtualWrite(V35, heatrateaverage);
+        Blynk.syncVirtual(V35);
+        Blynk.virtualWrite(V36, heatrateaveragemin);
+        Blynk.syncVirtual(V36);
+      }
 
       //  Serial.print(bPID.GetKp());
-      Blynk.virtualWrite(V20, bPID.GetKp());
-      Blynk.syncVirtual(V20);
       //  Serial.print(",");
-      //   Serial.print(bPID.GetKi());
-      Blynk.virtualWrite(V21, bPID.GetKi());
-      Blynk.syncVirtual(V21);
-      //Serial.print(",");
-      //Serial.print(bPID.GetKd());
-      Blynk.virtualWrite(V22, bPID.GetKd());
-      Blynk.syncVirtual(V22);
-      // Serial.print(",");
-      // Serial.print(Output);
-      Blynk.virtualWrite(V23, Output);
-      Blynk.syncVirtual(V23);
+      //  Serial.print(bPID.GetKi());
+      //  Serial.print(",");
+      //  Serial.print(bPID.GetKd());
+      //  Serial.print(",");
+      //  Serial.print(Output);
       //  Serial.print(",");
       //  Serial.print(setPoint);
       //  Serial.print(",");
       //  Serial.println(Input);
-      Blynk.virtualWrite(V35, heatrateaverage);
-      Blynk.syncVirtual(V35);
-      Blynk.virtualWrite(V36, heatrateaveragemin);
-      Blynk.syncVirtual(V36);
+
 
       if (Display == 1) {
 
@@ -538,7 +546,6 @@ void loop() {
            DISPLAY AUSGABE
         ******************************************************/
         u8x8.setFont(u8x8_font_chroma48medium8_r);  //Ausgabe vom aktuellen Wert im Display
-
         u8x8.setCursor(0, 0);
         u8x8.print("               ");
         u8x8.setCursor(0, 1);
