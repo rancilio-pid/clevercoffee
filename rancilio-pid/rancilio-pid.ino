@@ -174,7 +174,7 @@ PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, DIRECT);
 #include <OneWire.h>
 #include <DallasTemperature.h>
 // Data wire is plugged into port 2 on the Arduino
-#define ONE_WIRE_BUS 14
+#define ONE_WIRE_BUS 2
 // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
 OneWire oneWire(ONE_WIRE_BUS);
 // Pass our oneWire reference to Dallas Temperature.
@@ -343,6 +343,10 @@ void loop() {
   if (TempSensor == 1) {
     sensors.requestTemperatures();
     Input = sensors.getTempCByIndex(0);
+    Serial.print(setPoint);
+    Serial.print(",");
+    Serial.print(Input);
+    Serial.print(",");
 
   }
   if (TempSensor == 2) {
@@ -352,13 +356,6 @@ void loop() {
       Sensor1.getTemperature(&temperature);
       Temperatur_C = Sensor1.calc_Celsius(&temperature);
       Input = Temperatur_C;
-      // Input = random(998.0,1000.0);
-      // Serial.print(currentMillistemp);
-      // Serial.print(";");
-      // Serial.print(previousMillistemp);
-      // Serial.print(";");
-      // Serial.print(Temperatur_C);
-      // Serial.print(";");
       Serial.print(setPoint);
       Serial.print(",");
       Serial.print(Input);
