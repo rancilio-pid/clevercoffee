@@ -284,6 +284,8 @@ void setup() {
   ******************************************************/
   pinMode(pinRelayVentil, OUTPUT);
   pinMode(pinRelayPumpe, OUTPUT);
+  digitalWrite(pinRelayVentil, HIGH);
+  digitalWrite(pinRelayPumpe, HIGH);
 
   /********************************************************
      BLYNK
