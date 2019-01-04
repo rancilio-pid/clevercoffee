@@ -300,11 +300,9 @@ void setup() {
   Coldstart = 1;
 
   setPointTemp = setPoint;
-  if (Offlinemodus == 0) {
-    bPID.SetSampleTime(windowSize);
-    bPID.SetOutputLimits(0, windowSize);
-    bPID.SetMode(AUTOMATIC);
-  }
+  bPID.SetSampleTime(windowSize);
+  bPID.SetOutputLimits(0, windowSize);
+  bPID.SetMode(AUTOMATIC);
 
   /********************************************************
      TEMP SENSOR
