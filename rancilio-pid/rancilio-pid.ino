@@ -376,6 +376,7 @@ void loop() {
 
   }
   if (TempSensor == 2) {
+    unsigned long currentMillistemp = millis();
     if (currentMillistemp - previousMillistemp > intervaltempmestsic) {
       temperature = 0;
       Sensor1.getTemperature(&temperature);
