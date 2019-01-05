@@ -336,6 +336,7 @@ void loop() {
     if (currentMillistemp - previousMillistemp > intervaltempmesds18b20) {
       sensors.requestTemperatures();
       Input = sensors.getTempCByIndex(0);
+       previousMillistemp = currentMillistemp;
       if (Brewdetection == 1 && Input > 0) {
         if (firstreading == 1) {
           for (int thisReading = 1; thisReading <= numReadings; thisReading++) {
@@ -376,14 +377,13 @@ void loop() {
 
   }
   if (TempSensor == 2) {
-    unsigned long currentMillistemp = millis();
     if (currentMillistemp - previousMillistemp > intervaltempmestsic) {
       temperature = 0;
       Sensor1.getTemperature(&temperature);
       Temperatur_C = Sensor1.calc_Celsius(&temperature);
       Input = Temperatur_C;
+        previousMillistemp = currentMillistemp;
       // Serial.println(OnlyPID);
-      // previousMillistemp = currentMillistemp;
       // Logging Temp has to be sync with reading temp.
       if (Brewdetection == 1 && Input > 0) {
         if (firstreading == 1) {
