@@ -1,6 +1,6 @@
 
 /********************************************************
-   Version 1.5.0 Master (27.12.2018)
+   Version 1.5.2 Master (27.12.2018)
   Key facts: MASTER VERSION OF THE SOFTWARE DETECTION!
   - Check the PIN Ports in the CODE! Not the default from MASTER
   - Find your changerate of the machine, can be wrong, test it!
@@ -19,9 +19,9 @@ double Onoff = 1 ; // default 1
 /********************************************************
    Vorab-Konfig
 ******************************************************/
-int Offlinemodus = 0;       // 0=Blynk und WLAN wird benötigt 1=OfflineModus (ACHTUNG EINSTELLUNGEN NUR DIREKT IM CODE MÖGLICH)
+int Offlinemodus = 1;       // 0=Blynk und WLAN wird benötigt 1=OfflineModus (ACHTUNG EINSTELLUNGEN NUR DIREKT IM CODE MÖGLICH)
 int debugmodus = 1;         // 0=Keine Seriellen Debug Werte 1=SeriellenDebug aktiv
-int Display = 2;            // 1=U8x8libm, 0=Deaktiviert, 2=Externes 128x64 Display
+int Display = 0;            // 1=U8x8libm, 0=Deaktiviert, 2=Externes 128x64 Display
 int OnlyPID = 0;            // 1=Nur PID ohne Preinfussion, 0=PID + Preinfussion
 int TempSensor = 2;         // 1=DS19B20; 2=TSIC306
 int Brewdetection = 1 ;     // 0=off ,1=Software
@@ -57,16 +57,6 @@ double brewtimersoftware = 45; // 20-5 for detection
 double brewboarder = 150 ; // border for the detection,
 // be carefull: to high: risk of wrong brew detection
 // and rising temperature
-
-/********************************************************
-   Analog Input - hardware solution brew detection
-******************************************************/
-int inputVoltage ;
-int inputVoltagetime = 10 ;
-int Voltagecounter = 0 ;
-int Voltagenormal = 0 ;
-int Voltagecalc = 0 ;
-int Voltageuse = 0 ;
 
 /********************************************************
    BLYNK
@@ -150,7 +140,8 @@ Adafruit_SSD1306 display(OLED_RESET);
 #define pinRelayHeater    14
 long previousMillistemp = 0;
 long currentMillistemp = 0;
-long intervaltempmes = 200 ;
+long intervaltempmestsic = 200 ;
+long intervaltempmesds18b20 = 400  ;
 
 unsigned int windowSize = 1000;
 unsigned long windowStartTime;
@@ -262,7 +253,7 @@ BLYNK_WRITE(V34) {
 
 
 void setup() {
-  Serial.begin(250000);
+  Serial.begin(500000);
   if (Display == 1) {
     /********************************************************
       DISPLAY Intern
@@ -340,26 +331,56 @@ void loop() {
   /********************************************************
     Temp. Request
   ******************************************************/
+  unsigned long currentMillistemp = millis();
   if (TempSensor == 1) {
-    sensors.requestTemperatures();
-    Input = sensors.getTempCByIndex(0);
-    Serial.print(setPoint);
-    Serial.print(",");
-    Serial.print(Input);
-    Serial.print(",");
+    if (currentMillistemp - previousMillistemp > intervaltempmesds18b20) {
+      sensors.requestTemperatures();
+      Input = sensors.getTempCByIndex(0);
+      if (Brewdetection == 1 && Input > 0) {
+        if (firstreading == 1) {
+          for (int thisReading = 1; thisReading <= numReadings; thisReading++) {
+            readingstemp[thisReading] = Input;
+            readingstime[thisReading] = 0;
+            readingchangerate[thisReading] = 0;
+          }
+          firstreading = 0 ;
+        }
+        readingstime[readIndex] = millis() ;
+        readingstemp[readIndex] = Input ;
+        if (readIndex == 15) {
+          changerate = (readingstemp[15] - readingstemp[1]) / (readingstime[15] - readingstime[1]) * 10000;
+        } else {
+          changerate = (readingstemp[readIndex] - readingstemp[readIndex + 1]) / (readingstime[readIndex] - readingstime[readIndex + 1]) * 10000;
+        }
+        readingchangerate[readIndex] = changerate ;
+        total = 0 ;
+        for (i = 1; i < (numReadings); ++i)
+        {
+          total += readingchangerate[i];
+        }
+        heatrateaverage = total / numReadings * 100 ;
+        if (heatrateaveragemin > heatrateaverage) {
+          heatrateaveragemin = heatrateaverage ;
+        }
+        Serial.print(heatrateaveragemin, 4);
+        Serial.print(",");
+        Serial.print(heatrateaverage, 4);
+        Serial.print(",");
+        if (readIndex >= numReadings) {
+          // ...wrap around to the beginning:
+          readIndex = 0;
+        }
+        readIndex = readIndex + 1;
+      }
+    }
 
   }
   if (TempSensor == 2) {
-    unsigned long currentMillistemp = millis();
-    if (currentMillistemp - previousMillistemp > intervaltempmes) {
+    if (currentMillistemp - previousMillistemp > intervaltempmestsic) {
       temperature = 0;
       Sensor1.getTemperature(&temperature);
       Temperatur_C = Sensor1.calc_Celsius(&temperature);
       Input = Temperatur_C;
-      Serial.print(setPoint);
-      Serial.print(",");
-      Serial.print(Input);
-      Serial.print(",");
       // Serial.println(OnlyPID);
       // previousMillistemp = currentMillistemp;
       // Logging Temp has to be sync with reading temp.
@@ -386,12 +407,11 @@ void loop() {
           total += readingchangerate[i];
         }
         heatrateaverage = total / numReadings * 100 ;
-        // if we're at the end of the array...
         if (heatrateaveragemin > heatrateaverage) {
           heatrateaveragemin = heatrateaverage ;
         }
-        //Serial.print(heatrateaveragemin, 4);
-        //Serial.print(",");
+        Serial.print(heatrateaveragemin, 4);
+        Serial.print(",");
         Serial.print(heatrateaverage, 4);
         Serial.print(",");
         if (readIndex >= numReadings) {
@@ -402,7 +422,19 @@ void loop() {
       }
     }
   }
+  // Input = random(998.0,1000.0);
+  // Serial.print(currentMillistemp);
+  // Serial.print(";");
+  // Serial.print(previousMillistemp);
+  // Serial.print(";");
+  // Serial.print(Temperatur_C);
+  // Serial.print(";");
+  Serial.print(setPoint);
+  Serial.print(",");
+  Serial.print(Input);
+  Serial.println(",");
   //Serial.println(Input);
+
 
 
 
@@ -509,6 +541,36 @@ void loop() {
     if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
       previousMillisDisplay = currentMillisDisplay;
 
+      /********************************************************
+        Sendet Daten zur App
+      ******************************************************/
+
+      unsigned long currentMillis = millis();
+      if (currentMillis - previousMillis >= interval) {
+        previousMillis = currentMillis;
+        //  Serial.print("runblynk");
+        if (Offlinemodus == 0) {
+          Blynk.run();
+          Blynk.virtualWrite(V2, Input);
+          Blynk.syncVirtual(V2);
+          Blynk.virtualWrite(V3, setPoint);
+          Blynk.syncVirtual(V3);
+          Blynk.virtualWrite(V20, bPID.GetKp());
+          Blynk.syncVirtual(V20);
+          Blynk.virtualWrite(V21, bPID.GetKi());
+          Blynk.syncVirtual(V21);
+          Blynk.virtualWrite(V22, bPID.GetKd());
+          Blynk.syncVirtual(V22);
+          Blynk.virtualWrite(V23, Output);
+          Blynk.syncVirtual(V23);
+          Blynk.virtualWrite(V35, heatrateaverage);
+          Blynk.syncVirtual(V35);
+          Blynk.virtualWrite(V36, heatrateaveragemin);
+          Blynk.syncVirtual(V36);
+        }
+      }
+
+
       if (Display == 1) {
 
         /********************************************************
@@ -580,34 +642,6 @@ void loop() {
         display.display();
       }
 
-    }
-    /********************************************************
-      Sendet Daten zur App
-    ******************************************************/
-
-    unsigned long currentMillis = millis();
-    if (currentMillis - previousMillis >= interval) {
-      previousMillis = currentMillis;
-      //  Serial.print("runblynk");
-      if (Offlinemodus == 0) {
-        Blynk.run();
-        Blynk.virtualWrite(V2, Input);
-        Blynk.syncVirtual(V2);
-        Blynk.virtualWrite(V3, setPoint);
-        Blynk.syncVirtual(V3);
-        Blynk.virtualWrite(V20, bPID.GetKp());
-        Blynk.syncVirtual(V20);
-        Blynk.virtualWrite(V21, bPID.GetKi());
-        Blynk.syncVirtual(V21);
-        Blynk.virtualWrite(V22, bPID.GetKd());
-        Blynk.syncVirtual(V22);
-        Blynk.virtualWrite(V23, Output);
-        Blynk.syncVirtual(V23);
-        Blynk.virtualWrite(V35, heatrateaverage);
-        Blynk.syncVirtual(V35);
-        Blynk.virtualWrite(V36, heatrateaveragemin);
-        Blynk.syncVirtual(V36);
-      }
     }
   } else {
     if (Display == 2) {
