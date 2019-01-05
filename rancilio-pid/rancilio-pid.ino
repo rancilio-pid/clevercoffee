@@ -432,7 +432,7 @@ void loop() {
   Serial.print(setPoint);
   Serial.print(",");
   Serial.print(Input);
-  Serial.println(",");
+  Serial.print(",");
   //Serial.println(Input);
 
 
