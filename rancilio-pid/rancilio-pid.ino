@@ -547,7 +547,7 @@ void loop() {
       ******************************************************/
 
       unsigned long currentMillis = millis();
-      if (currentMillis - previousMillis >= interval && Input > 0) {
+      if (currentMillis - previousMillis >= interval) {
         previousMillis = currentMillis;
         //  Serial.print("runblynk");
         if (Offlinemodus == 0) {
