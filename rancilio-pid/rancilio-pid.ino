@@ -1,10 +1,9 @@
 
 /********************************************************
-   Version 1.5.2 Master (27.12.2018)
+   Version 1.5.2 Master (11.01.2019)
   Key facts: MASTER VERSION OF THE SOFTWARE DETECTION!
-  - Check the PIN Ports in the CODE! Not the default from MASTER
+  - Check the PIN Ports in the CODE! 
   - Find your changerate of the machine, can be wrong, test it!
-
 ******************************************************/
 #include "Arduino.h"
 unsigned long previousMillisColdstart = 0;
@@ -20,7 +19,7 @@ double Onoff = 1 ; // default 1
    Vorab-Konfig
 ******************************************************/
 int Offlinemodus = 1;       // 0=Blynk und WLAN wird benötigt 1=OfflineModus (ACHTUNG EINSTELLUNGEN NUR DIREKT IM CODE MÖGLICH)
-int debugmodus = 1;         // 0=Keine Seriellen Debug Werte 1=SeriellenDebug aktiv
+int debugmodus = 0;         // 0=Keine Seriellen Debug Werte 1=SeriellenDebug aktiv
 int Display = 0;            // 1=U8x8libm, 0=Deaktiviert, 2=Externes 128x64 Display
 int OnlyPID = 0;            // 1=Nur PID ohne Preinfussion, 0=PID + Preinfussion
 int TempSensor = 2;         // 1=DS19B20; 2=TSIC306
@@ -32,7 +31,7 @@ char auth[] = "";
 char ssid[] = "";
 char pass[] = "";
 /********************************************************
-   moving average
+   moving average - Brüherkennung
 *****************************************************/
 const int numReadings = 15;           // number of values per Array
 float readingstemp[numReadings];       // the readings from Temp
@@ -109,7 +108,10 @@ long windowStartOnoff = 0 ;
 /********************************************************
    DISPLAY
 ******************************************************/
-
+const int numReadingsdisplayerror = 30;           // number of values per Array
+float readingsdisplayerror[numReadingsdisplayerror]; 
+int error = 0;
+int displayerrorcounter=0 ;
 #include <U8x8lib.h>
 #ifdef U8X8_HAVE_HW_SPI
 #include <SPI.h>
@@ -253,7 +255,12 @@ BLYNK_WRITE(V34) {
 
 
 void setup() {
-  Serial.begin(500000);
+  Serial.begin(125000);
+  
+    for (int thisReading = 0; thisReading <= numReadings; thisReading++) {
+    readingsdisplayerror[thisReading] = 0 ;
+    }
+  
   if (Display == 1) {
     /********************************************************
       DISPLAY Intern
@@ -430,10 +437,10 @@ void loop() {
   // Serial.print(";");
   // Serial.print(Temperatur_C);
   // Serial.print(";");
-  Serial.print(setPoint);
-  Serial.print(",");
-  Serial.print(Input);
-  Serial.print(",");
+//  Serial.print(setPoint);
+//  Serial.print(",");
+//  Serial.print(Input);
+//  Serial.print(",");
   //Serial.println(Input);
 
 
@@ -447,9 +454,9 @@ void loop() {
 
   unsigned long startZeit = millis();
 
-  Serial.print(brewswitch);
-  Serial.print(",");
-  Serial.println(OnlyPID);
+//  Serial.print(brewswitch);
+//  Serial.print(",");
+//  Serial.println(OnlyPID);
   if (OnlyPID == 0) {
     if (brewswitch > 1000 && startZeit - aktuelleZeit > totalbrewtime && brewcounter == 0) {
       aktuelleZeit = millis();
@@ -487,7 +494,35 @@ void loop() {
       aktuelleZeit = 0;
     }
   }
+  /********************************************************
+    sensor error
+  ******************************************************/
+ // number of values per Array
+if (Input < 0) { 
+  readingsdisplayerror[displayerrorcounter] = 1;
+}  else {
+  readingsdisplayerror[displayerrorcounter] = 0;
+  }
+ error=0;
+ for (int i = 0; i < numReadingsdisplayerror; i++) {
+ if (readingsdisplayerror[i] == 1) { 
+ error++;
+ }
+ }
 
+  Serial.print(error);
+  Serial.print(",");
+  Serial.print(Input);
+  Serial.print(",");
+  Serial.println(displayerrorcounter);
+   displayerrorcounter++;
+ if (displayerrorcounter==16) {
+  displayerrorcounter=0 ;   
+  } 
+//const int numReadingsdisplayerror = 15;           // number of values per Array
+//float readingsdisplayerror[numReadingsdisplayerror]; 
+//int error = 0;
+//int displayerrorcounter=0 ;
   /********************************************************
     change of rate
   ******************************************************/
@@ -571,7 +606,6 @@ void loop() {
         }
       }
 
-
       if (Display == 1) {
 
         /********************************************************
@@ -644,7 +678,7 @@ void loop() {
       }
 
     }
-  } else {
+  } else if (error == numReadingsdisplayerror) {  
     if (Display == 2) {
       /********************************************************
          DISPLAY AUSGABE
