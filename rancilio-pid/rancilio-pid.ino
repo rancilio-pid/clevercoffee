@@ -1,11 +1,12 @@
 
 /********************************************************
-   Version 1.5.2 Master (11.01.2019)
-  Key facts: MASTER VERSION OF THE SOFTWARE DETECTION!
-  - Check the PIN Ports in the CODE! 
+   Version 1.6.0 BETA (06.05.2019)
+  Key facts: BETA VERSION WITH FALLBACK
+  - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
 ******************************************************/
 #include "Arduino.h"
+#include <EEPROM.h>
 unsigned long previousMillisColdstart = 0;
 unsigned long previousMillisColdstartPause = 0;
 unsigned long ColdstartPause = 0;
@@ -13,23 +14,30 @@ unsigned long KaltstartPause = 0;
 unsigned long bruehvorganggestartet = 0;
 unsigned long warmstart = 0;
 unsigned long previousMillisSwing = 0;
+unsigned long wifistarttime = 0;
 double Onoff = 1 ; // default 1
+int status ;   // the Wifi radio's status
+String displaymessagetext ;
+String displaymessagetext2 ;
 
 /********************************************************
    Vorab-Konfig
 ******************************************************/
-int Offlinemodus = 1;       // 0=Blynk und WLAN wird benötigt 1=OfflineModus (ACHTUNG EINSTELLUNGEN NUR DIREKT IM CODE MÖGLICH)
+int Offlinemodus = 0;       // 0=Blynk und WLAN wird benötigt 1=OfflineModus (ACHTUNG EINSTELLUNGEN NUR DIREKT IM CODE MÖGLICH)
 int debugmodus = 0;         // 0=Keine Seriellen Debug Werte 1=SeriellenDebug aktiv
-int Display = 0;            // 1=U8x8libm, 0=Deaktiviert, 2=Externes 128x64 Display
-int OnlyPID = 0;            // 1=Nur PID ohne Preinfussion, 0=PID + Preinfussion
+int Display = 2;            // 1=U8x8libm, 0=Deaktiviert, 2=Externes 128x64 Display
+int OnlyPID = 1;            // 1=Nur PID ohne Preinfussion, 0=PID + Preinfussion
 int TempSensor = 2;         // 1=DS19B20; 2=TSIC306
 int Brewdetection = 1 ;     // 0=off ,1=Software
 int standby = 0 ;           // 0: Old rancilio not needed, 1: new one , E or V5 with standy, not used in the moment
+int fallback = 1  ;          // 1: fallback auf eeprom Werte, wenn blynk nicht geht
 
 
-char auth[] = "";
-char ssid[] = "";
-char pass[] = "";
+char auth[] = "blynkauthcode"; 
+char ssid[] = "wlanname";
+char pass[] = "wlanpass";
+char blynkaddress[]  = "blynk.remoteapp.de" ; // Blynk Adresse
+// char blynkaddress[]  = "raspberrypi.local" ; 
 /********************************************************
    moving average - Brüherkennung
 *****************************************************/
@@ -54,7 +62,7 @@ double aggbi = 0 ;
 double aggbd = 800;
 double brewtimersoftware = 45; // 20-5 for detection
 double brewboarder = 150 ; // border for the detection,
-// be carefull: to high: risk of wrong brew detection
+// be carefull: to low: risk of wrong brew detection
 // and rising temperature
 
 /********************************************************
@@ -109,9 +117,9 @@ long windowStartOnoff = 0 ;
    DISPLAY
 ******************************************************/
 const int numReadingsdisplayerror = 30;           // number of values per Array
-float readingsdisplayerror[numReadingsdisplayerror]; 
+float readingsdisplayerror[numReadingsdisplayerror];
 int error = 0;
-int displayerrorcounter=0 ;
+int displayerrorcounter = 0 ;
 #include <U8x8lib.h>
 #ifdef U8X8_HAVE_HW_SPI
 #include <SPI.h>
@@ -151,8 +159,8 @@ double acceleration = 1;
 double Input, Output, setPointTemp, Coldstart;
 
 double setPoint = 95;
-double aggKp = 28.0 / acceleration;
-double aggKi = 0.08 / acceleration;
+float aggKp = 28.0 / acceleration;
+float aggKi = 0.08 / acceleration;
 double aggKd = 0 / acceleration;
 double startKp = 60;
 double starttemp = 85;
@@ -188,8 +196,7 @@ float Temperatur_C = 0;
    BLYNK WERTE EINLESEN
 ******************************************************/
 
-//beim starten soll einmalig der gespeicherte Wert aus dem EEPROM 0 in die virtelle
-//Variable geschrieben werden
+
 BLYNK_CONNECTED() {
   if (Offlinemodus == 0) {
     Blynk.syncAll();
@@ -252,15 +259,41 @@ BLYNK_WRITE(V34) {
   brewboarder =  param.asDouble();
 }
 
+void displaymessage(String displaymessagetext, String displaymessagetext2, int Display) {
+  if (Display == 2) {
+    /********************************************************
+       DISPLAY AUSGABE
+    ******************************************************/
+    display.setTextSize(1);
+    display.setTextColor(WHITE);
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.print(displaymessagetext);
+    display.setCursor(0, 8);
+    display.print(displaymessagetext2);
+  }
+  if (Display == 1) {
+    /********************************************************
+       DISPLAY AUSGABE
+    ******************************************************/
+    u8x8.clear();
+    u8x8.setFont(u8x8_font_chroma48medium8_r);  //Ausgabe vom aktuellen Wert im Display
+    u8x8.setCursor(0, 0);
+    u8x8.print(displaymessagetext);
+    u8x8.setCursor(0, 2);
+    u8x8.print(displaymessagetext2);
+  }
+
+}
 
 
 void setup() {
-  Serial.begin(125000);
-  
-    for (int thisReading = 0; thisReading <= numReadings; thisReading++) {
+  Serial.begin(115200);
+
+  for (int thisReading = 0; thisReading <= numReadings; thisReading++) {
     readingsdisplayerror[thisReading] = 0 ;
-    }
-  
+  }
+
   if (Display == 1) {
     /********************************************************
       DISPLAY Intern
@@ -276,7 +309,8 @@ void setup() {
     //display.begin(SSD1306_SWITCHCAPVCC, 0x3D);  // initialize with the I2C addr 0x3D (for the 128x64)
     display.clearDisplay();
   }
-
+  displaymessage("Version 1.6.0", "", Display);
+  delay(5000);
   /********************************************************
     BrewKnopf SSR Relais
   ******************************************************/
@@ -286,12 +320,85 @@ void setup() {
   digitalWrite(pinRelayPumpe, HIGH);
 
   /********************************************************
-     BLYNK
+     BLYNK & Fallback offline
   ******************************************************/
   if (Offlinemodus == 0) {
-    Blynk.begin(auth, ssid, pass, "blynk.remoteapp.de", 8080);
-    //Blynk.begin(auth,ssid,pass,"raspberrypi.local",8080);
+
+    if (fallback == 0) {
+      displaymessage("Connect to Blynk", "no Fallback", Display);
+      Blynk.begin(auth, ssid, pass, blynkaddress, 8080);
+
+    }
+
+    if (fallback == 1) {
+
+      displaymessage("1: Try Wifi", "to connect", Display);
+      // wait 10 seconds for connection:
+      status = WiFi.begin(ssid, pass);
+      delay (10 * 1000) ;
+
+      if (WiFi.status() == WL_CONNECTED) {
+
+        displaymessage("2: Wifi works, ", "try Blynk   ", Display);
+        Serial.println("Wifi works, now try Blynk connection");
+        delay(2000);
+        Blynk.config(auth, blynkaddress, 8080) ;
+        Blynk.connect(1500);
+
+        // Blnky works:
+        if (Blynk.connect() == true) {
+          displaymessage("3: Blynk works", "", Display);
+          delay(2000) ;
+          Serial.println(WiFi.status());
+
+          // Werte in den eeprom schreiben
+          // ini eeprom mit begin
+          EEPROM.begin(1024);
+          Serial.println("Blynk is online, new values to eeprom");
+          Blynk.syncAll();
+          EEPROM.put(0, aggKp);
+          EEPROM.put(10, aggKi);
+          EEPROM.put(20, aggKd);
+          EEPROM.put(30, setPoint);
+          EEPROM.put(40, brewtime);
+          EEPROM.put(50, preinfusion);
+          EEPROM.put(60, preinfusionpause);
+          EEPROM.put(70, startKp);
+          EEPROM.put(80, starttemp);
+          EEPROM.put(90, aggbp);
+          EEPROM.put(100, aggbi);
+          EEPROM.put(110, aggbd);
+          EEPROM.put(120, brewtimersoftware);
+          EEPROM.put(130, brewboarder);
+          // eeprom schließen
+          EEPROM.commit();
+        }
+      }
+      if (WiFi.status() != WL_CONNECTED || Blynk.connect() != true) {
+        displaymessage("Begin Fallback,", "No Blynk/Wifi", Display);
+        delay(5000);
+        Serial.println("Start offline mode with eeprom values, no wifi or blynk :(");
+        Offlinemodus = 1 ;
+        EEPROM.begin(1024);
+        EEPROM.get(0, aggKp);
+        EEPROM.get(10, aggKi);
+        EEPROM.get(20, aggKd);
+        EEPROM.get(30, setPoint);
+        EEPROM.get(40, brewtime);
+        EEPROM.get(50, preinfusion);
+        EEPROM.get(60, preinfusionpause);
+        EEPROM.get(70, startKp);
+        EEPROM.get(80, starttemp);
+        EEPROM.get(90, aggbp);
+        EEPROM.get(100, aggbi);
+        EEPROM.get(110, aggbd);
+        EEPROM.get(120, brewtimersoftware);
+        EEPROM.get(130, brewboarder);
+      }
+    }
+    Serial.println(WiFi.localIP());
   }
+
   pinMode(pinRelayHeater, OUTPUT);
 
   windowStartTime = millis();
@@ -334,7 +441,6 @@ void setup() {
 
 void loop() {
 
-
   /********************************************************
     Temp. Request
   ******************************************************/
@@ -343,7 +449,7 @@ void loop() {
     if (currentMillistemp - previousMillistemp > intervaltempmesds18b20) {
       sensors.requestTemperatures();
       Input = sensors.getTempCByIndex(0);
-       previousMillistemp = currentMillistemp;
+      previousMillistemp = currentMillistemp;
       if (Brewdetection == 1 && Input > 0) {
         if (firstreading == 1) {
           for (int thisReading = 1; thisReading <= numReadings; thisReading++) {
@@ -370,10 +476,10 @@ void loop() {
         if (heatrateaveragemin > heatrateaverage) {
           heatrateaveragemin = heatrateaverage ;
         }
-        Serial.print(heatrateaveragemin, 4);
-        Serial.print(",");
-        Serial.print(heatrateaverage, 4);
-        Serial.print(",");
+//        Serial.print(heatrateaveragemin, 4);
+//        Serial.print(",");
+//        Serial.print(heatrateaverage, 4);
+//        Serial.print(",");
         if (readIndex >= numReadings) {
           // ...wrap around to the beginning:
           readIndex = 0;
@@ -389,7 +495,8 @@ void loop() {
       Sensor1.getTemperature(&temperature);
       Temperatur_C = Sensor1.calc_Celsius(&temperature);
       Input = Temperatur_C;
-        previousMillistemp = currentMillistemp;
+      //Input = 50 ;// test value
+      previousMillistemp = currentMillistemp;
       // Serial.println(OnlyPID);
       // Logging Temp has to be sync with reading temp.
       if (Brewdetection == 1 && Input > 0) {
@@ -418,10 +525,10 @@ void loop() {
         if (heatrateaveragemin > heatrateaverage) {
           heatrateaveragemin = heatrateaverage ;
         }
-        Serial.print(heatrateaveragemin, 4);
-        Serial.print(",");
-        Serial.print(heatrateaverage, 4);
-        Serial.print(",");
+//        Serial.print(heatrateaveragemin, 4);
+//        Serial.print(",");
+//        Serial.print(heatrateaverage, 4);
+//        Serial.print(",");
         if (readIndex >= numReadings) {
           // ...wrap around to the beginning:
           readIndex = 0;
@@ -437,10 +544,10 @@ void loop() {
   // Serial.print(";");
   // Serial.print(Temperatur_C);
   // Serial.print(";");
-//  Serial.print(setPoint);
-//  Serial.print(",");
-//  Serial.print(Input);
-//  Serial.print(",");
+  //  Serial.print(setPoint);
+  //  Serial.print(",");
+  //  Serial.print(Input);
+  //  Serial.print(",");
   //Serial.println(Input);
 
 
@@ -454,9 +561,9 @@ void loop() {
 
   unsigned long startZeit = millis();
 
-//  Serial.print(brewswitch);
-//  Serial.print(",");
-//  Serial.println(OnlyPID);
+  //  Serial.print(brewswitch);
+  //  Serial.print(",");
+  //  Serial.println(OnlyPID);
   if (OnlyPID == 0) {
     if (brewswitch > 1000 && startZeit - aktuelleZeit > totalbrewtime && brewcounter == 0) {
       aktuelleZeit = millis();
@@ -497,32 +604,32 @@ void loop() {
   /********************************************************
     sensor error
   ******************************************************/
- // number of values per Array
-if (Input < 0) { 
-  readingsdisplayerror[displayerrorcounter] = 1;
-}  else {
-  readingsdisplayerror[displayerrorcounter] = 0;
+  // number of values per Array
+  if (Input < 0) {
+    readingsdisplayerror[displayerrorcounter] = 1;
+  }  else {
+    readingsdisplayerror[displayerrorcounter] = 0;
   }
- error=0;
- for (int i = 0; i < numReadingsdisplayerror; i++) {
- if (readingsdisplayerror[i] == 1) { 
- error++;
- }
- }
+  error = 0;
+  for (int i = 0; i < numReadingsdisplayerror; i++) {
+    if (readingsdisplayerror[i] == 1) {
+      error++;
+    }
+  }
 
-  Serial.print(error);
-  Serial.print(",");
-  Serial.print(Input);
-  Serial.print(",");
-  Serial.println(displayerrorcounter);
-   displayerrorcounter++;
- if (displayerrorcounter==16) {
-  displayerrorcounter=0 ;   
-  } 
-//const int numReadingsdisplayerror = 15;           // number of values per Array
-//float readingsdisplayerror[numReadingsdisplayerror]; 
-//int error = 0;
-//int displayerrorcounter=0 ;
+//  Serial.print(error);
+//  Serial.print(",");
+//  Serial.print(Input);
+//  Serial.print(",");
+//  Serial.println(displayerrorcounter);
+  displayerrorcounter++;
+  if (displayerrorcounter == 16) {
+    displayerrorcounter = 0 ;
+  }
+  //const int numReadingsdisplayerror = 15;           // number of values per Array
+  //float readingsdisplayerror[numReadingsdisplayerror];
+  //int error = 0;
+  //int displayerrorcounter=0 ;
   /********************************************************
     change of rate
   ******************************************************/
@@ -678,7 +785,7 @@ if (Input < 0) {
       }
 
     }
-  } else if (error == numReadingsdisplayerror) {  
+  } else if (error == numReadingsdisplayerror) {
     if (Display == 2) {
       /********************************************************
          DISPLAY AUSGABE
