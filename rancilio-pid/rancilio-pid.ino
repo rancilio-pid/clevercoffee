@@ -33,11 +33,11 @@ int standby = 0 ;           // 0: Old rancilio not needed, 1: new one , E or V5 
 int fallback = 1  ;          // 1: fallback auf eeprom Werte, wenn blynk nicht geht
 
 
-char auth[] = "blynkauthcode"; 
+char auth[] = "blynkauthcode";
 char ssid[] = "wlanname";
 char pass[] = "wlanpass";
-char blynkaddress[]  = "blynk.remoteapp.de" ; // Blynk Adresse
-// char blynkaddress[]  = "raspberrypi.local" ; 
+char blynkaddress[]  = "blynk.remoteapp.de" ;
+// char blynkaddress[]  = "raspberrypi.local" ;
 /********************************************************
    moving average - Brüherkennung
 *****************************************************/
