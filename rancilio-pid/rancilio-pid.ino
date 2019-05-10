@@ -379,6 +379,7 @@ void setup() {
         delay(5000);
         Serial.println("Start offline mode with eeprom values, no wifi or blynk :(");
         Offlinemodus = 1 ;
+         // eeprom öffnen
         EEPROM.begin(1024);
         EEPROM.get(0, aggKp);
         EEPROM.get(10, aggKi);
@@ -394,6 +395,8 @@ void setup() {
         EEPROM.get(110, aggbd);
         EEPROM.get(120, brewtimersoftware);
         EEPROM.get(130, brewboarder);
+         // eeeprom schließen
+          EEPROM.commit();
       }
     }
     Serial.println(WiFi.localIP());
