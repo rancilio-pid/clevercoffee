@@ -2,7 +2,7 @@
 /********************************************************
    Version 1.6.0 BETA (06.05.2019)
   Key facts: BETA VERSION WITH FALLBACK
-  - Check the PIN Ports in the CODE!
+  - Check the PIN Ports in the CODE! 
   - Find your changerate of the machine, can be wrong, test it!
 ******************************************************/
 #include "Arduino.h"
@@ -19,13 +19,14 @@ double Onoff = 1 ; // default 1
 int status ;   // the Wifi radio's status
 String displaymessagetext ;
 String displaymessagetext2 ;
+double eepromcheck = 0 ; 
 
 /********************************************************
    Vorab-Konfig
 ******************************************************/
 int Offlinemodus = 0;       // 0=Blynk und WLAN wird benötigt 1=OfflineModus (ACHTUNG EINSTELLUNGEN NUR DIREKT IM CODE MÖGLICH)
 int debugmodus = 0;         // 0=Keine Seriellen Debug Werte 1=SeriellenDebug aktiv
-int Display = 2;            // 1=U8x8libm, 0=Deaktiviert, 2=Externes 128x64 Display
+int Display = 1;            // 1=U8x8libm, 0=Deaktiviert, 2=Externes 128x64 Display
 int OnlyPID = 1;            // 1=Nur PID ohne Preinfussion, 0=PID + Preinfussion
 int TempSensor = 2;         // 1=DS19B20; 2=TSIC306
 int Brewdetection = 1 ;     // 0=off ,1=Software
@@ -355,7 +356,7 @@ void setup() {
           // ini eeprom mit begin
           EEPROM.begin(1024);
           Serial.println("Blynk is online, new values to eeprom");
-          Blynk.syncAll();
+          Blynk.syncAll();  
           EEPROM.put(0, aggKp);
           EEPROM.put(10, aggKi);
           EEPROM.put(20, aggKd);
@@ -381,6 +382,9 @@ void setup() {
         Offlinemodus = 1 ;
          // eeprom öffnen
         EEPROM.begin(1024);
+        // eeprom werte prüfen, ob numerisch 
+       EEPROM.get(0, eepromcheck);
+       if (isDigit(eepromcheck)) {
         EEPROM.get(0, aggKp);
         EEPROM.get(10, aggKi);
         EEPROM.get(20, aggKd);
@@ -395,6 +399,12 @@ void setup() {
         EEPROM.get(110, aggbd);
         EEPROM.get(120, brewtimersoftware);
         EEPROM.get(130, brewboarder);
+       }
+       else 
+       {
+        displaymessage("No eeprom,", "Value", Display);
+        Serial.println("No working eeprom value, I am sorry, but use default offline value  :)");
+       }
          // eeeprom schließen
           EEPROM.commit();
       }
