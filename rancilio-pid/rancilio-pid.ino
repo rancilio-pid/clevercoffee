@@ -1,6 +1,6 @@
 
 /********************************************************
-   Version 1.6.0 BETA (06.05.2019)
+   Version 1.6.1 BETA (13.05.2019)
   Key facts: BETA VERSION WITH FALLBACK
   - Check the PIN Ports in the CODE! 
   - Find your changerate of the machine, can be wrong, test it!
@@ -19,7 +19,8 @@ double Onoff = 1 ; // default 1
 int status ;   // the Wifi radio's status
 String displaymessagetext ;
 String displaymessagetext2 ;
-double eepromcheck = 0 ; 
+double eepromcheck ; 
+String eepromcheckstring; 
 
 /********************************************************
    Vorab-Konfig
@@ -34,11 +35,13 @@ int standby = 0 ;           // 0: Old rancilio not needed, 1: new one , E or V5 
 int fallback = 1  ;          // 1: fallback auf eeprom Werte, wenn blynk nicht geht
 
 
+
 char auth[] = "blynkauthcode";
 char ssid[] = "wlanname";
 char pass[] = "wlanpass";
 char blynkaddress[]  = "blynk.remoteapp.de" ;
 // char blynkaddress[]  = "raspberrypi.local" ;
+
 /********************************************************
    moving average - Brüherkennung
 *****************************************************/
@@ -354,9 +357,9 @@ void setup() {
 
           // Werte in den eeprom schreiben
           // ini eeprom mit begin
+          Blynk.run();  
           EEPROM.begin(1024);
-          Serial.println("Blynk is online, new values to eeprom");
-          Blynk.syncAll();  
+          Serial.println("Blynk is online, new values to eeprom"); 
           EEPROM.put(0, aggKp);
           EEPROM.put(10, aggKi);
           EEPROM.put(20, aggKd);
@@ -383,8 +386,11 @@ void setup() {
          // eeprom öffnen
         EEPROM.begin(1024);
         // eeprom werte prüfen, ob numerisch 
-       EEPROM.get(0, eepromcheck);
-       if (isDigit(eepromcheck)) {
+       EEPROM.get(0, aggKp);
+       eepromcheckstring=String(aggKp,1);
+       Serial.println(aggKp);
+        Serial.println(eepromcheckstring);
+       if (isDigit(eepromcheckstring.charAt(1))== true) {
         EEPROM.get(0, aggKp);
         EEPROM.get(10, aggKi);
         EEPROM.get(20, aggKd);
