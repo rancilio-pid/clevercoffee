@@ -1,6 +1,6 @@
 
 /********************************************************
-   Version 1.6.1 BETA (13.05.2019)
+   Version 1.6.2 BETA (13.05.2019)
   Key facts: BETA VERSION WITH FALLBACK
   - Check the PIN Ports in the CODE! 
   - Find your changerate of the machine, can be wrong, test it!
@@ -275,6 +275,7 @@ void displaymessage(String displaymessagetext, String displaymessagetext2, int D
     display.print(displaymessagetext);
     display.setCursor(0, 8);
     display.print(displaymessagetext2);
+    display.display();
   }
   if (Display == 1) {
     /********************************************************
@@ -313,7 +314,7 @@ void setup() {
     //display.begin(SSD1306_SWITCHCAPVCC, 0x3D);  // initialize with the I2C addr 0x3D (for the 128x64)
     display.clearDisplay();
   }
-  displaymessage("Version 1.6.0", "", Display);
+  displaymessage("Version 1.6.2", "", Display);
   delay(5000);
   /********************************************************
     BrewKnopf SSR Relais
