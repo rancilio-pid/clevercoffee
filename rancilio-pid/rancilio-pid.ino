@@ -565,7 +565,7 @@ void loop() {
       Sensor1.getTemperature(&temperature);
       Temperatur_C = Sensor1.calc_Celsius(&temperature);
       Input = Temperatur_C;
-      Input = random(50,70) ;// test value
+     // Input = random(50,70) ;// test value
 
       if (Brewdetection == 1 && Input > 0) 
       {
