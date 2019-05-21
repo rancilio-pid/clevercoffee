@@ -1,7 +1,7 @@
 
 /********************************************************
-   Version 1.6.2 BETA (19.05.2019)
-  Key facts: BETA VERSION WITH FALLBACK
+   Version 1.6.2 BETA (21.05.2019)
+  Key facts: VERSION WITH FALLBACK
   - Check the PIN Ports in the CODE! 
   - Find your changerate of the machine, can be wrong, test it!
 ******************************************************/
@@ -19,15 +19,12 @@ int standby = 0 ;           // 0: Old rancilio not needed, 1: new one , E or V5 
 int fallback = 1  ;          // 1: fallback auf eeprom Werte, wenn blynk nicht geht 0: deaktiviert
 
 
-//char auth[] = "296da16b0626443caf96bff568be4ead"; //ich lokal
-char auth[] = "f1e490b08f7f498f8942dcbee8e8ac24"; //ich lokal test node
-//char auth[] = "df1989795361411c9f1f54a6aad23fc5"; //Markus
-char ssid[] = "FRITZ!Box 7560 TW";
-//char pass[] = "11"; // Andreas - test
-char pass[] = "73529858617456203989"; // Andreas
+char auth[] = "blynkauthcode"
+char ssid[] = "wlan_ssid_name";
+char pass[] = "wlanpasswort";
 
-//char blynkaddress[]  = "blynk.remoteapp.de" ;
- char blynkaddress[]  = "raspberrypi.local" ;
+char blynkaddress[]  = "blynk.remoteapp.de" ;
+// char blynkaddress[]  = "raspberrypi.local" ;
 /********************************************************
    Vorab-Konfig
 ******************************************************/
