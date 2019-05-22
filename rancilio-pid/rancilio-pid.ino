@@ -1,8 +1,7 @@
-
 /********************************************************
-   Version 1.6.2 BETA (21.05.2019)
+   Version 1.6.3 BETA (22.05.2019)
   Key facts: VERSION WITH FALLBACK
-  - Check the PIN Ports in the CODE! 
+  - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
 ******************************************************/
 
@@ -10,8 +9,8 @@
    Vorab-Konfig
 ******************************************************/
 int Offlinemodus = 0;       // 0=Blynk und WLAN wird benötigt 1=OfflineModus (ACHTUNG EINSTELLUNGEN NUR DIREKT IM CODE MÖGLICH)
-int debugmodus = 1;         // 0=Keine Seriellen Debug Werte 1=SeriellenDebug aktiv
-int Display = 0;            // 1=U8x8libm, 0=Deaktiviert, 2=Externes 128x64 Display
+int debugmodus = 0;         // 0=Keine Seriellen Debug Werte 1=SeriellenDebug aktiv
+int Display = 2;            // 1=U8x8libm, 0=Deaktiviert, 2=Externes 128x64 Display
 int OnlyPID = 1;            // 1=Nur PID ohne Preinfussion, 0=PID + Preinfussion
 int TempSensor = 2;         // 1=DS19B20; 2=TSIC306
 int Brewdetection = 1 ;     // 0=off ,1=Software
@@ -19,9 +18,9 @@ int standby = 0 ;           // 0: Old rancilio not needed, 1: new one , E or V5 
 int fallback = 1  ;          // 1: fallback auf eeprom Werte, wenn blynk nicht geht 0: deaktiviert
 
 
-char auth[] = "blynkauthcode"
-char ssid[] = "wlan_ssid_name";
-char pass[] = "wlanpasswort";
+char auth[] = "blynkauthcode";
+char ssid[] = "wlanname";
+char pass[] = "wlanpass";
 
 char blynkaddress[]  = "blynk.remoteapp.de" ;
 // char blynkaddress[]  = "raspberrypi.local" ;
@@ -39,35 +38,35 @@ unsigned long bruehvorganggestartet = 0;
 unsigned long warmstart = 0;
 unsigned long previousMillisSwing = 0;
 
-double Onoff = 1 ; // default 1
-int status ;   // the Wifi radio's status
+double Onoff = 1 ;  // default 1
+int status ;        // the Wifi radio's status
 
 
 
-String displaymessagetext ; // display Ausgabe
-String displaymessagetext2 ; // display Ausgabe 2 
-double eepromcheck ;  // Eeprom Prüfung
-String eepromcheckstring;  
+String displaymessagetext ;     // display Ausgabe
+String displaymessagetext2 ;    // display Ausgabe 2
+double eepromcheck ;            // Eeprom Prüfung
+String eepromcheckstring;
 
- 
+
 /********************************************************
    moving average - Brüherkennung
 *****************************************************/
-const int numReadings = 15;           // number of values per Array
-float readingstemp[numReadings];       // the readings from Temp
-float readingstime[numReadings];       // the readings from time
+const int numReadings = 15;             // number of values per Array
+float readingstemp[numReadings];        // the readings from Temp
+float readingstime[numReadings];        // the readings from time
 float readingchangerate[numReadings];
 
-int readIndex = 1;             // the index of the current reading
-double total = 0;              // the running
-int totaltime = 0 ;            // the running time
-double heatrateaverage = 0;    // the average over the numReadings
-double changerate = 0;         // local change rate of temprature
+int readIndex = 1;              // the index of the current reading
+double total = 0;               // the running
+int totaltime = 0 ;             // the running time
+double heatrateaverage = 0;     // the average over the numReadings
+double changerate = 0;          // local change rate of temprature
 double heatrateaveragemin = 0 ;
 unsigned long  timeBrewdetection = 0 ;
 int timerBrewdetection = 0 ;
 int i = 0;
-int firstreading = 1 ; // Ini of the field
+int firstreading = 1 ;          // Ini of the field
 
 /********************************************************
    PID - Werte Brüherkennung Offline
@@ -76,8 +75,8 @@ int firstreading = 1 ; // Ini of the field
 double aggbp = 80 ;
 double aggbi = 0 ;
 double aggbd = 800;
-double brewtimersoftware = 45; // 20-5 for detection
-double brewboarder = 150 ; // border for the detection,
+double brewtimersoftware = 45;    // 20-5 for detection
+double brewboarder = 150 ;        // border for the detection,
 // be carefull: to low: risk of wrong brew detection
 // and rising temperature
 
@@ -219,7 +218,6 @@ BLYNK_CONNECTED() {
     Blynk.syncAll();
     rtc.begin();
   }
-
 }
 
 BLYNK_WRITE(V4) {
@@ -312,59 +310,59 @@ void displaymessage(String displaymessagetext, String displaymessagetext2, int D
 *****************************************************/
 
 void brueherkennung() {
-   if (firstreading == 1) {
-        for (int thisReading = 0; thisReading < numReadings; thisReading++) {
-          readingstemp[thisReading] = Input;
-          readingstime[thisReading] = 0;
-          readingchangerate[thisReading] = 0;
-        }
-        firstreading = 0 ;
-      }
-      
-      readingstime[readIndex] = millis() ;
-      readingstemp[readIndex] = Input ;
-      
-      if (readIndex == numReadings - 1) {
-        changerate = (readingstemp[numReadings - 1] - readingstemp[0]) / (readingstime[numReadings - 1] - readingstime[0]) * 10000;
-      } else {
-        changerate = (readingstemp[readIndex] - readingstemp[readIndex + 1]) / (readingstime[readIndex] - readingstime[readIndex + 1]) * 10000;
-      }
-      
-      readingchangerate[readIndex] = changerate ;
-      total = 0 ;
-      for (i = 1; i < numReadings; ++i)
-      {
-        total += readingchangerate[i];
-      }
-      
-      heatrateaverage = total / numReadings * 100 ;
-      if (heatrateaveragemin > heatrateaverage) {
-        heatrateaveragemin = heatrateaverage ;
-      }
-
-if (debugmodus == 1) {
-      Serial.print("Input: ");
-      Serial.print(Input, 4);
-      Serial.print(",");  
-      Serial.print("heataveragemin: ");
-      Serial.print(heatrateaveragemin, 4);
-      Serial.print(",");
-      Serial.print("heataverage: ");
-      Serial.print(heatrateaverage, 4);
-      Serial.println(",");
-}
-      if (readIndex >= numReadings - 1) {
-        // ...wrap around to the beginning:
-        readIndex = 0;
-      }
-      readIndex++;
-     
+  if (firstreading == 1) {
+    for (int thisReading = 0; thisReading < numReadings; thisReading++) {
+      readingstemp[thisReading] = Input;
+      readingstime[thisReading] = 0;
+      readingchangerate[thisReading] = 0;
     }
- 
+    firstreading = 0 ;
+  }
+
+  readingstime[readIndex] = millis() ;
+  readingstemp[readIndex] = Input ;
+
+  if (readIndex == numReadings - 1) {
+    changerate = (readingstemp[numReadings - 1] - readingstemp[0]) / (readingstime[numReadings - 1] - readingstime[0]) * 10000;
+  } else {
+    changerate = (readingstemp[readIndex] - readingstemp[readIndex + 1]) / (readingstime[readIndex] - readingstime[readIndex + 1]) * 10000;
+  }
+
+  readingchangerate[readIndex] = changerate ;
+  total = 0 ;
+  for (i = 1; i < numReadings; ++i)
+  {
+    total += readingchangerate[i];
+  }
+
+  heatrateaverage = total / numReadings * 100 ;
+  if (heatrateaveragemin > heatrateaverage) {
+    heatrateaveragemin = heatrateaverage ;
+  }
+
+  if (debugmodus == 1) {
+    Serial.print("Input: ");
+    Serial.print(Input, 4);
+    Serial.print(",");
+    Serial.print("heataveragemin: ");
+    Serial.print(heatrateaveragemin, 4);
+    Serial.print(",");
+    Serial.print("heataverage: ");
+    Serial.print(heatrateaverage, 4);
+    Serial.println(",");
+  }
+  if (readIndex >= numReadings - 1) {
+    // ...wrap around to the beginning:
+    readIndex = 0;
+  }
+  readIndex++;
+
+}
+
 
 void setup() {
   Serial.begin(115200);
-    /********************************************************
+  /********************************************************
     Ini Pins
   ******************************************************/
   pinMode(pinRelayVentil, OUTPUT);
@@ -372,7 +370,7 @@ void setup() {
   digitalWrite(pinRelayVentil, HIGH);
   digitalWrite(pinRelayPumpe, HIGH);
   pinMode(pinRelayHeater, OUTPUT);
-  
+
 
   for (int thisReading = 0; thisReading <= numReadings; thisReading++) {
     readingsdisplayerror[thisReading] = 0 ;
@@ -393,7 +391,7 @@ void setup() {
     //display.begin(SSD1306_SWITCHCAPVCC, 0x3D);  // initialize with the I2C addr 0x3D (for the 128x64)
     display.clearDisplay();
   }
-  displaymessage("Version 1.6.2", "", Display);
+  displaymessage("Version 1.6.3", "", Display);
   delay(5000);
 
   /********************************************************
@@ -430,9 +428,9 @@ void setup() {
 
           // Werte in den eeprom schreiben
           // ini eeprom mit begin
-          Blynk.run();  
+          Blynk.run();
           EEPROM.begin(1024);
-          Serial.println("Blynk is online, new values to eeprom"); 
+          Serial.println("Blynk is online, new values to eeprom");
           EEPROM.put(0, aggKp);
           EEPROM.put(10, aggKi);
           EEPROM.put(20, aggKd);
@@ -456,36 +454,36 @@ void setup() {
         delay(5000);
         Serial.println("Start offline mode with eeprom values, no wifi or blynk :(");
         Offlinemodus = 1 ;
-         // eeprom öffnen
+        // eeprom öffnen
         EEPROM.begin(1024);
-        // eeprom werte prüfen, ob numerisch 
-       EEPROM.get(0, aggKp);
-       eepromcheckstring=String(aggKp,1);
-       Serial.println(aggKp);
-        Serial.println(eepromcheckstring);
-       if (isDigit(eepromcheckstring.charAt(1))== true) {
+        // eeprom werte prüfen, ob numerisch
         EEPROM.get(0, aggKp);
-        EEPROM.get(10, aggKi);
-        EEPROM.get(20, aggKd);
-        EEPROM.get(30, setPoint);
-        EEPROM.get(40, brewtime);
-        EEPROM.get(50, preinfusion);
-        EEPROM.get(60, preinfusionpause);
-        EEPROM.get(70, startKp);
-        EEPROM.get(80, starttemp);
-        EEPROM.get(90, aggbp);
-        EEPROM.get(100, aggbi);
-        EEPROM.get(110, aggbd);
-        EEPROM.get(120, brewtimersoftware);
-        EEPROM.get(130, brewboarder);
-       }
-       else 
-       {
-        displaymessage("No eeprom,", "Value", Display);
-        Serial.println("No working eeprom value, I am sorry, but use default offline value  :)");
-       }
-         // eeeprom schließen
-          EEPROM.commit();
+        eepromcheckstring = String(aggKp, 1);
+        Serial.println(aggKp);
+        Serial.println(eepromcheckstring);
+        if (isDigit(eepromcheckstring.charAt(1)) == true) {
+          EEPROM.get(0, aggKp);
+          EEPROM.get(10, aggKi);
+          EEPROM.get(20, aggKd);
+          EEPROM.get(30, setPoint);
+          EEPROM.get(40, brewtime);
+          EEPROM.get(50, preinfusion);
+          EEPROM.get(60, preinfusionpause);
+          EEPROM.get(70, startKp);
+          EEPROM.get(80, starttemp);
+          EEPROM.get(90, aggbp);
+          EEPROM.get(100, aggbi);
+          EEPROM.get(110, aggbd);
+          EEPROM.get(120, brewtimersoftware);
+          EEPROM.get(130, brewboarder);
+        }
+        else
+        {
+          displaymessage("No eeprom,", "Value", Display);
+          Serial.println("No working eeprom value, I am sorry, but use default offline value  :)");
+        }
+        // eeeprom schließen
+        EEPROM.commit();
       }
     }
     Serial.println(WiFi.localIP());
@@ -540,7 +538,7 @@ void loop() {
     Temp. Request
   ******************************************************/
   unsigned long currentMillistemp = millis();
-  if (TempSensor == 1) 
+  if (TempSensor == 1)
   {
     if (currentMillistemp - previousMillistemp > intervaltempmesds18b20)
     {
@@ -551,9 +549,9 @@ void loop() {
       if (Brewdetection == 1 && Input > 0) {
         brueherkennung();
       }
-     }
+    }
   }
-  if (TempSensor == 2) 
+  if (TempSensor == 2)
   {
     if (currentMillistemp - previousMillistemp > intervaltempmestsic)
     {
@@ -562,11 +560,11 @@ void loop() {
       Sensor1.getTemperature(&temperature);
       Temperatur_C = Sensor1.calc_Celsius(&temperature);
       Input = Temperatur_C;
-     // Input = random(50,70) ;// test value
+      // Input = random(50,70) ;// test value
 
-      if (Brewdetection == 1 && Input > 0) 
+      if (Brewdetection == 1 && Input > 0)
       {
-       brueherkennung();
+        brueherkennung();
       }
     }
   }
@@ -579,8 +577,8 @@ void loop() {
   //  Serial.print(",");
   //  Serial.println(OnlyPID);
   if (OnlyPID == 0) {
-      brewswitch = analogRead(analogPin);
-     unsigned long startZeit = millis();
+    brewswitch = analogRead(analogPin);
+    unsigned long startZeit = millis();
     if (brewswitch > 1000 && startZeit - aktuelleZeit > totalbrewtime && brewcounter == 0) {
       aktuelleZeit = millis();
       brewcounter = brewcounter + 1;
@@ -633,14 +631,14 @@ void loop() {
     }
   }
 
-if (debugmodus == 1) {
-  Serial.print("error: ");
-  Serial.print(error);
-  Serial.print(",");
-  Serial.print("displayerrorcounter :");
-  Serial.print(displayerrorcounter);
-  Serial.println(",");
-}
+  if (debugmodus == 1) {
+    Serial.print("error: ");
+    Serial.print(error);
+    Serial.print(",");
+    Serial.print("displayerrorcounter :");
+    Serial.print(displayerrorcounter);
+    Serial.println(",");
+  }
   displayerrorcounter++;
   if (displayerrorcounter > numReadingsdisplayerror) {
     displayerrorcounter = 0 ;
@@ -710,7 +708,7 @@ if (debugmodus == 1) {
       unsigned long currentMillis = millis();
       if (currentMillis - previousMillis >= interval) {
         previousMillis = currentMillis;
-        if (debugmodus == 1) 
+        if (debugmodus == 1)
         {
           Serial.print("runblynk");
         }
