@@ -330,7 +330,7 @@ void brueherkennung() {
 
   readingchangerate[readIndex] = changerate ;
   total = 0 ;
-  for (i = 1; i < numReadings; ++i)
+  for (i = 0; i < numReadings; i++)
   {
     total += readingchangerate[i];
   }
