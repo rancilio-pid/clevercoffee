@@ -1,5 +1,5 @@
 /********************************************************
-   Version 1.6.3 BETA (22.05.2019)
+   Version 1.6.3 Master (22.05.2019)
   Key facts: VERSION WITH FALLBACK
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
