@@ -372,7 +372,7 @@ void setup() {
   pinMode(pinRelayHeater, OUTPUT);
 
 
-  for (int thisReading = 0; thisReading <= numReadings; thisReading++) {
+  for (int thisReading = 0; thisReading <= numReadingsdisplayerror; thisReading++) {
     readingsdisplayerror[thisReading] = 0 ;
   }
 
@@ -516,7 +516,7 @@ void setup() {
     movingaverage ini array
   ******************************************************/
   if (Brewdetection == 1) {
-    for (int thisReading = 0; thisReading <= numReadings; thisReading++) {
+    for (int thisReading = 0; thisReading < numReadings; thisReading++) {
       readingstemp[thisReading] = 0;
       readingstime[thisReading] = 0;
       readingchangerate[thisReading] = 0;
