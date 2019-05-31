@@ -1,0 +1,24 @@
+#######################################
+# Syntax Coloring Map For WiFi101OTA
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+ArduinoOTA	KEYWORD1
+
+InternalStorage	KEYWORD1
+SDStorage	KEYWORD1
+SerialFlashStorage	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+begin	KEYWORD2
+poll	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
