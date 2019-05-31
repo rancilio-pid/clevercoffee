@@ -4,7 +4,8 @@
   - Find your changerate of the machine, can be wrong, test it!
   - 
 ******************************************************/
-
+#include "Arduino.h"
+#include <EEPROM.h>
 /********************************************************
    Vorab-Konfig
 ******************************************************/
@@ -16,7 +17,8 @@ int TempSensor = 2;         // 1=DS19B20; 2=TSIC306
 int Brewdetection = 1 ;     // 0=off ,1=Software
 int standby = 0 ;           // 0: Old rancilio not needed, 1: new one , E or V5 with standy, not used in the moment
 int fallback = 1  ;          // 1: fallback auf eeprom Werte, wenn blynk nicht geht 0: deaktiviert
-
+int triggerType = HIGH;// LOW = low trigger, HIGH = high trigger relay
+boolean OTA = true;                // true=activate update via OTA
 
 char auth[] = "blynkauthcode";
 char ssid[] = "wlanname";
@@ -30,7 +32,7 @@ char blynkaddress[]  = "blynk.remoteapp.de" ;
 
 #include "Arduino.h"
 #include <EEPROM.h>
-/*	Variablen werden alle nicht verwendet
+/*  Variablen werden alle nicht verwendet
 unsigned long previousMillisColdstart = 0;
 unsigned long previousMillisColdstartPause = 0;
 unsigned long ColdstartPause = 0;
@@ -41,16 +43,14 @@ unsigned long previousMillisSwing = 0;
 */
 
 int Onoff = 1 ;  // default 1
-int triggerType = HIGH;// LOW = low trigger, HIGH = high trigger relay
 int relayON, relayOFF;// used for relay trigger type. Do not change!
-boolean OTA = true;                // true=activate update via OTA
 boolean kaltstart = true;   //true = Rancilio started for first time
 /* Nicht notwendig, ist in function deklariert
 String displaymessagetext ;     // display Ausgabe
 String displaymessagetext2 ;    // display Ausgabe 2
 */
-//double eepromcheck ;            // Eeprom Pr�fung		//Variable wird nicht verwendet
-//String eepromcheckstring;		//wenn nicht global ben�tigt, dann nur in function deklarieren
+//double eepromcheck ;            // Eeprom Pr�fung   //Variable wird nicht verwendet
+//String eepromcheckstring;   //wenn nicht global ben�tigt, dann nur in function deklarieren
 
 
 /********************************************************
@@ -162,7 +162,7 @@ Adafruit_SSD1306 display(OLED_RESET);
 #include "PID_v1.h"
 #define pinRelayHeater    14
 long previousMillistemp = 0;
-//long currentMillistemp = 0;	// Doppelt deklariert
+//long currentMillistemp = 0; // Doppelt deklariert
 long intervaltempmestsic = 200 ;
 long intervaltempmesds18b20 = 400  ;
 int pidMode = 1; //1 = Automatic, 0 = Manual
@@ -170,7 +170,7 @@ int pidMode = 1; //1 = Automatic, 0 = Manual
 unsigned int windowSize = 1000;
 unsigned long windowStartTime;
 double acceleration = 1;
-double Input, Output, setPointTemp;	//, Coldstart;	//wird nicht verwendet
+double Input, Output, setPointTemp; //, Coldstart;  //wird nicht verwendet
 
 double setPoint = 95;
 float aggKp = 28.0 / acceleration;
@@ -582,7 +582,7 @@ void setup() {
   ******************************************************/
 
   windowStartTime = millis();
-  //Coldstart = 1;	// wird nicht verwendet
+  //Coldstart = 1;  // wird nicht verwendet
 
   setPointTemp = setPoint;
   bPID.SetSampleTime(windowSize);
@@ -628,8 +628,8 @@ void refreshTemp(){
     if (currentMillistemp - previousMillistemp > intervaltempmesds18b20)
     {
       previousMillistemp = currentMillistemp;
-	  sensors.requestTemperatures();
-	  if (!checkSensor(sensors.getTempCByIndex(0))) return;  //if sensor data is not valid, abort function
+    sensors.requestTemperatures();
+    if (!checkSensor(sensors.getTempCByIndex(0))) return;  //if sensor data is not valid, abort function
       Input = sensors.getTempCByIndex(0);
 
       if (Brewdetection == 1 && Input > 0) {
@@ -642,13 +642,13 @@ void refreshTemp(){
     if (currentMillistemp - previousMillistemp > intervaltempmestsic)
     {
       previousMillistemp = currentMillistemp;
-	  /*  variable "temperature" must be set to zero, before reading new data
+    /*  variable "temperature" must be set to zero, before reading new data
        *  getTemperature only updates if data is valid, otherwise "temperature" will still hold old values
        */
       temperature = 0;
       Sensor1.getTemperature(&temperature);
       Temperatur_C = Sensor1.calc_Celsius(&temperature);
-	  if (!checkSensor(Temperatur_C)) return;  //if sensor data is not valid, abort function
+    if (!checkSensor(Temperatur_C)) return;  //if sensor data is not valid, abort function
       Input = Temperatur_C;
       // Input = random(50,70) ;// test value
 
@@ -750,7 +750,7 @@ refreshTemp();
     }
 
     bPID.Compute();
-	
+  
     //check if PID should run or not. If not, set to manuel and force output to zero
     if (Onoff == 0 && pidMode == 1) {
       pidMode = 0;
@@ -760,7 +760,7 @@ refreshTemp();
       pidMode = 1;
       bPID.SetMode(pidMode);
     }
-	
+  
     if (millis() - windowStartTime > windowSize) {
       windowStartTime += windowSize;
     }
@@ -862,8 +862,8 @@ refreshTemp();
       }
 
     }
-	
-	/********************************************************
+  
+  /********************************************************
         Sendet Daten zur App
       ******************************************************/
 
@@ -888,19 +888,19 @@ refreshTemp();
           Blynk.syncVirtual(V36);
         }
       }
-	
+  
   } else if (sensorError) {
-	  
-	//Deactivate PID
+    
+  //Deactivate PID
     if (pidMode == 1) {
       pidMode = 0;
       bPID.SetMode(pidMode);
       Output = 0 ;
     }
-	  
-	//Stop heating
+    
+  //Stop heating
     digitalWrite(pinRelayHeater, relayOFF);  
-	  
+    
     if (Display == 2) {
       /********************************************************
          DISPLAY AUSGABE
