@@ -1,5 +1,5 @@
 /********************************************************
-   Version 1.7.0 MASTER (31.05.2019)
+   Version 1.7.1 MASTER (05.06.2019)
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
   - 
@@ -171,6 +171,7 @@ unsigned int windowSize = 1000;
 unsigned long windowStartTime;
 double acceleration = 1;
 double Input, Output, setPointTemp; //, Coldstart;  //wird nicht verwendet
+double previousInput = 0;
 
 double setPoint = 95;
 float aggKp = 28.0 / acceleration;
@@ -382,10 +383,10 @@ boolean checkSensor(float tempInput){
    /********************************************************
     sensor error
   ******************************************************/
-    if (tempInput < 0 && !sensorError) { 
+    if ((tempInput < 0 || abs(tempInput-previousInput) > 25) && !sensorError) { 
     error++;
     OK = false;     
-  } else if (tempInput > 0){
+  } else if (tempInput > 0 ){
     error = 0;
     OK = true;
   }
@@ -442,7 +443,7 @@ void setup() {
     //display.begin(SSD1306_SWITCHCAPVCC, 0x3D);  // initialize with the I2C addr 0x3D (for the 128x64)
     display.clearDisplay();
   }
-  displaymessage("Version 1.7.0 MASTER","31.05.2019", Display);
+  displaymessage("Version 1.7.1 MASTER","05.06.2019", Display);
   delay(2000);
 
   /********************************************************
@@ -544,7 +545,7 @@ void setup() {
           Serial.println("No working eeprom value, I am sorry, but use default offline value  :)");
           delay(2000);
         }
-        // eeeprom schlie�en
+        // eeeprom schließen
         EEPROM.commit();
       }
     }
@@ -622,6 +623,7 @@ void refreshTemp(){
   /********************************************************
     Temp. Request
   ******************************************************/
+   previousInput = Input ;
   unsigned long currentMillistemp = millis();
   if (TempSensor == 1)
   {
@@ -632,7 +634,7 @@ void refreshTemp(){
     if (!checkSensor(sensors.getTempCByIndex(0))) return;  //if sensor data is not valid, abort function
       Input = sensors.getTempCByIndex(0);
 
-      if (Brewdetection == 1 && Input > 0) {
+      if (Brewdetection == 1) {
         brueherkennung();
       }
     }
@@ -645,14 +647,13 @@ void refreshTemp(){
     /*  variable "temperature" must be set to zero, before reading new data
        *  getTemperature only updates if data is valid, otherwise "temperature" will still hold old values
        */
-      temperature = 0;
       Sensor1.getTemperature(&temperature);
       Temperatur_C = Sensor1.calc_Celsius(&temperature);
     if (!checkSensor(Temperatur_C)) return;  //if sensor data is not valid, abort function
       Input = Temperatur_C;
       // Input = random(50,70) ;// test value
 
-      if (Brewdetection == 1 && Input > 0)
+      if (Brewdetection == 1)
       {
         brueherkennung();
       }
@@ -723,7 +724,7 @@ refreshTemp();
 
 
   //Sicherheitsabfrage
-  if (Input >= 0) {
+  if (!sensorError) {
     // Brew detecion == 1 software solution , == 2 hardware
     if (Brewdetection == 1 || Brewdetection == 2) {
       if (millis() - timeBrewdetection > 50 * 1000) {
