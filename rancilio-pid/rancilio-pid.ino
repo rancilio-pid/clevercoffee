@@ -424,7 +424,7 @@ void setup() {
   pinMode(pinRelayHeater, OUTPUT);
   digitalWrite(pinRelayVentil, relayOFF);
   digitalWrite(pinRelayPumpe, relayOFF);
-  digitalWrite(pinRelayHeater, relayOFF);
+  digitalWrite(pinRelayHeater, LOW);
   
 
 
