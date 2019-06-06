@@ -1,5 +1,5 @@
 /********************************************************
-   Version 1.7.1 MASTER (05.06.2019)
+   Version 1.7.2 MASTER (06.06.2019)
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
   - 
@@ -443,7 +443,7 @@ void setup() {
     //display.begin(SSD1306_SWITCHCAPVCC, 0x3D);  // initialize with the I2C addr 0x3D (for the 128x64)
     display.clearDisplay();
   }
-  displaymessage("Version 1.7.1 MASTER","05.06.2019", Display);
+  displaymessage("Version 1.7.2 MASTER","06.06.2019", Display);
   delay(2000);
 
   /********************************************************
