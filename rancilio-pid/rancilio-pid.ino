@@ -900,7 +900,7 @@ refreshTemp();
     }
     
   //Stop heating
-    digitalWrite(pinRelayHeater, relayOFF);  
+    digitalWrite(pinRelayHeater, LOW);  
     
     if (Display == 2) {
       /********************************************************
