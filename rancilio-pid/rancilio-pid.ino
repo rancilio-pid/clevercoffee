@@ -1,5 +1,5 @@
 /********************************************************
-   Version 1.7.3 MASTER (07.06.2019)
+   Version 1.7.4 MASTER (07.06.2019)
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
   - 
@@ -26,6 +26,7 @@ char pass[] = "wlanpass";
 
 char blynkaddress[]  = "blynk.remoteapp.de" ;
 // char blynkaddress[]  = "raspberrypi.local" ;
+
 /********************************************************
    Vorab-Konfig
 ******************************************************/
@@ -443,7 +444,7 @@ void setup() {
     //display.begin(SSD1306_SWITCHCAPVCC, 0x3D);  // initialize with the I2C addr 0x3D (for the 128x64)
     display.clearDisplay();
   }
-  displaymessage("Version 1.7.2 MASTER","06.06.2019", Display);
+  displaymessage("Version 1.7.4 MASTER","06.06.2019", Display);
   delay(2000);
 
   /********************************************************
@@ -557,7 +558,7 @@ void setup() {
   ******************************************************/
   if (OTA){
     //Check if wifi is already connected, e.g. because of Blynk
-    if(WiFi.status() != WL_CONNECTED ){
+    if(WiFi.status() != WL_CONNECTED &&  Offlinemodus == 0 ){
     /* Explicitly set the ESP8266 to be a WiFi-client, otherwise, it by default,
     would try to act as both a client and an access-point and could cause
     network-issues with your other WiFi-devices on your WiFi-network. */
