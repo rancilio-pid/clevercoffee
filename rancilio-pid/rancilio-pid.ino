@@ -1,5 +1,5 @@
 /********************************************************
-   Version 1.7.2 MASTER (06.06.2019)
+   Version 1.7.3 MASTER (07.06.2019)
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
   - 
@@ -733,7 +733,7 @@ refreshTemp();
     }
 
     if (Brewdetection == 1) {
-      if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 ) {
+      if (heatrateaverage <= -brewboarder && brewboarder != 0 && timerBrewdetection == 0 ) {
         //   Serial.println("Brewdetected") ;
         timeBrewdetection = millis() ;
         timerBrewdetection = 1 ;
@@ -876,17 +876,19 @@ refreshTemp();
           Serial.print("runblynk");
         }
         if (Offlinemodus == 0) {
-          Blynk.run();
-          Blynk.virtualWrite(V2, Input);
-          Blynk.syncVirtual(V2);
-          Blynk.virtualWrite(V3, setPoint);
-          Blynk.syncVirtual(V3);
-          Blynk.virtualWrite(V23, Output);
-          Blynk.syncVirtual(V23);
-          Blynk.virtualWrite(V35, heatrateaverage);
-          Blynk.syncVirtual(V35);
-          Blynk.virtualWrite(V36, heatrateaveragemin);
-          Blynk.syncVirtual(V36);
+          if(Blynk.connected()){
+            Blynk.run();
+            Blynk.virtualWrite(V2, Input);
+            Blynk.syncVirtual(V2);
+            Blynk.virtualWrite(V3, setPoint);
+            Blynk.syncVirtual(V3);
+            Blynk.virtualWrite(V23, Output);
+            Blynk.syncVirtual(V23);
+            Blynk.virtualWrite(V35, heatrateaverage);
+            Blynk.syncVirtual(V35);
+            Blynk.virtualWrite(V36, heatrateaveragemin);
+            Blynk.syncVirtual(V36);
+         }
         }
       }
   
