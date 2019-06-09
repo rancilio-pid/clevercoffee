@@ -1,5 +1,5 @@
 /********************************************************
-   Version 1.7.4 MASTER (07.06.2019)
+   Version 1.8.0 BETA (09.06.2019)
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
   - 
@@ -77,9 +77,11 @@ int firstreading = 1 ;          // Ini of the field
    PID - Werte Brüherkennung Offline
 *****************************************************/
 
-double aggbp = 80 ;
-double aggbi = 0 ;
-double aggbd = 800;
+double aggbKp =  30 ;
+double aggbTn = 0 ;
+double aggbTv = 3;
+double aggbKi=aggbKp/aggbTn ; 
+double aggbKd=aggbTv*aggbKp ; 
 double brewtimersoftware = 45;    // 20-5 for detection
 double brewboarder = 150 ;        // border for the detection,
 // be carefull: to low: risk of wrong brew detection
@@ -176,10 +178,12 @@ double previousInput = 0;
 
 double setPoint = 95;
 float aggKp = 28.0 / acceleration;
-float aggKi = 0.08 / acceleration;
-double aggKd = 0 / acceleration;
-double startKp = 60;
+float aggTn = 100 / acceleration;
+float aggTv = 0 / acceleration;
+float startKp = 60;
 double starttemp = 85;
+double aggKi=aggKp/aggTn ; 
+double aggKd=aggTv*aggKp ; 
 
 
 PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, DIRECT);
@@ -223,9 +227,9 @@ WidgetBridge bridge1(V1);
 
 //Update Intervall zur App
 unsigned long previousMillis = 0;
-const long interval = 5000;
-
-//Update f�r Display
+const long interval = 1000;
+int blynksendcounter = 1;
+//Update für Display
 unsigned long previousMillisDisplay = 0;
 const long intervalDisplay = 500;
 
@@ -247,10 +251,10 @@ BLYNK_WRITE(V4) {
 }
 
 BLYNK_WRITE(V5) {
-  aggKi = param.asDouble();
+  aggTn = param.asDouble();
 }
 BLYNK_WRITE(V6) {
-  aggKd =  param.asDouble();
+  aggTv =  param.asDouble();
 }
 
 BLYNK_WRITE(V7) {
@@ -280,14 +284,14 @@ BLYNK_WRITE(V13)
 }
 BLYNK_WRITE(V30)
 {
-  aggbp = param.asDouble();//
+  aggbKp = param.asDouble();//
 }
 
 BLYNK_WRITE(V31) {
-  aggbi = param.asDouble();
+  aggbTn = param.asDouble();
 }
 BLYNK_WRITE(V32) {
-  aggbd =  param.asDouble();
+  aggbTv =  param.asDouble();
 }
 BLYNK_WRITE(V33) {
   brewtimersoftware =  param.asDouble();
@@ -295,7 +299,46 @@ BLYNK_WRITE(V33) {
 BLYNK_WRITE(V34) {
   brewboarder =  param.asDouble();
 }
+/********************************************************
+ VOID BLynk send Data
+*****************************************************/
 
+void blynksenddata() {
+      unsigned long currentMillis = millis();
+      if (currentMillis - previousMillis >= interval) {
+        previousMillis = currentMillis;
+        if (Offlinemodus == 0) {
+          if(Blynk.connected()){
+            Blynk.run();
+            blynksendcounter++;
+            if (blynksendcounter == 1) {
+            Blynk.virtualWrite(V2, Input);
+            Blynk.syncVirtual(V2);
+            }
+            if (blynksendcounter == 2) {
+            Blynk.virtualWrite(V23, Output);
+            Blynk.syncVirtual(V23);
+            }
+             if (blynksendcounter == 3) {
+            Blynk.virtualWrite(V3, setPoint);
+            Blynk.syncVirtual(V3);
+            }
+            if (blynksendcounter == 4) {
+            Blynk.virtualWrite(V35, heatrateaverage);
+            Blynk.syncVirtual(V35);
+            }
+            if (blynksendcounter == 5) {
+            Blynk.virtualWrite(V36, heatrateaveragemin);
+            Blynk.syncVirtual(V36);   
+            blynksendcounter=0;
+            }       
+          //  Blynk.virtualWrite(V43, debug_timediff);
+          //  Blynk.syncVirtual(V43);
+          //  debug_timediff = millis()-previousMillis ;
+         }
+        }
+      }
+}
 /********************************************************
   VOID Displayausgabe
 *****************************************************/
@@ -444,7 +487,7 @@ void setup() {
     //display.begin(SSD1306_SWITCHCAPVCC, 0x3D);  // initialize with the I2C addr 0x3D (for the 128x64)
     display.clearDisplay();
   }
-  displaymessage("Version 1.7.4 MASTER","06.06.2019", Display);
+  displaymessage("Version 1.7.5 MASTER","07.06.2019", Display);
   delay(2000);
 
   /********************************************************
@@ -495,17 +538,17 @@ void setup() {
           EEPROM.begin(1024);
           Serial.println("Blynk is online, new values to eeprom");
           EEPROM.put(0, aggKp);
-          EEPROM.put(10, aggKi);
-          EEPROM.put(20, aggKd);
+          EEPROM.put(10, aggTn);
+          EEPROM.put(20, aggTv);
           EEPROM.put(30, setPoint);
           EEPROM.put(40, brewtime);
           EEPROM.put(50, preinfusion);
           EEPROM.put(60, preinfusionpause);
           EEPROM.put(70, startKp);
           EEPROM.put(80, starttemp);
-          EEPROM.put(90, aggbp);
-          EEPROM.put(100, aggbi);
-          EEPROM.put(110, aggbd);
+          EEPROM.put(90, aggbKp);
+          EEPROM.put(100, aggbTn);
+          EEPROM.put(110, aggbTv);
           EEPROM.put(120, brewtimersoftware);
           EEPROM.put(130, brewboarder);
           // eeprom schlie�en
@@ -526,17 +569,17 @@ void setup() {
         Serial.println(eepromcheckstring);
         if (isDigit(eepromcheckstring.charAt(1)) == true) {
           EEPROM.get(0, aggKp);
-          EEPROM.get(10, aggKi);
-          EEPROM.get(20, aggKd);
+          EEPROM.get(10, aggTn);
+          EEPROM.get(20, aggTv);
           EEPROM.get(30, setPoint);
           EEPROM.get(40, brewtime);
           EEPROM.get(50, preinfusion);
           EEPROM.get(60, preinfusionpause);
           EEPROM.get(70, startKp);
           EEPROM.get(80, starttemp);
-          EEPROM.get(90, aggbp);
-          EEPROM.get(100, aggbi);
-          EEPROM.get(110, aggbd);
+          EEPROM.get(90, aggbKp);
+          EEPROM.get(100, aggbTn);
+          EEPROM.get(110, aggbTv);
           EEPROM.get(120, brewtimersoftware);
           EEPROM.get(130, brewboarder);
         }
@@ -734,20 +777,31 @@ refreshTemp();
     }
 
     if (Brewdetection == 1) {
-      if (heatrateaverage <= -brewboarder && brewboarder != 0 && timerBrewdetection == 0 ) {
+      // only pid
+      if (heatrateaverage <= -brewboarder && brewboarder != 0 && timerBrewdetection == 0 && OnlyPID == 1 ) {
+        //   Serial.println("Brewdetected") ;
+        timeBrewdetection = millis() ;
+        timerBrewdetection = 1 ;
+      } // bei Vollausbau
+        if (OnlyPID == 0 && brewswitch > 1000  ) {
         //   Serial.println("Brewdetected") ;
         timeBrewdetection = millis() ;
         timerBrewdetection = 1 ;
       }
     }
-    if (Input < starttemp && kaltstart) {
+    if (Input < starttemp && kaltstart == true) {
       bPID.SetTunings(startKp, 0, 0);
     } else {
-      bPID.SetTunings(aggKp, aggKi, aggKd);
+    // calc ki kd
+    aggKi=aggKp/aggTn ; 
+    aggKd=aggTv*aggKp ;
+      bPID.SetTunings(aggKp, aggKi, aggKd,P_ON_M);
       kaltstart = false;
     }
     if ( millis() - timeBrewdetection  < brewtimersoftware * 1000 && timerBrewdetection == 1) {
-      bPID.SetTunings(aggbp, aggbi, aggbd) ;
+    aggbKi=aggbKp/aggbTn ; 
+    aggbKd=aggbTv*aggbKp ;      
+      bPID.SetTunings(aggbKp, aggbKi, aggbKd,P_ON_M) ;
       //   Serial.println("PIDMODEBREW") ;
     }
 
@@ -762,17 +816,20 @@ refreshTemp();
       pidMode = 1;
       bPID.SetMode(pidMode);
     }
-  
     if (millis() - windowStartTime > windowSize) {
       windowStartTime += windowSize;
     }
     if (Output < millis() - windowStartTime)    {
       digitalWrite(pinRelayHeater, LOW);
       //Serial.println("Power off!");
+      blynksenddata() ;
 
     } else {
       digitalWrite(pinRelayHeater, HIGH);
       //Serial.println("Power on!");
+      if (Output > 900) {
+      blynksenddata() ;  
+      }
     }
 
     /********************************************************
@@ -864,35 +921,6 @@ refreshTemp();
       }
 
     }
-  
-  /********************************************************
-        Sendet Daten zur App
-      ******************************************************/
-
-      unsigned long currentMillis = millis();
-      if (currentMillis - previousMillis >= interval) {
-        previousMillis = currentMillis;
-        if (debugmodus == 1)
-        {
-          Serial.print("runblynk");
-        }
-        if (Offlinemodus == 0) {
-          if(Blynk.connected()){
-            Blynk.run();
-            Blynk.virtualWrite(V2, Input);
-            Blynk.syncVirtual(V2);
-            Blynk.virtualWrite(V3, setPoint);
-            Blynk.syncVirtual(V3);
-            Blynk.virtualWrite(V23, Output);
-            Blynk.syncVirtual(V23);
-            Blynk.virtualWrite(V35, heatrateaverage);
-            Blynk.syncVirtual(V35);
-            Blynk.virtualWrite(V36, heatrateaveragemin);
-            Blynk.syncVirtual(V36);
-         }
-        }
-      }
-  
   } else if (sensorError) {
     
   //Deactivate PID
