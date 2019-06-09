@@ -1,8 +1,9 @@
 /********************************************************
    Version 1.8.0 BETA (09.06.2019)
   - Check the PIN Ports in the CODE!
-  - Find your changerate of the machine, can be wrong, test it!
-  - 
+  - Find your brewdetection changerate of the machine, can be wrong, test it!
+  - WE CHANGE THE PID WORKING MODE & PID PARAMETER FROM Ki to Tn and Kp zu Tv!
+  - VALUES BEFORE 1.8.0. have to be recalculated 
 ******************************************************/
 #include "Arduino.h"
 #include <EEPROM.h>
