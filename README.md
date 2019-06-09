@@ -7,9 +7,12 @@ Version 1.8.0 (09.06.2019)
 
 WICHTIG: ÄNDERUNG VOM PID Betrieb!
 
-1) Umrechnung der PID WERTE
+1) Umrechnung der PID WERTE notwendig
+
 P bleibt
+
 I_NEU = P / I_ALT
+
 D_NEU = D_NEU / P 
 
 2) PID wurde geändert, damit Schwankungen minimiert werden und stabiler läuft.
