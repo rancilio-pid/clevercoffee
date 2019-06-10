@@ -1,5 +1,5 @@
 /********************************************************
-   Version 1.8.2 BETA (10.06.2019)
+   Version 1.8.1 BETA (10.06.2019)
   - Check the PIN Ports in the CODE!
   - Find your brewdetection changerate of the machine, can be wrong, test it!
   - WE CHANGE THE PID WORKING MODE & PID PARAMETER FROM Ki to Tn and Kp zu Tv!
