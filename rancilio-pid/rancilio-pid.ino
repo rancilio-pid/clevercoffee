@@ -793,7 +793,7 @@ temp_emergencyshutdown();
         timeBrewdetection = millis() ;
         timerBrewdetection = 1 ;
       } // bei Vollausbau
-        if (OnlyPID == 0 && brewswitch > 1000  ) {
+        if (OnlyPID == 0 && brewswitch > 1000 && brewboarder != 0  ) {
         //   Serial.println("Brewdetected") ;
         timeBrewdetection = millis() ;
         timerBrewdetection = 1 ;
