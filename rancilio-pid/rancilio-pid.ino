@@ -1,5 +1,5 @@
 /********************************************************
-   Version 1.8.0 BETA (09.06.2019)
+   Version 1.8.1 BETA (10.06.2019)
   - Check the PIN Ports in the CODE!
   - Find your brewdetection changerate of the machine, can be wrong, test it!
   - WE CHANGE THE PID WORKING MODE & PID PARAMETER FROM Ki to Tn and Kp zu Tv!
@@ -27,6 +27,7 @@ char pass[] = "wlanpass";
 
 char blynkaddress[]  = "blynk.remoteapp.de" ;
 // char blynkaddress[]  = "raspberrypi.local" ;
+
 
 /********************************************************
    Vorab-Konfig
@@ -87,6 +88,8 @@ double brewtimersoftware = 45;    // 20-5 for detection
 double brewboarder = 150 ;        // border for the detection,
 // be carefull: to low: risk of wrong brew detection
 // and rising temperature
+
+boolean emergencyshutdown = false;
 
 /********************************************************
    Analog Schalter Read
@@ -446,6 +449,14 @@ boolean checkSensor(float tempInput){
   return OK;
 }
 
+void temp_emergencyshutdown() {
+ if (Input > 130) { 
+ emergencyshutdown =  true ;
+ }
+   
+}
+
+
 void setup() {
   Serial.begin(115200);
   while (! Serial); // Wait untilSerial is ready
@@ -488,7 +499,7 @@ void setup() {
     //display.begin(SSD1306_SWITCHCAPVCC, 0x3D);  // initialize with the I2C addr 0x3D (for the 128x64)
     display.clearDisplay();
   }
-  displaymessage("Version 1.8.0 BETA","09.06.2019", Display);
+  displaymessage("Version 1.7.5 MASTER","07.06.2019", Display);
   delay(2000);
 
   /********************************************************
@@ -711,7 +722,7 @@ void loop() {
 ArduinoOTA.handle();  // For OTA
 
 refreshTemp();
-
+temp_emergencyshutdown();
   /********************************************************
     PreInfusion, Brew , if not Only PID
   ******************************************************/
@@ -766,8 +777,6 @@ refreshTemp();
   /********************************************************
     change of rate
   ******************************************************/
-
-
   //Sicherheitsabfrage
   if (!sensorError) {
     // Brew detecion == 1 software solution , == 2 hardware
@@ -784,7 +793,7 @@ refreshTemp();
         timeBrewdetection = millis() ;
         timerBrewdetection = 1 ;
       } // bei Vollausbau
-        if (OnlyPID == 0 && brewswitch > 1000 && brewboarder != 0 ) {
+        if (OnlyPID == 0 && brewswitch > 1000  ) {
         //   Serial.println("Brewdetected") ;
         timeBrewdetection = millis() ;
         timerBrewdetection = 1 ;
@@ -794,13 +803,15 @@ refreshTemp();
       bPID.SetTunings(startKp, 0, 0);
     } else {
     // calc ki kd
-    aggKi=aggKp/aggTn ; 
-    aggKd=aggTv*aggKp ;
+    if (aggTn != 0)
+    { aggKi=aggKp/aggTn ; } else { aggKi = 0 ;}
+     aggKd=aggTv*aggKp ;
       bPID.SetTunings(aggKp, aggKi, aggKd,P_ON_M);
       kaltstart = false;
     }
     if ( millis() - timeBrewdetection  < brewtimersoftware * 1000 && timerBrewdetection == 1) {
-    aggbKi=aggbKp/aggbTn ; 
+    if (aggbTn != 0)
+    {   aggbKi=aggbKp/aggbTn ;} else {aggbKi = 0 ;}
     aggbKd=aggbTv*aggbKp ;      
       bPID.SetTunings(aggbKp, aggbKi, aggbKd,P_ON_M) ;
       //   Serial.println("PIDMODEBREW") ;
@@ -816,6 +827,11 @@ refreshTemp();
     }else if (Onoff == 1 && pidMode == 0) {
       pidMode = 1;
       bPID.SetMode(pidMode);
+    }
+    if (emergencyshutdown == true )
+    {
+     Output = 0 ;
+     digitalWrite(pinRelayHeater, LOW);
     }
     if (millis() - windowStartTime > windowSize) {
       windowStartTime += windowSize;
@@ -840,7 +856,7 @@ refreshTemp();
     if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
       previousMillisDisplay = currentMillisDisplay;
 
-      if (Display == 1 && !sensorError) {
+      if (Display == 1 && !sensorError && !emergencyshutdown) {
 
         /********************************************************
            DISPLAY AUSGABE
@@ -882,7 +898,7 @@ refreshTemp();
         u8x8.setCursor(6, 3);
         u8x8.print(Output);
       }
-      if (Display == 2 && !sensorError) {
+      if (Display == 2 && !sensorError &&!emergencyshutdown) {
         /********************************************************
            DISPLAY AUSGABE
         ******************************************************/
@@ -890,34 +906,41 @@ refreshTemp();
         display.setTextColor(WHITE);
         display.clearDisplay();
         display.setCursor(0, 0);
-        display.print("Ist-Temp:");
-        display.print("  ");
-        display.println(Input);
-        display.print("Soll-Temp:");
-        display.print(" ");
-        display.println(setPoint);
-        display.print("PID-Outlet:");
-        display.println(Output/10);
-        display.print("PID:");
-        display.print(" ");
-        display.print(bPID.GetKp());
-        display.print(",");
-        display.print(bPID.GetKp()/bPID.GetKi());
-        display.print(",");
-        display.println(bPID.GetKd()/bPID.GetKp());
-        display.println();
-        display.print("Bezugszeit:");
+       display.print("Ist-T: ");
+     //  display.print("  ");
         display.setTextSize(2);
+        display.println(Input);
+        display.setTextSize(1);
+       display.print("Soll-T:");
+       display.setTextSize(2);
+    //    display.print("/");
+    //    display.print(" ");
+        display.print(setPoint);
+      //  display.print("PID-Outlet:");
+      //  display.println(Output/10);
+    //    display.print("PID:");
+     //   display.print(" ");
+     //   display.print(bPID.GetKp());
+     //   display.print(",");
+     //   display.print(bPID.GetKi());
+     //   display.print(",");
+     //   display.println(bPID.GetKd());
+     display.setTextSize(1);
+        display.println();
+        display.println();
+        display.println("Bezugszeit:");
+        display.setTextSize(2);
+        display.print("      ");
         display.print(bezugsZeit/1000);
-        display.print("/");
-        display.println(totalbrewtime/1000);
+     //   display.print("/");
+     //   display.println(totalbrewtime/1000);
         display.setTextSize(1);
         display.setCursor(0, 48);
-        display.print(preinfusion/1000);
-        display.print("/");
-        display.print(preinfusionpause/1000);
-        display.print("/");
-        display.print(brewtime/1000);
+        //display.print(preinfusion/1000);
+      //  display.print("/");
+     //   display.print(preinfusionpause/1000);
+      //  display.print("/");
+     //   display.print(brewtime/1000);
         display.display();
       }
 
@@ -965,4 +988,13 @@ refreshTemp();
       u8x8.print(Input);
     }
   }
+   if (emergencyshutdown) {
+      display.setTextSize(1);
+      display.setTextColor(WHITE);
+      display.clearDisplay();
+      display.setCursor(0, 0);
+      display.print("Emergency Shutdown");
+      display.print("Temp > 130!");
+      display.display();
+   }
 }
