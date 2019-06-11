@@ -79,9 +79,9 @@ int firstreading = 1 ;          // Ini of the field
    PID - Werte Brüherkennung Offline
 *****************************************************/
 
-double aggbKp =  30 ;
-double aggbTn = 0 ;
-double aggbTv = 3;
+double aggbKp =  40 ;
+double aggbTn = 200 ;
+double aggbTv = 10;
 double aggbKi=aggbKp/aggbTn ; 
 double aggbKd=aggbTv*aggbKp ; 
 double brewtimersoftware = 45;    // 20-5 for detection
@@ -181,13 +181,15 @@ double Input, Output, setPointTemp; //, Coldstart;  //wird nicht verwendet
 double previousInput = 0;
 
 double setPoint = 95;
-float aggKp = 28.0 / acceleration;
-float aggTn = 100 / acceleration;
+float aggKp = 40 / acceleration;
+float aggTn = 200 / acceleration;
 float aggTv = 0 / acceleration;
-float startKp = 60;
+float startKp = 40;
+float startTn = 100 ;
 double starttemp = 85;
 double aggKi=aggKp/aggTn ; 
 double aggKd=aggTv*aggKp ; 
+double startKi = startKp/startTn;
 
 
 PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, DIRECT);
@@ -286,6 +288,10 @@ BLYNK_WRITE(V13)
 {
   Onoff = param.asInt();
 }
+BLYNK_WRITE(V14)
+{
+  startKi = param.asDouble();
+}
 BLYNK_WRITE(V30)
 {
   aggbKp = param.asDouble();//
@@ -303,9 +309,18 @@ BLYNK_WRITE(V33) {
 BLYNK_WRITE(V34) {
   brewboarder =  param.asDouble();
 }
+
 /********************************************************
  VOID BLynk send Data
 *****************************************************/
+void blynkconnection() {
+  if(Blynk.connected()){
+  Blynk.run();
+  }
+  if(!Blynk.connected()){
+  Blynk.connect(1111);
+  }
+}
 
 void blynksenddata() {
       unsigned long currentMillis = millis();
@@ -536,7 +551,7 @@ void setup() {
         Serial.println("Wifi works, now try Blynk connection");
         delay(2000);
         Blynk.config(auth, blynkaddress, 8080) ;
-        Blynk.connect(30000);
+        Blynk.connect(4444);
 
         // Blnky works:
         if (Blynk.connected() == true) {
@@ -689,7 +704,6 @@ void refreshTemp(){
     sensors.requestTemperatures();
     if (!checkSensor(sensors.getTempCByIndex(0))) return;  //if sensor data is not valid, abort function
       Input = sensors.getTempCByIndex(0);
-
       if (Brewdetection == 1) {
         brueherkennung();
       }
@@ -705,9 +719,9 @@ void refreshTemp(){
        */
       Sensor1.getTemperature(&temperature);
       Temperatur_C = Sensor1.calc_Celsius(&temperature);
+     // Temperatur_C =  random(60,70) ;// test value
     if (!checkSensor(Temperatur_C)) return;  //if sensor data is not valid, abort function
       Input = Temperatur_C;
-      // Input = random(50,70) ;// test value
 
       if (Brewdetection == 1)
       {
@@ -715,12 +729,13 @@ void refreshTemp(){
       }
     }
   }
+  
 }
 
 void loop() {
 
 ArduinoOTA.handle();  // For OTA
-
+blynkconnection();
 refreshTemp();
 temp_emergencyshutdown();
   /********************************************************
@@ -800,7 +815,9 @@ temp_emergencyshutdown();
       }
     }
     if (Input < starttemp && kaltstart == true) {
-      bPID.SetTunings(startKp, 0, 0);
+      if (aggTn != 0)
+       { startKi = startKp/startTn; ; } else { startKi = 0 ;}
+      bPID.SetTunings(startKp, startKi, 0,P_ON_M);
     } else {
     // calc ki kd
     if (aggTn != 0)
