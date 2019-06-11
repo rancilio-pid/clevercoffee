@@ -514,7 +514,7 @@ void setup() {
     //display.begin(SSD1306_SWITCHCAPVCC, 0x3D);  // initialize with the I2C addr 0x3D (for the 128x64)
     display.clearDisplay();
   }
-  displaymessage("Version 1.8.1 BETA","10.06.2019", Display);
+  displaymessage("Version 1.8.2 BETA","11.06.2019", Display);
   delay(2000);
 
   /********************************************************
