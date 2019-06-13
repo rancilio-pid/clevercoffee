@@ -20,9 +20,9 @@
 #define PONE 1               // 1 = P_ON_E, 0 = P_ON_M
 
 // Wifi
-#define AUTH "blynkauthcode";
-#define D_SSID "wlanname";
-#define PASS "wlanpass";
+#define AUTH "blynkauthcode"
+#define D_SSID "wlanname"
+#define PASS "wlanpass"
 
 // OTA
 #define OTAHOST "Rancilio"   // Name to be shown in ARUDINO IDE Port
