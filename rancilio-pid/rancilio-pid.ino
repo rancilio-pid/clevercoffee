@@ -1,5 +1,5 @@
 /********************************************************
-   Version 1.8.3 beta (13.06.2019)
+   Version 1.8.4 beta (13.06.2019)
   Key facts: major revision
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
@@ -18,6 +18,8 @@
 #define DEBUGSTART(a) Serial.begin(a);
 #endif
 
+//#define BLYNK_PRINT Serial
+//#define BLYNK_DEBUG
 
 //Define pins for outputs
 #define pinRelayVentil    12
@@ -35,7 +37,7 @@
 //#include "Arduino.h"
 #include <EEPROM.h>
 
-const char* sysVersion PROGMEM  = "Version 1.8.3 beta";
+const char* sysVersion PROGMEM  = "Version 1.8.4 beta";
 
 /********************************************************
 definitions below must be changed in the userConfig.h file
@@ -86,7 +88,7 @@ double heatrateaveragemin = 0 ;
 unsigned long  timeBrewdetection = 0 ;
 int timerBrewdetection = 0 ;
 int i = 0;
-int firstreading = 1 ;          // Ini of the field
+int firstreading = 1 ;          // Ini of the field, also used for sensor check
 
 /********************************************************
    PID - Werte Brüherkennung Offline
@@ -381,19 +383,19 @@ void movAvg() {
   If error is equal to maxErrorCounter, then set sensorError
 *****************************************************/
 boolean checkSensor(float tempInput) {
-  boolean sensorOK = true;
+  boolean sensorOK = false;
   /********************************************************
     sensor error
   ******************************************************/
   if ((tempInput < 0 || abs(tempInput - previousInput) > 25) && !sensorError) {
     error++;
     sensorOK = false;
-    DEBUG_println("Sensor value Error");
-  } else if (tempInput > 0) {
+    DEBUG_println(error)
+    DEBUG_println(tempInput);
+  } else if (tempInput > 0 && abs(tempInput - previousInput) < 25) {
     error = 0;
     sensorOK = true;
   }
-
   if (error >= maxErrorCounter && !sensorError) {
     sensorError = true ;
     DEBUG_print("Sensor Error");
@@ -401,6 +403,7 @@ boolean checkSensor(float tempInput) {
   } else if (error == 0) {
     sensorError = false ;
   }
+  
   return sensorOK;
 }
 
@@ -421,7 +424,7 @@ void refreshTemp() {
     {
       previousMillistemp += intervaltempmesds18b20;
       sensors.requestTemperatures();
-      if (!checkSensor(sensors.getTempCByIndex(0))) return;  //if sensor data is not valid, abort function
+      if (!checkSensor(sensors.getTempCByIndex(0)) && firstreading == 0) return;  //if sensor data is not valid, abort function
       Input = sensors.getTempCByIndex(0);
       if (Brewdetection == 1) {
         movAvg();
@@ -439,7 +442,7 @@ void refreshTemp() {
       temperature = 0;
       Sensor1.getTemperature(&temperature);
       Temperatur_C = Sensor1.calc_Celsius(&temperature);
-      if (!checkSensor(Temperatur_C)) return;  //if sensor data is not valid, abort function
+      if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function
       Input = Temperatur_C;
       // Input = random(50,70) ;// test value
       if (Brewdetection == 1)
@@ -607,7 +610,7 @@ void sendToBlynk() {
       if (blynksendcounter >= 5) {
         Blynk.virtualWrite(V36, heatrateaveragemin);
         Blynk.syncVirtual(V36);
-        blynksendcounter = 1;
+        blynksendcounter = 0;
       }
       blynksendcounter++;
     }
@@ -828,7 +831,6 @@ void setup() {
       readingstime[thisReading] = 0;
       readingchangerate[thisReading] = 0;
     }
-
   }
 }
 
@@ -838,6 +840,7 @@ void setup() {
 void loop() {
 
   ArduinoOTA.handle();  // For OTA
+  Blynk.run(); //Do Blynk magic stuff
   unsigned long startT;
   unsigned long stopT;
 
@@ -858,7 +861,7 @@ void loop() {
   bPID.Compute();
 
   //Sicherheitsabfrage
-  if (Input >= 0) {
+  if (!sensorError) {
 
     //Set PID if first start of machine detected
     if (Input < starttemp && kaltstart) {
@@ -930,24 +933,18 @@ void loop() {
 
     digitalWrite(pinRelayHeater, LOW); //Stop heating
 
-    if (Display == 2) {
-      /********************************************************
-         DISPLAY AUSGABE
-      ******************************************************/
+    //DISPLAY AUSGABE
+    if (Display == 2) {  
       display.setTextSize(1);
       display.setTextColor(WHITE);
       display.clearDisplay();
       display.setCursor(0, 0);
-      display.print("Error:");
-      display.print("  ");
+      display.print("Error: Temp = ");
       display.println(Input);
       display.print("Check Temp. Sensor!");
       display.display();
     }
     if (Display == 1) {
-      /********************************************************
-         DISPLAY AUSGABE
-      ******************************************************/
       u8x8.setFont(u8x8_font_chroma48medium8_r);  //Ausgabe vom aktuellen Wert im Display
       u8x8.setCursor(0, 0);
       u8x8.print("               ");
@@ -956,7 +953,7 @@ void loop() {
       u8x8.setCursor(0, 2);
       u8x8.print("               ");
       u8x8.setCursor(0, 1);
-      u8x8.print("Error: Temp.");
+      u8x8.print("Error: Temp = ");
       u8x8.setCursor(0, 2);
       u8x8.print(Input);
     }
@@ -968,14 +965,12 @@ void loop() {
     previousMillisBlynk += intervalBlynk;
     if (Offlinemodus == 0) {
       if (Blynk.connected()) {
-        Blynk.run();
         if (allowBlynk) {        
-          sendToBlynk();
+          sendToBlynk();          
         }
       } else {
         //reconnect
       }
     }
   }
-    
-}
+ }
