@@ -723,13 +723,11 @@ void setup() {
         // Blnky works:
         if (Blynk.connected() == true) {
           displaymessage("3: Blynk connected", "");
+          DEBUG_println("Blynk is online, new values to eeprom");
           delay(2000) ;
-
           // Werte in den eeprom schreiben
           // ini eeprom mit begin
-          Blynk.run();
-          EEPROM.begin(1024);
-          DEBUG_println("Blynk is online, new values to eeprom");
+          EEPROM.begin(1024);          
           EEPROM.put(0, aggKp);
           EEPROM.put(10, aggTn);
           EEPROM.put(20, aggTv);
