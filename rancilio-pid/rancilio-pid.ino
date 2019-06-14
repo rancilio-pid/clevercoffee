@@ -1,5 +1,5 @@
 /********************************************************
-   Version 1.8.4 beta (14.06.2019)
+   Version 1.8.5 beta (14.06.2019)
   Key facts: major revision
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
@@ -37,7 +37,7 @@
 //#include "Arduino.h"
 #include <EEPROM.h>
 
-const char* sysVersion PROGMEM  = "Version 1.8.4 beta";
+const char* sysVersion PROGMEM  = "Version 1.8.5 beta";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -166,6 +166,7 @@ const long intervaltempmesds18b20 = 400  ;
 int pidMode = 1; //1 = Automatic, 0 = Manual
 
 const unsigned int windowSize = 1000;
+unsigned int isrCounter = 0;  // counter for ISR
 unsigned long windowStartTime;
 double Input, Output, setPointTemp;	//
 double previousInput = 0;
@@ -305,6 +306,10 @@ BLYNK_WRITE(V33) {
 BLYNK_WRITE(V34) {
   brewboarder =  param.asDouble();
 }
+
+
+
+
 
 /********************************************************
   Displayausgabe
@@ -594,7 +599,7 @@ void sendToBlynk() {
   if (Offlinemodus != 0) return;
   unsigned long currentMillisBlynk = millis();
   if (currentMillisBlynk - previousMillisBlynk >= intervalBlynk) {
-    previousMillisBlynk += intervalBlynk;    
+    previousMillisBlynk += intervalBlynk;
     if (Blynk.connected()) {
       if (blynksendcounter == 1) {
         Blynk.virtualWrite(V2, Input);
@@ -642,6 +647,30 @@ void brewdetection() {
       timerBrewdetection = 1 ;
     }
   }
+}
+
+/********************************************************
+    Timer 1 - ISR für PID Berechnung und Heizrelais-Ausgabe
+******************************************************/
+void ICACHE_RAM_ATTR onTimer1ISR() {
+  timer1_write(50000); // set interrupt time to 10ms
+
+  if (Output <= isrCounter) {
+    digitalWrite(pinRelayHeater, LOW);
+    //DEBUG_println("Power off!");
+  } else {
+    digitalWrite(pinRelayHeater, HIGH);
+    //DEBUG_println("Power on!");
+  }
+
+  isrCounter += 10; // += 10 because one tick = 10ms
+  //set PID output as relais commands
+  if (isrCounter > windowSize) {
+    isrCounter = 0;
+  }
+
+  //run PID calculation
+  bPID.Compute();
 }
 
 void setup() {
@@ -842,10 +871,19 @@ void setup() {
   windowStartTime = currentTime;
   previousMillisDisplay = currentTime;
   previousMillisBlynk = currentTime;
+
+  /********************************************************
+    Timer1 ISR - Initialisierung
+    TIM_DIV1 = 0,   //80MHz (80 ticks/us - 104857.588 us max)
+    TIM_DIV16 = 1,  //5MHz (5 ticks/us - 1677721.4 us max)
+    TIM_DIV256 = 3  //312.5Khz (1 tick = 3.2us - 26843542.4 us max)
+  ******************************************************/
+  timer1_isr_init();
+  timer1_attachInterrupt(onTimer1ISR);
+  timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+  timer1_write(50000); // set interrupt time to 10ms
+  
 }
-
-
-
 
 void loop() {
 
@@ -867,8 +905,7 @@ void loop() {
     bPID.SetMode(pidMode);
   }
 
-  //run PID calculation
-  bPID.Compute();
+
 
   //Sicherheitsabfrage
   if (!sensorError) {
@@ -906,22 +943,7 @@ void loop() {
       bPID.SetTunings(aggbKp, aggbKi, aggbKd) ;
     }
 
-    //set PID output as relais commands
-    if (millis() - windowStartTime >= windowSize) {
-      windowStartTime += windowSize;
-    }
-
-    if (Output <= millis() - windowStartTime)    {
-      digitalWrite(pinRelayHeater, LOW);
-      //DEBUG_println("Power off!");
-      sendToBlynk();
-    } else {
-      digitalWrite(pinRelayHeater, HIGH);
-      DEBUG_println("Power on!");
-      if (Output > 900) {
-        sendToBlynk();
-      }
-    }
+    sendToBlynk();
 
     //update display if time interval xpired
     unsigned long currentMillisDisplay = millis();
