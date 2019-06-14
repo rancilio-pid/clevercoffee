@@ -17,7 +17,7 @@
 #define FALLBACK 1           // 1: fallback auf eeprom Werte, wenn blynk nicht geht 0: deaktiviert
 #define TRIGGERTYPE HIGH     // LOW = low trigger, HIGH = high trigger relay
 #define OTA true             // true=activate update via OTA
-#define PONE 1               // 1 = P_ON_E, 0 = P_ON_M
+#define PONE 1               // 1 = P_ON_E (normal), 0 = P_ON_M (spezieller PID Modus, ACHTUNG andere Formel zur Berechnung)
 
 // Wifi
 #define AUTH "blynkauthcode"
