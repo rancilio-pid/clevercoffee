@@ -1,5 +1,5 @@
 /********************************************************
-   Version 1.8.4 beta (13.06.2019)
+   Version 1.8.4 beta (14.06.2019)
   Key facts: major revision
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
@@ -40,7 +40,7 @@
 const char* sysVersion PROGMEM  = "Version 1.8.4 beta";
 
 /********************************************************
-definitions below must be changed in the userConfig.h file
+  definitions below must be changed in the userConfig.h file
 ******************************************************/
 int Offlinemodus = OFFLINEMODUS;
 const int Display = DISPLAY;
@@ -98,7 +98,7 @@ double aggbKp = AGGBKP;
 double aggbTn = AGGBTN;
 double aggbTv = AGGBTV;
 double aggbKi = aggbKp / aggbTn;
-double aggbKd = aggbTv * aggbKp ; 
+double aggbKd = aggbTv * aggbKp ;
 double brewtimersoftware = 45;    // 20-5 for detection
 double brewboarder = 150 ;        // border for the detection,
 const int PonE = PONE;
@@ -160,13 +160,12 @@ Adafruit_SSD1306 display(OLED_RESET);
 ******************************************************/
 #include "PID_v1.h"
 
-long previousMillistemp = 0;
-//long currentMillistemp = 0;	// Doppelt deklariert
-long intervaltempmestsic = 400 ;
-long intervaltempmesds18b20 = 400  ;
+unsigned long previousMillistemp;  // initialisation at the end of init()
+const long intervaltempmestsic = 400 ;
+const long intervaltempmesds18b20 = 400  ;
 int pidMode = 1; //1 = Automatic, 0 = Manual
 
-unsigned int windowSize = 1000;
+const unsigned int windowSize = 1000;
 unsigned long windowStartTime;
 double Input, Output, setPointTemp;	//
 double previousInput = 0;
@@ -218,20 +217,22 @@ float Temperatur_C = 0;
 #include <BlynkSimpleEsp8266.h>
 
 //Zeitserver
-#include <TimeLib.h>
-#include <WidgetRTC.h>
-BlynkTimer timer;
-WidgetRTC rtc;
-WidgetBridge bridge1(V1);
+/*
+   NOT KNOWN WHAT THIS IS USED FOR
+  #include <TimeLib.h>
+  #include <WidgetRTC.h>
+  BlynkTimer timer;
+  WidgetRTC rtc;
+  WidgetBridge bridge1(V1);
+*/
 
 //Update Intervall zur App
-unsigned long previousMillisBlynk = 0;
+unsigned long previousMillisBlynk;  // initialisation at the end of init()
 const long intervalBlynk = 1000;
 int blynksendcounter = 1;
-boolean allowBlynk = 0;
 
 //Update für Display
-unsigned long previousMillisDisplay = 0;
+unsigned long previousMillisDisplay;  // initialisation at the end of init()
 const long intervalDisplay = 500;
 
 /********************************************************
@@ -239,14 +240,14 @@ const long intervalDisplay = 500;
 ******************************************************/
 
 
-
-BLYNK_CONNECTED() {
+/*
+  BLYNK_CONNECTED() {
   if (Offlinemodus == 0) {
     Blynk.syncAll();
-    rtc.begin();
+    //rtc.begin();
   }
-}
-
+  }
+*/
 BLYNK_WRITE(V4) {
   aggKp = param.asDouble();
 }
@@ -390,9 +391,11 @@ boolean checkSensor(float tempInput) {
   if ((tempInput < 0 || abs(tempInput - previousInput) > 25) && !sensorError) {
     error++;
     sensorOK = false;
-    DEBUG_println(error)
+    DEBUG_print("Error counter: ");
+    DEBUG_println(error);
+    DEBUG_print("temp delta: ");
     DEBUG_println(tempInput);
-  } else if (tempInput > 0 && abs(tempInput - previousInput) < 25) {
+  } else if (tempInput > 0) {
     error = 0;
     sensorOK = true;
   }
@@ -403,7 +406,7 @@ boolean checkSensor(float tempInput) {
   } else if (error == 0) {
     sensorError = false ;
   }
-  
+
   return sensorOK;
 }
 
@@ -517,11 +520,11 @@ void printScreen() {
     u8x8.setCursor(6, 0);
     u8x8.print(",");
     u8x8.setCursor(7, 0);
-    u8x8.print(bPID.GetKp()/bPID.GetKi());
+    u8x8.print(bPID.GetKp() / bPID.GetKi());
     u8x8.setCursor(11, 0);
     u8x8.print(",");
     u8x8.setCursor(12, 0);
-    u8x8.print(bPID.GetKd()/bPID.GetKp());
+    u8x8.print(bPID.GetKd() / bPID.GetKp());
     u8x8.setCursor(0, 1);
     u8x8.print("Input:");
     u8x8.setCursor(9, 1);
@@ -563,9 +566,9 @@ void printScreen() {
     display.print(" ");
     display.print(bPID.GetKp(), 1);
     display.print(",");
-    display.print(bPID.GetKp()/bPID.GetKi(), 0);
+    display.print(bPID.GetKp() / bPID.GetKi(), 0);
     display.print(",");
-    display.println(bPID.GetKd()/bPID.GetKp(), 1);
+    display.println(bPID.GetKd() / bPID.GetKp(), 1);
     display.println();
     display.print("Bezugszeit:");
     display.setTextSize(2);
@@ -589,7 +592,9 @@ void printScreen() {
 
 void sendToBlynk() {
   if (Offlinemodus != 0) return;
-  
+  unsigned long currentMillisBlynk = millis();
+  if (currentMillisBlynk - previousMillisBlynk >= intervalBlynk) {
+    previousMillisBlynk += intervalBlynk;    
     if (Blynk.connected()) {
       if (blynksendcounter == 1) {
         Blynk.virtualWrite(V2, Input);
@@ -614,6 +619,7 @@ void sendToBlynk() {
       }
       blynksendcounter++;
     }
+  }
 }
 
 /********************************************************
@@ -722,12 +728,13 @@ void setup() {
 
         // Blnky works:
         if (Blynk.connected() == true) {
-          displaymessage("3: Blynk connected", "");
+          displaymessage("3: Blynk connected", "sync all variables...");
           DEBUG_println("Blynk is online, new values to eeprom");
-          delay(2000) ;
+          Blynk.syncAll();  //sync all values from Blynk server
+          delay(2000);
           // Werte in den eeprom schreiben
           // ini eeprom mit begin
-          EEPROM.begin(1024);          
+          EEPROM.begin(1024);
           EEPROM.put(0, aggKp);
           EEPROM.put(10, aggTn);
           EEPROM.put(20, aggTv);
@@ -802,8 +809,6 @@ void setup() {
      Ini PID
   ******************************************************/
 
-  windowStartTime = millis();
-
   setPointTemp = setPoint;
   bPID.SetSampleTime(windowSize);
   bPID.SetOutputLimits(0, windowSize);
@@ -830,6 +835,13 @@ void setup() {
       readingchangerate[thisReading] = 0;
     }
   }
+
+  //Initialisation MUST be at the very end of the init(), otherwise the time comparision in loop() will have a big offset
+  unsigned long currentTime = millis();
+  previousMillistemp = currentTime;
+  windowStartTime = currentTime;
+  previousMillisDisplay = currentTime;
+  previousMillisBlynk = currentTime;
 }
 
 
@@ -863,7 +875,7 @@ void loop() {
 
     //Set PID if first start of machine detected
     if (Input < starttemp && kaltstart) {
-      if (startTn != 0){
+      if (startTn != 0) {
         startKi = startKp / startTn;
       } else {
         startKi = 0 ;
@@ -871,12 +883,12 @@ void loop() {
       bPID.SetTunings(startKp, startKi, 0);
     } else {
       // calc ki, kd
-      if (aggTn != 0){
+      if (aggTn != 0) {
         aggKi = aggKp / aggTn ;
-        } else {
-          aggKi = 0 ;
-        }
-      aggKd=aggTv * aggKp ;
+      } else {
+        aggKi = 0 ;
+      }
+      aggKd = aggTv * aggKp ;
       bPID.SetTunings(aggKp, aggKi, aggKd);
       kaltstart = false;
     }
@@ -885,12 +897,12 @@ void loop() {
     brewdetection();
     if ( millis() - timeBrewdetection  < brewtimersoftware * 1000 && timerBrewdetection == 1) {
       // calc ki, kd
-      if (aggbTn != 0){
+      if (aggbTn != 0) {
         aggbKi = aggbKp / aggbTn ;
-        } else {
-          aggbKi = 0 ;
-        }
-      aggbKd = aggbTv * aggbKp ;      
+      } else {
+        aggbKi = 0 ;
+      }
+      aggbKd = aggbTv * aggbKp ;
       bPID.SetTunings(aggbKp, aggbKi, aggbKd) ;
     }
 
@@ -899,17 +911,15 @@ void loop() {
       windowStartTime += windowSize;
     }
 
-    if (Output < millis() - windowStartTime)    {
+    if (Output <= millis() - windowStartTime)    {
       digitalWrite(pinRelayHeater, LOW);
       //DEBUG_println("Power off!");
-      allowBlynk = 1;
+      sendToBlynk();
     } else {
       digitalWrite(pinRelayHeater, HIGH);
-      //DEBUG_println("Power on!");
+      DEBUG_println("Power on!");
       if (Output > 900) {
-        allowBlynk = 1;
-      } else {
-        allowBlynk = 0;
+        sendToBlynk();
       }
     }
 
@@ -932,7 +942,7 @@ void loop() {
     digitalWrite(pinRelayHeater, LOW); //Stop heating
 
     //DISPLAY AUSGABE
-    if (Display == 2) {  
+    if (Display == 2) {
       display.setTextSize(1);
       display.setTextColor(WHITE);
       display.clearDisplay();
@@ -956,19 +966,4 @@ void loop() {
       u8x8.print(Input);
     }
   }
-  
-  // send data to blynk if allowed, else try to reconnect
-  unsigned long currentMillisBlynk = millis();
-  if (currentMillisBlynk - previousMillisBlynk >= intervalBlynk) {
-    previousMillisBlynk += intervalBlynk;
-    if (Offlinemodus == 0) {
-      if (Blynk.connected()) {
-        if (allowBlynk) {        
-          sendToBlynk();          
-        }
-      } else {
-        //reconnect
-      }
-    }
-  }
- }
+}
