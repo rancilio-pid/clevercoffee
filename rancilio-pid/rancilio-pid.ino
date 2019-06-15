@@ -436,6 +436,8 @@ void refreshTemp() {
       Input = sensors.getTempCByIndex(0);
       if (Brewdetection == 1) {
         movAvg();
+      } else {
+        firstreading = 0;
       }
     }
   }
@@ -456,6 +458,8 @@ void refreshTemp() {
       if (Brewdetection == 1)
       {
         movAvg();
+      } else {
+        firstreading = 0;
       }
     }
   }
@@ -908,7 +912,7 @@ void loop() {
 
 
   //Sicherheitsabfrage
-  if (!sensorError) {
+  if (!sensorError && Input > 0) {
 
     //Set PID if first start of machine detected
     if (Input < starttemp && kaltstart) {
@@ -939,6 +943,7 @@ void loop() {
       } else {
         aggbKi = 0 ;
       }
+      
       aggbKd = aggbTv * aggbKp ;
       bPID.SetTunings(aggbKp, aggbKi, aggbKd) ;
     }
