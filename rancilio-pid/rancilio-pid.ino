@@ -905,6 +905,10 @@ void loop() {
   // Disable interrupt it OTA is starting, otherwise it will not work
   ArduinoOTA.onStart([](){
     timer1_disable();
+    digitalWrite(pinRelayHeater, LOW); //Stop heating
+  });
+  ArduinoOTA.onError([](ota_error_t error) {
+    timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
   });
   // Enable interrupts if OTA is finished
   ArduinoOTA.onEnd([](){
