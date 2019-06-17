@@ -1,5 +1,5 @@
 /********************************************************
-   Version 1.8.5 beta (14.06.2019)
+   Version 1.8.6 beta (17.06.2019)
   Key facts: major revision
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
@@ -37,7 +37,7 @@
 //#include "Arduino.h"
 #include <EEPROM.h>
 
-const char* sysVersion PROGMEM  = "Version 1.8.5 beta";
+const char* sysVersion PROGMEM  = "Version 1.8.6 beta";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -67,9 +67,10 @@ const char* blynkaddress  = BLYNKADDRESS;
 /********************************************************
    Vorab-Konfig
 ******************************************************/
-int pidON = 1 ;  // 1 = control loop in closed loop
-int relayON, relayOFF;// used for relay trigger type. Do not change!
-boolean kaltstart = true;   //true = Rancilio started for first time
+int pidON = 1 ;                 // 1 = control loop in closed loop
+int relayON, relayOFF;          // used for relay trigger type. Do not change!
+boolean kaltstart = true;       // true = Rancilio started for first time
+boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
 
 /********************************************************
    moving average - Brüherkennung
@@ -308,7 +309,16 @@ BLYNK_WRITE(V34) {
 }
 
 
-
+/********************************************************
+  Notstop wenn Temp zu hoch
+*****************************************************/
+void testEmergencyStop(){
+  if (Input > 120){
+    emergencyStop = true;
+  } else if (Input < 100) {
+    emergencyStop = false;
+  }
+}
 
 
 /********************************************************
@@ -794,11 +804,11 @@ void setup() {
         // eeprom öffnen
         EEPROM.begin(1024);
         // eeprom werte prüfen, ob numerisch
-        EEPROM.get(0, aggKp);
-        String eepromcheckstring = String(aggKp, 1);
-        DEBUG_println(aggKp);
-        DEBUG_println(eepromcheckstring);
-        if (isDigit(eepromcheckstring.charAt(1)) == true) {
+        double dummy;
+        EEPROM.get(0, dummy);
+        DEBUG_print("check eeprom 0x00 in dummy: ");
+        DEBUG_println(dummy);
+        if (!isnan(aggKp)) {
           EEPROM.get(0, aggKp);
           EEPROM.get(10, aggTn);
           EEPROM.get(20, aggTv);
@@ -886,17 +896,27 @@ void setup() {
   timer1_attachInterrupt(onTimer1ISR);
   timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
   timer1_write(50000); // set interrupt time to 10ms
-  
+
 }
 
 void loop() {
 
   ArduinoOTA.handle();  // For OTA
+  // Disable interrupt it OTA is starting, otherwise it will not work
+  ArduinoOTA.onStart([](){
+    timer1_disable();
+  });
+  // Enable interrupts if OTA is finished
+  ArduinoOTA.onEnd([](){
+    timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+  });
+  
   Blynk.run(); //Do Blynk magic stuff
   unsigned long startT;
   unsigned long stopT;
 
   refreshTemp();   //read new temperature values
+  testEmergencyStop();  // test if Temp is to high
   brew();   //start brewing if button pressed
 
   //check if PID should run or not. If not, set to manuel and force output to zero
@@ -912,7 +932,7 @@ void loop() {
 
 
   //Sicherheitsabfrage
-  if (!sensorError && Input > 0) {
+  if (!sensorError && Input > 0 && !emergencyStop) {
 
     //Set PID if first start of machine detected
     if (Input < starttemp && kaltstart) {
@@ -943,7 +963,7 @@ void loop() {
       } else {
         aggbKi = 0 ;
       }
-      
+
       aggbKd = aggbTv * aggbKp ;
       bPID.SetTunings(aggbKp, aggbKi, aggbKd) ;
     }
@@ -989,6 +1009,44 @@ void loop() {
       u8x8.print("               ");
       u8x8.setCursor(0, 1);
       u8x8.print("Error: Temp = ");
+      u8x8.setCursor(0, 2);
+      u8x8.print(Input);
+    }
+  } else if (emergencyStop){
+
+    //Deactivate PID
+    if (pidMode == 1) {
+      pidMode = 0;
+      bPID.SetMode(pidMode);
+      Output = 0 ;
+    }
+        
+    digitalWrite(pinRelayHeater, LOW); //Stop heating
+
+    //DISPLAY AUSGABE
+    if (Display == 2) {
+      display.setTextSize(1);
+      display.setTextColor(WHITE);
+      display.clearDisplay();
+      display.setCursor(0, 0);
+      display.println("Emergency Stop!");
+      display.println("");
+      display.println("Temp > 120");
+      display.print("Temp: ");
+      display.println(Input);
+      display.print("Resume if Temp < 100");
+      display.display();
+    }
+    if (Display == 1) {
+      u8x8.setFont(u8x8_font_chroma48medium8_r);  //Ausgabe vom aktuellen Wert im Display
+      u8x8.setCursor(0, 0);
+      u8x8.print("               ");
+      u8x8.setCursor(0, 1);
+      u8x8.print("               ");
+      u8x8.setCursor(0, 2);
+      u8x8.print("               ");
+      u8x8.setCursor(0, 1);
+      u8x8.print("Emergency Stop! T>120");
       u8x8.setCursor(0, 2);
       u8x8.print(Input);
     }
