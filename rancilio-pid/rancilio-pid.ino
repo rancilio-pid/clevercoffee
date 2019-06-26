@@ -1,5 +1,6 @@
+
 /********************************************************
-   Version 1.8.6 beta (17.06.2019)
+   Version 1.9.0 MASTER (25.06.2019)
   Key facts: major revision
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
@@ -37,7 +38,7 @@
 //#include "Arduino.h"
 #include <EEPROM.h>
 
-const char* sysVersion PROGMEM  = "Version 1.8.6 beta";
+const char* sysVersion PROGMEM  = "Version 1.9.0 Master";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -55,6 +56,10 @@ const boolean ota = OTA;
 const char* auth = AUTH;
 const char* ssid = D_SSID;
 const char* pass = PASS;
+
+unsigned long lastWifiConnectionAttempt = millis();
+const unsigned long wifiConnectionDelay = 10000; // try to reconnect every 5 seconds
+unsigned int wifiReconnects = 0; //number of reconnects
 
 // OTA
 const char* OTAhost = OTAHOST;
@@ -169,7 +174,7 @@ int pidMode = 1; //1 = Automatic, 0 = Manual
 const unsigned int windowSize = 1000;
 unsigned int isrCounter = 0;  // counter for ISR
 unsigned long windowStartTime;
-double Input, Output, setPointTemp;	//
+double Input, Output, setPointTemp;  //
 double previousInput = 0;
 
 double setPoint = SETPOINT;
@@ -519,6 +524,27 @@ void brew() {
     }
   }
 }
+     /********************************************************
+   Check if Wifi is connected, if not reconnect
+ *****************************************************/
+ void checkWifi(){
+   if (Offlinemodus == 1) return;
+   int statusTemp = WiFi.status();
+   // check WiFi connection:
+   if (statusTemp != WL_CONNECTED) {
+     // (optional) "offline" part of code
+
+      // check delay:
+     if (millis() - lastWifiConnectionAttempt >= wifiConnectionDelay) {
+       lastWifiConnectionAttempt = millis();      
+       // attempt to connect to Wifi network:
+       WiFi.begin(ssid, pass); 
+       delay(5000);    //will not work without delay
+       wifiReconnects++;    
+     }
+
+    }
+ }
 
 
 /********************************************************
@@ -915,7 +941,12 @@ void loop() {
     timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
   });
   
-  Blynk.run(); //Do Blynk magic stuff
+    if (WiFi.status() == WL_CONNECTED){
+     Blynk.run(); //Do Blynk magic stuff
+     wifiReconnects = 0;
+   } else {
+     checkWifi();
+   }
   unsigned long startT;
   unsigned long stopT;
 
