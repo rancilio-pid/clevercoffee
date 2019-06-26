@@ -105,7 +105,7 @@ double aggbTn = AGGBTN;
 double aggbTv = AGGBTV;
 double aggbKi = aggbKp / aggbTn;
 double aggbKd = aggbTv * aggbKp ;
-double brewtimersoftware = 45;    // 20-5 for detection
+double brewtimersoftware = 90;    // 20-5 for detection
 double brewboarder = 150 ;        // border for the detection,
 const int PonE = PONE;
 // be carefull: to low: risk of wrong brew detection
