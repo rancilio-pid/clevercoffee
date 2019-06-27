@@ -692,7 +692,7 @@ void brewdetection() {
 
   // Brew detecion == 1 software solution , == 2 hardware
   if (Brewdetection == 1 || Brewdetection == 2) {
-    if (millis() - timeBrewdetection > 50 * 1000) {
+    if (millis() - timeBrewdetection > brewtimersoftware * 1000) {
       timerBrewdetection = 0 ;
       bezugsZeit = 0 ;
     }
