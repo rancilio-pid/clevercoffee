@@ -1,6 +1,6 @@
 
 /********************************************************
-   Version 1.9.0 MASTER (25.06.2019)
+   Version 1.9.1 MASTER (27.06.2019)
   Key facts: major revision
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
@@ -38,7 +38,7 @@
 //#include "Arduino.h"
 #include <EEPROM.h>
 
-const char* sysVersion PROGMEM  = "Version 1.9.0 Master";
+const char* sysVersion PROGMEM  = "Version 1.9.1 Master";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -103,9 +103,13 @@ int firstreading = 1 ;          // Ini of the field, also used for sensor check
 double aggbKp = AGGBKP;
 double aggbTn = AGGBTN;
 double aggbTv = AGGBTV;
+#if (aggbTn == 0)
+double aggbKi = 0;
+#else
 double aggbKi = aggbKp / aggbTn;
+#endif
 double aggbKd = aggbTv * aggbKp ;
-double brewtimersoftware = 90;    // 20-5 for detection
+double brewtimersoftware = 45;    // 20-5 for detection
 double brewboarder = 150 ;        // border for the detection,
 const int PonE = PONE;
 // be carefull: to low: risk of wrong brew detection
@@ -183,14 +187,21 @@ double aggTn = AGGTN;
 double aggTv = AGGTV;
 double startKp = STARTKP;
 double startTn = STARTTN;
+#if (startTn == 0)
+double startKi = 0;
+#else
 double startKi = startKp / startTn;
+#endif
+
 double starttemp = STARTTEMP;
+#if (aggTn == 0)
+double aggKi = 0;
+#else
 double aggKi = aggKp / aggTn;
+#endif
 double aggKd = aggTv * aggKp ;
 
-#if (AGGBTN == 0 || AGGTN == 0 || startTN)
-#error("aggTn, aggbTn, startTN = 0, not allowed, div/0 for Ki!");
-#endif
+
 PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, PonE, DIRECT);
 
 /********************************************************
@@ -565,7 +576,10 @@ void printScreen() {
     u8x8.setCursor(6, 0);
     u8x8.print(",");
     u8x8.setCursor(7, 0);
-    u8x8.print(bPID.GetKp() / bPID.GetKi());
+    if (bPID.GetKi() != 0){
+    u8x8.print(bPID.GetKp() / bPID.GetKi());}
+    else
+    {u8x8.print("0");}
     u8x8.setCursor(11, 0);
     u8x8.print(",");
     u8x8.setCursor(12, 0);
@@ -611,7 +625,10 @@ void printScreen() {
     display.print(" ");
     display.print(bPID.GetKp(), 1);
     display.print(",");
-    display.print(bPID.GetKp() / bPID.GetKi(), 0);
+    if (bPID.GetKi() != 0){
+    display.print(bPID.GetKp() / bPID.GetKi(), 0);;}
+    else
+    { display.print("0");}
     display.print(",");
     display.println(bPID.GetKd() / bPID.GetKp(), 1);
     display.println();
