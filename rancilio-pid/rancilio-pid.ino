@@ -1008,7 +1008,7 @@ void loop() {
 
     //if brew detected, set PID values
     brewdetection();
-    if ( millis() - timeBrewdetection  < brewtimersoftware * 1000 && timerBrewdetection == 1) {
+    if ( millis() - timeBrewdetection  < brewtimersoftware * 1000) {
       // calc ki, kd
       if (aggbTn != 0) {
         aggbKi = aggbKp / aggbTn ;
