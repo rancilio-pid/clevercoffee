@@ -1,6 +1,6 @@
 
 /********************************************************
-   Version 1.9.1 MASTER (27.06.2019)
+   Version 1.9.2 MASTER (27.06.2019)
   Key facts: major revision
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
@@ -694,6 +694,7 @@ void brewdetection() {
   if (Brewdetection == 1 || Brewdetection == 2) {
     if (millis() - timeBrewdetection > 50 * 1000) {
       timerBrewdetection = 0 ;
+      bezugsZeit = 0 ;
     }
   }
 
@@ -1015,9 +1016,9 @@ void loop() {
       } else {
         aggbKi = 0 ;
       }
-
       aggbKd = aggbTv * aggbKp ;
       bPID.SetTunings(aggbKp, aggbKi, aggbKd) ;
+      bezugsZeit= millis() - timeBrewdetection ;
     }
 
     sendToBlynk();
