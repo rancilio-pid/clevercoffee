@@ -34,13 +34,13 @@
 
 //PID - Werte für Brüherkennung Offline
 #define AGGBKP 50    // Kp
-#define AGGBTN 0   // Tn Must never be zero! Otherwise div/0 for aggbKi
+#define AGGBTN 0   // Tn 
 #define AGGBTV 20    // Tv
 
 //PID - Werte für Regelung Offline
 #define SETPOINT 95  // Temperatur Sollwert
 #define AGGKP 69     // Kp
-#define AGGTN 399    // Must never be zero! Otherwise div/0 for aggKi
+#define AGGTN 399    // Tn
 #define AGGTV 0      // Tv
 #define STARTKP 100   // Start Kp während Kaltstart
 #define STARTTN 0  // Start Tn während Kaltstart
