@@ -1018,7 +1018,9 @@ void loop() {
       }
       aggbKd = aggbTv * aggbKp ;
       bPID.SetTunings(aggbKp, aggbKi, aggbKd) ;
+      if(OnlyPID == 1){
       bezugsZeit= millis() - timeBrewdetection ;
+      }
     }
 
     sendToBlynk();
