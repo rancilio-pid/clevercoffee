@@ -1,6 +1,6 @@
-
+ 
 /********************************************************
-   Version 1.9.2 MASTER (27.06.2019)
+   Version 1.9.3 MASTER (27.06.2019)
   Key facts: major revision
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
@@ -38,7 +38,7 @@
 //#include "Arduino.h"
 #include <EEPROM.h>
 
-const char* sysVersion PROGMEM  = "Version 1.9.2 Master";
+const char* sysVersion PROGMEM  = "Version 1.9.3 Master";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -258,14 +258,14 @@ const long intervalDisplay = 500;
 ******************************************************/
 
 
-/*
+
   BLYNK_CONNECTED() {
   if (Offlinemodus == 0) {
     Blynk.syncAll();
     //rtc.begin();
   }
   }
-*/
+
 BLYNK_WRITE(V4) {
   aggKp = param.asDouble();
 }
@@ -694,7 +694,9 @@ void brewdetection() {
   if (Brewdetection == 1 || Brewdetection == 2) {
     if (millis() - timeBrewdetection > brewtimersoftware * 1000) {
       timerBrewdetection = 0 ;
+        if (OnlyPID == 1) {
       bezugsZeit = 0 ;
+        }
     }
   }
 
