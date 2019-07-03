@@ -1,6 +1,7 @@
+
  
 /********************************************************
-   Version 1.9.3 MASTER (27.06.2019)
+   Version 1.9.4 MASTER (04.07.2019)
   Key facts: major revision
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
@@ -38,7 +39,7 @@
 //#include "Arduino.h"
 #include <EEPROM.h>
 
-const char* sysVersion PROGMEM  = "Version 1.9.3 Master";
+const char* sysVersion PROGMEM  = "Version 1.9.4 Master";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -819,8 +820,24 @@ void setup() {
         if (Blynk.connected() == true) {
           displaymessage("3: Blynk connected", "sync all variables...");
           DEBUG_println("Blynk is online, new values to eeprom");
-          Blynk.syncAll();  //sync all values from Blynk server
-          delay(2000);
+         // Blynk.run() ; 
+          Blynk.syncVirtual(V4);
+          Blynk.syncVirtual(V5);
+          Blynk.syncVirtual(V6);
+          Blynk.syncVirtual(V7);
+          Blynk.syncVirtual(V8);
+          Blynk.syncVirtual(V9);
+          Blynk.syncVirtual(V10);
+          Blynk.syncVirtual(V11);
+          Blynk.syncVirtual(V12);
+          Blynk.syncVirtual(V13);
+          Blynk.syncVirtual(V14);
+          Blynk.syncVirtual(V30);
+          Blynk.syncVirtual(V31);
+          Blynk.syncVirtual(V32);
+          Blynk.syncVirtual(V33);
+          Blynk.syncVirtual(V34);
+         // Blynk.syncAll();  //sync all values from Blynk server
           // Werte in den eeprom schreiben
           // ini eeprom mit begin
           EEPROM.begin(1024);
