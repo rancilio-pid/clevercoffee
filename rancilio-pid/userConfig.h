@@ -11,7 +11,7 @@
 ******************************************************/
 #define OFFLINEMODUS 0       // 0=Blynk und WLAN wird benötigt 1=OfflineModus (ACHTUNG EINSTELLUNGEN NUR DIREKT IM CODE MÖGLICH)
 #define DISPLAY 2            // 1=U8x8libm, 0=Deaktiviert, 2=Externes 128x64 Display
-#define ONLYPID 0            // 1=Nur PID ohne Preinfussion, 0=PID + Preinfussion
+#define ONLYPID 1            // 1=Nur PID ohne Preinfussion, 0=PID + Preinfussion
 #define TEMPSENSOR 2         // 1=DS19B20; 2=TSIC306
 #define BREWDETECTION 1      // 0 = off ,1 = Software, 2 = Hardware
 #define FALLBACK 1           // 1: fallback auf eeprom Werte, wenn blynk nicht geht 0: deaktiviert
