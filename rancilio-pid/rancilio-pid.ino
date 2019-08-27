@@ -1,7 +1,5 @@
-
- 
 /********************************************************
-   Version 1.9.4 MASTER (04.07.2019)
+   Version 1.9.5 MASTER (27.08.2019)
   Key facts: major revision
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
@@ -39,7 +37,7 @@
 //#include "Arduino.h"
 #include <EEPROM.h>
 
-const char* sysVersion PROGMEM  = "Version 1.9.4 Master";
+const char* sysVersion PROGMEM  = "Version 1.9.5 Master";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -52,6 +50,7 @@ const int Brewdetection = BREWDETECTION;
 const int fallback = FALLBACK;
 const int triggerType = TRIGGERTYPE;
 const boolean ota = OTA;
+const int grafana=GRAFANA;
 
 // Wifi
 const char* auth = AUTH;
@@ -124,9 +123,9 @@ int brewcounter = 0;
 int brewswitch = 0;
 
 
-int brewtime = 25000;
+long brewtime = 25000;
 long aktuelleZeit = 0;
-int totalbrewtime = 0;
+long totalbrewtime = 0;
 int preinfusion = 2000;
 int preinfusionpause = 5000;
 unsigned long bezugsZeit = 0;
@@ -659,6 +658,9 @@ void sendToBlynk() {
   if (currentMillisBlynk - previousMillisBlynk >= intervalBlynk) {
     previousMillisBlynk += intervalBlynk;
     if (Blynk.connected()) {
+      if (grafana == 1) {
+        Blynk.virtualWrite(V60, Input, Output,bPID.GetKp(),bPID.GetKi(),bPID.GetKd(),setPoint );
+        }
       if (blynksendcounter == 1) {
         Blynk.virtualWrite(V2, Input);
         Blynk.syncVirtual(V2);
