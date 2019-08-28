@@ -4,6 +4,8 @@
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
 ******************************************************/
+         
+#include "icon.h"  
 
 // Debug mode is active if #define DEBUGMODE is set
 //#define DEBUGMODE
@@ -33,7 +35,6 @@
 #include <WiFiUdp.h>
 
 #include "userConfig.h" // needs to be configured by the user
-
 //#include "Arduino.h"
 #include <EEPROM.h>
 
@@ -143,10 +144,13 @@ int maxErrorCounter = 10 ;  //depends on intervaltempmes* , define max seconds f
    DISPLAY
 ******************************************************/
 #include <U8x8lib.h>
+            
+
 #ifdef U8X8_HAVE_HW_SPI
 #include <SPI.h>
 #endif
 U8X8_SSD1306_128X32_UNIVISION_SW_I2C u8x8(/* clock=*/ 5, /* data=*/ 4, /* reset=*/ 16);   //Display initalisieren
+                             
 
 // Display 128x64
 #include <Wire.h>
@@ -347,12 +351,20 @@ void displaymessage(String displaymessagetext, String displaymessagetext2) {
        DISPLAY AUSGABE
     ******************************************************/
     display.setTextSize(1);
+
+
     display.setTextColor(WHITE);
     display.clearDisplay();
-    display.setCursor(0, 0);
+    display.setCursor(0, 47);
     display.println(displaymessagetext);
     display.print(displaymessagetext2);
+    //Rancilio startup logo
+    display.drawBitmap(41,2, startLogo_bits,startLogo_width, startLogo_height, WHITE);
+    //draw circle
+    //display.drawCircle(63, 24, 20, WHITE);
     display.display();
+   // display.fadeout();
+   // display.fadein();
   }
   if (Display == 1) {
     /********************************************************
@@ -604,47 +616,79 @@ void printScreen() {
     u8x8.print(Output);
   }
   if (Display == 2 && !sensorError) {
+    display.clearDisplay();
+    display.drawBitmap(0,0, logo_bits,logo_width, logo_height, WHITE);
     display.setTextSize(1);
     display.setTextColor(WHITE);
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.print("Ist-Temp:   ");
+    display.setCursor(32, 10); 
+    display.print("Ist :  ");
     display.print(Input, 1);
     display.print(" ");
     display.print((char)247);
     display.println("C");
-    display.print("Soll-Temp:  ");
+    display.setCursor(32, 20); 
+    display.print("Soll:  ");
     display.print(setPoint, 1);
     display.print(" ");
     display.print((char)247);
     display.println("C");
-    display.print("PID-Outlet: ");
-    display.print(Output / 10, 1);
-    display.println(" %");
-    display.print("PID:");
-    display.print(" ");
-    display.print(bPID.GetKp(), 1);
-    display.print(",");
-    if (bPID.GetKi() != 0){
-    display.print(bPID.GetKp() / bPID.GetKi(), 0);;}
+   // display.print("Heizen: ");
+    
+   // display.println(" %");
+   
+// Draw heat bar
+   display.drawLine(15, 58, 117, 58, WHITE);
+   display.drawLine(15, 58, 15, 61, WHITE); 
+   display.drawLine(117, 58, 117, 61, WHITE);
+
+   display.drawLine(16, 59, (Output / 10) + 16, 59, WHITE);
+   display.drawLine(16, 60, (Output / 10) + 16, 60, WHITE);
+   display.drawLine(15, 61, 117, 61, WHITE);
+   
+//draw current temp in icon
+   display.drawLine(9, 48, 9, 58 - (Input / 2), WHITE); 
+   display.drawLine(10, 48, 10, 58 - (Input / 2), WHITE);  
+   display.drawLine(11, 48, 11, 58 - (Input / 2), WHITE); 
+   display.drawLine(12, 48, 12, 58 - (Input / 2), WHITE); 
+   display.drawLine(13, 48, 13, 58 - (Input / 2), WHITE);
+   
+//draw setPoint line
+   display.drawLine(18, 58 - (setPoint / 2), 23, 58 - (setPoint / 2), WHITE); 
+ 
+// PID Werte ueber heatbar
+    display.setCursor(40, 50);  
+
+    display.print(bPID.GetKp(), 0); // P 
+    display.print("|");
+    if (bPID.GetKi() != 0){      
+    display.print(bPID.GetKp() / bPID.GetKi(), 0);;} // I 
     else
-    { display.print("0");}
-    display.print(",");
-    display.println(bPID.GetKd() / bPID.GetKp(), 1);
-    display.println();
-    display.print("Bezugszeit:");
-    display.setTextSize(2);
+    { 
+      display.print("0");
+    }
+    display.print("|");
+    display.println(bPID.GetKd() / bPID.GetKp(), 0); // D
+    display.setCursor(98,50);
+    display.print(Output / 10, 0);
+    display.print("%");
+
+// Brew
+    display.setCursor(32, 31); 
+    display.print("Brew:  ");
+    display.setTextSize(1);
     display.print(bezugsZeit / 1000);
     display.print("/");
-    display.println(totalbrewtime / 1000);
-    display.setTextSize(1);
-    display.setCursor(0, 48);
-    display.print(preinfusion / 1000);
-    display.print("/");
-    display.print(preinfusionpause / 1000);
-    display.print("/");
-    display.print(brewtime / 1000);
-    display.display();
+    if (ONLYPID == 1){
+    display.println(brewtimersoftware, 0);             // deaktivieren wenn Preinfusion ( // voransetzen )
+    }
+    else 
+    {
+    display.println(totalbrewtime / 1000);            // aktivieren wenn Preinfusion
+    }
+//draw box
+   display.drawRoundRect(0, 0, 128, 64, 1, WHITE);    
+   display.display();
+
   }
 }
 
@@ -785,9 +829,9 @@ void setup() {
   if (Offlinemodus == 0) {
 
     if (fallback == 0) {
+
       displaymessage("Connect to Blynk", "no Fallback");
       Blynk.begin(auth, ssid, pass, blynkaddress, 8080);
-
     }
 
     if (fallback == 1) {
