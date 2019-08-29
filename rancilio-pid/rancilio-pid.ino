@@ -1,5 +1,5 @@
 /********************************************************
-   Version 1.9.5 MASTER (27.08.2019)
+   Version 1.9.6 MASTER (28.08.2019)
   Key facts: major revision
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
@@ -38,7 +38,7 @@
 //#include "Arduino.h"
 #include <EEPROM.h>
 
-const char* sysVersion PROGMEM  = "Version 1.9.5 Master";
+const char* sysVersion PROGMEM  = "Version 1.9.6 Master";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
