@@ -917,7 +917,7 @@ void setup() {
         EEPROM.get(0, dummy);
         DEBUG_print("check eeprom 0x00 in dummy: ");
         DEBUG_println(dummy);
-        if (!isnan(aggKp)) {
+        if (!isnan(dummy)) {
           EEPROM.get(0, aggKp);
           EEPROM.get(10, aggTn);
           EEPROM.get(20, aggTv);
