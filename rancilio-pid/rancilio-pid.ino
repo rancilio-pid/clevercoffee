@@ -1,14 +1,33 @@
 /********************************************************
-   Version 1.9.6 MASTER (28.08.2019)
+   Version 1.9.7 BETA (06.10.2019)
   Key facts: major revision
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
 ******************************************************/
-         
-#include "icon.h"  
 
-// Debug mode is active if #define DEBUGMODE is set
-//#define DEBUGMODE
+/********************************************************
+  INCLUDES
+******************************************************/       
+#include <ArduinoOTA.h>
+#include <ESP8266WiFi.h>
+#include <ESP8266mDNS.h>
+#include <WiFiUdp.h>
+#include <EEPROM.h>
+#include "userConfig.h" // needs to be configured by the user
+#include <Wire.h>
+#include <Adafruit_GFX.h>   
+#include <Adafruit_SSD1306.h>
+#include "PID_v1.h" //for PID calculation
+#include <OneWire.h>    //Library for one wire communication to temp sensor
+#include <DallasTemperature.h>    //Library for dallas temp sensor
+#include "TSIC.h"       //Library for TSIC temp sensor
+#include <BlynkSimpleEsp8266.h>
+#include "icon.h"   //user icons for display
+
+/********************************************************
+  DEFINES
+******************************************************/  
+//#define DEBUGMODE   // Debug mode is active if #define DEBUGMODE is set
 
 #ifndef DEBUGMODE
 #define DEBUG_println(a)
@@ -20,25 +39,24 @@
 #define DEBUGSTART(a) Serial.begin(a);
 #endif
 
-//#define BLYNK_PRINT Serial
+//#define BLYNK_PRINT Serial    // In detail debugging for blynk
 //#define BLYNK_DEBUG
 
-//Define pins for outputs
-#define pinRelayVentil    12
-#define pinRelayPumpe     13
-#define pinRelayHeater    14
+#define pinRelayVentil    12    //Output pin for 3-way-valve
+#define pinRelayPumpe     13    //Output pin for pump
+#define pinRelayHeater    14    //Output pin for heater
 
-//Libraries for OTA
-#include <ArduinoOTA.h>
-#include <ESP8266WiFi.h>
-#include <ESP8266mDNS.h>
-#include <WiFiUdp.h>
+#define OLED_RESET 16     //Output pin for dispaly reset pin
 
-#include "userConfig.h" // needs to be configured by the user
-//#include "Arduino.h"
-#include <EEPROM.h>
+#define ONE_WIRE_BUS 2  // Data wire is plugged into port 2 on the Arduino
 
-const char* sysVersion PROGMEM  = "Version 1.9.6 Master";
+
+/********************************************************
+   DISPLAY
+******************************************************/    
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels  
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire,OLED_RESET);   
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -52,15 +70,15 @@ const int fallback = FALLBACK;
 const int triggerType = TRIGGERTYPE;
 const boolean ota = OTA;
 const int grafana=GRAFANA;
+const unsigned long wifiConnectionDelay = WIFICINNECTIONDELAY;
+const unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
 
 // Wifi
 const char* auth = AUTH;
 const char* ssid = D_SSID;
 const char* pass = PASS;
-
 unsigned long lastWifiConnectionAttempt = millis();
-const unsigned long wifiConnectionDelay = 10000; // try to reconnect every 5 seconds
-unsigned int wifiReconnects = 0; //number of reconnects
+unsigned int wifiReconnects = 0; //actual number of reconnects
 
 // OTA
 const char* OTAhost = OTAHOST;
@@ -71,36 +89,36 @@ const char* blynkaddress  = BLYNKADDRESS;
 
 
 /********************************************************
-   Vorab-Konfig
+   declarations
 ******************************************************/
 int pidON = 1 ;                 // 1 = control loop in closed loop
 int relayON, relayOFF;          // used for relay trigger type. Do not change!
 boolean kaltstart = true;       // true = Rancilio started for first time
 boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
+const char* sysVersion PROGMEM  = "Version 1.9.7 BETA";   //System version
+int inX = 0, inY = 0, inOld = 0, inSum = 0; //used for filter()
+int bars = 0; //used for getSignalStrength()
 
 /********************************************************
    moving average - Brüherkennung
 *****************************************************/
 const int numReadings = 15;             // number of values per Array
-float readingstemp[numReadings];        // the readings from Temp
-float readingstime[numReadings];        // the readings from time
-float readingchangerate[numReadings];
+double readingstemp[numReadings];        // the readings from Temp
+unsigned long readingstime[numReadings];        // the readings from time
+double readingchangerate[numReadings];
 
 int readIndex = 1;              // the index of the current reading
-double total = 0;               // the running
-int totaltime = 0 ;             // the running time
+double total = 0;               // total sum of readingchangerate[]
 double heatrateaverage = 0;     // the average over the numReadings
 double changerate = 0;          // local change rate of temprature
 double heatrateaveragemin = 0 ;
 unsigned long  timeBrewdetection = 0 ;
-int timerBrewdetection = 0 ;
-int i = 0;
+int timerBrewdetection = 0 ;    // flag is set if brew was detected
 int firstreading = 1 ;          // Ini of the field, also used for sensor check
 
 /********************************************************
    PID - Werte Brüherkennung Offline
 *****************************************************/
-
 double aggbKp = AGGBKP;
 double aggbTn = AGGBTN;
 double aggbTv = AGGBTV;
@@ -111,26 +129,21 @@ double aggbKi = aggbKp / aggbTn;
 #endif
 double aggbKd = aggbTv * aggbKp ;
 double brewtimersoftware = 45;    // 20-5 for detection
-double brewboarder = 150 ;        // border for the detection,
+double brewboarder = 150 ;        // border for the detection; to low: risk of wrong brew detection and rising temperature
 const int PonE = PONE;
-// be carefull: to low: risk of wrong brew detection
-// and rising temperature
 
 /********************************************************
-   Analog Schalter Read
+   Analog Input
 ******************************************************/
-const int analogPin = 0; // will be use in case of hardware
+const int analogPin = 0; // AI0 will be used
 int brewcounter = 0;
 int brewswitch = 0;
-
-
-long brewtime = 25000;
-long aktuelleZeit = 0;
-long totalbrewtime = 0;
-int preinfusion = 2000;
-int preinfusionpause = 5000;
-unsigned long bezugsZeit = 0;
-unsigned long startZeit = 0;
+double brewtime = 25000;  //brewtime in ms
+double totalbrewtime = 0; //total brewtime set in softare or blynk
+double preinfusion = 2000;  //preinfusion time in ms
+double preinfusionpause = 5000;   //preinfusion pause time in ms
+unsigned long bezugsZeit = 0;   //total brewed time
+unsigned long startZeit = 0;    //start time of brew
 
 /********************************************************
    Sensor check
@@ -139,50 +152,19 @@ boolean sensorError = false;
 int error = 0;
 int maxErrorCounter = 10 ;  //depends on intervaltempmes* , define max seconds for invalid data
 
-
-/********************************************************
-   DISPLAY
-******************************************************/
-#include <U8x8lib.h>
-            
-
-#ifdef U8X8_HAVE_HW_SPI
-#include <SPI.h>
-#endif
-U8X8_SSD1306_128X32_UNIVISION_SW_I2C u8x8(/* clock=*/ 5, /* data=*/ 4, /* reset=*/ 16);   //Display initalisieren
-                             
-
-// Display 128x64
-#include <Wire.h>
-#include <Adafruit_GFX.h>
-//#include <ACROBOTIC_SSD1306.h>
-#include <Adafruit_SSD1306.h>
-#define OLED_RESET 16
-Adafruit_SSD1306 display(OLED_RESET);
-#define XPOS 0
-#define YPOS 1
-#define DELTAY 2
-
-
-#if (SSD1306_LCDHEIGHT != 64)
-#error("Height incorrect, please fix Adafruit_SSD1306.h!");
-#endif
-
-
 /********************************************************
    PID
 ******************************************************/
-#include "PID_v1.h"
-
 unsigned long previousMillistemp;  // initialisation at the end of init()
-const long intervaltempmestsic = 400 ;
-const long intervaltempmesds18b20 = 400  ;
+const unsigned long intervaltempmestsic = 400 ;
+const unsigned long intervaltempmesds18b20 = 400  ;
 int pidMode = 1; //1 = Automatic, 0 = Manual
 
 const unsigned int windowSize = 1000;
 unsigned int isrCounter = 0;  // counter for ISR
 unsigned long windowStartTime;
-double Input, Output, setPointTemp;  //
+double Input, Output;
+double setPointTemp;
 double previousInput = 0;
 
 double setPoint = SETPOINT;
@@ -205,70 +187,43 @@ double aggKi = aggKp / aggTn;
 #endif
 double aggKd = aggTv * aggKp ;
 
-
-PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, PonE, DIRECT);
+PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, PonE, DIRECT);    //PID initialisation
 
 /********************************************************
    DALLAS TEMP
 ******************************************************/
-// Include the libraries we need
-#include <OneWire.h>
-#include <DallasTemperature.h>
-// Data wire is plugged into port 2 on the Arduino
-#define ONE_WIRE_BUS 2
-// Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
-OneWire oneWire(ONE_WIRE_BUS);
-// Pass our oneWire reference to Dallas Temperature.
-DallasTemperature sensors(&oneWire);
-
-// arrays to hold device address
-DeviceAddress sensorDeviceAddress;
+OneWire oneWire(ONE_WIRE_BUS);  // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
+DallasTemperature sensors(&oneWire);  // Pass our oneWire reference to Dallas Temperature.
+DeviceAddress sensorDeviceAddress;  // arrays to hold device address
 
 /********************************************************
-   B+B Sensors TSIC 306
+   Temp Sensors TSIC 306
 ******************************************************/
-#include "TSIC.h"       // include the library
 TSIC Sensor1(2);    // only Signalpin, VCCpin unused by default
-uint16_t temperature = 0;
-float Temperatur_C = 0;
+uint16_t temperature = 0; //internal variable used to read temeprature
+float Temperatur_C = 0; 
 
 /********************************************************
    BLYNK
 ******************************************************/
-#define BLYNK_PRINT Serial
-#include <BlynkSimpleEsp8266.h>
-
-//Zeitserver
-/*
-   NOT KNOWN WHAT THIS IS USED FOR
-  #include <TimeLib.h>
-  #include <WidgetRTC.h>
-  BlynkTimer timer;
-  WidgetRTC rtc;
-  WidgetBridge bridge1(V1);
-*/
-
 //Update Intervall zur App
 unsigned long previousMillisBlynk;  // initialisation at the end of init()
-const long intervalBlynk = 1000;
+const unsigned long intervalBlynk = 1000;
 int blynksendcounter = 1;
 
 //Update für Display
 unsigned long previousMillisDisplay;  // initialisation at the end of init()
-const long intervalDisplay = 500;
+const unsigned long intervalDisplay = 500;
 
 /********************************************************
    BLYNK WERTE EINLESEN und Definition der PINS
 ******************************************************/
-
-
-
-  BLYNK_CONNECTED() {
+BLYNK_CONNECTED() {
   if (Offlinemodus == 0) {
     Blynk.syncAll();
     //rtc.begin();
   }
-  }
+}
 
 BLYNK_WRITE(V4) {
   aggKp = param.asDouble();
@@ -328,7 +283,6 @@ BLYNK_WRITE(V34) {
   brewboarder =  param.asDouble();
 }
 
-
 /********************************************************
   Notstop wenn Temp zu hoch
 *****************************************************/
@@ -340,19 +294,12 @@ void testEmergencyStop(){
   }
 }
 
-
 /********************************************************
   Displayausgabe
 *****************************************************/
-
 void displaymessage(String displaymessagetext, String displaymessagetext2) {
   if (Display == 2) {
-    /********************************************************
-       DISPLAY AUSGABE
-    ******************************************************/
     display.setTextSize(1);
-
-
     display.setTextColor(WHITE);
     display.clearDisplay();
     display.setCursor(0, 47);
@@ -366,22 +313,11 @@ void displaymessage(String displaymessagetext, String displaymessagetext2) {
    // display.fadeout();
    // display.fadein();
   }
-  if (Display == 1) {
-    /********************************************************
-       DISPLAY AUSGABE
-    ******************************************************/
-    u8x8.clear();
-    u8x8.setFont(u8x8_font_chroma48medium8_r);  //Ausgabe vom aktuellen Wert im Display
-    u8x8.setCursor(0, 0);
-    u8x8.println(displaymessagetext);
-    u8x8.print(displaymessagetext2);
-  }
-
 }
+
 /********************************************************
   Moving average - brewdetection (SW)
 *****************************************************/
-
 void movAvg() {
   if (firstreading == 1) {
     for (int thisReading = 0; thisReading < numReadings; thisReading++) {
@@ -403,7 +339,7 @@ void movAvg() {
 
   readingchangerate[readIndex] = changerate ;
   total = 0 ;
-  for (i = 0; i < numReadings; i++)
+  for (int i = 0; i < numReadings; i++)
   {
     total += readingchangerate[i];
   }
@@ -420,7 +356,6 @@ void movAvg() {
   readIndex++;
 
 }
-
 
 /********************************************************
   check sensor value. If < 0 or difference between old and new >25, then increase error.
@@ -508,7 +443,7 @@ void refreshTemp() {
 ******************************************************/
 void brew() {
   if (OnlyPID == 0) {
-    brewswitch = analogRead(analogPin);
+    brewswitch = filter(analogRead(analogPin));
     unsigned long aktuelleZeit = millis();
     if (brewswitch > 1000 && brewcounter == 0) {
       startZeit = millis();
@@ -547,155 +482,99 @@ void brew() {
     }
   }
 }
-     /********************************************************
+
+/********************************************************
    Check if Wifi is connected, if not reconnect
  *****************************************************/
  void checkWifi(){
-   if (Offlinemodus == 1) return;
-   int statusTemp = WiFi.status();
-   // check WiFi connection:
-   if (statusTemp != WL_CONNECTED) {
-     // (optional) "offline" part of code
-
-      // check delay:
-     if (millis() - lastWifiConnectionAttempt >= wifiConnectionDelay) {
-       lastWifiConnectionAttempt = millis();      
-       // attempt to connect to Wifi network:
-       WiFi.begin(ssid, pass); 
-       delay(5000);    //will not work without delay
-       wifiReconnects++;    
-     }
-
+  if (Offlinemodus == 1 || brewcounter == 1) return;
+  if ((millis() - lastWifiConnectionAttempt >= wifiConnectionDelay) && (wifiReconnects >= maxWifiReconnects)) {
+    int statusTemp = WiFi.status();
+    // check WiFi connection:
+    if (statusTemp != WL_CONNECTED) {       
+      lastWifiConnectionAttempt = millis();      
+      // attempt to connect to Wifi network:
+      WiFi.begin(ssid, pass); 
+      delay(5000);    //will not work without delay
+      wifiReconnects++;    
     }
- }
-
+  }
+}
 
 /********************************************************
     send data to display
 ******************************************************/
 void printScreen() {
-  if (Display == 1 && !sensorError) {
-    u8x8.setFont(u8x8_font_chroma48medium8_r);  //Ausgabe vom aktuellen Wert im Display
-    u8x8.setCursor(0, 0);
-    u8x8.print("               ");
-    u8x8.setCursor(0, 1);
-    u8x8.print("               ");
-    u8x8.setCursor(0, 2);
-    u8x8.print("               ");
-    u8x8.setCursor(0, 0);
-    u8x8.setCursor(1, 0);
-    u8x8.print(bPID.GetKp());
-    u8x8.setCursor(6, 0);
-    u8x8.print(",");
-    u8x8.setCursor(7, 0);
-    if (bPID.GetKi() != 0){
-    u8x8.print(bPID.GetKp() / bPID.GetKi());}
-    else
-    {u8x8.print("0");}
-    u8x8.setCursor(11, 0);
-    u8x8.print(",");
-    u8x8.setCursor(12, 0);
-    u8x8.print(bPID.GetKd() / bPID.GetKp());
-    u8x8.setCursor(0, 1);
-    u8x8.print("Input:");
-    u8x8.setCursor(9, 1);
-    u8x8.print("   ");
-    u8x8.setCursor(9, 1);
-    u8x8.print(Input);
-    u8x8.setCursor(0, 2);
-    u8x8.print("SetPoint:");
-    u8x8.setCursor(10, 2);
-    u8x8.print("   ");
-    u8x8.setCursor(10, 2);
-    u8x8.print(setPoint);
-    u8x8.setCursor(0, 3);
-    u8x8.print(round((Input * 100) / setPoint));
-    u8x8.setCursor(4, 3);
-    u8x8.print("%");
-    u8x8.setCursor(6, 3);
-    u8x8.print(Output);
-  }
   if (Display == 2 && !sensorError) {
-    display.clearDisplay();
-    display.drawBitmap(0,0, logo_bits,logo_width, logo_height, WHITE);
     display.setTextSize(1);
     display.setTextColor(WHITE);
-    display.setCursor(32, 10); 
-    display.print("Ist :  ");
-    display.print(Input, 1);
-    display.print(" ");
-    display.print((char)247);
-    display.println("C");
-    display.setCursor(32, 20); 
-    display.print("Soll:  ");
-    display.print(setPoint, 1);
-    display.print(" ");
-    display.print((char)247);
-    display.println("C");
-   // display.print("Heizen: ");
-    
-   // display.println(" %");
-   
-// Draw heat bar
-   display.drawLine(15, 58, 117, 58, WHITE);
-   display.drawLine(15, 58, 15, 61, WHITE); 
-   display.drawLine(117, 58, 117, 61, WHITE);
-
-   display.drawLine(16, 59, (Output / 10) + 16, 59, WHITE);
-   display.drawLine(16, 60, (Output / 10) + 16, 60, WHITE);
-   display.drawLine(15, 61, 117, 61, WHITE);
-   
-//draw current temp in icon
-   display.drawLine(9, 48, 9, 58 - (Input / 2), WHITE); 
-   display.drawLine(10, 48, 10, 58 - (Input / 2), WHITE);  
-   display.drawLine(11, 48, 11, 58 - (Input / 2), WHITE); 
-   display.drawLine(12, 48, 12, 58 - (Input / 2), WHITE); 
-   display.drawLine(13, 48, 13, 58 - (Input / 2), WHITE);
-   
-//draw setPoint line
-   display.drawLine(18, 58 - (setPoint / 2), 23, 58 - (setPoint / 2), WHITE); 
- 
-// PID Werte ueber heatbar
-    display.setCursor(40, 50);  
-
-    display.print(bPID.GetKp(), 0); // P 
-    display.print("|");
-    if (bPID.GetKi() != 0){      
-    display.print(bPID.GetKp() / bPID.GetKi(), 0);;} // I 
-    else
-    { 
-      display.print("0");
-    }
-    display.print("|");
-    display.println(bPID.GetKd() / bPID.GetKp(), 0); // D
-    display.setCursor(98,50);
-    display.print(Output / 10, 0);
-    display.print("%");
-
-// Brew
-    display.setCursor(32, 31); 
-    display.print("Brew:  ");
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    if (Offlinemodus == 0) {
+      getSignalStrength();
+      if (WiFi.status() == WL_CONNECTED){
+        display.drawBitmap(0,0,antenna_OK,8,8,WHITE);
+        for (int b=0; b <= bars; b++) {
+          display.drawFastVLine(5 + (b*2),8 - (b*2),b*2,WHITE);
+        }
+      } else {
+        display.drawBitmap(0,0,antenna_NOK,8,8,WHITE);
+        display.setCursor(48, 0);
+        display.print("Reconect: ");
+        display.print(wifiReconnects);
+      }
+      if (Blynk.connected()){
+        display.drawBitmap(20,0,blynk_OK,11,8,WHITE);
+      } else {
+        display.drawBitmap(20,0,blynk_NOK,8,8,WHITE);
+      }
+    } else {
+      display.print("Offlinemodus");
+    }    
+    display.println("");
+    display.println("");
+    display.print("S:");
+    display.setTextSize(2);
+    if (setPoint < 100){
+      display.print(setPoint, 1);
+    }else{
+      display.print(setPoint, 0);
+    }         
     display.setTextSize(1);
+    display.print(" I:");
+    display.setTextSize(2);
+    if (Input < 100){
+      display.println(Input, 1);
+    }else{
+      display.println(Input, 0);
+    }
+    display.setTextSize(1);
+    //display.setCursor(0, 32);
+    display.print("Q: ");
+    display.print(Output / 10, 1);
+    display.print(" %, ");
+    display.print(bPID.GetKp(), 1);
+    display.print(",");
+    display.println(bPID.GetKp() / bPID.GetKi(), 0);
+    display.print("Bezugszeit:");
+    display.setTextSize(2);
     display.print(bezugsZeit / 1000);
     display.print("/");
-    if (ONLYPID == 1){
-    display.println(brewtimersoftware, 0);             // deaktivieren wenn Preinfusion ( // voransetzen )
-    }
-    else 
-    {
-    display.println(totalbrewtime / 1000);            // aktivieren wenn Preinfusion
-    }
-//draw box
-   display.drawRoundRect(0, 0, 128, 64, 1, WHITE);    
-   display.display();
-
+    display.println(totalbrewtime / 1000);
+    display.setTextSize(1);
+    display.setCursor(0, 56);
+    display.print(preinfusion / 1000);
+    display.print("/");   
+    display.print(preinfusionpause / 1000);
+    display.print("/");      
+    display.print(brewtime / 1000);
+    display.display();
   }
 }
 
 /********************************************************
   send data to Blynk server
 *****************************************************/
-
 void sendToBlynk() {
   if (Offlinemodus != 0) return;
   unsigned long currentMillisBlynk = millis();
@@ -757,6 +636,44 @@ void brewdetection() {
 }
 
 /********************************************************
+  nach ca. 28 Zyklen ist der input zu 99,99% erreicht
+*****************************************************/
+int filter(int input){
+  inX = input * 0.3;
+  inY = inOld * 0.7;
+  inSum = inX + inY;
+  inOld = inSum;
+  
+  return inSum;
+}
+
+/********************************************************
+  Get Wifi signal strength and set bars for display
+*****************************************************/
+void getSignalStrength(){
+  if (Offlinemodus == 1) return;
+  
+  long rssi;
+  if (WiFi.status() == WL_CONNECTED) {
+    rssi = WiFi.RSSI();  
+  } else {
+    rssi = -100;
+  }
+
+  if (rssi >= -50) { 
+    bars = 4;
+  } else if (rssi < -50 & rssi >= -65) {
+    bars = 3;
+  } else if (rssi < -65 & rssi >= -75) {
+    bars = 2;
+  } else if (rssi < -75 & rssi >= -80) {
+    bars = 1;
+  } else {
+    bars = 0;
+  }
+}
+
+/********************************************************
     Timer 1 - ISR für PID Berechnung und Heizrelais-Ausgabe
 ******************************************************/
 void ICACHE_RAM_ATTR onTimer1ISR() {
@@ -804,14 +721,6 @@ void setup() {
   digitalWrite(pinRelayPumpe, relayOFF);
   digitalWrite(pinRelayHeater, LOW);
 
-
-  if (Display == 1) {
-    /********************************************************
-      DISPLAY Intern
-    ******************************************************/
-    u8x8.begin();
-    u8x8.setPowerSave(0);
-  }
   if (Display == 2) {
     /********************************************************
       DISPLAY 128x64
@@ -950,7 +859,6 @@ void setup() {
   ******************************************************/
   if (ota && Offlinemodus == 0 ) {
     //wifi connection is done during blynk connection
-
     ArduinoOTA.setHostname(OTAhost);  //  Device name for OTA
     ArduinoOTA.setPassword(OTApass);  //  Password for OTA
     ArduinoOTA.begin();
@@ -1009,29 +917,28 @@ void setup() {
 }
 
 void loop() {
-
-  ArduinoOTA.handle();  // For OTA
-  // Disable interrupt it OTA is starting, otherwise it will not work
-  ArduinoOTA.onStart([](){
-    timer1_disable();
-    digitalWrite(pinRelayHeater, LOW); //Stop heating
-  });
-  ArduinoOTA.onError([](ota_error_t error) {
-    timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
-  });
-  // Enable interrupts if OTA is finished
-  ArduinoOTA.onEnd([](){
-    timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
-  });
-  
-    if (WiFi.status() == WL_CONNECTED){
-     Blynk.run(); //Do Blynk magic stuff
-     wifiReconnects = 0;
-   } else {
-     checkWifi();
-   }
-  unsigned long startT;
-  unsigned long stopT;
+  if (WiFi.status() == WL_CONNECTED){
+    if (Offlinemodus == 1) return;
+    ArduinoOTA.handle();  // For OTA
+    // Disable interrupt it OTA is starting, otherwise it will not work
+    ArduinoOTA.onStart([](){
+      timer1_disable();
+      digitalWrite(pinRelayHeater, LOW); //Stop heating
+    });
+    ArduinoOTA.onError([](ota_error_t error) {
+      timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+    });
+    // Enable interrupts if OTA is finished
+    ArduinoOTA.onEnd([](){
+      timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+    });
+    
+    Blynk.run(); //Do Blynk magic stuff
+    wifiReconnects = 0;
+  } else {
+    if (Offlinemodus == 1) return;
+    checkWifi();
+  }
 
   refreshTemp();   //read new temperature values
   testEmergencyStop();  // test if Temp is to high
@@ -1048,7 +955,6 @@ void loop() {
   }
 
 
-
   //Sicherheitsabfrage
   if (!sensorError && Input > 0 && !emergencyStop) {
 
@@ -1059,8 +965,8 @@ void loop() {
       } else {
         startKi = 0 ;
       }
-      bPID.SetTunings(startKp, startKi, 0);
-    } else {
+      bPID.SetTunings(startKp, startKi, 0);      
+    } else if(timerBrewdetection == 0) {
       // calc ki, kd
       if (aggTn != 0) {
         aggKi = aggKp / aggTn ;
@@ -1119,19 +1025,6 @@ void loop() {
       display.print("Check Temp. Sensor!");
       display.display();
     }
-    if (Display == 1) {
-      u8x8.setFont(u8x8_font_chroma48medium8_r);  //Ausgabe vom aktuellen Wert im Display
-      u8x8.setCursor(0, 0);
-      u8x8.print("               ");
-      u8x8.setCursor(0, 1);
-      u8x8.print("               ");
-      u8x8.setCursor(0, 2);
-      u8x8.print("               ");
-      u8x8.setCursor(0, 1);
-      u8x8.print("Error: Temp = ");
-      u8x8.setCursor(0, 2);
-      u8x8.print(Input);
-    }
   } else if (emergencyStop){
 
     //Deactivate PID
@@ -1156,19 +1049,6 @@ void loop() {
       display.println(Input);
       display.print("Resume if Temp < 100");
       display.display();
-    }
-    if (Display == 1) {
-      u8x8.setFont(u8x8_font_chroma48medium8_r);  //Ausgabe vom aktuellen Wert im Display
-      u8x8.setCursor(0, 0);
-      u8x8.print("               ");
-      u8x8.setCursor(0, 1);
-      u8x8.print("               ");
-      u8x8.setCursor(0, 2);
-      u8x8.print("               ");
-      u8x8.setCursor(0, 1);
-      u8x8.print("Emergency Stop! T>120");
-      u8x8.setCursor(0, 2);
-      u8x8.print(Input);
     }
   }
 }
