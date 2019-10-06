@@ -1,5 +1,5 @@
 /********************************************************
-  Version 1.1 (28.08.2019)
+  Version 1.2 (06.10.2019)
   Config must be configured by the user
 ******************************************************/
 
@@ -7,18 +7,20 @@
 #define _userConfig_H  
 
 /********************************************************
-   Vorab-Konfig
+   Config
 ******************************************************/
-#define OFFLINEMODUS 0       // 0=Blynk und WLAN wird benötigt 1=OfflineModus (ACHTUNG EINSTELLUNGEN NUR DIREKT IM CODE MÖGLICH)
-#define DISPLAY 2            // 1=U8x8libm, 0=Deaktiviert, 2=Externes 128x64 Display
-#define ONLYPID 1            // 1=Nur PID ohne Preinfussion, 0=PID + Preinfussion
-#define TEMPSENSOR 2         // 1=DS19B20; 2=TSIC306
-#define BREWDETECTION 1      // 0 = off ,1 = Software, 2 = Hardware
-#define FALLBACK 1           // 1: fallback auf eeprom Werte, wenn blynk nicht geht 0: deaktiviert
+#define OFFLINEMODUS 0       // 0 = Blynk and WIFI are used; 1 = offline mode (only preconfigured values in code are used!)
+#define DISPLAY 2            // 0 = deactivated; 2 = External 128x64 Display
+#define ONLYPID 1            // 1 = Only PID, no preinfusion; 0 = PID and preinfusion
+#define TEMPSENSOR 2         // 1 = DS19B20; 2 = TSIC306
+#define BREWDETECTION 1      // 0 = off; 1 = Software; 2 = Hardware
+#define FALLBACK 1           // 1 = fallback to values stored in eeprom, if blynk is not working; 0 = deactivated
 #define TRIGGERTYPE HIGH     // LOW = low trigger, HIGH = high trigger relay
-#define OTA true             // true=activate update via OTA
-#define PONE 1               // 1 = P_ON_E (normal), 0 = P_ON_M (spezieller PID Modus, ACHTUNG andere Formel zur Berechnung)
-#define GRAFANA 1           // 1=Markus grafana Visualisierung. Zugang notwendig, 0=default, aus
+#define OTA true             // true = activate update via OTA
+#define PONE 1               // 1 = P_ON_E (default), 0 = P_ON_M (special PID mode, other PID-parameter are needed)
+#define GRAFANA 0            // 1 = grafana visualisation. Access required, 0 = off (default)
+#define WIFICINNECTIONDELAY 10000 // delay between reconnects in ms
+#define MAXWIFIRECONNECTS 5  // maximum number of reconnects; use -1 to set to maximum ("deactivated")
 
 // Wifi
 #define AUTH "blynkauthcode"
