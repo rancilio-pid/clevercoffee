@@ -34,6 +34,9 @@
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
 
+//Libraries for MQTT
+#include <PubSubClient.h>
+
 #include "userConfig.h" // needs to be configured by the user
 //#include "Arduino.h"
 #include <EEPROM.h>
@@ -72,6 +75,19 @@ const char* OTApass = OTAPASS;
 //Blynk
 const char* blynkaddress = BLYNKADDRESS;
 const int blynkport = BLYNKPORT;
+
+// MQTT
+const int mqtt_enable = MQTT_ENABLE;
+const char* mqtt_server_ip = MQTT_SERVER_IP;
+const int mqtt_server_port = MQTT_SERVER_PORT;
+const char* mqtt_username = MQTT_USERNAME;
+const char* mqtt_password = MQTT_PASSWORD;
+unsigned int mqtt_lastReconnectAttemptTime = 0;
+unsigned int mqtt_reconnectAttempts = 0;
+unsigned int mqtt_reconnect_incremental_backoff = 10000 ; //add 10sec to reconnect time after each connect-failure.
+unsigned int mqtt_max_incremental_backoff = 5 ; // At most backoff <mqtt_max_incremenatl_backoff>+1 times (<mqtt_reconnect_incremental_backoff>ms): 60sec
+WiFiClient espClient;
+PubSubClient mqtt_client(espClient);
 
 /********************************************************
    Vorab-Konfig
@@ -487,7 +503,7 @@ void refreshTemp() {
     unsigned long millis_elapsed = currentMillistemp - previousMillistemp ;
     if ( floor(millis_elapsed / intervaltempmestsic) >= 2) // TODO: notify if it is blocked too much // remove hard-coded
     {
-      sprintf(debugline, "WARN: System hang occured. Number of temp polls missed=%f, millis_elapsed=%f", floor(millis_elapsed / intervaltempmestsic) -1, millis_elapsed);
+      sprintf(debugline, "WARN: Temporary main loop() hang. Number of temp polls missed=%g, millis_elapsed=%lu", floor(millis_elapsed / intervaltempmestsic) -1, millis_elapsed);
       DEBUG_println(debugline);
     }
     if (millis_elapsed >= intervaltempmestsic)
@@ -779,6 +795,7 @@ void ICACHE_RAM_ATTR onTimer1ISR() {
     isrCounter = 0;  // Attention: heater might not shutdown if bPid.SetSampleTime(), windowSize, timer1_write() and are not set correctly!
     sprintf(debugline, "INFO: bPID.Compute(): Output=%f, InputTemp=%f, DiffTemp=%f, isrCounter=%u", Output, Input, (Input - setPoint), isrCounter);
     DEBUG_println(debugline);
+    mqtt_client.publish("test/out", debugline); //TODO build json object and use correct configurable topic
   }
 
   // activate/deactivate heater
@@ -813,6 +830,31 @@ void ICACHE_RAM_ATTR onTimer1ISR() {
   if (isrCounter <= windowSize) {
     isrCounter += 10; // += 10 because one tick = 10ms
   }
+}
+
+boolean mqtt_reconnect() {
+  espClient.setTimeout(2000); // set timeout for mqtt connect()/write() to 2 seconds (default 5 seconds).
+  if (mqtt_client.connect(hostname, mqtt_username, mqtt_password, "test/will", 0, 0, "unexpected exit")) {
+    DEBUG_println("INFO: Connected to mqtt server");
+    mqtt_client.publish("test/out","hello world");
+    mqtt_client.subscribe("test/in");
+  } else {
+    sprintf(debugline,"INFO: Cannot connect to mqtt server (consecutive failures=#%u)", mqtt_reconnectAttempts);
+    DEBUG_println(debugline);
+  }
+  return mqtt_client.connected();
+}
+
+void mqtt_callback(char* topic, byte* payload, unsigned int length) {
+  DEBUG_print("Message arrived [");
+  DEBUG_print(topic);
+  DEBUG_print("] ");
+  for (int i = 0; i < length; i++) {
+    DEBUG_print((char)payload[i]);
+  }
+  DEBUG_println();
+  // business logic to activate rancilio function from external
+  // TODO
 }
 
 void setup() {
@@ -941,10 +983,12 @@ void setup() {
           EEPROM.commit();
         }
       }
+
       if (WiFi.status() != WL_CONNECTED || Blynk.connected() != true) {
         displaymessage("Begin Fallback,", "No Blynk/Wifi");
         delay(2000);
         DEBUG_println("Start offline mode with eeprom values, no wifi or blynk :(");
+        //TODO: Show this state somehow. eg blinking LED?
         Offlinemodus = 1 ;
         // eeprom öffnen
         EEPROM.begin(1024);
@@ -977,6 +1021,12 @@ void setup() {
         }
         // eeeprom schließen
         EEPROM.commit();
+      }
+
+      // Connect to MQTT-Service (only if WIFI and Blynk are working)
+      if (Offlinemodus == 0 && mqtt_enable) {
+        mqtt_client.setServer(mqtt_server_ip, mqtt_server_port);
+        mqtt_client.setCallback(mqtt_callback);
       }
     }
   }
@@ -1069,6 +1119,26 @@ void loop() {
   if (WiFi.status() == WL_CONNECTED){
     Blynk.run(); //Do Blynk magic stuff
     wifiReconnects = 0;
+
+    //Check mqtt connection
+    if (!mqtt_client.connected()) {
+      long now = millis();
+
+      if (now - mqtt_lastReconnectAttemptTime > (mqtt_reconnect_incremental_backoff * (mqtt_reconnectAttempts+1)) ) {
+        mqtt_lastReconnectAttemptTime = now;
+        // Attempt to reconnect
+        if (mqtt_reconnect()) {
+          mqtt_lastReconnectAttemptTime = 0;
+          mqtt_reconnectAttempts = 0;
+        } else if (mqtt_reconnectAttempts < mqtt_max_incremental_backoff) {
+          mqtt_reconnectAttempts++;
+        }
+      }
+    } else {
+      // mqtt client connected, do mqtt housekeeping
+      mqtt_client.loop();
+    }
+
   } else {
     checkWifi();
   }

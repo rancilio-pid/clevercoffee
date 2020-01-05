@@ -11,3 +11,5 @@
 - Feature: (Optional) add support for messenger telegram?
 - Feature: Perhaps add an LED which shows when the ideal temperature is reached (?)
 
+# TODO Tests
+- Test if OFFLINEMODUS=1 really reads pid settings from EPPROM
