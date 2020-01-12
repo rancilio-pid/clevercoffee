@@ -82,10 +82,19 @@ const char* mqtt_server_ip = MQTT_SERVER_IP;
 const int mqtt_server_port = MQTT_SERVER_PORT;
 const char* mqtt_username = MQTT_USERNAME;
 const char* mqtt_password = MQTT_PASSWORD;
+const char* mqtt_topic_prefix = MQTT_TOPIC_PREFIX;
+unsigned int mqtt_dontPublishUntilTime = 0;
+unsigned int mqtt_dontPublishBackoffTime = 10000; // dont publish if there are errors for 10 seconds
 unsigned int mqtt_lastReconnectAttemptTime = 0;
 unsigned int mqtt_reconnectAttempts = 0;
 unsigned int mqtt_reconnect_incremental_backoff = 10000 ; //add 10sec to reconnect time after each connect-failure.
 unsigned int mqtt_max_incremental_backoff = 5 ; // At most backoff <mqtt_max_incremenatl_backoff>+1 times (<mqtt_reconnect_incremental_backoff>ms): 60sec
+char topic_will[256];
+snprintf(topic_will, sizeof(topic_will), "%s%s/%s", mqtt_topic_prefix, hostname, "will");
+//char topic_events[256];
+//snprintf(topic_events, sizeof(topic_events), "%s%s/%s", mqtt_topic_prefix, hostname, "events");
+char topic_set[256];
+snprintf(topic_set, sizeof(topic_set), "%s%s/%s", mqtt_topic_prefix, hostname, "set");
 WiFiClient espClient;
 PubSubClient mqtt_client(espClient);
 
@@ -199,7 +208,7 @@ const long intervaltempmestsic = 400 ;
 const long intervaltempmesds18b20 = 400  ;
 int pidMode = 1; //1 = Automatic, 0 = Manual
 
-const unsigned int windowSize = 1000; // TODO: PID is evaluated evey second. But why are we then measuring sensors every 400ms?
+const unsigned int windowSize = 1000; // TODO: PID is evaluated every second. But why are we then measuring sensors every 400ms?
 unsigned int isrCounter = 0;  // counter for ISR
 unsigned long windowStartTime;
 double Input, Output, setPointTemp;  //
@@ -350,6 +359,102 @@ BLYNK_WRITE(V34) {
 
 
 /********************************************************
+  MQTT
+*****************************************************/
+
+char* number2string(double in) {
+  char ret[22];
+  snprintf(ret, sizeof(ret), "%0.2f", in);
+  return ret;
+}
+
+char* number2string(float in) {
+  char ret[22];
+  snprintf(ret, sizeof(ret), "%0.2f", in);
+  return ret;
+}
+
+char* number2string(int in) {
+  char ret[22];
+  snprintf(ret, sizeof(ret), "%d", in);
+  return ret;
+}
+
+char* number2string(unsigned int in) {
+  char ret[22];
+  snprintf(ret, sizeof(ret), "%u", in);
+  return ret;
+}
+
+//void float2Bytes(float float_variable, byte bytes_temp[4]){ 
+//  memcpy(bytes_temp, (unsigned char*) (&float_variable), 4);
+//}
+
+//void double2Bytes(double double_variable, byte bytes_temp[sizeof(double)]){
+//  memcpy(bytes_temp, (unsigned char*) (&double_variable), sizeof(double));
+//}
+
+char* mqtt_build_topic(char* reading) {
+  char* topic = (char *) malloc(sizeof(char) * 256);
+  snprintf(topic, sizeof(topic), "%s%s/%s", mqtt_topic_prefix, hostname, reading);
+  return topic;
+}
+
+boolean mqtt_reconnect() {
+  espClient.setTimeout(2000); // set timeout for mqtt connect()/write() to 2 seconds (default 5 seconds).
+  if (mqtt_client.connect(hostname, mqtt_username, mqtt_password, topic_will, 0, 0, "unexpected exit")) {
+    DEBUG_println("INFO: Connected to mqtt server");
+    mqtt_publish("events", "connected");
+    mqtt_client.subscribe(topic_set);
+  } else {
+    snprintf(debugline, sizeof(debugline), "WARN: Cannot connect to mqtt server (consecutive failures=#%u)", mqtt_reconnectAttempts);
+    DEBUG_println(debugline);
+  }
+  return mqtt_client.connected();
+}
+
+void mqtt_callback(char* topic, byte* payload, unsigned int length) {
+  DEBUG_print("Message arrived [");
+  DEBUG_print(topic);
+  DEBUG_print("] ");
+  for (int i = 0; i < length; i++) {
+    DEBUG_print((char)payload[i]);
+  }
+  DEBUG_println();
+  // OPTIONAL TODO: business logic to activate rancilio functions from external (eg brewing, PidOn, startup, PID parameters,..)
+}
+
+boolean mqtt_publish(char* reading, char* payload )
+  const int MQTT_MAX_SIZE = 120; //see https://github.com/knolleary/pubsubclient/blob/master/src/PubSubClient.cpp
+  const boolean retained = false; //TODO true
+  char topic[MQTT_MAX_SIZE];
+  if (!mqtt_client.connected()) return false;
+  snprintf(topic, sizeof(topic), "%s%s/%s", mqtt_topic_prefix, hostname, reading);
+  if (strlen(topic) + strlen(payload) >= MQTT_MAX_SIZE) { //TODO test this code block later
+    snprintf(debugline, sizeof(debugline), "WARN: mqtt_publish() wants to send to much data (len=%u)", strlen(topic) + strlen(payload));
+    DEBUG_println(debugline);
+    return false;
+  } else {
+    unsigned long currentMillis = millis();
+    if (currentMillis() > mqtt_dontPublishUntilTime) {
+      boolean ret = mqtt_client.publish(topic, payload, retained);
+      if (ret == false) { //TODO test this code block later (faking an error, eg millis <30000?)
+        mqtt_dontPublishUntilTime = millis() + mqtt_dontPublishBackoffTime;
+        snprintf(debugline, sizeof(debugline), "WARN: mqtt_publish() error on publish. Dont publish the next %ul milliseconds", mqtt_dontPublishBackoffTime);
+        DEBUG_println(debugline);
+      }
+      return ret;
+    } else { //TODO test this code block later (faking an error)
+      snprintf(debugline, sizeof(debugline), "WARN: mqtt_publish() wont publish data (still for the next %ul milliseconds)", mqtt_dontPublishUntilTime - currentMillis);
+      DEBUG_println(debugline);
+      return false;
+    }
+
+  }
+}
+
+
+/********************************************************
   Notstop wenn Temp zu hoch
 *****************************************************/
 void testEmergencyStop(){
@@ -454,7 +559,7 @@ boolean checkSensor(float tempInput) {
   if ( ( tempInput < 0 || tempInput > 150 || abs(tempInput - previousInput) > 25) && !sensorError) {
     error++;
     sensorOK = false;
-    sprintf(debugline, "WARN: temperature sensor reading: consec_errors=%d, temp_current=%f, temp_prev=%f", error, tempInput, previousInput);
+    snprintf(debugline, sizeof(debugline), "WARN: temperature sensor reading: consec_errors=%d, temp_current=%f, temp_prev=%f", error, tempInput, previousInput);
     DEBUG_println(debugline);
   } else if (tempInput > 0) {
     error = 0;
@@ -462,7 +567,7 @@ boolean checkSensor(float tempInput) {
   }
   if (error >= maxErrorCounter && !sensorError) {
     sensorError = true ;
-    sprintf(debugline, "ERROR: temperature sensor malfunction: temp_current=%f, temp_prev=%f", tempInput, previousInput);
+    snprintf(debugline, sizeof(debugline), "ERROR: temperature sensor malfunction: temp_current=%f, temp_prev=%f", tempInput, previousInput);
     DEBUG_println(debugline);
     //TODO add external notify (eg telegram) . see below for better place to code
   } else if (error == 0 && TempSensorRecovery == 1) { //Safe-guard: prefer to stop heating forever if sensor is flapping!
@@ -501,9 +606,9 @@ void refreshTemp() {
   if (TempSensor == 2)
   {
     unsigned long millis_elapsed = currentMillistemp - previousMillistemp ;
-    if ( floor(millis_elapsed / intervaltempmestsic) >= 2) // TODO: notify if it is blocked too much // remove hard-coded
+    if ( floor(millis_elapsed / intervaltempmestsic) >= 2) // TODO: notify if it is blocked too much and/or set emergencystop // remove hard-coded and generalize to all sensors.
     {
-      sprintf(debugline, "WARN: Temporary main loop() hang. Number of temp polls missed=%g, millis_elapsed=%lu", floor(millis_elapsed / intervaltempmestsic) -1, millis_elapsed);
+      snprintf(debugline, sizeof(debugline), "WARN: Temporary main loop() hang. Number of temp polls missed=%g, millis_elapsed=%lu", floor(millis_elapsed / intervaltempmestsic) -1, millis_elapsed);
       DEBUG_println(debugline);
     }
     if (millis_elapsed >= intervaltempmestsic)
@@ -787,15 +892,20 @@ void brewdetection() {
 /********************************************************
     Timer 1 - ISR für PID Berechnung und Heizrelais-Ausgabe
 ******************************************************/
-void ICACHE_RAM_ATTR onTimer1ISR() {
+void ICACHE_RAM_ATTR w() {
   timer1_write(50000); // set interrupt time to 10ms
 
+  //TODO: emergency function has to be additionally added in here! We dont want to enable heater when there is an error.
   //run PID calculation
   if ( bPID.Compute() ) {
     isrCounter = 0;  // Attention: heater might not shutdown if bPid.SetSampleTime(), windowSize, timer1_write() and are not set correctly!
-    sprintf(debugline, "INFO: bPID.Compute(): Output=%f, InputTemp=%f, DiffTemp=%f, isrCounter=%u", Output, Input, (Input - setPoint), isrCounter);
+    snprintf(debugline, sizeof(debugline), "INFO: bPID.Compute(): Output=%f, InputTemp=%f, DiffTemp=%f, isrCounter=%u", Output, Input, (Input - setPoint), isrCounter);
     DEBUG_println(debugline);
-    mqtt_client.publish("test/out", debugline); //TODO build json object and use correct configurable topic
+    //mqtt_publish("temperature", number2string(Input));
+    //mqtt_publish("pidOutput", number2string(Output));
+    //mqtt_publish("temperatureDiff", number2string((Input - setPoint))); 
+  } else {
+    Output = 0;
   }
 
   // activate/deactivate heater
@@ -822,7 +932,7 @@ void ICACHE_RAM_ATTR onTimer1ISR() {
 
   //int pinRelayHeater_status = digitalRead(pinRelayHeater);
   if ( pinRelayHeater_status != pinRelayHeater_status_prev) {
-    sprintf(debugline, "INFO: onTimer1ISR(): New pinRelayHeater_status=%u, isrCounter=%u", pinRelayHeater_status, isrCounter);
+    snprintf(debugline, sizeof(debugline), "INFO: onTimer1ISR(): New pinRelayHeater_status=%u, isrCounter=%u", pinRelayHeater_status, isrCounter);
     DEBUG_println(debugline);
   }
 
@@ -830,31 +940,6 @@ void ICACHE_RAM_ATTR onTimer1ISR() {
   if (isrCounter <= windowSize) {
     isrCounter += 10; // += 10 because one tick = 10ms
   }
-}
-
-boolean mqtt_reconnect() {
-  espClient.setTimeout(2000); // set timeout for mqtt connect()/write() to 2 seconds (default 5 seconds).
-  if (mqtt_client.connect(hostname, mqtt_username, mqtt_password, "test/will", 0, 0, "unexpected exit")) {
-    DEBUG_println("INFO: Connected to mqtt server");
-    mqtt_client.publish("test/out","hello world");
-    mqtt_client.subscribe("test/in");
-  } else {
-    sprintf(debugline,"INFO: Cannot connect to mqtt server (consecutive failures=#%u)", mqtt_reconnectAttempts);
-    DEBUG_println(debugline);
-  }
-  return mqtt_client.connected();
-}
-
-void mqtt_callback(char* topic, byte* payload, unsigned int length) {
-  DEBUG_print("Message arrived [");
-  DEBUG_print(topic);
-  DEBUG_print("] ");
-  for (int i = 0; i < length; i++) {
-    DEBUG_print((char)payload[i]);
-  }
-  DEBUG_println();
-  // business logic to activate rancilio function from external
-  // TODO
 }
 
 void setup() {
@@ -1135,6 +1220,9 @@ void loop() {
         }
       }
     } else {
+      mqtt_publish("temperature", number2string(Input));
+      mqtt_publish("pidOutput", number2string(Output));
+      mqtt_publish("temperatureDiff", number2string((Input - setPoint))); 
       // mqtt client connected, do mqtt housekeeping
       mqtt_client.loop();
     }
@@ -1195,8 +1283,8 @@ void loop() {
       }
       aggbKd = aggbTv * aggbKp ;
       bPID.SetTunings(aggbKp, aggbKi, aggbKd) ;
-      if(OnlyPID == 1){
-      bezugsZeit= millis() - timeBrewdetection ;
+      if (OnlyPID == 1){
+        bezugsZeit = millis() - timeBrewdetection ;
       }
     }
 

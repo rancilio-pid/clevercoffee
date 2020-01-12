@@ -13,3 +13,4 @@
 
 # TODO Tests
 - Test if OFFLINEMODUS=1 really reads pid settings from EPPROM
+- Add EmergecyStop logic into ISR as safe-guard. useful?
