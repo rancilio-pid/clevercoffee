@@ -77,24 +77,25 @@ const char* blynkaddress = BLYNKADDRESS;
 const int blynkport = BLYNKPORT;
 
 // MQTT
+const int MQTT_MAX_PUBLISH_SIZE = 120; //see https://github.com/knolleary/pubsubclient/blob/master/src/PubSubClient.cpp
 const int mqtt_enable = MQTT_ENABLE;
 const char* mqtt_server_ip = MQTT_SERVER_IP;
 const int mqtt_server_port = MQTT_SERVER_PORT;
 const char* mqtt_username = MQTT_USERNAME;
 const char* mqtt_password = MQTT_PASSWORD;
 const char* mqtt_topic_prefix = MQTT_TOPIC_PREFIX;
-unsigned int mqtt_dontPublishUntilTime = 0;
-unsigned int mqtt_dontPublishBackoffTime = 10000; // dont publish if there are errors for 10 seconds
-unsigned int mqtt_lastReconnectAttemptTime = 0;
-unsigned int mqtt_reconnectAttempts = 0;
-unsigned int mqtt_reconnect_incremental_backoff = 10000 ; //add 10sec to reconnect time after each connect-failure.
-unsigned int mqtt_max_incremental_backoff = 5 ; // At most backoff <mqtt_max_incremenatl_backoff>+1 times (<mqtt_reconnect_incremental_backoff>ms): 60sec
 char topic_will[256];
-snprintf(topic_will, sizeof(topic_will), "%s%s/%s", mqtt_topic_prefix, hostname, "will");
-//char topic_events[256];
-//snprintf(topic_events, sizeof(topic_events), "%s%s/%s", mqtt_topic_prefix, hostname, "events");
 char topic_set[256];
-snprintf(topic_set, sizeof(topic_set), "%s%s/%s", mqtt_topic_prefix, hostname, "set");
+unsigned long lastMQTTStatusReportTime = 0;
+unsigned long lastMQTTStatusReportInterval = 1000; //mqtt send status-report every 1 second
+const boolean mqtt_flag_retained = false; //TODO true
+unsigned long mqtt_dontPublishUntilTime = 0;
+unsigned long mqtt_dontPublishBackoffTime = 10000; // Failsafe: dont publish if there are errors for 10 seconds
+unsigned long mqtt_lastReconnectAttemptTime = 0;
+unsigned int mqtt_reconnectAttempts = 0;
+unsigned long mqtt_reconnect_incremental_backoff = 10000 ; //Failsafe: add 10sec to reconnect time after each connect-failure.
+unsigned int mqtt_max_incremental_backoff = 5 ; // At most backoff <mqtt_max_incremenatl_backoff>+1 times (<mqtt_reconnect_incremental_backoff>ms): 60sec
+
 WiFiClient espClient;
 PubSubClient mqtt_client(espClient);
 
@@ -400,6 +401,32 @@ char* mqtt_build_topic(char* reading) {
   return topic;
 }
 
+boolean mqtt_publish(char* reading, char* payload) {
+  char topic[MQTT_MAX_PUBLISH_SIZE];
+  if (!mqtt_client.connected()) return false;
+  snprintf(topic, MQTT_MAX_PUBLISH_SIZE, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
+  if (strlen(topic) + strlen(payload) >= MQTT_MAX_PUBLISH_SIZE) { //TODO test this code block later
+    snprintf(debugline, sizeof(debugline), "WARN: mqtt_publish() wants to send to much data (len=%u)", strlen(topic) + strlen(payload));
+    DEBUG_println(debugline);
+    return false;
+  } else {
+    unsigned long currentMillis = millis();
+    if (currentMillis > mqtt_dontPublishUntilTime) {
+      boolean ret = mqtt_client.publish(topic, payload, mqtt_flag_retained);
+      if (ret == false) { //TODO test this code block later (faking an error, eg millis <30000?)
+        mqtt_dontPublishUntilTime = millis() + mqtt_dontPublishBackoffTime;
+        snprintf(debugline, sizeof(debugline), "WARN: mqtt_publish() error on publish. Dont publish the next %ul milliseconds", mqtt_dontPublishBackoffTime);
+        DEBUG_println(debugline);
+      }
+      return ret;
+    } else { //TODO test this code block later (faking an error)
+      snprintf(debugline, sizeof(debugline), "WARN: mqtt_publish() wont publish data (still for the next %ul milliseconds)", mqtt_dontPublishUntilTime - currentMillis);
+      DEBUG_println(debugline);
+      return false;
+    }
+  }
+}
+
 boolean mqtt_reconnect() {
   espClient.setTimeout(2000); // set timeout for mqtt connect()/write() to 2 seconds (default 5 seconds).
   if (mqtt_client.connect(hostname, mqtt_username, mqtt_password, topic_will, 0, 0, "unexpected exit")) {
@@ -424,42 +451,15 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   // OPTIONAL TODO: business logic to activate rancilio functions from external (eg brewing, PidOn, startup, PID parameters,..)
 }
 
-boolean mqtt_publish(char* reading, char* payload )
-  const int MQTT_MAX_SIZE = 120; //see https://github.com/knolleary/pubsubclient/blob/master/src/PubSubClient.cpp
-  const boolean retained = false; //TODO true
-  char topic[MQTT_MAX_SIZE];
-  if (!mqtt_client.connected()) return false;
-  snprintf(topic, sizeof(topic), "%s%s/%s", mqtt_topic_prefix, hostname, reading);
-  if (strlen(topic) + strlen(payload) >= MQTT_MAX_SIZE) { //TODO test this code block later
-    snprintf(debugline, sizeof(debugline), "WARN: mqtt_publish() wants to send to much data (len=%u)", strlen(topic) + strlen(payload));
-    DEBUG_println(debugline);
-    return false;
-  } else {
-    unsigned long currentMillis = millis();
-    if (currentMillis() > mqtt_dontPublishUntilTime) {
-      boolean ret = mqtt_client.publish(topic, payload, retained);
-      if (ret == false) { //TODO test this code block later (faking an error, eg millis <30000?)
-        mqtt_dontPublishUntilTime = millis() + mqtt_dontPublishBackoffTime;
-        snprintf(debugline, sizeof(debugline), "WARN: mqtt_publish() error on publish. Dont publish the next %ul milliseconds", mqtt_dontPublishBackoffTime);
-        DEBUG_println(debugline);
-      }
-      return ret;
-    } else { //TODO test this code block later (faking an error)
-      snprintf(debugline, sizeof(debugline), "WARN: mqtt_publish() wont publish data (still for the next %ul milliseconds)", mqtt_dontPublishUntilTime - currentMillis);
-      DEBUG_println(debugline);
-      return false;
-    }
-
-  }
-}
-
-
 /********************************************************
   Notstop wenn Temp zu hoch
 *****************************************************/
 void testEmergencyStop(){
   if (Input > 120){
     emergencyStop = true;
+    snprintf(debugline, sizeof(debugline), "ERROR: EmergencyStop because temperature>120 (temperature=%0.2f)", Input);
+    DEBUG_println(debugline);
+    mqtt_publish("events", debugline);
   } else if (Input < 100) {
     emergencyStop = false;
   }
@@ -559,7 +559,7 @@ boolean checkSensor(float tempInput) {
   if ( ( tempInput < 0 || tempInput > 150 || abs(tempInput - previousInput) > 25) && !sensorError) {
     error++;
     sensorOK = false;
-    snprintf(debugline, sizeof(debugline), "WARN: temperature sensor reading: consec_errors=%d, temp_current=%f, temp_prev=%f", error, tempInput, previousInput);
+    snprintf(debugline, sizeof(debugline), "WARN: temperature sensor reading: consec_errors=%d, temp_current=%0.2f, temp_prev=%0.2f", error, tempInput, previousInput);
     DEBUG_println(debugline);
   } else if (tempInput > 0) {
     error = 0;
@@ -567,9 +567,9 @@ boolean checkSensor(float tempInput) {
   }
   if (error >= maxErrorCounter && !sensorError) {
     sensorError = true ;
-    snprintf(debugline, sizeof(debugline), "ERROR: temperature sensor malfunction: temp_current=%f, temp_prev=%f", tempInput, previousInput);
+    snprintf(debugline, sizeof(debugline), "ERROR: temperature sensor malfunction: temp_current=%0.2f, temp_prev=%0.2f", tempInput, previousInput);
     DEBUG_println(debugline);
-    //TODO add external notify (eg telegram) . see below for better place to code
+    mqtt_publish("events", debugline);
   } else if (error == 0 && TempSensorRecovery == 1) { //Safe-guard: prefer to stop heating forever if sensor is flapping!
     sensorError = false ;
   }
@@ -610,6 +610,7 @@ void refreshTemp() {
     {
       snprintf(debugline, sizeof(debugline), "WARN: Temporary main loop() hang. Number of temp polls missed=%g, millis_elapsed=%lu", floor(millis_elapsed / intervaltempmestsic) -1, millis_elapsed);
       DEBUG_println(debugline);
+      mqtt_publish("events", debugline);
     }
     if (millis_elapsed >= intervaltempmestsic)
     {
@@ -892,20 +893,18 @@ void brewdetection() {
 /********************************************************
     Timer 1 - ISR für PID Berechnung und Heizrelais-Ausgabe
 ******************************************************/
-void ICACHE_RAM_ATTR w() {
+void ICACHE_RAM_ATTR onTimer1ISR() {
   timer1_write(50000); // set interrupt time to 10ms
 
   //TODO: emergency function has to be additionally added in here! We dont want to enable heater when there is an error.
   //run PID calculation
   if ( bPID.Compute() ) {
     isrCounter = 0;  // Attention: heater might not shutdown if bPid.SetSampleTime(), windowSize, timer1_write() and are not set correctly!
-    snprintf(debugline, sizeof(debugline), "INFO: bPID.Compute(): Output=%f, InputTemp=%f, DiffTemp=%f, isrCounter=%u", Output, Input, (Input - setPoint), isrCounter);
+    snprintf(debugline, sizeof(debugline), "INFO: bPID.Compute(): Output=%0.2f, InputTemp=%0.2f, DiffTemp=%0.2f, isrCounter=%u", Output, Input, (Input - setPoint), isrCounter);
     DEBUG_println(debugline);
     //mqtt_publish("temperature", number2string(Input));
     //mqtt_publish("pidOutput", number2string(Output));
     //mqtt_publish("temperatureDiff", number2string((Input - setPoint))); 
-  } else {
-    Output = 0;
   }
 
   // activate/deactivate heater
@@ -1110,6 +1109,8 @@ void setup() {
 
       // Connect to MQTT-Service (only if WIFI and Blynk are working)
       if (Offlinemodus == 0 && mqtt_enable) {
+        snprintf(topic_will, sizeof(topic_will), "%s%s/%s", mqtt_topic_prefix, hostname, "will");
+        snprintf(topic_set, sizeof(topic_set), "%s%s/%s", mqtt_topic_prefix, hostname, "set");
         mqtt_client.setServer(mqtt_server_ip, mqtt_server_port);
         mqtt_client.setCallback(mqtt_callback);
       }
@@ -1200,15 +1201,14 @@ void loop() {
   ArduinoOTA.onEnd([](){
     timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
   });
-  
+ 
   if (WiFi.status() == WL_CONNECTED){
+ 
     Blynk.run(); //Do Blynk magic stuff
     wifiReconnects = 0;
-
     //Check mqtt connection
     if (!mqtt_client.connected()) {
-      long now = millis();
-
+      unsigned long now = millis();
       if (now - mqtt_lastReconnectAttemptTime > (mqtt_reconnect_incremental_backoff * (mqtt_reconnectAttempts+1)) ) {
         mqtt_lastReconnectAttemptTime = now;
         // Attempt to reconnect
@@ -1220,13 +1220,16 @@ void loop() {
         }
       }
     } else {
-      mqtt_publish("temperature", number2string(Input));
-      mqtt_publish("pidOutput", number2string(Output));
-      mqtt_publish("temperatureDiff", number2string((Input - setPoint))); 
       // mqtt client connected, do mqtt housekeeping
       mqtt_client.loop();
+      unsigned long now = millis();
+      if (now - lastMQTTStatusReportTime >= lastMQTTStatusReportInterval) {
+        lastMQTTStatusReportTime = now;
+        mqtt_publish("temperature", number2string(Input));
+        mqtt_publish("temperatureDiff", number2string((Input - setPoint)));
+        mqtt_publish("pidOutput", number2string(Output));
+      }
     }
-
   } else {
     checkWifi();
   }
