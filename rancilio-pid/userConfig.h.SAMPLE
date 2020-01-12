@@ -14,7 +14,7 @@
 #define ONLYPID 1            // 1=Nur PID ohne Preinfussion, 0=PID + Preinfussion
 #define TEMPSENSOR 2         // 1=DS19B20; 2=TSIC306
 #define TEMPSENSORRECOVERY 1 // 1 = on (default), 2= off. If off, temp sensor errors will stop the brewer until power cycle
-#define HEATERPREVENTFLAPPING -1 // -1 = off (default), else time-window[ms] in which the heater should never be activated and deactivated (vice versa). Must be <windowSize (1000ms). Recommended value 100.
+#define HEATERPREVENTFLAPPING -1 // ATTENTION - TEST FEATURE: -1 = off (default), else time-window[ms] in which the heater should never be activated and deactivated (vice versa). Must be <windowSize (1000ms). Recommended value 100.
 #define BREWDETECTION 1      // 0 = off ,1 = Software, 2 = Hardware
 #define FALLBACK 1           // 1: fallback auf eeprom Werte, wenn blynk nicht geht 0: deaktiviert
 #define TRIGGERTYPE HIGH     // LOW = low trigger, HIGH = high trigger relay
