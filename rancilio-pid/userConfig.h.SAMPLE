@@ -13,25 +13,28 @@
 #define DISPLAY 2            // 1=U8x8libm, 0=Deaktiviert, 2=Externes 128x64 Display
 #define ONLYPID 1            // 1=Nur PID ohne Preinfussion, 0=PID + Preinfussion
 #define TEMPSENSOR 2         // 1=DS19B20; 2=TSIC306
+#define TEMPSENSORRECOVERY 1 // 1 = on (default), 2= off. If off, temp sensor errors will stop the brewer until power cycle
+#define HEATERPREVENTFLAPPING -1 // ATTENTION - TEST FEATURE: -1 = off (default), else time-window[ms] in which the heater should never be activated and deactivated (vice versa). Must be <windowSize (1000ms). Recommended value 100.
 #define BREWDETECTION 1      // 0 = off ,1 = Software, 2 = Hardware
 #define FALLBACK 1           // 1: fallback auf eeprom Werte, wenn blynk nicht geht 0: deaktiviert
 #define TRIGGERTYPE HIGH     // LOW = low trigger, HIGH = high trigger relay
 #define OTA true             // true=activate update via OTA
 #define PONE 1               // 1 = P_ON_E (normal), 0 = P_ON_M (spezieller PID Modus, ACHTUNG andere Formel zur Berechnung)
-#define GRAFANA 1           // 1=Markus grafana Visualisierung. Zugang notwendig, 0=default, aus
+#define GRAFANA 0           // 1=Markus grafana Visualisierung. Zugang notwendig, 0=default, aus
 
 // Wifi
+#define HOSTNAME "rancilio"
 #define AUTH "blynkauthcode"
 #define D_SSID "wlanname"
 #define PASS "wlanpass"
 
 // OTA
 #define OTAHOST "Rancilio"   // Name to be shown in ARUDINO IDE Port
-#define OTAPASS "otapass"    // Password for OTA updtates
+#define OTAPASS "otapass"    // Password for OTA updates
 
 #define BLYNKADDRESS "blynk.remoteapp.de"         // IP-Address of used blynk server
 // define BLYNKADDRESS "raspberrypi.local"
-
+#define BLYNKPORT 8080
 
 //PID - Werte für Brüherkennung Offline
 #define AGGBKP 50    // Kp
