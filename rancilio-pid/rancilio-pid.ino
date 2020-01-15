@@ -4,11 +4,11 @@
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
 ******************************************************/
-         
-#include "icon.h"  
+
+#include "icon.h"
 
 // Debug mode is active if #define DEBUGMODE is set
-//#define DEBUGMODE
+#define DEBUGMODE
 
 #ifndef DEBUGMODE
 #define DEBUG_println(a)
@@ -47,6 +47,8 @@ int Offlinemodus = OFFLINEMODUS;
 const int Display = DISPLAY;
 const int OnlyPID = ONLYPID;
 const int TempSensor = TEMPSENSOR;
+const int TempSensorRecovery = TEMPSENSORRECOVERY;
+const int HeaterPreventFlapping = HEATERPREVENTFLAPPING;
 const int Brewdetection = BREWDETECTION;
 const int fallback = FALLBACK;
 const int triggerType = TRIGGERTYPE;
@@ -54,12 +56,13 @@ const boolean ota = OTA;
 const int grafana=GRAFANA;
 
 // Wifi
+const char* hostname = HOSTNAME;
 const char* auth = AUTH;
 const char* ssid = D_SSID;
 const char* pass = PASS;
 
 unsigned long lastWifiConnectionAttempt = millis();
-const unsigned long wifiConnectionDelay = 10000; // try to reconnect every 5 seconds
+const unsigned long wifiConnectionDelay = 10000; // try to reconnect every 10 seconds
 unsigned int wifiReconnects = 0; //number of reconnects
 
 // OTA
@@ -67,8 +70,8 @@ const char* OTAhost = OTAHOST;
 const char* OTApass = OTAPASS;
 
 //Blynk
-const char* blynkaddress  = BLYNKADDRESS;
-
+const char* blynkaddress = BLYNKADDRESS;
+const int blynkport = BLYNKPORT;
 
 /********************************************************
    Vorab-Konfig
@@ -96,6 +99,7 @@ unsigned long  timeBrewdetection = 0 ;
 int timerBrewdetection = 0 ;
 int i = 0;
 int firstreading = 1 ;          // Ini of the field, also used for sensor check
+char debugline[100];
 
 /********************************************************
    PID - Werte Brüherkennung Offline
@@ -137,7 +141,7 @@ unsigned long startZeit = 0;
 ******************************************************/
 boolean sensorError = false;
 int error = 0;
-int maxErrorCounter = 10 ;  //depends on intervaltempmes* , define max seconds for invalid data
+int maxErrorCounter = 10 ;  //define maximum number of consecutive polls (of intervaltempmes* duration) to have errors
 
 
 /********************************************************
@@ -179,7 +183,7 @@ const long intervaltempmestsic = 400 ;
 const long intervaltempmesds18b20 = 400  ;
 int pidMode = 1; //1 = Automatic, 0 = Manual
 
-const unsigned int windowSize = 1000;
+const unsigned int windowSize = 1000; // TODO: PID is evaluated evey second. But why are we then measuring sensors every 400ms?
 unsigned int isrCounter = 0;  // counter for ISR
 unsigned long windowStartTime;
 double Input, Output, setPointTemp;  //
@@ -431,22 +435,21 @@ boolean checkSensor(float tempInput) {
   /********************************************************
     sensor error
   ******************************************************/
-  if ((tempInput < 0 || abs(tempInput - previousInput) > 25) && !sensorError) {
+  if ( ( tempInput < 0 || tempInput > 150 || abs(tempInput - previousInput) > 25) && !sensorError) {
     error++;
     sensorOK = false;
-    DEBUG_print("Error counter: ");
-    DEBUG_println(error);
-    DEBUG_print("temp delta: ");
-    DEBUG_println(tempInput);
+    sprintf(debugline, "WARN: temperature sensor reading: consec_errors=%d, temp_current=%f, temp_prev=%f", error, tempInput, previousInput);
+    DEBUG_println(debugline);
   } else if (tempInput > 0) {
     error = 0;
     sensorOK = true;
   }
   if (error >= maxErrorCounter && !sensorError) {
     sensorError = true ;
-    DEBUG_print("Sensor Error");
-    DEBUG_println(Input);
-  } else if (error == 0) {
+    sprintf(debugline, "ERROR: temperature sensor malfunction: temp_current=%f, temp_prev=%f", tempInput, previousInput);
+    DEBUG_println(debugline);
+    //TODO add external notify (eg telegram) . see below for better place to code
+  } else if (error == 0 && TempSensorRecovery == 1) { //Safe-guard: prefer to stop heating forever if sensor is flapping!
     sensorError = false ;
   }
 
@@ -468,7 +471,7 @@ void refreshTemp() {
   {
     if (currentMillistemp - previousMillistemp >= intervaltempmesds18b20)
     {
-      previousMillistemp += intervaltempmesds18b20;
+      previousMillistemp = currentMillistemp; // prevent race condition after "hang"
       sensors.requestTemperatures();
       if (!checkSensor(sensors.getTempCByIndex(0)) && firstreading == 0) return;  //if sensor data is not valid, abort function
       Input = sensors.getTempCByIndex(0);
@@ -481,15 +484,23 @@ void refreshTemp() {
   }
   if (TempSensor == 2)
   {
-    if (currentMillistemp - previousMillistemp >= intervaltempmestsic)
+    unsigned long millis_elapsed = currentMillistemp - previousMillistemp ;
+    if ( floor(millis_elapsed / intervaltempmestsic) >= 2) // TODO: notify if it is blocked too much // remove hard-coded
     {
-      previousMillistemp += intervaltempmestsic;
+      sprintf(debugline, "WARN: System hang occured. Number of temp polls missed=%f, millis_elapsed=%f", floor(millis_elapsed / intervaltempmestsic) -1, millis_elapsed);
+      DEBUG_println(debugline);
+    }
+    if (millis_elapsed >= intervaltempmestsic)
+    {
+      previousMillistemp = currentMillistemp; // prevent race condition after "hang"
       /*  variable "temperature" must be set to zero, before reading new data
             getTemperature only updates if data is valid, otherwise "temperature" will still hold old values
       */
       temperature = 0;
       Sensor1.getTemperature(&temperature);
+      // temperature must be between 0x000 and 0x7FF(=DEC2047)
       Temperatur_C = Sensor1.calc_Celsius(&temperature);
+      // Temperature_C must be -50C < Temperature_C <= 150C
       if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function
       Input = Temperatur_C;
       // Input = random(50,70) ;// test value
@@ -561,9 +572,10 @@ void brew() {
      if (millis() - lastWifiConnectionAttempt >= wifiConnectionDelay) {
        lastWifiConnectionAttempt = millis();      
        // attempt to connect to Wifi network:
+       WiFi.hostname(hostname);
        WiFi.begin(ssid, pass); 
        delay(5000);    //will not work without delay
-       wifiReconnects++;    
+       wifiReconnects++; 
      }
 
     }
@@ -762,22 +774,45 @@ void brewdetection() {
 void ICACHE_RAM_ATTR onTimer1ISR() {
   timer1_write(50000); // set interrupt time to 10ms
 
-  if (Output <= isrCounter) {
-    digitalWrite(pinRelayHeater, LOW);
+  //run PID calculation
+  if ( bPID.Compute() ) {
+    isrCounter = 0;  // Attention: heater might not shutdown if bPid.SetSampleTime(), windowSize, timer1_write() and are not set correctly!
+    sprintf(debugline, "INFO: bPID.Compute(): Output=%f, InputTemp=%f, DiffTemp=%f, isrCounter=%u", Output, Input, (Input - setPoint), isrCounter);
+    DEBUG_println(debugline);
+  }
+
+  // activate/deactivate heater
+  int pinRelayHeater_status_prev = digitalRead(pinRelayHeater); // reading hardware instead relying on global variable
+  int pinRelayHeater_status = 0;
+  if (Output <= HeaterPreventFlapping) {
+    pinRelayHeater_status = 0;
+    //digitalWrite(pinRelayHeater, LOW);
+    //DEBUG_println("Power off (Threshold)!");
+  } else if (Output >= (windowSize - HeaterPreventFlapping) ) {
+    pinRelayHeater_status = 1;
+    //digitalWrite(pinRelayHeater, HIGH);
+    //DEBUG_println("Power on (Threshold)!");
+  } else if (Output <= isrCounter) {
+    pinRelayHeater_status = 0;
+    //digitalWrite(pinRelayHeater, LOW);
     //DEBUG_println("Power off!");
   } else {
-    digitalWrite(pinRelayHeater, HIGH);
+    pinRelayHeater_status = 1;
+    //digitalWrite(pinRelayHeater, HIGH);
     //DEBUG_println("Power on!");
   }
+  digitalWrite(pinRelayHeater, pinRelayHeater_status);
 
-  isrCounter += 10; // += 10 because one tick = 10ms
-  //set PID output as relais commands
-  if (isrCounter > windowSize) {
-    isrCounter = 0;
+  //int pinRelayHeater_status = digitalRead(pinRelayHeater);
+  if ( pinRelayHeater_status != pinRelayHeater_status_prev) {
+    sprintf(debugline, "INFO: onTimer1ISR(): New pinRelayHeater_status=%u, isrCounter=%u", pinRelayHeater_status, isrCounter);
+    DEBUG_println(debugline);
   }
 
-  //run PID calculation
-  bPID.Compute();
+  //increase counter until fail-safe is reached
+  if (isrCounter <= windowSize) {
+    isrCounter += 10; // += 10 because one tick = 10ms
+  }
 }
 
 void setup() {
@@ -828,10 +863,11 @@ void setup() {
   ******************************************************/
   if (Offlinemodus == 0) {
 
+    WiFi.hostname(hostname);
     if (fallback == 0) {
 
       displaymessage("Connect to Blynk", "no Fallback");
-      Blynk.begin(auth, ssid, pass, blynkaddress, 8080);
+      Blynk.begin(auth, ssid, pass, blynkaddress, blynkport);
     }
 
     if (fallback == 1) {
@@ -859,7 +895,7 @@ void setup() {
         displaymessage("2: Wifi connected, ", "try Blynk   ");
         DEBUG_println("Wifi works, now try Blynk connection");
         delay(2000);
-        Blynk.config(auth, blynkaddress, 8080) ;
+        Blynk.config(auth, blynkaddress, blynkport) ;
         Blynk.connect(30000);
 
         // Blnky works:
@@ -975,8 +1011,14 @@ void setup() {
     sensors.getAddress(sensorDeviceAddress, 0);
     sensors.setResolution(sensorDeviceAddress, 10) ;
     sensors.requestTemperatures();
+    Input = sensors.getTempCByIndex(0);
   }
 
+  if (TempSensor == 2) {
+    temperature = 0;
+    Sensor1.getTemperature(&temperature);
+    Input = Sensor1.calc_Celsius(&temperature);
+  }
   /********************************************************
     movingaverage ini array
   ******************************************************/
@@ -1024,12 +1066,12 @@ void loop() {
     timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
   });
   
-    if (WiFi.status() == WL_CONNECTED){
-     Blynk.run(); //Do Blynk magic stuff
-     wifiReconnects = 0;
-   } else {
-     checkWifi();
-   }
+  if (WiFi.status() == WL_CONNECTED){
+    Blynk.run(); //Do Blynk magic stuff
+    wifiReconnects = 0;
+  } else {
+    checkWifi();
+  }
   unsigned long startT;
   unsigned long stopT;
 
