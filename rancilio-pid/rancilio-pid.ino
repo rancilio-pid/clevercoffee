@@ -98,7 +98,7 @@ unsigned int mqtt_max_incremental_backoff = 5 ; // At most backoff <mqtt_max_inc
 
 WiFiClient espClient;
 PubSubClient mqtt_client(espClient);
-
+ 
 /********************************************************
    Vorab-Konfig
 ******************************************************/
@@ -113,7 +113,7 @@ boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
 const int numReadings = 15;             // number of values per Array
 float readingstemp[numReadings];        // the readings from Temp
 float readingstime[numReadings];        // the readings from time
-float readingchangerate[numReadings];
+float readingchangerate[numReadings];   // DiffTemp (based on readings) Per Second
 
 int readIndex = 1;              // the index of the current reading
 double total = 0;               // the running
@@ -140,8 +140,8 @@ double aggbKi = 0;
 double aggbKi = aggbKp / aggbTn;
 #endif
 double aggbKd = aggbTv * aggbKp ;
-double brewtimersoftware = 45;    // 20-5 for detection
-double brewboarder = 150 ;        // border for the detection,
+double brewtimersoftware = 45;    // 20-5 for detection // after detecting a brew, wait at least this amount of seconds for detecting the next one.
+double brewboarder = 150 ;        // border for the detection // if heater temperature is increased/decreasing by this rate (=diff-Temp / diff-Time), then we detect a brew.
 const int PonE = PONE;
 // be carefull: to low: risk of wrong brew detection
 // and rising temperature
@@ -795,7 +795,8 @@ void printScreen() {
     display.print(bPID.GetKp(), 0); // P 
     display.print("|");
     if (bPID.GetKi() != 0){      
-    display.print(bPID.GetKp() / bPID.GetKi(), 0);;} // I 
+      display.print(bPID.GetKp() / bPID.GetKi(), 0);; // I
+    }
     else
     { 
       display.print("0");
@@ -813,11 +814,11 @@ void printScreen() {
     display.print(bezugsZeit / 1000);
     display.print("/");
     if (ONLYPID == 1){
-    display.println(brewtimersoftware, 0);             // deaktivieren wenn Preinfusion ( // voransetzen )
+      display.println(brewtimersoftware, 0);             // deaktivieren wenn Preinfusion ( // voransetzen )
     }
     else 
     {
-    display.println(totalbrewtime / 1000);            // aktivieren wenn Preinfusion
+      display.println(totalbrewtime / 1000);            // aktivieren wenn Preinfusion
     }
 //draw box
    display.drawRoundRect(0, 0, 128, 64, 1, WHITE);    
@@ -876,7 +877,7 @@ void brewdetection() {
     if (millis() - timeBrewdetection > brewtimersoftware * 1000) {
       timerBrewdetection = 0 ;
         if (OnlyPID == 1) {
-      bezugsZeit = 0 ;
+          bezugsZeit = 0 ;
         }
     }
   }
@@ -886,6 +887,7 @@ void brewdetection() {
       DEBUG_println("SW Brew detected") ;
       timeBrewdetection = millis() ;
       timerBrewdetection = 1 ;
+      mqtt_publish("brew", "1");
     }
   }
 }
@@ -902,19 +904,15 @@ void ICACHE_RAM_ATTR onTimer1ISR() {
     isrCounter = 0;  // Attention: heater might not shutdown if bPid.SetSampleTime(), windowSize, timer1_write() and are not set correctly!
     snprintf(debugline, sizeof(debugline), "INFO: bPID.Compute(): Output=%0.2f, InputTemp=%0.2f, DiffTemp=%0.2f, isrCounter=%u", Output, Input, (Input - setPoint), isrCounter);
     DEBUG_println(debugline);
-    //mqtt_publish("temperature", number2string(Input));
-    //mqtt_publish("pidOutput", number2string(Output));
-    //mqtt_publish("temperatureDiff", number2string((Input - setPoint))); 
   }
 
   // activate/deactivate heater
-  int pinRelayHeater_status_prev = digitalRead(pinRelayHeater); // reading hardware instead relying on global variable
   int pinRelayHeater_status = 0;
   if (Output <= HeaterPreventFlapping) {
     pinRelayHeater_status = 0;
     //digitalWrite(pinRelayHeater, LOW);
     //DEBUG_println("Power off (Threshold)!");
-  } else if (Output >= (windowSize - HeaterPreventFlapping) ) {
+  } else if (Output >= (windowSize - HeaterPreventFlapping) && (windowSize - HeaterPreventFlapping) > 0) {
     pinRelayHeater_status = 1;
     //digitalWrite(pinRelayHeater, HIGH);
     //DEBUG_println("Power on (Threshold)!");
@@ -928,13 +926,6 @@ void ICACHE_RAM_ATTR onTimer1ISR() {
     //DEBUG_println("Power on!");
   }
   digitalWrite(pinRelayHeater, pinRelayHeater_status);
-
-  //int pinRelayHeater_status = digitalRead(pinRelayHeater);
-  if ( pinRelayHeater_status != pinRelayHeater_status_prev) {
-    snprintf(debugline, sizeof(debugline), "INFO: onTimer1ISR(): New pinRelayHeater_status=%u, isrCounter=%u", pinRelayHeater_status, isrCounter);
-    DEBUG_println(debugline);
-  }
-
   //increase counter until fail-safe is reached
   if (isrCounter <= windowSize) {
     isrCounter += 10; // += 10 because one tick = 10ms
@@ -1226,8 +1217,8 @@ void loop() {
       if (now - lastMQTTStatusReportTime >= lastMQTTStatusReportInterval) {
         lastMQTTStatusReportTime = now;
         mqtt_publish("temperature", number2string(Input));
-        mqtt_publish("temperatureDiff", number2string((Input - setPoint)));
-        mqtt_publish("pidOutput", number2string(Output));
+        mqtt_publish("temperatureBelowTarget", number2string((setPoint - Input)));
+        mqtt_publish("heaterUtilization", number2string(100*Output/windowSize));
       }
     }
   } else {
