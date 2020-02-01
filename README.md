@@ -12,6 +12,9 @@ Version 1.9.8b
   ![Library Manager](https://raw.githubusercontent.com/medlor/ranciliopid/add-mqtt-support/PubSubClient_Dep.jpg)
 
 # Changelog
+- 1.9.8c:
+  - Add more mqtt updates: kp,ki,kd, coldstart
+  - Safe-guard: be sure pid internals are cleared when pid is dis/enabled.
 - 1.9.8b:
   - Feature: Add support for MQTT.
   - Safeguard: HeaterPreventFlapping must never be > windowSize.

@@ -305,10 +305,10 @@ BLYNK_WRITE(V4) {
 }
 
 BLYNK_WRITE(V5) {
-  aggTn = param.asDouble();
+  aggTn = param.asDouble();  // TODO Beschriftung ändern im widget oder hier: I=>Tn
 }
 BLYNK_WRITE(V6) {
-  aggTv =  param.asDouble();
+  aggTv =  param.asDouble(); // TODO Beschriftung ändern im widget oder hier: D=>Tv
 }
 
 BLYNK_WRITE(V7) {
@@ -346,10 +346,10 @@ BLYNK_WRITE(V30)
 }
 
 BLYNK_WRITE(V31) {
-  aggbTn = param.asDouble();
+  aggbTn = param.asDouble(); //BUG: either use PID values or change the blink widget description
 }
 BLYNK_WRITE(V32) {
-  aggbTv =  param.asDouble();
+  aggbTv =  param.asDouble(); //BUG: either use PID values or change the blink widget description
 }
 BLYNK_WRITE(V33) {
   brewtimersoftware =  param.asDouble();
@@ -431,7 +431,7 @@ boolean mqtt_reconnect() {
   espClient.setTimeout(2000); // set timeout for mqtt connect()/write() to 2 seconds (default 5 seconds).
   if (mqtt_client.connect(hostname, mqtt_username, mqtt_password, topic_will, 0, 0, "unexpected exit")) {
     DEBUG_println("INFO: Connected to mqtt server");
-    mqtt_publish("events", "connected");
+    mqtt_publish("events", "INFO: Connected to mqtt server");
     mqtt_client.subscribe(topic_set);
   } else {
     snprintf(debugline, sizeof(debugline), "WARN: Cannot connect to mqtt server (consecutive failures=#%u)", mqtt_reconnectAttempts);
@@ -625,6 +625,7 @@ void refreshTemp() {
       // Temperature_C must be -50C < Temperature_C <= 150C
       if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function
       Input = Temperatur_C;
+      // TODO: beta feature: move flapping protection in here, which works when (P_ON_M is enabled && Input > SollTemp) : Input = SollTemp. oder besser call SetTuning()
       // Input = random(50,70) ;// test value
       if (Brewdetection == 1)
       {
@@ -902,8 +903,9 @@ void ICACHE_RAM_ATTR onTimer1ISR() {
   //run PID calculation
   if ( bPID.Compute() ) {
     isrCounter = 0;  // Attention: heater might not shutdown if bPid.SetSampleTime(), windowSize, timer1_write() and are not set correctly!
-    snprintf(debugline, sizeof(debugline), "INFO: bPID.Compute(): Output=%0.2f, InputTemp=%0.2f, DiffTemp=%0.2f, isrCounter=%u", Output, Input, (Input - setPoint), isrCounter);
+    snprintf(debugline, sizeof(debugline), "INFO: bPID.Compute(): Output=%0.2f, InputTemp=%0.2f, DiffTemp=%0.2f, isrCounter=%u", Output, Input, (setPoint - Input), isrCounter);
     DEBUG_println(debugline);
+    // TODO: Add failsafe flag which prevents output>0 if difftemp<-0.5: log error and set output = 0.
   }
 
   // activate/deactivate heater
@@ -1184,9 +1186,15 @@ void loop() {
   ArduinoOTA.onStart([](){
     timer1_disable();
     digitalWrite(pinRelayHeater, LOW); //Stop heating
+    snprintf(debugline, sizeof(debugline), "INFO: OTA update initiated");
+    DEBUG_println(debugline);
+    mqtt_publish("events", debugline);
   });
   ArduinoOTA.onError([](ota_error_t error) {
     timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+    snprintf(debugline, sizeof(debugline), "INFO: OTA update error");
+    DEBUG_println(debugline);
+    mqtt_publish("events", debugline);
   });
   // Enable interrupts if OTA is finished
   ArduinoOTA.onEnd([](){
@@ -1217,9 +1225,12 @@ void loop() {
       if (now - lastMQTTStatusReportTime >= lastMQTTStatusReportInterval) {
         lastMQTTStatusReportTime = now;
         mqtt_publish("temperature", number2string(Input));
-        mqtt_publish("temperatureBelowTarget", number2string((setPoint - Input)));
+        mqtt_publish("temperatureAboveTarget", number2string((Input - setPoint)));
         mqtt_publish("heaterUtilization", number2string(100*Output/windowSize));
-      }
+        mqtt_publish("kp", number2string(bPID.GetKp()));
+        mqtt_publish("ki", number2string(bPID.GetKi()));
+        mqtt_publish("kd", number2string(bPID.GetKd()));
+       }
     }
   } else {
     checkWifi();
@@ -1237,24 +1248,44 @@ void loop() {
     bPID.SetMode(pidMode);
     Output = 0 ;
   } else if (pidON == 1 && pidMode == 0) {
+    Output = 0; // safety: be 100% sure that PID.compute() starts fresh.
     pidMode = 1;
     bPID.SetMode(pidMode);
   }
-
-
 
   //Sicherheitsabfrage
   if (!sensorError && Input > 0 && !emergencyStop) {
 
     //Set PID if first start of machine detected
     if (Input < starttemp && kaltstart) {
-      if (startTn != 0) {
-        startKi = startKp / startTn;
-      } else {
-        startKi = 0 ;
+      if (pidMode == 1) {
+        if ( bPID.GetKp() != startKp ) { //TODO remove this condition by refactoring kaltstart variable
+          snprintf(debugline, sizeof(debugline), "INFO: cold start activated");
+          DEBUG_println(debugline);
+          mqtt_publish("events", debugline);
+        }
+        if (startTn != 0) {
+          startKi = startKp / startTn;
+        } else {
+          startKi = 0 ;
+        }
+        bPID.SetTunings(startKp, startKi, 0); // TODO BUG: setTunings() greift erst wenn startTn != 0 ist??
       }
-      bPID.SetTunings(startKp, startKi, 0);
     } else {
+      if ( kaltstart ) {
+        snprintf(debugline, sizeof(debugline), "INFO: cold start deactivated");
+        DEBUG_println(debugline);
+        mqtt_publish("events", debugline);
+        //reset PID by toggle on/off via SetMode() (workaround)
+        if (pidMode == 1) {
+          pidMode = 0;
+          bPID.SetMode(pidMode);
+          Output = 0;
+          pidMode = 1;
+          bPID.SetMode(pidMode);
+        }
+      }
+      //TODO: If >2C over target, disable PID at all.
       // calc ki, kd
       if (aggTn != 0) {
         aggKi = aggKp / aggTn ;
