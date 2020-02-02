@@ -3,7 +3,7 @@ Rancilio-Silvia PID für Arduino http://rancilio-pid.de
 
 BETA VERSION
 
-Version 1.9.8b
+Version 1.9.8e
 
 # Additional important information
 - Copy file userConfig.h.SAMPLE to userConfig.h and edit this file accordingly.
@@ -12,6 +12,18 @@ Version 1.9.8b
   ![Library Manager](https://raw.githubusercontent.com/medlor/ranciliopid/add-mqtt-support/PubSubClient_Dep.jpg)
 
 # Changelog
+- 1.9.8e:
+  - Removed movAvg() due to several issues:
+    - This is no moving avg, but something different (but it is working for "stable" temperature curves).
+    - readIndex=0 is not used.
+    - movingAvg does not compares currentValue with previousValue.
+    - Faktor *100 makes no sense (?).
+    - initializing methods/firstreading is refactored.
+  - movAvg() is replaced by pastTemperatureChange() (+ updateTemperatureHistory())
+  - Change order of brew-detection in main loop() to not confuse bPid.compute() due to flapping setTunings()
+  - Feature: isBrewReady() to determine if temperature is stable to start brewing
+  - Bugfix: Replace abs() with fabs().
+- 1.9.8d:
 - 1.9.8c:
   - Add more mqtt updates: kp,ki,kd, coldstart
   - Safe-guard: be sure pid internals are cleared when pid is dis/enabled.

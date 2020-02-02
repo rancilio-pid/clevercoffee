@@ -111,21 +111,22 @@ boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
    moving average - Brüherkennung
 *****************************************************/
 const int numReadings = 15;             // number of values per Array
-float readingstemp[numReadings];        // the readings from Temp
+double readingstemp[numReadings];        // the readings from Temp
 float readingstime[numReadings];        // the readings from time
 float readingchangerate[numReadings];   // DiffTemp (based on readings) Per Second
 
-int readIndex = 1;              // the index of the current reading
-double total = 0;               // the running
+int readIndex = 0;              // the index of the current reading
 int totaltime = 0 ;             // the running time
-double heatrateaverage = 0;     // the average over the numReadings
 double changerate = 0;          // local change rate of temprature
 double heatrateaveragemin = 0 ;
 unsigned long  timeBrewdetection = 0 ;
 int timerBrewdetection = 0 ;
 int i = 0;
-int firstreading = 1 ;          // Ini of the field, also used for sensor check
-char debugline[100];
+#ifdef BREW_READY_DETECTION
+float marginOfFluctuation = float(BREW_READY_DETECTION);
+#else
+float marginOfFluctuation = 0
+#endif
 
 /********************************************************
    PID - Werte Brüherkennung Offline
@@ -141,7 +142,7 @@ double aggbKi = aggbKp / aggbTn;
 #endif
 double aggbKd = aggbTv * aggbKp ;
 double brewtimersoftware = 45;    // 20-5 for detection // after detecting a brew, wait at least this amount of seconds for detecting the next one.
-double brewboarder = 150 ;        // border for the detection // if heater temperature is increased/decreasing by this rate (=diff-Temp / diff-Time), then we detect a brew.
+double brewboarder = 1.5 ;        // border for the detection // if temperature decreased within the last 6 seconds below this threshold (in Celcius), then we detect a brew.
 const int PonE = PONE;
 // be carefull: to low: risk of wrong brew detection
 // and rising temperature
@@ -168,7 +169,7 @@ unsigned long startZeit = 0;
 boolean sensorError = false;
 int error = 0;
 int maxErrorCounter = 10 ;  //define maximum number of consecutive polls (of intervaltempmes* duration) to have errors
-
+char debugline[100];
 
 /********************************************************
    DISPLAY
@@ -362,6 +363,20 @@ BLYNK_WRITE(V34) {
 /********************************************************
   MQTT
 *****************************************************/
+#include <math.h>
+#include <float.h>
+bool almostEqual(float a, float b) {
+    return fabs(a - b) <= FLT_EPSILON;
+}
+
+char* bool2string(bool in) {
+  char ret[22];
+  if (in) {
+    return "1";
+  } else {
+    return "0";
+  }
+}
 
 char* number2string(double in) {
   char ret[22];
@@ -503,49 +518,55 @@ void displaymessage(String displaymessagetext, String displaymessagetext2) {
   }
 
 }
+
 /********************************************************
-  Moving average - brewdetection (SW)
+  history temperature data
 *****************************************************/
-
-void movAvg() {
-  if (firstreading == 1) {
-    for (int thisReading = 0; thisReading < numReadings; thisReading++) {
-      readingstemp[thisReading] = Input;
-      readingstime[thisReading] = 0;
-      readingchangerate[thisReading] = 0;
-    }
-    firstreading = 0 ;
-  }
-
-  readingstime[readIndex] = millis() ;
-  readingstemp[readIndex] = Input ;
-
-  if (readIndex == numReadings - 1) {
-    changerate = (readingstemp[numReadings - 1] - readingstemp[0]) / (readingstime[numReadings - 1] - readingstime[0]) * 10000;
-  } else {
-    changerate = (readingstemp[readIndex] - readingstemp[readIndex + 1]) / (readingstime[readIndex] - readingstime[readIndex + 1]) * 10000;
-  }
-
-  readingchangerate[readIndex] = changerate ;
-  total = 0 ;
-  for (i = 0; i < numReadings; i++)
-  {
-    total += readingchangerate[i];
-  }
-
-  heatrateaverage = total / numReadings * 100 ;
-  if (heatrateaveragemin > heatrateaverage) {
-    heatrateaveragemin = heatrateaverage ;
-  }
-
-  if (readIndex >= numReadings - 1) {
-    // ...wrap around to the beginning:
+void updateTemperatureHistory(double myInput) {
+  if (readIndex >= numReadings -1) {
     readIndex = 0;
+  } else {
+    readIndex++;
   }
-  readIndex++;
-
+  readingstime[readIndex] = millis();
+  readingstemp[readIndex] = myInput;
 }
 
+//calculate the temperature difference between NOW and the most historical data. Returns temperature in celcius.
+double pastTemperatureChange() {
+  double temperatureDiff;
+  int historicIndex = readIndex + 1;
+  if (readIndex >= numReadings - 1) {
+    historicIndex = 0;
+  }
+  //ignore not yet initialized values
+  if (readingstime[readIndex] == 0 || readingstime[historicIndex] == 0) return 0;
+
+  if (brewboarder <= 30) {
+    temperatureDiff = (readingstemp[readIndex] - readingstemp[historicIndex]);
+  } else { // use previous factor on brewboarder threshold (compatibility to old brewboarder values using a factor of 100)
+    temperatureDiff = (readingstemp[readIndex] - readingstemp[historicIndex]) * 100;
+  }
+  //compatibel code (can heatrateaveragemin be removed completely?)
+  if (heatrateaveragemin > temperatureDiff) {
+    heatrateaveragemin = temperatureDiff;
+  }
+  return temperatureDiff;
+}
+
+bool brewReady(double setPoint, float marginOfFluctuation, int lookback) {
+  if (almostEqual(marginOfFluctuation, 0)) return false;
+  if (lookback > numReadings) lookback=numReadings;
+  for (int offset = 0; offset < lookback; offset++) {
+    int thisReading = readIndex - offset;
+    if (thisReading < 0) thisReading = numReadings + thisReading;
+    if (readingstime[thisReading] == 0) return false;
+    //snprintf(debugline, sizeof(debugline), "INFO: brewReady(): (cur_index=%d) index=%d: fluctuation=%0.2f (marginOfFluctuation=%0.2f)", readIndex, thisReading, fabs(setPoint - readingstemp[thisReading]), marginOfFluctuation);
+    //DEBUG_println(debugline);
+    if (fabs(setPoint - readingstemp[thisReading]) > (marginOfFluctuation + FLT_EPSILON)) return false;
+  }
+  return true;
+}
 
 /********************************************************
   check sensor value. If < 0 or difference between old and new >25, then increase error.
@@ -556,7 +577,7 @@ boolean checkSensor(float tempInput) {
   /********************************************************
     sensor error
   ******************************************************/
-  if ( ( tempInput < 0 || tempInput > 150 || abs(tempInput - previousInput) > 25) && !sensorError) {
+  if ( ( tempInput < 0 || tempInput > 150 || fabs(tempInput - previousInput) > 25) && !sensorError) {
     error++;
     sensorOK = false;
     snprintf(debugline, sizeof(debugline), "WARN: temperature sensor reading: consec_errors=%d, temp_current=%0.2f, temp_prev=%0.2f", error, tempInput, previousInput);
@@ -594,13 +615,9 @@ void refreshTemp() {
     {
       previousMillistemp = currentMillistemp; // prevent race condition after "hang"
       sensors.requestTemperatures();
-      if (!checkSensor(sensors.getTempCByIndex(0)) && firstreading == 0) return;  //if sensor data is not valid, abort function
+      if (!checkSensor(sensors.getTempCByIndex(0))) return;  //if sensor data is not valid, abort function
       Input = sensors.getTempCByIndex(0);
-      if (Brewdetection == 1) {
-        movAvg();
-      } else {
-        firstreading = 0;
-      }
+      updateTemperatureHistory(Input);
     }
   }
   if (TempSensor == 2)
@@ -623,16 +640,10 @@ void refreshTemp() {
       // temperature must be between 0x000 and 0x7FF(=DEC2047)
       Temperatur_C = Sensor1.calc_Celsius(&temperature);
       // Temperature_C must be -50C < Temperature_C <= 150C
-      if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function
+      if (!checkSensor(Temperatur_C)) return;  //if sensor data is not valid, abort function
       Input = Temperatur_C;
-      // TODO: beta feature: move flapping protection in here, which works when (P_ON_M is enabled && Input > SollTemp) : Input = SollTemp. oder besser call SetTuning()
       // Input = random(50,70) ;// test value
-      if (Brewdetection == 1)
-      {
-        movAvg();
-      } else {
-        firstreading = 0;
-      }
+      updateTemperatureHistory(Input);
     }
   }
 }
@@ -854,7 +865,7 @@ void sendToBlynk() {
         Blynk.syncVirtual(V3);
       }
       if (blynksendcounter == 4) {
-        Blynk.virtualWrite(V35, heatrateaverage);
+        Blynk.virtualWrite(V35, pastTemperatureChange());
         Blynk.syncVirtual(V35);
       }
       if (blynksendcounter >= 5) {
@@ -875,6 +886,7 @@ void brewdetection() {
 
   // Brew detecion == 1 software solution , == 2 hardware
   if (Brewdetection == 1 || Brewdetection == 2) {
+    //disable brew-detection after brewtimersoftware seconds
     if (millis() - timeBrewdetection > brewtimersoftware * 1000) {
       timerBrewdetection = 0 ;
         if (OnlyPID == 1) {
@@ -884,11 +896,12 @@ void brewdetection() {
   }
 
   if (Brewdetection == 1) {
-    if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 ) {
+    //enable bew-detection if not already running and diff temp is > brewboarder
+    if (pastTemperatureChange() <= -brewboarder && timerBrewdetection == 0 ) {
       DEBUG_println("SW Brew detected") ;
       timeBrewdetection = millis() ;
       timerBrewdetection = 1 ;
-      mqtt_publish("brew", "1");
+      mqtt_publish("brewDetected", "1");
     }
   }
 }
@@ -1151,12 +1164,10 @@ void setup() {
   /********************************************************
     movingaverage ini array
   ******************************************************/
-  if (Brewdetection == 1) {
-    for (int thisReading = 0; thisReading < numReadings; thisReading++) {
-      readingstemp[thisReading] = 0;
-      readingstime[thisReading] = 0;
-      readingchangerate[thisReading] = 0;
-    }
+  for (int thisReading = 0; thisReading < numReadings; thisReading++) {
+    readingstemp[thisReading] = 0;
+    readingstime[thisReading] = 0;
+    readingchangerate[thisReading] = 0;
   }
 
   //Initialisation MUST be at the very end of the init(), otherwise the time comparision in loop() will have a big offset
@@ -1230,6 +1241,8 @@ void loop() {
         mqtt_publish("kp", number2string(bPID.GetKp()));
         mqtt_publish("ki", number2string(bPID.GetKi()));
         mqtt_publish("kd", number2string(bPID.GetKd()));
+        mqtt_publish("pastTemperatureChange", number2string(pastTemperatureChange()));
+        mqtt_publish("brewReady", bool2string(brewReady(setPoint, marginOfFluctuation, numReadings)));
        }
     }
   } else {
@@ -1256,27 +1269,50 @@ void loop() {
   //Sicherheitsabfrage
   if (!sensorError && Input > 0 && !emergencyStop) {
 
-    //Set PID if first start of machine detected
+    brewdetection();
+
+    //Set spcific cold start PID values if first start of machine is detected
     if (Input < starttemp && kaltstart) {
       if (pidMode == 1) {
-        if ( bPID.GetKp() != startKp ) { //TODO remove this condition by refactoring kaltstart variable
+        if (startTn != 0) {
+          startKi = startKp / startTn;
+        } else {
+          startKi = 0;
+        }
+        if ( bPID.GetKp() != startKp && almostEqual(bPID.GetKi(), startKi) ) { //TODO remove this condition by refactoring kaltstart variable
           snprintf(debugline, sizeof(debugline), "INFO: cold start activated");
           DEBUG_println(debugline);
           mqtt_publish("events", debugline);
         }
-        if (startTn != 0) {
-          startKi = startKp / startTn;
-        } else {
-          startKi = 0 ;
-        }
-        bPID.SetTunings(startKp, startKi, 0); // TODO BUG: setTunings() greift erst wenn startTn != 0 ist??
+        bPID.SetTunings(startKp, startKi, 0); // TODO BUG: setTunings() greift erst wenn startTn != 0 ist?? float comparison < 0 failed.
       }
+
+    //if brew is detected, set brew specific PID values
+    } else if ( millis() - timeBrewdetection  < brewtimersoftware * 1000 && timerBrewdetection == 1) {
+      // calc ki, kd
+      if (aggbTn != 0) {
+        aggbKi = aggbKp / aggbTn ;
+      } else {
+        aggbKi = 0;
+      }
+      aggbKd = aggbTv * aggbKp ;
+      if ( bPID.GetKp() != aggbKp && almostEqual(bPID.GetKi(), aggbKi) && almostEqual(bPID.GetKd(), aggbKd) ) {
+        snprintf(debugline, sizeof(debugline), "INFO: brew detected. Changing pid values.");
+        DEBUG_println(debugline);
+        mqtt_publish("events", debugline);
+      }
+      bPID.SetTunings(aggbKp, aggbKi, aggbKd) ;
+      if (OnlyPID == 1){
+        bezugsZeit = millis() - timeBrewdetection ;
+      }
+
+    //set regular pid values in "normal" mode
     } else {
       if ( kaltstart ) {
         snprintf(debugline, sizeof(debugline), "INFO: cold start deactivated");
         DEBUG_println(debugline);
         mqtt_publish("events", debugline);
-        //reset PID by toggle on/off via SetMode() (workaround)
+        //this garantuees reseted PID by toggle on/off via SetMode() (workaround)
         if (pidMode == 1) {
           pidMode = 0;
           bPID.SetMode(pidMode);
@@ -1295,22 +1331,6 @@ void loop() {
       aggKd = aggTv * aggKp ;
       bPID.SetTunings(aggKp, aggKi, aggKd);
       kaltstart = false;
-    }
-
-    //if brew detected, set PID values
-    brewdetection();
-    if ( millis() - timeBrewdetection  < brewtimersoftware * 1000 && timerBrewdetection == 1) {
-      // calc ki, kd
-      if (aggbTn != 0) {
-        aggbKi = aggbKp / aggbTn ;
-      } else {
-        aggbKi = 0 ;
-      }
-      aggbKd = aggbTv * aggbKp ;
-      bPID.SetTunings(aggbKp, aggbKi, aggbKd) ;
-      if (OnlyPID == 1){
-        bezugsZeit = millis() - timeBrewdetection ;
-      }
     }
 
     sendToBlynk();
