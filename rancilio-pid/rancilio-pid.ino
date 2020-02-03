@@ -1,5 +1,5 @@
 /********************************************************
-   Version 1.9.6 MASTER (28.08.2019)
+   Version 1.9.8e MASTER
   Key facts: major revision
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
@@ -210,7 +210,7 @@ const long intervaltempmestsic = 400 ;
 const long intervaltempmesds18b20 = 400  ;
 int pidMode = 1; //1 = Automatic, 0 = Manual
 
-const unsigned int windowSize = 1000; // TODO: PID is evaluated every second. But why are we then measuring sensors every 400ms?
+const unsigned int windowSize = 1000;
 unsigned int isrCounter = 0;  // counter for ISR
 unsigned long windowStartTime;
 double Input, Output, setPointTemp;  //
@@ -609,11 +609,17 @@ void refreshTemp() {
   ******************************************************/
   unsigned long currentMillistemp = millis();
   previousInput = Input ;
+  unsigned long millis_elapsed = currentMillistemp - previousMillistemp ;
   if (TempSensor == 1)
   {
-    if (currentMillistemp - previousMillistemp >= intervaltempmesds18b20)
+    if ( floor(millis_elapsed / intervaltempmesds18b20) >= 2) {
+      snprintf(debugline, sizeof(debugline), "WARN: Temporary main loop() hang. Number of temp polls missed=%g, millis_elapsed=%lu", floor(millis_elapsed / intervaltempmesds18b20) -1, millis_elapsed);
+      DEBUG_println(debugline);
+      mqtt_publish("events", debugline);
+    }
+    if (millis_elapsed >= intervaltempmesds18b20)
     {
-      previousMillistemp = currentMillistemp; // prevent race condition after "hang"
+      previousMillistemp = currentMillistemp;
       sensors.requestTemperatures();
       if (!checkSensor(sensors.getTempCByIndex(0))) return;  //if sensor data is not valid, abort function
       Input = sensors.getTempCByIndex(0);
@@ -622,16 +628,14 @@ void refreshTemp() {
   }
   if (TempSensor == 2)
   {
-    unsigned long millis_elapsed = currentMillistemp - previousMillistemp ;
-    if ( floor(millis_elapsed / intervaltempmestsic) >= 2) // TODO: notify if it is blocked too much and/or set emergencystop // remove hard-coded and generalize to all sensors.
-    {
+    if ( floor(millis_elapsed / intervaltempmestsic) >= 2) {
       snprintf(debugline, sizeof(debugline), "WARN: Temporary main loop() hang. Number of temp polls missed=%g, millis_elapsed=%lu", floor(millis_elapsed / intervaltempmestsic) -1, millis_elapsed);
       DEBUG_println(debugline);
       mqtt_publish("events", debugline);
     }
     if (millis_elapsed >= intervaltempmestsic)
     {
-      previousMillistemp = currentMillistemp; // prevent race condition after "hang"
+      previousMillistemp = currentMillistemp;
       /*  variable "temperature" must be set to zero, before reading new data
             getTemperature only updates if data is valid, otherwise "temperature" will still hold old values
       */
@@ -909,38 +913,48 @@ void brewdetection() {
 /********************************************************
     Timer 1 - ISR für PID Berechnung und Heizrelais-Ausgabe
 ******************************************************/
+void ICACHE_RAM_ATTR onTimer1ISR_CURRENT() {
+  timer1_write(50000); // set interrupt time to 10ms
+
+  if (Output <= isrCounter) {
+    digitalWrite(pinRelayHeater, LOW);
+    //DEBUG_println("Power off!");
+  } else {
+    digitalWrite(pinRelayHeater, HIGH);
+    //DEBUG_println("Power on!");
+  }
+
+  isrCounter += 10; // += 10 because one tick = 10ms
+  //set PID output as relais commands
+  if (isrCounter > windowSize) { //Achtung: hier ist sowieso noch ein Bug der dazu führt, dass man einen Tick verliert.
+    isrCounter = 0;
+  }
+
+  //run PID calculation
+  if ( bPID.Compute() ) {
+    sprintf(debugline, "INFO: bPID.Compute(): Output=%f, InputTemp=%f, DiffTemp=%f, isrCounter=%u", Output, Input, (Input - setPoint), isrCounter);
+    DEBUG_println(debugline);
+  }
+}
+
 void ICACHE_RAM_ATTR onTimer1ISR() {
   timer1_write(50000); // set interrupt time to 10ms
 
-  //TODO: emergency function has to be additionally added in here! We dont want to enable heater when there is an error.
   //run PID calculation
   if ( bPID.Compute() ) {
     isrCounter = 0;  // Attention: heater might not shutdown if bPid.SetSampleTime(), windowSize, timer1_write() and are not set correctly!
     snprintf(debugline, sizeof(debugline), "INFO: bPID.Compute(): Output=%0.2f, InputTemp=%0.2f, DiffTemp=%0.2f, isrCounter=%u", Output, Input, (setPoint - Input), isrCounter);
     DEBUG_println(debugline);
-    // TODO: Add failsafe flag which prevents output>0 if difftemp<-0.5: log error and set output = 0.
   }
-
-  // activate/deactivate heater
-  int pinRelayHeater_status = 0;
-  if (Output <= HeaterPreventFlapping) {
-    pinRelayHeater_status = 0;
-    //digitalWrite(pinRelayHeater, LOW);
-    //DEBUG_println("Power off (Threshold)!");
-  } else if (Output >= (windowSize - HeaterPreventFlapping) && (windowSize - HeaterPreventFlapping) > 0) {
-    pinRelayHeater_status = 1;
-    //digitalWrite(pinRelayHeater, HIGH);
-    //DEBUG_println("Power on (Threshold)!");
-  } else if (Output <= isrCounter) {
-    pinRelayHeater_status = 0;
-    //digitalWrite(pinRelayHeater, LOW);
+  
+  if (Output <= isrCounter) {
+    digitalWrite(pinRelayHeater, LOW);
     //DEBUG_println("Power off!");
   } else {
-    pinRelayHeater_status = 1;
-    //digitalWrite(pinRelayHeater, HIGH);
+    digitalWrite(pinRelayHeater, HIGH);
     //DEBUG_println("Power on!");
   }
-  digitalWrite(pinRelayHeater, pinRelayHeater_status);
+  
   //increase counter until fail-safe is reached
   if (isrCounter <= windowSize) {
     isrCounter += 10; // += 10 because one tick = 10ms
