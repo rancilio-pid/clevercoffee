@@ -1,5 +1,5 @@
 /********************************************************
-  Version 1.9.8c
+  Version 1.9.8e
   Config must be configured by the user
 ******************************************************/
 
@@ -16,6 +16,7 @@
 #define TEMPSENSORRECOVERY 1 // 1 = on (default), 2= off. If off, temp sensor errors will stop the brewer until power cycle
 #define HEATERPREVENTFLAPPING -1 // -1 = off (default), else time-window[ms] in which the heater should never be activated and deactivated (vice versa). Must be <windowSize (1000ms). Recommended value 100.
 #define BREWDETECTION 1      // 0 = off ,1 = Software, 2 = Hardware
+#define BREW_READY_DETECTION 0 // 0 = off, [0.0 - 30.0] = enable. If measured temperature of the last 6 seconds has been within this defined margin around the SET_POINT, we are able to brew. (recommended value 0.2)
 #define FALLBACK 1           // 1: fallback auf eeprom Werte, wenn blynk nicht geht 0: deaktiviert
 #define TRIGGERTYPE HIGH     // LOW = low trigger, HIGH = high trigger relay
 #define OTA true             // true=activate update via OTA
