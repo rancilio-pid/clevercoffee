@@ -183,7 +183,7 @@ const long intervaltempmestsic = 400 ;
 const long intervaltempmesds18b20 = 400  ;
 int pidMode = 1; //1 = Automatic, 0 = Manual
 
-const unsigned int windowSize = 1000; // TODO: PID is evaluated evey second. But why are we then measuring sensors every 400ms?
+const unsigned int windowSize = 1000;
 unsigned int isrCounter = 0;  // counter for ISR
 unsigned long windowStartTime;
 double Input, Output, setPointTemp;  //
@@ -448,7 +448,6 @@ boolean checkSensor(float tempInput) {
     sensorError = true ;
     sprintf(debugline, "ERROR: temperature sensor malfunction: temp_current=%f, temp_prev=%f", tempInput, previousInput);
     DEBUG_println(debugline);
-    //TODO add external notify (eg telegram) . see below for better place to code
   } else if (error == 0 && TempSensorRecovery == 1) { //Safe-guard: prefer to stop heating forever if sensor is flapping!
     sensorError = false ;
   }
@@ -471,7 +470,7 @@ void refreshTemp() {
   {
     if (currentMillistemp - previousMillistemp >= intervaltempmesds18b20)
     {
-      previousMillistemp = currentMillistemp; // prevent race condition after "hang"
+      previousMillistemp = currentMillistemp;
       sensors.requestTemperatures();
       if (!checkSensor(sensors.getTempCByIndex(0)) && firstreading == 0) return;  //if sensor data is not valid, abort function
       Input = sensors.getTempCByIndex(0);
@@ -771,6 +770,31 @@ void brewdetection() {
 /********************************************************
     Timer 1 - ISR für PID Berechnung und Heizrelais-Ausgabe
 ******************************************************/
+void ICACHE_RAM_ATTR onTimer1ISR_CURRENT() {
+  timer1_write(50000); // set interrupt time to 10ms
+
+  if (Output <= isrCounter) {
+    digitalWrite(pinRelayHeater, LOW);
+    //DEBUG_println("Power off!");
+  } else {
+    digitalWrite(pinRelayHeater, HIGH);
+    //DEBUG_println("Power on!");
+  }
+
+  isrCounter += 10; // += 10 because one tick = 10ms
+  //set PID output as relais commands
+  if (isrCounter > windowSize) { //Achtung: hier ist sowieso noch ein Bug der dazu führt, dass man einen Tick verliert.
+    isrCounter = 0;
+  }
+
+  //run PID calculation
+  if ( bPID.Compute() ) {
+    sprintf(debugline, "INFO: bPID.Compute(): Output=%f, InputTemp=%f, DiffTemp=%f, isrCounter=%u", Output, Input, (Input - setPoint), isrCounter);
+    DEBUG_println(debugline);
+  }
+}
+
+
 void ICACHE_RAM_ATTR onTimer1ISR() {
   timer1_write(50000); // set interrupt time to 10ms
 
@@ -781,34 +805,13 @@ void ICACHE_RAM_ATTR onTimer1ISR() {
     DEBUG_println(debugline);
   }
 
-  // activate/deactivate heater
-  int pinRelayHeater_status_prev = digitalRead(pinRelayHeater); // reading hardware instead relying on global variable
-  int pinRelayHeater_status = 0;
-  if (Output <= HeaterPreventFlapping) {
-    pinRelayHeater_status = 0;
-    //digitalWrite(pinRelayHeater, LOW);
-    //DEBUG_println("Power off (Threshold)!");
-  } else if (Output >= (windowSize - HeaterPreventFlapping) ) {
-    pinRelayHeater_status = 1;
-    //digitalWrite(pinRelayHeater, HIGH);
-    //DEBUG_println("Power on (Threshold)!");
-  } else if (Output <= isrCounter) {
-    pinRelayHeater_status = 0;
-    //digitalWrite(pinRelayHeater, LOW);
+  if (Output <= isrCounter) {
+    digitalWrite(pinRelayHeater, LOW);
     //DEBUG_println("Power off!");
   } else {
-    pinRelayHeater_status = 1;
-    //digitalWrite(pinRelayHeater, HIGH);
+    digitalWrite(pinRelayHeater, HIGH);
     //DEBUG_println("Power on!");
   }
-  digitalWrite(pinRelayHeater, pinRelayHeater_status);
-
-  //int pinRelayHeater_status = digitalRead(pinRelayHeater);
-  if ( pinRelayHeater_status != pinRelayHeater_status_prev) {
-    sprintf(debugline, "INFO: onTimer1ISR(): New pinRelayHeater_status=%u, isrCounter=%u", pinRelayHeater_status, isrCounter);
-    DEBUG_println(debugline);
-  }
-
   //increase counter until fail-safe is reached
   if (isrCounter <= windowSize) {
     isrCounter += 10; // += 10 because one tick = 10ms
