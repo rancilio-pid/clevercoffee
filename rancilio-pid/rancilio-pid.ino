@@ -8,7 +8,7 @@
 #include "icon.h"
 
 // Debug mode is active if #define DEBUGMODE is set
-#define DEBUGMODE
+//#define DEBUGMODE
 
 #ifndef DEBUGMODE
 #define DEBUG_println(a)
@@ -484,14 +484,14 @@ void refreshTemp() {
   if (TempSensor == 2)
   {
     unsigned long millis_elapsed = currentMillistemp - previousMillistemp ;
-    if ( floor(millis_elapsed / intervaltempmestsic) >= 2) // TODO: notify if it is blocked too much // remove hard-coded
-    {
+    if ( floor(millis_elapsed / intervaltempmestsic) >= 2) {
       sprintf(debugline, "WARN: System hang occured. Number of temp polls missed=%f, millis_elapsed=%f", floor(millis_elapsed / intervaltempmestsic) -1, millis_elapsed);
       DEBUG_println(debugline);
+      //MQTT will be added in netx PR.
     }
     if (millis_elapsed >= intervaltempmestsic)
     {
-      previousMillistemp = currentMillistemp; // prevent race condition after "hang"
+      previousMillistemp = currentMillistemp;
       /*  variable "temperature" must be set to zero, before reading new data
             getTemperature only updates if data is valid, otherwise "temperature" will still hold old values
       */
