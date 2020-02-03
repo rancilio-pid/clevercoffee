@@ -1,11 +1,23 @@
 # ranciliopid
 Rancilio-Silvia PID für Arduino http://rancilio-pid.de
 
-MASTER VERSION
+BETA VERSION
 
-Version 1.9.7
+Version 1.9.8c
 
-# Changelog:
+# Additional important information
+- Copy file userConfig.h.SAMPLE to userConfig.h and edit this file accordingly.
+- Additional Arduino dependency on PubSubClient (tested with Version 2.7.0). 
+  Please install this lib by using Arduino->Sketch->Include Library->"Library Manager".
+  ![Library Manager](https://raw.githubusercontent.com/medlor/ranciliopid/add-mqtt-support/PubSubClient_Dep.jpg)
+
+# Changelog
+- 1.9.8c:
+  - Add more mqtt updates: kp,ki,kd, coldstart
+  - Safe-guard: be sure pid internals are cleared when pid is dis/enabled.
+- 1.9.8b:
+  - Feature: Add support for MQTT.
+  - Safeguard: HeaterPreventFlapping must never be > windowSize.
 - 1.9.7:
   - Fix: If temperature sensor detects more than 150Celcius then it must be an error.
   - Fix: Typos / explanations.
