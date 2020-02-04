@@ -1,5 +1,5 @@
 /********************************************************
-   Version 1.9.6 MASTER (28.08.2019)
+   Version 1.9.7 MASTER (04.02.2020)
   Key facts: major revision
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
@@ -38,7 +38,7 @@
 //#include "Arduino.h"
 #include <EEPROM.h>
 
-const char* sysVersion PROGMEM  = "Version 1.9.6 Master";
+const char* sysVersion PROGMEM  = "Version 1.9.7 Master";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -54,12 +54,13 @@ const boolean ota = OTA;
 const int grafana=GRAFANA;
 
 // Wifi
+const char* hostname = HOSTNAME;
 const char* auth = AUTH;
 const char* ssid = D_SSID;
 const char* pass = PASS;
 
 unsigned long lastWifiConnectionAttempt = millis();
-const unsigned long wifiConnectionDelay = 10000; // try to reconnect every 5 seconds
+const unsigned long wifiConnectionDelay = 10000; // try to reconnect every 10 seconds
 unsigned int wifiReconnects = 0; //number of reconnects
 
 // OTA
@@ -68,7 +69,7 @@ const char* OTApass = OTAPASS;
 
 //Blynk
 const char* blynkaddress  = BLYNKADDRESS;
-
+const int blynkport = BLYNKPORT;
 
 /********************************************************
    Vorab-Konfig
@@ -96,7 +97,7 @@ unsigned long  timeBrewdetection = 0 ;
 int timerBrewdetection = 0 ;
 int i = 0;
 int firstreading = 1 ;          // Ini of the field, also used for sensor check
-
+char debugline[100];
 /********************************************************
    PID - Werte Brüherkennung Offline
 *****************************************************/
@@ -137,7 +138,7 @@ unsigned long startZeit = 0;
 ******************************************************/
 boolean sensorError = false;
 int error = 0;
-int maxErrorCounter = 10 ;  //depends on intervaltempmes* , define max seconds for invalid data
+int maxErrorCounter = 10 ; //define maximum number of consecutive polls (of intervaltempmes* duration) to have errors
 
 
 /********************************************************

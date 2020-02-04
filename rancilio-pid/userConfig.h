@@ -20,14 +20,16 @@
 #define PONE 1               // 1 = P_ON_E (normal), 0 = P_ON_M (spezieller PID Modus, ACHTUNG andere Formel zur Berechnung)
 #define GRAFANA 1           // 1=Markus grafana Visualisierung. Zugang notwendig, 0=default, aus
 
-// Wifi
+// Wifi & Blynk 
+#define HOSTNAME "rancilio"
 #define AUTH "blynkauthcode"
 #define D_SSID "wlanname"
 #define PASS "wlanpass"
+#define BLYNKPORT 8080
 
 // OTA
 #define OTAHOST "Rancilio"   // Name to be shown in ARUDINO IDE Port
-#define OTAPASS "otapass"    // Password for OTA updtates
+#define OTAPASS "otapass"    // Password for OTA updates
 
 #define BLYNKADDRESS "blynk.remoteapp.de"         // IP-Address of used blynk server
 // define BLYNKADDRESS "raspberrypi.local"
