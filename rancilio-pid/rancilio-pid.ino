@@ -891,13 +891,15 @@ void brewdetection() {
   if (Brewdetection == 1 || Brewdetection == 2) {
     //disable brew-detection after brewtimersoftware seconds
     if (millis() - timeBrewdetection >= brewtimersoftware * 1000) {
+      if (timerBrewdetection == 1) {
+        snprintf(debugline, sizeof(debugline), "INFO: Brew detection is over. Reverting to regular pid values.");
+        DEBUG_println(debugline);
+        mqtt_publish("events", debugline);
+      }
       timerBrewdetection = 0 ;
         if (OnlyPID == 1) {
           bezugsZeit = 0 ;
         }
-        snprintf(debugline, sizeof(debugline), "INFO: Brew detection is over. Reverting to regular pid values.");
-        DEBUG_println(debugline);
-        mqtt_publish("events", debugline);
     }
   }
 
