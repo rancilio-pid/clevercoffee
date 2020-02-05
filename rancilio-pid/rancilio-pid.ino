@@ -1,5 +1,5 @@
 /********************************************************
-   Version 1.9.8e MASTER
+   Version 1.9.8f MASTER
   Key facts: major revision
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
@@ -41,7 +41,7 @@
 //#include "Arduino.h"
 #include <EEPROM.h>
 
-const char* sysVersion PROGMEM  = "Version 1.9.6 Master";
+const char* sysVersion PROGMEM  = "Version 1.9.8f Beta";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -891,11 +891,14 @@ void brewdetection() {
   // Brew detecion == 1 software solution , == 2 hardware
   if (Brewdetection == 1 || Brewdetection == 2) {
     //disable brew-detection after brewtimersoftware seconds
-    if (millis() - timeBrewdetection > brewtimersoftware * 1000) {
+    if (millis() - timeBrewdetection >= brewtimersoftware * 1000) {
       timerBrewdetection = 0 ;
         if (OnlyPID == 1) {
           bezugsZeit = 0 ;
         }
+        snprintf(debugline, sizeof(debugline), "INFO: Brew detection is over. Reverting to regular pid values.");
+        DEBUG_println(debugline);
+        mqtt_publish("events", debugline)
     }
   }
 

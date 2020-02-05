@@ -3,7 +3,7 @@ Rancilio-Silvia PID für Arduino http://rancilio-pid.de
 
 BETA VERSION
 
-Version 1.9.8e
+Version 1.9.8f
 
 # Additional important information
 - Copy file userConfig.h.SAMPLE to userConfig.h and edit this file accordingly.
@@ -12,6 +12,9 @@ Version 1.9.8e
   ![Library Manager](https://raw.githubusercontent.com/medlor/ranciliopid/add-mqtt-support/PubSubClient_Dep.jpg)
 
 # Changelog
+- 1.9.8f:
+  - Added missing config.h.SAMPLE variables.
+  - Added some more mqtt events.
 - 1.9.8e:
   - Removed movAvg() due to several issues:
     - This is no moving avg, but something different (but it is working for "stable" temperature curves).
