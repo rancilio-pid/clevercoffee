@@ -735,8 +735,9 @@ void sendToBlynk() {
     Brewdetection
 ******************************************************/
 void brewdetection() {
+  
   if (brewboarder == 0) return; //abort brewdetection if deactivated
-
+  
   // Brew detecion == 1 software solution , == 2 hardware
   if (Brewdetection == 1 || Brewdetection == 2) {
     if (millis() - timeBrewdetection > brewtimersoftware * 1000) {
@@ -754,8 +755,14 @@ void brewdetection() {
       timerBrewdetection = 1 ;
     }
   }
+    if (Brewdetection == 2) {
+    if (brewcounter == 1 ) {
+      DEBUG_println("HW Brew detected") ;
+      timeBrewdetection = millis() ;
+      timerBrewdetection = 1 ;
+    }  
+  }
 }
-
 /********************************************************
     Timer 1 - ISR für PID Berechnung und Heizrelais-Ausgabe
 ******************************************************/
