@@ -51,7 +51,6 @@ const int Display = DISPLAY;
 const int OnlyPID = ONLYPID;
 const int TempSensor = TEMPSENSOR;
 const int TempSensorRecovery = TEMPSENSORRECOVERY;
-const int HeaterPreventFlapping = HEATERPREVENTFLAPPING;
 const int Brewdetection = BREWDETECTION;
 const int fallback = FALLBACK;
 const int triggerType = TRIGGERTYPE;
@@ -898,7 +897,7 @@ void brewdetection() {
         }
         snprintf(debugline, sizeof(debugline), "INFO: Brew detection is over. Reverting to regular pid values.");
         DEBUG_println(debugline);
-        mqtt_publish("events", debugline)
+        mqtt_publish("events", debugline);
     }
   }
 
