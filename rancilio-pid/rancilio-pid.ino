@@ -383,7 +383,7 @@ void displaymessage(String displaymessagetext, String displaymessagetext2) {
   Moving average - brewdetection (SW)
 *****************************************************/
 
-void movAvg() {
+void movAvg() 
   if (firstreading == 1) {
     for (int thisReading = 0; thisReading < numReadings; thisReading++) {
       readingstemp[thisReading] = Input;
@@ -432,13 +432,15 @@ boolean checkSensor(float tempInput) {
   /********************************************************
     sensor error
   ******************************************************/
-  if ((tempInput < 0 || abs(tempInput - previousInput) > 25) && !sensorError) {
+  if ( ( tempInput < 0 || tempInput > 150 || abs(tempInput - previousInput) > 25) && !sensorError) {
     error++;
     sensorOK = false;
     DEBUG_print("Error counter: ");
     DEBUG_println(error);
     DEBUG_print("temp delta: ");
     DEBUG_println(tempInput);
+    sprintf(debugline, "WARN: temperature sensor reading: consec_errors=%d, temp_current=%f, temp_prev=%f", error, tempInput, previousInput);
+     DEBUG_println(debugline);
   } else if (tempInput > 0) {
     error = 0;
     sensorOK = true;
@@ -448,6 +450,8 @@ boolean checkSensor(float tempInput) {
     DEBUG_print("Sensor Error");
     DEBUG_println(Input);
   } else if (error == 0) {
+      sprintf(debugline, "ERROR: temperature sensor malfunction: temp_current=%f, temp_prev=%f", tempInput, previousInput);
+     DEBUG_println(debugline);
     sensorError = false ;
   }
 
@@ -469,7 +473,7 @@ void refreshTemp() {
   {
     if (currentMillistemp - previousMillistemp >= intervaltempmesds18b20)
     {
-      previousMillistemp += intervaltempmesds18b20;
+      previousMillistemp = currentMillistemp;
       sensors.requestTemperatures();
       if (!checkSensor(sensors.getTempCByIndex(0)) && firstreading == 0) return;  //if sensor data is not valid, abort function
       Input = sensors.getTempCByIndex(0);
@@ -828,11 +832,11 @@ void setup() {
      BLYNK & Fallback offline
   ******************************************************/
   if (Offlinemodus == 0) {
-
+  WiFi.hostname(hostname);
     if (fallback == 0) {
 
       displaymessage("Connect to Blynk", "no Fallback");
-      Blynk.begin(auth, ssid, pass, blynkaddress, 8080);
+      Blynk.begin(auth, ssid, pass, blynkaddress, blynkport);
     }
 
     if (fallback == 1) {
@@ -860,7 +864,7 @@ void setup() {
         displaymessage("2: Wifi connected, ", "try Blynk   ");
         DEBUG_println("Wifi works, now try Blynk connection");
         delay(2000);
-        Blynk.config(auth, blynkaddress, 8080) ;
+        Blynk.config(auth, blynkaddress, blynkport) ;
         Blynk.connect(30000);
 
         // Blnky works:
@@ -976,8 +980,14 @@ void setup() {
     sensors.getAddress(sensorDeviceAddress, 0);
     sensors.setResolution(sensorDeviceAddress, 10) ;
     sensors.requestTemperatures();
+    Input = sensors.getTempCByIndex(0);
   }
-
+  
+  if (TempSensor == 2) {
+     temperature = 0;
+     Sensor1.getTemperature(&temperature);
+     Input = Sensor1.calc_Celsius(&temperature);
+   }
   /********************************************************
     movingaverage ini array
   ******************************************************/
