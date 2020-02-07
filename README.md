@@ -3,7 +3,7 @@ Rancilio-Silvia PID für Arduino http://rancilio-pid.de
 
 BETA VERSION
 
-Version 1.9.8f
+Version 1.9.8g
 
 # Additional important information
 - Copy file userConfig.h.SAMPLE to userConfig.h and edit this file accordingly.
@@ -12,6 +12,10 @@ Version 1.9.8f
   ![Library Manager](https://raw.githubusercontent.com/medlor/ranciliopid/add-mqtt-support/PubSubClient_Dep.jpg)
 
 # Changelog
+- 1.9.8g:
+  - Improvement: Broken temperature is detected when temp has increased more than >5 degrees (previous 25 degrees) in the last 0.4 seconds.
+  - Improvement: Better brewReady detection by waiting for stable temperature within a longer time window (from 6 to 14secs).
+  - TemperatureHistory increased from 6 seconds to 30seconds.
 - 1.9.8f:
   - Added missing config.h.SAMPLE variables.
   - Added some more mqtt events.

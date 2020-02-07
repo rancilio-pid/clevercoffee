@@ -87,7 +87,7 @@ char topic_will[256];
 char topic_set[256];
 unsigned long lastMQTTStatusReportTime = 0;
 unsigned long lastMQTTStatusReportInterval = 1000; //mqtt send status-report every 1 second
-const boolean mqtt_flag_retained = false; //TODO true
+const boolean mqtt_flag_retained = true;
 unsigned long mqtt_dontPublishUntilTime = 0;
 unsigned long mqtt_dontPublishBackoffTime = 10000; // Failsafe: dont publish if there are errors for 10 seconds
 unsigned long mqtt_lastReconnectAttemptTime = 0;
@@ -109,7 +109,7 @@ boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
 /********************************************************
    moving average - Brüherkennung
 *****************************************************/
-const int numReadings = 15;             // number of values per Array
+const int numReadings = 75;             // number of values per Array
 double readingstemp[numReadings];        // the readings from Temp
 float readingstime[numReadings];        // the readings from time
 float readingchangerate[numReadings];   // DiffTemp (based on readings) Per Second
@@ -532,12 +532,15 @@ void updateTemperatureHistory(double myInput) {
 }
 
 //calculate the temperature difference between NOW and the most historical data. Returns temperature in celcius.
-double pastTemperatureChange() {
+double pastTemperatureChange(int lookback) {
   double temperatureDiff;
-  int historicIndex = readIndex + 1;
-  if (readIndex >= numReadings - 1) {
-    historicIndex = 0;
+  if (lookback > numReadings) lookback=numReadings -1;
+  int offset = lookback % numReadings;
+  int historicIndex = (readIndex - offset);
+  if ( historicIndex < 0 ) {
+    historicIndex += numReadings;
   }
+
   //ignore not yet initialized values
   if (readingstime[readIndex] == 0 || readingstime[historicIndex] == 0) return 0;
 
@@ -568,7 +571,7 @@ bool brewReady(double setPoint, float marginOfFluctuation, int lookback) {
 }
 
 /********************************************************
-  check sensor value. If < 0 or difference between old and new >25, then increase error.
+  check sensor value. If < 0 or difference between old and new >10, then increase error.
   If error is equal to maxErrorCounter, then set sensorError
 *****************************************************/
 boolean checkSensor(float tempInput) {
@@ -576,7 +579,7 @@ boolean checkSensor(float tempInput) {
   /********************************************************
     sensor error
   ******************************************************/
-  if ( ( tempInput < 0 || tempInput > 150 || fabs(tempInput - previousInput) > 25) && !sensorError) {
+  if ( ( tempInput < 0 || tempInput > 150 || fabs(tempInput - previousInput) > 5) && !sensorError) {
     error++;
     sensorOK = false;
     snprintf(debugline, sizeof(debugline), "WARN: temperature sensor reading: consec_errors=%d, temp_current=%0.2f, temp_prev=%0.2f", error, tempInput, previousInput);
@@ -868,7 +871,7 @@ void sendToBlynk() {
         Blynk.syncVirtual(V3);
       }
       if (blynksendcounter == 4) {
-        Blynk.virtualWrite(V35, pastTemperatureChange());
+        Blynk.virtualWrite(V35, pastTemperatureChange(15));
         Blynk.syncVirtual(V35);
       }
       if (blynksendcounter >= 5) {
@@ -895,6 +898,14 @@ void brewdetection() {
         snprintf(debugline, sizeof(debugline), "INFO: Brew detection is over. Reverting to regular pid values.");
         DEBUG_println(debugline);
         mqtt_publish("events", debugline);
+        //this garantuees reseted PID by toggle on/off via SetMode() (only useful if aggbKi != 0))
+        if (pidMode == 1 && aggbTn != 0) {
+          pidMode = 0;
+          bPID.SetMode(pidMode);
+          Output = 0;
+          pidMode = 1;
+          bPID.SetMode(pidMode);
+        }
       }
       timerBrewdetection = 0 ;
         if (OnlyPID == 1) {
@@ -905,7 +916,7 @@ void brewdetection() {
 
   if (Brewdetection == 1) {
     //enable bew-detection if not already running and diff temp is > brewboarder
-    if (pastTemperatureChange() <= -brewboarder && timerBrewdetection == 0 ) {
+    if (pastTemperatureChange(15) <= -brewboarder && timerBrewdetection == 0 ) {
       DEBUG_println("SW Brew detected") ;
       timeBrewdetection = millis() ;
       timerBrewdetection = 1 ;
@@ -1259,8 +1270,8 @@ void loop() {
         mqtt_publish("kp", number2string(bPID.GetKp()));
         mqtt_publish("ki", number2string(bPID.GetKi()));
         mqtt_publish("kd", number2string(bPID.GetKd()));
-        mqtt_publish("pastTemperatureChange", number2string(pastTemperatureChange()));
-        mqtt_publish("brewReady", bool2string(brewReady(setPoint, marginOfFluctuation, numReadings)));
+        mqtt_publish("pastTemperatureChange", number2string(pastTemperatureChange(15)));
+        mqtt_publish("brewReady", bool2string(brewReady(setPoint, marginOfFluctuation, 35)));
        }
     }
   } else {
@@ -1297,7 +1308,7 @@ void loop() {
         } else {
           startKi = 0;
         }
-        if ( bPID.GetKp() != startKp && almostEqual(bPID.GetKi(), startKi) ) { //TODO remove this condition by refactoring kaltstart variable
+        if ( not almostEqual(bPID.GetKp(), startKp) && not almostEqual(bPID.GetKi(), startKi) ) { //TODO remove this condition by refactoring kaltstart variable
           snprintf(debugline, sizeof(debugline), "INFO: cold start activated");
           DEBUG_println(debugline);
           mqtt_publish("events", debugline);
@@ -1314,8 +1325,8 @@ void loop() {
         aggbKi = 0;
       }
       aggbKd = aggbTv * aggbKp ;
-      if ( bPID.GetKp() != aggbKp && almostEqual(bPID.GetKi(), aggbKi) && almostEqual(bPID.GetKd(), aggbKd) ) {
-        snprintf(debugline, sizeof(debugline), "INFO: brew detected. Changing pid values.");
+      if ( not almostEqual(bPID.GetKp(), aggbKp) && not almostEqual(bPID.GetKi(), aggbKi) && not almostEqual(bPID.GetKd(), aggbKd) ) {
+        snprintf(debugline, sizeof(debugline), "INFO: Brew detected. Setting brew pid values.");
         DEBUG_println(debugline);
         mqtt_publish("events", debugline);
       }
@@ -1330,8 +1341,8 @@ void loop() {
         snprintf(debugline, sizeof(debugline), "INFO: cold start deactivated");
         DEBUG_println(debugline);
         mqtt_publish("events", debugline);
-        //this garantuees reseted PID by toggle on/off via SetMode() (workaround)
-        if (pidMode == 1) {
+        //this garantuees reseted PID by toggle on/off via SetMode() (only useful if startKi != 0)
+        if (pidMode == 1 && startTn != 0) {
           pidMode = 0;
           bPID.SetMode(pidMode);
           Output = 0;
