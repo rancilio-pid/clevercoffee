@@ -3,7 +3,7 @@ Rancilio-Silvia PID für Arduino http://rancilio-pid.de
 
 BETA VERSION
 
-Version 1.9.8g
+Version 1.9.8h
 
 # Additional important information
 - Copy file userConfig.h.SAMPLE to userConfig.h and edit this file accordingly.
@@ -11,7 +11,13 @@ Version 1.9.8g
   Please install this lib by using Arduino->Sketch->Include Library->"Library Manager".
   ![Library Manager](https://raw.githubusercontent.com/medlor/ranciliopid/add-mqtt-support/PubSubClient_Dep.jpg)
 
+# Tunings instructions
+- 2 Step Coldstart:
+  Set STARTTEMP variable to around 80 degree celcius and cold start the maschine. Wait until the heater goes from 100% to 0%, and after some time the heater's lamp starts blinking again. Write down the current temperature at this moment and increase the STARTTEMP variable by the difference of the written down temperature to your SETPOINT. Shutdown your machine and let it cool down. Do this multiple times until the temperature is correct.
+
 # Changelog
+- 1.9.8h:
+  - Feature: Implemented special 2 step cold-start mechanism. See special tuning instructions above.
 - 1.9.8g:
   - Improvement: Broken temperature is detected when temp has increased more than >5 degrees (previous 25 degrees) in the last 0.4 seconds.
   - Improvement: Better brewReady detection by waiting for stable temperature within a longer time window (from 6 to 14secs).

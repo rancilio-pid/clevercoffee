@@ -1,5 +1,5 @@
 /********************************************************
-   Version 1.9.8f MASTER
+   Version 1.9.8h MASTER
   Key facts: major revision
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
@@ -41,7 +41,7 @@
 //#include "Arduino.h"
 #include <EEPROM.h>
 
-const char* sysVersion PROGMEM  = "Version 1.9.8f Beta";
+const char* sysVersion PROGMEM  = "Version 1.9.8h Beta";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -51,7 +51,7 @@ const int Display = DISPLAY;
 const int OnlyPID = ONLYPID;
 const int TempSensor = TEMPSENSOR;
 const int TempSensorRecovery = TEMPSENSORRECOVERY;
-const int Brewdetection = BREWDETECTION;
+const int brewDetection = BREWDETECTION;
 const int fallback = FALLBACK;
 const int triggerType = TRIGGERTYPE;
 const boolean ota = OTA;
@@ -101,10 +101,12 @@ PubSubClient mqtt_client(espClient);
 /********************************************************
    Vorab-Konfig
 ******************************************************/
-int pidON = 1 ;                 // 1 = control loop in closed loop
-int relayON, relayOFF;          // used for relay trigger type. Do not change!
-boolean kaltstart = true;       // true = Rancilio started for first time
-boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
+int pidON = 1 ;               // 1 = control loop in closed loop
+int relayON, relayOFF;        // used for relay trigger type. Do not change!
+int coldstartStep = 3;        // 1:= coldstart step1 detected (full heater power), 
+                              // 2:= coldstart step2 (heater off, waiting for temperature to stabilize)
+                              // 3:= coldstart is over, we are in regular PID mode (default)
+boolean emergencyStop = false;// Notstop bei zu hoher Temperatur
 
 /********************************************************
    moving average - Brüherkennung
@@ -118,8 +120,8 @@ int readIndex = 0;              // the index of the current reading
 int totaltime = 0 ;             // the running time
 double changerate = 0;          // local change rate of temprature
 double heatrateaveragemin = 0 ;
-unsigned long  timeBrewdetection = 0 ;
-int timerBrewdetection = 0 ;
+unsigned long  timeBrewDetection = 0 ;
+int timerBrewDetection = 0 ;
 int i = 0;
 #ifdef BREW_READY_DETECTION
 float marginOfFluctuation = float(BREW_READY_DETECTION);
@@ -885,16 +887,56 @@ void sendToBlynk() {
 }
 
 /********************************************************
-    Brewdetection
+    coldstart Step Detection
 ******************************************************/
-void brewdetection() {
-  if (brewboarder == 0) return; //abort brewdetection if deactivated
+void coldstartStepDetection() {
+  const int coldstartStep1_minTempToActivate = 5;
+  switch (coldstartStep) {
+    case 1: // coldstart step 1 running, that means full heater power. Check if target temp is reached
+    {
+      if (Input >= starttemp) {
+        snprintf(debugline, sizeof(debugline), "INFO: Coldstart transition to step 2 (heater off)");
+        DEBUG_println(debugline);
+        mqtt_publish("events", debugline);
+        coldstartStep = 2;
+      }
+      break;
+    }
+    case 2: // coldstart step 1 running, that means heater is off and we are waiting to temperature to stabilize.
+    {
+      float tempChange = pastTemperatureChange(15); // 6 secs
+      if (Input >= setPoint || (tempChange <= 0.2 && tempChange>=0)) {
+        snprintf(debugline, sizeof(debugline), "INFO: Coldstart transition to step 3 (regular PID controlled)");
+        DEBUG_println(debugline);
+        mqtt_publish("events", debugline);
+        coldstartStep = 3;
+      }
+      break;
+    }
+    case 3: // regular mode, check if we need to go into coldstart step 1
+    default:
+    {
+      if (Input < starttemp - coldstartStep1_minTempToActivate) {
+        snprintf(debugline, sizeof(debugline), "INFO: Coldstart transition to step 1 (heater full power)");
+        DEBUG_println(debugline);
+        mqtt_publish("events", debugline);
+        coldstartStep = 1;
+      }
+      break;
+    }
+  }
+}
+/********************************************************
+    brewDetection
+******************************************************/
+void brewRunDetection() {
+  if (brewboarder == 0) return; //abort brewDetection if deactivated
 
   // Brew detecion == 1 software solution , == 2 hardware
-  if (Brewdetection == 1 || Brewdetection == 2) {
+  if (brewDetection == 1 || brewDetection == 2) {
     //disable brew-detection after brewtimersoftware seconds
-    if (millis() - timeBrewdetection >= brewtimersoftware * 1000) {
-      if (timerBrewdetection == 1) {
+    if (millis() - timeBrewDetection >= brewtimersoftware * 1000) {
+      if (timerBrewDetection == 1) {
         snprintf(debugline, sizeof(debugline), "INFO: Brew detection is over. Reverting to regular pid values.");
         DEBUG_println(debugline);
         mqtt_publish("events", debugline);
@@ -907,20 +949,22 @@ void brewdetection() {
           bPID.SetMode(pidMode);
         }
       }
-      timerBrewdetection = 0 ;
+      timerBrewDetection = 0 ;
         if (OnlyPID == 1) {
           bezugsZeit = 0 ;
         }
     }
   }
 
-  if (Brewdetection == 1) {
+  if (brewDetection == 1) {
     //enable bew-detection if not already running and diff temp is > brewboarder
-    if (pastTemperatureChange(15) <= -brewboarder && timerBrewdetection == 0 ) {
-      DEBUG_println("SW Brew detected") ;
-      timeBrewdetection = millis() ;
-      timerBrewdetection = 1 ;
+    if (pastTemperatureChange(15) <= -brewboarder && timerBrewDetection == 0 ) {
+      timeBrewDetection = millis() ;
+      timerBrewDetection = 1 ;
       mqtt_publish("brewDetected", "1");
+      snprintf(debugline, sizeof(debugline), "INFO: Brew detected. Setting brew pid values for %0.0f seconds", brewtimersoftware);
+      DEBUG_println(debugline);
+      mqtt_publish("events", debugline);
     }
   }
 }
@@ -1298,26 +1342,24 @@ void loop() {
   //Sicherheitsabfrage
   if (!sensorError && Input > 0 && !emergencyStop) {
 
-    brewdetection();
+    brewRunDetection();
+    coldstartStepDetection();
 
-    //Set spcific cold start PID values if first start of machine is detected
-    if (Input < starttemp && kaltstart) {
-      if (pidMode == 1) {
-        if (startTn != 0) {
-          startKi = startKp / startTn;
-        } else {
-          startKi = 0;
-        }
-        if ( not almostEqual(bPID.GetKp(), startKp) && not almostEqual(bPID.GetKi(), startKi) ) { //TODO remove this condition by refactoring kaltstart variable
-          snprintf(debugline, sizeof(debugline), "INFO: cold start activated");
-          DEBUG_println(debugline);
-          mqtt_publish("events", debugline);
-        }
-        bPID.SetTunings(startKp, startKi, 0); // TODO BUG: setTunings() greift erst wenn startTn != 0 ist?? float comparison < 0 failed.
+    //coldstartStep 1: Water is very cold, set heater to full power
+    if (coldstartStep == 1) {
+      if (startTn != 0) {
+        startKi = startKp / startTn;
+      } else {
+        startKi = 0;
       }
+      bPID.SetTunings(startKp, startKi, 0); // TODO BUG: setTunings() greift erst wenn startTn != 0 ist?? float comparison < 0 failed.
+
+    //coldstartStep 2: Water is very cold, set heater to full power
+    } else if (coldstartStep == 2) {
+        bPID.SetTunings(0, 0, 0);
 
     //if brew is detected, set brew specific PID values
-    } else if ( millis() - timeBrewdetection  < brewtimersoftware * 1000 && timerBrewdetection == 1) {
+    } else if ( coldstartStep == 3 && timerBrewDetection == 1 && (millis() - timeBrewDetection  < brewtimersoftware * 1000)) {
       // calc ki, kd
       if (aggbTn != 0) {
         aggbKi = aggbKp / aggbTn ;
@@ -1325,32 +1367,18 @@ void loop() {
         aggbKi = 0;
       }
       aggbKd = aggbTv * aggbKp ;
-      if ( not almostEqual(bPID.GetKp(), aggbKp) && not almostEqual(bPID.GetKi(), aggbKi) && not almostEqual(bPID.GetKd(), aggbKd) ) {
+      if ( not almostEqual(bPID.GetKp(), aggbKp) || not almostEqual(bPID.GetKi(), aggbKi) || not almostEqual(bPID.GetKd(), aggbKd) ) {
         snprintf(debugline, sizeof(debugline), "INFO: Brew detected. Setting brew pid values.");
         DEBUG_println(debugline);
         mqtt_publish("events", debugline);
       }
       bPID.SetTunings(aggbKp, aggbKi, aggbKd) ;
       if (OnlyPID == 1){
-        bezugsZeit = millis() - timeBrewdetection ;
+        bezugsZeit = millis() - timeBrewDetection ;
       }
 
-    //set regular pid values in "normal" mode
+    //coldstartStep 2: set regular pid values in "normal" mode
     } else {
-      if ( kaltstart ) {
-        snprintf(debugline, sizeof(debugline), "INFO: cold start deactivated");
-        DEBUG_println(debugline);
-        mqtt_publish("events", debugline);
-        //this garantuees reseted PID by toggle on/off via SetMode() (only useful if startKi != 0)
-        if (pidMode == 1 && startTn != 0) {
-          pidMode = 0;
-          bPID.SetMode(pidMode);
-          Output = 0;
-          pidMode = 1;
-          bPID.SetMode(pidMode);
-        }
-      }
-      //TODO: If >2C over target, disable PID at all.
       // calc ki, kd
       if (aggTn != 0) {
         aggKi = aggKp / aggTn ;
@@ -1359,7 +1387,6 @@ void loop() {
       }
       aggKd = aggTv * aggKp ;
       bPID.SetTunings(aggKp, aggKi, aggKd);
-      kaltstart = false;
     }
 
     sendToBlynk();
