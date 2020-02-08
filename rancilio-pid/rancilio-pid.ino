@@ -383,7 +383,7 @@ void displaymessage(String displaymessagetext, String displaymessagetext2) {
   Moving average - brewdetection (SW)
 *****************************************************/
 
-void movAvg() 
+void movAvg() {
   if (firstreading == 1) {
     for (int thisReading = 0; thisReading < numReadings; thisReading++) {
       readingstemp[thisReading] = Input;
