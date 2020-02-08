@@ -160,16 +160,12 @@ U8X8_SSD1306_128X32_UNIVISION_SW_I2C u8x8(/* clock=*/ 5, /* data=*/ 4, /* reset=
 //#include <ACROBOTIC_SSD1306.h>
 #include <Adafruit_SSD1306.h>
 #define OLED_RESET 16
-Adafruit_SSD1306 display(OLED_RESET);
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels  
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define XPOS 0
 #define YPOS 1
 #define DELTAY 2
-
-
-#if (SSD1306_LCDHEIGHT != 64)
-#error("Height incorrect, please fix Adafruit_SSD1306.h!");
-#endif
-
 
 /********************************************************
    PID
