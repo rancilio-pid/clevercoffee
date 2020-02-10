@@ -33,3 +33,43 @@ static const unsigned char PROGMEM logo_bits[] = {
 	0x00, 0x1f, 0x80, 0x00, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
+static const unsigned char PROGMEM antenna_OK[] = {
+  B11111000,
+  B10101000,
+  B10101000,
+  B01110000,
+  B00100000,
+  B00100000,
+  B00100000,
+  B00100000
+};
+static const unsigned char PROGMEM antenna_NOK[] = {
+  B10111100,
+  B01000100,
+  B00100100,
+  B00010000,
+  B00001000,
+  B00010100,
+  B00010010,
+  B00010001
+};
+static const unsigned char PROGMEM blynk_OK[] = {
+  B00000000, B00000000,
+  B10011110, B00100000,
+  B01010001, B01000000,
+  B00010001, B00000000,
+  B11011110, B01100000,
+  B00010001, B00000000,
+  B01010001, B01000000,
+  B10011110, B00100000
+};
+static const unsigned char PROGMEM blynk_NOK[] = {
+  B10000000,
+  B01011100,
+  B00100010,
+  B00010010,
+  B00101000,
+  B00100100,
+  B00100010,
+  B00111101
+};
