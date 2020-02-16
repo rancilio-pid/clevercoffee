@@ -143,7 +143,7 @@ double aggbKi = aggbKp / aggbTn;
 #endif
 double aggbKd = aggbTv * aggbKp ;
 double brewtimersoftware = 45;    // 20-5 for detection // after detecting a brew, wait at least this amount of seconds for detecting the next one.
-double brewboarder = 1.5 ;        // border for the detection // if temperature decreased within the last 6 seconds below this threshold (in Celcius), then we detect a brew.
+double brewboarder = 2.0 ;        // border for the detection // if temperature decreased within the last 6 seconds below this threshold (in Celcius), then we detect a brew.
 const int PonE = PONE;
 // be carefull: to low: risk of wrong brew detection
 // and rising temperature
@@ -239,6 +239,8 @@ double aggKd = aggTv * aggKp ;
 
 
 PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, PonE, DIRECT);
+
+unsigned long outputSum_lastcorrection = 0;
 
 /********************************************************
    DALLAS TEMP
@@ -533,7 +535,7 @@ void updateTemperatureHistory(double myInput) {
   readingstemp[readIndex] = myInput;
 }
 
-//calculate the temperature difference between NOW and the most historical data. Returns temperature in celcius.
+//calculate the temperature difference between NOW and a datapoint in history. Returns temperature in celcius.
 double pastTemperatureChange(int lookback) {
   double temperatureDiff;
   if (lookback > numReadings) lookback=numReadings -1;
@@ -645,6 +647,7 @@ void refreshTemp() {
       */
       temperature = 0;
       Sensor1.getTemperature(&temperature);
+      // TODO simulate what happens when temp >500 . It looks like Input is written despite if-ranges?!?! (pointer issue?)
       // temperature must be between 0x000 and 0x7FF(=DEC2047)
       Temperatur_C = Sensor1.calc_Celsius(&temperature);
       // Temperature_C must be -50C < Temperature_C <= 150C
@@ -873,7 +876,7 @@ void sendToBlynk() {
         Blynk.syncVirtual(V3);
       }
       if (blynksendcounter == 4) {
-        Blynk.virtualWrite(V35, pastTemperatureChange(15));
+        Blynk.virtualWrite(V35, pastTemperatureChange(30));
         Blynk.syncVirtual(V35);
       }
       if (blynksendcounter >= 5) {
@@ -904,11 +907,15 @@ void coldstartStepDetection() {
     }
     case 2: // coldstart step 1 running, that means heater is off and we are waiting to temperature to stabilize.
     {
-      float tempChange = pastTemperatureChange(15); // 6 secs
-      if (Input >= setPoint || (tempChange <= 0.2 && tempChange>=0)) {
+      float tempChange = pastTemperatureChange(30); // 12 secs
+      if ( (Input - setPoint >= 0) || (Input - setPoint <= -20) || (Input - setPoint <= 0  && tempChange <= 0)) {
         snprintf(debugline, sizeof(debugline), "INFO: Coldstart transition to step 3 (regular PID controlled)");
         DEBUG_println(debugline);
         mqtt_publish("events", debugline);
+        
+        //double outputSum = 49; // set to steady value . TODO remove hard-coded
+        //bPID.SetOutputLimits((outputSum), outputSum+1); //hack to set bPid.outputSum
+        //bPID.SetOutputLimits(outputSum, windowSize);
         coldstartStep = 3;
       }
       break;
@@ -940,14 +947,6 @@ void brewRunDetection() {
         snprintf(debugline, sizeof(debugline), "INFO: Brew detection is over. Reverting to regular pid values.");
         DEBUG_println(debugline);
         mqtt_publish("events", debugline);
-        //this garantuees reseted PID by toggle on/off via SetMode() (only useful if aggbKi != 0))
-        if (pidMode == 1 && aggbTn != 0) {
-          pidMode = 0;
-          bPID.SetMode(pidMode);
-          Output = 0;
-          pidMode = 1;
-          bPID.SetMode(pidMode);
-        }
       }
       timerBrewDetection = 0 ;
         if (OnlyPID == 1) {
@@ -1314,8 +1313,8 @@ void loop() {
         mqtt_publish("kp", number2string(bPID.GetKp()));
         mqtt_publish("ki", number2string(bPID.GetKi()));
         mqtt_publish("kd", number2string(bPID.GetKd()));
-        mqtt_publish("pastTemperatureChange", number2string(pastTemperatureChange(15)));
-        mqtt_publish("brewReady", bool2string(brewReady(setPoint, marginOfFluctuation, 35)));
+        mqtt_publish("pastTemperatureChange", number2string(pastTemperatureChange(30)));
+        mqtt_publish("brewReady", bool2string(brewReady(setPoint, marginOfFluctuation, numReadings)));
        }
     }
   } else {
@@ -1354,9 +1353,13 @@ void loop() {
       }
       bPID.SetTunings(startKp, startKi, 0); // TODO BUG: setTunings() greift erst wenn startTn != 0 ist?? float comparison < 0 failed.
 
-    //coldstartStep 2: Water is very cold, set heater to full power
+    //coldstartStep 2: ColdstartTemp reached. Now steadily increasing temperature.
     } else if (coldstartStep == 2) {
-        bPID.SetTunings(0, 0, 0);
+        // bPID.SetTunings(0, 0, 0);
+        double outputSum = 49; // set to steady value . TODO remove hard-coded
+        bPID.SetOutputLimits(outputSum*1, outputSum*1+1);
+        bPID.SetOutputLimits(outputSum*1, windowSize);
+        
 
     //if brew is detected, set brew specific PID values
     } else if ( coldstartStep == 3 && timerBrewDetection == 1 && (millis() - timeBrewDetection  < brewtimersoftware * 1000)) {
@@ -1377,7 +1380,7 @@ void loop() {
         bezugsZeit = millis() - timeBrewDetection ;
       }
 
-    //coldstartStep 2: set regular pid values in "normal" mode
+    //coldstartStep 3: set regular pid values in "normal" mode
     } else {
       // calc ki, kd
       if (aggTn != 0) {
@@ -1386,6 +1389,70 @@ void loop() {
         aggKi = 0 ;
       }
       aggKd = aggTv * aggKp ;
+
+      // TOBIAS TODO "Implement more phases": Add minimum output to 400 when near-below setpoint. Dont set when too high or in another phase??
+      // Idea against high peaks: Check every 10sec the Diff-Temp(20sec): If Diff-Temp is >=0.5, do
+      // 1) if setPoint is breached in 40secs time, then reduce Output by 50% (but not not below stable).
+      // 2) if setPoint is breached in 20sec time, then reduce Output to "stable".
+      // Idea: Remember past outputs and Temperatures:
+      // 1) If Temp decreases and past output 
+      if ( millis() - outputSum_lastcorrection > 20 * 1000 ) {
+
+        double outputSum = 49; //TODO remove hard-coded . Wenn es kalt ist dann brauche ich ~90
+        
+        if ( Input - setPoint >= 2 ) {
+          outputSum_lastcorrection = millis();
+          snprintf(debugline, sizeof(debugline), "INFO: Force outputSum to low value (too high above setpoint)");
+          DEBUG_println(debugline);
+          bPID.SetOutputLimits((outputSum*0.5), outputSum*0.5+1); //hack to set bPid.outputSum
+          bPID.SetOutputLimits(0, windowSize);
+        }
+        
+        //manipulate PID controller to reduce oscillating temperature (Tobias: this safes around 60 seconds on 1 oscillation)
+        //set outputSum to a minimum "stable" value when we are traversing downwards past setpoint
+        if ( (Output < outputSum * 1.1) && (pastTemperatureChange(30) <= -0.1 ) && (Input - setPoint >= 0.2 && Input - setPoint < 0.4 ) ) {
+          outputSum_lastcorrection = millis();
+          snprintf(debugline, sizeof(debugline), "INFO: Force outputSum to stable value (on traversing downwards past setpoint)");
+          DEBUG_println(debugline);
+          mqtt_publish("events", debugline);
+          bPID.SetOutputLimits((outputSum*1.1), outputSum*1.1+1); //hack to set bPid.outputSum
+          bPID.SetOutputLimits(outputSum*1.1, windowSize);  //same value as in coldstartstep transition from 2->3.
+        }
+
+        if ( true ) {
+          //manipulate PID controller to reduce oscillating temperature (Tobias: this safes around 25 seconds on 1 oscillation)
+          //reduce too high output on traversing upwards past setpoint
+          //double outputSum = 49; //TODO remove hard-coded
+
+          if ( (Output > outputSum * 1.5) && (pastTemperatureChange(30) > 0.2 ) && (Input - setPoint <= -0.5 && Input - setPoint >= -4.0) ) {
+            outputSum_lastcorrection = millis();
+            snprintf(debugline, sizeof(debugline), "INFO: Force outputSum to stable value (on traversing upwards past setpoint - rough)");
+            DEBUG_println(debugline);
+            mqtt_publish("events", debugline);
+            bPID.SetOutputLimits((outputSum*0.6), outputSum*0.6+1); //hack to set bPid.outputSum
+            bPID.SetOutputLimits(outputSum*0.6, windowSize);
+          }
+          
+          if ( (Output > outputSum * 1) && (pastTemperatureChange(30) > 0.1 ) && (Input - setPoint <= 0 && Input - setPoint > -0.3) ) {
+            outputSum_lastcorrection = millis();
+            snprintf(debugline, sizeof(debugline), "INFO: Force outputSum to stable value (on traversing upwards past setpoint - fine)");
+            DEBUG_println(debugline);
+            mqtt_publish("events", debugline);
+            bPID.SetOutputLimits((outputSum*0.9), outputSum*0.9+1); //hack to set bPid.outputSum
+            bPID.SetOutputLimits(outputSum*0.9, windowSize);
+          }
+
+          if ( (Output < outputSum * 1) && (pastTemperatureChange(30) <= 0.1 && pastTemperatureChange(30) >= -0.1) && (Input - setPoint <= 0.1 && Input - setPoint >= -0.1) ) {
+            outputSum_lastcorrection = millis();
+            snprintf(debugline, sizeof(debugline), "INFO: Force outputSum to stable value (stable point)");
+            DEBUG_println(debugline);
+            mqtt_publish("events", debugline);
+            //dont do this: bPID.SetOutputLimits((outputSum*1.1), outputSum*1.1+1); //hack to set bPid.outputSum
+            bPID.SetOutputLimits(outputSum*1.0, windowSize);
+          }
+        }
+      }
+      
       bPID.SetTunings(aggKp, aggKi, aggKd);
     }
 
