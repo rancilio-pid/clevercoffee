@@ -6,27 +6,8 @@
 ******************************************************/
 
 #include "icon.h"
+#include "RemoteDebug.h"  //https://github.com/JoaoLopesF/RemoteDebug
 
-// Debug mode is active if #define DEBUGMODE is set
-#define DEBUGMODE
-
-#ifndef DEBUGMODE
-#define DEBUG_println(a)
-#define DEBUG_print(a)
-#define DEBUGSTART(a)
-#else
-#define DEBUG_println(a) Serial.println(a);
-#define DEBUG_print(a) Serial.print(a);
-#define DEBUGSTART(a) Serial.begin(a);
-#endif
-
-//#define BLYNK_PRINT Serial
-//#define BLYNK_DEBUG
-
-//Define pins for outputs
-#define pinRelayVentil    12
-#define pinRelayPumpe     13
-#define pinRelayHeater    14
 
 //Libraries for OTA
 #include <ArduinoOTA.h>
@@ -40,6 +21,34 @@
 #include "userConfig.h" // needs to be configured by the user
 //#include "Arduino.h"
 #include <EEPROM.h>
+
+RemoteDebug Debug;
+
+// Debug mode is active if #define DEBUGMODE is set
+#define DEBUGMODE
+
+#ifndef DEBUGMODE
+#define DEBUG_println(a)
+#define DEBUG_print(a)
+#define DEBUGSTART(a)
+#else
+//#define DEBUG_println(a) rdebugDln("%s", a);
+#define DEBUG_printFmt(fmt, ...) if (Debug.isActive(Debug.DEBUG))   Debug.printf("%0u " fmt, millis()/1000, ##__VA_ARGS__)
+#define DEBUG_println(a) if (Debug.isActive(Debug.DEBUG))   Debug.printf("%0u %s\n", millis()/1000, a)
+//#define DEBUG_println(a) Serial.println(a);
+//#define DEBUG_printFmt(fmt, ...) if (Debug.isActive(Debug.DEBUG))   Debug.printf("%0u (%s)" fmt, millis()/1000, ##__VA_ARGS__)
+#define DEBUG_print(a) if (Debug.isActive(Debug.DEBUG))   Debug.printf("%0u %s", millis()/1000, a)
+//#define DEBUG_print(a) Serial.print(a);
+#define DEBUGSTART(a) Serial.begin(a);
+#endif
+
+//#define BLYNK_PRINT Serial
+//#define BLYNK_DEBUG
+
+//Define pins for outputs
+#define pinRelayVentil    12
+#define pinRelayPumpe     13
+#define pinRelayHeater    14
 
 const char* sysVersion PROGMEM  = "Version 1.9.8h Beta";
 
@@ -129,6 +138,7 @@ float marginOfFluctuation = float(BREW_READY_DETECTION);
 float marginOfFluctuation = 0
 #endif
 
+
 /********************************************************
    PID - Werte Brüherkennung Offline
 *****************************************************/
@@ -147,6 +157,53 @@ double brewboarder = 2.0 ;        // border for the detection // if temperature 
 const int PonE = PONE;
 // be carefull: to low: risk of wrong brew detection
 // and rising temperature
+
+
+/********************************************************
+   Steady Power Temperature Controller
+*****************************************************/
+#include "VelocityControllerTypeC.h"
+
+bool enableSteadyPowerTempController = true ; // TODO set default false + config + eeprom
+double steadyPower = 49;  // TODO config + eeprom
+double offsetPower = 0;
+double burstPower = 500;
+int burstShot = 0;
+
+unsigned long previousMillistemp;  // initialisation at the end of init()
+const long intervaltempmestsic = 400 ;
+const long intervaltempmesds18b20 = 400  ;
+int pidMode = 1; //1 = Automatic, 0 = Manual
+
+const unsigned int windowSize = 1000;
+unsigned int isrCounter = 0;  // counter for ISR
+unsigned long windowStartTime;
+double Input, Output, setPointTemp;  //
+double previousInput = 0;
+
+double setPoint = SETPOINT;
+double aggKp = AGGKP;
+double aggTn = AGGTN;
+double aggTv = AGGTV;
+double startKp = STARTKP;
+double startTn = STARTTN;
+#if (startTn == 0)
+double startKi = 0;
+#else
+double startKi = startKp / startTn;
+#endif
+
+double starttemp = STARTTEMP;
+#if (aggTn == 0)
+double aggKi = 0;
+#else
+double aggKi = aggKp / aggTn;
+#endif
+double aggKd = aggTv * aggKp ;
+
+VelocityControllerTypeC bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, &Debug);
+
+unsigned long outputSum_lastcorrection = 0;
 
 /********************************************************
    Analog Schalter Read
@@ -201,46 +258,6 @@ Adafruit_SSD1306 display(OLED_RESET);
 #endif
 
 
-/********************************************************
-   PID
-******************************************************/
-#include "PID_v1.h"
-
-unsigned long previousMillistemp;  // initialisation at the end of init()
-const long intervaltempmestsic = 400 ;
-const long intervaltempmesds18b20 = 400  ;
-int pidMode = 1; //1 = Automatic, 0 = Manual
-
-const unsigned int windowSize = 1000;
-unsigned int isrCounter = 0;  // counter for ISR
-unsigned long windowStartTime;
-double Input, Output, setPointTemp;  //
-double previousInput = 0;
-
-double setPoint = SETPOINT;
-double aggKp = AGGKP;
-double aggTn = AGGTN;
-double aggTv = AGGTV;
-double startKp = STARTKP;
-double startTn = STARTTN;
-#if (startTn == 0)
-double startKi = 0;
-#else
-double startKi = startKp / startTn;
-#endif
-
-double starttemp = STARTTEMP;
-#if (aggTn == 0)
-double aggKi = 0;
-#else
-double aggKi = aggKp / aggTn;
-#endif
-double aggKd = aggTv * aggKp ;
-
-
-PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, PonE, DIRECT);
-
-unsigned long outputSum_lastcorrection = 0;
 
 /********************************************************
    DALLAS TEMP
@@ -362,6 +379,18 @@ BLYNK_WRITE(V34) {
   brewboarder =  param.asDouble();
 }
 
+BLYNK_WRITE(V40) {
+  burstShot =  param.asInt();
+}
+BLYNK_WRITE(V41) {
+  steadyPower =  param.asDouble();
+}
+BLYNK_WRITE(V42) {
+  offsetPower =  param.asDouble();
+}
+BLYNK_WRITE(V43) {
+  burstPower =  param.asDouble();
+}
 
 /********************************************************
   MQTT
@@ -465,7 +494,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   for (int i = 0; i < length; i++) {
     DEBUG_print((char)payload[i]);
   }
-  DEBUG_println();
+  DEBUG_println(" ");
   // OPTIONAL TODO: business logic to activate rancilio functions from external (eg brewing, PidOn, startup, PID parameters,..)
 }
 
@@ -474,11 +503,18 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 *****************************************************/
 void testEmergencyStop(){
   if (Input > 120){
+    if (emergencyStop != true) {
+      snprintf(debugline, sizeof(debugline), "ERROR: EmergencyStop because temperature>120 (temperature=%0.2f)", Input);
+      DEBUG_println(debugline);
+      mqtt_publish("events", debugline);
+    }
     emergencyStop = true;
-    snprintf(debugline, sizeof(debugline), "ERROR: EmergencyStop because temperature>120 (temperature=%0.2f)", Input);
-    DEBUG_println(debugline);
-    mqtt_publish("events", debugline);
   } else if (Input < 100) {
+    if (emergencyStop == true) {
+      snprintf(debugline, sizeof(debugline), "ERROR: EmergencyStop ended because temperature<100 (temperature=%0.2f)", Input);
+      DEBUG_println(debugline);
+      mqtt_publish("events", debugline);
+    }
     emergencyStop = false;
   }
 }
@@ -858,7 +894,7 @@ void sendToBlynk() {
   if (Offlinemodus != 0) return;
   unsigned long currentMillisBlynk = millis();
   if (currentMillisBlynk - previousMillisBlynk >= intervalBlynk) {
-    previousMillisBlynk += intervalBlynk;
+    previousMillisBlynk += intervalBlynk;  // FIX race
     if (Blynk.connected()) {
       if (grafana == 1) {
         Blynk.virtualWrite(V60, Input, Output,bPID.GetKp(),bPID.GetKi(),bPID.GetKd(),setPoint );
@@ -968,32 +1004,6 @@ void brewRunDetection() {
   }
 }
 
-/********************************************************
-    Timer 1 - ISR für PID Berechnung und Heizrelais-Ausgabe
-******************************************************/
-void ICACHE_RAM_ATTR onTimer1ISR_CURRENT() {
-  timer1_write(50000); // set interrupt time to 10ms
-
-  if (Output <= isrCounter) {
-    digitalWrite(pinRelayHeater, LOW);
-    //DEBUG_println("Power off!");
-  } else {
-    digitalWrite(pinRelayHeater, HIGH);
-    //DEBUG_println("Power on!");
-  }
-
-  isrCounter += 10; // += 10 because one tick = 10ms
-  //set PID output as relais commands
-  if (isrCounter > windowSize) { //Achtung: hier ist sowieso noch ein Bug der dazu führt, dass man einen Tick verliert.
-    isrCounter = 0;
-  }
-
-  //run PID calculation
-  if ( bPID.Compute() ) {
-    sprintf(debugline, "INFO: bPID.Compute(): Output=%f, InputTemp=%f, DiffTemp=%f, isrCounter=%u", Output, Input, (Input - setPoint), isrCounter);
-    DEBUG_println(debugline);
-  }
-}
 
 void ICACHE_RAM_ATTR onTimer1ISR() {
   timer1_write(50000); // set interrupt time to 10ms
@@ -1001,16 +1011,25 @@ void ICACHE_RAM_ATTR onTimer1ISR() {
   //run PID calculation
   if ( bPID.Compute() ) {
     isrCounter = 0;  // Attention: heater might not shutdown if bPid.SetSampleTime(), windowSize, timer1_write() and are not set correctly!
+    //if (burstShot == 1) {
+    //  burstShot = 0;
+    //  Output = burstPower;
+    //  snprintf(debugline, sizeof(debugline), "INFO: bPID.Compute(): BURST Output=%0.2f, InputTemp=%0.2f, DiffTemp=%0.2f, isrCounter=%u", Output, Input, (setPoint - Input), isrCounter);
+    //  DEBUG_println(debugline);
+    //} else {
     snprintf(debugline, sizeof(debugline), "INFO: bPID.Compute(): Output=%0.2f, InputTemp=%0.2f, DiffTemp=%0.2f, isrCounter=%u", Output, Input, (setPoint - Input), isrCounter);
     DEBUG_println(debugline);
+    //}
   }
-  
+
+  if ( true ) {  // TODO TOBIAS READD
   if (Output <= isrCounter) {
     digitalWrite(pinRelayHeater, LOW);
     //DEBUG_println("Power off!");
   } else {
     digitalWrite(pinRelayHeater, HIGH);
     //DEBUG_println("Power on!");
+  }
   }
   
   //increase counter until fail-safe is reached
@@ -1095,7 +1114,13 @@ void setup() {
       if (WiFi.status() == WL_CONNECTED) {
         DEBUG_println("WiFi connected");
         DEBUG_println("IP address: ");
-        DEBUG_println(WiFi.localIP());
+        DEBUG_println(WiFi.localIP().toString().c_str());
+        Debug.begin(hostname, Debug.DEBUG);
+        Debug.setResetCmdEnabled(true); // Enable the reset command
+        Debug.showProfiler(true); // Profiler (Good to measure times, to optimize codes)
+        Debug.showColors(true); // Colors
+        // Debug.setSerialEnabled(true); // log to Serial also
+
         displaymessage("2: Wifi connected, ", "try Blynk   ");
         DEBUG_println("Wifi works, now try Blynk connection");
         delay(2000);
@@ -1123,6 +1148,10 @@ void setup() {
           Blynk.syncVirtual(V32);
           Blynk.syncVirtual(V33);
           Blynk.syncVirtual(V34);
+          Blynk.syncVirtual(V40);
+          Blynk.syncVirtual(V41);
+          Blynk.syncVirtual(V42);
+          Blynk.syncVirtual(V43);
          // Blynk.syncAll();  //sync all values from Blynk server
           // Werte in den eeprom schreiben
           // ini eeprom mit begin
@@ -1224,15 +1253,25 @@ void setup() {
     sensors.begin();
     sensors.getAddress(sensorDeviceAddress, 0);
     sensors.setResolution(sensorDeviceAddress, 10) ;
-    sensors.requestTemperatures();
-    Input = sensors.getTempCByIndex(0);
+    do {
+      delay(100);
+      sensors.requestTemperatures();
+      Input = sensors.getTempCByIndex(0);
+    } while (!checkSensor(Input));
   }
 
   if (TempSensor == 2) {
     temperature = 0;
     Sensor1.getTemperature(&temperature);
     Input = Sensor1.calc_Celsius(&temperature);
-  }
+    //do {
+    //  delay(100);
+    //  temperature = 0;
+    //  Sensor1.getTemperature(&temperature);
+    //  Input = Sensor1.calc_Celsius(&temperature);
+    //} while (!checkSensor(Input));
+  }   
+
   /********************************************************
     movingaverage ini array
   ******************************************************/
@@ -1337,6 +1376,13 @@ void loop() {
     pidMode = 1;
     bPID.SetMode(pidMode);
   }
+  if (burstShot == 1 && pidMode == 1) {
+    burstShot = 0;
+    Output = burstPower ;
+    snprintf(debugline, sizeof(debugline), "INFO: BURST Output=%0.2f", Output);
+    DEBUG_println(debugline);
+    mqtt_publish("events", debugline);
+  }
 
   //Sicherheitsabfrage
   if (!sensorError && Input > 0 && !emergencyStop) {
@@ -1346,19 +1392,23 @@ void loop() {
 
     //coldstartStep 1: Water is very cold, set heater to full power
     if (coldstartStep == 1) {
-      if (startTn != 0) {
-        startKi = startKp / startTn;
+      if ( enableSteadyPowerTempController ) {
+        Output = 1000;
       } else {
-        startKi = 0;
+        if (startTn != 0) {
+          startKi = startKp / startTn;
+        } else {
+          startKi = 0;
+        }
+        bPID.SetTunings(startKp, startKi, 0); // TODO BUG: setTunings() greift erst wenn startTn != 0 ist?? float comparison < 0 failed.
       }
-      bPID.SetTunings(startKp, startKi, 0); // TODO BUG: setTunings() greift erst wenn startTn != 0 ist?? float comparison < 0 failed.
 
     //coldstartStep 2: ColdstartTemp reached. Now steadily increasing temperature.
     } else if (coldstartStep == 2) {
         // bPID.SetTunings(0, 0, 0);
-        double outputSum = 49; // set to steady value . TODO remove hard-coded
-        bPID.SetOutputLimits(outputSum*1, outputSum*1+1);
-        bPID.SetOutputLimits(outputSum*1, windowSize);
+        double outputSum = steadyPower; // set to steady value . TODO remove hard-coded
+        bPID.SetOutputLimits(steadyPower*1, steadyPower*1+1);
+        bPID.SetOutputLimits(steadyPower*1, windowSize);
         
 
     //if brew is detected, set brew specific PID values
@@ -1396,7 +1446,14 @@ void loop() {
       // 2) if setPoint is breached in 20sec time, then reduce Output to "stable".
       // Idea: Remember past outputs and Temperatures:
       // 1) If Temp decreases and past output 
-      if ( millis() - outputSum_lastcorrection > 20 * 1000 ) {
+      //
+      // Idea: Compensate for "colder" brewhead by having setpoint increased?! test water temp.
+      // Push temp 3C above settemp. Coldstartphase2 ==> autotune phase (previous saved stablepower (eeprom) as reference).
+      // autotune phase: If temp is decreasing in the last 40sec, then increase stablepower by 10%. Else decrease 10% and repeat. I stable then safe value.
+      // let temp slowly drop to setpoint by -5% and set back to steadypower when reached.
+
+      //TODO IMPORTANT: mqtt_publish must transfer all temp values with 3 precision to reduce rounding errors!
+      if ( false &&  millis() - outputSum_lastcorrection > 20 * 1000 ) {
 
         double outputSum = 49; //TODO remove hard-coded . Wenn es kalt ist dann brauche ich ~90
         
@@ -1404,6 +1461,7 @@ void loop() {
           outputSum_lastcorrection = millis();
           snprintf(debugline, sizeof(debugline), "INFO: Force outputSum to low value (too high above setpoint)");
           DEBUG_println(debugline);
+          mqtt_publish("events", debugline);
           bPID.SetOutputLimits((outputSum*0.5), outputSum*0.5+1); //hack to set bPid.outputSum
           bPID.SetOutputLimits(0, windowSize);
         }
@@ -1539,4 +1597,6 @@ void loop() {
       u8x8.print(Input);
     }
   }
+
+  Debug.handle();
 }
