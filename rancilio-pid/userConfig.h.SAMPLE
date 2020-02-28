@@ -63,7 +63,7 @@
 #define AGGTN 399    // Tn
 #define AGGTV 0      // Tv
 #define STARTKP 100   // Start Kp während Kaltstart
-#define STARTTN 0  // Start Tn während Kaltstart
+#define STARTTN 1  // Start Tn während Kaltstart. Must be 1 for VelocityController
 #define STARTTEMP 80 // Temperaturschwelle für deaktivieren des Start Kp
 
 

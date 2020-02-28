@@ -4,7 +4,9 @@
  * Arduino PID Library - Version 1.2.1
  * This Library is licensed under the MIT License
  **********************************************************************************************/
- 
+
+#include <stdio.h>
+
 #if ARDUINO >= 100
   #include "Arduino.h"
 #else
@@ -25,8 +27,8 @@ VelocityControllerTypeC::VelocityControllerTypeC(double* Input, double* Output, 
     lastOutput = *myOutput;
     myDebug = Debug;
 
-    VelocityControllerTypeC::SetOutputLimits(0, 1000);
-    SampleTime = 1000;
+    VelocityControllerTypeC::SetOutputLimits(0, 5000);
+    SampleTime = 5000;
 
     VelocityControllerTypeC::SetTunings(Kp, Ki, Kd);
 
@@ -41,19 +43,74 @@ bool VelocityControllerTypeC::Compute()
    
    if(timeChange>=SampleTime)
    {
-      double output = 0;
       lastOutput = *myOutput;
       double input = *myInput;
       double error = *mySetpoint - input;
 
-      output = 
-        lastOutput 
-        - kp * (input - lastInput)
-        + ki * error 
-        - kd * (input - 2*lastInput + lastLastInput);
+      outputK = 0.0;
+      outputI = 0.0;
+      outputD = 0.0;
+      if ( input > 15 && fabs(input - lastInput) < 5 ) {  //TODO: BUG: why is input=0 after startup!
+        outputK = -kp * (input - lastInput);
+        outputI = ki * error;
+        //outputD = -kd * (input - 2*lastInput + lastLastInput);
+      }
+
+      setPointInSeconds = 0 ;
+
+      double deadTime = 40;
+      double pastChange = pastTemperatureChange(10);  // in seconds. Must be < deadTime
+      if ( fabs(pastChange) > 0 ) {  // dont over-estimate near setPoint. Let PI do the job.
+         //input + pastChange * SetPointInSeconds = mySetpoint;
+        setPointInSeconds = error / pastChange;
+        int direction = +1;
+        if (error < 0) {
+          direction = -1;
+        }
+        if ( fabs(setPointInSeconds) < deadTime ) {  // only tune if setPoint is hit in the next "deadTime" seconds
+          if (setPointInSeconds >=0 && setPointInSeconds < 1) { setPointInSeconds = 1; }
+          else if (setPointInSeconds <=0 && setPointInSeconds > -1) setPointInSeconds = -1;
+          outputD = -kd * direction * (deadTime / setPointInSeconds) ;
+        } else if ( fabs(setPointInSeconds) > 99) {
+          setPointInSeconds = 100;
+        }
+      }
+      double output =
+        lastOutput
+        + outputK
+        + outputI
+        + outputD;
+
+      //if (outputD > 0 && error > 0) {
+      //  output += outputD;
+      //}
+
+      //forget previous POSITIVE OutputD if temperature direction has changed / is changing
+      if ( outputD > 0 ) sumOutputD += outputD;  
+      if ( (sumOutputD >0 && outputD <0) || (error <= 0 && sumOutputD >0) ) {
+        DEBUG_printLib("Input=%5.2f error=%0.2f sumOutputD=%0.2f\n", input, error, convertOutputToUtilisation(sumOutputD) );
+        output -= sumOutputD;
+        sumOutputD = 0;
+      }
+
+      double steadyPower = 4.2;
+      if ( (output < convertUtilisationToOutput(steadyPower)) && (error >= -0.5) ) {
+        output = convertUtilisationToOutput(steadyPower);
+      }
+      
       if (output > outMax) output = outMax;
       else if(output < outMin) output = outMin;
-      DEBUG_printFmtln("output %0.2f = (%0.2f) - (%0.2f) + (%0.2f) - (%0.2f)\n",  output, lastOutput, kp * (input - lastInput), ki * error, kd * (input - 2*lastInput + lastLastInput) );
+      //DEBUG_printLib("Input=%5.2f error=%0.2f SetPoint=%0.2f\n", input, error, (double)*mySetpoint);
+      //DEBUG_printLib("Input=%6.2f | DiffTemp=%5.2f | SetInSecs=%0.2f | Output=%6.2f = %6.2f + k:%5.2f + i:%5.2f + d:%5.2f ***\n", 
+      //  input,
+      //  error,
+      //  setPointInSeconds,
+      //  convertOutputToUtilisation(output), 
+      //  convertOutputToUtilisation(lastOutput), 
+      //  convertOutputToUtilisation(outputK), 
+      //  convertOutputToUtilisation(outputI),
+      //  convertOutputToUtilisation(outputD)    
+      //  );    
       
       *myOutput = output;
       lastLastInput = lastInput;
@@ -118,13 +175,19 @@ void VelocityControllerTypeC::Initialize()
    lastInput = *myInput;
    lastLastInput = *myInput;
    lastOutput = *myOutput;
+   sumOutputD = 0;
    if(*myOutput > outMax) *myOutput = outMax;
    else if(*myOutput < outMin) *myOutput = outMin;
    if(lastOutput > outMax) lastOutput = outMax;
    else if(lastOutput < outMin) lastOutput = outMin;
 }
 
-double VelocityControllerTypeC::GetKp(){ return  dispKp; }
-double VelocityControllerTypeC::GetKi(){ return  dispKi;}
-double VelocityControllerTypeC::GetKd(){ return  dispKd;}
-int VelocityControllerTypeC::GetMode(){ return  inAuto ? AUTOMATIC : MANUAL;}
+double VelocityControllerTypeC::GetKp() { return dispKp;}
+double VelocityControllerTypeC::GetKi() { return dispKi;}
+double VelocityControllerTypeC::GetKd() { return dispKd;}
+double VelocityControllerTypeC::GetOutputK() { return outputK;}
+double VelocityControllerTypeC::GetOutputI() { return outputI;}
+double VelocityControllerTypeC::GetOutputD() { return outputD;} 
+double VelocityControllerTypeC::GetLastOutput() { return lastOutput;} 
+double VelocityControllerTypeC::GetSetPointInSeconds() { return setPointInSeconds;} 
+int VelocityControllerTypeC::GetMode() { return  inAuto ? AUTOMATIC : MANUAL;}

@@ -42,8 +42,7 @@ RemoteDebug Debug;
 #define DEBUGSTART(a) Serial.begin(a);
 #endif
 
-//#define BLYNK_PRINT Serial
-//#define BLYNK_DEBUG
+#include "rancilio-pid.h"
 
 //Define pins for outputs
 #define pinRelayVentil    12
@@ -158,52 +157,50 @@ const int PonE = PONE;
 // be carefull: to low: risk of wrong brew detection
 // and rising temperature
 
+/********************************************************
+   PID Variables
+*****************************************************/
+
+const unsigned int windowSizeSeconds = 5;
+unsigned int windowSize = windowSizeSeconds * 1000;  // 1000=100% heater power => resolution used in TSR() and PID.compute().
+unsigned int isrCounter = 0;  // counter for ISR
+unsigned long windowStartTime;
+double Input = 0, Output = 0;  //
+double previousInput = 0;
+
+unsigned long previousMillistemp;  // initialisation at the end of init()
+const long intervaltempmestsic = 1000;
+const long intervaltempmesds18b20 = 1000 ;
+int pidMode = 1; //1 = Automatic, 0 = Manual
+
+double setPoint = SETPOINT;
+double aggKp = AGGKP;
+double aggTn = AGGTN;
+double aggTv = AGGTV;
+
+double startKp = STARTKP;
+double startTn = STARTTN;
+double startKi = startTn;
+double starttemp = STARTTEMP;
+
+double aggKi = aggTn;
+double aggKd = aggKp ;
+
 
 /********************************************************
    Steady Power Temperature Controller
 *****************************************************/
 #include "VelocityControllerTypeC.h"
 
-bool enableSteadyPowerTempController = true ; // TODO set default false + config + eeprom
-double steadyPower = 49;  // TODO config + eeprom
+bool enableSteadyPowerTempController = true ; // TODO set default false + config + eeprom REMOVE
+double steadyPower = 4.7; // had been 47 for 1 sec windowSizeSeconds;  // in percent ! TODO config + eeprom
 double offsetPower = 0;
-double burstPower = 500;
+double burstPower = 50; //in percent
 int burstShot = 0;
-
-unsigned long previousMillistemp;  // initialisation at the end of init()
-const long intervaltempmestsic = 400 ;
-const long intervaltempmesds18b20 = 400  ;
-int pidMode = 1; //1 = Automatic, 0 = Manual
-
-const unsigned int windowSize = 1000;
-unsigned int isrCounter = 0;  // counter for ISR
-unsigned long windowStartTime;
-double Input, Output, setPointTemp;  //
-double previousInput = 0;
-
-double setPoint = SETPOINT;
-double aggKp = AGGKP;
-double aggTn = AGGTN;
-double aggTv = AGGTV;
-double startKp = STARTKP;
-double startTn = STARTTN;
-#if (startTn == 0)
-double startKi = 0;
-#else
-double startKi = startKp / startTn;
-#endif
-
-double starttemp = STARTTEMP;
-#if (aggTn == 0)
-double aggKi = 0;
-#else
-double aggKi = aggKp / aggTn;
-#endif
-double aggKd = aggTv * aggKp ;
 
 VelocityControllerTypeC bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, &Debug);
 
-unsigned long outputSum_lastcorrection = 0;
+unsigned long output_lastcorrection = 0;
 
 /********************************************************
    Analog Schalter Read
@@ -450,7 +447,10 @@ char* mqtt_build_topic(char* reading) {
 
 boolean mqtt_publish(char* reading, char* payload) {
   char topic[MQTT_MAX_PUBLISH_SIZE];
-  if (!mqtt_client.connected()) return false;
+  if (!mqtt_client.connected()) {
+    DEBUG_printFmt("mqtt_publish(): not connected to mqtt server\n");
+    return false;
+  }
   snprintf(topic, MQTT_MAX_PUBLISH_SIZE, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
   if (strlen(topic) + strlen(payload) >= MQTT_MAX_PUBLISH_SIZE) { //TODO test this code block later
     snprintf(debugline, sizeof(debugline), "WARN: mqtt_publish() wants to send to much data (len=%u)", strlen(topic) + strlen(payload));
@@ -460,6 +460,9 @@ boolean mqtt_publish(char* reading, char* payload) {
     unsigned long currentMillis = millis();
     if (currentMillis > mqtt_dontPublishUntilTime) {
       boolean ret = mqtt_client.publish(topic, payload, mqtt_flag_retained);
+      //if (strcmp(reading, "heaterUtilisation") == 0) {
+      //  DEBUG_printFmt("mqtt_publish(): reading=%s, payload=%s\n", reading, payload);
+      //}
       if (ret == false) { //TODO test this code block later (faking an error, eg millis <30000?)
         mqtt_dontPublishUntilTime = millis() + mqtt_dontPublishBackoffTime;
         snprintf(debugline, sizeof(debugline), "WARN: mqtt_publish() error on publish. Dont publish the next %ul milliseconds", mqtt_dontPublishBackoffTime);
@@ -502,16 +505,16 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   Notstop wenn Temp zu hoch
 *****************************************************/
 void testEmergencyStop(){
-  if (Input > 120){
+  if (getCurrentTemperature() > 120){
     if (emergencyStop != true) {
-      snprintf(debugline, sizeof(debugline), "ERROR: EmergencyStop because temperature>120 (temperature=%0.2f)", Input);
+      snprintf(debugline, sizeof(debugline), "ERROR: EmergencyStop because temperature>120 (temperature=%0.2f)", getCurrentTemperature());
       DEBUG_println(debugline);
       mqtt_publish("events", debugline);
     }
     emergencyStop = true;
-  } else if (Input < 100) {
+  } else if (getCurrentTemperature() < 100) {
     if (emergencyStop == true) {
-      snprintf(debugline, sizeof(debugline), "ERROR: EmergencyStop ended because temperature<100 (temperature=%0.2f)", Input);
+      snprintf(debugline, sizeof(debugline), "ERROR: EmergencyStop ended because temperature<100 (temperature=%0.2f)", getCurrentTemperature());
       DEBUG_println(debugline);
       mqtt_publish("events", debugline);
     }
@@ -519,44 +522,6 @@ void testEmergencyStop(){
   }
 }
 
-
-/********************************************************
-  Displayausgabe
-*****************************************************/
-
-void displaymessage(String displaymessagetext, String displaymessagetext2) {
-  if (Display == 2) {
-    /********************************************************
-       DISPLAY AUSGABE
-    ******************************************************/
-    display.setTextSize(1);
-
-
-    display.setTextColor(WHITE);
-    display.clearDisplay();
-    display.setCursor(0, 47);
-    display.println(displaymessagetext);
-    display.print(displaymessagetext2);
-    //Rancilio startup logo
-    display.drawBitmap(41,2, startLogo_bits,startLogo_width, startLogo_height, WHITE);
-    //draw circle
-    //display.drawCircle(63, 24, 20, WHITE);
-    display.display();
-   // display.fadeout();
-   // display.fadein();
-  }
-  if (Display == 1) {
-    /********************************************************
-       DISPLAY AUSGABE
-    ******************************************************/
-    u8x8.clear();
-    u8x8.setFont(u8x8_font_chroma48medium8_r);  //Ausgabe vom aktuellen Wert im Display
-    u8x8.setCursor(0, 0);
-    u8x8.println(displaymessagetext);
-    u8x8.print(displaymessagetext2);
-  }
-
-}
 
 /********************************************************
   history temperature data
@@ -571,10 +536,10 @@ void updateTemperatureHistory(double myInput) {
   readingstemp[readIndex] = myInput;
 }
 
-//calculate the temperature difference between NOW and a datapoint in history. Returns temperature in celcius.
+//calculate the temperature difference between NOW and a datapoint in history
 double pastTemperatureChange(int lookback) {
   double temperatureDiff;
-  if (lookback > numReadings) lookback=numReadings -1;
+  if (lookback >= numReadings) lookback=numReadings -1;
   int offset = lookback % numReadings;
   int historicIndex = (readIndex - offset);
   if ( historicIndex < 0 ) {
@@ -596,9 +561,44 @@ double pastTemperatureChange(int lookback) {
   return temperatureDiff;
 }
 
+//calculate the average temperature over the last (lookback) temperatures samples
+double getAverageTemperature(int lookback) {
+  double averageInput = 0;
+  int count = 0;
+  if (lookback >= numReadings) lookback=numReadings -1;
+  for (int offset = 0; offset < lookback; offset++) {
+    int thisReading = readIndex - offset;
+    if (thisReading < 0) thisReading = numReadings + thisReading;
+    if (readingstime[thisReading] == 0) break;
+    averageInput += readingstemp[thisReading];
+    count += 1;
+  }
+  if (count > 0) { 
+    return averageInput / count;
+  } else {
+    DEBUG_printFmt("WARN: getAverageTemperature() returned 0");
+    return 0;
+  }
+}
+
+double getCurrentTemperature() {
+  return readingstemp[readIndex];
+}
+
+//returns heater utilization in percent
+double convertOutputToUtilisation(double Output) {
+  return (100 * Output) / windowSize;
+}
+
+//returns heater utilization in Output
+double convertUtilisationToOutput(double utilization) {
+  return (utilization / 100 ) * windowSize;
+}
+
+
 bool brewReady(double setPoint, float marginOfFluctuation, int lookback) {
   if (almostEqual(marginOfFluctuation, 0)) return false;
-  if (lookback > numReadings) lookback=numReadings;
+  if (lookback >= numReadings) lookback=numReadings -1;
   for (int offset = 0; offset < lookback; offset++) {
     int thisReading = readIndex - offset;
     if (thisReading < 0) thisReading = numReadings + thisReading;
@@ -614,27 +614,28 @@ bool brewReady(double setPoint, float marginOfFluctuation, int lookback) {
   check sensor value. If < 0 or difference between old and new >10, then increase error.
   If error is equal to maxErrorCounter, then set sensorError
 *****************************************************/
-boolean checkSensor(float tempInput) {
+boolean checkSensor(float tempInput, float temppreviousInput) {
   boolean sensorOK = false;
   /********************************************************
     sensor error
   ******************************************************/
-  if ( ( tempInput < 0 || tempInput > 150 || fabs(tempInput - previousInput) > 5) && !sensorError) {
+  if ( ( tempInput < 0 || tempInput > 150 || fabs(tempInput - temppreviousInput) > 5) && !sensorError) {
     error++;
     sensorOK = false;
-    snprintf(debugline, sizeof(debugline), "WARN: temperature sensor reading: consec_errors=%d, temp_current=%0.2f, temp_prev=%0.2f", error, tempInput, previousInput);
+    snprintf(debugline, sizeof(debugline), "WARN: temperature sensor reading: consec_errors=%d, temp_current=%0.2f, temp_prev=%0.2f", error, tempInput, temppreviousInput);
     DEBUG_println(debugline);
-  } else if (tempInput > 0) {
+  } else {
     error = 0;
     sensorOK = true;
   }
+  
   if (error >= maxErrorCounter && !sensorError) {
-    sensorError = true ;
+    sensorError = true;
     snprintf(debugline, sizeof(debugline), "ERROR: temperature sensor malfunction: temp_current=%0.2f, temp_prev=%0.2f", tempInput, previousInput);
     DEBUG_println(debugline);
     mqtt_publish("events", debugline);
   } else if (error == 0 && TempSensorRecovery == 1) { //Safe-guard: prefer to stop heating forever if sensor is flapping!
-    sensorError = false ;
+    sensorError = false;
   }
 
   return sensorOK;
@@ -650,7 +651,7 @@ void refreshTemp() {
     Temp. Request
   ******************************************************/
   unsigned long currentMillistemp = millis();
-  previousInput = Input ;
+  previousInput = getCurrentTemperature() ;
   unsigned long millis_elapsed = currentMillistemp - previousMillistemp ;
   if (TempSensor == 1)
   {
@@ -663,9 +664,9 @@ void refreshTemp() {
     {
       previousMillistemp = currentMillistemp;
       sensors.requestTemperatures();
-      if (!checkSensor(sensors.getTempCByIndex(0))) return;  //if sensor data is not valid, abort function
-      Input = sensors.getTempCByIndex(0);
-      updateTemperatureHistory(Input);
+      if (!checkSensor(sensors.getTempCByIndex(0), previousInput)) return;  //if sensor data is not valid, abort function
+      updateTemperatureHistory(sensors.getTempCByIndex(0));
+      Input = getAverageTemperature(5);
     }
   }
   if (TempSensor == 2)
@@ -678,19 +679,20 @@ void refreshTemp() {
     if (millis_elapsed >= intervaltempmestsic)
     {
       previousMillistemp = currentMillistemp;
-      /*  variable "temperature" must be set to zero, before reading new data
-            getTemperature only updates if data is valid, otherwise "temperature" will still hold old values
-      */
+      // variable "temperature" must be set to zero, before reading new data
+      // getTemperature only updates if data is valid, otherwise "temperature" will still hold old values
       temperature = 0;
       Sensor1.getTemperature(&temperature);
       // TODO simulate what happens when temp >500 . It looks like Input is written despite if-ranges?!?! (pointer issue?)
       // temperature must be between 0x000 and 0x7FF(=DEC2047)
       Temperatur_C = Sensor1.calc_Celsius(&temperature);
+      
       // Temperature_C must be -50C < Temperature_C <= 150C
-      if (!checkSensor(Temperatur_C)) return;  //if sensor data is not valid, abort function
-      Input = Temperatur_C;
-      // Input = random(50,70) ;// test value
-      updateTemperatureHistory(Input);
+      if (!checkSensor(Temperatur_C, previousInput)) {
+        return;  //if sensor data is not valid, abort function
+      }
+      updateTemperatureHistory(Temperatur_C);
+      Input = getAverageTemperature(5);
     }
   }
 }
@@ -764,129 +766,6 @@ void brew() {
 
 
 /********************************************************
-    send data to display
-******************************************************/
-void printScreen() {
-  if (Display == 1 && !sensorError) {
-    u8x8.setFont(u8x8_font_chroma48medium8_r);  //Ausgabe vom aktuellen Wert im Display
-    u8x8.setCursor(0, 0);
-    u8x8.print("               ");
-    u8x8.setCursor(0, 1);
-    u8x8.print("               ");
-    u8x8.setCursor(0, 2);
-    u8x8.print("               ");
-    u8x8.setCursor(0, 0);
-    u8x8.setCursor(1, 0);
-    u8x8.print(bPID.GetKp());
-    u8x8.setCursor(6, 0);
-    u8x8.print(",");
-    u8x8.setCursor(7, 0);
-    if (bPID.GetKi() != 0){
-    u8x8.print(bPID.GetKp() / bPID.GetKi());}
-    else
-    {u8x8.print("0");}
-    u8x8.setCursor(11, 0);
-    u8x8.print(",");
-    u8x8.setCursor(12, 0);
-    u8x8.print(bPID.GetKd() / bPID.GetKp());
-    u8x8.setCursor(0, 1);
-    u8x8.print("Input:");
-    u8x8.setCursor(9, 1);
-    u8x8.print("   ");
-    u8x8.setCursor(9, 1);
-    u8x8.print(Input);
-    u8x8.setCursor(0, 2);
-    u8x8.print("SetPoint:");
-    u8x8.setCursor(10, 2);
-    u8x8.print("   ");
-    u8x8.setCursor(10, 2);
-    u8x8.print(setPoint);
-    u8x8.setCursor(0, 3);
-    u8x8.print(round((Input * 100) / setPoint));
-    u8x8.setCursor(4, 3);
-    u8x8.print("%");
-    u8x8.setCursor(6, 3);
-    u8x8.print(Output);
-  }
-  if (Display == 2 && !sensorError) {
-    display.clearDisplay();
-    display.drawBitmap(0,0, logo_bits,logo_width, logo_height, WHITE);
-    display.setTextSize(1);
-    display.setTextColor(WHITE);
-    display.setCursor(32, 10); 
-    display.print("Ist :  ");
-    display.print(Input, 1);
-    display.print(" ");
-    display.print((char)247);
-    display.println("C");
-    display.setCursor(32, 20); 
-    display.print("Soll:  ");
-    display.print(setPoint, 1);
-    display.print(" ");
-    display.print((char)247);
-    display.println("C");
-   // display.print("Heizen: ");
-    
-   // display.println(" %");
-   
-// Draw heat bar
-   display.drawLine(15, 58, 117, 58, WHITE);
-   display.drawLine(15, 58, 15, 61, WHITE); 
-   display.drawLine(117, 58, 117, 61, WHITE);
-
-   display.drawLine(16, 59, (Output / 10) + 16, 59, WHITE);
-   display.drawLine(16, 60, (Output / 10) + 16, 60, WHITE);
-   display.drawLine(15, 61, 117, 61, WHITE);
-   
-//draw current temp in icon
-   display.drawLine(9, 48, 9, 58 - (Input / 2), WHITE); 
-   display.drawLine(10, 48, 10, 58 - (Input / 2), WHITE);  
-   display.drawLine(11, 48, 11, 58 - (Input / 2), WHITE); 
-   display.drawLine(12, 48, 12, 58 - (Input / 2), WHITE); 
-   display.drawLine(13, 48, 13, 58 - (Input / 2), WHITE);
-   
-//draw setPoint line
-   display.drawLine(18, 58 - (setPoint / 2), 23, 58 - (setPoint / 2), WHITE); 
- 
-// PID Werte ueber heatbar
-    display.setCursor(40, 50);  
-
-    display.print(bPID.GetKp(), 0); // P 
-    display.print("|");
-    if (bPID.GetKi() != 0){      
-      display.print(bPID.GetKp() / bPID.GetKi(), 0);; // I
-    }
-    else
-    { 
-      display.print("0");
-    }
-    display.print("|");
-    display.println(bPID.GetKd() / bPID.GetKp(), 0); // D
-    display.setCursor(98,50);
-    display.print(Output / 10, 0);
-    display.print("%");
-
-// Brew
-    display.setCursor(32, 31); 
-    display.print("Brew:  ");
-    display.setTextSize(1);
-    display.print(bezugsZeit / 1000);
-    display.print("/");
-    if (ONLYPID == 1){
-      display.println(brewtimersoftware, 0);             // deaktivieren wenn Preinfusion ( // voransetzen )
-    }
-    else 
-    {
-      display.println(totalbrewtime / 1000);            // aktivieren wenn Preinfusion
-    }
-//draw box
-   display.drawRoundRect(0, 0, 128, 64, 1, WHITE);    
-   display.display();
-
-  }
-}
-
-/********************************************************
   send data to Blynk server
 *****************************************************/
 
@@ -894,17 +773,17 @@ void sendToBlynk() {
   if (Offlinemodus != 0) return;
   unsigned long currentMillisBlynk = millis();
   if (currentMillisBlynk - previousMillisBlynk >= intervalBlynk) {
-    previousMillisBlynk += intervalBlynk;  // FIX race
+    previousMillisBlynk = currentMillisBlynk;
     if (Blynk.connected()) {
       if (grafana == 1) {
-        Blynk.virtualWrite(V60, Input, Output,bPID.GetKp(),bPID.GetKi(),bPID.GetKd(),setPoint );
+        Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint );
         }
       if (blynksendcounter == 1) {
         Blynk.virtualWrite(V2, Input);
         Blynk.syncVirtual(V2);
       }
       if (blynksendcounter == 2) {
-        Blynk.virtualWrite(V23, Output);
+        Blynk.virtualWrite(V23, convertOutputToUtilisation(Output));
         Blynk.syncVirtual(V23);
       }
       if (blynksendcounter == 3) {
@@ -912,7 +791,7 @@ void sendToBlynk() {
         Blynk.syncVirtual(V3);
       }
       if (blynksendcounter == 4) {
-        Blynk.virtualWrite(V35, pastTemperatureChange(30));
+        Blynk.virtualWrite(V35, pastTemperatureChange(12));
         Blynk.syncVirtual(V35);
       }
       if (blynksendcounter >= 5) {
@@ -921,6 +800,9 @@ void sendToBlynk() {
         blynksendcounter = 0;
       }
       blynksendcounter++;
+    } else {
+      snprintf(debugline, sizeof(debugline), "WARN: Wifi working but blynk not connected..");
+      DEBUG_println(debugline);
     }
   }
 }
@@ -934,17 +816,18 @@ void coldstartStepDetection() {
     case 1: // coldstart step 1 running, that means full heater power. Check if target temp is reached
     {
       if (Input >= starttemp) {
-        snprintf(debugline, sizeof(debugline), "INFO: Coldstart transition to step 2 (heater off)");
+        snprintf(debugline, sizeof(debugline), "INFO: Coldstart transition to step 2 (steadyPower controlled)");
         DEBUG_println(debugline);
         mqtt_publish("events", debugline);
         coldstartStep = 2;
+        //Output = convertUtilisationToOutput(steadyPower);
       }
       break;
     }
-    case 2: // coldstart step 1 running, that means heater is off and we are waiting to temperature to stabilize.
+    case 2: // coldstart step 1 running, that means heater is off and we are waiting to temperature to stabilize. TODO remove?
     {
-      float tempChange = pastTemperatureChange(30); // 12 secs
-      if ( (Input - setPoint >= 0) || (Input - setPoint <= -20) || (Input - setPoint <= 0  && tempChange <= 0)) {
+      float tempChange = pastTemperatureChange(20); // 12 secs
+      if ( (Input - setPoint >= 0) || (Input - setPoint <= -20) || (Input - setPoint <= 0  && tempChange <= 0.3)) {
         snprintf(debugline, sizeof(debugline), "INFO: Coldstart transition to step 3 (regular PID controlled)");
         DEBUG_println(debugline);
         mqtt_publish("events", debugline);
@@ -993,7 +876,7 @@ void brewRunDetection() {
 
   if (brewDetection == 1) {
     //enable bew-detection if not already running and diff temp is > brewboarder
-    if (pastTemperatureChange(15) <= -brewboarder && timerBrewDetection == 0 ) {
+    if (pastTemperatureChange(6) <= -brewboarder && timerBrewDetection == 0 ) {
       timeBrewDetection = millis() ;
       timerBrewDetection = 1 ;
       mqtt_publish("brewDetected", "1");
@@ -1011,15 +894,17 @@ void ICACHE_RAM_ATTR onTimer1ISR() {
   //run PID calculation
   if ( bPID.Compute() ) {
     isrCounter = 0;  // Attention: heater might not shutdown if bPid.SetSampleTime(), windowSize, timer1_write() and are not set correctly!
-    //if (burstShot == 1) {
-    //  burstShot = 0;
-    //  Output = burstPower;
-    //  snprintf(debugline, sizeof(debugline), "INFO: bPID.Compute(): BURST Output=%0.2f, InputTemp=%0.2f, DiffTemp=%0.2f, isrCounter=%u", Output, Input, (setPoint - Input), isrCounter);
-    //  DEBUG_println(debugline);
-    //} else {
-    snprintf(debugline, sizeof(debugline), "INFO: bPID.Compute(): Output=%0.2f, InputTemp=%0.2f, DiffTemp=%0.2f, isrCounter=%u", Output, Input, (setPoint - Input), isrCounter);
-    DEBUG_println(debugline);
-    //}
+    DEBUG_printFmt("Input=%6.2f | DiffTemp=%5.2f (%5.2fs * %5.2f) | Output=%6.2f = %6.2f + k:%5.2f + i:%5.2f + d:%5.2f\n", 
+      Input,
+      (setPoint - Input),
+      bPID.GetSetPointInSeconds(),
+      pastTemperatureChange(10), 
+      convertOutputToUtilisation(Output), 
+      convertOutputToUtilisation(bPID.GetLastOutput()), 
+      convertOutputToUtilisation(bPID.GetOutputK()), 
+      convertOutputToUtilisation(bPID.GetOutputI()),
+      convertOutputToUtilisation(bPID.GetOutputD())
+      );
   }
 
   if ( true ) {  // TODO TOBIAS READD
@@ -1172,9 +1057,12 @@ void setup() {
           EEPROM.put(130, brewboarder);
           // eeprom schließen
           EEPROM.commit();
+        } else {
+          DEBUG_println("ERROR: Not connected to Blynk");
         }
       }
 
+      //TODO what happens if WLAN cannot be connected!! 
       if (WiFi.status() != WL_CONNECTED || Blynk.connected() != true) {
         displaymessage("Begin Fallback,", "No Blynk/Wifi");
         delay(2000);
@@ -1240,37 +1128,10 @@ void setup() {
      Ini PID
   ******************************************************/
 
-  setPointTemp = setPoint;
   bPID.SetSampleTime(windowSize);
   bPID.SetOutputLimits(0, windowSize);
   bPID.SetMode(AUTOMATIC);
 
-
-  /********************************************************
-     TEMP SENSOR
-  ******************************************************/
-  if (TempSensor == 1) {
-    sensors.begin();
-    sensors.getAddress(sensorDeviceAddress, 0);
-    sensors.setResolution(sensorDeviceAddress, 10) ;
-    do {
-      delay(100);
-      sensors.requestTemperatures();
-      Input = sensors.getTempCByIndex(0);
-    } while (!checkSensor(Input));
-  }
-
-  if (TempSensor == 2) {
-    temperature = 0;
-    Sensor1.getTemperature(&temperature);
-    Input = Sensor1.calc_Celsius(&temperature);
-    //do {
-    //  delay(100);
-    //  temperature = 0;
-    //  Sensor1.getTemperature(&temperature);
-    //  Input = Sensor1.calc_Celsius(&temperature);
-    //} while (!checkSensor(Input));
-  }   
 
   /********************************************************
     movingaverage ini array
@@ -1281,6 +1142,48 @@ void setup() {
     readingchangerate[thisReading] = 0;
   }
 
+
+  /********************************************************
+     TEMP SENSOR
+  ******************************************************/
+  if (TempSensor == 1) {
+    sensors.begin();
+    sensors.getAddress(sensorDeviceAddress, 0);
+    sensors.setResolution(sensorDeviceAddress, 10) ;
+    while (true) {
+      sensors.requestTemperatures();
+      previousInput = sensors.getTempCByIndex(0);
+      delay(500);
+      sensors.requestTemperatures();
+      Input = sensors.getTempCByIndex(0);
+      if (checkSensor(Input, previousInput)) {
+        updateTemperatureHistory(Input);
+        break;
+      }
+      delay(500);
+    }
+  }
+
+  if (TempSensor == 2) {
+    while (true) {
+      temperature = 0;
+      Sensor1.getTemperature(&temperature);
+      previousInput = Sensor1.calc_Celsius(&temperature);
+      delay(500);
+      temperature = 0;
+      Sensor1.getTemperature(&temperature);
+      Input = Sensor1.calc_Celsius(&temperature);
+      if (checkSensor(Input, previousInput)) {
+        updateTemperatureHistory(Input);
+        break;
+      }
+      delay(500);
+    }
+  }
+
+  /********************************************************
+     REST INIT()
+  ******************************************************/
   //Initialisation MUST be at the very end of the init(), otherwise the time comparision in loop() will have a big offset
   unsigned long currentTime = millis();
   previousMillistemp = currentTime;
@@ -1348,12 +1251,16 @@ void loop() {
         lastMQTTStatusReportTime = now;
         mqtt_publish("temperature", number2string(Input));
         mqtt_publish("temperatureAboveTarget", number2string((Input - setPoint)));
-        mqtt_publish("heaterUtilization", number2string(100*Output/windowSize));
+        mqtt_publish("heaterUtilization", number2string(convertOutputToUtilisation(Output)));
         mqtt_publish("kp", number2string(bPID.GetKp()));
         mqtt_publish("ki", number2string(bPID.GetKi()));
         mqtt_publish("kd", number2string(bPID.GetKd()));
-        mqtt_publish("pastTemperatureChange", number2string(pastTemperatureChange(30)));
-        mqtt_publish("brewReady", bool2string(brewReady(setPoint, marginOfFluctuation, numReadings)));
+        mqtt_publish("outputK", number2string(convertOutputToUtilisation(bPID.GetOutputK())));
+        mqtt_publish("outputI", number2string(convertOutputToUtilisation(bPID.GetOutputI())));
+        mqtt_publish("outputD", number2string(convertOutputToUtilisation(bPID.GetOutputD())));
+        mqtt_publish("setPointInSeconds", number2string(bPID.GetSetPointInSeconds()));
+        mqtt_publish("pastTemperatureChange", number2string(pastTemperatureChange(10)));
+        mqtt_publish("brewReady", bool2string(brewReady(setPoint, marginOfFluctuation, 30)));
        }
     }
   } else {
@@ -1371,14 +1278,16 @@ void loop() {
     pidMode = 0;
     bPID.SetMode(pidMode);
     Output = 0 ;
+    DEBUG_printFmt("set PID=off\n");
   } else if (pidON == 1 && pidMode == 0) {
     Output = 0; // safety: be 100% sure that PID.compute() starts fresh.
     pidMode = 1;
     bPID.SetMode(pidMode);
+    DEBUG_printFmt("set PID=on\n");
   }
   if (burstShot == 1 && pidMode == 1) {
     burstShot = 0;
-    Output = burstPower ;
+    Output = convertUtilisationToOutput(burstPower);
     snprintf(debugline, sizeof(debugline), "INFO: BURST Output=%0.2f", Output);
     DEBUG_println(debugline);
     mqtt_publish("events", debugline);
@@ -1386,17 +1295,17 @@ void loop() {
 
   //Sicherheitsabfrage
   if (!sensorError && Input > 0 && !emergencyStop) {
-
     brewRunDetection();
     coldstartStepDetection();
 
     //coldstartStep 1: Water is very cold, set heater to full power
     if (coldstartStep == 1) {
       if ( enableSteadyPowerTempController ) {
-        Output = 1000;
+        Output = windowSize;
       } else {
         if (startTn != 0) {
-          startKi = startKp / startTn;
+          //PID orig: startKi = startKp / startTn;
+          startKi = startTn;
         } else {
           startKi = 0;
         }
@@ -1405,40 +1314,75 @@ void loop() {
 
     //coldstartStep 2: ColdstartTemp reached. Now steadily increasing temperature.
     } else if (coldstartStep == 2) {
-        // bPID.SetTunings(0, 0, 0);
-        double outputSum = steadyPower; // set to steady value . TODO remove hard-coded
-        bPID.SetOutputLimits(steadyPower*1, steadyPower*1+1);
-        bPID.SetOutputLimits(steadyPower*1, windowSize);
-        
+        Output = convertUtilisationToOutput(steadyPower); // set to steady value . TODO remove hard-coded
 
     //if brew is detected, set brew specific PID values
     } else if ( coldstartStep == 3 && timerBrewDetection == 1 && (millis() - timeBrewDetection  < brewtimersoftware * 1000)) {
       // calc ki, kd
       if (aggbTn != 0) {
-        aggbKi = aggbKp / aggbTn ;
+        //PID orig: aggbKi = aggbKp / aggbTn ;
+        aggbKi = aggbTn ;
       } else {
         aggbKi = 0;
       }
-      aggbKd = aggbTv * aggbKp ;
+      //PID orig: aggbKd = aggbTv * aggbKp ;
+      aggbKd = aggbTv;  
       if ( not almostEqual(bPID.GetKp(), aggbKp) || not almostEqual(bPID.GetKi(), aggbKi) || not almostEqual(bPID.GetKd(), aggbKd) ) {
         snprintf(debugline, sizeof(debugline), "INFO: Brew detected. Setting brew pid values.");
         DEBUG_println(debugline);
         mqtt_publish("events", debugline);
       }
-      bPID.SetTunings(aggbKp, aggbKi, aggbKd) ;
+      if (pidMode == 1) bPID.SetMode(AUTOMATIC);
+      bPID.SetTunings(aggbKp, aggbKi, aggbKd);
       if (OnlyPID == 1){
-        bezugsZeit = millis() - timeBrewDetection ;
+        bezugsZeit = millis() - timeBrewDetection;
       }
 
     //coldstartStep 3: set regular pid values in "normal" mode
     } else {
+      if (pidMode == 1) bPID.SetMode(AUTOMATIC);
       // calc ki, kd
       if (aggTn != 0) {
-        aggKi = aggKp / aggTn ;
+        //PID orig: aggKi = aggKp / aggTn ;
+        aggKi = aggTn ;
       } else {
         aggKi = 0 ;
       }
-      aggKd = aggTv * aggKp ;
+      //PID orig: aggKd = aggTv * aggKp ;
+      aggKd = aggTv;  
+
+      // specific non-PID internal corrections
+      if ( false ) {
+        // above setpoint
+        if ( Input >= setPoint+4 ) {
+          Output = 0;
+        } else if ( Input > setPoint+0.3 && Input < setPoint + 4 ) {
+          Output = convertUtilisationToOutput(steadyPower);
+           //TODO add feature to auto-tune steadyPower
+        }
+  
+        if ( millis() - output_lastcorrection >= 20 * 1000 ) {
+          //rough
+          if ( Input >= setPoint-4 && Input < setPoint-0.6 && pastTemperatureChange(10) > 0.4 ) {
+            output_lastcorrection = millis();
+            Output = convertUtilisationToOutput(steadyPower * 0.6);  
+            snprintf(debugline, sizeof(debugline), "Force output to 60%% of steadypower (%0.2f)", steadyPower *0.6);
+            DEBUG_println(debugline);
+            mqtt_publish("events", debugline);
+          //fine
+          } else if ( Input <= setPoint-0.3 && Input >= setPoint-0.6 && pastTemperatureChange(10) >= 0.2 ) {
+            output_lastcorrection = millis();
+            Output = convertUtilisationToOutput(steadyPower * 1); 
+            snprintf(debugline, sizeof(debugline), "Force output to 100%% of steadypower (%0.2f)", steadyPower *1);
+            DEBUG_println(debugline);
+            mqtt_publish("events", debugline);
+          }
+        }
+      }
+
+
+        
+    
 
       // TOBIAS TODO "Implement more phases": Add minimum output to 400 when near-below setpoint. Dont set when too high or in another phase??
       // Idea against high peaks: Check every 10sec the Diff-Temp(20sec): If Diff-Temp is >=0.5, do
@@ -1453,12 +1397,12 @@ void loop() {
       // let temp slowly drop to setpoint by -5% and set back to steadypower when reached.
 
       //TODO IMPORTANT: mqtt_publish must transfer all temp values with 3 precision to reduce rounding errors!
-      if ( false &&  millis() - outputSum_lastcorrection > 20 * 1000 ) {
+      if ( false &&  millis() - output_lastcorrection > 20 * 1000 ) {
 
-        double outputSum = 49; //TODO remove hard-coded . Wenn es kalt ist dann brauche ich ~90
+        double outputSum = convertUtilisationToOutput(steadyPower); //TODO remove hard-coded . Wenn es kalt ist dann brauche ich ~90
         
         if ( Input - setPoint >= 2 ) {
-          outputSum_lastcorrection = millis();
+          output_lastcorrection = millis();
           snprintf(debugline, sizeof(debugline), "INFO: Force outputSum to low value (too high above setpoint)");
           DEBUG_println(debugline);
           mqtt_publish("events", debugline);
@@ -1468,8 +1412,8 @@ void loop() {
         
         //manipulate PID controller to reduce oscillating temperature (Tobias: this safes around 60 seconds on 1 oscillation)
         //set outputSum to a minimum "stable" value when we are traversing downwards past setpoint
-        if ( (Output < outputSum * 1.1) && (pastTemperatureChange(30) <= -0.1 ) && (Input - setPoint >= 0.2 && Input - setPoint < 0.4 ) ) {
-          outputSum_lastcorrection = millis();
+        if ( (Output < outputSum * 1.1) && (pastTemperatureChange(12) <= -0.1 ) && (Input - setPoint >= 0.2 && Input - setPoint < 0.4 ) ) {
+          output_lastcorrection = millis();
           snprintf(debugline, sizeof(debugline), "INFO: Force outputSum to stable value (on traversing downwards past setpoint)");
           DEBUG_println(debugline);
           mqtt_publish("events", debugline);
@@ -1482,8 +1426,8 @@ void loop() {
           //reduce too high output on traversing upwards past setpoint
           //double outputSum = 49; //TODO remove hard-coded
 
-          if ( (Output > outputSum * 1.5) && (pastTemperatureChange(30) > 0.2 ) && (Input - setPoint <= -0.5 && Input - setPoint >= -4.0) ) {
-            outputSum_lastcorrection = millis();
+          if ( (Output > outputSum * 1.5) && (pastTemperatureChange(12) > 0.2 ) && (Input - setPoint <= -0.5 && Input - setPoint >= -4.0) ) {
+            output_lastcorrection = millis();
             snprintf(debugline, sizeof(debugline), "INFO: Force outputSum to stable value (on traversing upwards past setpoint - rough)");
             DEBUG_println(debugline);
             mqtt_publish("events", debugline);
@@ -1491,8 +1435,8 @@ void loop() {
             bPID.SetOutputLimits(outputSum*0.6, windowSize);
           }
           
-          if ( (Output > outputSum * 1) && (pastTemperatureChange(30) > 0.1 ) && (Input - setPoint <= 0 && Input - setPoint > -0.3) ) {
-            outputSum_lastcorrection = millis();
+          if ( (Output > outputSum * 1) && (pastTemperatureChange(12) > 0.1 ) && (Input - setPoint <= 0 && Input - setPoint > -0.3) ) {
+            output_lastcorrection = millis();
             snprintf(debugline, sizeof(debugline), "INFO: Force outputSum to stable value (on traversing upwards past setpoint - fine)");
             DEBUG_println(debugline);
             mqtt_publish("events", debugline);
@@ -1500,8 +1444,8 @@ void loop() {
             bPID.SetOutputLimits(outputSum*0.9, windowSize);
           }
 
-          if ( (Output < outputSum * 1) && (pastTemperatureChange(30) <= 0.1 && pastTemperatureChange(30) >= -0.1) && (Input - setPoint <= 0.1 && Input - setPoint >= -0.1) ) {
-            outputSum_lastcorrection = millis();
+          if ( (Output < outputSum * 1) && (pastTemperatureChange(12) <= 0.1 && pastTemperatureChange(12) >= -0.1) && (Input - setPoint <= 0.1 && Input - setPoint >= -0.1) ) {
+            output_lastcorrection = millis();
             snprintf(debugline, sizeof(debugline), "INFO: Force outputSum to stable value (stable point)");
             DEBUG_println(debugline);
             mqtt_publish("events", debugline);
@@ -1530,6 +1474,7 @@ void loop() {
       pidMode = 0;
       bPID.SetMode(pidMode);
       Output = 0 ;
+      DEBUG_printFmt("ERROR: sensorError detected. Shutdown PID and heater\n"); //TODO only once every 5 seconds
     }
 
     digitalWrite(pinRelayHeater, LOW); //Stop heating
@@ -1541,7 +1486,7 @@ void loop() {
       display.clearDisplay();
       display.setCursor(0, 0);
       display.print("Error: Temp = ");
-      display.println(Input);
+      display.println(getCurrentTemperature());
       display.print("Check Temp. Sensor!");
       display.display();
     }
@@ -1556,15 +1501,16 @@ void loop() {
       u8x8.setCursor(0, 1);
       u8x8.print("Error: Temp = ");
       u8x8.setCursor(0, 2);
-      u8x8.print(Input);
+      u8x8.print(getCurrentTemperature());
     }
-  } else if (emergencyStop){
+  } else if (emergencyStop) {
 
     //Deactivate PID
     if (pidMode == 1) {
       pidMode = 0;
       bPID.SetMode(pidMode);
       Output = 0 ;
+      DEBUG_printFmt("ERROR: emergencyStop detected. Shutdown PID and heater\n"); //TODO only once every 5 seconds
     }
         
     digitalWrite(pinRelayHeater, LOW); //Stop heating
@@ -1579,7 +1525,7 @@ void loop() {
       display.println("");
       display.println("Temp > 120");
       display.print("Temp: ");
-      display.println(Input);
+      display.println(getCurrentTemperature());
       display.print("Resume if Temp < 100");
       display.display();
     }
@@ -1594,9 +1540,174 @@ void loop() {
       u8x8.setCursor(0, 1);
       u8x8.print("Emergency Stop! T>120");
       u8x8.setCursor(0, 2);
-      u8x8.print(Input);
+      u8x8.print(getCurrentTemperature());
     }
+  } else {
+    DEBUG_printFmt("ERROR: unknown error\n"); //TODO only once every 5 seconds
   }
 
   Debug.handle();
+}
+
+
+
+/********************************************************
+  Displayausgabe
+*****************************************************/
+
+void displaymessage(String displaymessagetext, String displaymessagetext2) {
+  if (Display == 2) {
+    /********************************************************
+       DISPLAY AUSGABE
+    ******************************************************/
+    display.setTextSize(1);
+
+
+    display.setTextColor(WHITE);
+    display.clearDisplay();
+    display.setCursor(0, 47);
+    display.println(displaymessagetext);
+    display.print(displaymessagetext2);
+    //Rancilio startup logo
+    display.drawBitmap(41,2, startLogo_bits,startLogo_width, startLogo_height, WHITE);
+    //draw circle
+    //display.drawCircle(63, 24, 20, WHITE);
+    display.display();
+   // display.fadeout();
+   // display.fadein();
+  }
+  if (Display == 1) {
+    /********************************************************
+       DISPLAY AUSGABE
+    ******************************************************/
+    u8x8.clear();
+    u8x8.setFont(u8x8_font_chroma48medium8_r);  //Ausgabe vom aktuellen Wert im Display
+    u8x8.setCursor(0, 0);
+    u8x8.println(displaymessagetext);
+    u8x8.print(displaymessagetext2);
+  }
+
+}
+
+/********************************************************
+    send data to display
+******************************************************/
+void printScreen() {
+  if (Display == 1 && !sensorError) {
+    u8x8.setFont(u8x8_font_chroma48medium8_r);  //Ausgabe vom aktuellen Wert im Display
+    u8x8.setCursor(0, 0);
+    u8x8.print("               ");
+    u8x8.setCursor(0, 1);
+    u8x8.print("               ");
+    u8x8.setCursor(0, 2);
+    u8x8.print("               ");
+    u8x8.setCursor(0, 0);
+    u8x8.setCursor(1, 0);
+    u8x8.print(bPID.GetKp());
+    u8x8.setCursor(6, 0);
+    u8x8.print(",");
+    u8x8.setCursor(7, 0);
+    if (bPID.GetKi() != 0){
+    u8x8.print(bPID.GetKp() / bPID.GetKi());}
+    else
+    {u8x8.print("0");}
+    u8x8.setCursor(11, 0);
+    u8x8.print(",");
+    u8x8.setCursor(12, 0);
+    u8x8.print(bPID.GetKd() / bPID.GetKp());
+    u8x8.setCursor(0, 1);
+    u8x8.print("Input:");
+    u8x8.setCursor(9, 1);
+    u8x8.print("   ");
+    u8x8.setCursor(9, 1);
+    u8x8.print(Input);
+    u8x8.setCursor(0, 2);
+    u8x8.print("SetPoint:");
+    u8x8.setCursor(10, 2);
+    u8x8.print("   ");
+    u8x8.setCursor(10, 2);
+    u8x8.print(setPoint);
+    u8x8.setCursor(0, 3);
+    u8x8.print(round((Input * 100) / setPoint));
+    u8x8.setCursor(4, 3);
+    u8x8.print("%");
+    u8x8.setCursor(6, 3);
+    u8x8.print(convertOutputToUtilisation(Output));
+  }
+  if (Display == 2 && !sensorError) {
+    display.clearDisplay();
+    display.drawBitmap(0,0, logo_bits,logo_width, logo_height, WHITE);
+    display.setTextSize(1);
+    display.setTextColor(WHITE);
+    display.setCursor(32, 10); 
+    display.print("Ist :  ");
+    display.print(Input, 1);
+    display.print(" ");
+    display.print((char)247);
+    display.println("C");
+    display.setCursor(32, 20); 
+    display.print("Soll:  ");
+    display.print(setPoint, 1);
+    display.print(" ");
+    display.print((char)247);
+    display.println("C");
+   // display.print("Heizen: ");
+    
+   // display.println(" %");
+   
+// Draw heat bar
+   display.drawLine(15, 58, 117, 58, WHITE);
+   display.drawLine(15, 58, 15, 61, WHITE); 
+   display.drawLine(117, 58, 117, 61, WHITE);
+
+   display.drawLine(16, 59, (convertOutputToUtilisation(Output)) + 16, 59, WHITE);
+   display.drawLine(16, 60, (convertOutputToUtilisation(Output)) + 16, 60, WHITE);
+   display.drawLine(15, 61, 117, 61, WHITE);
+   
+//draw current temp in icon
+   display.drawLine(9, 48, 9, 58 - (Input / 2), WHITE); 
+   display.drawLine(10, 48, 10, 58 - (Input / 2), WHITE);  
+   display.drawLine(11, 48, 11, 58 - (Input / 2), WHITE); 
+   display.drawLine(12, 48, 12, 58 - (Input / 2), WHITE); 
+   display.drawLine(13, 48, 13, 58 - (Input / 2), WHITE);
+   
+//draw setPoint line
+   display.drawLine(18, 58 - (setPoint / 2), 23, 58 - (setPoint / 2), WHITE); 
+ 
+// PID Werte ueber heatbar
+    display.setCursor(40, 50);  
+
+    display.print(bPID.GetKp(), 0); // P 
+    display.print("|");
+    if (bPID.GetKi() != 0){      
+      display.print(bPID.GetKp() / bPID.GetKi(), 0);; // I
+    }
+    else
+    { 
+      display.print("0");
+    }
+    display.print("|");
+    display.println(bPID.GetKd() / bPID.GetKp(), 0); // D
+    display.setCursor(98,50);
+    display.print(convertOutputToUtilisation(Output), 0);
+    display.print("%");
+
+// Brew
+    display.setCursor(32, 31); 
+    display.print("Brew:  ");
+    display.setTextSize(1);
+    display.print(bezugsZeit / 1000);
+    display.print("/");
+    if (ONLYPID == 1){
+      display.println(brewtimersoftware, 0);             // deaktivieren wenn Preinfusion ( // voransetzen )
+    }
+    else 
+    {
+      display.println(totalbrewtime / 1000);            // aktivieren wenn Preinfusion
+    }
+//draw box
+   display.drawRoundRect(0, 0, 128, 64, 1, WHITE);    
+   display.display();
+
+  }
 }

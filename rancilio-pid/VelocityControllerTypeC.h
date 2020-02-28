@@ -13,18 +13,17 @@
 #define LIBRARY_VERSION	0.0.1
 
 #include "RemoteDebug.h"  //https://github.com/JoaoLopesF/RemoteDebug
+#include "rancilio-pid.h"
 
 class VelocityControllerTypeC
 {
-
-
   public:
 
   //Constants used in some of the functions below
   #define AUTOMATIC	1
   #define MANUAL	0
 
-  #define DEBUG_printFmtln(fmt, ...) if ((*myDebug).isActive((*myDebug).DEBUG))   (*myDebug).printf("%0u " fmt, millis()/1000, ##__VA_ARGS__)
+  #define DEBUG_printLib(fmt, ...) if ((*myDebug).isActive((*myDebug).DEBUG))   (*myDebug).printf("%0u " fmt, millis()/1000, ##__VA_ARGS__)
 
 
   //commonly used functions **************************************************************************
@@ -61,6 +60,13 @@ class VelocityControllerTypeC
 	double GetKd();						  // where it's important to know what is actually 
 	int GetMode();						  //  inside the VelocityControllerTypeC.
 
+  double GetOutputK();
+  double GetOutputI();
+  double GetOutputD(); 
+  double GetLastOutput();
+  double GetSetPointInSeconds();
+
+
   private:
 	void Initialize();
 	
@@ -72,6 +78,12 @@ class VelocityControllerTypeC
   double ki;                  // * (I)ntegral Tuning Parameter
   double kd;                  // * (D)erivative Tuning Parameter
 
+  double outputK;
+  double outputI;
+  double outputD;
+  double setPointInSeconds;
+  double sumOutputD;
+      
 	int controllerDirection;
 	int pOn;
 

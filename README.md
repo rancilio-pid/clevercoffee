@@ -3,7 +3,7 @@ Rancilio-Silvia PID für Arduino http://rancilio-pid.de
 
 BETA VERSION
 
-Version 2.0.0_alpha
+Version 2.0.1_alpha
 
 # Additional important information
 - Copy file userConfig.h.SAMPLE to userConfig.h and edit this file accordingly.
@@ -17,11 +17,13 @@ Version 2.0.0_alpha
 - All other tuning variables are currently yet hard-coded (mainly outputSum has to match the minimum heater power required to have a stable temperature (for my silviaE it is around 4.9%)).
 
 # Changelog
-- 2.0.0_alpha:
+- 2.0.1_alpha:
+  - New PID Controller "Velocity Type C" (Attention: does not work out. Last commit to save stuff)
   - Added RemoteDebug over telnet (https://github.com/JoaoLopesF/RemoteDebug)
-  - New PID Controller "Velocity Type C"
   - Recover EmergencyStop when temperature poll in setup() fails
   - EmergencyStop state logging improved
+  - getAverageTemperature() is used to steady Input temperatures and therefore improve PID controls
+  - Because deadtime of Silvia5E is around 45seconds we can set PID.compute() to run every 5 seconds (previous 1sec) and reduce header on/off switches by factor 5.
 - 1.9.8h_alpha:
   - Feature: Implemented special 3 step cold-start mechanism. See special tuning instructions above.
 - 1.9.8g:
