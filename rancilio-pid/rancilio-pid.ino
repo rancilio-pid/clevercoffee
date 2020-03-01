@@ -321,9 +321,9 @@ void displaymessage(String displaymessagetext, String displaymessagetext2) {
     display.print(displaymessagetext2);
     //startup logo
     if (machineLogo == 1) {
-      display.drawBitmap(41, 2, startLogoRancilio_bits, startLogo_width, startLogo_height, WHITE);
+      display.drawBitmap(41, 2, startLogoRancilio_bits, startLogoRancilio_width, startLogoRancilio_height, WHITE);
     } else if (machineLogo == 2) {
-      display.drawBitmap(41, 2, startLogoGaggia_bits, startLogo_width, startLogo_height, WHITE);
+      display.drawBitmap(0, 2, startLogoGaggia_bits, startLogoGaggia_width, startLogoGaggia_height, WHITE);
     }
     display.display();
   }
