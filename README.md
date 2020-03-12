@@ -1,7 +1,7 @@
 # ranciliopid
 Rancilio-Silvia PID für Arduino http://rancilio-pid.de
 
-BETA VERSION
+BLEEDING EDGE BETA VERSION
 
 Version 2.0.1_beta
 
@@ -32,12 +32,13 @@ Version 2.0.1_beta
 - I only own the pid-only hardware solution, so I am greatful for feedback(bug reports) from persons using the full version. Please monitor our maschine's temperature closely the first few times. The muti-state pid controller should never lead to temperatures greater than 5 degress above setpoint!
 
 # Additional important information
+- Installation is as defined on http://rancilio-pid.de/ but with following adapations.
 - Copy file userConfig.h.SAMPLE to userConfig.h and edit this file accordingly.
 - Additional Arduino dependency on PubSubClient (tested with Version 2.7.0). 
   Please install this lib by using Arduino->Sketch->Include Library->"Library Manager".
   ![Library Manager](https://github.com/medlor/ranciliopid/blob/master/PubSubClient_Dep.jpg)
 - You have to use following Blynk Application settings. Just import following QR-Code:
-  <img src="https://github.com/medlor/ranciliopid/blob/master/blynk_application_qr_code.png" height="500">
+  <img src="https://github.com/medlor/ranciliopid/blob/master/blynk_application_qr_code.png" height="250">
 
 
 # Blynk application screenshots (including default values)
