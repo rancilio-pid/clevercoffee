@@ -20,7 +20,7 @@ Version 2.0.1_beta
    - PID Controller is now integral part of the software and not an external library.
 1. MQTT support to integrate maschine in smart-home solutions and to easier extract details for graphing/alerting.
 1. Added RemoteDebug over telnet so that we dont need USB to debug/tune pid anymore (https://github.com/JoaoLopesF/RemoteDebug)
-   - Just "$ telnet <rancilio ip> 23"
+   - Just "$ telnet rancilio_ip 23"
 1. "Brew Ready" Detection implemented, which detects when the temperature has stabilized at setPoint. It can send an
    MQTT event or have hardware pin 15 triggered (which can be used to turn a LED on).
 1. All heater power relevant settings are now set and given in percent (and not absolute output) and therefore better to understand
@@ -71,7 +71,7 @@ Version 2.0.1_beta
   - Code refactoring/cleanup and fixes of bugs.
   - BurstShot feature added to temporary overwrite PID controls (useful mainly for tests)
   - Added RemoteDebug over telnet so that we dont need USB to debug/tune pid anymore (https://github.com/JoaoLopesF/RemoteDebug)
-   - Just "$ telnet <rancilio ip> 23"
+    - Just "$ telnet rancilio_ip 23"
   - Fix: Recover EmergencyStop when temperature poll in setup() fails
   - EmergencyStop state logging improved
 - 1.9.8h_alpha:
