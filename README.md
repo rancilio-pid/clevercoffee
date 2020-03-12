@@ -37,13 +37,16 @@ Version 2.0.1_beta
   Please install this lib by using Arduino->Sketch->Include Library->"Library Manager".
   ![Library Manager](https://github.com/medlor/ranciliopid/blob/master/PubSubClient_Dep.jpg)
 - You have to use following Blynk Application settings. Just import following QR-Code:
-  ![blynk_application_qr_code](https://github.com/medlor/ranciliopid/blob/master/blynk_application_qr_code.png)
+  <img src="https://github.com/medlor/ranciliopid/blob/master/blynk_application_qr_code.png" height="500">
 
-# Blynk application screenshots
-- Also showing default values
-- ![blynk_app_status.jpg](https://github.com/medlor/ranciliopid/blob/master/blynk_app_status.jpg)
-  ![blynk_app_controller.jpg](https://github.com/medlor/ranciliopid/blob/master/blynk_app_controller.jpg)
-  ![blynk_app_preinfusion.jpg](https://github.com/medlor/ranciliopid/blob/master/blynk_app_preinfusion.jpg)
+
+# Blynk application screenshots (including default values)
+<p align="center">
+<img src="https://github.com/medlor/ranciliopid/blob/master/blynk_app_status.jpg" height="500">
+<img src="https://github.com/medlor/ranciliopid/blob/master/blynk_app_controller.jpg" height="500">
+<img src="https://github.com/medlor/ranciliopid/blob/master/blynk_app_preinfusion.jpg" height="500">
+</p>
+
 
 # Tunings instructions
 1. Maschine has to be cold (<40 C): Adjust coldstart step 1 and step 2 to cleanly reach setPoint without any PID controls.
@@ -54,6 +57,7 @@ Version 2.0.1_beta
    - tbd (maschine has to be cold)
 1. After this is configured correctly, you should configure the PID values for inner-zone and outer-zone.
    - tbd
+
 
 # Changelog
 - 2.0.1_beta:
