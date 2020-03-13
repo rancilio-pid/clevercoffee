@@ -1372,6 +1372,7 @@ void setup() {
 
   bPID.SetSampleTime(windowSize);
   bPID.SetOutputLimits(0, windowSize);
+  bPID.SetMode(AUTOMATIC);
 
   /********************************************************
      REST INIT()

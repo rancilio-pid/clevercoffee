@@ -41,7 +41,7 @@ Version 2.0.1_beta
   <img src="https://github.com/medlor/ranciliopid/blob/master/blynk_application_qr_code.png" height="250">
 
 
-# Blynk application screenshots (including default values)
+# Blynk application screenshots
 <p align="center">
 <img src="https://github.com/medlor/ranciliopid/blob/master/blynk_app_status.jpg" height="500">
 <img src="https://github.com/medlor/ranciliopid/blob/master/blynk_app_controller.jpg" height="500">
