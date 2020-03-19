@@ -444,11 +444,9 @@ boolean checkSensor(float tempInput) {
   }
   if (error >= maxErrorCounter && !sensorError) {
     sensorError = true ;
-    DEBUG_print("Sensor Error");
-    DEBUG_println(Input);
+    sprintf(debugline, "ERROR: temperature sensor malfunction: temp_current=%f, temp_prev=%f", tempInput, previousInput);
+    DEBUG_println(debugline);
   } else if (error == 0) {
-      sprintf(debugline, "ERROR: temperature sensor malfunction: temp_current=%f, temp_prev=%f", tempInput, previousInput);
-     DEBUG_println(debugline);
     sensorError = false ;
   }
 
