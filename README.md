@@ -37,16 +37,57 @@ Version 2.0.1_beta
 - Additional Arduino dependency on PubSubClient (tested with Version 2.7.0). 
   Please install this lib by using Arduino->Sketch->Include Library->"Library Manager".
   ![Library Manager](https://github.com/medlor/ranciliopid/blob/master/PubSubClient_Dep.jpg)
-- You have to use following Blynk Application settings. Just import following QR-Code:
-  <img src="https://github.com/medlor/ranciliopid/blob/master/blynk_application_qr_code.png" height="250">
+- Additional Arduino dependency on RemoteDebug (tested with Version 3.0.5). 
+  Please install this lib by using Arduino->Sketch->Include Library->"Library Manager".
+  ![Library Manager](https://github.com/medlor/ranciliopid/blob/master/RemoteDebug_Dep.jpg)
+- If you see the following error during compile "Height incorrect, please fix Adafruit_SSD1306.h!", then open the file  ./rancilio-pid/libraries/Adafruit_SSD1306/Adafruit_SSD1306.h and adapt Line 72ff to match following code:
+  ```
+  #define SSD1306_128_64
+  //#define SSD1306_128_32
+  //#define SSD1306_96_16
+  ```
+  Also check and fix all files matching "Adafruit_SSD1306.h" in your Documents/ subfolder!!
 
+# Blynk App Dashboard
+- Unfortunately you have to manually build your dashboard (config does not fit in QR code):
+  Please stick to the following screenshots and use the "virtual pin mapping" as described:
 
-# Blynk application screenshots
+## Blynk application screenshots
 <p align="center">
 <img src="https://github.com/medlor/ranciliopid/blob/master/blynk_app_status.jpg" height="500">
 <img src="https://github.com/medlor/ranciliopid/blob/master/blynk_app_controller.jpg" height="500">
 <img src="https://github.com/medlor/ranciliopid/blob/master/blynk_app_preinfusion.jpg" height="500">
 </p>
+
+## Blynk Pin Mapping
+- Tab "Status":
+  On/OFF := V13
+  EspressoReady := V14
+  TargetTemp := V7
+  (CurrentTemp := V2
+  HeaterPower := V23
+  Temperature Error := V11
+  Temperature Change (last 10 sec) := V35)
+
+- Tab "PID Controller":
+  Interzone P := V4
+  Interzone I := V5
+  Interzone D := V6
+  Outerzone P := V30
+  Outerzone I := V31
+  Outerzone D := V32
+  SteadyPower := V41
+  SteadyPower Offset Time := V43
+  SteadyPower Offset Power := V42
+  StartTemp := V12
+  Brew Detection Temperaturdrop := V34
+  BurstShot := V40
+  BurstPower := V44
+
+- Tab "Preinfusion":
+  Brew Time := V8
+  Preinfusion Time := V9
+  Preinfusion Pause := V10
 
 
 # Tunings instructions
@@ -61,6 +102,13 @@ Version 2.0.1_beta
 
 
 # Changelog
+- 2.0.1_beta2:
+  - Better Installation Guide
+  - Fix brew() function
+  - Support virtual BrewReady LED in blynk
+  - Improve pastChange() in Pid.compute(). (default Kd value has to be doubled)
+  - Improve Auto-tuning.
+  - Default PID Value Tunings
 - 2.0.1_beta:
   - ATTENTION: EEPROM has changed. Therefore you have to connect to blynk at least once, and manually set correct settings in blynk app (see screenshots for default values).
   - New PID Controller "Multi-state PID with steadyPower (Bias)"

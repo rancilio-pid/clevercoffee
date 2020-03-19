@@ -191,7 +191,6 @@ const double outerZoneTemperatureDifference = 1;
 *****************************************************/
 #include "PIDBias.h"
 double steadyPower = STEADYPOWER; // in percent. TODO config + eeprom
-double offsetPower = 0;   // in percent. TODO remove not needed anymore
 int burstShot      = 0;   // this is 1, when the user wants to immediatly set the heater power to the value specified in burstPower
 double burstPower  = 20;  // in percent
 int testTrigger    = 0;
@@ -207,15 +206,17 @@ PIDBias bPID(&Input, &Output, &steadyPower, &setPoint, aggKp, aggKi, aggKd, &Deb
    Analog Schalter Read
 ******************************************************/
 const int analogPin = 0; // will be use in case of hardware
-int brewcounter     = 0;
+int brewing     = 0;
 int brewswitch      = 0;
+bool waitingForBrewSwitchOff = false;
 long brewtime       = 25000;
-long aktuelleZeit   = 0;
+//long aktuelleZeit   = 0;
 long totalbrewtime  = 0;
 int preinfusion     = 2000;
 int preinfusionpause     = 5000;
 unsigned long bezugsZeit = 0;
 unsigned long startZeit  = 0;
+unsigned long lastBrewMessage = 0;
 
 /********************************************************
    Sensor check
@@ -550,7 +551,7 @@ bool checkBrewReady(double setPoint, float marginOfFluctuation, int lookback) {
   return true;
 }
 
-void refreshBrewReadyLed(boolean brewReady) {
+void refreshBrewReadyHardwareLed(boolean brewReady) {
   static boolean lastBrewReady = false;
   if (!brew_ready_led_enabled) return;
   if (brewReady != lastBrewReady) {
@@ -650,44 +651,63 @@ void refreshTemp() {
 ******************************************************/
 void brew() {
   if (OnlyPID == 0) {
+    //TODO add code to only check brew every 50ms.
     brewswitch = analogRead(analogPin);
     unsigned long aktuelleZeit = millis();
-    if (brewswitch > 1000 && brewcounter == 0) {
-      startZeit = millis();
-      brewcounter = brewcounter + 1;
-    }
-    if (brewcounter >= 1) {
-      bezugsZeit = aktuelleZeit - startZeit;
-    }
-    totalbrewtime = preinfusion + preinfusionpause + brewtime;
-    if (brewswitch > 1000 && bezugsZeit < totalbrewtime && brewcounter >= 1) {
-      if (bezugsZeit < preinfusion) {
-        //DEBUG_println("preinfusion");
-        digitalWrite(pinRelayVentil, relayON);
-        digitalWrite(pinRelayPumpe, relayON);
+    
+    if (brewswitch > 1000 && not (brewing == 0 && waitingForBrewSwitchOff) ) {
+      totalbrewtime = preinfusion + preinfusionpause + brewtime;
+      
+      if (brewing == 0) {
+        brewing = 1;
+        startZeit = millis();
+        waitingForBrewSwitchOff = true;
+        DEBUG_print("brewswitch=on - Starting brew() at startZeit=%lu", startZeit);
       }
-      if (bezugsZeit > preinfusion && bezugsZeit < preinfusion + preinfusionpause) {
-        //DEBUG_println("Pause");
-        digitalWrite(pinRelayVentil, relayON);
+      bezugsZeit = aktuelleZeit - startZeit;   
+
+      if (aktuelleZeit > lastBrewMessage + 500) {
+        lastBrewMessage = aktuelleZeit;
+        DEBUG_print("brew(): bezugsZeit=%lu totalbrewtime=%lu", bezugsZeit, totalbrewtime);
+      }
+      if (bezugsZeit <= totalbrewtime) {
+        if (bezugsZeit <= preinfusion) {
+          //DEBUG_println("preinfusion");
+          digitalWrite(pinRelayVentil, relayON);
+          digitalWrite(pinRelayPumpe, relayON);
+        } else if (bezugsZeit > preinfusion && bezugsZeit <= preinfusion + preinfusionpause) {
+          //DEBUG_println("Pause");
+          digitalWrite(pinRelayVentil, relayON);
+          digitalWrite(pinRelayPumpe, relayOFF);
+        } else if (bezugsZeit > preinfusion + preinfusionpause) {
+          //DEBUG_println("Brew");
+          digitalWrite(pinRelayVentil, relayON);
+          digitalWrite(pinRelayPumpe, relayON);
+        }
+      } else {
+        DEBUG_print("End brew() at %lu", aktuelleZeit);
+        brewing = 0;
+      }
+    }
+
+    if (brewswitch <= 1000) {
+      if (waitingForBrewSwitchOff) {
+        DEBUG_print("brewswitch=off (%lu)", aktuelleZeit);
+      }
+      waitingForBrewSwitchOff = false;
+      brewing = 0;
+    }
+    if (brewing == 0) {
+        brewing = 0;
+        //aktuelleZeit = 0;
+        //unnötig: bezugsZeit = 0;
+        //DEBUG_println("aus");
+        digitalWrite(pinRelayVentil, relayOFF);
         digitalWrite(pinRelayPumpe, relayOFF);
-      }
-      if (bezugsZeit > preinfusion + preinfusionpause) {
-        //DEBUG_println("Brew");
-        digitalWrite(pinRelayVentil, relayON);
-        digitalWrite(pinRelayPumpe, relayON);
-      }
-    } else {
-      //DEBUG_println("aus");
-      digitalWrite(pinRelayVentil, relayOFF);
-      digitalWrite(pinRelayPumpe, relayOFF);
-    }
-    if (brewswitch < 1000 && brewcounter >= 1) {
-      brewcounter = 0;
-      aktuelleZeit = 0;
-      bezugsZeit = 0;
     }
   }
 }
+
  /********************************************************
    Check if Wifi is connected, if not reconnect
  *****************************************************/
@@ -720,7 +740,7 @@ void sendToBlynk() {
     if (Blynk.connected()) {
       if (brewReady) {
         brewReadyLed.setColor(BLYNK_GREEN);
-      } else if (marginOfFluctuation != 0 && checkBrewReady(setPoint, marginOfFluctuation * 2, 60)) {
+      } else if (marginOfFluctuation != 0 && checkBrewReady(setPoint, marginOfFluctuation * 2, 40)) {
         brewReadyLed.setColor(BLYNK_YELLOW);
       } else {
         brewReadyLed.on();
@@ -741,7 +761,7 @@ void sendToBlynk() {
       if (blynksendcounter == 2) {
         Blynk.virtualWrite(V23, String(convertOutputToUtilisation(Output), 2));
         Blynk.syncVirtual(V23);
-        Blynk.virtualWrite(V35, String(pastTemperatureChange(10), 2));
+        Blynk.virtualWrite(V35, String(pastTemperatureChange(10)/2, 2));
         Blynk.syncVirtual(V35);
       }
       if (blynksendcounter >= 3) {
@@ -820,9 +840,9 @@ void updateState() {
     {
       //set maximum allowed filterSumOutputI based on error/marginOfFluctuation
       if ( Input >= setPoint - marginOfFluctuation) {
-        bPID.SetFilterSumOutputI(1.5);
+        bPID.SetFilterSumOutputI(1.0);
       } else if ( Input >= setPoint - 0.5) {
-        bPID.SetFilterSumOutputI(3);
+        bPID.SetFilterSumOutputI(4.5);
       } else {
         bPID.SetFilterSumOutputI(6);
       } 
@@ -834,6 +854,7 @@ void updateState() {
         mqtt_publish("events", debugline);
         bPID.SetSteadyPowerOffset(steadyPowerOffset);
         steadyPowerOffset_Activated = millis();
+        bPID.SetAutoTune(false);  //do not tune during powerOffset
         DEBUG_print("Enable steadyPowerOffset (steadyPower += %0.2f)\n", steadyPowerOffset);
         bPID.SetSumOutputI(0);
         activeState = 1;
@@ -884,11 +905,13 @@ void updateState() {
       snprintf(debugline, sizeof(debugline), "Disabled steadyPowerOffset because its too large or starttemp too high");
       ERROR_println(debugline);
       mqtt_publish("events", debugline);
+      bPID.SetAutoTune(true);
     }
     if (millis() >= steadyPowerOffset_Activated + steadyPowerOffset_Time) {
       bPID.SetSteadyPowerOffset(0);
       steadyPowerOffset_Activated = 0;
       DEBUG_print("Disable steadyPowerOffset (steadyPower -= %0.2f)\n", steadyPowerOffset);
+      bPID.SetAutoTune(true);
     }
   }
 }
@@ -901,7 +924,7 @@ void ICACHE_RAM_ATTR onTimer1ISR() {
     DEBUG_print("Input=%6.2f | error=%5.2f delta=%5.2f | Output=%6.2f = b:%5.2f + k:%5.2f + i:%5.2f(%5.2f) + d:%5.2f\n", 
       Input,
       (setPoint - Input),
-      pastTemperatureChange(10),
+      pastTemperatureChange(10)/2,
       convertOutputToUtilisation(Output),
       steadyPower + ((steadyPowerOffset_Activated) ? steadyPowerOffset: 0),
       convertOutputToUtilisation(bPID.GetOutputK()),
@@ -989,7 +1012,7 @@ void loop() {
   testEmergencyStop();  // test if Temp is to high
   brew();   //start brewing if button pressed
   brewReady = checkBrewReady(setPoint, marginOfFluctuation, 40);
-  refreshBrewReadyLed(brewReady);
+  refreshBrewReadyHardwareLed(brewReady);
 
   //check if PID should run or not. If not, set to manuel and force output to zero
   if (pidON == 0 && pidMode == 1) {

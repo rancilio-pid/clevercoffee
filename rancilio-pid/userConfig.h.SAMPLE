@@ -56,14 +56,15 @@
 /*******   
  * General PID values
  *******/
-#define STEADYPOWER 5.7 // Constant power of heater to accomodate against loss of heat to environment (in %)
-                        // (Rancilio Silvia 5E: 5.7 , ...)
+#define STEADYPOWER 5.4 // Constant power of heater to accomodate against loss of heat to environment (in %)
+                        // (Rancilio Silvia 5E: 5.4 , ...)
 #define STEADYPOWER_OFFSET_TIME 11*60 // If brew group is very cold, we need to put additional power to the heater: 
                                       // How long should this additional power be delivered (in s)
 #define STEADYPOWER_OFFSET 1.8        // How much power should be added? (in %) (Rancilio Silvia 5E: 1.8, ...)
 
 #define SETPOINT 97     // Temperature SetPoint
-#define STARTTEMP 84.5  // If temperature is below this value then Coldstart state should be triggered
+#define STARTTEMP 83.5  // If temperature is below this value then Coldstart state should be triggered
+                        // (Rancilio Silvia 5E: 83.5 , ...)
 
 // Inner Zone PID values
 #define AGGKP 80        // Kp (Rancilio Silvia 5E: 80, ...)
