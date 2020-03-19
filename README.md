@@ -3,7 +3,7 @@ Rancilio-Silvia PID für Arduino http://rancilio-pid.de
 
 BLEEDING EDGE BETA VERSION
 
-Version 2.0.1_beta
+Version 2.0.1_beta2
 
 # Most important features in comparison to original rancilio master:
 1. New PID Controller "Multi-state PID with steadyPower (Bias)"
@@ -60,34 +60,37 @@ Version 2.0.1_beta
 </p>
 
 ## Blynk Pin Mapping
-- Tab "Status":
-  On/OFF := V13
-  EspressoReady := V14
-  TargetTemp := V7
-  (CurrentTemp := V2
-  HeaterPower := V23
-  Temperature Error := V11
-  Temperature Change (last 10 sec) := V35)
+- Tab "Status":  
+  On/OFF (Type: Styled Button) := V13  
+  EspressoReady (Type: Led) := V14  
+  TargetTemp (Type: Numeric Input) := V7  
+  CurrentTemp (Type: Labeled Value) := V2  
+  HeaterPower := V23  
+  Temperature Error := V11  
+  Temperature Change (last 10 sec) := V35  
+  CurrentTemp/TargetTemp (Type: SuperChart) := V2/V3  
+  HeaterPower := V23  
+  Water Temp changes :=V35  
 
-- Tab "PID Controller":
-  Interzone P := V4
-  Interzone I := V5
-  Interzone D := V6
-  Outerzone P := V30
-  Outerzone I := V31
-  Outerzone D := V32
-  SteadyPower := V41
-  SteadyPower Offset Time := V43
-  SteadyPower Offset Power := V42
-  StartTemp := V12
-  Brew Detection Temperaturdrop := V34
-  BurstShot := V40
-  BurstPower := V44
+- Tab "PID Controller":  
+  Interzone P := V4  
+  Interzone I := V5  
+  Interzone D := V6  
+  Outerzone P := V30  
+  Outerzone I := V31  
+  Outerzone D := V32  
+  SteadyPower := V41  
+  SteadyPower Offset Time := V43  
+  SteadyPower Offset Power := V42  
+  StartTemp := V12  
+  Brew Detection Temperaturdrop := V34  
+  BurstShot (Type: Button) := V40  
+  BurstPower := V44  
 
-- Tab "Preinfusion":
-  Brew Time := V8
-  Preinfusion Time := V9
-  Preinfusion Pause := V10
+- Tab "Preinfusion":  
+  Brew Time := V8  
+  Preinfusion Time := V9  
+  Preinfusion Pause := V10  
 
 
 # Tunings instructions
