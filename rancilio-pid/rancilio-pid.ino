@@ -1,5 +1,5 @@
 /********************************************************
-   Version 1.9.7 MASTER (04.02.2020)
+   Version 1.9.7 MASTER (19.03.2020)
   Key facts: major revision
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
