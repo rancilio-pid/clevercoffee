@@ -22,6 +22,7 @@
 #define TRIGGERTYPE HIGH      // LOW = low trigger, HIGH = high trigger relay
 #define OTA true              // true=activate update via OTA
 #define GRAFANA 0             // 1=Markus grafana Visualisierung. Zugang notwendig, 0=default, aus
+#define EMERGENCY_TEXT "Emergency Stop!"  // Any short text to be displayed when TEMP>120 Grad. Eg "Steam the Milk!"
 
 // Wifi
 #define HOSTNAME "rancilio"

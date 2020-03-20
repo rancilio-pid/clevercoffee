@@ -3,7 +3,7 @@ Rancilio-Silvia PID für Arduino http://rancilio-pid.de
 
 BLEEDING EDGE BETA VERSION
 
-Version 2.0.1_beta2
+Version 2.0.1_beta3
 
 # Most important features in comparison to original rancilio master:
 1. New PID Controller "Multi-state PID with steadyPower (Bias)"
@@ -49,8 +49,8 @@ Version 2.0.1_beta2
   Also check and fix all files matching "Adafruit_SSD1306.h" in your Documents/ subfolder!!
 
 # Blynk App Dashboard
-- Unfortunately you have to manually build your dashboard (config does not fit in QR code):
-  Please stick to the following screenshots and use the "virtual pin mapping" as described:
+Unfortunately you have to manually build your dashboard (config does not fit in QR code).
+Please stick to the following screenshots and use the "virtual pin mapping" as described:
 
 ## Blynk application screenshots
 <p align="center">
@@ -92,6 +92,19 @@ Version 2.0.1_beta2
   Preinfusion Time := V9  
   Preinfusion Pause := V10  
 
+## Alternative way to clone blynk app dashboard (experimental)
+- Login to your server on which blynk is installed
+- install the programm jq (should be included in any distribution)
+- Shutdown blynk Service
+- Search for file in blynk/data which looks like <email>.Blynk.user. This is the config file. Make a backup of this file.
+- Download this project's config [rancilio_v2.json](https://github.com/medlor/ranciliopid/blob/master/rancilio_v2.json) and put it in the same folder as the config file.
+- Execute following command in this folder:
+  ```
+  jq --argjson blynkInfo "$(<rancilio_v2.json)" '.profile.dashBoards += [$blynkInfo]' YOUR_EMAIL.Blynk.user
+  ```
+- Startup blynk service
+- Open App, Search newly create project, Open the "Project Settings" then devices-> Master -> Master and Press "Refresh Token". Use this token in the rancilio software as auth token.
+
 
 # Tunings instructions
 1. Maschine has to be cold (<40 C): Adjust coldstart step 1 and step 2 to cleanly reach setPoint without any PID controls.
@@ -103,8 +116,22 @@ Version 2.0.1_beta2
 1. After this is configured correctly, you should configure the PID values for inner-zone and outer-zone.
    - tbd
 
+# How to use a simple LED as brewReady signal
+- The easiest way is to use arduino GPIO15. For this to work you have to connect a resistor and in parallel another resistor with the led in series. This has to be connected between GPIO Pin 15 and GROUND.  
+- Technical decription can be found here https://www.forward.com.au/pfod/ESP8266/GPIOpins/index.html
+- The configure in config.h:
+  - #define BREW_READY_LED 1
+  - #define BREW_READY_DETECTION 0.2  (or any other value)
 
 # Changelog
+- 2.0.1_beta3:
+  - Pre-Infusion Values are now in seconds (previously milliseconds).  
+    !! ATTENTION: Therefore you HAVE to change following values via blynk: brewtime, preinfusion, preinfusionpause !!
+  - Reduce overhead of preinfusion functionality by having it run just every 50ms (and not every ms).
+  - Add support for custom emergency text in display when temp >120 degree. (see EMERGENCY_TEXT in config.h.SAMPLE)
+  - Emergency temperature threshold can now be set by variable emergency_temperature.
+  - RemoteDebug inactivity time increased from 10min to 30min.
+  - Add missing line-break in brew() debug logging.
 - 2.0.1_beta2:
   - Better Installation Guide
   - Fix brew() function

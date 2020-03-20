@@ -11,8 +11,9 @@
  *****************************************************/
 
 #include "icon.h"
+#define SHOW_HELP false
+#define MAX_TIME_INACTIVE 1800000 // RemoteDebug: 30min inactivity time. default is 10min(600000)
 #include "RemoteDebug.h"  //https://github.com/JoaoLopesF/RemoteDebug
-
 
 //Libraries for OTA
 #include <ArduinoOTA.h>
@@ -205,18 +206,18 @@ PIDBias bPID(&Input, &Output, &steadyPower, &setPoint, aggKp, aggKi, aggKd, &Deb
 /********************************************************
    Analog Schalter Read
 ******************************************************/
-const int analogPin = 0; // will be use in case of hardware
-int brewing     = 0;
-int brewswitch      = 0;
+const int analogPin      = 0; // will be use in case of hardware
+int brewing              = 0;
+int brewswitch           = 0;
 bool waitingForBrewSwitchOff = false;
-long brewtime       = 25000;
-//long aktuelleZeit   = 0;
-long totalbrewtime  = 0;
-int preinfusion     = 2000;
-int preinfusionpause     = 5000;
+double brewtime          = 25;
+double totalbrewtime     = 0;
+double preinfusion       = 2;
+double preinfusionpause  = 5;
 unsigned long bezugsZeit = 0;
 unsigned long startZeit  = 0;
-unsigned long lastBrewMessage = 0;
+unsigned long previousBrewCheck = 0;
+unsigned long lastBrewMessage   = 0;
 
 /********************************************************
    Sensor check
@@ -228,6 +229,7 @@ int maxErrorCounter = 10 ;  //define maximum number of consecutive polls (of int
 /********************************************************
  * Rest
  *****************************************************/
+const int emergency_temperature = 120;  // temperature at which the emergency shutdown should take place. DONT SET IT ABOVE 120 DEGREE!!
 double brewboarder = 2.0 ;        // if temperature decreased within the last 6 seconds by this amount, then we detect a brew.
 #ifdef BREW_READY_DETECTION
 const int brew_ready_led_enabled = BREW_READY_LED;
@@ -316,13 +318,13 @@ BLYNK_WRITE(V7) {
   setPoint = param.asDouble();
 }
 BLYNK_WRITE(V8) {
-  brewtime = param.asDouble() * 1000;
+  brewtime = param.asDouble();
 }
 BLYNK_WRITE(V9) {
-  preinfusion = param.asDouble() * 1000;
+  preinfusion = param.asDouble();
 }
 BLYNK_WRITE(V10) {
-  preinfusionpause = param.asDouble() * 1000;
+  preinfusionpause = param.asDouble();
 }
 BLYNK_WRITE(V12) {
   starttemp = param.asDouble();
@@ -456,9 +458,9 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   Emergency Stop when temp too high
 *****************************************************/
 void testEmergencyStop(){
-  if (getCurrentTemperature() > 120){
+  if (getCurrentTemperature() > emergency_temperature){
     if (emergencyStop != true) {
-      snprintf(debugline, sizeof(debugline), "EmergencyStop because temperature>120 (temperature=%0.2f)", getCurrentTemperature());
+      snprintf(debugline, sizeof(debugline), "EmergencyStop because temperature>%u (temperature=%0.2f)", emergency_temperature, getCurrentTemperature());
       ERROR_println(debugline);
       mqtt_publish("events", debugline);
     }
@@ -651,59 +653,63 @@ void refreshTemp() {
 ******************************************************/
 void brew() {
   if (OnlyPID == 0) {
-    //TODO add code to only check brew every 50ms.
-    brewswitch = analogRead(analogPin);
     unsigned long aktuelleZeit = millis();
-    
-    if (brewswitch > 1000 && not (brewing == 0 && waitingForBrewSwitchOff) ) {
-      totalbrewtime = preinfusion + preinfusionpause + brewtime;
+    if ( aktuelleZeit > previousBrewCheck + 50 ) {  //50ms
+      previousBrewCheck = aktuelleZeit;
       
-      if (brewing == 0) {
-        brewing = 1;
-        startZeit = millis();
-        waitingForBrewSwitchOff = true;
-        DEBUG_print("brewswitch=on - Starting brew() at startZeit=%lu", startZeit);
-      }
-      bezugsZeit = aktuelleZeit - startZeit;   
-
-      if (aktuelleZeit > lastBrewMessage + 500) {
-        lastBrewMessage = aktuelleZeit;
-        DEBUG_print("brew(): bezugsZeit=%lu totalbrewtime=%lu", bezugsZeit, totalbrewtime);
-      }
-      if (bezugsZeit <= totalbrewtime) {
-        if (bezugsZeit <= preinfusion) {
-          //DEBUG_println("preinfusion");
-          digitalWrite(pinRelayVentil, relayON);
-          digitalWrite(pinRelayPumpe, relayON);
-        } else if (bezugsZeit > preinfusion && bezugsZeit <= preinfusion + preinfusionpause) {
-          //DEBUG_println("Pause");
-          digitalWrite(pinRelayVentil, relayON);
-          digitalWrite(pinRelayPumpe, relayOFF);
-        } else if (bezugsZeit > preinfusion + preinfusionpause) {
-          //DEBUG_println("Brew");
-          digitalWrite(pinRelayVentil, relayON);
-          digitalWrite(pinRelayPumpe, relayON);
+      //TODO add code to only check brew every 50ms.
+      brewswitch = analogRead(analogPin);
+          
+      if (brewswitch > 1000 && not (brewing == 0 && waitingForBrewSwitchOff) ) {
+        totalbrewtime = (preinfusion + preinfusionpause + brewtime) * 1000;
+        
+        if (brewing == 0) {
+          brewing = 1;
+          startZeit = millis();
+          waitingForBrewSwitchOff = true;
+          DEBUG_print("brewswitch=on - Starting brew() at startZeit=%lu\n", startZeit);
         }
-      } else {
-        DEBUG_print("End brew() at %lu", aktuelleZeit);
+        bezugsZeit = aktuelleZeit - startZeit;   
+  
+        if (aktuelleZeit > lastBrewMessage + 500) {
+          lastBrewMessage = aktuelleZeit;
+          DEBUG_print("brew(): bezugsZeit=%lu totalbrewtime=%0.2f\n", bezugsZeit, totalbrewtime);
+        }
+        if (bezugsZeit <= totalbrewtime) {
+          if (bezugsZeit <= preinfusion) {
+            //DEBUG_println("preinfusion");
+            digitalWrite(pinRelayVentil, relayON);
+            digitalWrite(pinRelayPumpe, relayON);
+          } else if (bezugsZeit > preinfusion && bezugsZeit <= preinfusion + preinfusionpause) {
+            //DEBUG_println("Pause");
+            digitalWrite(pinRelayVentil, relayON);
+            digitalWrite(pinRelayPumpe, relayOFF);
+          } else if (bezugsZeit > preinfusion + preinfusionpause) {
+            //DEBUG_println("Brew");
+            digitalWrite(pinRelayVentil, relayON);
+            digitalWrite(pinRelayPumpe, relayON);
+          }
+        } else {
+          DEBUG_print("End brew() at %lu\n", aktuelleZeit);
+          brewing = 0;
+        }
+      }
+  
+      if (brewswitch <= 1000) {
+        if (waitingForBrewSwitchOff) {
+          DEBUG_print("brewswitch=off (%lu)\n", aktuelleZeit);
+        }
+        waitingForBrewSwitchOff = false;
         brewing = 0;
       }
-    }
-
-    if (brewswitch <= 1000) {
-      if (waitingForBrewSwitchOff) {
-        DEBUG_print("brewswitch=off (%lu)", aktuelleZeit);
+      if (brewing == 0) {
+          brewing = 0;
+          //aktuelleZeit = 0;
+          //unnötig: bezugsZeit = 0;
+          //DEBUG_println("aus");
+          digitalWrite(pinRelayVentil, relayOFF);
+          digitalWrite(pinRelayPumpe, relayOFF);
       }
-      waitingForBrewSwitchOff = false;
-      brewing = 0;
-    }
-    if (brewing == 0) {
-        brewing = 0;
-        //aktuelleZeit = 0;
-        //unnötig: bezugsZeit = 0;
-        //DEBUG_println("aus");
-        digitalWrite(pinRelayVentil, relayOFF);
-        digitalWrite(pinRelayPumpe, relayOFF);
     }
   }
 }
@@ -1114,17 +1120,20 @@ void loop() {
       pidMode = 0;
       bPID.SetMode(pidMode);
       Output = 0 ;
-      if ( millis() - output_timestamp > 15000) {
-         ERROR_print("emergencyStop detected. Shutdown PID and heater\n");
+      if ( millis() - output_timestamp > 10000) {
+         ERROR_print("emergencyStop detected. Shutdown PID and heater (temp=%0.2f)\n", getCurrentTemperature());
          output_timestamp = millis();
       }
     }
-        
+
     digitalWrite(pinRelayHeater, LOW); //Stop heating
 
     //DISPLAY AUSGABE
-    snprintf(debugline, sizeof(debugline), "Temp: %0.2f", getCurrentTemperature());
-    displaymessage("Emergency Stop!", debugline, "Temp > 120");
+    char line2[17];
+    char line3[17];
+    snprintf(line2, sizeof(line2), "Temp: %0.2f", getCurrentTemperature());
+    snprintf(line3, sizeof(line3), "Temp > %u", emergency_temperature);
+    displaymessage(EMERGENCY_TEXT, line2, line3);
 
   } else {
     if ( millis() - output_timestamp > 15000) {
