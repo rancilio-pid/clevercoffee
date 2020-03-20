@@ -55,7 +55,7 @@ RemoteDebug Debug;
 #define pinRelayHeater    14
 #define pinLed            15
 
-const char* sysVersion PROGMEM  = "Version 2.0.0 Beta";
+const char* sysVersion PROGMEM  = "Version 2.0.1 Beta";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -210,10 +210,10 @@ const int analogPin      = 0; // will be use in case of hardware
 int brewing              = 0;
 int brewswitch           = 0;
 bool waitingForBrewSwitchOff = false;
-double brewtime          = 25;
+double brewtime          = 25000;
 double totalbrewtime     = 0;
-double preinfusion       = 2;
-double preinfusionpause  = 5;
+double preinfusion       = 2000;
+double preinfusionpause  = 5000;
 unsigned long bezugsZeit = 0;
 unsigned long startZeit  = 0;
 unsigned long previousBrewCheck = 0;
@@ -229,7 +229,7 @@ int maxErrorCounter = 10 ;  //define maximum number of consecutive polls (of int
 /********************************************************
  * Rest
  *****************************************************/
-const int emergency_temperature = 120;  // temperature at which the emergency shutdown should take place. DONT SET IT ABOVE 120 DEGREE!!
+const unsigned int emergency_temperature = 120;  // temperature at which the emergency shutdown should take place. DONT SET IT ABOVE 120 DEGREE!!
 double brewboarder = 2.0 ;        // if temperature decreased within the last 6 seconds by this amount, then we detect a brew.
 #ifdef BREW_READY_DETECTION
 const int brew_ready_led_enabled = BREW_READY_LED;
@@ -318,13 +318,13 @@ BLYNK_WRITE(V7) {
   setPoint = param.asDouble();
 }
 BLYNK_WRITE(V8) {
-  brewtime = param.asDouble();
+  brewtime = param.asDouble() * 1000;
 }
 BLYNK_WRITE(V9) {
-  preinfusion = param.asDouble();
+  preinfusion = param.asDouble() * 1000;
 }
 BLYNK_WRITE(V10) {
-  preinfusionpause = param.asDouble();
+  preinfusionpause = param.asDouble() * 1000;
 }
 BLYNK_WRITE(V12) {
   starttemp = param.asDouble();
@@ -661,7 +661,7 @@ void brew() {
       brewswitch = analogRead(analogPin);
           
       if (brewswitch > 1000 && not (brewing == 0 && waitingForBrewSwitchOff) ) {
-        totalbrewtime = (preinfusion + preinfusionpause + brewtime) * 1000;
+        totalbrewtime = preinfusion + preinfusionpause + brewtime;
         
         if (brewing == 0) {
           brewing = 1;
