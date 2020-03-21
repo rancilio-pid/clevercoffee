@@ -1,5 +1,5 @@
 /********************************************************
-   Version 1.9.7 MASTER (19.03.2020)
+   Version 1.9.8 MASTER (21.03.2020)
   Key facts: major revision
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
@@ -38,7 +38,7 @@
 //#include "Arduino.h"
 #include <EEPROM.h>
 
-const char* sysVersion PROGMEM  = "Version 1.9.7 Master";
+const char* sysVersion PROGMEM  = "Version 1.9.8 Master";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -98,6 +98,7 @@ unsigned long  timeBrewdetection = 0 ;
 int timerBrewdetection = 0 ;
 int i = 0;
 int firstreading = 1 ;          // Ini of the field, also used for sensor check
+int inX = 0, inY = 0, inOld = 0, inSum = 0; //used for filter()
 char debugline[100];
 /********************************************************
    PID - Werte Brüherkennung Offline
@@ -124,7 +125,7 @@ const int PonE = PONE;
 const int analogPin = 0; // will be use in case of hardware
 int brewcounter = 0;
 int brewswitch = 0;
-
+const long analogreadingtimeinterval = 200 ; // ms
 
 long brewtime = 25000;
 long aktuelleZeit = 0;
@@ -338,6 +339,16 @@ void testEmergencyStop(){
   }
 }
 
+/****
+  after ~28 cycles the input is set to 99,66% if the real input value - analog pin 
+*/
+int filter(int input) {
+  inX = input * 0.3;
+  inY = inOld * 0.7;
+  inSum = inX + inY;
+  inOld = inSum;
+  return inSum;
+}
 
 /********************************************************
   Displayausgabe
@@ -377,9 +388,20 @@ void displaymessage(String displaymessagetext, String displaymessagetext2) {
 
 }
 /********************************************************
+  analog pin
+*****************************************************/
+void analogreading() {
+  unsigned long currentMillistemp = millis();
+  if (currentMillistemp - previousMillistemp >= analogreadingtimeinterval)
+  {
+      previousMillistemp = currentMillistemp;
+      brewswitch = filter(analogRead(analogPin));
+  }
+}
+
+/********************************************************
   Moving average - brewdetection (SW)
 *****************************************************/
-
 void movAvg() {
   if (firstreading == 1) {
     for (int thisReading = 0; thisReading < numReadings; thisReading++) {
@@ -468,7 +490,6 @@ void refreshTemp() {
   {
     if (currentMillistemp - previousMillistemp >= intervaltempmesds18b20)
     {
-      brewswitch = analogRead(analogPin);
       previousMillistemp = currentMillistemp;
       sensors.requestTemperatures();
       if (!checkSensor(sensors.getTempCByIndex(0)) && firstreading == 0) return;  //if sensor data is not valid, abort function
@@ -484,7 +505,6 @@ void refreshTemp() {
   {
     if (currentMillistemp - previousMillistemp >= intervaltempmestsic)
     {
-      brewswitch = analogRead(analogPin);
       previousMillistemp = currentMillistemp;
       /*  variable "temperature" must be set to zero, before reading new data
             getTemperature only updates if data is valid, otherwise "temperature" will still hold old values
@@ -509,44 +529,40 @@ void refreshTemp() {
     PreInfusion, Brew , if not Only PID
 ******************************************************/
 void brew() {
-  if (OnlyPID == 0) {
-    unsigned long aktuelleZeit = millis();
-    if (brewswitch > 1000 && brewcounter == 0) {
+    if (OnlyPID == 0 && brewswitch > 1000 && brewcounter < 4) {
+    if (brewcounter == 0) {
       startZeit = millis();
-      brewcounter = 1;
-    }
-    if (brewcounter >= 1) {
-      bezugsZeit = aktuelleZeit - startZeit;
+      brewcounter++;
     }
 
-    totalbrewtime = preinfusion + preinfusionpause + brewtime;
-    if (brewswitch > 1000 && bezugsZeit < totalbrewtime && brewcounter >= 1) {
-      if (bezugsZeit < preinfusion) {
-        //DEBUG_println("preinfusion");
-        digitalWrite(pinRelayVentil, relayON);
-        digitalWrite(pinRelayPumpe, relayON);
-      }
-      if (bezugsZeit > preinfusion && bezugsZeit < preinfusion + preinfusionpause) {
-        //DEBUG_println("Pause");
-        digitalWrite(pinRelayVentil, relayON);
-        digitalWrite(pinRelayPumpe, relayOFF);
-      }
-      if (bezugsZeit > preinfusion + preinfusionpause) {
-        //DEBUG_println("Brew");
-        digitalWrite(pinRelayVentil, relayON);
-        digitalWrite(pinRelayPumpe, relayON);
-      }
-    } else {
-      //DEBUG_println("aus");
+    if (millis() - startZeit < preinfusion && brewcounter == 1) {
+    DEBUG_println("preinfusion");
+    digitalWrite(pinRelayVentil, relayON);
+    digitalWrite(pinRelayPumpe, relayON);
+    brewcounter++;
+    }
+    if (millis() - startZeit > preinfusion &&  brewcounter == 2) {
+    DEBUG_println("Pause");
+    digitalWrite(pinRelayVentil, relayON);
+    digitalWrite(pinRelayPumpe, relayOFF);
+    brewcounter++;
+    }
+    if (millis() - startZeit > preinfusion + preinfusionpause && brewcounter == 3) {
+    DEBUG_println("Brew");
+    digitalWrite(pinRelayVentil, relayON);
+    digitalWrite(pinRelayPumpe, relayON);
+    brewcounter++;
+    }
+  } 
+  if ((millis() - startZeit > preinfusion + preinfusionpause + brewtime || brewswitch < 1000) && brewcounter > 0) {
+      DEBUG_println("aus");
       digitalWrite(pinRelayVentil, relayOFF);
       digitalWrite(pinRelayPumpe, relayOFF);
-    }
-    if (brewswitch < 1000 && brewcounter >= 1) {
-      brewcounter = 0;
-      aktuelleZeit = 0;
-      bezugsZeit = 0;
-    }
+      startZeit = 0;
   }
+  if (brewswitch < 1000 && brewcounter > 0) {
+      brewcounter = 0;
+    }
 }
      /********************************************************
    Check if Wifi is connected, if not reconnect
@@ -1067,7 +1083,7 @@ void setup() {
 }
 
 void loop() {
-
+  
   ArduinoOTA.handle();  // For OTA
   // Disable interrupt it OTA is starting, otherwise it will not work
   ArduinoOTA.onStart([](){
@@ -1093,6 +1109,7 @@ void loop() {
 
   refreshTemp();   //read new temperature values
   testEmergencyStop();  // test if Temp is to high
+  analogreading() ; // reading analog pin
   brew();   //start brewing if button pressed
 
   //check if PID should run or not. If not, set to manuel and force output to zero
