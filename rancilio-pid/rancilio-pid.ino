@@ -468,6 +468,7 @@ void refreshTemp() {
   {
     if (currentMillistemp - previousMillistemp >= intervaltempmesds18b20)
     {
+      brewswitch = analogRead(analogPin);
       previousMillistemp = currentMillistemp;
       sensors.requestTemperatures();
       if (!checkSensor(sensors.getTempCByIndex(0)) && firstreading == 0) return;  //if sensor data is not valid, abort function
@@ -483,6 +484,7 @@ void refreshTemp() {
   {
     if (currentMillistemp - previousMillistemp >= intervaltempmestsic)
     {
+      brewswitch = analogRead(analogPin);
       previousMillistemp = currentMillistemp;
       /*  variable "temperature" must be set to zero, before reading new data
             getTemperature only updates if data is valid, otherwise "temperature" will still hold old values
@@ -508,11 +510,10 @@ void refreshTemp() {
 ******************************************************/
 void brew() {
   if (OnlyPID == 0) {
-    brewswitch = analogRead(analogPin);
     unsigned long aktuelleZeit = millis();
     if (brewswitch > 1000 && brewcounter == 0) {
       startZeit = millis();
-      brewcounter = brewcounter + 1;
+      brewcounter = 1;
     }
     if (brewcounter >= 1) {
       bezugsZeit = aktuelleZeit - startZeit;
