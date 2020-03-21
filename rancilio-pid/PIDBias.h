@@ -65,7 +65,7 @@ class PIDBias
 	double GetKd();						  // where it's important to know what is actually 
 	int GetMode();						  //  inside the PIDBias.
 
-  double GetOutputK();
+  double GetOutputP();
   double GetOutputI();
   double GetSumOutputI();
   double GetOutputD(); 
@@ -76,6 +76,7 @@ class PIDBias
   void SetFilterSumOutputI(double);
   void SetSteadyPowerOffset(double);
   void SetAutoTune(boolean);
+  void SetSteadyPowerDefault(double);
 
   private:
 	void Initialize();
@@ -88,13 +89,14 @@ class PIDBias
   double ki;                  // * (I)ntegral Tuning Parameter
   double kd;                  // * (D)erivative Tuning Parameter
 
-  double outputK;
+  double outputP;
   double outputI;
   double outputD;
   double sumOutputD;
   double sumOutputI;
   double burstOutput;
   double filterSumOutputI;
+  double steadyPowerDefault;
   double steadyPowerOffset;
   boolean steadyPowerAutoTune;
 

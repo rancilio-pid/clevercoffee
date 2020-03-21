@@ -40,6 +40,7 @@ PIDBias::PIDBias(double* Input, double* Output, double* steadyPower, double* Set
     lastLastInput = *myInput;
     lastOutput = *myOutput;
     myDebug = Debug;
+    steadyPowerDefault = *mySteadyPower;
     steadyPowerOffset = 0;
 
     PIDBias::SetOutputLimits(0, 5000);
@@ -65,7 +66,7 @@ bool PIDBias::Compute()
       double error = *mySetpoint - input;
       double pastChange = pastTemperatureChange(10) / 2;  // in seconds
 
-      outputK = kp * error;
+      outputP = kp * error;
       outputI = ki * error;
       // outputD = -kd * (input - 2*lastInput + lastLastInput);
       outputD = -kd * pastChange;
@@ -114,7 +115,16 @@ bool PIDBias::Compute()
         lastTrigger = millis();
       }
 
-      
+      //Auto-tune should never increase steadyPower too much (this prevents bugs due to not thought off uses)
+      if ( steadyPowerAutoTune && *mySteadyPower > steadyPowerDefault * 1.5 ) {
+        DEBUG_printLib("Auto-Tune steadyPower(%0.2f) is getting too high. Set back to %0.2f\n", *mySteadyPower, steadyPowerDefault);
+        *mySteadyPower = steadyPowerDefault; 
+      }
+      if ( steadyPowerAutoTune && *mySteadyPower > 10 ) {
+        DEBUG_printLib("Auto-Tune steadyPower(%0.2f) is by far too high. Set back to %0.2f\n", *mySteadyPower, 5);
+        *mySteadyPower = 4.7; 
+      }
+
       //TODO safe-guard against always moving up because of steadyPower (eg no steadyPower above error < 5)
 
       //If we are above setpoint, we dont want to overly reduce output when temperature is moving downwars
@@ -135,7 +145,7 @@ bool PIDBias::Compute()
 
       double output =
         + steadyPowerOutput + steadyPowerOffset // add steadyPower (bias) always to output
-        + outputK
+        + outputP
         + sumOutputI
         + outputD;
 
@@ -149,13 +159,13 @@ bool PIDBias::Compute()
       else if(output < outMin) output = outMin;
       
       //DEBUG_printLib("Input=%5.2f error=%0.2f SetPoint=%0.2f\n", input, error, (double)*mySetpoint);
-      //DEBUG_printLib("Input=%6.2f | DiffTemp=%5.2f | SetInSecs=%0.2f | Output=%6.2f = %6.2f + k:%5.2f + i:%5.2f + d:%5.2f ***\n", 
+      //DEBUG_printLib("Input=%6.2f | DiffTemp=%5.2f | SetInSecs=%0.2f | Output=%6.2f = %6.2f + p:%5.2f + i:%5.2f + d:%5.2f ***\n", 
       //  input,
       //  error,
       //  setPointInSeconds,
       //  convertOutputToUtilisation(output), 
       //  convertOutputToUtilisation(lastOutput), 
-      //  convertOutputToUtilisation(outputK), 
+      //  convertOutputToUtilisation(outputP), 
       //  convertOutputToUtilisation(outputI),
       //  convertOutputToUtilisation(outputD)    
       //  );    
@@ -228,6 +238,7 @@ void PIDBias::Initialize()
    sumOutputI = 0;
    lastTrigger = 0;
    steadyPowerAutoTune = true;
+   steadyPowerDefault = *mySteadyPower;
    filterSumOutputI = outMax;
    if(*myOutput > outMax) *myOutput = outMax;
    else if(*myOutput < outMin) *myOutput = outMin;
@@ -250,6 +261,11 @@ void PIDBias::SetFilterSumOutputI(double filterSumOutputI_set)
     filterSumOutputI = convertUtilisationToOutput(filterSumOutputI_set);
 }
 
+void PIDBias::SetSteadyPowerDefault(double steadyPowerDefault_set)
+{
+    steadyPowerDefault = convertUtilisationToOutput(steadyPowerDefault_set);
+}
+
 void PIDBias::SetSteadyPowerOffset(double steadyPowerOffset_set)
 {
     steadyPowerOffset = convertUtilisationToOutput(steadyPowerOffset_set);
@@ -263,7 +279,7 @@ void PIDBias::SetAutoTune(boolean steadyPowerAutoTune_set)
 double PIDBias::GetKp() { return dispKp;}
 double PIDBias::GetKi() { return dispKi;}
 double PIDBias::GetKd() { return dispKd;}
-double PIDBias::GetOutputK() { return outputK;}
+double PIDBias::GetOutputP() { return outputP;}
 double PIDBias::GetOutputI() { return outputI;}
 double PIDBias::GetSumOutputI() { return sumOutputI;}
 double PIDBias::GetOutputD() { return outputD;} 

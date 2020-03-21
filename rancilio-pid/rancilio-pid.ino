@@ -654,10 +654,8 @@ void refreshTemp() {
 void brew() {
   if (OnlyPID == 0) {
     unsigned long aktuelleZeit = millis();
-    if ( aktuelleZeit > previousBrewCheck + 50 ) {  //50ms
+    if ( aktuelleZeit >= previousBrewCheck + 50 ) {  //50ms
       previousBrewCheck = aktuelleZeit;
-      
-      //TODO add code to only check brew every 50ms.
       brewswitch = analogRead(analogPin);
           
       if (brewswitch > 1000 && not (brewing == 0 && waitingForBrewSwitchOff) ) {
@@ -665,15 +663,15 @@ void brew() {
         
         if (brewing == 0) {
           brewing = 1;
-          startZeit = millis();
+          startZeit = aktuelleZeit;
           waitingForBrewSwitchOff = true;
           DEBUG_print("brewswitch=on - Starting brew() at startZeit=%lu\n", startZeit);
         }
-        bezugsZeit = aktuelleZeit - startZeit;   
+        bezugsZeit = aktuelleZeit - startZeit; 
   
-        if (aktuelleZeit > lastBrewMessage + 500) {
+        if (aktuelleZeit >= lastBrewMessage + 500) {
           lastBrewMessage = aktuelleZeit;
-          DEBUG_print("brew(): bezugsZeit=%lu totalbrewtime=%0.2f\n", bezugsZeit, totalbrewtime);
+          DEBUG_print("brew(): bezugsZeit=%lu totalbrewtime=%0.1f\n", bezugsZeit, totalbrewtime);
         }
         if (bezugsZeit <= totalbrewtime) {
           if (bezugsZeit <= preinfusion) {
@@ -697,10 +695,11 @@ void brew() {
   
       if (brewswitch <= 1000) {
         if (waitingForBrewSwitchOff) {
-          DEBUG_print("brewswitch=off (%lu)\n", aktuelleZeit);
+          DEBUG_print("brewswitch=off\n");
         }
         waitingForBrewSwitchOff = false;
         brewing = 0;
+        bezugsZeit = 0;
       }
       if (brewing == 0) {
           brewing = 0;
@@ -927,13 +926,13 @@ void ICACHE_RAM_ATTR onTimer1ISR() {
   //run PID calculation
   if ( bPID.Compute() ) {
     isrCounter = 0;  // Attention: heater might not shutdown if bPid.SetSampleTime(), windowSize, timer1_write() and are not set correctly!
-    DEBUG_print("Input=%6.2f | error=%5.2f delta=%5.2f | Output=%6.2f = b:%5.2f + k:%5.2f + i:%5.2f(%5.2f) + d:%5.2f\n", 
+    DEBUG_print("Input=%6.2f | error=%5.2f delta=%5.2f | Output=%6.2f = b:%5.2f + p:%5.2f + i:%5.2f(%5.2f) + d:%5.2f\n", 
       Input,
       (setPoint - Input),
       pastTemperatureChange(10)/2,
       convertOutputToUtilisation(Output),
       steadyPower + ((steadyPowerOffset_Activated) ? steadyPowerOffset: 0),
-      convertOutputToUtilisation(bPID.GetOutputK()),
+      convertOutputToUtilisation(bPID.GetOutputP()),
       convertOutputToUtilisation(bPID.GetSumOutputI()),
       convertOutputToUtilisation(bPID.GetOutputI()),
       convertOutputToUtilisation(bPID.GetOutputD())
@@ -1001,7 +1000,7 @@ void loop() {
         mqtt_publish("kp", number2string(bPID.GetKp()));
         mqtt_publish("ki", number2string(bPID.GetKi()));
         mqtt_publish("kd", number2string(bPID.GetKd()));
-        mqtt_publish("outputK", number2string(convertOutputToUtilisation(bPID.GetOutputK())));
+        mqtt_publish("outputP", number2string(convertOutputToUtilisation(bPID.GetOutputP())));
         mqtt_publish("outputI", number2string(convertOutputToUtilisation(bPID.GetOutputI())));
         mqtt_publish("outputD", number2string(convertOutputToUtilisation(bPID.GetOutputD())));
         mqtt_publish("pastTemperatureChange", number2string(pastTemperatureChange(10)));

@@ -3,7 +3,7 @@ Rancilio-Silvia PID für Arduino http://rancilio-pid.de
 
 BLEEDING EDGE BETA VERSION
 
-Version 2.0.1_beta3
+Version 2.0.1_beta4
 
 # Most important features in comparison to original rancilio master:
 1. New PID Controller "Multi-state PID with steadyPower (Bias)"
@@ -116,6 +116,23 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
 1. After this is configured correctly, you should configure the PID values for inner-zone and outer-zone.
    - tbd
 
+# Debugging Howto
+## Explanation of the PID log line
+```
+[0m(D p:^5000ms) 435 Input= 93.46 | error= 0.54 delta= 2.45 | Output= 27.88 = b:52.10 + k: 0.86 + i: 0.00( 0.00) + d:-25.09
+
+```
+- 435 := Time since power-on of the arduino (in seconds)
+- Input= 93.46 := Current temperature
+- error= 0.54  := Temperature difference bcalculated by "target_temp - current_temp"
+- delta= 2.45  := Change in temperature in the last 10 seconds
+- Output= 27.88 := Heater Power (in percent)
+  which is calcucated by the sum of:
+   - b: 5.10        := steadyPower (in percent)
+   - k: 0.86        := PID Kp (in percent)
+   - i: 0.00( 0.00) := PID KiSum (KiLast) (in percent)
+   - d:-25.09       := PID Kd (in percent)
+
 # How to use a simple LED as brewReady signal
 - The easiest way is to use arduino GPIO15. For this to work you have to connect a resistor and in parallel another resistor with the led in series. This has to be connected between GPIO Pin 15 and GROUND.  
 - Technical decription can be found here https://www.forward.com.au/pfod/ESP8266/GPIOpins/index.html
@@ -124,6 +141,11 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
   - #define BREW_READY_DETECTION 0.2  (or any other value)
 
 # Changelog
+- 2.0.1_beta4:
+  - Limit auto-tuning of steadyPower to reduce overly increased values.
+  - Fix bug in brew().bezugsZeit calculation.
+  - Renamed outputK to outputI.
+  - Explanation of PID log line added.
 - 2.0.1_beta3:
   - Pre-Infusion Values are now in seconds (previously milliseconds).  
     !! ATTENTION: Therefore you HAVE to change following values via blynk: brewtime, preinfusion, preinfusionpause !!
