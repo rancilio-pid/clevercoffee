@@ -529,7 +529,8 @@ void refreshTemp() {
     PreInfusion, Brew , if not Only PID
 ******************************************************/
 void brew() {
-    if (OnlyPID == 0 && brewswitch > 1000 && brewcounter < 4) {
+ if (OnlyPID == 0) {
+    if ( brewswitch > 1000 && brewcounter < 4) {
     if (brewcounter == 0) {
       startZeit = millis();
       brewcounter++;
@@ -554,7 +555,7 @@ void brew() {
     brewcounter++;
     }
   } 
-  if ((millis() - startZeit > preinfusion + preinfusionpause + brewtime || brewswitch < 1000) && brewcounter > 0) {
+  if ((millis() - startZeit > preinfusion + preinfusionpause + brewtime || brewswitch < 1000) && startZeit > 0) {
       DEBUG_println("aus");
       digitalWrite(pinRelayVentil, relayOFF);
       digitalWrite(pinRelayPumpe, relayOFF);
@@ -563,6 +564,7 @@ void brew() {
   if (brewswitch < 1000 && brewcounter > 0) {
       brewcounter = 0;
     }
+  }
 }
      /********************************************************
    Check if Wifi is connected, if not reconnect
