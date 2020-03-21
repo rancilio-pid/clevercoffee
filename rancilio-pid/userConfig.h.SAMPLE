@@ -16,14 +16,53 @@
 #define TEMPSENSOR 2          // 1=DS19B20; 2=TSIC306
 #define TEMPSENSORRECOVERY 0  // 1 = on (default), 2= off. If off, temp sensor errors will stop the heater until power cycle
 #define BREWDETECTION 1       // 0 = off ,1 = Software
+#define BREWDETECTION_SENSITIVITY 2.0 // If temperature decreased within the last 6 seconds by this amount, then a brew is detected (BREWDETECTION must be 1)
 #define BREW_READY_DETECTION 0.2 // 0 = off, [0.0 - 30.0] = enable. If measured temperature of the last 6 seconds has been within this defined margin around the SET_POINT, we are able to brew. (recommended value 0.2) 
 #define BREW_READY_LED 0      // 0=off, 1=LED at GPO Pin15 will lighten when BREW_READY_DETECTION triggers
 #define FALLBACK 1            // 1: fallback auf eeprom Werte, wenn blynk nicht geht 0: deaktiviert
 #define TRIGGERTYPE HIGH      // LOW = low trigger, HIGH = high trigger relay
 #define OTA true              // true=activate update via OTA
-#define GRAFANA 0             // 1=Markus grafana Visualisierung. Zugang notwendig, 0=default, aus
-#define EMERGENCY_TEXT "Emergency Stop!"  // Any short text to be displayed when TEMP>120 Grad. Eg "Steam the Milk!"
+#define GRAFANA 0             // 0=default(off), 1=enable grafana visualisation by Markus (simply ask him for free access)
+#define EMERGENCY_TEMP 116    // If temperature is higher then notifications are send via display/debug/mqtt.
+                              // Reason might be an error OR the user wants to steam milk.
+#define EMERGENCY_TEXT "Emergency Stop!"  // Any short text to be displayed when temperature is >EMERGENCY_TEMP. Eg "Steam the Milk!"
 
+
+/*******   
+ * General PID values
+ *******/
+#define STEADYPOWER 5.4 // Constant power of heater to accomodate against loss of heat to environment (in %)
+                        // (Rancilio Silvia 5E: 5.4 , ...)
+#define STEADYPOWER_OFFSET_TIME 11*60 // If brew group is very cold, we need to put additional power to the heater: 
+                                      // How long should this additional power be delivered (in s)
+#define STEADYPOWER_OFFSET 1.8        // How much power should be added? (in %) (Rancilio Silvia 5E: 1.8, ...)
+
+#define SETPOINT 97     // Temperature SetPoint
+#define STARTTEMP 83.5  // If temperature is below this value then Coldstart state should be triggered
+                        // (Rancilio Silvia 5E: 83.5 , ...)
+
+// Inner Zone PID values
+#define AGGKP 80        // Kp (Rancilio Silvia 5E: 80, ...)
+#define AGGTN 11        // Tn (Rancilio Silvia 5E: 11, ...)
+#define AGGTV 32        // Tv (Rancilio Silvia 5E: 32, ...)
+
+// Outer Zone PID values
+#define AGGOKP 170      // Kp (Rancilio Silvia 5E: 170, ...)
+#define AGGOTN 40       // Tn (Rancilio Silvia 5E: 40, ...)
+#define AGGOTV 40       // Tv (Rancilio Silvia 5E: 40, ...)
+
+
+/*******   
+ * Preinfussion settings (only useful when ONLYPID=0) 
+ *******/
+#define PREINFUSION       2   // length of time of the pre-infusion (in sec)
+#define PREINFUSION_PAUSE 5   // length of time of the pre-infusion pause (time in between the pre-infussion and brewing) (in sec)
+#define BREWTIME          25  // length of time of the brewing (in sec)
+
+
+/*******   
+ * networking and services
+ *******/
 // Wifi
 #define HOSTNAME "rancilio"
 #define AUTH "blynkauthcode"
@@ -53,28 +92,5 @@
 #define MQTT_PASSWORD "mypass"
 #define MQTT_TOPIC_PREFIX "custom/Küche."  // topic will be "<MQTT_TOPIC_PREFIX><HOSTNAME>/<READING>"
 
-
-/*******   
- * General PID values
- *******/
-#define STEADYPOWER 5.4 // Constant power of heater to accomodate against loss of heat to environment (in %)
-                        // (Rancilio Silvia 5E: 5.4 , ...)
-#define STEADYPOWER_OFFSET_TIME 11*60 // If brew group is very cold, we need to put additional power to the heater: 
-                                      // How long should this additional power be delivered (in s)
-#define STEADYPOWER_OFFSET 1.8        // How much power should be added? (in %) (Rancilio Silvia 5E: 1.8, ...)
-
-#define SETPOINT 97     // Temperature SetPoint
-#define STARTTEMP 83.5  // If temperature is below this value then Coldstart state should be triggered
-                        // (Rancilio Silvia 5E: 83.5 , ...)
-
-// Inner Zone PID values
-#define AGGKP 80        // Kp (Rancilio Silvia 5E: 80, ...)
-#define AGGTN 11        // Tn (Rancilio Silvia 5E: 11, ...)
-#define AGGTV 32        // Tv (Rancilio Silvia 5E: 32, ...)
-
-// Outer Zone PID values
-#define AGGOKP 170      // Kp (Rancilio Silvia 5E: 170, ...)
-#define AGGOTN 40       // Tn (Rancilio Silvia 5E: 40, ...)
-#define AGGOTV 40       // Tv (Rancilio Silvia 5E: 40, ...)
 
 #endif // _userConfig_H

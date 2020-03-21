@@ -123,7 +123,7 @@ int activeState = 3;        // 1:= Coldstart required (maschine is cold)
                             // 3:= (default) Inner Zone detected (temperature near setPoint)
                             // 4:= Brew detected
                             // 5:= Outer Zone detected (temperature outside of "inner zone")
-boolean emergencyStop = false;// Notstop bei zu hoher Temperatur
+boolean emergencyStop = false; // Notstop bei zu hoher Temperatur
 
 /********************************************************
    history of temperatures
@@ -206,14 +206,14 @@ PIDBias bPID(&Input, &Output, &steadyPower, &setPoint, aggKp, aggKi, aggKd, &Deb
 /********************************************************
    Analog Schalter Read
 ******************************************************/
+double brewtime          = BREWTIME * 1000;
+double preinfusion       = PREINFUSION * 1000;
+double preinfusionpause  = PREINFUSION_PAUSE * 1000;
 const int analogPin      = 0; // will be use in case of hardware
 int brewing              = 0;
 int brewswitch           = 0;
 bool waitingForBrewSwitchOff = false;
-double brewtime          = 25000;
 double totalbrewtime     = 0;
-double preinfusion       = 2000;
-double preinfusionpause  = 5000;
 unsigned long bezugsZeit = 0;
 unsigned long startZeit  = 0;
 unsigned long previousBrewCheck = 0;
@@ -229,8 +229,12 @@ int maxErrorCounter = 10 ;  //define maximum number of consecutive polls (of int
 /********************************************************
  * Rest
  *****************************************************/
-const unsigned int emergency_temperature = 120;  // temperature at which the emergency shutdown should take place. DONT SET IT ABOVE 120 DEGREE!!
-double brewboarder = 2.0 ;        // if temperature decreased within the last 6 seconds by this amount, then we detect a brew.
+#ifdef EMERGENCY_TEMP
+const unsigned int emergency_temperature = EMERGENCY_TEMP;  // temperature at which the emergency shutdown should take place. DONT SET IT ABOVE 120 DEGREE!!
+#else
+const unsigned int emergency_temperature = 120;             // fallback
+#endif
+double brewDetectionSensitivity = BREWDETECTION_SENSITIVITY ; // if temperature decreased within the last 6 seconds by this amount, then we detect a brew.
 #ifdef BREW_READY_DETECTION
 const int brew_ready_led_enabled = BREW_READY_LED;
 float marginOfFluctuation = float(BREW_READY_DETECTION);
@@ -342,7 +346,7 @@ BLYNK_WRITE(V32) {
   aggoTv =  param.asDouble();
 }
 BLYNK_WRITE(V34) {
-  brewboarder =  param.asDouble();
+  brewDetectionSensitivity =  param.asDouble();
 }
 BLYNK_WRITE(V40) {
   burstShot =  param.asInt();
@@ -499,9 +503,9 @@ double pastTemperatureChange(int lookback) {
   }
   //ignore not yet initialized values
   if (readingstime[readIndex] == 0 || readingstime[historicIndex] == 0) return 0;
-  if (brewboarder <= 30) {
+  if (brewDetectionSensitivity <= 30) {
     temperatureDiff = (readingstemp[readIndex] - readingstemp[historicIndex]);
-  } else { // use previous factor on brewboarder threshold (compatibility to old brewboarder values using a factor of 100)
+  } else { // use previous factor on brewDetectionSensitivity threshold (compatibility to old brewDetectionSensitivity values using a factor of 100)
     temperatureDiff = (readingstemp[readIndex] - readingstemp[historicIndex]) * 100;
   }
   return temperatureDiff;
@@ -665,13 +669,13 @@ void brew() {
           brewing = 1;
           startZeit = aktuelleZeit;
           waitingForBrewSwitchOff = true;
-          DEBUG_print("brewswitch=on - Starting brew() at startZeit=%lu\n", startZeit);
+          DEBUG_print("brewswitch=on - Starting brew() at startZeit=%lu\n", startZeit/1000);
         }
         bezugsZeit = aktuelleZeit - startZeit; 
   
         if (aktuelleZeit >= lastBrewMessage + 500) {
           lastBrewMessage = aktuelleZeit;
-          DEBUG_print("brew(): bezugsZeit=%lu totalbrewtime=%0.1f\n", bezugsZeit, totalbrewtime);
+          DEBUG_print("brew(): bezugsZeit=%lu totalbrewtime=%0.1f\n", bezugsZeit/1000, totalbrewtime/1000);
         }
         if (bezugsZeit <= totalbrewtime) {
           if (bezugsZeit <= preinfusion) {
@@ -688,7 +692,7 @@ void brew() {
             digitalWrite(pinRelayPumpe, relayON);
           }
         } else {
-          DEBUG_print("End brew() at %lu\n", aktuelleZeit);
+          DEBUG_print("End brew()\n");
           brewing = 0;
         }
       }
@@ -867,9 +871,9 @@ void updateState() {
       }
 
       /* STATE 4 (BREW) DETECTION */
-      if (brewboarder != 0 && brewDetection == 1) {
-        //enable brew-detection if not already running and diff temp is > brewboarder
-        if (pastTemperatureChange(6) <= -brewboarder &&
+      if (brewDetectionSensitivity != 0 && brewDetection == 1) {
+        //enable brew-detection if not already running and diff temp is > brewDetectionSensitivity
+        if (pastTemperatureChange(6) <= -brewDetectionSensitivity &&
             Input < setPoint - outerZoneTemperatureDifference) {
           testTrigger = 0;
           if (OnlyPID == 1) {
@@ -1129,10 +1133,10 @@ void loop() {
 
     //DISPLAY AUSGABE
     char line2[17];
-    char line3[17];
+    //char line3[17];
     snprintf(line2, sizeof(line2), "Temp: %0.2f", getCurrentTemperature());
-    snprintf(line3, sizeof(line3), "Temp > %u", emergency_temperature);
-    displaymessage(EMERGENCY_TEXT, line2, line3);
+    //snprintf(line3, sizeof(line3), "Temp > %u", emergency_temperature);
+    displaymessage(EMERGENCY_TEXT, line2, "");
 
   } else {
     if ( millis() - output_timestamp > 15000) {
@@ -1275,7 +1279,7 @@ void setup() {
           EEPROM.put(90, aggoKp);
           EEPROM.put(100, aggoTn);
           EEPROM.put(110, aggoTv);
-          EEPROM.put(130, brewboarder);
+          EEPROM.put(130, brewDetectionSensitivity);
           EEPROM.put(140, steadyPower);
           EEPROM.put(150, steadyPowerOffset);
           EEPROM.put(160, steadyPowerOffset_Time);
@@ -1313,7 +1317,7 @@ void setup() {
           EEPROM.get(90, aggoKp);
           EEPROM.get(100, aggoTn);
           EEPROM.get(110, aggoTv);
-          EEPROM.get(130, brewboarder);
+          EEPROM.get(130, brewDetectionSensitivity);
           EEPROM.get(140, steadyPower);
           EEPROM.get(150, steadyPowerOffset);
           EEPROM.get(160, steadyPowerOffset_Time);
