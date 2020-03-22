@@ -514,7 +514,7 @@ void refreshTemp() {
       temperature = 0;
       Sensor1.getTemperature(&temperature);
       Temperatur_C = Sensor1.calc_Celsius(&temperature);
-      Temperatur_C = random(50,55);
+     // Temperatur_C = random(50,55);
       if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function
       Input = Temperatur_C;
       //Input = random(50,70) ;// test value
