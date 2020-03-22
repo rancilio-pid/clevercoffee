@@ -395,7 +395,9 @@ void analogreading() {
   if (currentMillistemp - previousMillistemp >= analogreadingtimeinterval)
   {
       previousMillistemp = currentMillistemp;
-      brewswitch = filter(analogRead(analogPin));
+      DEBUG_println("Analog_reading:");
+      brewswitch = analogRead(analogPin);
+      DEBUG_println(brewswitch);
   }
 }
 
@@ -512,9 +514,10 @@ void refreshTemp() {
       temperature = 0;
       Sensor1.getTemperature(&temperature);
       Temperatur_C = Sensor1.calc_Celsius(&temperature);
+      Temperatur_C = random(50,55);
       if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function
       Input = Temperatur_C;
-      // Input = random(50,70) ;// test value
+      //Input = random(50,70) ;// test value
       if (Brewdetection == 1)
       {
         movAvg();
@@ -530,25 +533,23 @@ void refreshTemp() {
 ******************************************************/
 void brew() {
  if (OnlyPID == 0) {
-    if ( brewswitch > 1000 && brewcounter < 4) {
-    if (brewcounter == 0) {
-      startZeit = millis();
-      brewcounter++;
-    }
+  analogreading() ; // reading analog pin
+  if (brewswitch > 1000 && brewcounter < 3) {
 
-    if (millis() - startZeit < preinfusion && brewcounter == 1) {
-    DEBUG_println("preinfusion");
+    if (brewcounter == 0) {
+    startZeit = millis();
+    DEBUG_println("preinfusion ");
     digitalWrite(pinRelayVentil, relayON);
     digitalWrite(pinRelayPumpe, relayON);
     brewcounter++;
     }
-    if (millis() - startZeit > preinfusion &&  brewcounter == 2) {
+    if (millis() - startZeit > preinfusion &&  brewcounter == 1) {
     DEBUG_println("Pause");
     digitalWrite(pinRelayVentil, relayON);
     digitalWrite(pinRelayPumpe, relayOFF);
     brewcounter++;
     }
-    if (millis() - startZeit > preinfusion + preinfusionpause && brewcounter == 3) {
+    if (millis() - startZeit > preinfusion + preinfusionpause && brewcounter == 2) {
     DEBUG_println("Brew");
     digitalWrite(pinRelayVentil, relayON);
     digitalWrite(pinRelayPumpe, relayON);
@@ -564,8 +565,9 @@ void brew() {
   if (brewswitch < 1000 && brewcounter > 0) {
       brewcounter = 0;
     }
-  }
-}
+   }
+ }
+
      /********************************************************
    Check if Wifi is connected, if not reconnect
  *****************************************************/
@@ -1111,7 +1113,7 @@ void loop() {
 
   refreshTemp();   //read new temperature values
   testEmergencyStop();  // test if Temp is to high
-  analogreading() ; // reading analog pin
+  //analogreading() ; // reading analog pin
   brew();   //start brewing if button pressed
 
   //check if PID should run or not. If not, set to manuel and force output to zero
