@@ -3,7 +3,7 @@ Rancilio-Silvia PID für Arduino http://rancilio-pid.de
 
 BLEEDING EDGE BETA VERSION
 
-Version 2.0.1_beta6
+Version 2.0.1_beta7
 
 # Most important features in comparison to original rancilio master:
 1. New PID Controller "Multi-state PID with steadyPower (Bias)"
@@ -147,6 +147,9 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
   - #define BREW_READY_DETECTION 0.2  # or any other value
 
 # Changelog
+- 2.0.1_beta7:
+  - Emergency Logo can be replaced by a nice "milk steam" logo (EMERGENCY_ICON). (Thanks helge for the icon)
+  - Regular status display is beautified and adapted to normal users needs. (Thanks helge for the code)
 - 2.0.1_beta6:
   - Fix: Reducing "temperature sensor reading" errors.
   - Fix: steadyPowerOffset_Time is now correctly configurable via blynk.

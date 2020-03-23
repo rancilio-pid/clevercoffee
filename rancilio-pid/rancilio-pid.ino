@@ -1103,7 +1103,7 @@ void loop() {
 
     //DISPLAY AUSGABE
     snprintf(debugline, sizeof(debugline), "Temp: %0.2f", getCurrentTemperature());
-    displaymessage("Check Temp. Sensor!", debugline, "");
+    displaymessage("rancilio", "Check Temp. Sensor!", debugline, "");
     
   } else if (emergencyStop) {
 
@@ -1125,7 +1125,7 @@ void loop() {
     //char line3[17];
     snprintf(line2, sizeof(line2), "Temp: %0.2f", getCurrentTemperature());
     //snprintf(line3, sizeof(line3), "Temp > %u", emergency_temperature);
-    displaymessage(EMERGENCY_TEXT, line2, "");
+    displaymessage(EMERGENCY_ICON, EMERGENCY_TEXT, line2, "");
 
   } else {
     if ( millis() - output_timestamp > 15000) {
@@ -1188,7 +1188,7 @@ void setup() {
     //display.begin(SSD1306_SWITCHCAPVCC, 0x3D);  // initialize with the I2C addr 0x3D (for the 128x64)
     display.clearDisplay();
   }
-  displaymessage(sysVersion, "", "");
+  displaymessage("rancilio", sysVersion, "", "");
   delay(2000);
 
   /********************************************************
@@ -1199,13 +1199,13 @@ void setup() {
 
     WiFi.hostname(hostname);
     if (fallback == 0) {
-      displaymessage("Connect to Blynk", "no Fallback", "");
+      displaymessage("rancilio", "Connect to Blynk", "no Fallback", "");
       Blynk.begin(auth, ssid, pass, blynkaddress, blynkport);
     }
 
     if (fallback == 1) {
       unsigned long started = millis();
-      displaymessage("1: Connect Wifi to:", ssid, "");
+      displaymessage("rancilio", "1: Connect Wifi to:", ssid, "");
 
       /* Explicitly set the ESP8266 to be a WiFi-client, otherwise, it by default,
         would try to act as both a client and an access-point and could cause
@@ -1224,7 +1224,7 @@ void setup() {
         DEBUG_println("WiFi connected\n");
         DEBUG_print("IP address: %s\n", WiFi.localIP().toString().c_str());
 
-        displaymessage("2: Wifi connected, ", "try Blynk   ", "");
+        displaymessage("rancilio", "2: Wifi connected, ", "try Blynk   ", "");
         DEBUG_print("Wifi works, now try Blynk connection\n");
         delay(2000);
         Blynk.config(auth, blynkaddress, blynkport) ;
@@ -1232,7 +1232,7 @@ void setup() {
 
         // Blnky works:
         if (Blynk.connected() == true) {
-          displaymessage("3: Blynk connected", "sync all variables...", "");
+          displaymessage("rancilio", "3: Blynk connected", "sync all variables...", "");
           DEBUG_print("Blynk is online, new values to eeprom\n");
          // Blynk.run() ; 
           Blynk.syncVirtual(V4);
@@ -1283,7 +1283,7 @@ void setup() {
       //TODO OFFLINE MODUS is totally broken in master and here.
       // add version info to Address 70 and use to validate structs
       if (WiFi.status() != WL_CONNECTED || Blynk.connected() != true) {
-        displaymessage("Begin Fallback,", "No Blynk/Wifi", "");
+        displaymessage("rancilio", "Begin Fallback,", "No Blynk/Wifi", "");
         delay(2000);
         DEBUG_print("Start offline mode with eeprom values, no wifi or blynk :\n");
         Offlinemodus = 1 ;
@@ -1314,7 +1314,7 @@ void setup() {
         }
         else
         {
-          displaymessage("No eeprom,", "Value", "");
+          displaymessage("rancilio", "No eeprom,", "Value", "");
           ERROR_print("No working eeprom value, I am sorry, but use default offline value\n");
           delay(2000);
         }
@@ -1425,7 +1425,7 @@ void setup() {
 /********************************************************
   Displayausgabe
 *****************************************************/
-void displaymessage(String displaymessagetext, String displaymessagetext2, String displaymessagetext3) {
+void displaymessage(String logo, String displaymessagetext, String displaymessagetext2, String displaymessagetext3) {
   if (Display == 2) {
     /********************************************************
        DISPLAY AUSGABE
@@ -1433,7 +1433,11 @@ void displaymessage(String displaymessagetext, String displaymessagetext2, Strin
     display.setTextSize(1);
     display.setTextColor(WHITE);
     display.clearDisplay();
-    display.setCursor(0, 47);
+    if (logo == "rancilio") {
+      display.setCursor(0, 47);
+    } else if (logo == "steam") {
+        display.setCursor(0, 52);
+    }
     display.println(displaymessagetext);
     if (displaymessagetext3 == "") {
       display.print(displaymessagetext2);
@@ -1441,7 +1445,12 @@ void displaymessage(String displaymessagetext, String displaymessagetext2, Strin
       display.println(displaymessagetext2);
       display.print(displaymessagetext3);
     }
-    display.drawBitmap(41,2, startLogo_bits,startLogo_width, startLogo_height, WHITE);  //Rancilio startup logo
+    //128x64
+    if (logo == "rancilio") {
+      display.drawBitmap(41,2, rancilio_logo_bits,rancilio_logo_width, rancilio_logo_height, WHITE);  //Rancilio startup logo
+    } else if (logo == "steam") {
+      display.drawBitmap(39,2, stream_logo_bits, stream_logo_width, stream_logo_height, WHITE);  //Rancilio startup logo
+    }
     display.display();
   }
   if (Display == 1) {
@@ -1501,65 +1510,36 @@ void printScreen() {
     u8x8.setCursor(6, 3);
     u8x8.print(convertOutputToUtilisation(Output));
   }
+  
   if (Display == 2 && !sensorError) {
     display.clearDisplay();
-    display.drawBitmap(0,0, logo_bits,logo_width, logo_height, WHITE);
+    display.drawBitmap(2,2, logo_bits, logo_width, logo_height, WHITE);
     display.setTextSize(1);
     display.setTextColor(WHITE);
-    display.setCursor(32, 10); 
+    display.setCursor(32, 15); 
     display.print("Ist :  ");
     display.print(Input, 1);
     display.print(" ");
     display.print((char)247);
     display.println("C");
-    display.setCursor(32, 20); 
+    display.setCursor(32, 25); 
     display.print("Soll:  ");
     display.print(setPoint, 1);
     display.print(" ");
     display.print((char)247);
     display.println("C");
-   // display.print("Heizen: ");
-    
-   // display.println(" %");
-   
-// Draw heat bar
-   display.drawLine(15, 58, 117, 58, WHITE);
-   display.drawLine(15, 58, 15, 61, WHITE); 
-   display.drawLine(117, 58, 117, 61, WHITE);
 
-   display.drawLine(16, 59, (convertOutputToUtilisation(Output)) + 16, 59, WHITE);
-   display.drawLine(16, 60, (convertOutputToUtilisation(Output)) + 16, 60, WHITE);
-   display.drawLine(15, 61, 117, 61, WHITE);
+    //draw current temp in icon
+    display.drawLine(11, 48, 11, 58 - (Input / 2), WHITE); 
+    display.drawLine(12, 48, 12, 58 - (Input / 2), WHITE);  
+    display.drawLine(13, 48, 13, 58 - (Input / 2), WHITE); 
+    display.drawLine(14, 48, 14, 58 - (Input / 2), WHITE); 
+    display.drawLine(15, 48, 15, 58 - (Input / 2), WHITE);
    
-//draw current temp in icon
-   display.drawLine(9, 48, 9, 58 - (Input / 2), WHITE); 
-   display.drawLine(10, 48, 10, 58 - (Input / 2), WHITE);  
-   display.drawLine(11, 48, 11, 58 - (Input / 2), WHITE); 
-   display.drawLine(12, 48, 12, 58 - (Input / 2), WHITE); 
-   display.drawLine(13, 48, 13, 58 - (Input / 2), WHITE);
-   
-//draw setPoint line
-   display.drawLine(18, 58 - (setPoint / 2), 23, 58 - (setPoint / 2), WHITE); 
- 
-// PID Werte ueber heatbar
-    display.setCursor(40, 50);  
+    //draw setPoint line
+    display.drawLine(18, 58 - (setPoint / 2), 23, 58 - (setPoint / 2), WHITE);
 
-    display.print(bPID.GetKp(), 0); // P 
-    display.print("|");
-    if (bPID.GetKi() != 0){      
-      display.print(bPID.GetKp() / bPID.GetKi(), 0);; // I
-    }
-    else
-    { 
-      display.print("0");
-    }
-    display.print("|");
-    display.println(bPID.GetKd() / bPID.GetKp(), 0); // D
-    display.setCursor(98,50);
-    display.print(convertOutputToUtilisation(Output), 0);
-    display.print("%");
-
-// Brew
+    // Brew
     display.setCursor(32, 31); 
     display.print("Brew:  ");
     display.setTextSize(1);
@@ -1572,8 +1552,8 @@ void printScreen() {
     {
       display.println(totalbrewtime / 1000);            // aktivieren wenn Preinfusion
     }
-//draw box
-   display.drawRoundRect(0, 0, 128, 64, 1, WHITE);    
-   display.display();
+    //draw box
+    display.drawRoundRect(0, 0, 128, 64, 1, WHITE);    
+    display.display();
   }
 }

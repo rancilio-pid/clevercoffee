@@ -26,6 +26,7 @@
 #define EMERGENCY_TEMP 116    // If temperature is higher then notifications are send via display/debug/mqtt.
                               // Reason might be an error OR the user wants to steam milk.
 #define EMERGENCY_TEXT "Emergency Stop!"  // Any short text to be displayed when temperature is >EMERGENCY_TEMP. Eg "Steam the Milk!"
+#define EMERGENCY_ICON "rancilio"  // icon displayed when temperature is >EMERGENCY_TEMP. Allowed values are "rancilio" or "steam"
 
 
 /*******   
