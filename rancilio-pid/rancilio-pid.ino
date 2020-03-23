@@ -1433,11 +1433,7 @@ void displaymessage(String logo, String displaymessagetext, String displaymessag
     display.setTextSize(1);
     display.setTextColor(WHITE);
     display.clearDisplay();
-    if (logo == "rancilio") {
-      display.setCursor(0, 47);
-    } else if (logo == "steam") {
-        display.setCursor(0, 52);
-    }
+    display.setCursor(0, 47);
     display.println(displaymessagetext);
     if (displaymessagetext3 == "") {
       display.print(displaymessagetext2);
@@ -1449,7 +1445,7 @@ void displaymessage(String logo, String displaymessagetext, String displaymessag
     if (logo == "rancilio") {
       display.drawBitmap(41,2, rancilio_logo_bits,rancilio_logo_width, rancilio_logo_height, WHITE);  //Rancilio startup logo
     } else if (logo == "steam") {
-      display.drawBitmap(39,2, stream_logo_bits, stream_logo_width, stream_logo_height, WHITE);  //Rancilio startup logo
+      display.drawBitmap(41,2, stream_logo_bits, stream_logo_width, stream_logo_height, WHITE);  //Rancilio startup logo
     }
     display.display();
   }
@@ -1540,7 +1536,7 @@ void printScreen() {
     display.drawLine(18, 58 - (setPoint / 2), 23, 58 - (setPoint / 2), WHITE);
 
     // Brew
-    display.setCursor(32, 31); 
+    display.setCursor(32, 40); 
     display.print("Brew:  ");
     display.setTextSize(1);
     display.print(bezugsZeit / 1000);
