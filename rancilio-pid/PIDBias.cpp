@@ -116,12 +116,12 @@ bool PIDBias::Compute()
       }
 
       //Auto-tune should never increase steadyPower too much (this prevents bugs due to not thought off uses)
-      if ( steadyPowerAutoTune && *mySteadyPower > steadyPowerDefault * 1.5 ) {
-        DEBUG_printLib("Auto-Tune steadyPower(%0.2f) is getting too high. Set back to %0.2f\n", *mySteadyPower, steadyPowerDefault);
+      if ( steadyPowerAutoTune && (*mySteadyPower > steadyPowerDefault * 1.5 || *mySteadyPower < steadyPowerDefault * 0.5) ) {
+        DEBUG_printLib("Auto-Tune steadyPower(%0.2f) is off too far. Set back to %0.2f\n", *mySteadyPower, steadyPowerDefault);
         *mySteadyPower = steadyPowerDefault; 
       }
       if ( steadyPowerAutoTune && *mySteadyPower > 10 ) {
-        DEBUG_printLib("Auto-Tune steadyPower(%0.2f) is by far too high. Set back to %0.2f\n", *mySteadyPower, 5);
+        DEBUG_printLib("Auto-Tune steadyPower(%0.2f) is by far too high. Set back to %0.2f\n", *mySteadyPower, 4.7);
         *mySteadyPower = 4.7; 
       }
 

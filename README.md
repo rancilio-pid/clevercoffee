@@ -3,7 +3,7 @@ Rancilio-Silvia PID für Arduino http://rancilio-pid.de
 
 BLEEDING EDGE BETA VERSION
 
-Version 2.0.1_beta5
+Version 2.0.1_beta6
 
 # Most important features in comparison to original rancilio master:
 1. New PID Controller "Multi-state PID with steadyPower (Bias)"
@@ -47,11 +47,9 @@ Version 2.0.1_beta5
   //#define SSD1306_96_16
   ```
   Also check and fix all files matching "Adafruit_SSD1306.h" in your Documents/ subfolder!!
-- If you want to increase the inactivity timeout you have to manually edit the file "RemoteDebugCfg.h" which is somewhere in a subpath below $USER/Documents/. Just search for the line "#define MAX_TIME_INACTIVE 600000" and replace if by following code block:
+- If you want to increase the inactivity timeout you have to manually edit the file "RemoteDebugCfg.h" which is somewhere in a subpath below $USER/Documents/. Just search for the line "#define MAX_TIME_INACTIVE 600000" and replace the number. Example :
   ```
-  #ifndef MAX_TIME_INACTIVE
-  #define MAX_TIME_INACTIVE 600000
-  #endif
+  #define MAX_TIME_INACTIVE 18000000
   ```
   Additionally just adapt the value MAX_TIME_INACTIVE in rancilio-pid.ino to your liking (new default is this code is 30min).
 
@@ -149,6 +147,12 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
   - #define BREW_READY_DETECTION 0.2  # or any other value
 
 # Changelog
+- 2.0.1_beta6:
+  - Fix: Reducing "temperature sensor reading" errors.
+  - Fix: steadyPowerOffset_Time is now correctly configurable via blynk.
+  - Fix: Hardware switch sensitivity ("brewswitch") is increased from 1000 to 700.
+  - Improved: mySteadyPower failure detections.
+  - Code Cleanup + Refactorings.
 - 2.0.1_beta5:
   - RemoteDebug inactivity time requires a version not yet in arduino library manager. Therefore a workaround is document in the meantime.
   - Pre-Infusion variables are now configurable in config.h: PREINFUSION, PREINFUSION_PAUSE, BREWTIME

@@ -11,9 +11,6 @@
  *****************************************************/
 
 #include "icon.h"
-#define SHOW_HELP false
-#define MAX_TIME_INACTIVE 1800000 // RemoteDebug: 30min inactivity time. default is 10min(600000)
-#include "RemoteDebug.h"  //https://github.com/JoaoLopesF/RemoteDebug
 
 //Libraries for OTA
 #include <ArduinoOTA.h>
@@ -28,26 +25,9 @@
 //#include "Arduino.h"
 #include <EEPROM.h>
 
-RemoteDebug Debug;
-
-// Debug mode is active if "#define DEBUGMODE" is not commented
-#define DEBUGMODE
-
-#ifndef DEBUGMODE
-#define DEBUG_print(fmt, ...)
-#define DEBUG_println(a)
-#define ERROR_print(fmt, ...)
-#define ERROR_println(a)
-#define DEBUGSTART(a)
-#else
-#define DEBUG_print(fmt, ...) if (Debug.isActive(Debug.DEBUG)) Debug.printf("%0u " fmt, millis()/1000, ##__VA_ARGS__)
-#define DEBUG_println(a) if (Debug.isActive(Debug.DEBUG)) Debug.printf("%0u %s\n", millis()/1000, a)
-#define ERROR_print(fmt, ...) if (Debug.isActive(Debug.ERROR)) Debug.printf("%0u " fmt, millis()/1000, ##__VA_ARGS__)
-#define ERROR_println(a) if (Debug.isActive(Debug.ERROR)) Debug.printf("%0u %s\n", millis()/1000, a)
-#define DEBUGSTART(a) Serial.begin(a);
-#endif
-
 #include "rancilio-pid.h"
+
+RemoteDebug Debug;
 
 //Define pins for outputs
 #define pinRelayVentil    12
@@ -70,7 +50,6 @@ const int fallback = FALLBACK;
 const int triggerType = TRIGGERTYPE;
 const boolean ota = OTA;
 const int grafana=GRAFANA;
-
 
 // Wifi
 const char* hostname = HOSTNAME;
@@ -147,8 +126,8 @@ double Input = 0, Output = 0;
 double previousInput = 0;
 
 unsigned long previousMillistemp;  // initialisation at the end of init()
-const long intervaltempmestsic = 1000;
-const long intervaltempmesds18b20 = 1000 ;
+unsigned long previousMillistemp2;
+const long refreshTempInterval = 1000;
 int pidMode = 1;                   //1 = Automatic, 0 = Manual
 
 double setPoint = SETPOINT;
@@ -285,6 +264,7 @@ DeviceAddress sensorDeviceAddress; // arrays to hold device address
 TSIC Sensor1(2);     // only Signalpin, VCCpin unused by default
 uint16_t temperature = 0;
 float Temperatur_C = 0;
+int refreshTempPreviousTimeSpend = 0;
 
 /********************************************************
    BLYNK
@@ -353,12 +333,13 @@ BLYNK_WRITE(V40) {
 }
 BLYNK_WRITE(V41) {
   steadyPower =  param.asDouble();
+  // TODO fix this bPID.SetSteadyPowerDefault(steadyPower); //TOBIAS: working?
 }
 BLYNK_WRITE(V42) {
   steadyPowerOffset =  param.asDouble();
 }
 BLYNK_WRITE(V43) {
-  steadyPowerOffset_Time =  param.asInt();
+  steadyPowerOffset_Time =  param.asInt() * 1000;
 }
 BLYNK_WRITE(V44) {
   burstPower =  param.asDouble();
@@ -417,7 +398,7 @@ boolean mqtt_publish(char* reading, char* payload) {
   if (!mqtt_enable) return true;
   char topic[MQTT_MAX_PUBLISH_SIZE];
   if (!mqtt_client.connected()) {
-    ERROR_print("Cannot publish(). Not connected to mqtt server\n");
+    ERROR_print("Not connected to mqtt server. Cannot publish(%s)\n", payload);
     return false;
   }
   snprintf(topic, MQTT_MAX_PUBLISH_SIZE, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
@@ -444,7 +425,7 @@ boolean mqtt_reconnect() {
   if (!mqtt_enable) return true;
   espClient.setTimeout(2000); // set timeout for mqtt connect()/write() to 2 seconds (default 5 seconds).
   if (mqtt_client.connect(hostname, mqtt_username, mqtt_password, topic_will, 0, 0, "unexpected exit")) {
-    DEBUG_print("Connected to mqtt server");
+    DEBUG_print("Connected to mqtt server\n");
     mqtt_publish("events", "Connected to mqtt server");
     mqtt_client.subscribe(topic_set);
   } else {
@@ -462,7 +443,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   Emergency Stop when temp too high
 *****************************************************/
 void testEmergencyStop(){
-  if (getCurrentTemperature() > emergency_temperature){
+  if (getCurrentTemperature() >= emergency_temperature){
     if (emergencyStop != true) {
       snprintf(debugline, sizeof(debugline), "EmergencyStop because temperature>%u (temperature=%0.2f)", emergency_temperature, getCurrentTemperature());
       ERROR_println(debugline);
@@ -607,18 +588,19 @@ void refreshTemp() {
   ******************************************************/
   unsigned long currentMillistemp = millis();
   previousInput = getCurrentTemperature() ;
-  unsigned long millis_elapsed = currentMillistemp - previousMillistemp ;
+  long millis_elapsed = currentMillistemp - previousMillistemp ;
+  if ( millis_elapsed <0 ) millis_elapsed = 0;
   if (TempSensor == 1)
   {
-    if ( floor(millis_elapsed / intervaltempmesds18b20) >= 2) {
-      snprintf(debugline, sizeof(debugline), "Temporary main loop() hang. Number of temp polls missed=%g, millis_elapsed=%lu", floor(millis_elapsed / intervaltempmesds18b20) -1, millis_elapsed);
+    if ( floor(millis_elapsed / refreshTempInterval) >= 2) {
+      snprintf(debugline, sizeof(debugline), "Temporary main loop() hang. Number of temp polls missed=%g, millis_elapsed=%lu", floor(millis_elapsed / refreshTempInterval) -1, millis_elapsed);
       ERROR_println(debugline);
       mqtt_publish("events", debugline);
     }
-    if (millis_elapsed >= intervaltempmesds18b20)
+    if (millis_elapsed >= refreshTempInterval)
     {
-      previousMillistemp = currentMillistemp;
       sensors.requestTemperatures();
+      previousMillistemp = currentMillistemp;
       if (!checkSensor(sensors.getTempCByIndex(0), previousInput)) return;  //if sensor data is not valid, abort function
       updateTemperatureHistory(sensors.getTempCByIndex(0));
       Input = getAverageTemperature(5);
@@ -626,22 +608,27 @@ void refreshTemp() {
   }
   if (TempSensor == 2)
   {
-    if ( floor(millis_elapsed / intervaltempmestsic) >= 2) {
-      snprintf(debugline, sizeof(debugline), "Temporary main loop() hang. Number of temp polls missed=%g, millis_elapsed=%lu", floor(millis_elapsed / intervaltempmestsic) -1, millis_elapsed);
+    if ( floor(millis_elapsed / refreshTempInterval) >= 2) {
+      snprintf(debugline, sizeof(debugline), "Temporary main loop() hang. Number of temp polls missed=%g, millis_elapsed=%lu", floor(millis_elapsed / refreshTempInterval) -1, millis_elapsed);
       ERROR_println(debugline);
       mqtt_publish("events", debugline);
     }
-    if (millis_elapsed >= intervaltempmestsic)
+    if (millis_elapsed >= refreshTempInterval)
     {
-      previousMillistemp = currentMillistemp;
       // variable "temperature" must be set to zero, before reading new data
       // getTemperature only updates if data is valid, otherwise "temperature" will still hold old values
       temperature = 0;
+      //unsigned long start = millis();
       Sensor1.getTemperature(&temperature);
-      // TODO simulate what happens when temp >500 . It looks like Input is written despite if-ranges?!?! (pointer issue?)
+      unsigned long stop = millis();
+      previousMillistemp = stop;
+      
       // temperature must be between 0x000 and 0x7FF(=DEC2047)
-      Temperatur_C = Sensor1.calc_Celsius(&temperature);      
+      Temperatur_C = Sensor1.calc_Celsius(&temperature); 
 
+      //DEBUG_print("millis=%lu | previousMillistemp=%lu | diff=%lu | Temperatur_C=%0.3f | time_spend=%lu\n", millis(), previousMillistemp, currentMillistemp - previousMillistemp2, Temperatur_C, stop - start);  //TOBIAS
+      //previousMillistemp2 = currentMillistemp;
+      
       // Temperature_C must be -50C < Temperature_C <= 150C
       if (!checkSensor(Temperatur_C, previousInput)) {
         return;  //if sensor data is not valid, abort function
@@ -658,25 +645,30 @@ void refreshTemp() {
 void brew() {
   if (OnlyPID == 0) {
     unsigned long aktuelleZeit = millis();
+    
     if ( aktuelleZeit >= previousBrewCheck + 50 ) {  //50ms
       previousBrewCheck = aktuelleZeit;
       brewswitch = analogRead(analogPin);
-          
-      if (brewswitch > 1000 && not (brewing == 0 && waitingForBrewSwitchOff) ) {
+
+      //if (aktuelleZeit >= output_timestamp + 500) {
+      //  DEBUG_print("brew(): brewswitch=%u | brewing=%u | waitingForBrewSwitchOff=%u\n", brewswitch, brewing, waitingForBrewSwitchOff);
+      //  output_timestamp = aktuelleZeit;
+      //}
+      if (brewswitch > 700 && not (brewing == 0 && waitingForBrewSwitchOff) ) {
         totalbrewtime = preinfusion + preinfusionpause + brewtime;
         
         if (brewing == 0) {
           brewing = 1;
           startZeit = aktuelleZeit;
           waitingForBrewSwitchOff = true;
-          DEBUG_print("brewswitch=on - Starting brew() at startZeit=%lu\n", startZeit/1000);
+          DEBUG_print("brewswitch=on - Starting brew()\n");
         }
         bezugsZeit = aktuelleZeit - startZeit; 
   
-        if (aktuelleZeit >= lastBrewMessage + 500) {
-          lastBrewMessage = aktuelleZeit;
-          DEBUG_print("brew(): bezugsZeit=%lu totalbrewtime=%0.1f\n", bezugsZeit/1000, totalbrewtime/1000);
-        }
+        //if (aktuelleZeit >= lastBrewMessage + 500) {
+        //  lastBrewMessage = aktuelleZeit;
+        //  DEBUG_print("brew(): bezugsZeit=%lu totalbrewtime=%0.1f\n", bezugsZeit/1000, totalbrewtime/1000);
+        //}
         if (bezugsZeit <= totalbrewtime) {
           if (bezugsZeit <= preinfusion) {
             //DEBUG_println("preinfusion");
@@ -697,7 +689,7 @@ void brew() {
         }
       }
   
-      if (brewswitch <= 1000) {
+      if (brewswitch <= 700) {
         if (waitingForBrewSwitchOff) {
           DEBUG_print("brewswitch=off\n");
         }
@@ -706,9 +698,6 @@ void brew() {
         bezugsZeit = 0;
       }
       if (brewing == 0) {
-          brewing = 0;
-          //aktuelleZeit = 0;
-          //unnötig: bezugsZeit = 0;
           //DEBUG_println("aus");
           digitalWrite(pinRelayVentil, relayOFF);
           digitalWrite(pinRelayPumpe, relayOFF);
@@ -917,6 +906,7 @@ void updateState() {
       bPID.SetAutoTune(true);
     }
     if (millis() >= steadyPowerOffset_Activated + steadyPowerOffset_Time) {
+      //DEBUG_print("millis=%lu | steadyPowerOffset_Activated=%0.2f | steadyPowerOffset_Time=%d\n", millis(), steadyPowerOffset_Activated, steadyPowerOffset_Time);
       bPID.SetSteadyPowerOffset(0);
       steadyPowerOffset_Activated = 0;
       DEBUG_print("Disable steadyPowerOffset (steadyPower -= %0.2f)\n", steadyPowerOffset);
@@ -942,7 +932,7 @@ void ICACHE_RAM_ATTR onTimer1ISR() {
       convertOutputToUtilisation(bPID.GetOutputD())
       );
   }
-  if (Output <= isrCounter) {
+  if (isrCounter >= Output) {
     digitalWrite(pinRelayHeater, LOW);
   } else {
     digitalWrite(pinRelayHeater, HIGH);
@@ -1109,7 +1099,6 @@ void loop() {
         output_timestamp = millis();
       }
     }
-
     digitalWrite(pinRelayHeater, LOW); //Stop heating
 
     //DISPLAY AUSGABE
@@ -1415,6 +1404,7 @@ void setup() {
   //Initialisation MUST be at the very end of the init(), otherwise the time comparison in loop() will have a big offset
   unsigned long currentTime = millis();
   previousMillistemp = currentTime;
+  previousMillistemp2 = currentTime;;
   previousMillisDisplay = currentTime;
   previousMillisBlynk = currentTime;
 
@@ -1424,6 +1414,7 @@ void setup() {
     TIM_DIV16 = 1,  //5MHz (5 ticks/us - 1677721.4 us max)
     TIM_DIV256 = 3  //312.5Khz (1 tick = 3.2us - 26843542.4 us max)
   ******************************************************/
+  //delay(35);
   timer1_isr_init();
   timer1_attachInterrupt(onTimer1ISR);
   timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);

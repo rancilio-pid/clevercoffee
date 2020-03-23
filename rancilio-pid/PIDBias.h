@@ -12,7 +12,6 @@
 #define PIDBias_h
 #define LIBRARY_VERSION	0.0.1
 
-#include "RemoteDebug.h"  //https://github.com/JoaoLopesF/RemoteDebug
 #include "rancilio-pid.h"
 
 class PIDBias
