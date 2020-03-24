@@ -28,6 +28,7 @@
 #define EMERGENCY_TEXT "Emergency Stop!"  // Any short text to be displayed when temperature is >EMERGENCY_TEMP. Eg "Steam the Milk!"
 #define EMERGENCY_ICON "rancilio"  // icon displayed when temperature is >EMERGENCY_TEMP. Allowed values are "rancilio" or "steam"
 
+//#define DEBUGMODE           // to enable Debug uncomment this line
 
 /*******   
  * General PID values

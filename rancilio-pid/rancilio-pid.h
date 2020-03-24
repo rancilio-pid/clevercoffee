@@ -3,6 +3,8 @@
 
 #define LIBRARY_VERSION	0.0.1
 
+#include "userConfig.h"
+
 #define SHOW_HELP false
 #define MAX_TIME_INACTIVE 1800000
 #ifdef MAX_TIME_INACTIVE
@@ -16,9 +18,6 @@
 #include "RemoteDebug.h"  //https://github.com/JoaoLopesF/RemoteDebug
 
 //RemoteDebug Debug;
-
-// Debug mode is active if "#define DEBUGMODE" is not commented
-#define DEBUGMODE
 
 #ifndef DEBUGMODE
 #define DEBUG_print(fmt, ...)

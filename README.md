@@ -3,7 +3,7 @@ Rancilio-Silvia PID für Arduino http://rancilio-pid.de
 
 BLEEDING EDGE BETA VERSION
 
-Version 2.0.1_beta7
+Version 2.0.1_beta8
 
 # Most important features in comparison to original rancilio master:
 1. New PID Controller "Multi-state PID with steadyPower (Bias)"
@@ -125,7 +125,7 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
 # Debugging Howto
 ## Explanation of the PID log line
 ```
-[0m(D p:^5000ms) 435 Input= 93.46 | error= 0.54 delta= 2.45 | Output= 27.88 = b:52.10 + k: 0.86 + i: 0.00( 0.00) + d:-25.09
+[0m(D p:^5000ms) 435 Input= 93.46 | error= 0.54 delta= 2.45 | Output= 27.88 = b:52.10 + p: 0.86 + i: 0.00( 0.00) + d:-25.09
 
 ```
 - 435 := Time since power-on of the arduino (in seconds)
@@ -135,7 +135,7 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
 - Output= 27.88 := Heater Power (in percent)
   which is calcucated by the sum of:
    - b: 5.10        := steadyPower (in percent)
-   - k: 0.86        := PID Kp (in percent)
+   - p: 0.86        := PID Kp (in percent)
    - i: 0.00( 0.00) := PID KiSum (KiLast) (in percent)
    - d:-25.09       := PID Kd (in percent)
 
@@ -147,6 +147,9 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
   - #define BREW_READY_DETECTION 0.2  # or any other value
 
 # Changelog
+- 2.0.1_beta8:
+  - ISR performance optimised when debug is active (spend time reduced from 0.8ms to 0.15ms).
+  - Move DEBUGMODE to config.h.
 - 2.0.1_beta7:
   - Emergency Logo can be replaced by a nice "milk steam" logo (EMERGENCY_ICON). (Thanks helge for the icon)
   - Regular status display is beautified and adapted to normal users needs. (Thanks helge for the code)
@@ -231,6 +234,14 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
   - Feature: Wifi hostname configuable.
   - New feature: Safe-guard: Stop heating forever if sensor is flapping!
   - Fix: Pid.Compute() is now in sync with isrCounter and is not loosing one tick each second. Heater flapping is reduced.
+
+
+# Special Thanks
+To the great work of the rancilio-pid.de team, just to mention a few: andreas, markus, toppo78, miau.
+Also to the nice people in the rancilio chat and the ones who contribute and give very much appreciated feedback like helge!
+
+!! Thank you so much for the tasty cup of coffee I enjoy each day !!
+
 
 # Disclaimer
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.

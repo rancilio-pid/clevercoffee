@@ -21,8 +21,6 @@
 //Libraries for MQTT
 #include <PubSubClient.h>
 
-#include "userConfig.h" // needs to be configured by the user
-//#include "Arduino.h"
 #include <EEPROM.h>
 
 #include "rancilio-pid.h"
@@ -124,6 +122,7 @@ unsigned int windowSize = windowSizeSeconds * 1000;  // 1000=100% heater power =
 unsigned int isrCounter = windowSize - 500;          // counter for ISR
 double Input = 0, Output = 0;
 double previousInput = 0;
+double previousOutput = 0;
 
 unsigned long previousMillistemp;  // initialisation at the end of init()
 unsigned long previousMillistemp2;
@@ -224,6 +223,7 @@ float marginOfFluctuation = 0;          // 0 = disable functionality
 bool brewReady = false;
 char debugline[100];
 unsigned long output_timestamp = 0;
+volatile byte bpidComputeHasRun = 0;
 
 /********************************************************
    DISPLAY
@@ -915,11 +915,9 @@ void updateState() {
   }
 }
 
-void ICACHE_RAM_ATTR onTimer1ISR() {
-  timer1_write(50000); // set interrupt time to 10ms
-  //run PID calculation
-  if ( bPID.Compute() ) {
-    isrCounter = 0;  // Attention: heater might not shutdown if bPid.SetSampleTime(), windowSize, timer1_write() and are not set correctly!
+void printPidStatus() {
+  if (bpidComputeHasRun > 0) {
+    bpidComputeHasRun = 0;
     DEBUG_print("Input=%6.2f | error=%5.2f delta=%5.2f | Output=%6.2f = b:%5.2f + p:%5.2f + i:%5.2f(%5.2f) + d:%5.2f\n", 
       Input,
       (setPoint - Input),
@@ -931,6 +929,15 @@ void ICACHE_RAM_ATTR onTimer1ISR() {
       convertOutputToUtilisation(bPID.GetOutputI()),
       convertOutputToUtilisation(bPID.GetOutputD())
       );
+  }
+}
+
+void ICACHE_RAM_ATTR onTimer1ISR() {
+  timer1_write(50000); // set interrupt time to 10ms
+  //run PID calculation
+  if ( bPID.Compute() ) {
+    isrCounter = 0;  // Attention: heater might not shutdown if bPid.SetSampleTime(), windowSize, timer1_write() and are not set correctly!
+    bpidComputeHasRun = 1;
   }
   if (isrCounter >= Output) {
     digitalWrite(pinRelayHeater, LOW);
@@ -991,12 +998,12 @@ void loop() {
         mqtt_publish("temperature", number2string(Input));
         mqtt_publish("temperatureAboveTarget", number2string((Input - setPoint)));
         mqtt_publish("heaterUtilization", number2string(convertOutputToUtilisation(Output)));
-        mqtt_publish("kp", number2string(bPID.GetKp()));
-        mqtt_publish("ki", number2string(bPID.GetKi()));
-        mqtt_publish("kd", number2string(bPID.GetKd()));
-        mqtt_publish("outputP", number2string(convertOutputToUtilisation(bPID.GetOutputP())));
-        mqtt_publish("outputI", number2string(convertOutputToUtilisation(bPID.GetOutputI())));
-        mqtt_publish("outputD", number2string(convertOutputToUtilisation(bPID.GetOutputD())));
+        //mqtt_publish("kp", number2string(bPID.GetKp()));
+        //mqtt_publish("ki", number2string(bPID.GetKi()));
+        //mqtt_publish("kd", number2string(bPID.GetKd()));
+        //mqtt_publish("outputP", number2string(convertOutputToUtilisation(bPID.GetOutputP())));
+        //mqtt_publish("outputI", number2string(convertOutputToUtilisation(bPID.GetOutputI())));
+        //mqtt_publish("outputD", number2string(convertOutputToUtilisation(bPID.GetOutputD())));
         mqtt_publish("pastTemperatureChange", number2string(pastTemperatureChange(10)));
         mqtt_publish("brewReady", bool2string(brewReady));
        }
@@ -1038,6 +1045,7 @@ void loop() {
 
   //Sicherheitsabfrage
   if (!sensorError && !emergencyStop && Input > 0) {
+    printPidStatus();
     updateState();
 
     /* state 1: Water is very cold, set heater to full power */

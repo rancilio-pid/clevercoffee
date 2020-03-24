@@ -22,8 +22,6 @@ class PIDBias
   #define AUTOMATIC	1
   #define MANUAL	0
 
-  #define DEBUGMODE
-  
   #ifndef DEBUGMODE
   #define DEBUG_printLib(fmt, ...)
   #else
