@@ -126,7 +126,7 @@ const int analogPin = 0; // will be use in case of hardware
 int brewcounter = 0;
 int brewswitch = 0;
 const long analogreadingtimeinterval = 200 ; // ms
-
+unsigned long previousMillistempanalogreading ; // ms for analogreading
 long brewtime = 25000;
 long aktuelleZeit = 0;
 long totalbrewtime = 0;
@@ -392,9 +392,9 @@ void displaymessage(String displaymessagetext, String displaymessagetext2) {
 *****************************************************/
 void analogreading() {
   unsigned long currentMillistemp = millis();
-  if (currentMillistemp - previousMillistemp >= analogreadingtimeinterval)
+  if (currentMillistemp - previousMillistempanalogreading >= analogreadingtimeinterval)
   {
-      previousMillistemp = currentMillistemp;
+      previousMillistempanalogreading = currentMillistemp;
       DEBUG_println("Analog_reading:");
       brewswitch = analogRead(analogPin);
       DEBUG_println(brewswitch);
@@ -1072,7 +1072,7 @@ void setup() {
   windowStartTime = currentTime;
   previousMillisDisplay = currentTime;
   previousMillisBlynk = currentTime;
-
+  previousMillistempanalogreading = currentTime; 
   /********************************************************
     Timer1 ISR - Initialisierung
     TIM_DIV1 = 0,   //80MHz (80 ticks/us - 104857.588 us max)
