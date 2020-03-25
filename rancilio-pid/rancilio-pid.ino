@@ -1091,12 +1091,11 @@ void loop() {
     //update display if time interval xpired
     unsigned long currentMillisDisplay = millis();
     if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
-      previousMillisDisplay += intervalDisplay;
-      printScreen();
+      previousMillisDisplay  = currentMillisDisplay;
+      displaymessage("brew", "", "", "");
     }
 
   } else if (sensorError) {
-
     //Deactivate PID
     if (pidMode == 1) {
       pidMode = 0;
@@ -1108,13 +1107,15 @@ void loop() {
       }
     }
     digitalWrite(pinRelayHeater, LOW); //Stop heating
-
     //DISPLAY AUSGABE
-    snprintf(debugline, sizeof(debugline), "Temp: %0.2f", getCurrentTemperature());
-    displaymessage("rancilio", "Check Temp. Sensor!", debugline, "");
+    unsigned long currentMillisDisplay = millis();
+    if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
+      previousMillisDisplay  = currentMillisDisplay;
+      snprintf(debugline, sizeof(debugline), "Temp: %0.2f", getCurrentTemperature());
+      displaymessage("rancilio", "Check Temp. Sensor!", debugline, "");
+    }
     
   } else if (emergencyStop) {
-
     //Deactivate PID
     if (pidMode == 1) {
       pidMode = 0;
@@ -1125,16 +1126,14 @@ void loop() {
          output_timestamp = millis();
       }
     }
-
     digitalWrite(pinRelayHeater, LOW); //Stop heating
-
     //DISPLAY AUSGABE
-    char line2[17];
-    //char line3[17];
-    snprintf(line2, sizeof(line2), "Temp: %0.2f", getCurrentTemperature());
-    //snprintf(line3, sizeof(line3), "Temp > %u", emergency_temperature);
-    displaymessage(EMERGENCY_ICON, EMERGENCY_TEXT, line2, "");
-
+    unsigned long currentMillisDisplay = millis();
+    if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
+      previousMillisDisplay  = currentMillisDisplay;
+      displaymessage(EMERGENCY_ICON, EMERGENCY_TEXT, "", "");
+    }
+    
   } else {
     if ( millis() - output_timestamp > 15000) {
        ERROR_print("unknown error\n");
@@ -1433,39 +1432,76 @@ void setup() {
 /********************************************************
   Displayausgabe
 *****************************************************/
+char float2stringChar[8];
+char* float2string(float in) {
+  snprintf(float2stringChar, sizeof(float2stringChar), "%3d.%1d", (int) in, (int) (in*10) % 10);
+  return float2stringChar;
+}
 void displaymessage(String logo, String displaymessagetext, String displaymessagetext2, String displaymessagetext3) {
-  if (Display == 2) {
+  if (Display == 2 && !sensorError) {
     /********************************************************
        DISPLAY AUSGABE
     ******************************************************/
+    display.clearDisplay();
     display.setTextSize(1);
     display.setTextColor(WHITE);
-    display.clearDisplay();
-    display.setCursor(0, 47);
-    display.println(displaymessagetext);
-    if (displaymessagetext3 == "") {
-      display.print(displaymessagetext2);
-    } else {
+    display.drawRoundRect(0, 0, 128, 64, 1, WHITE);
+    if (logo == "rancilio") {
+      display.drawBitmap(41,2, rancilio_logo_bits,rancilio_logo_width, rancilio_logo_height, WHITE);
+      display.setCursor(2, 47);
+      display.println(displaymessagetext);
       display.println(displaymessagetext2);
       display.print(displaymessagetext3);
-    }
-    //128x64
-    if (logo == "rancilio") {
-      display.drawBitmap(41,2, rancilio_logo_bits,rancilio_logo_width, rancilio_logo_height, WHITE);  //Rancilio startup logo
+      
     } else if (logo == "steam") {
-      display.drawBitmap(41,2, stream_logo_bits, stream_logo_width, stream_logo_height, WHITE);  //Rancilio startup logo
+      display.drawBitmap(83,20, steam_logo_bits, steam_logo_width, steam_logo_height, WHITE);
+      
+      display.setCursor(8, 8);
+      display.setTextSize(2);
+      display.setTextColor(WHITE);
+      display.print(float2string(Input));   //temperature line
+      display.setTextSize(1);
+      display.print(" ");
+      display.print((char)247);
+      display.println("C");
+      
+      display.setCursor(10, 25); 
+      display.println(displaymessagetext);  // description line
+
+    } else if (logo == "brew") {
+      display.drawBitmap(83,20, brew_logo_bits, brew_logo_width, brew_logo_height, WHITE);
+      
+      display.setCursor(8, 8);
+      display.setTextSize(2);
+      display.setTextColor(WHITE);
+      display.print(float2string(Input)); //temperature line
+      display.setTextSize(1);
+      display.print(" ");
+      display.print((char)247);
+      display.println("C");
+
+      display.setCursor(25, 25); 
+      display.print(setPoint, 1);      //setPoint line
+      display.print(" ");
+      display.print((char)247);
+      display.println("C");
+
+      display.setCursor(10, 55);       // preinfusion line
+      display.print(bezugsZeit / 1000);
+      display.print("/");
+      if (ONLYPID == 1){
+        display.println(0, 0);
+      }
+      else 
+      {
+        display.print(totalbrewtime / 1000); 
+        display.print(" ");
+        display.print((char)247);
+        display.println("sec.");
+      }     
     }
+    
     display.display();
-  }
-  if (Display == 1) {
-    /********************************************************
-       DISPLAY AUSGABE
-    ******************************************************/
-    u8x8.clear();
-    u8x8.setFont(u8x8_font_chroma48medium8_r);  //Ausgabe vom aktuellen Wert im Display
-    u8x8.print(displaymessagetext);
-    u8x8.setCursor(0, 1);
-    u8x8.print(displaymessagetext2);
   }
 }
 
@@ -1473,80 +1509,26 @@ void displaymessage(String logo, String displaymessagetext, String displaymessag
     send data to display
 ******************************************************/
 void printScreen() {
-  if (Display == 1 && !sensorError) {
-    u8x8.setFont(u8x8_font_chroma48medium8_r);  //Ausgabe vom aktuellen Wert im Display
-    u8x8.setCursor(0, 0);
-    u8x8.print("               ");
-    u8x8.setCursor(0, 1);
-    u8x8.print("               ");
-    u8x8.setCursor(0, 2);
-    u8x8.print("               ");
-    u8x8.setCursor(0, 0);
-    u8x8.setCursor(1, 0);
-    u8x8.print(bPID.GetKp());
-    u8x8.setCursor(6, 0);
-    u8x8.print(",");
-    u8x8.setCursor(7, 0);
-    if (bPID.GetKi() != 0){
-    u8x8.print(bPID.GetKp() / bPID.GetKi());}
-    else
-    {u8x8.print("0");}
-    u8x8.setCursor(11, 0);
-    u8x8.print(",");
-    u8x8.setCursor(12, 0);
-    u8x8.print(bPID.GetKd() / bPID.GetKp());
-    u8x8.setCursor(0, 1);
-    u8x8.print("Input:");
-    u8x8.setCursor(9, 1);
-    u8x8.print("   ");
-    u8x8.setCursor(9, 1);
-    u8x8.print(Input);
-    u8x8.setCursor(0, 2);
-    u8x8.print("SetPoint:");
-    u8x8.setCursor(10, 2);
-    u8x8.print("   ");
-    u8x8.setCursor(10, 2);
-    u8x8.print(setPoint);
-    u8x8.setCursor(0, 3);
-    u8x8.print(round((Input * 100) / setPoint));
-    u8x8.setCursor(4, 3);
-    u8x8.print("%");
-    u8x8.setCursor(6, 3);
-    u8x8.print(convertOutputToUtilisation(Output));
-  }
-  
   if (Display == 2 && !sensorError) {
     display.clearDisplay();
-    display.drawBitmap(2,2, logo_bits, logo_width, logo_height, WHITE);
-    display.setTextSize(1);
+    display.setTextSize(2);
     display.setTextColor(WHITE);
-    display.setCursor(32, 15); 
-    display.print("Ist :  ");
-    display.print(Input, 1);
+    
+    display.setCursor(8, 8); 
+    display.print(float2string(Input));
+    
+    display.setTextSize(1);
     display.print(" ");
     display.print((char)247);
     display.println("C");
-    display.setCursor(32, 25); 
-    display.print("Soll:  ");
+    
+    display.setCursor(25, 25); 
     display.print(setPoint, 1);
     display.print(" ");
     display.print((char)247);
     display.println("C");
-
-    //draw current temp in icon
-    display.drawLine(11, 48, 11, 58 - (Input / 2), WHITE); 
-    display.drawLine(12, 48, 12, 58 - (Input / 2), WHITE);  
-    display.drawLine(13, 48, 13, 58 - (Input / 2), WHITE); 
-    display.drawLine(14, 48, 14, 58 - (Input / 2), WHITE); 
-    display.drawLine(15, 48, 15, 58 - (Input / 2), WHITE);
-   
-    //draw setPoint line
-    display.drawLine(18, 58 - (setPoint / 2), 23, 58 - (setPoint / 2), WHITE);
-
-    // Brew
-    display.setCursor(32, 40); 
-    display.print("Brew:  ");
-    display.setTextSize(1);
+    
+    display.setCursor(10, 55); 
     display.print(bezugsZeit / 1000);
     display.print("/");
     if (ONLYPID == 1){
@@ -1554,9 +1536,12 @@ void printScreen() {
     }
     else 
     {
-      display.println(totalbrewtime / 1000);            // aktivieren wenn Preinfusion
+      display.print(totalbrewtime / 1000);            // aktivieren wenn Preinfusion  
+      display.print(" ");
+      display.print((char)247);
+      display.println("sec.");
     }
-    //draw box
+    display.drawBitmap(83,20, brew_logo_bits, brew_logo_width, brew_logo_height, WHITE);
     display.drawRoundRect(0, 0, 128, 64, 1, WHITE);    
     display.display();
   }

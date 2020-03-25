@@ -3,7 +3,7 @@ Rancilio-Silvia PID für Arduino http://rancilio-pid.de
 
 BLEEDING EDGE BETA VERSION
 
-Version 2.0.1_beta8
+Version 2.0.2_beta
 
 # Most important features in comparison to original rancilio master:
 1. New PID Controller "Multi-state PID with steadyPower (Bias)"
@@ -147,6 +147,9 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
   - #define BREW_READY_DETECTION 0.2  # or any other value
 
 # Changelog
+- 2.0.2_beta1:
+  - Major improvements in display related stuff (eg new icons,..)
+  - Restructure folders (thanks helge)
 - 2.0.1_beta8:
   - ISR performance optimised when debug is active (spend time reduced from 0.8ms to 0.15ms).
   - Move DEBUGMODE to config.h.
