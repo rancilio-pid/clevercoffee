@@ -1,5 +1,5 @@
 /********************************************************
- * Version 2.0.2 BLEEDING EDGE BETA
+ * Version 2.0.2 BLEEDING EDGE MASTER
  *   
  * This enhancement implementation is based on the
  * great work of the rancilio-pid (http://rancilio-pid.de/)
@@ -31,7 +31,7 @@ RemoteDebug Debug;
 #define pinRelayHeater    14
 #define pinLed            15
 
-const char* sysVersion PROGMEM  = "Version 2.0.2 Beta";
+const char* sysVersion PROGMEM  = "Version 2.0.2 Master";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file

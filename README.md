@@ -6,9 +6,10 @@ Version 2.0.2 stable master
 
 based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 
-# Most important features in comparison to original rancilio-pid master (Version 1.9.7):
+# Most important features compared to rancilio-pid master (Version 1.9.7):
 1. New PID Controller "Multi-state PID with steadyPower (Bias)"
-   - Distinct PID settings dependend on the current "state" of the maschine. Most of the settings are either static or semi-automatically tuned.
+   - Distinct PID settings dependend on the current "state" of the maschine. 
+   - Most of the settings are either static or semi-automatically tuned, which does not require an PHD (German: Diplom) to understand.
    - Currently 5 states are implemented:
      - Coldstart (maschine is cold)
      - Coldstart stabilisation (directly after coldstart)
@@ -19,21 +20,23 @@ based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
    - steadyPowerOffset is introduced which compensates the increased temperature loss when the maschine (brew head etc.) are still very cold.
    - PidController offers feature like filtering, special handling of setPoint crossings and more (hard-coded)
    - PID Controller is now integral part of the software and not an external library.
+1. Beautify display output with new icons (thanks to helge!)
 1. MQTT support to integrate maschine in smart-home solutions and to easier extract details for graphing/alerting.
 1. Added RemoteDebug over telnet so that we dont need USB to debug/tune pid anymore (https://github.com/JoaoLopesF/RemoteDebug)
-   - Just "$ telnet rancilio_ip 23" (it is strongly recommended to use "putty" on microsoft windows)
 1. "Brew Ready" Detection implemented, which detects when the temperature has stabilized at setPoint. It can send an
    MQTT event or have hardware pin 15 triggered (which can be used to turn a LED on).
 1. All heater power relevant settings are now set and given in percent (and not absolute output) and therefore better to understand
-1. Many useful functions to be used internally  getAverageTemperature(), pastTemperatureChange() + updateTemperatureHistory())
 1. Safetly toogle added to shutdown heater on sensor malfunction (TEMPSENSORRECOVERY)
+1. Many useful functions to be used internally getAverageTemperature(), pastTemperatureChange() + updateTemperatureHistory())
+1. Much tunings and improvements under the hood which stabilizes the system.
 
 # ATTENTION:
 - EEPROM has changed. Therefore you have to connect to blynk at least once after flashing, and manually set correct settings in blynk app (see screenshots for default values).
-- I only own the pid-only hardware solution, so I am greatful for feedback(bug reports) from persons using the full version. Please monitor our maschine's temperature closely the first few times. The muti-state pid controller should never lead to temperatures greater than 5 degress above setpoint!
+- This software is tested thoroughly with the pid-only hardware solution on Silvia 5e, and with a permanently run full-hardware solution on an 10 year old Silvia. I am grateful for any further feedback. 
+- Please monitor our maschine's temperature closely the first few run times. The muti-state pid controller should never lead to temperatures greater than 5 degress above setpoint!
 
 # Additional important information
-- Installation is as defined on http://rancilio-pid.de/ but with following adapations.
+- Installation is as explained on http://rancilio-pid.de/ but with following adapations:
 - Copy file userConfig.h.SAMPLE to userConfig.h and edit this file accordingly.
 - Additional Arduino dependency on PubSubClient (tested with Version 2.7.0). 
   Please install this lib by using Arduino->Sketch->Include Library->"Library Manager".
@@ -114,13 +117,13 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
 # Tunings instructions
 1. Enable debug mode and have a look at the logs
 1. Adjust coldstart (state 1 and state 2):
-  - The goal is to adapt "StartTemp" that after power-on of the cold (<50 Celcius) maschine and upon reaching "state 3" the temperature is around 0.5 Celcius below setPoint. 
-  - Loglines to look for:
-    - State 3 is reached: "\*\* End of Brew. Transition to step 3 (normal mode)".
-      If this is >1 Celcius below setPoint, then increase "StartTemp" by this amount.
-      If this is >0.5 Celcius above setPoint, then decrease "StartTemp" by this amount.
-    - "StartTemp" too high: "Disabled steadyPowerOffset because its too large or starttemp too high"
-      Probably you have to decrease setPoint by at least 1 Celcius.
+   - The goal is to adapt "StartTemp" that after power-on of the cold (<50 Celcius) maschine and upon reaching "state 3" the temperature is around 0.5 Celcius below setPoint. 
+   - Loglines to look for:
+     - State 3 is reached: "\*\* End of Brew. Transition to step 3 (normal mode)".
+       If this is >1 Celcius below setPoint, then increase "StartTemp" by this amount.
+       If this is >0.5 Celcius above setPoint, then decrease "StartTemp" by this amount.
+     - "StartTemp" too high: "Disabled steadyPowerOffset because its too large or starttemp too high"
+       Probably you have to decrease setPoint by at least 1 Celcius.
 1. After this is configured correctly, you can determine your steadyPower value. 
    - The maschine including the case and brew head to be hot by having it run for at least 1h (for Siliva 5E just power-on the maschine again when it turned off)
    - Check the "SteadyPower" value in the logs or the blynk app. This value is normally around 4-6% and is your optimum value. Set this value in your userConfig.h and check regularly if this is still set. 
@@ -134,34 +137,32 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
    - k := tune in 5 steps. Mostly useful when the temperature is not coming closer to the setPoint, even over a longer period.
 
 # Debugging Howto
-## Enable debugging
-- Open your userConfig.h file and uncomment following line:
-  ```
-  #define DEBUGMODE
-  ```
-## Getting logs
-- Download [putty](https://the.earth.li/~sgtatham/putty/latest/w64/putty.exe) for windows or use telnet in linux to connect to port 23 of the rancilio-maschine's IP-address: 
-  <p align="center">
-  <img src="https://github.com/medlor/ranciliopid/blob/master/pictures/putty/putty.jpg" height="300">
-  </p>
-  ```
-  bash> $ telnet 192.168.10.174 23
-  ```
-## Explanation of the PID log line
-```
-[0m(D p:^5000ms) 435 Input= 93.46 | error= 0.54 delta= 2.45 | Output= 27.88 = b:52.10 + p: 0.86 + i: 0.00( 0.00) + d:-25.09
-
-```
-- 435 := Time since power-on of the arduino (in seconds)
-- Input= 93.46 := Current temperature
-- error= 0.54  := Temperature difference calculated by (target_temp - current_temp)
-- delta= 2.45  := Change in temperature in the last 10 seconds
-- Output= 27.88 := Heater Power (in percent)
-  which is calcucated by the sum of:
-   - b: 5.10        := steadyPower (in percent)
-   - p: 0.86        := PID Kp (in percent)
-   - i: 0.00( 0.00) := PID KiSum (KiLast) (in percent)
-   - d:-25.09       := PID Kd (in percent)
+1. Enable debugging
+   - Open your userConfig.h file and uncomment following line:
+   ```
+   #define DEBUGMODE
+   ```
+1. Getting logs
+   - Download [putty](https://the.earth.li/~sgtatham/putty/latest/w64/putty.exe) for windows or use telnet in linux to connect to port 23 of the rancilio-maschine's IP-address: 
+     <p align="center">
+     <img src="https://github.com/medlor/ranciliopid/blob/master/pictures/putty/putty.jpg" height="300">
+     </p>
+     Or for linux: bash> $ telnet ip-address 23
+1. Explanation of the PID log line
+   ```
+   [0m(D p:^5000ms) 435 Input= 93.46 | error= 0.54 delta= 2.45 | Output= 27.88 = b:52.10 + p: 0.86 + i: 0.00( 0.00) + d:-25.09
+   ```
+   - 435 := Time since power-on of the arduino (in seconds)
+   - Input= 93.46 := Current temperature
+   - error= 0.54  := Temperature difference calculated by (target_temp - current_temp)
+   - delta= 2.45  := Change in temperature in the last 10 seconds
+   - Output= 27.88 := Heater Power (in percent)  
+     which is calcucated by the sum of:
+     - b: 5.10        := steadyPower (in percent)
+     - p: 0.86        := PID Kp (in percent)
+     - i: 0.00( 0.00) := PID KiSum (KiLast) (in percent)
+     - d:-25.09       := PID Kd (in percent)
+1. If you need help or have questions, just send me the logs in the [rancilio-pid chat](https://chat.rancilio-pid.de/).
 
 # How to use a simple LED as brewReady signal
 - The easiest way is to use arduino GPIO15. For this to work you have to connect a resistor and in parallel another resistor with the led in series. This has to be connected between GPIO Pin 15 and GROUND.  
@@ -275,10 +276,10 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
 
 
 # Special Thanks
-To the great work of the rancilio-pid.de team, just to mention a few: andreas, markus, toppo78, miau.
-Also to the nice people in the rancilio chat and the ones who contribute and give very much appreciated feedback like helge!
-
-!! Thank you so much for the tasty cup of coffee I enjoy each day !!
+To the great work of the rancilio-pid.de team, just to mention a few: andreas, markus, toppo78, miau.  
+Also to the nice people in the rancilio chat and the ones who contribute and give very much appreciated feedback like helge!  
+  
+!! Thank you so much for the tasty cup of coffee I enjoy each day !!  
 
 
 # Disclaimer
