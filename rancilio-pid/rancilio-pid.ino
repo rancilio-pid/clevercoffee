@@ -1,8 +1,6 @@
 /********************************************************
- * Version 2.0.1 FINAL BETA
+ * Version 2.0.2 BLEEDING EDGE BETA
  *   
- * - Check the PIN Ports in the CODE!
- * 
  * This enhancement implementation is based on the
  * great work of the rancilio-pid (http://rancilio-pid.de/)
  * team. Hopefully it will be merged upstream soon. In case
@@ -33,7 +31,7 @@ RemoteDebug Debug;
 #define pinRelayHeater    14
 #define pinLed            15
 
-const char* sysVersion PROGMEM  = "Version 2.0.1 Beta";
+const char* sysVersion PROGMEM  = "Version 2.0.2 Beta";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -228,11 +226,12 @@ volatile byte bpidComputeHasRun = 0;
 /********************************************************
    DISPLAY
 ******************************************************/
-#include <U8x8lib.h>
-#ifdef U8X8_HAVE_HW_SPI
-#include <SPI.h>
-#endif
-U8X8_SSD1306_128X32_UNIVISION_SW_I2C u8x8(/* clock=*/ 5, /* data=*/ 4, /* reset=*/ 16);   //Display initalisieren                          
+//#include <U8x8lib.h>
+//#ifdef U8X8_HAVE_HW_SPI
+//#include <SPI.h>
+//#endif
+//U8X8_SSD1306_128X32_UNIVISION_SW_I2C u8x8(/* clock=*/ 5, /* data=*/ 4, /* reset=*/ 16);   //Display initalisieren  
+                        
 // Display 128x64
 #include <Wire.h>
 #include <Adafruit_GFX.h>
@@ -1131,7 +1130,11 @@ void loop() {
     unsigned long currentMillisDisplay = millis();
     if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
       previousMillisDisplay  = currentMillisDisplay;
-      displaymessage(EMERGENCY_ICON, EMERGENCY_TEXT, "", "");
+      char line2[17];
+      char line3[17];
+      snprintf(line2, sizeof(line2), "Temp: %0.2f", getCurrentTemperature());
+      snprintf(line3, sizeof(line3), "Temp > %u", emergency_temperature);
+      displaymessage(EMERGENCY_ICON, EMERGENCY_TEXT, line2, line3);
     }
     
   } else {
@@ -1180,13 +1183,6 @@ void setup() {
   digitalWrite(pinLed, LOW);
   #endif
 
-  if (Display == 1) {
-    /********************************************************
-      DISPLAY Intern
-    ******************************************************/
-    u8x8.begin();
-    u8x8.setPowerSave(0);
-  }
   if (Display == 2) {
     /********************************************************
       DISPLAY 128x64
@@ -1428,7 +1424,6 @@ void setup() {
   timer1_write(50000); // set interrupt time to 10ms
 }
 
-
 /********************************************************
   Displayausgabe
 *****************************************************/
@@ -1501,48 +1496,6 @@ void displaymessage(String logo, String displaymessagetext, String displaymessag
       }     
     }
     
-    display.display();
-  }
-}
-
-/********************************************************
-    send data to display
-******************************************************/
-void printScreen() {
-  if (Display == 2 && !sensorError) {
-    display.clearDisplay();
-    display.setTextSize(2);
-    display.setTextColor(WHITE);
-    
-    display.setCursor(8, 8); 
-    display.print(float2string(Input));
-    
-    display.setTextSize(1);
-    display.print(" ");
-    display.print((char)247);
-    display.println("C");
-    
-    display.setCursor(25, 25); 
-    display.print(setPoint, 1);
-    display.print(" ");
-    display.print((char)247);
-    display.println("C");
-    
-    display.setCursor(10, 55); 
-    display.print(bezugsZeit / 1000);
-    display.print("/");
-    if (ONLYPID == 1){
-      display.println(0, 0);             // deaktivieren wenn Preinfusion ( // voransetzen )
-    }
-    else 
-    {
-      display.print(totalbrewtime / 1000);            // aktivieren wenn Preinfusion  
-      display.print(" ");
-      display.print((char)247);
-      display.println("sec.");
-    }
-    display.drawBitmap(83,20, brew_logo_bits, brew_logo_width, brew_logo_height, WHITE);
-    display.drawRoundRect(0, 0, 128, 64, 1, WHITE);    
     display.display();
   }
 }

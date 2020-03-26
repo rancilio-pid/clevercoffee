@@ -1,11 +1,12 @@
-# ranciliopid
-Rancilio-Silvia PID für Arduino http://rancilio-pid.de
+# ranciliopid - Open source PID for your espresso maschine
 
-BLEEDING EDGE BETA VERSION
+BLEEDING EDGE MASTER VERSION 
 
-Version 2.0.2_beta
+Version 2.0.2 stable master
 
-# Most important features in comparison to original rancilio master:
+based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
+
+# Most important features in comparison to original rancilio-pid master (Version 1.9.7):
 1. New PID Controller "Multi-state PID with steadyPower (Bias)"
    - Distinct PID settings dependend on the current "state" of the maschine. Most of the settings are either static or semi-automatically tuned.
    - Currently 5 states are implemented:
@@ -20,7 +21,7 @@ Version 2.0.2_beta
    - PID Controller is now integral part of the software and not an external library.
 1. MQTT support to integrate maschine in smart-home solutions and to easier extract details for graphing/alerting.
 1. Added RemoteDebug over telnet so that we dont need USB to debug/tune pid anymore (https://github.com/JoaoLopesF/RemoteDebug)
-   - Just "$ telnet rancilio_ip 23"
+   - Just "$ telnet rancilio_ip 23" (it is strongly recommended to use "putty" on microsoft windows)
 1. "Brew Ready" Detection implemented, which detects when the temperature has stabilized at setPoint. It can send an
    MQTT event or have hardware pin 15 triggered (which can be used to turn a LED on).
 1. All heater power relevant settings are now set and given in percent (and not absolute output) and therefore better to understand
@@ -36,11 +37,11 @@ Version 2.0.2_beta
 - Copy file userConfig.h.SAMPLE to userConfig.h and edit this file accordingly.
 - Additional Arduino dependency on PubSubClient (tested with Version 2.7.0). 
   Please install this lib by using Arduino->Sketch->Include Library->"Library Manager".
-  ![Library Manager](https://github.com/medlor/ranciliopid/blob/master/PubSubClient_Dep.jpg)
+  ![Library Manager](https://github.com/medlor/ranciliopid/blob/master/arduino-docs/PubSubClient_Dep.jpg)
 - Additional Arduino dependency on RemoteDebug (tested with Version 3.0.5). 
   Please install this lib by using Arduino->Sketch->Include Library->"Library Manager".
-  ![Library Manager](https://github.com/medlor/ranciliopid/blob/master/RemoteDebug_Dep.jpg)
-- If you see the following error during compile "Height incorrect, please fix Adafruit_SSD1306.h!", then open the file  ./rancilio-pid/libraries/Adafruit_SSD1306/Adafruit_SSD1306.h and adapt Line 72ff to match following code:
+  ![Library Manager](https://github.com/medlor/ranciliopid/blob/master/arduino-docs/RemoteDebug_Dep.jpg)
+- If you see the following error during compile "Height incorrect, please fix Adafruit_SSD1306.h!", then search for the file Adafruit_SSD1306.h in your Documents/ folder and adapt Line 72ff to match following code:
   ```
   #define SSD1306_128_64
   //#define SSD1306_128_32
@@ -51,8 +52,6 @@ Version 2.0.2_beta
   ```
   #define MAX_TIME_INACTIVE 18000000
   ```
-  Additionally just adapt the value MAX_TIME_INACTIVE in rancilio-pid.ino to your liking (new default is this code is 30min).
-
 
 # Blynk App Dashboard
 Unfortunately you have to manually build your dashboard (config does not fit in QR code).
@@ -60,9 +59,10 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
 
 ## Blynk application screenshots
 <p align="center">
-<img src="https://github.com/medlor/ranciliopid/blob/master/blynk_app_status.jpg" height="500">
-<img src="https://github.com/medlor/ranciliopid/blob/master/blynk_app_controller.jpg" height="500">
-<img src="https://github.com/medlor/ranciliopid/blob/master/blynk_app_preinfusion.jpg" height="500">
+<img src="https://github.com/medlor/ranciliopid/blob/master/pictures/blynk-app/blynk_app_status.jpg" height="500">
+<img src="https://github.com/medlor/ranciliopid/blob/master/pictures/blynk-app/blynk_app_controller.jpg" height="500">
+<img src="https://github.com/medlor/ranciliopid/blob/master/pictures/blynk-app/blynk_app_controller2.jpg" height="500">
+<img src="https://github.com/medlor/ranciliopid/blob/master/pictures/blynk-app/blynk_app_preinfusion.jpg" height="500">
 </p>
 
 ## Blynk Pin Mapping
@@ -103,7 +103,7 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
 - install the programm jq (should be included in any distribution)
 - Shutdown blynk Service
 - Search for file in blynk/data which looks like <email>.Blynk.user. This is the config file. Make a backup of this file.
-- Download this project's config [rancilio_v2.json](https://github.com/medlor/ranciliopid/blob/master/rancilio_v2.json) and put it in the same folder as the config file.
+- Download this project's config [rancilio_v2.json](https://github.com/medlor/ranciliopid/blob/master/blynk/rancilio_v2.json) and put it in the same folder as the config file.
 - Execute following command in this folder:
   ```
   jq --argjson blynkInfo "$(<rancilio_v2.json)" '.profile.dashBoards += [$blynkInfo]' YOUR_EMAIL.Blynk.user
@@ -111,18 +111,42 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
 - Startup blynk service
 - Open App, Search newly create project, Open the "Project Settings" then devices-> Master -> Master and Press "Refresh Token". Use this token in the rancilio software as auth token.
 
-
 # Tunings instructions
-1. Maschine has to be cold (<40 C): Adjust coldstart step 1 and step 2 to cleanly reach setPoint without any PID controls.
-   - tbd
-1. After this is configured correctly, you have to determine your steadyPower value. 
-   - tbd
-1. After this is configured correctly, you should configure steadyPowerOffset and steadyPowerOffsetTime.
-   - tbd (maschine has to be cold)
+1. Enable debug mode and have a look at the logs
+1. Adjust coldstart (state 1 and state 2):
+  - The goal is to adapt "StartTemp" that after power-on of the cold (<50 Celcius) maschine and upon reaching "state 3" the temperature is around 0.5 Celcius below setPoint. 
+  - Loglines to look for:
+    - State 3 is reached: "\*\* End of Brew. Transition to step 3 (normal mode)".
+      If this is >1 Celcius below setPoint, then increase "StartTemp" by this amount.
+      If this is >0.5 Celcius above setPoint, then decrease "StartTemp" by this amount.
+    - "StartTemp" too high: "Disabled steadyPowerOffset because its too large or starttemp too high"
+      Probably you have to decrease setPoint by at least 1 Celcius.
+1. After this is configured correctly, you can determine your steadyPower value. 
+   - The maschine including the case and brew head to be hot by having it run for at least 1h (for Siliva 5E just power-on the maschine again when it turned off)
+   - Check the "SteadyPower" value in the logs or the blynk app. This value is normally around 4-6% and is your optimum value. Set this value in your userConfig.h and check regularly if this is still set. 
+   - During regular operations the auto-tuning will adapt this value by up to 1 Celcius up/down. This is normal.
+1. After this is configured correctly, you can configure your steadyPowerOffset and steadyPowerOffsetTime.
+   - When the maschine's metal is cold additional heat is lost. By configuring an additional power to the heater (steadyPowerOffset in percent) for steadyPowerOffsetTime seconds (counting from power-on) you can compensate this.
+   - When the maschine is cold and the heater-power to reach the setPoint quickly enough is not sufficient, you can increase steadyPowerOffset.
+   - When the maschine is cold, coldstart is correctly configured and after reaching "state 3" the temperature is falling rapidly and > 1.5 Celcius below setPoint, you probably should increase steadyPowerOffset also.
 1. After this is configured correctly, you should configure the PID values for inner-zone and outer-zone.
-   - tbd
+   - These settings should be tuned very carefully because small changes might have huge impacts.
+   - k := tune in 5 steps. Mostly useful when the temperature is not coming closer to the setPoint, even over a longer period.
 
 # Debugging Howto
+## Enable debugging
+- Open your userConfig.h file and uncomment following line:
+  ```
+  #define DEBUGMODE
+  ```
+## Getting logs
+- Download [putty](https://the.earth.li/~sgtatham/putty/latest/w64/putty.exe) for windows or use telnet in linux to connect to port 23 of the rancilio-maschine's IP-address: 
+  <p align="center">
+  <img src="https://github.com/medlor/ranciliopid/blob/master/pictures/putty/putty.jpg" height="300">
+  </p>
+  ```
+  bash> $ telnet 192.168.10.174 23
+  ```
 ## Explanation of the PID log line
 ```
 [0m(D p:^5000ms) 435 Input= 93.46 | error= 0.54 delta= 2.45 | Output= 27.88 = b:52.10 + p: 0.86 + i: 0.00( 0.00) + d:-25.09
@@ -146,9 +170,20 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
   - #define BREW_READY_LED 1
   - #define BREW_READY_DETECTION 0.2  # or any other value
 
+# Update instructions
+1. Just overwrite all existing files with a newly released version.
+2. Open your userConfig.h file, which had not been overwritten in previous step, and manually check (line by line!) that all updates to the new file userConfig.h.SAMPLE are reflected in your own userConfig.h. 
+3. Compile, upload and enjoy!
+
 # Changelog
+- 2.0.2_master:
+  - stable release
+  - updated docs
+- 2.0.2_beta2:
+  - removed 8x8 display support
+  - Code cleanup
 - 2.0.2_beta1:
-  - Major improvements in display related stuff (eg new icons,..)
+  - Major improvements in display related stuff (eg new icons,..) (thanks helge)
   - Restructure folders (thanks helge)
 - 2.0.1_beta8:
   - ISR performance optimised when debug is active (spend time reduced from 0.8ms to 0.15ms).
