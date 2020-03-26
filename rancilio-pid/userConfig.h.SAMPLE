@@ -1,5 +1,5 @@
 /********************************************************
- * Version 2.0.1
+ * Version 2.0.2
  * Config must be configured by the user
  *****************************************************/
 
@@ -11,7 +11,7 @@
  *****************************************************/
 #define OFFLINEMODUS 0        // 0=Blynk und WLAN wird benötigt 1=OfflineModus (ACHTUNG EINSTELLUNGEN NUR DIREKT IM CODE MÖGLICH)
                               // OFFLINEMODUS=1 is currently broken. dont use.
-#define DISPLAY 0             // 0=Deaktiviert, 1=U8x8libm, 2=Externes 128x64 Display
+#define DISPLAY 0             // 0=Deaktiviert, 2=Externes 128x64 Display
 #define ONLYPID 1             // 1=Nur PID ohne Preinfussion, 0=PID + Preinfussion
 #define TEMPSENSOR 2          // 1=DS19B20; 2=TSIC306
 #define TEMPSENSORRECOVERY 0  // 1 = on (default), 2= off. If off, temp sensor errors will stop the heater until power cycle
@@ -25,10 +25,10 @@
 #define GRAFANA 0             // 0=default(off), 1=enable grafana visualisation by Markus (simply ask him for free access)
 #define EMERGENCY_TEMP 116    // If temperature is higher then notifications are send via display/debug/mqtt.
                               // Reason might be an error OR the user wants to steam milk.
-#define EMERGENCY_TEXT "Emergency Stop!"  // Any short text to be displayed when temperature is >EMERGENCY_TEMP. Eg "Steam the Milk!"
+#define EMERGENCY_TEXT "Emergency Stop!"  // Any short text to be displayed when temperature is >EMERGENCY_TEMP. Eg "Steam Milk!"
 #define EMERGENCY_ICON "rancilio"  // icon displayed when temperature is >EMERGENCY_TEMP. Allowed values are "rancilio" or "steam"
 
-//#define DEBUGMODE           // to enable Debug uncomment this line
+//#define DEBUGMODE           // to enable Debug uncomment this line. Afterwards you can connect via telnet to pot 23 to see debug logs.
 
 /*******   
  * General PID values
