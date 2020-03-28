@@ -54,7 +54,7 @@ const char* ssid = D_SSID;
 const char* pass = PASS;
 
 unsigned long lastWifiConnectionAttempt = millis();
-const unsigned long wifiConnectionDelay = 10000; // try to reconnect every 10 seconds
+const unsigned long wifiConnectionDelay = 60000; // try to reconnect every 60 seconds (must be at least 4000)
 unsigned int wifiReconnects = 0; //number of reconnects
 
 // OTA
@@ -76,7 +76,7 @@ const char* mqtt_topic_prefix = MQTT_TOPIC_PREFIX;
 char topic_will[256];
 char topic_set[256];
 unsigned long lastMQTTStatusReportTime = 0;
-unsigned long lastMQTTStatusReportInterval = 1000; //mqtt send status-report every 1 second
+unsigned long lastMQTTStatusReportInterval = 5000; //mqtt send status-report every 5 second
 const boolean mqtt_flag_retained = true;
 unsigned long mqtt_dontPublishUntilTime = 0;
 unsigned long mqtt_dontPublishBackoffTime = 10000; // Failsafe: dont publish if there are errors for 10 seconds
@@ -396,11 +396,11 @@ char* mqtt_build_topic(char* reading) {
 boolean mqtt_publish(char* reading, char* payload) {
   if (!mqtt_enable) return true;
   char topic[MQTT_MAX_PUBLISH_SIZE];
+  snprintf(topic, MQTT_MAX_PUBLISH_SIZE, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
   if (!mqtt_client.connected()) {
-    ERROR_print("Not connected to mqtt server. Cannot publish(%s)\n", payload);
+    ERROR_print("Not connected to mqtt server. Cannot publish(%s %s)\n", topic, payload);
     return false;
   }
-  snprintf(topic, MQTT_MAX_PUBLISH_SIZE, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
   if (strlen(topic) + strlen(payload) >= MQTT_MAX_PUBLISH_SIZE) {
     ERROR_print("mqtt_publish() wants to send too much data (len=%u)\n", strlen(topic) + strlen(payload));
     return false;
@@ -709,22 +709,23 @@ void brew() {
    Check if Wifi is connected, if not reconnect
  *****************************************************/
  void checkWifi(){
-   if (Offlinemodus == 1) return;
-   int statusTemp = WiFi.status();
-   // check WiFi connection:
-   if (statusTemp != WL_CONNECTED) {
-     // (optional) "offline" part of code
-      // check delay:
-     if (millis() - lastWifiConnectionAttempt >= wifiConnectionDelay) {
-       lastWifiConnectionAttempt = millis();      
-       // attempt to connect to Wifi network:
-       WiFi.hostname(hostname);
-       WiFi.begin(ssid, pass); 
-       delay(5000);    //will not work without delay
-       wifiReconnects++; 
-     }
+  if (Offlinemodus == 1) return;
+  if (WiFi.status() != WL_CONNECTED) {
+    // (optional) "offline" part of code TODO
+    if (millis() >= lastWifiConnectionAttempt + wifiConnectionDelay) {
+      
+      DEBUG_print("Wifi reconnecting...\n");
+      lastWifiConnectionAttempt = millis();      
+      WiFi.hostname(hostname);
+      WiFi.begin(ssid, pass);
+      while ((WiFi.status() != WL_CONNECTED) && ( millis() < lastWifiConnectionAttempt + (wifiConnectionDelay/3) - 500)) {
+          yield(); //Prevent Watchdog trigger
+      }
+      wifiReconnects++; // TODO: handle wifiReconnects >>.
+      ERROR_print("Wifi reconnection attempt (#%u) took %lu seconds. WiFi.Status=%d\n", wifiReconnects, (millis() - lastWifiConnectionAttempt) /1000, WiFi.status());
     }
- }
+  }
+}
 
 /********************************************************
   send data to Blynk server
@@ -972,40 +973,39 @@ void loop() {
   });
  
   if (WiFi.status() == WL_CONNECTED){
-    Blynk.run(); //Do Blynk magic stuff
+    Blynk.run(); //Do Blynk household stuff. (On reconnect after disconnect, timeout seems to be 5 seconds)
     wifiReconnects = 0;
 
     //Check mqtt connection
-    if (mqtt_enable && !mqtt_client.connected()) {
+    if (mqtt_enable) {
       unsigned long now = millis();
-      if (now - mqtt_lastReconnectAttemptTime > (mqtt_reconnect_incremental_backoff * (mqtt_reconnectAttempts+1)) ) {
-        mqtt_lastReconnectAttemptTime = now;
-        // Attempt to reconnect
-        if (mqtt_reconnect()) {
-          mqtt_lastReconnectAttemptTime = 0;
-          mqtt_reconnectAttempts = 0;
-        } else if (mqtt_reconnectAttempts < mqtt_max_incremental_backoff) {
-          mqtt_reconnectAttempts++;
+      mqtt_client.loop(); // mqtt client connected, do mqtt housekeeping
+      if (!mqtt_client.connected()) {
+        if (now > mqtt_lastReconnectAttemptTime + (mqtt_reconnect_incremental_backoff * (mqtt_reconnectAttempts+1)) ) {
+          mqtt_lastReconnectAttemptTime = now;
+          if (mqtt_reconnect()) { // Attempt to reconnect
+            mqtt_lastReconnectAttemptTime = 0;
+            mqtt_reconnectAttempts = 0;
+          } else if (mqtt_reconnectAttempts < mqtt_max_incremental_backoff) {
+            mqtt_reconnectAttempts++;
+          }
         }
+      } else {
+        if (now >= lastMQTTStatusReportTime + lastMQTTStatusReportInterval) {
+          lastMQTTStatusReportTime = now;
+          mqtt_publish("temperature", number2string(Input));
+          mqtt_publish("temperatureAboveTarget", number2string((Input - setPoint)));
+          mqtt_publish("heaterUtilization", number2string(convertOutputToUtilisation(Output)));
+          //mqtt_publish("kp", number2string(bPID.GetKp()));
+          //mqtt_publish("ki", number2string(bPID.GetKi()));
+          //mqtt_publish("kd", number2string(bPID.GetKd()));
+          //mqtt_publish("outputP", number2string(convertOutputToUtilisation(bPID.GetOutputP())));
+          //mqtt_publish("outputI", number2string(convertOutputToUtilisation(bPID.GetOutputI())));
+          //mqtt_publish("outputD", number2string(convertOutputToUtilisation(bPID.GetOutputD())));
+          mqtt_publish("pastTemperatureChange", number2string(pastTemperatureChange(10)));
+          mqtt_publish("brewReady", bool2string(brewReady));
+         }
       }
-    } else if (mqtt_enable) {
-      // mqtt client connected, do mqtt housekeeping
-      mqtt_client.loop();
-      unsigned long now = millis();
-      if (now - lastMQTTStatusReportTime >= lastMQTTStatusReportInterval) {
-        lastMQTTStatusReportTime = now;
-        mqtt_publish("temperature", number2string(Input));
-        mqtt_publish("temperatureAboveTarget", number2string((Input - setPoint)));
-        mqtt_publish("heaterUtilization", number2string(convertOutputToUtilisation(Output)));
-        //mqtt_publish("kp", number2string(bPID.GetKp()));
-        //mqtt_publish("ki", number2string(bPID.GetKi()));
-        //mqtt_publish("kd", number2string(bPID.GetKd()));
-        //mqtt_publish("outputP", number2string(convertOutputToUtilisation(bPID.GetOutputP())));
-        //mqtt_publish("outputI", number2string(convertOutputToUtilisation(bPID.GetOutputI())));
-        //mqtt_publish("outputD", number2string(convertOutputToUtilisation(bPID.GetOutputD())));
-        mqtt_publish("pastTemperatureChange", number2string(pastTemperatureChange(10)));
-        mqtt_publish("brewReady", bool2string(brewReady));
-       }
     }
   } else {
     checkWifi();
@@ -1087,7 +1087,6 @@ void loop() {
 
     sendToBlynk();
 
-    //update display if time interval xpired
     unsigned long currentMillisDisplay = millis();
     if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
       previousMillisDisplay  = currentMillisDisplay;
@@ -1217,8 +1216,8 @@ void setup() {
       WiFi.begin(ssid, pass);
       DEBUG_print("Connecting to %s ...\n", ssid);
 
-      // wait 10 seconds for connection:
-      while ((WiFi.status() != WL_CONNECTED) && (millis() - started < 20000))
+      // wait up to 20 seconds for connection
+      while ((WiFi.status() != WL_CONNECTED) && (millis() < started + 20000))
       {
         yield();    //Prevent Watchdog trigger
       }
@@ -1229,9 +1228,9 @@ void setup() {
 
         displaymessage("rancilio", "2: Wifi connected, ", "try Blynk   ", "");
         DEBUG_print("Wifi works, now try Blynk connection\n");
-        delay(2000);
+        //delay(2000);
         Blynk.config(auth, blynkaddress, blynkport) ;
-        Blynk.connect(30000);
+        Blynk.connect(10000);
 
         // Blnky works:
         if (Blynk.connected() == true) {
@@ -1483,17 +1482,13 @@ void displaymessage(String logo, String displaymessagetext, String displaymessag
 
       display.setCursor(10, 55);       // preinfusion line
       display.print(bezugsZeit / 1000);
-      display.print("/");
-      if (ONLYPID == 1){
-        display.println(0, 0);
-      }
-      else 
-      {
+      if (ONLYPID == 0) {
+        display.print("/");
         display.print(totalbrewtime / 1000); 
-        display.print(" ");
-        display.print((char)247);
-        display.println("sec.");
-      }     
+      }
+      display.print(" ");
+      display.print((char)247);
+      display.println("sec.");
     }
     
     display.display();
