@@ -2,7 +2,7 @@
 
 BLEEDING EDGE MASTER VERSION 
 
-Version 2.0.2 stable master
+Version 2.0.3 beta2
 
 based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 
@@ -177,6 +177,11 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
 3. Compile, upload and enjoy!
 
 # Changelog
+- 2.0.3_beta2:
+  - Wifi disconnects handled better.
+  - Implement blynk reconnect exponential backoff.
+  - Set blynk reconnection timeout (3sec).
+  - Added debug messages in ciritical paths.
 - 2.0.2_master:
   - stable release
   - updated docs

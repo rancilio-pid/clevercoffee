@@ -64,6 +64,11 @@ const char* OTApass = OTAPASS;
 //Blynk
 const char* blynkaddress = BLYNKADDRESS;
 const int blynkport = BLYNKPORT;
+unsigned long blynk_lastReconnectAttemptTime = 0;
+unsigned int blynk_reconnectAttempts = 0;
+unsigned long blynk_reconnect_incremental_backoff = 30000 ; //Failsafe: add 10sec to reconnect time after each connect-failure.
+unsigned int blynk_max_incremental_backoff = 5 ; // At most backoff <mqtt_max_incremenatl_backoff>+1 times (<mqtt_reconnect_incremental_backoff>ms): 180sec
+
 
 // MQTT
 const int MQTT_MAX_PUBLISH_SIZE = 120; //see https://github.com/knolleary/pubsubclient/blob/master/src/PubSubClient.cpp
@@ -82,8 +87,8 @@ unsigned long mqtt_dontPublishUntilTime = 0;
 unsigned long mqtt_dontPublishBackoffTime = 10000; // Failsafe: dont publish if there are errors for 10 seconds
 unsigned long mqtt_lastReconnectAttemptTime = 0;
 unsigned int mqtt_reconnectAttempts = 0;
-unsigned long mqtt_reconnect_incremental_backoff = 10000 ; //Failsafe: add 10sec to reconnect time after each connect-failure.
-unsigned int mqtt_max_incremental_backoff = 5 ; // At most backoff <mqtt_max_incremenatl_backoff>+1 times (<mqtt_reconnect_incremental_backoff>ms): 60sec
+unsigned long mqtt_reconnect_incremental_backoff = 30000 ; //Failsafe: add 10sec to reconnect time after each connect-failure.
+unsigned int mqtt_max_incremental_backoff = 5 ; // At most backoff <mqtt_max_incremenatl_backoff>+1 times (<mqtt_reconnect_incremental_backoff>ms): 180sec
 
 WiFiClient espClient;
 PubSubClient mqtt_client(espClient);
@@ -748,7 +753,6 @@ void sendToBlynk() {
         Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint );
       }
       if (blynksendcounter == 1) {
-        //Blynk.virtualWrite(V2, (float)(Input * 100L) / 100.0);
         Blynk.virtualWrite(V2, String(Input, 2));
         Blynk.syncVirtual(V2);
         Blynk.virtualWrite(V3, setPoint);
@@ -769,7 +773,7 @@ void sendToBlynk() {
       }
       blynksendcounter++;
     } else {
-      DEBUG_println("Wifi working but blynk not connected..\n");
+      DEBUG_println("Wifi working but blynk not connected. Reconnecting.\n");
     }
   }
 }
@@ -973,9 +977,25 @@ void loop() {
   });
  
   if (WiFi.status() == WL_CONNECTED){
-    Blynk.run(); //Do Blynk household stuff. (On reconnect after disconnect, timeout seems to be 5 seconds)
     wifiReconnects = 0;
-
+    
+    if (Blynk.connected()) {
+      Blynk.run(); //Do Blynk household stuff. (On reconnect after disconnect, timeout seems to be 5 seconds)
+    } else {
+      unsigned long now = millis();
+      if (now > blynk_lastReconnectAttemptTime + (blynk_reconnect_incremental_backoff * (blynk_reconnectAttempts+1)) ) {
+          blynk_lastReconnectAttemptTime = now;
+          ERROR_print("Blynk disconnected. Reconnecting...\n");
+          if ( Blynk.connect(4000) ) { // Attempt to reconnect
+            blynk_lastReconnectAttemptTime = 0;
+            blynk_reconnectAttempts = 0;
+            DEBUG_print("Blynk reconnected in %lu seconds\n", (millis() - now)/1000);
+          } else if (blynk_reconnectAttempts < blynk_max_incremental_backoff) {
+            blynk_reconnectAttempts++;
+          }
+      }
+    }
+    
     //Check mqtt connection
     if (mqtt_enable) {
       unsigned long now = millis();
@@ -1156,6 +1176,7 @@ void setup() {
   Debug.showProfiler(true); // Profiler (Good to measure times, to optimize codes)
   Debug.showColors(true); // Colors
   Debug.setSerialEnabled(true); // log to Serial also
+  
   /********************************************************
     Define trigger type
   ******************************************************/
@@ -1172,10 +1193,10 @@ void setup() {
     Ini Pins
   ******************************************************/
   pinMode(pinRelayVentil, OUTPUT);
-  pinMode(pinRelayPumpe, OUTPUT);
-  pinMode(pinRelayHeater, OUTPUT);
   digitalWrite(pinRelayVentil, relayOFF);
+  pinMode(pinRelayPumpe, OUTPUT);
   digitalWrite(pinRelayPumpe, relayOFF);
+  pinMode(pinRelayHeater, OUTPUT);
   digitalWrite(pinRelayHeater, LOW);
   #ifdef BREW_READY_LED
   pinMode(pinLed, OUTPUT);
@@ -1357,6 +1378,7 @@ void setup() {
   /********************************************************
      TEMP SENSOR
   ******************************************************/
+  displaymessage("rancilio", "Init. vars", "", "");
   if (TempSensor == 1) {
     sensors.begin();
     sensors.getAddress(sensorDeviceAddress, 0);
@@ -1364,14 +1386,15 @@ void setup() {
     while (true) {
       sensors.requestTemperatures();
       previousInput = sensors.getTempCByIndex(0);
-      delay(500);
+      delay(400);
       sensors.requestTemperatures();
       Input = sensors.getTempCByIndex(0);
       if (checkSensor(Input, previousInput)) {
         updateTemperatureHistory(Input);
         break;
       }
-      delay(500);
+      ERROR_print("Temp. sensor defect. Cannot read consistant values\n");
+      delay(400);
     }
   }
 
@@ -1380,7 +1403,7 @@ void setup() {
       temperature = 0;
       Sensor1.getTemperature(&temperature);
       previousInput = Sensor1.calc_Celsius(&temperature);
-      delay(500);
+      delay(400);
       temperature = 0;
       Sensor1.getTemperature(&temperature);
       Input = Sensor1.calc_Celsius(&temperature);
@@ -1388,14 +1411,14 @@ void setup() {
         updateTemperatureHistory(Input);
         break;
       }
-      delay(500);
+      ERROR_print("Temp. sensor defect. Cannot read consistant values\n");
+      delay(400);
     }
   }
 
   /********************************************************
      Ini PID
   ******************************************************/
-
   bPID.SetSampleTime(windowSize);
   bPID.SetOutputLimits(0, windowSize);
   bPID.SetMode(AUTOMATIC);
