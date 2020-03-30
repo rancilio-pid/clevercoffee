@@ -125,7 +125,7 @@ const int PonE = PONE;
 const int analogPin = 0; // will be use in case of hardware
 int brewcounter = 0;
 int brewswitch = 0;
-const long analogreadingtimeinterval = 200 ; // ms
+const long analogreadingtimeinterval = 10 ; // ms
 unsigned long previousMillistempanalogreading ; // ms for analogreading
 long brewtime = 25000;
 long aktuelleZeit = 0;
@@ -388,16 +388,16 @@ void displaymessage(String displaymessagetext, String displaymessagetext2) {
 
 }
 /********************************************************
-  analog pin
+  Read analog input pin
 *****************************************************/
-void analogreading() {
+void readAnalogInput() {
   unsigned long currentMillistemp = millis();
   if (currentMillistemp - previousMillistempanalogreading >= analogreadingtimeinterval)
   {
-      previousMillistempanalogreading = currentMillistemp;
-      DEBUG_println("Analog_reading:");
-      brewswitch = analogRead(analogPin);
-      DEBUG_println(brewswitch);
+    previousMillistempanalogreading = currentMillistemp;
+    brewswitch = filter(analogRead(analogPin));
+    //DEBUG_print("Analog_reading:");
+    //DEBUG_println(brewswitch);
   }
 }
 
@@ -532,47 +532,88 @@ void refreshTemp() {
     PreInfusion, Brew , if not Only PID
 ******************************************************/
 void brew() {
- if (OnlyPID == 0) {
-  analogreading() ; // reading analog pin
-  if (brewswitch > 1000 && brewcounter < 3) {
+  if (OnlyPID == 0) {
+    readAnalogInput();
+    unsigned long currentMillistemp = millis();
 
-    if (brewcounter == 0) {
-    startZeit = millis();
-    DEBUG_println("preinfusion ");
-    digitalWrite(pinRelayVentil, relayON);
-    digitalWrite(pinRelayPumpe, relayON);
-    brewcounter++;
+    if (brewswitch < 1000 && brewcounter >= 11) {   //abort function for state machine from every state
+      brewcounter = 10;
+      currentMillistemp = 0;
+      bezugsZeit = 0;
     }
-    if (millis() - startZeit > preinfusion &&  brewcounter == 1) {
-    DEBUG_println("Pause");
-    digitalWrite(pinRelayVentil, relayON);
-    digitalWrite(pinRelayPumpe, relayOFF);
-    brewcounter++;
+
+
+    if (brewcounter > 10) {
+      bezugsZeit = currentMillistemp - startZeit;
     }
-    if (millis() - startZeit > preinfusion + preinfusionpause && brewcounter == 2) {
-    DEBUG_println("Brew");
-    digitalWrite(pinRelayVentil, relayON);
-    digitalWrite(pinRelayPumpe, relayON);
-    brewcounter++;
+
+    totalbrewtime = preinfusion + preinfusionpause + brewtime;    // running every cycle, in case changes are done during brew
+
+    // state machine for brew
+    switch (brewcounter) {
+      case 10:    // waiting step for brew switch turning on
+        if (brewswitch > 1000) {
+          startZeit = millis();
+          brewcounter = 20;
+        }
+        break;
+      case 20:    //preinfusioon
+        DEBUG_println("Preinfusion");
+        digitalWrite(pinRelayVentil, relayON);
+        digitalWrite(pinRelayPumpe, relayON);
+        brewcounter = 21;
+        break;
+      case 21:    //waiting time preinfusion
+        if (bezugsZeit > preinfusion) {
+          brewcounter = 30;
+        }
+        break;
+      case 30:    //preinfusion pause
+        DEBUG_println("preinfusion pause");
+        digitalWrite(pinRelayVentil, relayON);
+        digitalWrite(pinRelayPumpe, relayOFF);
+        brewcounter = 31;
+        break;
+      case 31:    //waiting time preinfusion pause
+        if (bezugsZeit > preinfusion + preinfusionpause) {
+          brewcounter = 40;
+        }
+        break;
+      case 40:    //brew running
+        DEBUG_println("Brew started");
+        digitalWrite(pinRelayVentil, relayON);
+        digitalWrite(pinRelayPumpe, relayON);
+        brewcounter = 41;
+        break;
+      case 41:    //waiting time brew
+        if (bezugsZeit > totalbrewtime) {
+          brewcounter = 42;
+        }
+        break;
+      case 42:    //brew finished
+        DEBUG_println("Brew stopped");
+        digitalWrite(pinRelayVentil, relayOFF);
+        digitalWrite(pinRelayPumpe, relayOFF);
+        brewcounter = 43;
+        break;
+      case 43:    // waiting for brewswitch off position
+        if (brewswitch < 1000) {
+          digitalWrite(pinRelayVentil, relayOFF);
+          digitalWrite(pinRelayPumpe, relayOFF);
+          brewcounter = 10;
+          currentMillistemp = 0;
+          bezugsZeit = 0;
+        }
+        break;
     }
-  } 
-  if ((millis() - startZeit > preinfusion + preinfusionpause + brewtime || brewswitch < 1000) && startZeit > 0) {
-      DEBUG_println("aus");
-      digitalWrite(pinRelayVentil, relayOFF);
-      digitalWrite(pinRelayPumpe, relayOFF);
-      startZeit = 0;
   }
-  if (brewswitch < 1000 && brewcounter > 0) {
-      brewcounter = 0;
-    }
-   }
- }
+}
 
-     /********************************************************
+/********************************************************
    Check if Wifi is connected, if not reconnect
- *****************************************************/
+*****************************************************/
  void checkWifi(){
-   if (Offlinemodus == 1) return;
+   if (Offlinemodus == 1 || brewcounter > 11) return;
    int statusTemp = WiFi.status();
    // check WiFi connection:
    if (statusTemp != WL_CONNECTED) {
@@ -784,18 +825,28 @@ void brewdetection() {
   if (brewboarder == 0) return; //abort brewdetection if deactivated
 
   // Brew detecion == 1 software solution , == 2 hardware
-  if (Brewdetection == 1 || Brewdetection == 2) {
+  if (Brewdetection == 1) {
     if (millis() - timeBrewdetection > brewtimersoftware * 1000) {
-      timerBrewdetection = 0 ;
-        if (OnlyPID == 1) {
-      bezugsZeit = 0 ;
-        }
+      timerBrewdetection = 0 ;    //rearm brewdetection
+      if (OnlyPID == 1) {
+        bezugsZeit = 0 ;    // brewdetection is used in OnlyPID mode to detect a start of brew, and set the bezugsZeit
+      }
+    }
+  } else if (Brewdetection == 2) {
+    if (brewcounter == 10 && timerBrewdetection != 0) {
+      timerBrewdetection = 0 ;   //rearm brewdetection
     }
   }
 
   if (Brewdetection == 1) {
     if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 ) {
       DEBUG_println("SW Brew detected") ;
+      timeBrewdetection = millis() ;
+      timerBrewdetection = 1 ;
+    }
+  } else if (Brewdetection == 2) {
+    if (brewcounter >= 11 && timerBrewdetection == 0 ) {
+      DEBUG_println("HW Brew detected") ;
       timeBrewdetection = millis() ;
       timerBrewdetection = 1 ;
     }
@@ -1087,7 +1138,7 @@ void setup() {
 }
 
 void loop() {
-  
+if (WiFi.status() == WL_CONNECTED && Offlinemodus == 0) { 
   ArduinoOTA.handle();  // For OTA
   // Disable interrupt it OTA is starting, otherwise it will not work
   ArduinoOTA.onStart([](){
@@ -1101,10 +1152,10 @@ void loop() {
   ArduinoOTA.onEnd([](){
     timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
   });
-  
-    if (WiFi.status() == WL_CONNECTED){
-     Blynk.run(); //Do Blynk magic stuff
-     wifiReconnects = 0;
+     
+      Blynk.run(); //Do Blynk magic stuff     
+    
+   wifiReconnects = 0;
    } else {
      checkWifi();
    }
