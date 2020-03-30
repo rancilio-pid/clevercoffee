@@ -1,5 +1,5 @@
 /********************************************************
-   Version 1.9.8 MASTER (01.03.2020)
+   Version 1.9.9 beta (30.03.2020)
 ******************************************************/
 
 /********************************************************
@@ -24,7 +24,7 @@
 /********************************************************
   DEFINES
 ******************************************************/
-//#define DEBUGMODE   // Debug mode is active if #define DEBUGMODE is set
+#define DEBUGMODE   // Debug mode is active if #define DEBUGMODE is set
 
 //#define BLYNK_PRINT Serial    // In detail debugging for blynk
 //#define BLYNK_DEBUG
@@ -92,6 +92,9 @@ const char* OTApass = OTAPASS;
 //Blynk
 const char* blynkaddress  = BLYNKADDRESS;
 const int blynkport = BLYNKPORT;
+unsigned int blynkReCnctFlag;  // Blynk Reconnection Flag
+unsigned int blynkReCnctCount = 0;  // Blynk Reconnection counter
+unsigned long lastBlynkConnectionAttempt = millis();
 
 /********************************************************
    declarations
@@ -100,7 +103,7 @@ int pidON = 1 ;                 // 1 = control loop in closed loop
 int relayON, relayOFF;          // used for relay trigger type. Do not change!
 boolean kaltstart = true;       // true = Rancilio started for first time
 boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
-const char* sysVersion PROGMEM  = "Version 1.9.8";   //System version
+const char* sysVersion PROGMEM  = "Version 1.9.9 beta";   //System version
 int inX = 0, inY = 0, inOld = 0, inSum = 0; //used for filter()
 int bars = 0; //used for getSignalStrength()
 double Q = 0; // thermal energy variable
@@ -148,7 +151,7 @@ const int PonE = PONE;
    Analog Input
 ******************************************************/
 const int analogPin = 0; // AI0 will be used
-int brewcounter = 0;
+int brewcounter = 10;
 int brewswitch = 0;
 double brewtime = 25000;  //brewtime in ms
 double totalbrewtime = 0; //total brewtime set in softare or blynk
@@ -156,6 +159,8 @@ double preinfusion = 2000;  //preinfusion time in ms
 double preinfusionpause = 5000;   //preinfusion pause time in ms
 unsigned long bezugsZeit = 0;   //total brewed time
 unsigned long startZeit = 0;    //start time of brew
+const unsigned long analogreadingtimeinterval = 10 ; // ms
+unsigned long previousMillistempanalogreading ; // ms for analogreading
 
 /********************************************************
    Sensor check
@@ -300,9 +305,9 @@ BLYNK_WRITE(V34) {
   Emergency stop inf temp is to high
 *****************************************************/
 void testEmergencyStop() {
-  if (Input > 120) {
+  if (Input > 120 && emergencyStop == false) {
     emergencyStop = true;
-  } else if (Input < 100) {
+  } else if (Input < 100 && emergencyStop == true) {
     emergencyStop = false;
   }
 }
@@ -328,6 +333,22 @@ void displaymessage(String displaymessagetext, String displaymessagetext2) {
     display.display();
   }
 }
+
+
+/********************************************************
+  Read analog input pin
+*****************************************************/
+void readAnalogInput() {
+  unsigned long currentMillistemp = millis();
+  if (currentMillistemp - previousMillistempanalogreading >= analogreadingtimeinterval)
+  {
+    previousMillistempanalogreading = currentMillistemp;
+    brewswitch = filter(analogRead(analogPin));
+    //DEBUG_print("Analog_reading:");
+    //DEBUG_println(brewswitch);
+  }
+}
+
 
 /********************************************************
   Moving average - brewdetection (SW)
@@ -379,30 +400,23 @@ void movAvg() {
 *****************************************************/
 boolean checkSensor(float tempInput) {
   boolean sensorOK = false;
-
-  if ( ( tempInput < 0 || tempInput > 150 || abs(tempInput - previousInput) > 25) && !sensorError) {
+  boolean badCondition = ( tempInput < 0 || tempInput > 150 || fabs(tempInput - previousInput) > 25);
+  if ( badCondition && !sensorError) {
     error++;
     sensorOK = false;
-    DEBUG_print("Error counter: ");
-    DEBUG_println(error);
-    DEBUG_print("temp delta: ");
-    DEBUG_println(tempInput);
     sprintf(debugline, "WARN: temperature sensor reading: consec_errors=%d, temp_current=%f, temp_prev=%f", error, tempInput, previousInput);
     DEBUG_println(debugline);
-  } else if (tempInput > 0) {
+  } else if (badCondition == false && sensorOK == false) {
     error = 0;
     sensorOK = true;
   }
   if (error >= maxErrorCounter && !sensorError) {
     sensorError = true ;
-    DEBUG_print("Sensor Error");
-    DEBUG_println(Input);
-  } else if (error == 0) {
     sprintf(debugline, "ERROR: temperature sensor malfunction: temp_current=%f, temp_prev=%f", tempInput, previousInput);
     DEBUG_println(debugline);
+  } else if (error == 0 && sensorError) {
     sensorError = false ;
   }
-
   return sensorOK;
 }
 
@@ -420,11 +434,9 @@ void refreshTemp() {
     {
       previousMillistemp = currentMillistemp;
       sensors.requestTemperatures();
-      if (!checkSensor(sensors.getTempCByIndex(0)) && firstreading == 0) return;  //if sensor data is not valid, abort function
+      if (!checkSensor(sensors.getTempCByIndex(0)) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
       Input = sensors.getTempCByIndex(0);
-      if (Brewdetection == 1) {
-        movAvg();
-      } else {
+      if (Brewdetection == 0 && firstreading == 1) {
         firstreading = 0;
       }
     }
@@ -440,13 +452,9 @@ void refreshTemp() {
       temperature = 0;
       Sensor1.getTemperature(&temperature);
       Temperatur_C = Sensor1.calc_Celsius(&temperature);
-      if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function
+      if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
       Input = Temperatur_C;
-      // Input = random(50,70) ;// test value
-      if (Brewdetection == 1)
-      {
-        movAvg();
-      } else {
+      if (Brewdetection == 0 && firstreading == 1) {
         firstreading = 0;
       }
     }
@@ -458,59 +466,171 @@ void refreshTemp() {
 ******************************************************/
 void brew() {
   if (OnlyPID == 0) {
-    brewswitch = filter(analogRead(analogPin));
-    unsigned long aktuelleZeit = millis();
-    if (brewswitch > 1000 && brewcounter == 0) {
-      startZeit = millis();
-      brewcounter = brewcounter + 1;
-    }
-    if (brewcounter >= 1) {
-      bezugsZeit = aktuelleZeit - startZeit;
+    readAnalogInput();
+    unsigned long currentMillistemp = millis();
+
+    if (brewswitch < 1000 && brewcounter >= 11) {   //abort function for state machine from every state
+      brewcounter = 10;
+      currentMillistemp = 0;
+      bezugsZeit = 0;
     }
 
-    totalbrewtime = preinfusion + preinfusionpause + brewtime;
-    if (brewswitch > 1000 && bezugsZeit < totalbrewtime && brewcounter >= 1) {
-      if (bezugsZeit < preinfusion) {
-        //DEBUG_println("preinfusion");
+
+    if (brewcounter > 10) {
+      bezugsZeit = currentMillistemp - startZeit;
+    }
+
+    totalbrewtime = preinfusion + preinfusionpause + brewtime;    // running every cycle, in case changes are done during brew
+
+    // state machine for brew
+    switch (brewcounter) {
+      case 10:    // waiting step for brew switch turning on
+        if (brewswitch > 1000) {
+          startZeit = millis();
+          brewcounter = 20;
+        }
+        break;
+      case 20:    //preinfusioon
+        DEBUG_println("Preinfusion");
         digitalWrite(pinRelayVentil, relayON);
         digitalWrite(pinRelayPumpe, relayON);
-      }
-      if (bezugsZeit > preinfusion && bezugsZeit < preinfusion + preinfusionpause) {
-        //DEBUG_println("Pause");
+        brewcounter = 21;
+        break;
+      case 21:    //waiting time preinfusion
+        if (bezugsZeit > preinfusion) {
+          brewcounter = 30;
+        }
+        break;
+      case 30:    //preinfusion pause
+        DEBUG_println("preinfusion pause");
         digitalWrite(pinRelayVentil, relayON);
         digitalWrite(pinRelayPumpe, relayOFF);
-      }
-      if (bezugsZeit > preinfusion + preinfusionpause) {
-        //DEBUG_println("Brew");
+        brewcounter = 31;
+        break;
+      case 31:    //waiting time preinfusion pause
+        if (bezugsZeit > preinfusion + preinfusionpause) {
+          brewcounter = 40;
+        }
+        break;
+      case 40:    //brew running
+        DEBUG_println("Brew started");
         digitalWrite(pinRelayVentil, relayON);
         digitalWrite(pinRelayPumpe, relayON);
-      }
-    } else {
-      //DEBUG_println("aus");
-      digitalWrite(pinRelayVentil, relayOFF);
-      digitalWrite(pinRelayPumpe, relayOFF);
-    }
-    if (brewswitch < 1000 && brewcounter >= 1) {
-      brewcounter = 0;
-      aktuelleZeit = 0;
-      bezugsZeit = 0;
+        brewcounter = 41;
+        break;
+      case 41:    //waiting time brew
+        if (bezugsZeit > totalbrewtime) {
+          brewcounter = 42;
+        }
+        break;
+      case 42:    //brew finished
+        DEBUG_println("Brew stopped");
+        digitalWrite(pinRelayVentil, relayOFF);
+        digitalWrite(pinRelayPumpe, relayOFF);
+        brewcounter = 43;
+        break;
+      case 43:    // waiting for brewswitch off position
+        if (brewswitch < 1000) {
+          digitalWrite(pinRelayVentil, relayOFF);
+          digitalWrite(pinRelayPumpe, relayOFF);
+          brewcounter = 10;
+          currentMillistemp = 0;
+          bezugsZeit = 0;
+        }
+        break;
     }
   }
 }
+
+/*******************************************************
+  Switch to offline modeif maxWifiReconnects were exceeded
+  TODO
+*****************************************************/
+void initOfflineMode() {
+  displaymessage("Begin Fallback,", "No Wifi");
+  delay(1000);
+  DEBUG_println("Start offline mode with eeprom values, no wifi:(");
+  Offlinemodus = 1 ;
+
+  EEPROM.begin(1024);  // open eeprom
+  double dummy; // check if eeprom values are numeric (only check first value in eeprom)
+  EEPROM.get(0, dummy);
+  DEBUG_print("check eeprom 0x00 in dummy: ");
+  DEBUG_println(dummy);
+  if (!isnan(dummy)) {
+    EEPROM.get(0, aggKp);
+    EEPROM.get(10, aggTn);
+    EEPROM.get(20, aggTv);
+    EEPROM.get(30, setPoint);
+    EEPROM.get(40, brewtime);
+    EEPROM.get(50, preinfusion);
+    EEPROM.get(60, preinfusionpause);
+    EEPROM.get(70, startKp);
+    EEPROM.get(80, starttemp);
+    EEPROM.get(90, aggbKp);
+    EEPROM.get(100, aggbTn);
+    EEPROM.get(110, aggbTv);
+    EEPROM.get(120, brewtimersoftware);
+    EEPROM.get(130, brewboarder);
+  } else {
+    displaymessage("No eeprom,", "Values");
+    DEBUG_println("No working eeprom value, I am sorry, but use default offline value  :)");
+    delay(1000);
+  }
+  // eeeprom schließen
+  EEPROM.commit();
+}
+
 /*******************************************************
    Check if Wifi is connected, if not reconnect
+   abort function if offline, or brew is running
 *****************************************************/
 void checkWifi() {
-  if (Offlinemodus == 1 || brewcounter == 1) return;
-  if ((millis() - lastWifiConnectionAttempt >= wifiConnectionDelay) && (wifiReconnects <= maxWifiReconnects)) {
-    int statusTemp = WiFi.status();
-    // check WiFi connection:
-    if (statusTemp != WL_CONNECTED) {
-      lastWifiConnectionAttempt = millis();
-      // attempt to connect to Wifi network:
-      WiFi.begin(ssid, pass);
-      delay(5000);    //will not work without delay
-      wifiReconnects++;
+  if (Offlinemodus == 1 || brewcounter > 11) return;
+  do {
+    if ((millis() - lastWifiConnectionAttempt >= wifiConnectionDelay) && (wifiReconnects <= maxWifiReconnects)) {
+      int statusTemp = WiFi.status();
+      if (statusTemp != WL_CONNECTED) {   // check WiFi connection status
+        lastWifiConnectionAttempt = millis();
+        wifiReconnects++;
+        DEBUG_print("Attempting WIFI reconnection: ");
+        DEBUG_println(wifiReconnects);
+        if (kaltstart == 1) {
+          displaymessage("Wifi reconnect:", String(wifiReconnects));
+        }
+        WiFi.persistent(false);   //needed, otherwise exceptions are triggered \o.O/
+        WiFi.begin(ssid, pass);   // attempt to connect to Wifi network
+        int count = 1;
+        while (WiFi.status() != WL_CONNECTED && count <= 20) {
+          delay(100);   //give WIFI some time to connect
+          count++;      //reconnect counter, maximum waiting time for reconnect = 20*100ms
+        }
+      }
+    }
+    yield();  //Prevent WDT trigger
+  } while ( kaltstart == 1 && wifiReconnects < maxWifiReconnects );   //if kaltstart ist still true when checkWifi() is called, then there was no WIFI connection at boot -> connect or offlinemode
+
+  if (wifiReconnects >= maxWifiReconnects && kaltstart == 1) {   // no wifi connection after boot, initiate offline mode (only directly after boot)
+    initOfflineMode();
+  }
+
+}
+
+/*******************************************************
+   Check if Blynk is connected, if not reconnect
+   abort function if offline, or brew is running
+   blynk is also using maxWifiReconnects!
+*****************************************************/
+void checkBlynk() {
+  if (Offlinemodus == 1 || brewcounter > 11) return;
+  if ((millis() - lastBlynkConnectionAttempt >= wifiConnectionDelay) && (blynkReCnctCount <= maxWifiReconnects)) {
+    int statusTemp = Blynk.connected();
+    if (statusTemp != 1) {   // check Blynk connection status
+      lastBlynkConnectionAttempt = millis();        // Reconnection Timer Function
+      blynkReCnctCount++;  // Increment reconnection Counter
+      DEBUG_print("Attempting blynk reconnection: ");
+      DEBUG_println(blynkReCnctCount);
+      Blynk.connect(500);  // Try to reconnect to the server; connect() is a blocking function, watch the timeout!
     }
   }
 }
@@ -627,14 +747,14 @@ void printScreen() {
 *****************************************************/
 
 void sendToBlynk() {
-  if (Offlinemodus != 0) return;
+  if (Offlinemodus == 1) return;
+
   unsigned long currentMillisBlynk = millis();
+  unsigned long currentMillistemp = 0;
+
   if (currentMillisBlynk - previousMillisBlynk >= intervalBlynk) {
     previousMillisBlynk = currentMillisBlynk;
     if (Blynk.connected()) {
-      if (grafana == 1) {
-        Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint );
-      }
       if (blynksendcounter == 1) {
         Blynk.virtualWrite(V2, Input);
         Blynk.syncVirtual(V2);
@@ -651,9 +771,14 @@ void sendToBlynk() {
         Blynk.virtualWrite(V35, heatrateaverage);
         Blynk.syncVirtual(V35);
       }
-      if (blynksendcounter >= 5) {
+      if (blynksendcounter == 5) {
         Blynk.virtualWrite(V36, heatrateaveragemin);
         Blynk.syncVirtual(V36);
+      }
+      if (grafana == 1 && blynksendcounter >= 6) {
+        Blynk.virtualWrite(V60, Input, Output, setPoint, setPoint, setPoint, setPoint );
+        blynksendcounter = 0;
+      } else if (grafana == 0 && blynksendcounter >= 5) {
         blynksendcounter = 0;
       }
       blynksendcounter++;
@@ -668,12 +793,16 @@ void brewdetection() {
   if (brewboarder == 0) return; //abort brewdetection if deactivated
 
   // Brew detecion == 1 software solution , == 2 hardware
-  if (Brewdetection == 1 || Brewdetection == 2) {
+  if (Brewdetection == 1) {
     if (millis() - timeBrewdetection > brewtimersoftware * 1000) {
-      timerBrewdetection = 0 ;
+      timerBrewdetection = 0 ;    //rearm brewdetection
       if (OnlyPID == 1) {
-        bezugsZeit = 0 ;
+        bezugsZeit = 0 ;    // brewdetection is used in OnlyPID mode to detect a start of brew, and set the bezugsZeit
       }
+    }
+  } else if (Brewdetection == 2) {
+    if (brewcounter == 10 && timerBrewdetection != 0) {
+      timerBrewdetection = 0 ;  //rearm brewdetection
     }
   }
 
@@ -684,7 +813,7 @@ void brewdetection() {
       timerBrewdetection = 1 ;
     }
   } else if (Brewdetection == 2) {
-    if (brewcounter >= 1 && timerBrewdetection == 0 ) {
+    if (brewcounter >= 11 && timerBrewdetection == 0 ) {
       DEBUG_println("HW Brew detected") ;
       timeBrewdetection = millis() ;
       timerBrewdetection = 1 ;
@@ -694,6 +823,8 @@ void brewdetection() {
 
 /********************************************************
   after ~28 cycles the input is set to 99,66% if the real input value
+  sum of inX and inY multiplier must be 1
+  increase inX multiplier to make the filter faster
 *****************************************************/
 int filter(int input) {
   inX = input * 0.3;
@@ -738,10 +869,8 @@ void ICACHE_RAM_ATTR onTimer1ISR() {
 
   if (Output <= isrCounter) {
     digitalWrite(pinRelayHeater, LOW);
-    //DEBUG_println("Power off!");
   } else {
     digitalWrite(pinRelayHeater, HIGH);
-    //DEBUG_println("Power on!");
   }
 
   isrCounter += 10; // += 10 because one tick = 10ms
@@ -783,6 +912,7 @@ void setup() {
     /********************************************************
       DISPLAY 128x64
     ******************************************************/
+
     display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3C (for the 128x64)  for AZ Deliv. Display
     //display.begin(SSD1306_SWITCHCAPVCC, 0x3D);  // initialize with the I2C addr 0x3D (for the 128x64)
     display.clearDisplay();
@@ -795,44 +925,45 @@ void setup() {
   ******************************************************/
   if (Offlinemodus == 0) {
     WiFi.hostname(hostname);
-    if (fallback == 0) {
+    unsigned long started = millis();
+    displaymessage("1: Connect Wifi to:", ssid);
+    /* Explicitly set the ESP8266 to be a WiFi-client, otherwise, it by default,
+      would try to act as both a client and an access-point and could cause
+      network-issues with your other WiFi-devices on your WiFi-network. */
+    WiFi.mode(WIFI_STA);
+    //WiFi.persistent(false);   //prevent writing wifi stuff to flash, needed to prevent exceptions
+    WiFi.begin(ssid, pass);
+    DEBUG_print("Connecting to ");
+    DEBUG_print(ssid);
+    DEBUG_println(" ...");
 
-      displaymessage("Connect to Blynk", "no Fallback");
-      Blynk.begin(auth, ssid, pass, blynkaddress, blynkport);
+    // wait up to 20 seconds for connection:
+    while ((WiFi.status() != WL_CONNECTED) && (millis() - started < 20000))
+    {
+      yield();    //Prevent Watchdog trigger
     }
 
-    if (fallback == 1) {
-      unsigned long started = millis();
-      displaymessage("1: Connect Wifi to:", ssid);
-      // wait 10 seconds for connection:
-      /* Explicitly set the ESP8266 to be a WiFi-client, otherwise, it by default,
-        would try to act as both a client and an access-point and could cause
-        network-issues with your other WiFi-devices on your WiFi-network. */
-      WiFi.mode(WIFI_STA);
-      WiFi.begin(ssid, pass);
-      DEBUG_print("Connecting to ");
-      DEBUG_print(ssid);
-      DEBUG_println(" ...");
-
-      while ((WiFi.status() != WL_CONNECTED) && (millis() - started < 20000))
-      {
-        yield();    //Prevent Watchdog trigger
-      }
-
-      if (WiFi.status() == WL_CONNECTED) {
-        DEBUG_println("WiFi connected");
-        DEBUG_println("IP address: ");
-        DEBUG_println(WiFi.localIP());
+    if (WiFi.status() == WL_CONNECTED) {
+      DEBUG_println("WiFi connected");
+      DEBUG_println("IP address: ");
+      DEBUG_println(WiFi.localIP());
+      DEBUG_println("Wifi works, now try Blynk (timeout 30s)");
+      if (fallback == 0) {
+        displaymessage("Connect to Blynk", "no Fallback");
+      } else if (fallback == 1) {
         displaymessage("2: Wifi connected, ", "try Blynk   ");
-        DEBUG_println("Wifi works, now try Blynk connection");
-        delay(2000);
-        Blynk.config(auth, blynkaddress, blynkport) ;
-        Blynk.connect(30000);
+      }
+      delay(1000);
 
-        // Blnky works:
-        if (Blynk.connected() == true) {
-          displaymessage("3: Blynk connected", "sync all variables...");
-          DEBUG_println("Blynk is online, new values to eeprom");
+      //try blynk connection
+      Blynk.config(auth, blynkaddress, blynkport) ;
+      Blynk.connect(30000);
+
+      if (Blynk.connected() == true) {
+        displaymessage("3: Blynk connected", "sync all variables...");
+        DEBUG_println("Blynk is online");
+        if (fallback == 1) {
+          DEBUG_println("sync all variables and write new values to eeprom");
           // Blynk.run() ;
           Blynk.syncVirtual(V4);
           Blynk.syncVirtual(V5);
@@ -871,53 +1002,21 @@ void setup() {
           // eeprom schließen
           EEPROM.commit();
         }
+      } else {
+        DEBUG_println("No connection to Blynk");
       }
-      if (WiFi.status() != WL_CONNECTED || Blynk.connected() != true) {
-        displaymessage("Begin Fallback,", "No Blynk/Wifi");
-        delay(2000);
-        DEBUG_println("Start offline mode with eeprom values, no wifi or blynk :(");
-        Offlinemodus = 1 ;
-        // eeprom öffnen
-        EEPROM.begin(1024);
-        // eeprom werte prüfen, ob numerisch
-        double dummy;
-        EEPROM.get(0, dummy);
-        DEBUG_print("check eeprom 0x00 in dummy: ");
-        DEBUG_println(dummy);
-        if (!isnan(dummy)) {
-          EEPROM.get(0, aggKp);
-          EEPROM.get(10, aggTn);
-          EEPROM.get(20, aggTv);
-          EEPROM.get(30, setPoint);
-          EEPROM.get(40, brewtime);
-          EEPROM.get(50, preinfusion);
-          EEPROM.get(60, preinfusionpause);
-          EEPROM.get(70, startKp);
-          EEPROM.get(80, starttemp);
-          EEPROM.get(90, aggbKp);
-          EEPROM.get(100, aggbTn);
-          EEPROM.get(110, aggbTv);
-          EEPROM.get(120, brewtimersoftware);
-          EEPROM.get(130, brewboarder);
-        }
-        else
-        {
-          displaymessage("No eeprom,", "Value");
-          DEBUG_println("No working eeprom value, I am sorry, but use default offline value  :)");
-          delay(2000);
-        }
-        // eeeprom schließen
-        EEPROM.commit();
-      }
+
+    } else {
+      displaymessage("No ", "WIFI");
+      DEBUG_println("No WIFI");
+      delay(1000);
     }
   }
 
   /********************************************************
      OTA
   ******************************************************/
-  if (ota && Offlinemodus == 0 ) {
-    //wifi connection is done during blynk connection
-
+  if (ota && Offlinemodus == 0 && WiFi.status() == WL_CONNECTED) {
     ArduinoOTA.setHostname(OTAhost);  //  Device name for OTA
     ArduinoOTA.setPassword(OTApass);  //  Password for OTA
     ArduinoOTA.begin();
@@ -944,6 +1043,13 @@ void setup() {
     sensors.requestTemperatures();
     Input = sensors.getTempCByIndex(0);
   }
+
+  if (TempSensor == 2) {
+    temperature = 0;
+    Sensor1.getTemperature(&temperature);
+    Input = Sensor1.calc_Celsius(&temperature);
+  }
+
   /********************************************************
     movingaverage ini array
   ******************************************************/
@@ -953,6 +1059,11 @@ void setup() {
       readingstime[thisReading] = 0;
       readingchangerate[thisReading] = 0;
     }
+  }
+  if (TempSensor == 2) {
+    temperature = 0;
+    Sensor1.getTemperature(&temperature);
+    Input = Sensor1.calc_Celsius(&temperature);
   }
 
   //Initialisation MUST be at the very end of the init(), otherwise the time comparision in loop() will have a big offset
@@ -977,8 +1088,7 @@ void setup() {
 
 void loop() {
   //Only do Wifi stuff, if Wifi is connected
-  if (WiFi.status() == WL_CONNECTED) {
-    if (Offlinemodus == 1) return;
+  if (WiFi.status() == WL_CONNECTED && Offlinemodus == 0) {
     ArduinoOTA.handle();  // For OTA
     // Disable interrupt it OTA is starting, otherwise it will not work
     ArduinoOTA.onStart([]() {
@@ -993,17 +1103,24 @@ void loop() {
       timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
     });
 
-    Blynk.run(); //Do Blynk magic stuff
-    wifiReconnects = 0;
+    if (Blynk.connected()) {  // If connected run as normal
+      Blynk.run();
+      blynkReCnctCount = 0; //reset blynk reconnects if connected
+    } else  {
+      checkBlynk();
+    }
+    wifiReconnects = 0;   //reset wifi reconnects if connected
   } else {
-    if (Offlinemodus == 1) return;
     checkWifi();
   }
 
+
   refreshTemp();   //read new temperature values
+  movAvg();   //calculated moving average
   testEmergencyStop();  // test if Temp is to high
   brew();   //start brewing if button pressed
   sendToBlynk();
+
 
   //check if PID should run or not. If not, set to manuel and force output to zero
   if (pidON == 0 && pidMode == 1) {
@@ -1109,4 +1226,5 @@ void loop() {
       display.display();
     }
   }
+
 }
