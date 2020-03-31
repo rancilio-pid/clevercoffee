@@ -79,6 +79,7 @@ int relayON, relayOFF;          // used for relay trigger type. Do not change!
 boolean kaltstart = true;       // true = Rancilio started for first time
 boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
 int bars = 0; //used for getSignalStrength()
+boolean brewDetected = 0;
 
 /********************************************************
    moving average - Brüherkennung
@@ -603,6 +604,7 @@ void brew() {
           brewcounter = 10;
           currentMillistemp = 0;
           bezugsZeit = 0;
+          brewDetected = 0;
         }
         break;
     }
@@ -833,7 +835,7 @@ void brewdetection() {
       }
     }
   } else if (Brewdetection == 2) {
-    if (brewcounter == 10 && timerBrewdetection != 0) {
+    if (millis() - timeBrewdetection > brewtimersoftware * 1000) {
       timerBrewdetection = 0 ;   //rearm brewdetection
     }
   }
@@ -845,10 +847,11 @@ void brewdetection() {
       timerBrewdetection = 1 ;
     }
   } else if (Brewdetection == 2) {
-    if (brewcounter >= 11 && timerBrewdetection == 0 ) {
+    if (brewcounter > 10 && brewDetected == 0 && brewboarder != 0) {
       DEBUG_println("HW Brew detected") ;
       timeBrewdetection = millis() ;
       timerBrewdetection = 1 ;
+      brewDetected = 1;
     }
   }
 }
