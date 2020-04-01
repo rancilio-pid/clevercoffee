@@ -773,7 +773,7 @@ void sendToBlynk() {
       }
       blynksendcounter++;
     } else {
-      DEBUG_println("Wifi working but blynk not connected. Reconnecting.\n");
+      DEBUG_println("Wifi working but blynk not connected.\n");
     }
   }
 }
@@ -986,7 +986,7 @@ void loop() {
       if (now > blynk_lastReconnectAttemptTime + (blynk_reconnect_incremental_backoff * (blynk_reconnectAttempts+1)) ) {
           blynk_lastReconnectAttemptTime = now;
           ERROR_print("Blynk disconnected. Reconnecting...\n");
-          if ( Blynk.connect(4000) ) { // Attempt to reconnect
+          if ( Blynk.connect(3000) ) { // Attempt to reconnect
             blynk_lastReconnectAttemptTime = 0;
             blynk_reconnectAttempts = 0;
             DEBUG_print("Blynk reconnected in %lu seconds\n", (millis() - now)/1000);
