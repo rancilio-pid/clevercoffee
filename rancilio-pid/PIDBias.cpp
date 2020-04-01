@@ -48,7 +48,7 @@ PIDBias::PIDBias(double* Input, double* Output, double* steadyPower, double* Set
 
     PIDBias::SetTunings(Kp, Ki, Kd);
 
-    lastTime = millis()-SampleTime;
+    lastTime = millis();
 }
 
 bool PIDBias::Compute()
@@ -59,7 +59,7 @@ bool PIDBias::Compute()
    double steadyPowerOutput = convertUtilisationToOutput(*mySteadyPower);
    double setPointBand = 0.1;
    
-   if(timeChange>=SampleTime)
+   if(timeChange >= SampleTime)
    {
       lastOutput = *myOutput;
       double input = *myInput;
@@ -240,6 +240,7 @@ void PIDBias::Initialize()
    steadyPowerAutoTune = true;
    steadyPowerDefault = *mySteadyPower;
    filterSumOutputI = outMax;
+   lastTime = millis();
    if(*myOutput > outMax) *myOutput = outMax;
    else if(*myOutput < outMin) *myOutput = outMin;
    if(lastOutput > outMax) lastOutput = outMax;

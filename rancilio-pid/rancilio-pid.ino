@@ -54,7 +54,7 @@ const char* ssid = D_SSID;
 const char* pass = PASS;
 
 unsigned long lastWifiConnectionAttempt = millis();
-const unsigned long wifiConnectionDelay = 10000; // try to reconnect every 10 seconds
+const unsigned long wifiConnectionDelay = 60000; // try to reconnect every 60 seconds (must be at least 4000)
 unsigned int wifiReconnects = 0; //number of reconnects
 
 // OTA
@@ -64,6 +64,11 @@ const char* OTApass = OTAPASS;
 //Blynk
 const char* blynkaddress = BLYNKADDRESS;
 const int blynkport = BLYNKPORT;
+unsigned long blynk_lastReconnectAttemptTime = 0;
+unsigned int blynk_reconnectAttempts = 0;
+unsigned long blynk_reconnect_incremental_backoff = 30000 ; //Failsafe: add 10sec to reconnect time after each connect-failure.
+unsigned int blynk_max_incremental_backoff = 5 ; // At most backoff <mqtt_max_incremenatl_backoff>+1 times (<mqtt_reconnect_incremental_backoff>ms): 180sec
+
 
 // MQTT
 const int MQTT_MAX_PUBLISH_SIZE = 120; //see https://github.com/knolleary/pubsubclient/blob/master/src/PubSubClient.cpp
@@ -76,14 +81,14 @@ const char* mqtt_topic_prefix = MQTT_TOPIC_PREFIX;
 char topic_will[256];
 char topic_set[256];
 unsigned long lastMQTTStatusReportTime = 0;
-unsigned long lastMQTTStatusReportInterval = 1000; //mqtt send status-report every 1 second
+unsigned long lastMQTTStatusReportInterval = 5000; //mqtt send status-report every 5 second
 const boolean mqtt_flag_retained = true;
 unsigned long mqtt_dontPublishUntilTime = 0;
 unsigned long mqtt_dontPublishBackoffTime = 10000; // Failsafe: dont publish if there are errors for 10 seconds
 unsigned long mqtt_lastReconnectAttemptTime = 0;
 unsigned int mqtt_reconnectAttempts = 0;
-unsigned long mqtt_reconnect_incremental_backoff = 10000 ; //Failsafe: add 10sec to reconnect time after each connect-failure.
-unsigned int mqtt_max_incremental_backoff = 5 ; // At most backoff <mqtt_max_incremenatl_backoff>+1 times (<mqtt_reconnect_incremental_backoff>ms): 60sec
+unsigned long mqtt_reconnect_incremental_backoff = 30000 ; //Failsafe: add 10sec to reconnect time after each connect-failure.
+unsigned int mqtt_max_incremental_backoff = 5 ; // At most backoff <mqtt_max_incremenatl_backoff>+1 times (<mqtt_reconnect_incremental_backoff>ms): 180sec
 
 WiFiClient espClient;
 PubSubClient mqtt_client(espClient);
@@ -396,11 +401,11 @@ char* mqtt_build_topic(char* reading) {
 boolean mqtt_publish(char* reading, char* payload) {
   if (!mqtt_enable) return true;
   char topic[MQTT_MAX_PUBLISH_SIZE];
+  snprintf(topic, MQTT_MAX_PUBLISH_SIZE, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
   if (!mqtt_client.connected()) {
-    ERROR_print("Not connected to mqtt server. Cannot publish(%s)\n", payload);
+    ERROR_print("Not connected to mqtt server. Cannot publish(%s %s)\n", topic, payload);
     return false;
   }
-  snprintf(topic, MQTT_MAX_PUBLISH_SIZE, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
   if (strlen(topic) + strlen(payload) >= MQTT_MAX_PUBLISH_SIZE) {
     ERROR_print("mqtt_publish() wants to send too much data (len=%u)\n", strlen(topic) + strlen(payload));
     return false;
@@ -709,22 +714,23 @@ void brew() {
    Check if Wifi is connected, if not reconnect
  *****************************************************/
  void checkWifi(){
-   if (Offlinemodus == 1) return;
-   int statusTemp = WiFi.status();
-   // check WiFi connection:
-   if (statusTemp != WL_CONNECTED) {
-     // (optional) "offline" part of code
-      // check delay:
-     if (millis() - lastWifiConnectionAttempt >= wifiConnectionDelay) {
-       lastWifiConnectionAttempt = millis();      
-       // attempt to connect to Wifi network:
-       WiFi.hostname(hostname);
-       WiFi.begin(ssid, pass); 
-       delay(5000);    //will not work without delay
-       wifiReconnects++; 
-     }
+  if (Offlinemodus == 1) return;
+  if (WiFi.status() != WL_CONNECTED) {
+    // (optional) "offline" part of code TODO
+    if (millis() >= lastWifiConnectionAttempt + wifiConnectionDelay) {
+      
+      DEBUG_print("Wifi reconnecting...\n");
+      lastWifiConnectionAttempt = millis();      
+      WiFi.hostname(hostname);
+      WiFi.begin(ssid, pass);
+      while ((WiFi.status() != WL_CONNECTED) && ( millis() < lastWifiConnectionAttempt + (wifiConnectionDelay/3) - 500)) {
+          yield(); //Prevent Watchdog trigger
+      }
+      wifiReconnects++; // TODO: handle wifiReconnects >>.
+      ERROR_print("Wifi reconnection attempt (#%u) took %lu seconds. WiFi.Status=%d\n", wifiReconnects, (millis() - lastWifiConnectionAttempt) /1000, WiFi.status());
     }
- }
+  }
+}
 
 /********************************************************
   send data to Blynk server
@@ -747,7 +753,6 @@ void sendToBlynk() {
         Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint );
       }
       if (blynksendcounter == 1) {
-        //Blynk.virtualWrite(V2, (float)(Input * 100L) / 100.0);
         Blynk.virtualWrite(V2, String(Input, 2));
         Blynk.syncVirtual(V2);
         Blynk.virtualWrite(V3, setPoint);
@@ -768,7 +773,7 @@ void sendToBlynk() {
       }
       blynksendcounter++;
     } else {
-      DEBUG_println("Wifi working but blynk not connected..\n");
+      DEBUG_println("Wifi working but blynk not connected.\n");
     }
   }
 }
@@ -972,40 +977,55 @@ void loop() {
   });
  
   if (WiFi.status() == WL_CONNECTED){
-    Blynk.run(); //Do Blynk magic stuff
     wifiReconnects = 0;
-
-    //Check mqtt connection
-    if (mqtt_enable && !mqtt_client.connected()) {
+    
+    if (Blynk.connected()) {
+      Blynk.run(); //Do Blynk household stuff. (On reconnect after disconnect, timeout seems to be 5 seconds)
+    } else {
       unsigned long now = millis();
-      if (now - mqtt_lastReconnectAttemptTime > (mqtt_reconnect_incremental_backoff * (mqtt_reconnectAttempts+1)) ) {
-        mqtt_lastReconnectAttemptTime = now;
-        // Attempt to reconnect
-        if (mqtt_reconnect()) {
-          mqtt_lastReconnectAttemptTime = 0;
-          mqtt_reconnectAttempts = 0;
-        } else if (mqtt_reconnectAttempts < mqtt_max_incremental_backoff) {
-          mqtt_reconnectAttempts++;
-        }
+      if (now > blynk_lastReconnectAttemptTime + (blynk_reconnect_incremental_backoff * (blynk_reconnectAttempts+1)) ) {
+          blynk_lastReconnectAttemptTime = now;
+          ERROR_print("Blynk disconnected. Reconnecting...\n");
+          if ( Blynk.connect(3000) ) { // Attempt to reconnect
+            blynk_lastReconnectAttemptTime = 0;
+            blynk_reconnectAttempts = 0;
+            DEBUG_print("Blynk reconnected in %lu seconds\n", (millis() - now)/1000);
+          } else if (blynk_reconnectAttempts < blynk_max_incremental_backoff) {
+            blynk_reconnectAttempts++;
+          }
       }
-    } else if (mqtt_enable) {
-      // mqtt client connected, do mqtt housekeeping
-      mqtt_client.loop();
+    }
+    
+    //Check mqtt connection
+    if (mqtt_enable) {
       unsigned long now = millis();
-      if (now - lastMQTTStatusReportTime >= lastMQTTStatusReportInterval) {
-        lastMQTTStatusReportTime = now;
-        mqtt_publish("temperature", number2string(Input));
-        mqtt_publish("temperatureAboveTarget", number2string((Input - setPoint)));
-        mqtt_publish("heaterUtilization", number2string(convertOutputToUtilisation(Output)));
-        //mqtt_publish("kp", number2string(bPID.GetKp()));
-        //mqtt_publish("ki", number2string(bPID.GetKi()));
-        //mqtt_publish("kd", number2string(bPID.GetKd()));
-        //mqtt_publish("outputP", number2string(convertOutputToUtilisation(bPID.GetOutputP())));
-        //mqtt_publish("outputI", number2string(convertOutputToUtilisation(bPID.GetOutputI())));
-        //mqtt_publish("outputD", number2string(convertOutputToUtilisation(bPID.GetOutputD())));
-        mqtt_publish("pastTemperatureChange", number2string(pastTemperatureChange(10)));
-        mqtt_publish("brewReady", bool2string(brewReady));
-       }
+      mqtt_client.loop(); // mqtt client connected, do mqtt housekeeping
+      if (!mqtt_client.connected()) {
+        if (now > mqtt_lastReconnectAttemptTime + (mqtt_reconnect_incremental_backoff * (mqtt_reconnectAttempts+1)) ) {
+          mqtt_lastReconnectAttemptTime = now;
+          if (mqtt_reconnect()) { // Attempt to reconnect
+            mqtt_lastReconnectAttemptTime = 0;
+            mqtt_reconnectAttempts = 0;
+          } else if (mqtt_reconnectAttempts < mqtt_max_incremental_backoff) {
+            mqtt_reconnectAttempts++;
+          }
+        }
+      } else {
+        if (now >= lastMQTTStatusReportTime + lastMQTTStatusReportInterval) {
+          lastMQTTStatusReportTime = now;
+          mqtt_publish("temperature", number2string(Input));
+          mqtt_publish("temperatureAboveTarget", number2string((Input - setPoint)));
+          mqtt_publish("heaterUtilization", number2string(convertOutputToUtilisation(Output)));
+          //mqtt_publish("kp", number2string(bPID.GetKp()));
+          //mqtt_publish("ki", number2string(bPID.GetKi()));
+          //mqtt_publish("kd", number2string(bPID.GetKd()));
+          //mqtt_publish("outputP", number2string(convertOutputToUtilisation(bPID.GetOutputP())));
+          //mqtt_publish("outputI", number2string(convertOutputToUtilisation(bPID.GetOutputI())));
+          //mqtt_publish("outputD", number2string(convertOutputToUtilisation(bPID.GetOutputD())));
+          mqtt_publish("pastTemperatureChange", number2string(pastTemperatureChange(10)));
+          mqtt_publish("brewReady", bool2string(brewReady));
+         }
+      }
     }
   } else {
     checkWifi();
@@ -1087,7 +1107,6 @@ void loop() {
 
     sendToBlynk();
 
-    //update display if time interval xpired
     unsigned long currentMillisDisplay = millis();
     if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
       previousMillisDisplay  = currentMillisDisplay;
@@ -1157,6 +1176,7 @@ void setup() {
   Debug.showProfiler(true); // Profiler (Good to measure times, to optimize codes)
   Debug.showColors(true); // Colors
   Debug.setSerialEnabled(true); // log to Serial also
+  
   /********************************************************
     Define trigger type
   ******************************************************/
@@ -1173,10 +1193,10 @@ void setup() {
     Ini Pins
   ******************************************************/
   pinMode(pinRelayVentil, OUTPUT);
-  pinMode(pinRelayPumpe, OUTPUT);
-  pinMode(pinRelayHeater, OUTPUT);
   digitalWrite(pinRelayVentil, relayOFF);
+  pinMode(pinRelayPumpe, OUTPUT);
   digitalWrite(pinRelayPumpe, relayOFF);
+  pinMode(pinRelayHeater, OUTPUT);
   digitalWrite(pinRelayHeater, LOW);
   #ifdef BREW_READY_LED
   pinMode(pinLed, OUTPUT);
@@ -1217,8 +1237,8 @@ void setup() {
       WiFi.begin(ssid, pass);
       DEBUG_print("Connecting to %s ...\n", ssid);
 
-      // wait 10 seconds for connection:
-      while ((WiFi.status() != WL_CONNECTED) && (millis() - started < 20000))
+      // wait up to 20 seconds for connection
+      while ((WiFi.status() != WL_CONNECTED) && (millis() < started + 20000))
       {
         yield();    //Prevent Watchdog trigger
       }
@@ -1229,9 +1249,9 @@ void setup() {
 
         displaymessage("rancilio", "2: Wifi connected, ", "try Blynk   ", "");
         DEBUG_print("Wifi works, now try Blynk connection\n");
-        delay(2000);
+        //delay(2000);
         Blynk.config(auth, blynkaddress, blynkport) ;
-        Blynk.connect(30000);
+        Blynk.connect(10000);
 
         // Blnky works:
         if (Blynk.connected() == true) {
@@ -1358,6 +1378,7 @@ void setup() {
   /********************************************************
      TEMP SENSOR
   ******************************************************/
+  displaymessage("rancilio", "Init. vars", "", "");
   if (TempSensor == 1) {
     sensors.begin();
     sensors.getAddress(sensorDeviceAddress, 0);
@@ -1365,14 +1386,15 @@ void setup() {
     while (true) {
       sensors.requestTemperatures();
       previousInput = sensors.getTempCByIndex(0);
-      delay(500);
+      delay(400);
       sensors.requestTemperatures();
       Input = sensors.getTempCByIndex(0);
       if (checkSensor(Input, previousInput)) {
         updateTemperatureHistory(Input);
         break;
       }
-      delay(500);
+      ERROR_print("Temp. sensor defect. Cannot read consistant values\n");
+      delay(400);
     }
   }
 
@@ -1381,7 +1403,7 @@ void setup() {
       temperature = 0;
       Sensor1.getTemperature(&temperature);
       previousInput = Sensor1.calc_Celsius(&temperature);
-      delay(500);
+      delay(400);
       temperature = 0;
       Sensor1.getTemperature(&temperature);
       Input = Sensor1.calc_Celsius(&temperature);
@@ -1389,14 +1411,14 @@ void setup() {
         updateTemperatureHistory(Input);
         break;
       }
-      delay(500);
+      ERROR_print("Temp. sensor defect. Cannot read consistant values\n");
+      delay(400);
     }
   }
 
   /********************************************************
      Ini PID
   ******************************************************/
-
   bPID.SetSampleTime(windowSize);
   bPID.SetOutputLimits(0, windowSize);
   bPID.SetMode(AUTOMATIC);
@@ -1483,17 +1505,13 @@ void displaymessage(String logo, String displaymessagetext, String displaymessag
 
       display.setCursor(10, 55);       // preinfusion line
       display.print(bezugsZeit / 1000);
-      display.print("/");
-      if (ONLYPID == 1){
-        display.println(0, 0);
-      }
-      else 
-      {
+      if (ONLYPID == 0) {
+        display.print("/");
         display.print(totalbrewtime / 1000); 
-        display.print(" ");
-        display.print((char)247);
-        display.println("sec.");
-      }     
+      }
+      display.print(" ");
+      display.print((char)247);
+      display.println("sec.");
     }
     
     display.display();
