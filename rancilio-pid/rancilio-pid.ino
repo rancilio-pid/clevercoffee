@@ -1184,14 +1184,16 @@ if (WiFi.status() == WL_CONNECTED && Offlinemodus == 0) {
 
   //Sicherheitsabfrage
   if (!sensorError && Input > 0 && !emergencyStop) {
-if (Input < starttemp && kaltstart) {
+
+    //Set PID if first start of machine detected
+    if (Input < starttemp && kaltstart) {
       if (startTn != 0) {
         startKi = startKp / startTn;
       } else {
         startKi = 0 ;
       }
-      bPID.SetTunings(startKp, startKi, 0, P_ON_M);
-    } else if (timerBrewdetection == 0) {    //Prevent overwriting of brewdetection values
+      bPID.SetTunings(startKp, startKi, 0);
+    } else {
       // calc ki, kd
       if (aggTn != 0) {
         aggKi = aggKp / aggTn ;
@@ -1199,7 +1201,7 @@ if (Input < starttemp && kaltstart) {
         aggKi = 0 ;
       }
       aggKd = aggTv * aggKp ;
-      bPID.SetTunings(aggKp, aggKi, aggKd, PonE);
+      bPID.SetTunings(aggKp, aggKi, aggKd);
       kaltstart = false;
     }
 
