@@ -338,7 +338,14 @@ void backflush() {
   } else if ( Offlinemodus == 1 || brewcounter > 10 || maxflushCycles <= 0 || backflushON == 0) {
     return;
   }
-
+  
+  if (pidMode == 1) { //Deactivate PID
+    pidMode = 0;
+    bPID.SetMode(pidMode);
+    Output = 0 ;
+  }
+  digitalWrite(pinRelayHeater, LOW); //Stop heating
+  
   readAnalogInput();
   unsigned long currentMillistemp = millis();
 
@@ -350,13 +357,7 @@ void backflush() {
   switch (backflushState) {
     case 10:    // waiting step for brew switch turning on
       if (brewswitch > 1000 && backflushON) {
-        startZeit = millis();        
-        if (pidMode == 1) { //Deactivate PID
-          pidMode = 0;
-          bPID.SetMode(pidMode);
-          Output = 0 ;
-        }
-        digitalWrite(pinRelayHeater, LOW); //Stop heating
+        startZeit = millis();
         backflushState = 20;
       }
       break;
@@ -1346,7 +1347,7 @@ void loop() {
   }
 
   //Sicherheitsabfrage
-  if (!sensorError && Input > 0 && !emergencyStop && backflushState == 10 && (backflushON == 0 || brewcounter > 10)) {    
+  if (!sensorError && Input > 0 && !emergencyStop && backflushState == 10 && (backflushON == 0 || brewcounter > 10)) {
     brewdetection();  //if brew detected, set PID values
     printScreen();  // refresh display
 
