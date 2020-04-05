@@ -538,9 +538,7 @@ void brew() {
     unsigned long currentMillistemp = millis();
 
     if (brewswitch < 1000 && brewcounter >= 11) {   //abort function for state machine from every state
-      brewcounter = 10;
-      currentMillistemp = 0;
-      bezugsZeit = 0;
+      brewcounter = 43;
     }
 
 
