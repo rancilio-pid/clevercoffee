@@ -2,7 +2,7 @@
 
 BLEEDING EDGE MASTER VERSION 
 
-Version 2.0.3 beta2
+Version 2.1.0 beta1
 
 based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 
@@ -21,6 +21,8 @@ based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
    - PidController offers feature like filtering, special handling of setPoint crossings and more (hard-coded)
    - PID Controller is now integral part of the software and not an external library.
 1. Beautify display output with new icons (thanks to helge!)
+1. Freely choose if you want the software use WIFI, BLYNK and MQTT. Everythink can be enabled/disabled and stil have a flawlessly working PID controller.
+1. Offline Modus is fixed and enhanced. If userConfig.h's FORCE_OFFLINE is enabled, then PID fully is working without networking. Ideal in situations when there is no connectivity or you dont want to rely on it.
 1. MQTT support to integrate maschine in smart-home solutions and to easier extract details for graphing/alerting.
 1. Added RemoteDebug over telnet so that we dont need USB to debug/tune pid anymore (https://github.com/JoaoLopesF/RemoteDebug)
 1. "Brew Ready" Detection implemented, which detects when the temperature has stabilized at setPoint. It can send an
@@ -28,7 +30,7 @@ based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 1. All heater power relevant settings are now set and given in percent (and not absolute output) and therefore better to understand
 1. Safetly toogle added to shutdown heater on sensor malfunction (TEMPSENSORRECOVERY)
 1. Many useful functions to be used internally getAverageTemperature(), pastTemperatureChange() + updateTemperatureHistory())
-1. Much tunings and improvements under the hood which stabilizes the system.
+1. Many tunings and improvements under the hood which stabilizes the system (eg in situations of bad WIFI, hardware issues,..).
 
 # ATTENTION:
 - EEPROM has changed. Therefore you have to connect to blynk at least once after flashing, and manually set correct settings in blynk app (see screenshots for default values).
@@ -51,10 +53,6 @@ based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
   //#define SSD1306_96_16
   ```
   Also check and fix all files matching "Adafruit_SSD1306.h" in your Documents/ subfolder!!
-- If you want to increase the inactivity timeout you have to manually edit the file "RemoteDebugCfg.h" which is somewhere in a subpath below $USER/Documents/. Just search for the line "#define MAX_TIME_INACTIVE 600000" and replace the number. Example :
-  ```
-  #define MAX_TIME_INACTIVE 18000000
-  ```
 
 # Blynk App Dashboard
 Unfortunately you have to manually build your dashboard (config does not fit in QR code).
@@ -142,12 +140,23 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
    ```
    #define DEBUGMODE
    ```
-1. Getting logs
-   - Download [putty](https://the.earth.li/~sgtatham/putty/latest/w64/putty.exe) for windows or use telnet in linux to connect to port 23 of the rancilio-maschine's IP-address: 
-     <p align="center">
-     <img src="https://github.com/medlor/ranciliopid/blob/master/pictures/putty/putty.jpg" height="300">
-     </p>
-     Or for linux: bash> $ telnet ip-address 23
+1. Getting debug logs 
+   - on windows
+     - Download [putty](https://the.earth.li/~sgtatham/putty/latest/w64/putty.exe) for windows or use telnet in linux to connect to port 23 of the rancilio-maschine's IP-address: 
+       <p align="center">
+       <img src="https://github.com/medlor/ranciliopid/blob/master/pictures/putty/putty.jpg" height="300">
+       </p>
+   - on linux
+     ```
+     sh> $ telnet rancilio-ip-address 23
+     ```
+   - on andriod, following apps are recommended
+     - [Fing](https://play.google.com/store/apps/details?id=com.overlook.android.fing)
+     - [JuiceSSH](https://play.google.com/store/apps/details?id=com.sonelli.juicessh)
+     - Just open Fing, search for your "rancilio device" as defined in userConfig.h's HOSTNAME, then press on the device -> "Offene Ports finden" -> "Porr 23" -> "Verbinden mit Telnet-Client"
+     - To export the protocol just long press on one of the log-lines and choose "save/share".
+   - with Web-Browser
+     - Open the file ```rancilio-pid\src\RemoteDebugApp\index.html``` with firefox/chrome and enter your rancilio-ip in the upper left field.
 1. Explanation of the PID log line
    ```
    [0m(D p:^5000ms) 435 Input= 93.46 | error= 0.54 delta= 2.45 | Output= 27.88 = b:52.10 + p: 0.86 + i: 0.00( 0.00) + d:-25.09
@@ -170,6 +179,11 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
 - Required configuration in config.h:
   - #define BREW_READY_LED 1
   - #define BREW_READY_DETECTION 0.2  # or any other value
+  - <p align="center">
+    <img src="https://github.com/medlor/ranciliopid/blob/master/pictures/hardware-led/rancilio-brewReadyLed.jpg" height="300">
+    </p>
+  - [![](https://github.com/medlor/ranciliopid/blob/master/pictures/hardware-led/rancilio-brewReadyLed.jpg)](https://github.com/medlor/ranciliopid/blob/master/pictures/hardware-led/rancilio-brewReadyLed.jpg)
+  - [![test2](https://github.com/medlor/ranciliopid/blob/master/pictures/hardware-led/rancilio-brewReadyLed.jpg)](https://github.com/medlor/ranciliopid/blob/master/pictures/hardware-led/rancilio-brewReadyLed.jpg)
 
 # Update instructions
 1. Just overwrite all existing files with a newly released version.
@@ -177,6 +191,19 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
 3. Compile, upload and enjoy!
 
 # Changelog
+- 2.1.0_beta1:
+  - You can disable/enable WIFI, MQTT or Blynk in userConfig.h and stil have a flawlessly working PID controller. Blynk is no longer an hard requirement!
+  - Offline Modus is fixed and enhanced. If userConfig.h's FORCE_OFFLINE is enabled, then PID fully is working without networking. Ideal in situations when there is no connectivity or you dont want to rely on it.
+  - Instead of using dynamic IPs (over DHCPd) you have the option to set a static IP.
+  - Fix of EEPROM functionality: PID settings are correctly saved in EERPOM and correctly used if there are WIFI issues.
+  - Huge improvements in handling unstable WIFI networks and mqtt/blynk service unavailabilities.
+  - Code Tunings all over the place to increase performance and therefor stability (too many to mention).
+  - Set non-critical (service) network timeouts to 2sec.
+  - If blynk or mqtt is not working during startup, do not retry the connection periodically (configurable by userconfig.h DISABLE_SERVICES_ON_STARTUP_ERRORS)
+  - Fix: WLAN reconnection attempts might reboot the arduino.
+  - Some system libs are optimized in performance and stability (src/ folder).
+  - Debuglogs can also be accessed via browser (see documentation).
+  - Remove all unneeded external libraries which are installed in system's arduino search path.
 - 2.0.3_beta2:
   - Wifi disconnects handled better.
   - Implement blynk reconnect exponential backoff.
