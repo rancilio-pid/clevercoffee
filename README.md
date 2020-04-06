@@ -6,7 +6,7 @@ Version 2.1.0 beta1
 
 based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 
-# Most important features compared to rancilio-pid master (Version 1.9.7):
+# Most important features compared to rancilio-pid master:
 1. New PID Controller "Multi-state PID with steadyPower (Bias)"
    - Distinct PID settings dependend on the current "state" of the maschine. 
    - Most of the settings are either static or semi-automatically tuned, which does not require an PHD (German: Diplom) to understand.
@@ -33,7 +33,6 @@ based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 1. Many tunings and improvements under the hood which stabilizes the system (eg in situations of bad WIFI, hardware issues,..).
 
 # ATTENTION:
-- EEPROM has changed. Therefore you have to connect to blynk at least once after flashing, and manually set correct settings in blynk app (see screenshots for default values).
 - This software is tested thoroughly with the pid-only hardware solution on Silvia 5e, and with a permanently run full-hardware solution on an 10 year old Silvia. I am grateful for any further feedback. 
 - Please monitor our maschine's temperature closely the first few run times. The muti-state pid controller should never lead to temperatures greater than 5 degress above setpoint!
 
@@ -180,10 +179,10 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
   - #define BREW_READY_LED 1
   - #define BREW_READY_DETECTION 0.2  # or any other value
   - <p align="center">
-    <img src="https://github.com/medlor/ranciliopid/blob/master/pictures/hardware-led/rancilio-brewReadyLed.jpg" height="300">
+    <img src="https://github.com/medlor/ranciliopid/blob/2.0.3_beta/pictures/hardware-led/rancilio-brewReadyLed.jpg" height="300">
     </p>
-  - [![](https://github.com/medlor/ranciliopid/blob/master/pictures/hardware-led/rancilio-brewReadyLed.jpg)](https://github.com/medlor/ranciliopid/blob/master/pictures/hardware-led/rancilio-brewReadyLed.jpg)
-  - [![test2](https://github.com/medlor/ranciliopid/blob/master/pictures/hardware-led/rancilio-brewReadyLed.jpg)](https://github.com/medlor/ranciliopid/blob/master/pictures/hardware-led/rancilio-brewReadyLed.jpg)
+  - [![](https://github.com/medlor/ranciliopid/blob/2.0.3_beta/pictures/hardware-led/rancilio-brewReadyLed.jpg)](https://github.com/medlor/ranciliopid/blob/2.0.3_beta/pictures/hardware-led/rancilio-brewReadyLed.jpg)
+  - [![test2](https://github.com/medlor/ranciliopid/blob/2.0.3_beta/pictures/hardware-led/rancilio-brewReadyLed.jpg)](https://github.com/medlor/ranciliopid/blob/2.0.3_beta/pictures/hardware-led/rancilio-brewReadyLed.jpg)
 
 # Update instructions
 1. Just overwrite all existing files with a newly released version.
