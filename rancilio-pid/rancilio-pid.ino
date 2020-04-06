@@ -64,7 +64,6 @@ U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);
   definitions below must be changed in the userConfig.h file
 ******************************************************/
 int Offlinemodus = OFFLINEMODUS;
-const int Display = DISPLAY;
 const int OnlyPID = ONLYPID;
 const int TempSensor = TEMPSENSOR;
 const int Brewdetection = BREWDETECTION;
@@ -128,7 +127,7 @@ boolean brewDetected = 0;
 boolean setupDone = false;
 int backflushON = 0;            // 1 = activate backflush
 int flushCycles = 0;            // number of active flush cycles
-int backflushState = 10;         // counter for state machine
+int backflushState = 10;        // counter for state machine
 
 /********************************************************
    moving average - brewdetection
@@ -320,6 +319,7 @@ BLYNK_WRITE(V40) {
 }
 
 
+
 /********************************************************
   Emergency stop inf temp is to high
 *****************************************************/
@@ -338,14 +338,14 @@ void backflush() {
   } else if ( Offlinemodus == 1 || brewcounter > 10 || maxflushCycles <= 0 || backflushON == 0) {
     return;
   }
-  
+
   if (pidMode == 1) { //Deactivate PID
     pidMode = 0;
     bPID.SetMode(pidMode);
     Output = 0 ;
   }
   digitalWrite(pinRelayHeater, LOW); //Stop heating
-  
+
   readAnalogInput();
   unsigned long currentMillistemp = millis();
 
@@ -415,34 +415,34 @@ void u8g2_prepare(void) {
   u8g2.setFontDirection(0);
 }
 
-void displaymessage(String displaymessagetext, String displaymessagetext2) {
-  if (Display == 1) {
-    u8g2.clearBuffer();
-    u8g2.drawStr(0, 47, displaymessagetext.c_str());
-    u8g2.drawStr(0, 55, displaymessagetext2.c_str());
-    //Rancilio startup logo
-    if (machineLogo == 1) {
-      u8g2.drawXBMP(41, 2, startLogoRancilio_width, startLogoRancilio_height, startLogoRancilio_bits);
-    } else if (machineLogo == 2) {
-      u8g2.drawXBMP(0, 2, startLogoGaggia_width, startLogoGaggia_height, startLogoGaggia_bits);
-    }
-    u8g2.sendBuffer();
+void displayMessage(String text1, String text2, String text3, String text4, String text5, String text6) {
+  u8g2.clearBuffer();
+  u8g2.setCursor(0, 0);
+  u8g2.print(text1);
+  u8g2.setCursor(0, 10);
+  u8g2.print(text2);
+  u8g2.setCursor(0, 20);
+  u8g2.print(text3);
+  u8g2.setCursor(0, 30);
+  u8g2.print(text4);
+  u8g2.setCursor(0, 40);
+  u8g2.print(text5);
+  u8g2.setCursor(0, 50);
+  u8g2.print(text6);
+  u8g2.sendBuffer();
+}
+
+void displayLogo(String displaymessagetext, String displaymessagetext2) {
+  u8g2.clearBuffer();
+  u8g2.drawStr(0, 47, displaymessagetext.c_str());
+  u8g2.drawStr(0, 55, displaymessagetext2.c_str());
+  //Rancilio startup logo
+  if (machineLogo == 1) {
+    u8g2.drawXBMP(41, 2, startLogoRancilio_width, startLogoRancilio_height, startLogoRancilio_bits);
+  } else if (machineLogo == 2) {
+    u8g2.drawXBMP(0, 2, startLogoGaggia_width, startLogoGaggia_height, startLogoGaggia_bits);
   }
-  if (Display == 2) {
-    display.setTextSize(1);
-    display.setTextColor(WHITE);
-    display.clearDisplay();
-    display.setCursor(0, 47);
-    display.println(displaymessagetext);
-    display.print(displaymessagetext2);
-    //startup logo
-    if (machineLogo == 1) {
-      display.drawBitmap(41, 2, startLogoRancilio_bits, startLogoRancilio_width, startLogoRancilio_height, WHITE);
-    } else if (machineLogo == 2) {
-      display.drawBitmap(0, 2, startLogoGaggia_bits, startLogoGaggia_width, startLogoGaggia_height, WHITE);
-    }
-    display.display();
-  }
+  u8g2.sendBuffer();
 }
 
 
@@ -657,7 +657,7 @@ void brew() {
   TODO
 *****************************************************/
 void initOfflineMode() {
-  displaymessage("Begin Fallback,", "No Wifi");
+  displayMessage("","","","","Begin Fallback,", "No Wifi");
   delay(1000);
   DEBUG_println("Start offline mode with eeprom values, no wifi:(");
   Offlinemodus = 1 ;
@@ -683,7 +683,7 @@ void initOfflineMode() {
     EEPROM.get(120, brewtimersoftware);
     EEPROM.get(130, brewboarder);
   } else {
-    displaymessage("No eeprom,", "Values");
+    displayMessage("","","","","No eeprom,", "Values");
     DEBUG_println("No working eeprom value, I am sorry, but use default offline value  :)");
     delay(1000);
   }
@@ -706,7 +706,7 @@ void checkWifi() {
         DEBUG_print("Attempting WIFI reconnection: ");
         DEBUG_println(wifiReconnects);
         if (!setupDone) {
-          displaymessage("Wifi reconnect:", String(wifiReconnects));
+          displayMessage("","","","","Wifi reconnect:", String(wifiReconnects));
         }
         WiFi.disconnect();
         WiFi.begin(ssid, pass);   // attempt to connect to Wifi network
@@ -752,7 +752,7 @@ void printScreen() {
   unsigned long currentMillisDisplay = millis();
   if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
     previousMillisDisplay = currentMillisDisplay;
-    if (Display == 1 && !sensorError) {
+    if (!sensorError) {
       u8g2.clearBuffer();
       u8g2.drawXBMP(0, 0, logo_width, logo_height, logo_bits_u8g2);
       u8g2.setCursor(32, 14);
@@ -760,13 +760,13 @@ void printScreen() {
       u8g2.print(Input, 1);
       u8g2.print(" ");
       u8g2.print((char)176);
-      u8g2.println("C");
+      u8g2.print("C");
       u8g2.setCursor(32, 24);
       u8g2.print("Soll:  ");
       u8g2.print(setPoint, 1);
       u8g2.print(" ");
       u8g2.print((char)176);
-      u8g2.println("C");
+      u8g2.print("C");
 
       // Draw heat bar
       u8g2.drawLine(15, 58, 117, 58);
@@ -800,7 +800,7 @@ void printScreen() {
         u8g2.print("0");
       }
       u8g2.print("|");
-      u8g2.println(bPID.GetKd() / bPID.GetKp(), 0); // D
+      u8g2.print(bPID.GetKd() / bPID.GetKp(), 0); // D
       u8g2.setCursor(98, 48);
       u8g2.print(Output / 10, 0);
       u8g2.print("%");
@@ -811,11 +811,11 @@ void printScreen() {
       u8g2.print(bezugsZeit / 1000);
       u8g2.print("/");
       if (ONLYPID == 1) {
-        u8g2.println(brewtimersoftware, 0);             // deaktivieren wenn Preinfusion ( // voransetzen )
+        u8g2.print(brewtimersoftware, 0);             // deaktivieren wenn Preinfusion ( // voransetzen )
       }
       else
       {
-        u8g2.println(totalbrewtime / 1000);            // aktivieren wenn Preinfusion
+        u8g2.print(totalbrewtime / 1000);            // aktivieren wenn Preinfusion
       }
       //draw box
       u8g2.drawFrame(0, 0, 128, 64);
@@ -845,107 +845,6 @@ void printScreen() {
         u8g2.print("Offlinemodus");
       }
       u8g2.sendBuffer();
-    }
-    if (Display == 2 && !sensorError)
-    {
-      display.clearDisplay();
-      display.drawBitmap(0, 0, logo_bits, logo_width, logo_height, WHITE);
-      display.setTextSize(1);
-      display.setTextColor(WHITE);
-      display.setCursor(32, 14);
-      display.print("Ist :  ");
-      display.print(Input, 1);
-      display.print(" ");
-      display.print((char)247);
-      display.println("C");
-      display.setCursor(32, 24);
-      display.print("Soll:  ");
-      display.print(setPoint, 1);
-      display.print(" ");
-      display.print((char)247);
-      display.println("C");
-      // display.print("Heizen: ");
-
-      // display.println(" %");
-
-      // Draw heat bar
-      display.drawLine(15, 58, 117, 58, WHITE);
-      display.drawLine(15, 58, 15, 61, WHITE);
-      display.drawLine(117, 58, 117, 61, WHITE);
-
-      display.drawLine(16, 59, (Output / 10) + 16, 59, WHITE);
-      display.drawLine(16, 60, (Output / 10) + 16, 60, WHITE);
-      display.drawLine(15, 61, 117, 61, WHITE);
-
-      //draw current temp in icon
-      display.drawLine(9, 48, 9, 58 - (Input / 2), WHITE);
-      display.drawLine(10, 48, 10, 58 - (Input / 2), WHITE);
-      display.drawLine(11, 48, 11, 58 - (Input / 2), WHITE);
-      display.drawLine(12, 48, 12, 58 - (Input / 2), WHITE);
-      display.drawLine(13, 48, 13, 58 - (Input / 2), WHITE);
-
-      //draw setPoint line
-      display.drawLine(18, 58 - (setPoint / 2), 23, 58 - (setPoint / 2), WHITE);
-
-      // PID Werte ueber heatbar
-      display.setCursor(40, 50);
-
-      display.print(bPID.GetKp(), 0); // P
-      display.print("|");
-      if (bPID.GetKi() != 0) {
-        display.print(bPID.GetKp() / bPID.GetKi(), 0);;
-      } // I
-      else
-      {
-        display.print("0");
-      }
-      display.print("|");
-      display.println(bPID.GetKd() / bPID.GetKp(), 0); // D
-      display.setCursor(98, 50);
-      display.print(Output / 10, 0);
-      display.print("%");
-
-      // Brew
-      display.setCursor(32, 35);
-      display.print("Brew:  ");
-      display.setTextSize(1);
-      display.print(bezugsZeit / 1000);
-      display.print("/");
-      if (ONLYPID == 1) {
-        display.println(brewtimersoftware, 0);             // deaktivieren wenn Preinfusion ( // voransetzen )
-      }
-      else
-      {
-        display.println(totalbrewtime / 1000);            // aktivieren wenn Preinfusion
-      }
-      //draw box
-      display.drawRoundRect(0, 0, 128, 64, 1, WHITE);
-
-      // Für Statusinfos
-      display.drawRoundRect(32, 0, 84, 12, 1, WHITE);
-      if (Offlinemodus == 0) {
-        getSignalStrength();
-        if (WiFi.status() == WL_CONNECTED) {
-          display.drawBitmap(40, 2, antenna_OK, 8, 8, WHITE);
-          for (int b = 0; b <= bars; b++) {
-            display.drawFastVLine(45 + (b * 2), 10 - (b * 2), b * 2, WHITE);
-          }
-        } else {
-          display.drawBitmap(40, 2, antenna_NOK, 8, 8, WHITE);
-          display.setCursor(88, 2);
-          display.print("RC: ");
-          display.print(wifiReconnects);
-        }
-        if (Blynk.connected()) {
-          display.drawBitmap(60, 2, blynk_OK, 11, 8, WHITE);
-        } else {
-          display.drawBitmap(60, 2, blynk_NOK, 8, 8, WHITE);
-        }
-      } else {
-        display.setCursor(40, 2);
-        display.print("Offlinemodus");
-      }
-      display.display();
     }
   }
 }
@@ -984,7 +883,7 @@ void sendToBlynk() {
         Blynk.syncVirtual(V36);
       }
       if (grafana == 1 && blynksendcounter >= 6) {
-        Blynk.virtualWrite(V60, Input, Output, setPoint, setPoint, setPoint, setPoint );
+        Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint );
         blynksendcounter = 0;
       } else if (grafana == 0 && blynksendcounter >= 5) {
         blynksendcounter = 0;
@@ -1074,7 +973,7 @@ void getSignalStrength() {
     Timer 1 - ISR for PID calculation and heat realay output
 ******************************************************/
 void ICACHE_RAM_ATTR onTimer1ISR() {
-  timer1_write(50000); // set interrupt time to 10ms
+  timer1_write(6250); // set interrupt time to 20ms
 
   if (Output <= isrCounter) {
     digitalWrite(pinRelayHeater, LOW);
@@ -1082,7 +981,7 @@ void ICACHE_RAM_ATTR onTimer1ISR() {
     digitalWrite(pinRelayHeater, HIGH);
   }
 
-  isrCounter += 10; // += 10 because one tick = 10ms
+  isrCounter += 20; // += 20 because one tick = 20ms
   //set PID output as relais commands
   if (isrCounter > windowSize) {
     isrCounter = 0;
@@ -1119,16 +1018,9 @@ void setup() {
   /********************************************************
     DISPLAY 128x64
   ******************************************************/
-  if (Display == 1) {
-    u8g2.begin();
-    u8g2_prepare();
-  }
-  if (Display == 2) {
-    display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3C (for the 128x64)  for AZ Deliv. Display
-    //display.begin(SSD1306_SWITCHCAPVCC, 0x3D);  // initialize with the I2C addr 0x3D (for the 128x64)
-    display.clearDisplay();
-  }
-  displaymessage(sysVersion, "");
+  u8g2.begin();
+  u8g2_prepare();
+  displayLogo(sysVersion, "");
   delay(2000);
 
   /********************************************************
@@ -1137,7 +1029,7 @@ void setup() {
   if (Offlinemodus == 0) {
     WiFi.hostname(hostname);
     unsigned long started = millis();
-    displaymessage("1: Connect Wifi to:", ssid);
+    displayLogo("1: Connect Wifi to:", ssid);
     /* Explicitly set the ESP8266 to be a WiFi-client, otherwise, it by default,
       would try to act as both a client and an access-point and could cause
       network-issues with your other WiFi-devices on your WiFi-network. */
@@ -1162,9 +1054,9 @@ void setup() {
       DEBUG_println(WiFi.localIP());
       DEBUG_println("Wifi works, now try Blynk (timeout 30s)");
       if (fallback == 0) {
-        displaymessage("Connect to Blynk", "no Fallback");
+        displayLogo("Connect to Blynk", "no Fallback");
       } else if (fallback == 1) {
-        displaymessage("2: Wifi connected, ", "try Blynk   ");
+        displayLogo("2: Wifi connected, ", "try Blynk   ");
       }
       delay(1000);
 
@@ -1173,7 +1065,7 @@ void setup() {
       Blynk.connect(30000);
 
       if (Blynk.connected() == true) {
-        displaymessage("3: Blynk connected", "sync all variables...");
+        displayLogo("3: Blynk connected", "sync all variables...");
         DEBUG_println("Blynk is online");
         if (fallback == 1) {
           DEBUG_println("sync all variables and write new values to eeprom");
@@ -1220,7 +1112,7 @@ void setup() {
       }
 
     } else {
-      displaymessage("No ", "WIFI");
+      displayLogo("No ", "WIFI");
       DEBUG_println("No WIFI");
       WiFi.disconnect(true);
       delay(1000);
@@ -1295,8 +1187,10 @@ void setup() {
   ******************************************************/
   timer1_isr_init();
   timer1_attachInterrupt(onTimer1ISR);
-  timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
-  timer1_write(50000); // set interrupt time to 10ms
+  //timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+  //timer1_write(50000); // set interrupt time to 10ms
+  timer1_enable(TIM_DIV256, TIM_EDGE, TIM_SINGLE);
+  timer1_write(6250); // set interrupt time to 20ms
   setupDone = true;
 }
 
@@ -1396,25 +1290,8 @@ void loop() {
 
     digitalWrite(pinRelayHeater, LOW); //Stop heating
 
-    //DISPLAY AUSGABE
-    if (Display == 1) {
-      u8g2.clearBuffer();
-      u8g2.setCursor(0, 0);
-      u8g2.print("Error: Temp = ");
-      u8g2.println(Input);
-      u8g2.print("Check Temp. Sensor!");
-      u8g2.sendBuffer();
-    }
-    if (Display == 2) {
-      display.setTextSize(1);
-      display.setTextColor(WHITE);
-      display.clearDisplay();
-      display.setCursor(0, 0);
-      display.print("Error: Temp = ");
-      display.println(Input);
-      display.print("Check Temp. Sensor!");
-      display.display();
-    }
+    displayMessage("Error: Temp = "+String(Input), "", "Check Temp. Sensor!", "", "",""); //DISPLAY AUSGABE
+
   } else if (emergencyStop) {
 
     //Deactivate PID
@@ -1424,40 +1301,17 @@ void loop() {
       Output = 0 ;
     }
 
-    digitalWrite(pinRelayHeater, LOW); //Stop heating
+    digitalWrite(pinRelayHeater, LOW); //Stop heating    
+    
+    displayMessage("Emergency Stop!", "", "Temp > 120", "Temp: "+String(Input), "Resume if Temp < 100",""); //DISPLAY AUSGABE
 
-    //DISPLAY AUSGABE
-    if (Display == 1) {
-      u8g2.clearBuffer();
-      u8g2.setCursor(0, 0);
-      u8g2.println("Emergency Stop!");
-      u8g2.println("");
-      u8g2.println("Temp > 120");
-      u8g2.print("Temp: ");
-      u8g2.println(Input);
-      u8g2.print("Resume if Temp < 100");
-      u8g2.sendBuffer();
-    }
-    if (Display == 2) {
-      display.setTextSize(1);
-      display.setTextColor(WHITE);
-      display.clearDisplay();
-      display.setCursor(0, 0);
-      display.println("Emergency Stop!");
-      display.println("");
-      display.println("Temp > 120");
-      display.print("Temp: ");
-      display.println(Input);
-      display.print("Resume if Temp < 100");
-      display.display();
-    }
   } else if (backflushON || backflushState > 10) {
     if (backflushState == 43) {
-      displaymessage("Backflush finished", "Please reset brewswitch...");
+      displayMessage("Backflush finished", "Please reset brewswitch...","","","","");
     } else if (backflushState == 10) {
-      displaymessage("Backflush activated", "Please set brewswitch...");
+      displayMessage("Backflush activated", "Please set brewswitch...","","","","");
     } else if ( backflushState > 10) {
-      displaymessage("Backflush running:", String(flushCycles) + "/" + String(maxflushCycles));
+      displayMessage("Backflush running:", String(flushCycles) + "/" + String(maxflushCycles),"","","","");
     }
   }
 
