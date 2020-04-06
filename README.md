@@ -40,8 +40,8 @@ based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 Installation is as explained on http://rancilio-pid.de/ but with following adapations:
 1. Make screenshots of the official "Blynk App Dashboard" so that you can revert anytime.
 1. Copy file userConfig.h.SAMPLE to userConfig.h and edit this file accordingly.
-1. (Optional) Enable blynk in userConfig and create the "Blynk App Dashboard" as described below.
-   OR just disable blynk in userConfig, enable debug logs and use one of the methods described below to monitor the first few runs.
+1. (Optional) Enable blynk in userConfig and build the "Blynk App Dashboard" as described below.
+   OR just disable blynk in userConfig, enable debug logs and use one of the methods described in "Debugging Howto" to monitor the first few runs.
 1. Flash and enjoy your espresso.
 1. No tuning should be required normally. If you want/need to then use the method described below.
 
