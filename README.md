@@ -36,15 +36,16 @@ based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 - This software is tested thoroughly with the pid-only hardware solution on Silvia 5e, and with a permanently run full-hardware solution on an 10 year old Silvia. I am grateful for any further feedback. 
 - Please monitor our maschine's temperature closely the first few run times. The muti-state pid controller should never lead to temperatures greater than 5 degress above setpoint!
 
-# Additional important information
-- Installation is as explained on http://rancilio-pid.de/ but with following adapations:
-- Copy file userConfig.h.SAMPLE to userConfig.h and edit this file accordingly.
-- Additional Arduino dependency on PubSubClient (tested with Version 2.7.0). 
-  Please install this lib by using Arduino->Sketch->Include Library->"Library Manager".
-  ![Library Manager](https://github.com/medlor/ranciliopid/blob/master/arduino-docs/PubSubClient_Dep.jpg)
-- Additional Arduino dependency on RemoteDebug (tested with Version 3.0.5). 
-  Please install this lib by using Arduino->Sketch->Include Library->"Library Manager".
-  ![Library Manager](https://github.com/medlor/ranciliopid/blob/master/arduino-docs/RemoteDebug_Dep.jpg)
+# Instructions on how to migrate from official rancilio to bleeding-edge
+Installation is as explained on http://rancilio-pid.de/ but with following adapations:
+1. Make screenshots of the official "Blynk App Dashboard" so that you can revert anytime.
+1. Copy file userConfig.h.SAMPLE to userConfig.h and edit this file accordingly.
+1. (Optional) Enable blynk in userConfig and create the "Blynk App Dashboard" as described below.
+   OR just disable blynk in userConfig, enable debug logs and use one of the methods described below to monitor the first few runs.
+1. Flash and enjoy your espresso.
+1. No tuning should be required normally. If you want/need to then use the method described below.
+
+# Additional information
 - If you see the following error during compile "Height incorrect, please fix Adafruit_SSD1306.h!", then search for the file Adafruit_SSD1306.h in your Documents/ folder and adapt Line 72ff to match following code:
   ```
   #define SSD1306_128_64
@@ -179,12 +180,10 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
   - #define BREW_READY_LED 1
   - #define BREW_READY_DETECTION 0.2  # or any other value
   - <p align="center">
-    <img src="https://github.com/medlor/ranciliopid/blob/2.0.3_beta/pictures/hardware-led/rancilio-brewReadyLed.jpg" height="300">
+    <img src="https://github.com/medlor/ranciliopid/blob/2.1.0_beta/pictures/hardware-led/rancilio-brewReadyLed.jpg" height="300">
     </p>
-  - [![](https://github.com/medlor/ranciliopid/blob/2.0.3_beta/pictures/hardware-led/rancilio-brewReadyLed.jpg)](https://github.com/medlor/ranciliopid/blob/2.0.3_beta/pictures/hardware-led/rancilio-brewReadyLed.jpg)
-  - [![test2](https://github.com/medlor/ranciliopid/blob/2.0.3_beta/pictures/hardware-led/rancilio-brewReadyLed.jpg)](https://github.com/medlor/ranciliopid/blob/2.0.3_beta/pictures/hardware-led/rancilio-brewReadyLed.jpg)
 
-# Update instructions
+# Instructions on how to update to the latest version of bleeding-edge
 1. Just overwrite all existing files with a newly released version.
 2. Open your userConfig.h file, which had not been overwritten in previous step, and manually check (line by line!) that all updates to the new file userConfig.h.SAMPLE are reflected in your own userConfig.h. 
 3. Compile, upload and enjoy!
