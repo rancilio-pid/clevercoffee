@@ -1,5 +1,5 @@
 /********************************************************
-  Version 1.3 (01.03.2020)
+  Version 1.4 (06.04.2020)
   Config must be configured by the user
 ******************************************************/
 
@@ -10,7 +10,6 @@
    Vorab-Konfig
 ******************************************************/
 #define OFFLINEMODUS 0       // 0 = Blynk and WIFI are used; 1 = offline mode (only preconfigured values in code are used!)
-#define DISPLAY 2            // 0 = deactivated; 2 = External 128x64 Display
 #define ONLYPID 0            // 1 = Only PID, no preinfusion; 0 = PID and preinfusion
 #define TEMPSENSOR 2         // 2 = TSIC306
 #define BREWDETECTION 1      // 0 = off; 1 = Software; 2 = Hardware
