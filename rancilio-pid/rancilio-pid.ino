@@ -1701,7 +1701,6 @@ void displaymessage(String logo, String displaymessagetext, String displaymessag
         display.print(totalbrewtime / 1000); 
       }
       display.print(" ");
-      display.print((char)247);
       display.println("sec.");
     }
     
