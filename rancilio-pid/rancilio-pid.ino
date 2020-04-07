@@ -124,7 +124,7 @@ const int PonE = PONE;
    Analog Schalter Read
 ******************************************************/
 const int analogPin = 0; // will be use in case of hardware
-int brewcounter = 0;
+int brewcounter = 10;
 int brewswitch = 0;
 const long analogreadingtimeinterval = 10 ; // ms
 unsigned long previousMillistempanalogreading ; // ms for analogreading
