@@ -6,14 +6,9 @@
   INCLUDES
 ******************************************************/
 #include <ArduinoOTA.h>
-#include <ESP8266WiFi.h>
-#include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
 #include <EEPROM.h>
 #include "userConfig.h" // needs to be configured by the user
-#include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
 #include <U8g2lib.h>
 #include "PID_v1.h" //for PID calculation
 #include <OneWire.h>    //Library for one wire communication to temp sensor
@@ -53,12 +48,10 @@
 #define ONE_WIRE_BUS 2  // Data wire is plugged into port 2 on the Arduino
 
 /********************************************************
-   DISPLAY constructor
+   DISPLAY constructor, select the one needed for your display
 ******************************************************/
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-//U8G2_SH1106_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0, OLED_SCL, OLED_SDA, OLED_RESET);
-//U8G2_SSD1306_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0, OLED_SCL, OLED_SDA, OLED_RESET);
-U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);
+//U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);   //e.g. 1.3"																					
+U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);    //e.g. 0.96"
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -73,13 +66,6 @@ const boolean ota = OTA;
 const int grafana = GRAFANA;
 const unsigned long wifiConnectionDelay = WIFICINNECTIONDELAY;
 const unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
-const boolean feedForwardControl = FEEDFORWARDCONTROL;
-const float brewFlowrate = BREWFLOWRATE;
-const float emptyBrewFlowrate = EMPTYBREWFLOWRATE;
-const unsigned int brewBoarder_1 = BREWBOARDER_1;
-const unsigned int brewBoarder_2 = BREWBOARDER_2;
-const unsigned int heatingPower = HEATINGPOWER;
-unsigned int brewType = 0;  // 0 = now brew detected; 1 = normal brew detected; 2 = empty brew detected;
 int machineLogo = MACHINELOGO;
 
 // Wifi
@@ -116,13 +102,6 @@ boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
 const char* sysVersion PROGMEM  = "Version 1.9.9 beta";   //System version
 int inX = 0, inY = 0, inOld = 0, inSum = 0; //used for filter()
 int bars = 0; //used for getSignalStrength()
-double Q = 0; // thermal energy variable
-unsigned long heatingTime = 0;  //time where output=100%; used for FeedForwardControl
-unsigned long heatingStart = 0; //start time; used for FeedForwardControl
-double preHeatingOutput = 0;    //start output; used for FeedForwardControl
-bool thermalCalc = false;
-bool preHeatingPidMode = 0; //1 = Automatic, 0 = Manual
-char debugline[100];
 boolean brewDetected = 0;
 boolean setupDone = false;
 int backflushON = 0;            // 1 = activate backflush
@@ -224,16 +203,16 @@ PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, PonE, DIRECT);    //PI
 /********************************************************
    DALLAS TEMP
 ******************************************************/
-OneWire oneWire(ONE_WIRE_BUS);  // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
-DallasTemperature sensors(&oneWire);  // Pass our oneWire reference to Dallas Temperature.
-DeviceAddress sensorDeviceAddress;  // arrays to hold device address
+OneWire oneWire(ONE_WIRE_BUS);         // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
+DallasTemperature sensors(&oneWire);   // Pass our oneWire reference to Dallas Temperature.
+DeviceAddress sensorDeviceAddress;     // arrays to hold device address
 
 /********************************************************
    Temp Sensors TSIC 306
 ******************************************************/
-TSIC Sensor1(2);    // only Signalpin, VCCpin unused by default
-uint16_t temperature = 0; //internal variable used to read temeprature
-float Temperatur_C = 0;
+TSIC Sensor1(ONE_WIRE_BUS);   // only Signalpin, VCCpin unused by default
+uint16_t temperature = 0;     // internal variable used to read temeprature
+float Temperatur_C = 0;       // internal variable that holds the converted temperature in °C
 
 /********************************************************
    BLYNK
@@ -403,7 +382,7 @@ void backflush() {
 
 
 /********************************************************
-  DISPLAY - print startup message
+  initialize u8g2 display
 *****************************************************/
 void u8g2_prepare(void) {
   //u8g2.setFont(u8g2_font_6x12_tf);
@@ -415,6 +394,9 @@ void u8g2_prepare(void) {
   u8g2.setFontDirection(0);
 }
 
+/********************************************************
+  DISPLAY - print message
+*****************************************************/
 void displayMessage(String text1, String text2, String text3, String text4, String text5, String text6) {
   u8g2.clearBuffer();
   u8g2.setCursor(0, 0);
@@ -432,6 +414,9 @@ void displayMessage(String text1, String text2, String text3, String text4, Stri
   u8g2.sendBuffer();
 }
 
+/********************************************************
+  DISPLAY - print logo and message at boot
+*****************************************************/
 void displayLogo(String displaymessagetext, String displaymessagetext2) {
   u8g2.clearBuffer();
   u8g2.drawStr(0, 47, displaymessagetext.c_str());
@@ -445,6 +430,37 @@ void displayLogo(String displaymessagetext, String displaymessagetext2) {
   u8g2.sendBuffer();
 }
 
+/********************************************************
+  DISPLAY - EmergencyStop
+*****************************************************/
+void displayEmergencyStop(void) {
+  u8g2.clearBuffer();
+  u8g2.drawXBMP(0, 0, logo_width, logo_height, logo_bits_u8g2);   //draw temp icon
+  u8g2.setCursor(32, 24);
+  u8g2.print("Ist :  ");
+  u8g2.print(Input, 1);
+  u8g2.print(" ");
+  u8g2.print((char)176);
+  u8g2.print("C");
+  u8g2.setCursor(32, 34);
+  u8g2.print("Soll:  ");
+  u8g2.print(setPoint, 1);
+  u8g2.print(" ");
+  u8g2.print((char)176);
+  u8g2.print("C");
+
+  //draw current temp in icon
+  if (isrCounter < 500) {
+    u8g2.drawLine(9, 48, 9, 5);
+    u8g2.drawLine(10, 48, 10, 4);
+    u8g2.drawLine(11, 48, 11, 3);
+    u8g2.drawLine(12, 48, 12, 4);
+    u8g2.drawLine(13, 48, 13, 5);
+    u8g2.setCursor(32, 4);
+    u8g2.print("HEATING STOPPED");
+  }
+  u8g2.sendBuffer();
+}
 
 /********************************************************
   Read analog input pin
@@ -513,16 +529,14 @@ boolean checkSensor(float tempInput) {
   if ( badCondition && !sensorError) {
     error++;
     sensorOK = false;
-    sprintf(debugline, "WARN: temperature sensor reading: consec_errors=%d, temp_current=%f, temp_prev=%f", error, tempInput, previousInput);
-    DEBUG_println(debugline);
+    DEBUG_print("WARN: temperature sensor reading: consec_errors = ");    DEBUG_print(error);    DEBUG_print(", temp_current = ");    DEBUG_println(tempInput);
   } else if (badCondition == false && sensorOK == false) {
     error = 0;
     sensorOK = true;
   }
   if (error >= maxErrorCounter && !sensorError) {
     sensorError = true ;
-    sprintf(debugline, "ERROR: temperature sensor malfunction: temp_current=%f, temp_prev=%f", tempInput, previousInput);
-    DEBUG_println(debugline);
+    DEBUG_print("ERROR: temperature sensor malfunction: emp_current = ");    DEBUG_println(tempInput);
   } else if (error == 0 && sensorError) {
     sensorError = false ;
   }
@@ -654,7 +668,7 @@ void brew() {
 
 /*******************************************************
   Switch to offline modeif maxWifiReconnects were exceeded
-  TODO
+  during boot
 *****************************************************/
 void initOfflineMode() {
   displayMessage("","","","","Begin Fallback,", "No Wifi");
@@ -754,7 +768,7 @@ void printScreen() {
     previousMillisDisplay = currentMillisDisplay;
     if (!sensorError) {
       u8g2.clearBuffer();
-      u8g2.drawXBMP(0, 0, logo_width, logo_height, logo_bits_u8g2);
+      u8g2.drawXBMP(0, 0, logo_width, logo_height, logo_bits_u8g2);   //draw temp icon
       u8g2.setCursor(32, 14);
       u8g2.print("Ist :  ");
       u8g2.print(Input, 1);
@@ -778,11 +792,27 @@ void printScreen() {
       u8g2.drawLine(15, 61, 117, 61);
 
       //draw current temp in icon
-      u8g2.drawLine(9, 48, 9, 58 - (Input / 2));
-      u8g2.drawLine(10, 48, 10, 58 - (Input / 2));
-      u8g2.drawLine(11, 48, 11, 58 - (Input / 2));
-      u8g2.drawLine(12, 48, 12, 58 - (Input / 2));
-      u8g2.drawLine(13, 48, 13, 58 - (Input / 2));
+      if (abs(Input  - setPoint) < 0.3) {
+        if (isrCounter < 500) {
+          u8g2.drawLine(9, 48, 9, 58 - (Input  / 2));
+          u8g2.drawLine(10, 48, 10, 58 - (Input  / 2));
+          u8g2.drawLine(11, 48, 11, 58 - (Input  / 2));
+          u8g2.drawLine(12, 48, 12, 58 - (Input  / 2));
+          u8g2.drawLine(13, 48, 13, 58 - (Input  / 2));
+        }
+      } else if (Input > 106) {
+        u8g2.drawLine(9, 48, 9, 5);
+        u8g2.drawLine(10, 48, 10, 4);
+        u8g2.drawLine(11, 48, 11, 3);
+        u8g2.drawLine(12, 48, 12, 4);
+        u8g2.drawLine(13, 48, 13, 5);
+      } else {
+        u8g2.drawLine(9, 48, 9, 58 - (Input  / 2));
+        u8g2.drawLine(10, 48, 10, 58 - (Input  / 2));
+        u8g2.drawLine(11, 48, 11, 58 - (Input  / 2));
+        u8g2.drawLine(12, 48, 12, 58 - (Input  / 2));
+        u8g2.drawLine(13, 48, 13, 58 - (Input  / 2));
+      }
 
       //draw setPoint line
       u8g2.drawLine(18, 58 - (setPoint / 2), 23, 58 - (setPoint / 2));
@@ -802,13 +832,17 @@ void printScreen() {
       u8g2.print("|");
       u8g2.print(bPID.GetKd() / bPID.GetKp(), 0); // D
       u8g2.setCursor(98, 48);
-      u8g2.print(Output / 10, 0);
+      if (Output < 99) {
+        u8g2.print(Output / 10, 1);
+      } else {
+        u8g2.print(Output / 10, 0);
+      }
       u8g2.print("%");
 
       // Brew
       u8g2.setCursor(32, 34);
       u8g2.print("Brew:  ");
-      u8g2.print(bezugsZeit / 1000);
+      u8g2.print(bezugsZeit / 1000, 1);
       u8g2.print("/");
       if (ONLYPID == 1) {
         u8g2.print(brewtimersoftware, 0);             // deaktivieren wenn Preinfusion ( // voransetzen )
@@ -1290,7 +1324,7 @@ void loop() {
 
     digitalWrite(pinRelayHeater, LOW); //Stop heating
 
-    displayMessage("Error: Temp = "+String(Input), "", "Check Temp. Sensor!", "", "",""); //DISPLAY AUSGABE
+    displayMessage("Error, Temp: ", String(Input), "Check Temp. Sensor!", "", "", ""); //DISPLAY AUSGABE
 
   } else if (emergencyStop) {
 
@@ -1303,7 +1337,7 @@ void loop() {
 
     digitalWrite(pinRelayHeater, LOW); //Stop heating    
     
-    displayMessage("Emergency Stop!", "", "Temp > 120", "Temp: "+String(Input), "Resume if Temp < 100",""); //DISPLAY AUSGABE
+    displayEmergencyStop();
 
   } else if (backflushON || backflushState > 10) {
     if (backflushState == 43) {
@@ -1311,7 +1345,7 @@ void loop() {
     } else if (backflushState == 10) {
       displayMessage("Backflush activated", "Please set brewswitch...","","","","");
     } else if ( backflushState > 10) {
-      displayMessage("Backflush running:", String(flushCycles) + "/" + String(maxflushCycles),"","","","");
+      displayMessage("Backflush running:", String(flushCycles), "from", String(maxflushCycles), "", "");
     }
   }
 
