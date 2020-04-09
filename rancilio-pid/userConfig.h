@@ -49,9 +49,4 @@
 #define STARTTN 0  // Start Tn während Kaltstart
 #define STARTTEMP 80 // Temperaturschwelle für deaktivieren des Start Kp
 
-//PID - Werte für Kaltstart der Maschine
-#define PONMKP 50    // Kp
-#define PONMTN 150   // Tn 
-#define PONMTV 0    // Tv
-
 #endif // _userConfig_H
