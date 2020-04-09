@@ -52,4 +52,9 @@
 #define STARTTN 130  // Start Tn during cold start
 #define STARTTEMP 85 // temperature setpoint to deactivate startup values
 
+//PID - Werte für Kaltstart der Maschine
+#define PONMKP 50    // Kp
+#define PONMTN 150   // Tn 
+#define PONMTV 0    // Tv
+
 #endif // _userConfig_H
