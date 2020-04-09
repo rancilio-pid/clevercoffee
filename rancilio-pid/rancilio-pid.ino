@@ -190,7 +190,6 @@ double startKi = 0;
 double startKi = startKp / startTn;
 #endif
 
-double starttemp = STARTTEMP;
 #if (aggTn == 0)
 double aggKi = 0;
 #else
@@ -679,8 +678,6 @@ void initOfflineMode() {
     EEPROM.get(40, brewtime);
     EEPROM.get(50, preinfusion);
     EEPROM.get(60, preinfusionpause);
-    EEPROM.get(70, startKp);
-    EEPROM.get(80, starttemp);
     EEPROM.get(90, aggbKp);
     EEPROM.get(100, aggbTn);
     EEPROM.get(110, aggbTv);
@@ -1121,8 +1118,6 @@ void setup() {
           EEPROM.put(40, brewtime);
           EEPROM.put(50, preinfusion);
           EEPROM.put(60, preinfusionpause);
-          EEPROM.put(70, startKp);
-          EEPROM.put(80, starttemp);
           EEPROM.put(90, aggbKp);
           EEPROM.put(100, aggbTn);
           EEPROM.put(110, aggbTv);
