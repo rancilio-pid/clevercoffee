@@ -262,19 +262,9 @@ BLYNK_WRITE(V9) {
 BLYNK_WRITE(V10) {
   preinfusionpause = param.asDouble() * 1000;
 }
-BLYNK_WRITE(V11) {
-  startKp = param.asDouble();
-}
-BLYNK_WRITE(V12) {
-  starttemp = param.asDouble();
-}
 BLYNK_WRITE(V13)
 {
   pidON = param.asInt();
-}
-BLYNK_WRITE(V14)
-{
-  startTn = param.asDouble();
 }
 BLYNK_WRITE(V30)
 {
@@ -1280,7 +1270,7 @@ void loop() {
     printScreen();  // refresh display
 
     //Set PID if first start of machine detected
-    if (Input < starttemp && kaltstart) {
+    if (Input < setPoint && kaltstart) {
       if (startTn != 0) {
         startKi = startKp / startTn;
       } else {
