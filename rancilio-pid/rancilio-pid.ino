@@ -548,9 +548,11 @@ void refreshTemp() {
       sensors.requestTemperatures();
       if (!checkSensor(sensors.getTempCByIndex(0)) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
       Input = sensors.getTempCByIndex(0);
-      if (Brewdetection == 0 && firstreading == 1) {
+      if (Brewdetection != 0) {
+        movAvg();
+      } else if (firstreading != 0) {
         firstreading = 0;
-      }
+      } 
     }
   }
   if (TempSensor == 2)
@@ -566,9 +568,11 @@ void refreshTemp() {
       Temperatur_C = Sensor1.calc_Celsius(&temperature);
       if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
       Input = Temperatur_C;
-      if (Brewdetection == 0 && firstreading == 1) {
+      if (Brewdetection != 0) {
+        movAvg();
+      } else if (firstreading != 0) {
         firstreading = 0;
-      }
+      } 
     }
   }
 }
@@ -1243,7 +1247,6 @@ void loop() {
 
 
   refreshTemp();   //read new temperature values
-  movAvg();   //calculated moving average
   testEmergencyStop();  // test if Temp is to high
   brew();   //start brewing if button pressed
   sendToBlynk();
