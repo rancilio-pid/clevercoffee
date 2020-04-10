@@ -124,6 +124,10 @@ unsigned int isrCounter = 0; // TODO remove windowSize - 500;          // counte
 double Input = 0, Output = 0;
 double previousInput = 0;
 double previousOutput = 0;
+
+unsigned long previousMillistemp;  // initialisation at the end of init()
+unsigned long previousMillistemp2;
+const long refreshTempInterval = 1000;
 int pidMode = 1;                   //1 = Automatic, 0 = Manual
 
 double setPoint = SETPOINT;
@@ -205,15 +209,6 @@ int maxErrorCounter = 10 ;  //define maximum number of consecutive polls (of int
 /********************************************************
  * Rest
  *****************************************************/
-unsigned long previousMillistemp;       // initialisation at the end of init()
-unsigned long previousMillistemp2;
-const long refreshTempInterval = 1000;  //How often to use the sensor to read the remperature TODO 1000
-unsigned long best_time_to_call_refreshTemp = 0;
-unsigned int maximum_spend_time_to_refreshTemp = 50;  // for my TSIC it is 76ms
-int offset_spend_time_to_refreshTemp = 0;
-int estimated_cycle_refreshTemp = 0;
-unsigned int time_spend_in_previous_offset_spend_time_to_refreshTemp = 0;
-int validate_next_refreshTemp = 0;
 #ifdef EMERGENCY_TEMP
 const unsigned int emergency_temperature = EMERGENCY_TEMP;  // temperature at which the emergency shutdown should take place. DONT SET IT ABOVE 120 DEGREE!!
 #else
@@ -277,8 +272,8 @@ DeviceAddress sensorDeviceAddress; // arrays to hold device address
 /********************************************************
    B+B Sensors TSIC 306
 ******************************************************/
-#include "src\TSIC\TSIC.h"
-TSIC Sensor1(2, NO_VCC_PIN, TSIC_30x);    // VCCpin must be un-used due to custom lib
+#include "TSIC.h"    // include the library
+TSIC Sensor1(2);     // only Signalpin, VCCpin unused by default
 uint16_t temperature = 0;
 float Temperatur_C = 0;
 int refreshTempPreviousTimeSpend = 0;
@@ -649,7 +644,7 @@ void refreshTemp() {
   ******************************************************/
   unsigned long currentMillistemp = millis();
   previousInput = getCurrentTemperature() ;
-  long millis_elapsed = currentMillistemp - previousMillistemp ;  //remove this var
+  long millis_elapsed = currentMillistemp - previousMillistemp ;
   if ( millis_elapsed <0 ) millis_elapsed = 0;
   if (TempSensor == 1)
   {
@@ -658,10 +653,10 @@ void refreshTemp() {
       ERROR_println(debugline);
       mqtt_publish("events", debugline);
     }
-    if (currentMillistemp >= previousMillistemp + refreshTempInterval)
+    if (millis_elapsed >= refreshTempInterval)
     {
+      sensors.requestTemperatures();
       previousMillistemp = currentMillistemp;
-      sensors.requestTemperatures();  
       if (!checkSensor(sensors.getTempCByIndex(0), previousInput)) return;  //if sensor data is not valid, abort function
       updateTemperatureHistory(sensors.getTempCByIndex(0));
       Input = getAverageTemperature(5);
@@ -674,107 +669,22 @@ void refreshTemp() {
       ERROR_println(debugline);
       mqtt_publish("events", debugline);
     }
-    if (currentMillistemp >= previousMillistemp + refreshTempInterval +100 || currentMillistemp >= best_time_to_call_refreshTemp)  
+    if (millis_elapsed >= refreshTempInterval)
     {
-      previousMillistemp = currentMillistemp;
       // variable "temperature" must be set to zero, before reading new data
       // getTemperature only updates if data is valid, otherwise "temperature" will still hold old values
       temperature = 0;
-      unsigned long start = millis();
-      unsigned long start_micros = micros();
+      //unsigned long start = millis();
       Sensor1.getTemperature(&temperature);
       unsigned long stop = millis();
-      //previousMillistemp = stop;
+      previousMillistemp = stop;
       
       // temperature must be between 0x000 and 0x7FF(=DEC2047)
       Temperatur_C = Sensor1.calc_Celsius(&temperature); 
 
-      //DEBUG_print("millis=%lu | previousMillistemp=%lu | diff=%lu | Temperatur_C=%0.3f | sensor1=%u | time_spend=%lu\n", millis(), previousMillistemp, currentMillistemp - previousMillistemp2, Temperatur_C, Sensor1.timeout_tmp, stop - start);  //TOBIAS
-      DEBUG_print("data_start_time=%lu | wait_time=%lu | previousMillistemp=%lu | current=%lu | end=%lu | time_spend=%lu\n", Sensor1.data_start_time/1000, Sensor1.wait_time/1000,  previousMillistemp, start_micros/1000, Sensor1.end - Sensor1.start, stop - start);  //TOBIAS
-     
-
-      //Idee maximum time_spend ist die genähte Cycle dauer. 
-      // -> cur_time_after_call - time_spend = data_start_time
-      // (x* max_time_spend) = 1000
-      //maximum_spend_time_to_refreshTemp = 77;
-      if (start > 10000) {  //wait to stabilize after start-up TODO 20sec
-        //if (stop-start > 20) {
-        //  if ( maximum_spend_time_to_refreshTemp + offset_spend_time_to_refreshTemp > 1) {
-        //      offset_spend_time_to_refreshTemp -= 1;
-        //      DEBUG_print("maximum_spend_time_to_refreshTemp=%u offset=%d\n", maximum_spend_time_to_refreshTemp, offset_spend_time_to_refreshTemp);
-        //  }
-        //}
-
-        
-        if (stop-start > 5 && validate_next_refreshTemp == 0) {  //todo 5?
-          if ( maximum_spend_time_to_refreshTemp + offset_spend_time_to_refreshTemp > 1
-               && time_spend_in_previous_offset_spend_time_to_refreshTemp > stop-start) {
-              offset_spend_time_to_refreshTemp -= 1;
-              validate_next_refreshTemp = 4;
-              time_spend_in_previous_offset_spend_time_to_refreshTemp = 0;
-              DEBUG_print("DEC\n");
-              //DEBUG_print("maximum_spend_time_to_refreshTemp=%u offset=%d\n", maximum_spend_time_to_refreshTemp, offset_spend_time_to_refreshTemp);
-          } 
-        }
-
-        if (validate_next_refreshTemp >0 && time_spend_in_previous_offset_spend_time_to_refreshTemp != 0) {
-          validate_next_refreshTemp -=1;
-          if (time_spend_in_previous_offset_spend_time_to_refreshTemp < stop-start) {
-              offset_spend_time_to_refreshTemp += 1;
-              validate_next_refreshTemp = -15; //TODO increase 900 (=sec)
-              DEBUG_print("INC\n");
-          }
-          //time_spend_in_previous_offset_spend_time_to_refreshTemp = stop-start;
-        } else if (validate_next_refreshTemp <0) {
-          validate_next_refreshTemp +=1;
-        }
-        
-        if ( maximum_spend_time_to_refreshTemp < stop-start) {
-          maximum_spend_time_to_refreshTemp = stop-start;
-          offset_spend_time_to_refreshTemp = 0;
-          time_spend_in_previous_offset_spend_time_to_refreshTemp = 0;
-          validate_next_refreshTemp = 0;
-          DEBUG_print("RESET\n");
-          //DEBUG_print("maximum_spend_time_to_refreshTemp=%u offset=%d\n", maximum_spend_time_to_refreshTemp, offset_spend_time_to_refreshTemp);
-        }
-        if (validate_next_refreshTemp <0 && stop-start > 15) {  //test
-          maximum_spend_time_to_refreshTemp += 1;
-          offset_spend_time_to_refreshTemp = 0;
-          time_spend_in_previous_offset_spend_time_to_refreshTemp = 0;
-          validate_next_refreshTemp = 0;
-          DEBUG_print("MASTER INC\n");
-          //DEBUG_print("maximum_spend_time_to_refreshTemp=%u offset=%d\n", maximum_spend_time_to_refreshTemp, offset_spend_time_to_refreshTemp);
-        }
-
-      }
-      estimated_cycle_refreshTemp = maximum_spend_time_to_refreshTemp + offset_spend_time_to_refreshTemp;
+      //DEBUG_print("millis=%lu | previousMillistemp=%lu | diff=%lu | Temperatur_C=%0.3f | time_spend=%lu\n", millis(), previousMillistemp, currentMillistemp - previousMillistemp2, Temperatur_C, stop - start);  //TOBIAS
+      //previousMillistemp2 = currentMillistemp;
       
-      //best_time_to_call_refreshTemp = Sensor1.data_start_time/1000 + (1000 / maximum_spend_time_to_refreshTemp)*maximum_spend_time_to_refreshTemp -12;
-      best_time_to_call_refreshTemp = millis() + (round((float)refreshTempInterval / estimated_cycle_refreshTemp)) *estimated_cycle_refreshTemp;
-      time_spend_in_previous_offset_spend_time_to_refreshTemp = stop-start;
-
-      DEBUG_print("next_call=%lu | maximum_spend_time_to_refreshTemp=(%u + %d) | validate_next_refreshTemp=%d\n", best_time_to_call_refreshTemp, maximum_spend_time_to_refreshTemp, offset_spend_time_to_refreshTemp, validate_next_refreshTemp);
-       
-      previousMillistemp2 = currentMillistemp;  //remove this var
-
-
-      
-      //best_time_to_call_refreshTemp = Sensor1.data_start_time/1000;
-      //data_start_time=9720 | wait_time=73 | previousMillistemp=9644 | current=9644 | readSens1=76249 | end=77431 | time_spend=77
-
-      //best_time_to_call_refreshTemp = Sensor1.data_start_time/1000 + 73 -5;
-      //73 data_start_time=73997 | wait_time=15 | previousMillistemp=73982 | current=73982 | readSens1=16389 | end=17607 | time_spend=17
-
-      //best_time_to_call_refreshTemp = Sensor1.data_start_time/1000 + 77 -5;
-      //7 data_start_time=7950 | wait_time=11 | previousMillistemp=7939 | current=7939 | readSens1=12050 | end=13236 | time_spend=13
-
-      //best_time_to_call_refreshTemp = Sensor1.data_start_time/1000 + 77;
-      //22 data_start_time=22435 | wait_time=5 | previousMillistemp=22430 | current=22430 | readSens1=6805 | end=7991 | time_spend=8
-
-      //best_time_to_call_refreshTemp = Sensor1.data_start_time/1000 + 63 -10 ;
-      //data_start_time=20489 | wait_time=30 | previousMillistemp=20459 | current=20459 | readSens1=31021 | end=32207 | time_spend=32
-
-
       // Temperature_C must be -50C < Temperature_C <= 150C
       if (!checkSensor(Temperatur_C, previousInput)) {
         return;  //if sensor data is not valid, abort function
@@ -1113,7 +1023,7 @@ void ICACHE_RAM_ATTR onTimer1ISR() {
   timer1_write(50000); // set interrupt time to 10ms
   if ( bPID.Compute() ) {
     isrCounter = 0;  // Attention: heater might not shutdown if bPid.SetSampleTime(), windowSize, timer1_write() and are not set correctly!
-    bpidComputeHasRun += 1;
+    bpidComputeHasRun = 1;
   }
   if (isrCounter >= Output) {
     digitalWrite(pinRelayHeater, LOW);
@@ -1720,10 +1630,10 @@ void setup() {
     TIM_DIV256 = 3  //312.5Khz (1 tick = 3.2us - 26843542.4 us max)
   ******************************************************/
   //delay(35);
-  //timer1_isr_init();
-  //timer1_attachInterrupt(onTimer1ISR);
-  //timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
-  //timer1_write(50000); // set interrupt time to 10ms
+  timer1_isr_init();
+  timer1_attachInterrupt(onTimer1ISR);
+  timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+  timer1_write(50000); // set interrupt time to 10ms
   DEBUG_print("End of setup()\n");
 }
 
