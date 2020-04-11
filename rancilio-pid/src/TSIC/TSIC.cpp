@@ -72,20 +72,8 @@ uint8_t TSIC::getTemperature(uint16_t *temp_value16){
 		if(m_vcc_pin!=NO_VCC_PIN) TSIC_ON();
 		//delayMicroseconds(120);     // wait for stabilization
 
-		/*
-		uint16_t timeout = 0;
-		//Serial.print("INSIDE readSens()\n");
-		//while (TSIC_HIGH && timeout >= 50){	// wait until start bit starts
-			timeout++;
-			delayMicroseconds(10);
-			//Cancel();
-			if (timeout > 10000){ Serial.print("ERROR: cancel() at readSens() AA\n"); return 0;}
-		}
-		*/
-
 		timeout_tmp = 0;
-
-		flag = 1;
+		flag = 0;
 		wait_time = 0;
 		if(TSIC::readSens(&temp_value1)){}			// get 1st byte
 		else TSIC_EXIT();
