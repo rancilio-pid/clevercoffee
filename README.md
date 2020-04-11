@@ -2,7 +2,7 @@
 
 BLEEDING EDGE MASTER VERSION 
 
-Version 2.1.0 beta1
+Version 2.1.0 beta2
 
 based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 
@@ -23,14 +23,14 @@ based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 1. Beautify display output with new icons (thanks to helge!)
 1. Freely choose if you want the software use WIFI, BLYNK and MQTT. Everythink can be enabled/disabled and stil have a flawlessly working PID controller.
 1. Offline Modus is fixed and enhanced. If userConfig.h's FORCE_OFFLINE is enabled, then PID fully is working without networking. Ideal in situations when there is no connectivity or you dont want to rely on it.
+1. Huge performance tunings and improvements under the hood which stabilizes the system (eg in situations of bad WIFI, hardware issues,..).
 1. MQTT support to integrate maschine in smart-home solutions and to easier extract details for graphing/alerting.
-1. Added RemoteDebug over telnet so that we dont need USB to debug/tune pid anymore (https://github.com/JoaoLopesF/RemoteDebug)
+1. Added RemoteDebug over telnet so that we dont need USB to debug/tune pid anymore (https://github.com/JoaoLopesF/RemoteDebug). While using OTA updates you can remotely debug and update the software!
 1. "Brew Ready" Detection implemented, which detects when the temperature has stabilized at setPoint. It can send an
    MQTT event or have hardware pin 15 triggered (which can be used to turn a LED on).
 1. All heater power relevant settings are now set and given in percent (and not absolute output) and therefore better to understand
 1. Safetly toogle added to shutdown heater on sensor malfunction (TEMPSENSORRECOVERY)
 1. Many useful functions to be used internally getAverageTemperature(), pastTemperatureChange() + updateTemperatureHistory())
-1. Many tunings and improvements under the hood which stabilizes the system (eg in situations of bad WIFI, hardware issues,..).
 
 # ATTENTION:
 - This software is tested thoroughly with the pid-only hardware solution on Silvia 5e, and with a permanently run full-hardware solution on an 10 year old Silvia. I am grateful for any further feedback. 
@@ -189,13 +189,18 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
 3. Compile, upload and enjoy!
 
 # Changelog
+- 2.1.0_beta2:
+  - Feature: Auto-tuning of tsic sensor read interval to reduce loop() freezes from 70ms to 4ms.
+  - Fix crashes when saving to eeprom.
 - 2.1.0_beta1:
   - You can disable/enable WIFI, MQTT or Blynk in userConfig.h and stil have a flawlessly working PID controller. Blynk is no longer an hard requirement!
   - Offline Modus is fixed and enhanced. If userConfig.h's FORCE_OFFLINE is enabled, then PID fully is working without networking. Ideal in situations when there is no connectivity or you dont want to rely on it.
   - Instead of using dynamic IPs (over DHCPd) you have the option to set a static IP.
   - Fix of EEPROM functionality: PID settings are correctly saved in EERPOM and correctly used if there are WIFI issues.
   - Huge improvements in handling unstable WIFI networks and mqtt/blynk service unavailabilities.
-  - Code Tunings all over the place to increase performance and therefor stability (too many to mention).
+  - Code Tunings all over the place to increase performance and therefor stability 
+    - Reduce loop() freezes from 70ms to 12ms when data is send to blynk.
+    - too many to mention.
   - Set non-critical (service) network timeouts to 2sec.
   - If blynk or mqtt is not working during startup, do not retry the connection periodically (configurable by userconfig.h DISABLE_SERVICES_ON_STARTUP_ERRORS)
   - Fix: WLAN reconnection attempts might reboot the arduino.
