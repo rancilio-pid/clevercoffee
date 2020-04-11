@@ -29,7 +29,7 @@ double PIDBias::signnum_c(double x) {
 }
 
 PIDBias::PIDBias(double* Input, double* Output, double* steadyPower, double* Setpoint,
-        double Kp, double Ki, double Kd)
+        double Kp, double Ki, double Kd, RemoteDebug* Debug)
 {
     myOutput = Output;
     myInput = Input;
@@ -39,11 +39,15 @@ PIDBias::PIDBias(double* Input, double* Output, double* steadyPower, double* Set
     lastInput = *myInput;
     lastLastInput = *myInput;
     lastOutput = *myOutput;
+    myDebug = Debug;
     steadyPowerDefault = *mySteadyPower;
     steadyPowerOffset = 0;
+
     PIDBias::SetOutputLimits(0, 5000);
     SampleTime = 5000;
+
     PIDBias::SetTunings(Kp, Ki, Kd);
+
     lastTime = millis();
 }
 
@@ -54,7 +58,7 @@ bool PIDBias::Compute()
    unsigned long timeChange = (now - lastTime);
    double steadyPowerOutput = convertUtilisationToOutput(*mySteadyPower);
    double setPointBand = 0.1;
-
+   
    if(timeChange >= SampleTime)
    {
       lastOutput = *myOutput;
@@ -74,12 +78,12 @@ bool PIDBias::Compute()
       
       //reset sumI when at setPoint. This improves stabilization.
       if ( signnum_c(error) * signnum_c(lastError) < 0 ) { //temperature curve crosses setPoint
-        DEBUG_print("Crossing setPoint\n");
+        DEBUG_printLib("Crossing setPoint\n");
         //moving upwards
         if ( sumOutputI > 0 ) {
           //steadyPower auto-tuning
           if ( steadyPowerAutoTune && pastChange <= 0.3 && convertOutputToUtilisation(sumOutputI) >= 0.3 && sumOutputI < filterSumOutputI ) {
-            DEBUG_print("Auto-Tune steadyPower(%0.2f += %0.2f) (moving up with too much outputI)\n", *mySteadyPower, 0.1); //convertOutputToUtilisation(sumOutputI / 2));
+            DEBUG_printLib("Auto-Tune steadyPower(%0.2f += %0.2f) (moving up with too much outputI)\n", *mySteadyPower, 0.1); //convertOutputToUtilisation(sumOutputI / 2));
             *mySteadyPower += 0.1; // convertOutputToUtilisation(sumOutputI / 2);  //TODO write to epprom?
             //TODO: remember sumOutputI and restore it back to 1/2 when moving down later. only when we are moving up <0.2
           }
@@ -87,10 +91,10 @@ bool PIDBias::Compute()
         //moving downwards
         if ( steadyPowerAutoTune && pastChange <= -0.2 && pastChange > -0.4 ) { //we only detect major issues when going downwards
           //steadyPower auto-tuning
-          DEBUG_print("Auto-Tune steadyPower(%0.2f += %0.2f) (moving down too fast)\n", *mySteadyPower, 0.1); //convertOutputToUtilisation(sumOutputI / 2));
+          DEBUG_printLib("Auto-Tune steadyPower(%0.2f += %0.2f) (moving down too fast)\n", *mySteadyPower, 0.1); //convertOutputToUtilisation(sumOutputI / 2));
           *mySteadyPower += 0.1;
         }
-        DEBUG_print("Set sumOutputI=0 to stabilize(%0.2f)\n", convertOutputToUtilisation(sumOutputI));
+        DEBUG_printLib("Set sumOutputI=0 to stabilize(%0.2f)\n", convertOutputToUtilisation(sumOutputI));
         sumOutputI = 0;
       }
       
@@ -98,7 +102,7 @@ bool PIDBias::Compute()
       if ( steadyPowerAutoTune && error < -setPointBand && pastTemperatureChange(20) <= 0.1 && pastTemperatureChange(20) > 0 &&
            (millis() - lastTrigger >30000) ) {
         //steadyPower auto-tuning
-        DEBUG_print("Auto-Tune steadyPower(%0.2f -= %0.2f) (moving up too much)\n", *mySteadyPower, 0.2);
+        DEBUG_printLib("Auto-Tune steadyPower(%0.2f -= %0.2f) (moving up too much)\n", *mySteadyPower, 0.2);
         *mySteadyPower -= 0.2; //TODO write to epprom?
         lastTrigger = millis();
       }
@@ -106,18 +110,18 @@ bool PIDBias::Compute()
       else if ( steadyPowerAutoTune && error >= (setPointBand+0.1) && pastTemperatureChange(30) <= 0.1 && pastTemperatureChange(30) >= 0 &&
                 sumOutputI == filterSumOutputI && (millis() - lastTrigger >20000) ) {
         //steadyPower auto-tuning
-        DEBUG_print("Auto-Tune steadyPower(%0.2f += %0.2f) (not moving. either Kp or steadyPower too low)\n", *mySteadyPower, 0.1);
+        DEBUG_printLib("Auto-Tune steadyPower(%0.2f += %0.2f) (not moving. either Kp or steadyPower too low)\n", *mySteadyPower, 0.1);
         *mySteadyPower += 0.1; //TODO write to epprom?
         lastTrigger = millis();
       }
 
       //Auto-tune should never increase steadyPower too much (this prevents bugs due to not thought off uses)
       if ( steadyPowerAutoTune && (*mySteadyPower > steadyPowerDefault * 1.5 || *mySteadyPower < steadyPowerDefault * 0.5) ) {
-        DEBUG_print("Auto-Tune steadyPower(%0.2f) is off too far. Set back to %0.2f\n", *mySteadyPower, steadyPowerDefault);
+        DEBUG_printLib("Auto-Tune steadyPower(%0.2f) is off too far. Set back to %0.2f\n", *mySteadyPower, steadyPowerDefault);
         *mySteadyPower = steadyPowerDefault; 
       }
       if ( steadyPowerAutoTune && *mySteadyPower > 10 ) {
-        DEBUG_print("Auto-Tune steadyPower(%0.2f) is by far too high. Set back to %0.2f\n", *mySteadyPower, 4.7);
+        DEBUG_printLib("Auto-Tune steadyPower(%0.2f) is by far too high. Set back to %0.2f\n", *mySteadyPower, 4.7);
         *mySteadyPower = 4.7; 
       }
 
@@ -154,8 +158,8 @@ bool PIDBias::Compute()
       if (output > outMax) output = outMax;
       else if(output < outMin) output = outMin;
       
-      //DEBUG_print("Input=%5.2f error=%0.2f SetPoint=%0.2f\n", input, error, (double)*mySetpoint);
-      //DEBUG_print("Input=%6.2f | DiffTemp=%5.2f | SetInSecs=%0.2f | Output=%6.2f = %6.2f + p:%5.2f + i:%5.2f + d:%5.2f ***\n", 
+      //DEBUG_printLib("Input=%5.2f error=%0.2f SetPoint=%0.2f\n", input, error, (double)*mySetpoint);
+      //DEBUG_printLib("Input=%6.2f | DiffTemp=%5.2f | SetInSecs=%0.2f | Output=%6.2f = %6.2f + p:%5.2f + i:%5.2f + d:%5.2f ***\n", 
       //  input,
       //  error,
       //  setPointInSeconds,

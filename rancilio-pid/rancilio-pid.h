@@ -5,9 +5,19 @@
 
 #include "userConfig.h"
 
-#include "src\RemoteDebug\RemoteDebug.h" //https://github.com/JoaoLopesF/RemoteDebug
-//#include <RemoteDebug.h>  // uncomment this line AND delete src/RemoteDebug/ folder, if you want to use system lib
-extern RemoteDebug Debug;
+#define SHOW_HELP false
+#define MAX_TIME_INACTIVE 1800000
+#ifdef MAX_TIME_INACTIVE
+#undef MAX_TIME_INACTIVE
+#define MAX_TIME_INACTIVE 1800000  // RemoteDebug: 30min inactivity time. default is 10min(600000)
+#endif
+#ifdef SHOW_HELP
+#undef SHOW_HELP
+#define SHOW_HELP false
+#endif
+#include "RemoteDebug.h"  //https://github.com/JoaoLopesF/RemoteDebug
+
+//RemoteDebug Debug;
 
 #ifndef DEBUGMODE
 #define DEBUG_print(fmt, ...)

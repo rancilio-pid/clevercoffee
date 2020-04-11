@@ -22,9 +22,15 @@ class PIDBias
   #define AUTOMATIC	1
   #define MANUAL	0
 
+  #ifndef DEBUGMODE
+  #define DEBUG_printLib(fmt, ...)
+  #else
+  #define DEBUG_printLib(fmt, ...) if ((*myDebug).isActive((*myDebug).DEBUG))   (*myDebug).printf("%0u " fmt, millis()/1000, ##__VA_ARGS__)
+  #endif
+
   //commonly used functions **************************************************************************
     PIDBias(double*, double*, double*, double*,        // * constructor.  links the PIDBias to the Input, Output, and 
-        double, double, double);          //   Setpoint.  Initial tuning parameters are also set here.
+        double, double, double, RemoteDebug*);//   Setpoint.  Initial tuning parameters are also set here.
                                           //   (overload for specifying proportional mode)
 	
     void SetMode(int Mode);               // * sets PIDBias to either Manual (0) or Auto (non-0)
@@ -96,6 +102,7 @@ class PIDBias
   double *mySetpoint;           //   PIDBias, freeing the user from having to constantly tell us
                                 //   what these values are.  with pointers we'll just know.
   double *mySteadyPower;
+  RemoteDebug *myDebug;
 	unsigned long lastTime;
   unsigned long lastTrigger;
   double lastInput, lastLastInput, lastOutput, lastError;
