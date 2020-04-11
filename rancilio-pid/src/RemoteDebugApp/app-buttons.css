@@ -1,0 +1,514 @@
+/* Buttons with image -> thanks to: https://stackoverflow.com/questions/8683528/embed-image-in-a-button-element */
+
+#btn_connect {
+    color: #ccc;
+    cursor:pointer;
+    padding: 4px 4px 4px 24px;
+    background: url(images/connect_wifi.png);
+    background-size: 16px 16px;
+    background-position: 4px 4px;
+    background-repeat: no-repeat;
+    margin-right: 5px;
+    /* border-color: #000;
+    border-width: 1px; */
+    border: 1px solid #000;
+}
+#btn_connect:hover {
+    color: #000;
+    cursor:pointer;
+    /* padding: 8px 8px 8px 32px; */
+    padding: 4px 4px 4px 24px;
+    background: #F8F8FF url(images/connect_wifi_b.png);
+    background-size: 16px 16px;
+    /* background-position: 8px 8px; */
+    background-position: 4px 4px;
+    background-repeat: no-repeat;
+}
+
+#btn_fullscreen {
+    color: #ccc;
+    cursor:pointer;
+    padding: 4px 4px 4px 24px;
+    background: url(images/fullscreen.png);
+    background-size: 16px 16px;
+    background-position: 4px 4px;
+    background-repeat: no-repeat;
+    border: 1px solid #000;
+}
+#btn_fullscreen:hover {
+    color: #000;
+    cursor:pointer;
+    padding: 4px 4px 4px 24px;
+    background: #F8F8FF url(images/fullscreen_b.png);
+    background-size: 16px 16px;
+    background-position: 4px 4px;
+    background-repeat: no-repeat;
+}
+#btn_fullscreen:disabled {
+    color: var(--disabled-color);
+    cursor:default;
+    padding: 4px 4px 4px 24px;
+    background: url(images/fullscreen.png);
+    background-size: 16px 16px;
+    background-position: 4px 4px;
+    background-repeat: no-repeat;
+}
+
+#btn_autoscroll {
+    color: #ccc;
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+    border: 1px solid #000;
+}
+#btn_autoscroll:hover {
+    color: #000;
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: #F8F8FF url(images/void.png);
+}
+#btn_autoscroll:disabled {
+    color: var(--disabled-color);
+    cursor:default;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+}
+
+#btn_silence {
+    color: #ccc;
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+    border: 1px solid #000;
+}
+#btn_silence:hover {
+    color: #000;
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: #F8F8FF url(images/void.png);
+}
+#btn_silence:disabled {
+    color: var(--disabled-color);
+    cursor:default;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+}
+
+#btn_debugger {
+    color: #ccc;
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+    border: 1px solid #000;
+}
+#btn_debugger:hover {
+    color: #000;
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: #F8F8FF url(images/void.png);
+}
+#btn_debugger:disabled {
+    color: var(--disabled-color);
+    cursor:default;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+}
+
+#btn_lev_verbose {
+    color: var(--verbose-color);
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+    border: 1px solid #000;
+}
+#btn_lev_verbose:hover {
+    color: var(--verbose-color);
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: #F8F8FF url(images/void.png);
+}
+#btn_lev_verbose:disabled {
+    color: var(--disabled-color);
+    cursor:default;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+}
+
+#btn_lev_debug {
+    color: var(--debug-color);
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+    border: 1px solid #000;
+}
+#btn_lev_debug:hover {
+    color: var(--debug-color);
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: #F8F8FF url(images/void.png);
+}
+#btn_lev_debug:disabled {
+    color: var(--disabled-color);
+    cursor:default;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+}
+
+#btn_lev_info {
+    color: var(--info-color);
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+    border: 1px solid #000;
+}
+#btn_lev_info:hover {
+    color: var(--info-color);
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: #F8F8FF url(images/void.png);
+}
+#btn_lev_info:disabled {
+    color: var(--disabled-color);
+    cursor:default;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+}
+
+#btn_lev_warning {
+    color: var(--warning-color);;
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+    border: 1px solid #000;
+}
+#btn_lev_warning:hover {
+    color: var(--warning-color);;
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: #F8F8FF url(images/void.png);
+}
+#btn_lev_warning:disabled {
+    color: var(--disabled-color);
+    cursor:default;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+}
+
+#btn_lev_error {
+    color: var(--error-color);
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+    border: 1px solid #000;
+}
+#btn_lev_error:hover {
+    color: var(--error-color);
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: #F8F8FF url(images/void.png);
+}
+#btn_lev_error:disabled {
+    color: var(--disabled-color);
+    cursor:default;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+}
+
+#btn_help {
+    color: #ccc;
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+    border: 1px solid #000;
+}
+#btn_help:hover {
+    color: #000;
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: #F8F8FF url(images/void.png);
+}
+#btn_help:disabled {
+    color: var(--disabled-color);
+    cursor:default;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+}
+
+#btn_continue {
+    color: #ccc;
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+    border: 1px solid #000;
+}
+#btn_continue:hover {
+    color: #000;
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: #F8F8FF url(images/void.png);
+}
+#btn_continue:disabled {
+    color: var(--disabled-color);
+    cursor:default;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+}
+
+#btn_wnstop {
+    color: #ccc;
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+    border: 1px solid #000;
+}
+#btn_wnstop:hover {
+    color: #000;
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: #F8F8FF url(images/void.png);
+}
+#btn_wnstop:disabled {
+    color: #000;
+    cursor:default;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+}
+
+#btn_reset {
+    color: #ccc;
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+    border: 1px solid #000;
+}
+#btn_reset:hover {
+    color: #000;
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: #F8F8FF url(images/void.png);
+}
+#btn_reset:disabled {
+    color: var(--disabled-color);
+    cursor:default;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+}
+
+#btn_send {
+    color: #ccc;
+    cursor:pointer;
+    padding: 4px 4px 4px 24px;
+    background: url(images/send.png);
+    background-size: 16px 16px;
+    background-position: 4px 4px;
+    background-repeat: no-repeat;
+    border: 1px solid #000;
+}
+#btn_send:hover {
+    color: #000;
+    cursor:pointer;
+    padding: 4px 4px 4px 24px;
+    background: #F8F8FF url(images/send_b.png);
+    background-size: 16px 16px;
+    background-position: 4px 4px;
+    background-repeat: no-repeat;
+}
+#btn_send:disabled {
+    color: var(--disabled-color);
+    cursor:default;
+    padding: 4px 4px 4px 24px;
+    background: url(images/send.png);
+    background-size: 16px 16px;
+    background-position: 4px 4px;
+    background-repeat: no-repeat;
+}
+
+#btn_filter {
+    color: #ccc;
+    cursor:pointer;
+    padding: 4px 4px 4px 24px;
+    background: url(images/filter.png);
+    background-size: 16px 16px;
+    background-position: 4px 4px;
+    background-repeat: no-repeat;
+    border: 1px solid #000;
+}
+
+#btn_filter:hover {
+    color: #000;
+    cursor:pointer;
+    padding: 4px 4px 4px 24px;
+    background: #F8F8FF url(images/filter_b.png);
+    background-size: 16px 16px;
+    background-position: 4px 4px;
+    background-repeat: no-repeat;
+}
+#btn_filter:disabled {
+    color: var(--disabled-color);
+    cursor:default;
+    padding: 4px 4px 4px 24px;
+    background: url(images/filter.png);
+    background-size: 16px 16px;
+    background-position: 4px 4px;
+    background-repeat: no-repeat;
+}
+
+#btn_fontsizeup {
+    color: #ccc;
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+    border: 1px solid #000;
+}
+#btn_fontsizeup:hover {
+    color: #000;
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: #F8F8FF url(images/void.png);
+}
+#btn_fontsizeup:disabled {
+    color: var(--disabled-color);
+    cursor:default;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+}
+
+#btn_fontsizedown {
+    color: #ccc;
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+    border: 1px solid #000;
+}
+#btn_fontsizedown:hover {
+    color: #000;
+    cursor:pointer;
+    padding: 4px 4px 4px 4px;
+    background: #F8F8FF url(images/void.png);
+}
+#btn_fontsizedown:disabled {
+    color: var(--disabled-color);
+    cursor:default;
+    padding: 4px 4px 4px 4px;
+    background: url(images/void.png);
+}
+
+#btn_clear {
+    color: #ccc;
+    cursor:pointer;
+    padding: 4px 4px 4px 24px;
+    background: url(images/clear.png);
+    background-size: 16px 16px;
+    background-position: 4px 4px;
+    background-repeat: no-repeat;
+    border: 1px solid #000;
+}
+#btn_clear:hover {
+    color: #000;
+    cursor:pointer;
+    padding: 4px 4px 4px 24px;
+    background: #F8F8FF url(images/clear_b.png);
+    background-size: 16px 16px;
+    background-position: 4px 4px;
+    background-repeat: no-repeat;
+}
+#btn_clear:disabled {
+    color: var(--disabled-color);
+    cursor:default;
+    padding: 4px 4px 4px 24px;
+    background: url(images/clear_b.png);
+    background-size: 16px 16px;
+    background-position: 4px 4px;
+    background-repeat: no-repeat;
+}
+
+#btn_clipboard {
+    color: #ccc;
+    cursor:pointer;
+    padding: 4px 4px 4px 24px;
+    background: url(images/clipboard.png);
+    background-size: 16px 16px;
+    background-position: 4px 4px;
+    background-repeat: no-repeat;
+    border: 1px solid #000;
+}
+#btn_clipboard:hover {
+    color: #000;
+    cursor:pointer;
+    padding: 4px 4px 4px 24px;
+    background: #F8F8FF url(images/clipboard_b.png);
+    background-size: 16px 16px;
+    background-position: 4px 4px;
+    background-repeat: no-repeat;
+}
+#btn_clipboard:disabled {
+    color: var(--disabled-color);
+    cursor:default;
+    padding: 4px 4px 4px 24px;
+    background: url(images/clipboard_b.png);
+    background-size: 16px 16px;
+    background-position: 4px 4px;
+    background-repeat: no-repeat;
+}
+
+#btn_settings {
+    color: #ccc;
+    cursor:pointer;
+    padding: 4px 4px 4px 24px;
+    background: url(images/config.png);
+    background-size: 16px 16px;
+    background-position: 4px 4px;
+    background-repeat: no-repeat;
+    border: 1px solid #000;
+}
+
+#btn_settings:hover {
+    color: #000;
+    cursor:pointer;
+    padding: 4px 4px 4px 24px;
+    background: #F8F8FF url(images/config_b.png);
+    background-size: 16px 16px;
+    background-position: 4px 4px;
+    background-repeat: no-repeat;
+}
+#btn_settings:disabled {
+    color: var(--disabled-color);
+    cursor:default;
+    padding: 4px 4px 4px 24px;
+    background: url(images/config_b.png);
+    background-size: 16px 16px;
+    background-position: 4px 4px;
+    background-repeat: no-repeat;
+}
+
+#btn_converter {
+    color: #ccc;
+    cursor:pointer;
+    padding: 4px 4px 4px 24px;
+    background: url(images/converter.png);
+    background-size: 16px 16px;
+    background-position: 4px 4px;
+    background-repeat: no-repeat;
+    border: 1px solid #000;
+}
+
+#btn_converter:hover {
+    color: #000;
+    cursor:pointer;
+    padding: 4px 4px 4px 24px;
+    background: #F8F8FF url(images/converter_b.png);
+    background-size: 16px 16px;
+    background-position: 4px 4px;
+    background-repeat: no-repeat;
+}
+#btn_converter:disabled {
+    color: var(--disabled-color);
+    cursor:default;
+    padding: 4px 4px 4px 24px;
+    background: url(images/converter.png);
+    background-size: 16px 16px;
+    background-position: 4px 4px;
+    background-repeat: no-repeat;
+}
+
+/* end */
