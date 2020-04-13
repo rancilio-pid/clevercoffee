@@ -1541,6 +1541,12 @@ void setup() {
   displaymessage("rancilio", sysVersion, "", "");
   delay(1000);
 
+  //if brewswitch is already "on" on startup, then we brew should not start automatically
+  if (OnlyPID == 0 && (analogRead(analogPin) >= 700)) { 
+    DEBUG_print("brewsitch is already on. Dont brew until it is turned off.");
+    waitingForBrewSwitchOff=true; 
+  }
+
   /********************************************************
      BLYNK & Fallback offline
   ******************************************************/

@@ -2,7 +2,7 @@
 
 BLEEDING EDGE MASTER VERSION 
 
-Version 2.1.0 beta2
+Version 2.1.0 beta3
 
 based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 
@@ -189,8 +189,11 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
 3. Compile, upload and enjoy!
 
 # Changelog
+- 2.1.0_beta3:
+  - Fix: Reimplemented and refactored Wifi stack (again)
+  - Safetly feature: Done start brewing if the brew-button is switched "on" on startup
 - 2.1.0_beta2:
-  - Feature: Auto-tuning of tsic sensor read interval to reduce loop() freezes from 70ms to 4ms.
+  - Feature: Auto-tuning of tsic sensor read interval to reduce loop() freezes from 70ms to <15ms.
   - Fix crashes when saving to eeprom.
 - 2.1.0_beta1:
   - You can disable/enable WIFI, MQTT or Blynk in userConfig.h and stil have a flawlessly working PID controller. Blynk is no longer an hard requirement!
