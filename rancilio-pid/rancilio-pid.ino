@@ -211,7 +211,7 @@ unsigned long best_time_to_call_refreshTemp = refreshTempInterval;
 unsigned int estimated_cycle_refreshTemp = 25;  // for my TSIC the hardware refresh happens every 76ms
 int validate_next_refreshTemp = 0;
 int estimated_cycle_refreshTemp_stable = 0;
-bool estimated_cycle_refreshTemp_stable_saved = true;
+unsigned int estimated_cycle_refreshTemp_stable_next_save = 1;
 #ifdef EMERGENCY_TEMP
 const unsigned int emergency_temperature = EMERGENCY_TEMP;  // temperature at which the emergency shutdown should take place. DONT SET IT ABOVE 120 DEGREE!!
 #else
@@ -682,8 +682,9 @@ void refreshTemp() {
       Temperatur_C = Sensor1.calc_Celsius(&temperature); 
 
       //auto-tune TSIC read cycle
+      const int auto_tuning_enable_refreshTemp = 15000; //after how many seconds since start should be begin tuning
       const int spend_time_threshold = 16;  //this might not yet be optimally choosen
-      if (start > 15000) {  //wait to stabilize after start-up
+      if (start > auto_tuning_enable_refreshTemp) {
         if (stop-start <= 2 || stop-start >= spend_time_threshold) {
           if (estimated_cycle_refreshTemp_stable <= 5) {
             if (validate_next_refreshTemp == 0) {
@@ -694,13 +695,10 @@ void refreshTemp() {
                    estimated_cycle_refreshTemp += 1;
                 }
                 validate_next_refreshTemp = 2;     //should be an even number to trigger flapping
-                estimated_cycle_refreshTemp_stable = 0;  //TODO change to cur_time+15min
-                estimated_cycle_refreshTemp_stable_saved = false;
+                estimated_cycle_refreshTemp_stable = 0;
               } else {
                 estimated_cycle_refreshTemp = 25;
                 estimated_cycle_refreshTemp_stable = 0;
-                estimated_cycle_refreshTemp_stable_saved = false;
-                ERROR_print("TSIC cycle happened on auto-tuning. Please send log to maintainer.\n");
               }
             } else {
               validate_next_refreshTemp -= 1;
@@ -710,31 +708,30 @@ void refreshTemp() {
               estimated_cycle_refreshTemp_stable -= 1;
             }
             if (estimated_cycle_refreshTemp_stable == 5) {
-              ERROR_print("estimated_cycle_refreshTemp: unstable=%u (time_spend_reading_sensor=%lu)\n", estimated_cycle_refreshTemp, stop - start);
-              estimated_cycle_refreshTemp_stable_saved = false;
+              DEBUG_print("estimated_cycle_refreshTemp: unstable=%u (time_spend_reading_sensor=%lu)\n", estimated_cycle_refreshTemp, stop - start);
             }
           }
-
+        estimated_cycle_refreshTemp_stable_next_save = millis() + 900000;  //15min timer
         } else {  //we are in target range
           if (estimated_cycle_refreshTemp_stable <= 10) {
                 estimated_cycle_refreshTemp_stable += 1;
           } else {
-            if (!estimated_cycle_refreshTemp_stable_saved) {
-              estimated_cycle_refreshTemp_stable_saved = true;
+            if (estimated_cycle_refreshTemp_stable_next_save != 0 && (millis() >= estimated_cycle_refreshTemp_stable_next_save)) {
+              estimated_cycle_refreshTemp_stable_next_save = 0;
               DEBUG_print("estimated_cycle_refreshTemp: stable=%u (time_spend_reading_sensor=%lu)\n", estimated_cycle_refreshTemp, stop - start);
               noInterrupts();
-              sync_eeprom();  //TODO: save at most every 10min or does it make sense at all?
+              sync_eeprom();  //TODO: do we really need to save it?
               interrupts();
             }
           }
-
         }
-
         best_time_to_call_refreshTemp = millis() + (round((float)refreshTempInterval / estimated_cycle_refreshTemp)) *estimated_cycle_refreshTemp;
+        /* Uncomment to debug
         if (stop-start > spend_time_threshold) {
           DEBUG_print("TSIC Auto-Tune: next_refreshTemp=%lu(#%u) | Temperatur_C=%0.3f | time_spend_reading_sensor=%lu\n", 
                        best_time_to_call_refreshTemp -  millis(), estimated_cycle_refreshTemp, Temperatur_C, stop - start);
         }
+        */
       }
       //DEBUG_print("TSIC Auto-Tune: next_refreshTemp=%lu(#%u) | Temperatur_C=%0.3f | time_spend_reading_sensor=%lu\n", 
       //                 best_time_to_call_refreshTemp -  millis(), estimated_cycle_refreshTemp, Temperatur_C, stop - start);
@@ -1209,13 +1206,13 @@ void loop() {
     pidMode = 0;
     bPID.SetMode(pidMode);
     Output = 0 ;
-    DEBUG_print("Set PID=off\n");
+    DEBUG_print("Current config has disabled PID\n");
   } else if (pidON == 1 && pidMode == 0) {
     Output = 0; // safety: be 100% sure that PID.compute() starts fresh.
     pidMode = 1;
     bPID.SetMode(pidMode);
     if ( millis() - output_timestamp > 21000) {
-      DEBUG_print("Set PID=on\n");
+      DEBUG_print("Current config has enabled PID\n");
       output_timestamp = millis();
     }
   }
