@@ -27,7 +27,7 @@ RemoteDebug Debug;
 #define pinRelayHeater    14
 #define pinLed            15
 
-const char* sysVersion PROGMEM  = "Version 2.1.0 beta2";
+const char* sysVersion PROGMEM  = "Version 2.1.0 beta3";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -48,8 +48,8 @@ const char* ssid = D_SSID;
 const char* pass = PASS;
 
 unsigned long lastWifiConnectionAttempt = millis();
-const unsigned long wifiReconnectInterval = 60000; // try to reconnect every 60 seconds (must be at least 4000)
-unsigned long wifiConnectWaitTime = 5000; //ms to wait for the connection to succeed
+const unsigned long wifiReconnectInterval = 60000; // try to reconnect every 60 seconds
+unsigned long wifiConnectWaitTime = 6000; //ms to wait for the connection to succeed
 unsigned int wifiReconnects = 0; //number of reconnects
 
 // OTA
@@ -235,6 +235,9 @@ char debugline[100];
 unsigned long output_timestamp = 0;
 volatile byte bpidComputeHasRun = 0;
 unsigned long last_micro = 0;
+unsigned long last_micro_sum = 0;
+unsigned long last_micro2 = 0;
+unsigned long last_micro2_sum = 0;
 unsigned long all_services_lastReconnectAttemptTime = 0;
 unsigned long all_services_min_reconnect_interval = 160000; // 160sec minimum wait-time between service reconnections
 bool force_offline = FORCE_OFFLINE;
@@ -384,15 +387,15 @@ WidgetLED brewReadyLed(V14);
  * HELPER
  ******************************************************/
 bool wifi_working() {
-  return (WiFi.status() == WL_CONNECTED);
+  return ((!force_offline) && (WiFi.status() == WL_CONNECTED) && (WiFi.localIP() != IPAddress(0U)) );
 }
 
 bool blynk_working() {
-  return (WiFi.status() == WL_CONNECTED && Blynk.connected());
+  return (wifi_working() && BLYNK_ENABLE && Blynk.connected());
 }
 
 bool mqtt_working() {
-  return (WiFi.status() == WL_CONNECTED && mqtt_client.connected());
+  return (wifi_working() && MQTT_ENABLE && mqtt_client.connected());
 }
 
 bool in_sensitive_phase() {
@@ -456,7 +459,7 @@ boolean mqtt_publish(char* reading, char* payload) {
     unsigned long currentMillis = millis();
     if (currentMillis > mqtt_dontPublishUntilTime) {
       boolean ret = mqtt_client.publish(topic, payload, mqtt_flag_retained);
-      if (ret == false) { //TODO test this code block later (faking an error, eg millis <30000?)
+      if (ret == false) {
         mqtt_dontPublishUntilTime = millis() + mqtt_dontPublishBackoffTime;
         ERROR_print("Error on publish. Wont publish the next %ul ms\n", mqtt_dontPublishBackoffTime);
         mqtt_client.disconnect();
@@ -649,7 +652,7 @@ void refreshTemp() {
   previousInput = getCurrentTemperature() ;
   long millis_elapsed = currentMillistemp - previousMillistemp ;
   if ( floor(millis_elapsed / refreshTempInterval) >= 2) {
-      snprintf(debugline, sizeof(debugline), "Main loop() hang. Number of refreshTemp() calls missed=%g, millis_elapsed=%lu", floor(millis_elapsed / refreshTempInterval) -1, millis_elapsed);
+      snprintf(debugline, sizeof(debugline), "Main loop() hang. Number of refreshTemp() calls missed=%g, millis_elapsed=%lu\n", floor(millis_elapsed / refreshTempInterval) -1, millis_elapsed);
       ERROR_println(debugline);
       mqtt_publish("events", debugline);
   }  
@@ -679,14 +682,19 @@ void refreshTemp() {
       Temperatur_C = Sensor1.calc_Celsius(&temperature); 
 
       //auto-tune TSIC read cycle
+      const int spend_time_threshold = 16;  //this might not yet be optimally choosen
       if (start > 15000) {  //wait to stabilize after start-up
-        if (stop-start <= 2 || stop-start >= 6) {  //This value might be to aggressiv (try 6 or more instead)
+        if (stop-start <= 2 || stop-start >= spend_time_threshold) {
           if (estimated_cycle_refreshTemp_stable <= 5) {
             if (validate_next_refreshTemp == 0) {
               if (estimated_cycle_refreshTemp < 95) {
-                estimated_cycle_refreshTemp += 1;
-                validate_next_refreshTemp = 2;  //should be an even number to trigger flapping
-                estimated_cycle_refreshTemp_stable = 0;
+                if (stop-start >= 40) { //room for improvements
+                  estimated_cycle_refreshTemp += 2;
+                } else {
+                   estimated_cycle_refreshTemp += 1;
+                }
+                validate_next_refreshTemp = 2;     //should be an even number to trigger flapping
+                estimated_cycle_refreshTemp_stable = 0;  //TODO change to cur_time+15min
                 estimated_cycle_refreshTemp_stable_saved = false;
               } else {
                 estimated_cycle_refreshTemp = 25;
@@ -706,8 +714,8 @@ void refreshTemp() {
               estimated_cycle_refreshTemp_stable_saved = false;
             }
           }
-        
-        } else {
+
+        } else {  //we are in target range
           if (estimated_cycle_refreshTemp_stable <= 10) {
                 estimated_cycle_refreshTemp_stable += 1;
           } else {
@@ -715,7 +723,7 @@ void refreshTemp() {
               estimated_cycle_refreshTemp_stable_saved = true;
               DEBUG_print("estimated_cycle_refreshTemp: stable=%u (time_spend_reading_sensor=%lu)\n", estimated_cycle_refreshTemp, stop - start);
               noInterrupts();
-              sync_eeprom();
+              sync_eeprom();  //TODO: save at most every 10min or does it make sense at all?
               interrupts();
             }
           }
@@ -723,7 +731,7 @@ void refreshTemp() {
         }
 
         best_time_to_call_refreshTemp = millis() + (round((float)refreshTempInterval / estimated_cycle_refreshTemp)) *estimated_cycle_refreshTemp;
-        if (stop-start >= 6) {
+        if (stop-start > spend_time_threshold) {
           DEBUG_print("TSIC Auto-Tune: next_refreshTemp=%lu(#%u) | Temperatur_C=%0.3f | time_spend_reading_sensor=%lu\n", 
                        best_time_to_call_refreshTemp -  millis(), estimated_cycle_refreshTemp, Temperatur_C, stop - start);
         }
@@ -811,26 +819,43 @@ void brew() {
  /********************************************************
    Check if Wifi is connected, if not reconnect
  *****************************************************/
- void checkWifi(unsigned long wifiConnectWaitTime_tmp = wifiConnectWaitTime){
-  if (force_offline || wifi_working() || in_sensitive_phase()) return;
-  if (millis() > lastWifiConnectionAttempt + 5000 + (wifiReconnectInterval * wifiReconnects)) {
+ void checkWifi() {checkWifi(false, wifiConnectWaitTime); }
+ void checkWifi(bool force_connect, unsigned long wifiConnectWaitTime_tmp) {  //ABC
+  if ((!force_connect) && (wifi_working() || in_sensitive_phase())) return;
+  if (force_connect || (millis() > lastWifiConnectionAttempt + 5000 + (wifiReconnectInterval * wifiReconnects))) {
     lastWifiConnectionAttempt = millis();
-    DEBUG_print("Wifi reconnecting...\n");
-    WiFi.persistent(false);  // this is required, else arduino reboots
-    WiFi.disconnect(true);
+    //noInterrupts();
+    DEBUG_print("Connecting to WIFI with SID %s ...\n", ssid);
+    WiFi.persistent(false);   // Don't save WiFi configuration in flash
+    WiFi.disconnect(true);    // Delete SDK WiFi config
+    WiFi.setSleepMode(WIFI_NONE_SLEEP);  // needed for some disconnection bugs?
+    //WiFi.setSleep(false);              // needed?
+    //displaymessage("rancilio", "1: Connect Wifi to:", ssid, "");
+    #ifdef STATIC_IP
+    IPAddress STATIC_IP;      //ip(192, 168, 10, 177);
+    IPAddress STATIC_GATEWAY; //gateway(192, 168, 10, 1);
+    IPAddress STATIC_SUBNET;  //subnet(255,255,255,0);
+    WiFi.config(ip, gateway, subnet);
+    #endif
+    /* Explicitly set the ESP8266 to be a WiFi-client, otherwise, it by default,
+      would try to act as both a client and an access-point and could cause
+      network-issues with your other WiFi-devices on your WiFi-network. */
+    WiFi.mode(WIFI_STA);
+    WiFi.setAutoConnect(false);    //disable auto-connect
+    WiFi.setAutoReconnect(false);  //disable auto-reconnect
     WiFi.hostname(hostname);
     WiFi.begin(ssid, pass);
-    while ((!wifi_working()) && ( millis() < lastWifiConnectionAttempt + wifiConnectWaitTime)) {
+    while (!wifi_working() && (millis() < lastWifiConnectionAttempt + wifiConnectWaitTime_tmp)) {
         yield(); //Prevent Watchdog trigger
     }
     if (wifi_working()) {
+      DEBUG_print("Wifi connection attempt (#%u) successfull (%lu secs)\n", wifiReconnects, (millis() - lastWifiConnectionAttempt) /1000);
       wifiReconnects = 0;
-      DEBUG_print("Wifi reconnection attempt (#%u) successfull in %lu seconds. WiFi.Status=%d\n", wifiReconnects, (millis() - lastWifiConnectionAttempt) /1000, WiFi.status());
-      
     } else {
+      ERROR_print("Wifi connection attempt (#%u) not successfull (%lu secs)\n", wifiReconnects, (millis() - lastWifiConnectionAttempt) /1000);
       wifiReconnects++;
-      ERROR_print("Wifi reconnection attempt (#%u) not successfull. WiFi.Status=%d\n", wifiReconnects, (millis() - lastWifiConnectionAttempt) /1000, WiFi.status());
-    }   
+    }
+    //interrupts();
   }
 }
 
@@ -1074,8 +1099,9 @@ void printPidStatus() {
 
 void ICACHE_RAM_ATTR onTimer1ISR() {
   timer1_write(50000); // set interrupt time to 10ms
-  if ( bPID.Compute() ) {
+  if ( bPID.Compute() ) {  //TODO think about moving compute() to loop()!
     isrCounter = 0;  // Attention: heater might not shutdown if bPid.SetSampleTime(), windowSize, timer1_write() and are not set correctly!
+    //TODO add emergency check if loop() has not cleared this variable in time!!
     if (bpidComputeHasRun < 56) {
       bpidComputeHasRun += 1;
     }
@@ -1478,6 +1504,7 @@ void setup() {
   Debug.showProfiler(true); // Profiler (Good to measure times, to optimize codes)
   Debug.showColors(true); // Colors
   Debug.setSerialEnabled(true); // log to Serial also
+  //Serial.setDebugOutput(true); // enable diagnostic output of WiFi libraries
 
   /********************************************************
     Define trigger type
@@ -1521,29 +1548,7 @@ void setup() {
      BLYNK & Fallback offline
   ******************************************************/
   if (!force_offline) {
-    WiFi.hostname(hostname);
-    unsigned long started = millis();
-    //displaymessage("rancilio", "1: Connect Wifi to:", ssid, "");
-
-    /* Explicitly set the ESP8266 to be a WiFi-client, otherwise, it by default,
-      would try to act as both a client and an access-point and could cause
-      network-issues with your other WiFi-devices on your WiFi-network. */
-    //WiFi.setSleepMode(WIFI_NONE_SLEEP);
-    WiFi.mode(WIFI_STA);
-    #ifdef STATIC_IP
-    IPAddress STATIC_IP; //ip(192, 168, 10, 177);
-    IPAddress STATIC_GATEWAY; //gateway(192, 168, 10, 1);
-    IPAddress STATIC_SUBNET; //subnet(255,255,255,0);
-    WiFi.config(ip, gateway, subnet);
-    #endif
-    WiFi.begin(ssid, pass);
-    DEBUG_print("Connecting to WIFI with SID %s ...\n", ssid);
-    // wait up to 10 seconds for connection
-    while (!wifi_working() && (millis() < started + 20000))
-    {
-      yield();    //Prevent Watchdog trigger
-    }
-
+    checkWifi(true, 12000); // wait up to 12 seconds for connection
     if (!wifi_working()) {
       ERROR_print("Cannot connect to WIFI %s. Disabling WIFI\n", ssid);
       if (DISABLE_SERVICES_ON_STARTUP_ERRORS) {
@@ -1563,7 +1568,7 @@ void setup() {
         snprintf(topic_will, sizeof(topic_will), "%s%s/%s", mqtt_topic_prefix, hostname, "will");
         snprintf(topic_set, sizeof(topic_set), "%s%s/%s", mqtt_topic_prefix, hostname, "set");
         mqtt_client.setServer(mqtt_server_ip, mqtt_server_port);
-        mqtt_client.setCallback(mqtt_callback);
+        mqtt_client.setCallback(mqtt_callback); // implement when functionality is needed
         if (!mqtt_reconnect(true)) {
           if (DISABLE_SERVICES_ON_STARTUP_ERRORS) mqtt_disabled_temporary = true;
           ERROR_print("Cannot connect to MQTT. Disabling...\n");

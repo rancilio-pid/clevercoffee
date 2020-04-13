@@ -53,8 +53,7 @@ bool PIDBias::Compute()
    unsigned long now = millis();
    unsigned long timeChange = (now - lastTime);
    double steadyPowerOutput = convertUtilisationToOutput(*mySteadyPower);
-   double setPointBand = 0.1;
-
+   const double setPointBand = 0.1;
    if(timeChange >= SampleTime)
    {
       lastOutput = *myOutput;
