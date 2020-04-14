@@ -67,7 +67,7 @@ unsigned int blynk_max_incremental_backoff = 5 ; // At most backoff <mqtt_max_in
 
 // MQTT
 //how to set general connect_timeout AND read_timeout (socket timeout)?
-#include "src\PubSubClient\PubSubClient.h"
+#include "src/PubSubClient/PubSubClient.h"
 //#include <PubSubClient.h>  // uncomment this line AND delete src/PubSubClient/ folder, if you want to use system lib
 const int MQTT_MAX_PUBLISH_SIZE = 120; //see https://github.com/knolleary/pubsubclient/blob/master/src/PubSubClient.cpp
 const char* mqtt_server_ip = MQTT_SERVER_IP;
@@ -149,6 +149,7 @@ double aggKd = aggTv * aggKp ;
 
 // State 4: Brew PID values
 // ... none ...
+double brewPower = BREW_POWER;
 
 // State 5: Outer Zone Pid values
 double aggoKp = AGGOKP;
@@ -209,8 +210,8 @@ unsigned long previousMillistemp;       // initialisation at the end of init()
 const long refreshTempInterval = 1000;  //How often to use the sensor to read the remperature
 unsigned long best_time_to_call_refreshTemp = refreshTempInterval;
 unsigned int estimated_cycle_refreshTemp = 25;  // for my TSIC the hardware refresh happens every 76ms
-int validate_next_refreshTemp = 0;
-int estimated_cycle_refreshTemp_stable = 0;
+int tsic_validate_count = 0;
+int tsic_stable_count = 0;
 unsigned int estimated_cycle_refreshTemp_stable_next_save = 1;
 #ifdef EMERGENCY_TEMP
 const unsigned int emergency_temperature = EMERGENCY_TEMP;  // temperature at which the emergency shutdown should take place. DONT SET IT ABOVE 120 DEGREE!!
@@ -228,7 +229,7 @@ float marginOfFluctuation = 0;          // 0 = disable functionality
 char* blynkReadyLedColor = "#000000";
 unsigned long lastCheckBrewReady = 0 ;
 bool brewReady = false;
-const int expected_eeprom_version = 2;        // EEPROM values are saved according to this versions layout. Increase if a new layout is implemented.
+const int expected_eeprom_version = 3;        // EEPROM values are saved according to this versions layout. Increase if a new layout is implemented.
 unsigned long eeprom_save_interval = 28*60*1000UL;  //save every 28min
 unsigned long last_eeprom_save = 0;
 char debugline[100];
@@ -278,7 +279,7 @@ DeviceAddress sensorDeviceAddress; // arrays to hold device address
 /********************************************************
    B+B Sensors TSIC 306
 ******************************************************/
-#include "src\TSIC\TSIC.h"
+#include "src/TSIC/TSIC.h"
 TSIC Sensor1(2, NO_VCC_PIN, TSIC_30x);    // VCCpin must be un-used due to custom lib
 uint16_t temperature = 0;
 float Temperatur_C = 0;
@@ -359,6 +360,9 @@ BLYNK_WRITE(V32) {
 }
 BLYNK_WRITE(V34) {
   brewDetectionSensitivity = param.asDouble();
+}
+BLYNK_WRITE(V36) {
+  brewPower = param.asDouble();
 }
 BLYNK_WRITE(V40) {
   burstShot = param.asInt();
@@ -610,6 +614,68 @@ void refreshBrewReadyHardwareLed(boolean brewReady) {
 }
 
 /********************************************************
+  auto-tune TSIC read cycle
+*****************************************************/
+void tsicAutoTune(unsigned long start, unsigned long stop) {
+  const int auto_tuning_enable_refreshTemp = 15000; //after how many seconds since start should be begin tuning
+  const int spend_time_threshold = 16;  //this might not yet be optimally choosen
+  unsigned long spend_time=stop-start;
+  if (start > auto_tuning_enable_refreshTemp) {
+    if (spend_time <= 3 || spend_time >= spend_time_threshold) {
+      if (tsic_stable_count <= 5) {
+        if (tsic_validate_count == 0) {
+          if (estimated_cycle_refreshTemp < 95) {
+            if (spend_time >= 40) { //room for improvements
+              estimated_cycle_refreshTemp += 2;
+            } else {
+              estimated_cycle_refreshTemp += 1;
+            }
+            tsic_validate_count = 2;     //should be an even number to trigger flapping
+            
+          } else {
+            estimated_cycle_refreshTemp = 25;
+          }
+          tsic_stable_count = 0;
+        } else {
+          tsic_validate_count -= 1;
+        }
+      } else {
+        if (tsic_stable_count >= 1) {
+          tsic_stable_count -= 1;
+        }
+        if (tsic_stable_count == 5) {
+          DEBUG_print("estimated_cycle_refreshTemp: unstable=%u (time_spend_reading_sensor=%lu)\n", estimated_cycle_refreshTemp, spend_time);
+          tsic_stable_count = 0;
+        }
+      }
+      estimated_cycle_refreshTemp_stable_next_save = millis() + 900000;  //15min timer
+    } else {  //we are in target range
+      if (tsic_stable_count <= 10) {
+            tsic_stable_count += 1;
+      } else {
+        tsic_validate_count = 0;
+        if (estimated_cycle_refreshTemp_stable_next_save != 0 && (millis() >= estimated_cycle_refreshTemp_stable_next_save)) {
+          estimated_cycle_refreshTemp_stable_next_save = 0;
+          DEBUG_print("estimated_cycle_refreshTemp: stable=%u (time_spend_reading_sensor=%lu)\n", estimated_cycle_refreshTemp, spend_time);
+          noInterrupts();
+          sync_eeprom();  //TODO: do we really need to save it?
+          interrupts();
+        }
+      }
+    }
+    best_time_to_call_refreshTemp = millis() + (round((float)refreshTempInterval / estimated_cycle_refreshTemp)) *estimated_cycle_refreshTemp;
+  } else {
+    best_time_to_call_refreshTemp = millis() + refreshTempInterval;
+  }
+  /* Uncomment to debug
+    if (stop-start > spend_time_threshold) {
+  */
+  //TODO comment this to reduce debug output
+  DEBUG_print("TSIC Auto-Tune: next_refreshTemp=%lu(#%u) | Temperatur_C=%0.3f | time_spend_reading_sensor=%lu\n", 
+               best_time_to_call_refreshTemp -  millis(), estimated_cycle_refreshTemp, Temperatur_C, spend_time);
+}
+
+/********************************************************
   check sensor value. If < 0 or difference between old and new >10, then increase error.
   If error is equal to maxErrorCounter, then set sensorError
 *****************************************************/
@@ -679,69 +745,15 @@ void refreshTemp() {
       Sensor1.getTemperature(&temperature);
       unsigned long stop = millis();
       // temperature must be between 0x000 and 0x7FF(=DEC2047)
-      Temperatur_C = Sensor1.calc_Celsius(&temperature); 
-
-      //auto-tune TSIC read cycle
-      const int auto_tuning_enable_refreshTemp = 15000; //after how many seconds since start should be begin tuning
-      const int spend_time_threshold = 16;  //this might not yet be optimally choosen
-      if (start > auto_tuning_enable_refreshTemp) {
-        if (stop-start <= 2 || stop-start >= spend_time_threshold) {
-          if (estimated_cycle_refreshTemp_stable <= 5) {
-            if (validate_next_refreshTemp == 0) {
-              if (estimated_cycle_refreshTemp < 95) {
-                if (stop-start >= 40) { //room for improvements
-                  estimated_cycle_refreshTemp += 2;
-                } else {
-                   estimated_cycle_refreshTemp += 1;
-                }
-                validate_next_refreshTemp = 2;     //should be an even number to trigger flapping
-                estimated_cycle_refreshTemp_stable = 0;
-              } else {
-                estimated_cycle_refreshTemp = 25;
-                estimated_cycle_refreshTemp_stable = 0;
-              }
-            } else {
-              validate_next_refreshTemp -= 1;
-            }
-          } else {
-            if (estimated_cycle_refreshTemp_stable >= 1) {
-              estimated_cycle_refreshTemp_stable -= 1;
-            }
-            if (estimated_cycle_refreshTemp_stable == 5) {
-              DEBUG_print("estimated_cycle_refreshTemp: unstable=%u (time_spend_reading_sensor=%lu)\n", estimated_cycle_refreshTemp, stop - start);
-            }
-          }
-        estimated_cycle_refreshTemp_stable_next_save = millis() + 900000;  //15min timer
-        } else {  //we are in target range
-          if (estimated_cycle_refreshTemp_stable <= 10) {
-                estimated_cycle_refreshTemp_stable += 1;
-          } else {
-            if (estimated_cycle_refreshTemp_stable_next_save != 0 && (millis() >= estimated_cycle_refreshTemp_stable_next_save)) {
-              estimated_cycle_refreshTemp_stable_next_save = 0;
-              DEBUG_print("estimated_cycle_refreshTemp: stable=%u (time_spend_reading_sensor=%lu)\n", estimated_cycle_refreshTemp, stop - start);
-              noInterrupts();
-              sync_eeprom();  //TODO: do we really need to save it?
-              interrupts();
-            }
-          }
-        }
-        best_time_to_call_refreshTemp = millis() + (round((float)refreshTempInterval / estimated_cycle_refreshTemp)) *estimated_cycle_refreshTemp;
-        /* Uncomment to debug
-        if (stop-start > spend_time_threshold) {
-          DEBUG_print("TSIC Auto-Tune: next_refreshTemp=%lu(#%u) | Temperatur_C=%0.3f | time_spend_reading_sensor=%lu\n", 
-                       best_time_to_call_refreshTemp -  millis(), estimated_cycle_refreshTemp, Temperatur_C, stop - start);
-        }
-        */
-      }
-      //DEBUG_print("TSIC Auto-Tune: next_refreshTemp=%lu(#%u) | Temperatur_C=%0.3f | time_spend_reading_sensor=%lu\n", 
-      //                 best_time_to_call_refreshTemp -  millis(), estimated_cycle_refreshTemp, Temperatur_C, stop - start);
-      
+      Temperatur_C = Sensor1.calc_Celsius(&temperature);
       // Temperature_C must be -50C < Temperature_C <= 150C
-      if (!checkSensor(Temperatur_C, previousInput)) {
-        return;  //if sensor data is not valid, abort function
+      if (checkSensor(Temperatur_C, previousInput)) {
+        updateTemperatureHistory(Temperatur_C);
+        Input = getAverageTemperature(5);
+      } else {
+        stop = start + 999;  //tsicAutoTune should handle this like an error
       }
-      updateTemperatureHistory(Temperatur_C);
-      Input = getAverageTemperature(5);
+      tsicAutoTune(start, stop);
     }
   }
 }
@@ -817,7 +829,7 @@ void brew() {
    Check if Wifi is connected, if not reconnect
  *****************************************************/
  void checkWifi() {checkWifi(false, wifiConnectWaitTime); }
- void checkWifi(bool force_connect, unsigned long wifiConnectWaitTime_tmp) {  //ABC
+ void checkWifi(bool force_connect, unsigned long wifiConnectWaitTime_tmp) {
   if ((!force_connect) && (wifi_working() || in_sensitive_phase())) return;
   if (force_connect || (millis() > lastWifiConnectionAttempt + 5000 + (wifiReconnectInterval * wifiReconnects))) {
     lastWifiConnectionAttempt = millis();
@@ -963,7 +975,7 @@ void updateState() {
     {
       bPID.SetFilterSumOutputI(100);
       bPID.SetAutoTune(false);
-      if (Input > setPoint - outerZoneTemperatureDifference ||
+      if (Input > setPoint - 2 * outerZoneTemperatureDifference ||
           pastTemperatureChange(10) >= 0.5) {
         snprintf(debugline, sizeof(debugline), "** End of Brew. Transition to step 3 (normal mode)");
         DEBUG_println(debugline);
@@ -1162,7 +1174,7 @@ void loop() {
         }
       }
     }
-  
+
     //Check mqtt connection
     if (MQTT_ENABLE && !force_offline && !mqtt_disabled_temporary) {
       unsigned long now = millis();
@@ -1188,7 +1200,7 @@ void loop() {
       }
     }
   }
-  
+
   unsigned long startT;
   unsigned long stopT;
 
@@ -1226,7 +1238,6 @@ void loop() {
 
   //Sicherheitsabfrage
   if (!sensorError && !emergencyStop && Input > 0) {
-    printPidStatus();
     updateState();
 
     /* state 1: Water is very cold, set heater to full power */
@@ -1239,7 +1250,7 @@ void loop() {
 
     /* state 4: Brew detected. Increase heater power */
     } else if (activeState == 4) {
-      Output = windowSize;
+      Output = convertUtilisationToOutput(brewPower);
       if (OnlyPID == 1 && timerBrewDetection == 1){
         bezugsZeit = millis() - timeBrewDetection;
       }
@@ -1267,6 +1278,7 @@ void loop() {
       bPID.SetTunings(aggKp, aggKi, aggKd);
     }
 
+    printPidStatus();
     sendToBlynk();
 
     unsigned long currentMillisDisplay = millis();
@@ -1371,6 +1383,8 @@ void sync_eeprom(bool startup_read, bool force_read) {
     EEPROM.get(150, steadyPowerOffset);
     EEPROM.get(160, steadyPowerOffset_Time);
     EEPROM.get(170, burstPower);
+    //180 is used
+    EEPROM.get(190, brewPower);
     //Reminder: 290 is reserved for "version"
   }
   //always read the following values during setup() (which are not saved in blynk)
@@ -1396,6 +1410,7 @@ void sync_eeprom(bool startup_read, bool force_read) {
   int steadyPowerOffset_Time_latest_saved = 0;
   double burstPower_latest_saved = 0;
   int estimated_cycle_refreshTemp_latest_saved = 0;
+  double brewPower_latest_saved = 0;
   if (current_version == expected_eeprom_version) {
     EEPROM.get(0, aggKp_latest_saved);
     EEPROM.get(10, aggTn_latest_saved);
@@ -1414,6 +1429,7 @@ void sync_eeprom(bool startup_read, bool force_read) {
     EEPROM.get(160, steadyPowerOffset_Time_latest_saved);
     EEPROM.get(170, burstPower_latest_saved);
     EEPROM.get(180, estimated_cycle_refreshTemp_latest_saved);
+    EEPROM.get(190, brewPower_latest_saved);
   }
 
   //get saved userConfig.h values
@@ -1433,6 +1449,7 @@ void sync_eeprom(bool startup_read, bool force_read) {
   double steadyPowerOffset_config_saved;
   int steadyPowerOffset_Time_config_saved;
   double burstPower_config_saved;
+  double brewPower_config_saved;
   EEPROM.get(300, aggKp_config_saved);
   EEPROM.get(310, aggTn_config_saved);
   EEPROM.get(320, aggTv_config_saved);
@@ -1449,6 +1466,7 @@ void sync_eeprom(bool startup_read, bool force_read) {
   EEPROM.get(450, steadyPowerOffset_config_saved);
   EEPROM.get(460, steadyPowerOffset_Time_config_saved);
   EEPROM.get(470, burstPower_config_saved);
+  EEPROM.get(480, brewPower_config_saved);
 
   //use userConfig.h value if if differs from *_config_saved
   if (AGGKP != aggKp_config_saved) { aggKp = AGGKP; EEPROM.put(300, aggKp); }
@@ -1467,6 +1485,7 @@ void sync_eeprom(bool startup_read, bool force_read) {
   if (STEADYPOWER_OFFSET != steadyPowerOffset_config_saved) { steadyPowerOffset = STEADYPOWER_OFFSET; EEPROM.put(450, steadyPowerOffset); }
   if (STEADYPOWER_OFFSET_TIME != steadyPowerOffset_Time_config_saved) { steadyPowerOffset_Time = STEADYPOWER_OFFSET_TIME; EEPROM.put(460, steadyPowerOffset_Time); }
   //if (BURSTPOWER != burstPower_config_saved) { burstPower = BURSTPOWER; EEPROM.put(470, burstPower); }
+  if (BREW_POWER != brewPower_config_saved) { brewPower = BREW_POWER; EEPROM.put(480, brewPower); }
 
   //save latest values to eeprom
   if ( aggKp != aggKp_latest_saved) EEPROM.put(0, aggKp);  //TODO: remove IFs, EEPROM.put is already conditional
@@ -1486,6 +1505,7 @@ void sync_eeprom(bool startup_read, bool force_read) {
   if ( steadyPowerOffset_Time != steadyPowerOffset_Time_latest_saved) EEPROM.put(160, steadyPowerOffset_Time);
   if ( burstPower != burstPower_latest_saved) EEPROM.put(170, burstPower);
   if ( estimated_cycle_refreshTemp != estimated_cycle_refreshTemp_latest_saved) { EEPROM.put(180, estimated_cycle_refreshTemp); DEBUG_print("EEPROM: estimated_cycle_refreshTemp (%u) is saved (previous:%u)\n", estimated_cycle_refreshTemp, estimated_cycle_refreshTemp_latest_saved); }
+  if ( brewPower != brewPower_latest_saved) { EEPROM.put(190, brewPower); DEBUG_print("EEPROM: brewPower (%u) is saved (previous:%u)\n", brewPower, brewPower_latest_saved); }
   
   EEPROM.commit();
   DEBUG_print("EEPROM: sync_eeprom() finished.\n");
@@ -1616,7 +1636,7 @@ void setup() {
   DEBUG_print("setPoint: %0.2f | starttemp: %0.2f | brewDetectionSensitivity: %0.2f\n", setPoint, starttemp, brewDetectionSensitivity);
   DEBUG_print("brewtime: %0.2f | preinfusion: %0.2f | preinfusionpause: %0.2f\n", brewtime, preinfusion, preinfusionpause);
   DEBUG_print("steadyPower: %0.2f | steadyPowerOffset: %0.2f | steadyPowerOffset_Time: %d\n", steadyPower, steadyPowerOffset, steadyPowerOffset_Time);
-  DEBUG_print("burstPower: %0.2f | estimated_cycle_refreshTemp: %d\n", burstPower, estimated_cycle_refreshTemp);
+  DEBUG_print("burstPower: %0.2f | estimated_cycle_refreshTemp: %d | brewPower: %0.2f\n", burstPower, estimated_cycle_refreshTemp, brewPower);
   /********************************************************
      OTA
   ******************************************************/

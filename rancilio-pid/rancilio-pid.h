@@ -5,7 +5,7 @@
 
 #include "userConfig.h"
 
-#include "src\RemoteDebug\RemoteDebug.h" //https://github.com/JoaoLopesF/RemoteDebug
+#include "src/RemoteDebug/RemoteDebug.h" //https://github.com/JoaoLopesF/RemoteDebug
 //#include <RemoteDebug.h>  // uncomment this line AND delete src/RemoteDebug/ folder, if you want to use system lib
 extern RemoteDebug Debug;
 

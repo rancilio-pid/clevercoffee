@@ -1,5 +1,8 @@
 # TODO
 - mqtt events/ should deliver json not string.
+- String replacement (https://cpp4arduino.com/2020/02/07/how-to-format-strings-without-the-string-class.html)
+- linux path support
+- make starttemp auto-tuned.
 
 # TODO Tests
 

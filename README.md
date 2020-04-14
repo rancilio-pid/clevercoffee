@@ -2,7 +2,7 @@
 
 BLEEDING EDGE MASTER VERSION 
 
-Version 2.1.0 beta3
+Version 2.1.0 beta4
 
 based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 
@@ -86,6 +86,7 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
   Outerzone P := V30  
   Outerzone I := V31  
   Outerzone D := V32  
+  BrewPower   := V36
   SteadyPower := V41  
   SteadyPower Offset Time := V43  
   SteadyPower Offset Power := V42  
@@ -189,6 +190,10 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
 3. Compile, upload and enjoy!
 
 # Changelog
+- 2.1.0_beta4:
+  - New PID Variable "BREW_POWER" introduced which defines the heater power during brewing.
+  - Debug Output should show correct output values in all situations.
+  - Library path adapted to support Arduino under Linux.
 - 2.1.0_beta3:
   - Fix: Reimplemented and refactored Wifi stack (again)
   - Safetly feature: Done start brewing if the brew-button is switched "on" on startup
