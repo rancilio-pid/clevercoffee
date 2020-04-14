@@ -194,6 +194,7 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
   - New PID Variable "BREW_POWER" introduced which defines the heater power during brewing.
   - Debug Output should show correct output values in all situations.
   - Library path adapted to support Arduino under Linux.
+  - Fix: Restart TSIC algorithmen when a sensor error occured.
 - 2.1.0_beta3:
   - Fix: Reimplemented and refactored Wifi stack (again)
   - Safetly feature: Done start brewing if the brew-button is switched "on" on startup

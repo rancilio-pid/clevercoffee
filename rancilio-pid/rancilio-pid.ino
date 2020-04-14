@@ -27,7 +27,7 @@ RemoteDebug Debug;
 #define pinRelayHeater    14
 #define pinLed            15
 
-const char* sysVersion PROGMEM  = "Version 2.1.0 beta3";
+const char* sysVersion PROGMEM  = "Version 2.1.0 beta4";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -631,7 +631,6 @@ void tsicAutoTune(unsigned long start, unsigned long stop) {
               estimated_cycle_refreshTemp += 1;
             }
             tsic_validate_count = 2;     //should be an even number to trigger flapping
-            
           } else {
             estimated_cycle_refreshTemp = 25;
           }
