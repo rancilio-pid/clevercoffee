@@ -1504,7 +1504,7 @@ void sync_eeprom(bool startup_read, bool force_read) {
   if ( steadyPowerOffset_Time != steadyPowerOffset_Time_latest_saved) EEPROM.put(160, steadyPowerOffset_Time);
   if ( burstPower != burstPower_latest_saved) EEPROM.put(170, burstPower);
   if ( estimated_cycle_refreshTemp != estimated_cycle_refreshTemp_latest_saved) { EEPROM.put(180, estimated_cycle_refreshTemp); DEBUG_print("EEPROM: estimated_cycle_refreshTemp (%u) is saved (previous:%u)\n", estimated_cycle_refreshTemp, estimated_cycle_refreshTemp_latest_saved); }
-  if ( brewPower != brewPower_latest_saved) { EEPROM.put(190, brewPower); DEBUG_print("EEPROM: brewPower (%u) is saved (previous:%u)\n", brewPower, brewPower_latest_saved); }
+  if ( brewPower != brewPower_latest_saved) { EEPROM.put(190, brewPower); DEBUG_print("EEPROM: brewPower (%0.2f) is saved (previous:%0.2f)\n", brewPower, brewPower_latest_saved); }
   
   EEPROM.commit();
   DEBUG_print("EEPROM: sync_eeprom() finished.\n");
