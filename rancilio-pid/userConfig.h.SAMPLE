@@ -52,6 +52,9 @@
 #define AGGOTN 40       // Tn (Rancilio Silvia 5E: 40, ...)
 #define AGGOTV 40       // Tv (Rancilio Silvia 5E: 40, ...)
 
+// Power during brew
+#define BREW_POWER        20  // 20(default)=heater utiilization (in percent) during brew phase
+
 /*******   
  * Preinfussion settings (only useful when ONLYPID=0) 
  *******/
