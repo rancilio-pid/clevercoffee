@@ -27,7 +27,7 @@ RemoteDebug Debug;
 #define pinRelayHeater    14
 #define pinLed            15
 
-const char* sysVersion PROGMEM  = "Version 2.1.0 beta4";
+const char* sysVersion PROGMEM  = "Version 2.1.0 beta5";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -149,7 +149,7 @@ double aggKd = aggTv * aggKp ;
 
 // State 4: Brew PID values
 // ... none ...
-double brewPower = BREW_POWER;
+double brewDetectionPower = BREWDETECTION_POWER;
 
 // State 5: Outer Zone Pid values
 double aggoKp = AGGOKP;
@@ -207,7 +207,7 @@ int maxErrorCounter = 10 ;  //define maximum number of consecutive polls (of int
  * Rest
  *****************************************************/
 unsigned long previousMillistemp;       // initialisation at the end of init()
-const long refreshTempInterval = 1000;  //How often to use the sensor to read the remperature
+const long refreshTempInterval = 1000;  //How often to read the temperature sensor
 unsigned long best_time_to_call_refreshTemp = refreshTempInterval;
 unsigned int estimated_cycle_refreshTemp = 25;  // for my TSIC the hardware refresh happens every 76ms
 int tsic_validate_count = 0;
@@ -362,7 +362,7 @@ BLYNK_WRITE(V34) {
   brewDetectionSensitivity = param.asDouble();
 }
 BLYNK_WRITE(V36) {
-  brewPower = param.asDouble();
+  brewDetectionPower = param.asDouble();
 }
 BLYNK_WRITE(V40) {
   burstShot = param.asInt();
@@ -541,7 +541,6 @@ void updateTemperatureHistory(double myInput) {
 
 //calculate the temperature difference between NOW and a datapoint in history
 double pastTemperatureChange(int lookback) {
-  double temperatureDiff;
   if (lookback >= numReadings) lookback=numReadings -1;
   int offset = lookback % numReadings;
   int historicIndex = (readIndex - offset);
@@ -550,12 +549,7 @@ double pastTemperatureChange(int lookback) {
   }
   //ignore not yet initialized values
   if (readingstime[readIndex] == 0 || readingstime[historicIndex] == 0) return 0;
-  if (brewDetectionSensitivity <= 30) {
-    temperatureDiff = (readingstemp[readIndex] - readingstemp[historicIndex]);
-  } else { // use previous factor on brewDetectionSensitivity threshold (compatibility to old brewDetectionSensitivity values using a factor of 100)
-    temperatureDiff = (readingstemp[readIndex] - readingstemp[historicIndex]) * 100;
-  }
-  return temperatureDiff;
+  return readingstemp[readIndex] - readingstemp[historicIndex];
 }
 
 //calculate the average temperature over the last (lookback) temperatures samples
@@ -657,7 +651,7 @@ void tsicAutoTune(unsigned long start, unsigned long stop) {
           estimated_cycle_refreshTemp_stable_next_save = 0;
           DEBUG_print("estimated_cycle_refreshTemp: stable=%u (time_spend_reading_sensor=%lu)\n", estimated_cycle_refreshTemp, spend_time);
           noInterrupts();
-          sync_eeprom();  //TODO: do we really need to save it?
+          sync_eeprom();  //TODO do we really need to save it
           interrupts();
         }
       }
@@ -667,11 +661,11 @@ void tsicAutoTune(unsigned long start, unsigned long stop) {
     best_time_to_call_refreshTemp = millis() + refreshTempInterval;
   }
   /* Uncomment to debug
-    if (stop-start > spend_time_threshold) {
-  */
-  //TODO comment this to reduce debug output
-  DEBUG_print("TSIC Auto-Tune: next_refreshTemp=%lu(#%u) | Temperatur_C=%0.3f | time_spend_reading_sensor=%lu\n", 
+  if (stop-start > spend_time_threshold) {
+    DEBUG_print("TSIC Auto-Tune: next_refreshTemp=%lu(#%u) | Temperatur_C=%0.3f | time_spend_reading_sensor=%lu\n", 
                best_time_to_call_refreshTemp -  millis(), estimated_cycle_refreshTemp, Temperatur_C, spend_time);
+  }
+  */
 }
 
 /********************************************************
@@ -816,7 +810,6 @@ void brew() {
         bezugsZeit = 0;
       }
       if (brewing == 0) {
-          //DEBUG_println("aus");
           digitalWrite(pinRelayVentil, relayOFF);
           digitalWrite(pinRelayPumpe, relayOFF);
       }
@@ -974,8 +967,9 @@ void updateState() {
     {
       bPID.SetFilterSumOutputI(100);
       bPID.SetAutoTune(false);
-      if (Input > setPoint - 2 * outerZoneTemperatureDifference ||
+      if ( (Input > setPoint - outerZoneTemperatureDifference && pastTemperatureChange(5) >= 0) ||
           pastTemperatureChange(10) >= 0.5) {
+        DEBUG_print("Out Zone Detection: pastTemperatureChange(5)=%0.2f | pastTemperatureChange(10)=%0.2f\n", pastTemperatureChange(5), pastTemperatureChange(10));  
         snprintf(debugline, sizeof(debugline), "** End of Brew. Transition to step 3 (normal mode)");
         DEBUG_println(debugline);
         mqtt_publish("events", debugline);
@@ -1028,8 +1022,10 @@ void updateState() {
       /* STATE 4 (BREW) DETECTION */
       if (brewDetectionSensitivity != 0 && brewDetection == 1) {
         //enable brew-detection if not already running and diff temp is > brewDetectionSensitivity
-        if (pastTemperatureChange(6) <= -brewDetectionSensitivity &&
-            Input < setPoint - outerZoneTemperatureDifference) {
+        const float brewDetectionAverageSensitivity = 0.4;
+        if ( (pastTemperatureChange(3) <= -brewDetectionSensitivity)
+             && Input < setPoint - outerZoneTemperatureDifference) {
+          DEBUG_print("Brew Detection: past(3)=%0.2f past(5)=%0.2f | Avg(3)=%0.2f | Avg(10)=%0.2f Avg(20)=%0.2f\n", pastTemperatureChange(3), pastTemperatureChange(5), getAverageTemperature(3), getAverageTemperature(10), getAverageTemperature(20));  
           testTrigger = 0;
           if (OnlyPID == 1) {
             bezugsZeit = 0 ;
@@ -1049,6 +1045,7 @@ void updateState() {
       /* STATE 5 (OUTER ZONE) DETECTION */
       if ( (Input > starttemp - coldStartStep1ActivationOffset && 
             Input < setPoint - outerZoneTemperatureDifference) || testTrigger  ) {
+        //DEBUG_print("Out Zone Detection: Avg(3)=%0.2f | Avg(5)=%0.2f Avg(20)=%0.2f Avg(2)=%0.2f\n", getAverageTemperature(3), getAverageTemperature(5), getAverageTemperature(20), getAverageTemperature(2));  
         snprintf(debugline, sizeof(debugline), "** End of normal mode. Transition to step 5 (outerZone)");
         DEBUG_println(debugline);
         mqtt_publish("events", debugline);
@@ -1249,7 +1246,7 @@ void loop() {
 
     /* state 4: Brew detected. Increase heater power */
     } else if (activeState == 4) {
-      Output = convertUtilisationToOutput(brewPower);
+      Output = convertUtilisationToOutput(brewDetectionPower);
       if (OnlyPID == 1 && timerBrewDetection == 1){
         bezugsZeit = millis() - timeBrewDetection;
       }
@@ -1281,8 +1278,8 @@ void loop() {
     sendToBlynk();
 
     unsigned long currentMillisDisplay = millis();
-    if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
-      previousMillisDisplay  = currentMillisDisplay;
+    if (currentMillisDisplay >= previousMillisDisplay + intervalDisplay) {
+      previousMillisDisplay = currentMillisDisplay;
       displaymessage("brew", "", "", "");
     }
 
@@ -1300,8 +1297,8 @@ void loop() {
     digitalWrite(pinRelayHeater, LOW); //Stop heating
     //DISPLAY AUSGABE
     unsigned long currentMillisDisplay = millis();
-    if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
-      previousMillisDisplay  = currentMillisDisplay;
+    if (currentMillisDisplay >= previousMillisDisplay + intervalDisplay) {
+      previousMillisDisplay = currentMillisDisplay;
       snprintf(debugline, sizeof(debugline), "Temp: %0.2f", getCurrentTemperature());
       displaymessage("rancilio", "Check Temp. Sensor!", debugline, "");
     }
@@ -1320,8 +1317,8 @@ void loop() {
     digitalWrite(pinRelayHeater, LOW); //Stop heating
     //DISPLAY AUSGABE
     unsigned long currentMillisDisplay = millis();
-    if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
-      previousMillisDisplay  = currentMillisDisplay;
+    if (currentMillisDisplay >= previousMillisDisplay + intervalDisplay) {
+      previousMillisDisplay = currentMillisDisplay;
       char line2[17];
       char line3[17];
       snprintf(line2, sizeof(line2), "Temp: %0.2f", getCurrentTemperature());
@@ -1347,14 +1344,13 @@ void loop() {
 }
 
 
-
 /***********************************
  * EEPROM
  ***********************************/
 void sync_eeprom() { sync_eeprom(false, false); }
 void sync_eeprom(bool startup_read, bool force_read) {
   int current_version;
-  DEBUG_print("EEPROM: sync_eeprom(%d) called\n", force_read);
+  DEBUG_print("EEPROM: sync_eeprom(force_read=%d) called\n", force_read);
   EEPROM.begin(1024);
   EEPROM.get(290, current_version);
   DEBUG_print("EEPROM: Detected Version=%d Expected Version=%d\n", current_version, expected_eeprom_version);
@@ -1383,7 +1379,7 @@ void sync_eeprom(bool startup_read, bool force_read) {
     EEPROM.get(160, steadyPowerOffset_Time);
     EEPROM.get(170, burstPower);
     //180 is used
-    EEPROM.get(190, brewPower);
+    EEPROM.get(190, brewDetectionPower);
     //Reminder: 290 is reserved for "version"
   }
   //always read the following values during setup() (which are not saved in blynk)
@@ -1409,7 +1405,7 @@ void sync_eeprom(bool startup_read, bool force_read) {
   int steadyPowerOffset_Time_latest_saved = 0;
   double burstPower_latest_saved = 0;
   int estimated_cycle_refreshTemp_latest_saved = 0;
-  double brewPower_latest_saved = 0;
+  double brewDetectionPower_latest_saved = 0;
   if (current_version == expected_eeprom_version) {
     EEPROM.get(0, aggKp_latest_saved);
     EEPROM.get(10, aggTn_latest_saved);
@@ -1428,7 +1424,7 @@ void sync_eeprom(bool startup_read, bool force_read) {
     EEPROM.get(160, steadyPowerOffset_Time_latest_saved);
     EEPROM.get(170, burstPower_latest_saved);
     EEPROM.get(180, estimated_cycle_refreshTemp_latest_saved);
-    EEPROM.get(190, brewPower_latest_saved);
+    EEPROM.get(190, brewDetectionPower_latest_saved);
   }
 
   //get saved userConfig.h values
@@ -1448,7 +1444,7 @@ void sync_eeprom(bool startup_read, bool force_read) {
   double steadyPowerOffset_config_saved;
   int steadyPowerOffset_Time_config_saved;
   double burstPower_config_saved;
-  double brewPower_config_saved;
+  double brewDetectionPower_config_saved;
   EEPROM.get(300, aggKp_config_saved);
   EEPROM.get(310, aggTn_config_saved);
   EEPROM.get(320, aggTv_config_saved);
@@ -1465,7 +1461,7 @@ void sync_eeprom(bool startup_read, bool force_read) {
   EEPROM.get(450, steadyPowerOffset_config_saved);
   EEPROM.get(460, steadyPowerOffset_Time_config_saved);
   EEPROM.get(470, burstPower_config_saved);
-  EEPROM.get(480, brewPower_config_saved);
+  EEPROM.get(480, brewDetectionPower_config_saved);
 
   //use userConfig.h value if if differs from *_config_saved
   if (AGGKP != aggKp_config_saved) { aggKp = AGGKP; EEPROM.put(300, aggKp); }
@@ -1484,31 +1480,32 @@ void sync_eeprom(bool startup_read, bool force_read) {
   if (STEADYPOWER_OFFSET != steadyPowerOffset_config_saved) { steadyPowerOffset = STEADYPOWER_OFFSET; EEPROM.put(450, steadyPowerOffset); }
   if (STEADYPOWER_OFFSET_TIME != steadyPowerOffset_Time_config_saved) { steadyPowerOffset_Time = STEADYPOWER_OFFSET_TIME; EEPROM.put(460, steadyPowerOffset_Time); }
   //if (BURSTPOWER != burstPower_config_saved) { burstPower = BURSTPOWER; EEPROM.put(470, burstPower); }
-  if (BREW_POWER != brewPower_config_saved) { brewPower = BREW_POWER; EEPROM.put(480, brewPower); }
+  if (BREWDETECTION_POWER != brewDetectionPower_config_saved) { brewDetectionPower = BREWDETECTION_POWER; EEPROM.put(480, brewDetectionPower); DEBUG_print("EEPROM: brewDetectionPower (%0.2f) is read from userConfig.h\n", brewDetectionPower); }
 
-  //save latest values to eeprom
-  if ( aggKp != aggKp_latest_saved) EEPROM.put(0, aggKp);  //TODO: remove IFs, EEPROM.put is already conditional
-  if ( aggTn != aggTn_latest_saved) EEPROM.put(10, aggTn);
-  if ( aggTv != aggTv_latest_saved) EEPROM.put(20, aggTv);
-  if ( setPoint != setPoint_latest_saved) { EEPROM.put(30, setPoint); DEBUG_print("EEPROM: setPoint (%0.2f) is saved\n", setPoint); }
-  if ( brewtime != brewtime_latest_saved) { EEPROM.put(40, brewtime); DEBUG_print("EEPROM: brewtime (%0.2f) is saved (previous:%0.2f)\n", brewtime, brewtime_latest_saved); }
-  if ( preinfusion != preinfusion_latest_saved) EEPROM.put(50, preinfusion);
-  if ( preinfusionpause != preinfusionpause_latest_saved) EEPROM.put(60, preinfusionpause);
-  if ( starttemp != starttemp_latest_saved) EEPROM.put(80, starttemp);
-  if ( aggoKp != aggoKp_latest_saved) EEPROM.put(90, aggoKp);
-  if ( aggoTn != aggoTn_latest_saved) EEPROM.put(100, aggoTn);
-  if ( aggoTv != aggoTv_latest_saved) EEPROM.put(110, aggoTv);
-  if ( brewDetectionSensitivity != brewDetectionSensitivity_latest_saved) EEPROM.put(130, brewDetectionSensitivity);
-  if ( steadyPower != steadyPower_latest_saved) { EEPROM.put(140, steadyPower); DEBUG_print("EEPROM: steadyPower (%0.2f) is saved (previous:%0.2f)\n", steadyPower, steadyPower_latest_saved); }
-  if ( steadyPowerOffset != steadyPowerOffset_latest_saved) EEPROM.put(150, steadyPowerOffset);
-  if ( steadyPowerOffset_Time != steadyPowerOffset_Time_latest_saved) EEPROM.put(160, steadyPowerOffset_Time);
-  if ( burstPower != burstPower_latest_saved) EEPROM.put(170, burstPower);
+  //save latest values to eeprom and sync back to blynk
+  if ( aggKp != aggKp_latest_saved) { EEPROM.put(0, aggKp); Blynk.virtualWrite(V4, aggKp); }
+  if ( aggTn != aggTn_latest_saved) { EEPROM.put(10, aggTn); Blynk.virtualWrite(V5, aggTn); }
+  if ( aggTv != aggTv_latest_saved) { EEPROM.put(20, aggTv); Blynk.virtualWrite(V6, aggTv); }
+  if ( setPoint != setPoint_latest_saved) { EEPROM.put(30, setPoint); Blynk.virtualWrite(V7, setPoint); DEBUG_print("EEPROM: setPoint (%0.2f) is saved\n", setPoint); }
+  if ( brewtime != brewtime_latest_saved) { EEPROM.put(40, brewtime); Blynk.virtualWrite(V8, brewtime); DEBUG_print("EEPROM: brewtime (%0.2f) is saved (previous:%0.2f)\n", brewtime, brewtime_latest_saved); }
+  if ( preinfusion != preinfusion_latest_saved) { EEPROM.put(50, preinfusion); Blynk.virtualWrite(V9, preinfusion); }
+  if ( preinfusionpause != preinfusionpause_latest_saved) { EEPROM.put(60, preinfusionpause); Blynk.virtualWrite(V10, preinfusionpause); }
+  if ( starttemp != starttemp_latest_saved) { EEPROM.put(80, starttemp); Blynk.virtualWrite(V12, starttemp); }
+  if ( aggoKp != aggoKp_latest_saved) { EEPROM.put(90, aggoKp); Blynk.virtualWrite(V30, aggoKp); }
+  if ( aggoTn != aggoTn_latest_saved) { EEPROM.put(100, aggoTn); Blynk.virtualWrite(V31, aggoTn); }
+  if ( aggoTv != aggoTv_latest_saved) { EEPROM.put(110, aggoTv); Blynk.virtualWrite(V32, aggoTv); }
+  if ( brewDetectionSensitivity != brewDetectionSensitivity_latest_saved) { EEPROM.put(130, brewDetectionSensitivity); Blynk.virtualWrite(V34, brewDetectionSensitivity); }
+  if ( steadyPower != steadyPower_latest_saved) { EEPROM.put(140, steadyPower); Blynk.virtualWrite(V41, steadyPower); DEBUG_print("EEPROM: steadyPower (%0.2f) is saved (previous:%0.2f)\n", steadyPower, steadyPower_latest_saved); }
+  if ( steadyPowerOffset != steadyPowerOffset_latest_saved) { EEPROM.put(150, steadyPowerOffset); Blynk.virtualWrite(V42, steadyPowerOffset); }
+  if ( steadyPowerOffset_Time != steadyPowerOffset_Time_latest_saved) { EEPROM.put(160, steadyPowerOffset_Time); Blynk.virtualWrite(V43, steadyPowerOffset_Time); }
+  if ( burstPower != burstPower_latest_saved) { EEPROM.put(170, burstPower); Blynk.virtualWrite(V44, burstPower); }
   if ( estimated_cycle_refreshTemp != estimated_cycle_refreshTemp_latest_saved) { EEPROM.put(180, estimated_cycle_refreshTemp); DEBUG_print("EEPROM: estimated_cycle_refreshTemp (%u) is saved (previous:%u)\n", estimated_cycle_refreshTemp, estimated_cycle_refreshTemp_latest_saved); }
-  if ( brewPower != brewPower_latest_saved) { EEPROM.put(190, brewPower); DEBUG_print("EEPROM: brewPower (%0.2f) is saved (previous:%0.2f)\n", brewPower, brewPower_latest_saved); }
+  if ( brewDetectionPower != brewDetectionPower_latest_saved) { EEPROM.put(190, brewDetectionPower); Blynk.virtualWrite(V36, brewDetectionPower); DEBUG_print("EEPROM: brewDetectionPower (%0.2f) is saved (previous:%0.2f)\n", brewDetectionPower, brewDetectionPower_latest_saved); }
   
   EEPROM.commit();
   DEBUG_print("EEPROM: sync_eeprom() finished.\n");
 }
+
 
 /***********************************
  * SETUP()
@@ -1632,10 +1629,11 @@ void setup() {
   DEBUG_print("Active settings:\n");
   DEBUG_print("aggKp: %0.2f | aggTn: %0.2f | aggTv: %0.2f\n", aggKp, aggTn, aggTv);
   DEBUG_print("aggoKp: %0.2f | aggoTn: %0.2f | aggoTv: %0.2f\n", aggoKp, aggoTn, aggoTv);
-  DEBUG_print("setPoint: %0.2f | starttemp: %0.2f | brewDetectionSensitivity: %0.2f\n", setPoint, starttemp, brewDetectionSensitivity);
+  DEBUG_print("setPoint: %0.2f | starttemp: %0.2f | burstPower: %0.2f\n", setPoint, starttemp, burstPower);
+  DEBUG_print("brewDetection: %d |brewDetectionSensitivity: %0.2f | brewDetectionPower: %0.2f\n", brewDetection, brewDetectionSensitivity, brewDetectionPower);
   DEBUG_print("brewtime: %0.2f | preinfusion: %0.2f | preinfusionpause: %0.2f\n", brewtime, preinfusion, preinfusionpause);
   DEBUG_print("steadyPower: %0.2f | steadyPowerOffset: %0.2f | steadyPowerOffset_Time: %d\n", steadyPower, steadyPowerOffset, steadyPowerOffset_Time);
-  DEBUG_print("burstPower: %0.2f | estimated_cycle_refreshTemp: %d | brewPower: %0.2f\n", burstPower, estimated_cycle_refreshTemp, brewPower);
+  DEBUG_print("estimated_cycle_refreshTemp: %d\n", estimated_cycle_refreshTemp);
   /********************************************************
      OTA
   ******************************************************/

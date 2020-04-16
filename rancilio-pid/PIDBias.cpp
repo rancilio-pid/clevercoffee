@@ -59,7 +59,7 @@ bool PIDBias::Compute()
       lastOutput = *myOutput;
       double input = *myInput;
       double error = *mySetpoint - input;
-      double pastChange = pastTemperatureChange(10) / 2;  // in seconds
+      double pastChange = pastTemperatureChange(10) / 2;  // difference of the last 10 seconds scaled down to one compute() cycle (=5 seconds).
 
       outputP = kp * error;
       outputI = ki * error;

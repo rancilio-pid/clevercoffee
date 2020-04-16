@@ -15,19 +15,23 @@
 #define ONLYPID 1             // 1=Nur PID ohne Preinfussion, 0=PID + Preinfussion
 #define TEMPSENSOR 2          // 1=DS19B20; 2=TSIC306
 #define TEMPSENSORRECOVERY 0  // 1 = on (default), 2= off. If off, temp sensor errors will stop the heater until power cycle
-#define BREWDETECTION 1       // 0 = off ,1 = Software
-#define BREWDETECTION_SENSITIVITY 2.0 // If temperature decreased within the last 6 seconds by this amount, then a brew is detected (BREWDETECTION must be 1)
-#define BREW_READY_DETECTION 0.2 // 0 = off, [0.0 - 30.0] = enable. If measured temperature of the last 6 seconds has been within this defined margin around the SET_POINT, we are able to brew. (recommended value 0.2) 
-#define BREW_READY_LED 0      // 0=off, 1=LED at GPO Pin15 will lighten when BREW_READY_DETECTION triggers
 #define TRIGGERTYPE HIGH      // LOW = low trigger, HIGH = high trigger relay
 #define OTA true              // true=activate update via OTA
 #define GRAFANA 0             // 0=default(off), 1=enable grafana visualisation by Markus (simply ask him for free access)
+
 #define EMERGENCY_TEMP 116    // If temperature is higher then notifications are send via display/debug/mqtt.
                               // Reason might be an error OR the user wants to steam milk.
 #define EMERGENCY_TEXT "Emergency Stop!"  // Any short text to be displayed when temperature is >EMERGENCY_TEMP. Eg "Steam Milk!"
 #define EMERGENCY_ICON "rancilio"  // icon displayed when temperature is >EMERGENCY_TEMP. Allowed values are "rancilio" or "steam"
 
-//#define DEBUGMODE           // to enable Debug uncomment this line. Afterwards you can connect via telnet to pot 23 to see debug logs.
+#define BREWDETECTION 1                // 0 = off ,1 = Software
+#define BREWDETECTION_SENSITIVITY 1.0 // If temperature decreased within the last 3 seconds by this amount, then a brew is detected (BREWDETECTION must be 1)
+#define BREWDETECTION_POWER 70   // 70(default)=heater utiilization (in percent) during detected brew (BREWDETECTION must be 1)
+
+#define BREW_READY_DETECTION 0.3 // 0 = off, [0.0 - 30.0] = enable. If measured temperature of the last 6 seconds has been within this defined margin around the SET_POINT, we are able to brew. (recommended value 0.2) 
+#define BREW_READY_LED 0         // 0=off, 1=LED at GPO Pin15 will lighten when BREW_READY_DETECTION triggers
+
+//#define DEBUGMODE              // to enable Debug uncomment this line. Afterwards you can connect via telnet to pot 23 to see debug logs.
 
 /*******   
  * General PID values
@@ -52,8 +56,6 @@
 #define AGGOTN 40       // Tn (Rancilio Silvia 5E: 40, ...)
 #define AGGOTV 40       // Tv (Rancilio Silvia 5E: 40, ...)
 
-// Power during brew
-#define BREW_POWER        20  // 20(default)=heater utiilization (in percent) during brew phase
 
 /*******   
  * Preinfussion settings (only useful when ONLYPID=0) 

@@ -2,7 +2,7 @@
 
 BLEEDING EDGE MASTER VERSION 
 
-Version 2.1.0 beta4
+Version 2.1.0 beta5
 
 based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 
@@ -86,7 +86,7 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
   Outerzone P := V30  
   Outerzone I := V31  
   Outerzone D := V32  
-  BrewPower   := V36
+  BrewPower   := V36  
   SteadyPower := V41  
   SteadyPower Offset Time := V43  
   SteadyPower Offset Power := V42  
@@ -190,6 +190,12 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
 3. Compile, upload and enjoy!
 
 # Changelog
+- 2.1.0_beta5:
+  - Fix: TSIC Bug causes restarts. (Thanks to pbeh & helgo for the debug logs)
+  - Fix: Brew detection optimized.
+  - Fix: Eeprom save did not sync back to blynk.
+  - BrewDetection is more sensitive.
+  - Renamed BREW_POWER to BREWDETECTION_POWER (default is 70%).
 - 2.1.0_beta4:
   - New PID Variable "BREW_POWER" introduced which defines the heater power during brewing.
   - Debug Output should show correct output values in all situations.
