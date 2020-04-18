@@ -1,5 +1,5 @@
 /********************************************************
-  Version 1.1 (28.08.2019)
+  Version 1.2 (18.04.2020)
   Config must be configured by the user
 ******************************************************/
 
@@ -17,8 +17,9 @@
 #define FALLBACK 1           // 1: fallback auf eeprom Werte, wenn blynk nicht geht 0: deaktiviert
 #define TRIGGERTYPE HIGH     // LOW = low trigger, HIGH = high trigger relay
 #define OTA true             // true=activate update via OTA
-#define PONE 1               // 1 = P_ON_E (normal), 0 = P_ON_M (spezieller PID Modus, ACHTUNG andere Formel zur Berechnung)
-#define GRAFANA 1           // 1=Markus grafana Visualisierung. Zugang notwendig, 0=default, aus
+#define PONE 1               // 1 = P_ON_E (normal), 0 = P_ON_M (spezieller PID Modus, ACHTUNG andere Formel zur Berechnung, nur für Experten)
+#define GRAFANA 1            // 1 = Markus grafana Visualisierung. Zugang notwendig, 0=default, auskalt
+#define COLDSTART_PID 1      // 1 = default COLDStart Values , 2 = eigene Werte via Blynk 
 
 // Wifi & Blynk 
 #define HOSTNAME "rancilio"
