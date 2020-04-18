@@ -46,8 +46,8 @@
 #define AGGKP 69     // Kp
 #define AGGTN 399    // Tn
 #define AGGTV 0      // Tv
-#define STARTKP 100   // Start Kp während Kaltstart
-#define STARTTN 0  // Start Tn während Kaltstart
-#define STARTTEMP 80 // Temperaturschwelle für deaktivieren des Start Kp
+#define STARTKP 50   // Start Kp während Kaltstart
+#define STARTTN 130  // Start Tn während Kaltstart
+#define STARTTEMP 95 // Temperaturschwelle für deaktivieren des Start Kp
 
 #endif // _userConfig_H
