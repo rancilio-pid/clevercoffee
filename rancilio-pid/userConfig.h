@@ -19,7 +19,7 @@
 #define OTA true             // true=activate update via OTA
 #define PONE 1               // 1 = P_ON_E (normal), 0 = P_ON_M (spezieller PID Modus, ACHTUNG andere Formel zur Berechnung, nur für Experten)
 #define GRAFANA 1            // 1 = Markus grafana Visualisierung. Zugang notwendig, 0=default, auskalt
-#define COLDSTART_PID 1      // 1 = default COLDStart Values , 2 = eigene Werte via Blynk 
+#define COLDSTART_PID 1      // 1 = default COLDStart Values , 2 = eigene Werte via Blynk, experten modus
 
 // Wifi & Blynk 
 #define HOSTNAME "rancilio"
