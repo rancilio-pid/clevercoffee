@@ -70,10 +70,10 @@ bool PIDBias::Compute()
 
       //Filter too high sumOutputI
       if ( sumOutputI > filterSumOutputI ) sumOutputI = filterSumOutputI;
-      
+
       //reset sumI when at setPoint. This improves stabilization.
       if ( signnum_c(error) * signnum_c(lastError) < 0 ) { //temperature curve crosses setPoint
-        DEBUG_print("Crossing setPoint\n");
+        //DEBUG_print("Crossing setPoint\n");
         //moving upwards
         if ( sumOutputI > 0 ) {
           //steadyPower auto-tuning
@@ -152,19 +152,6 @@ bool PIDBias::Compute()
 
       if (output > outMax) output = outMax;
       else if(output < outMin) output = outMin;
-      
-      //DEBUG_print("Input=%5.2f error=%0.2f SetPoint=%0.2f\n", input, error, (double)*mySetpoint);
-      //DEBUG_print("Input=%6.2f | DiffTemp=%5.2f | SetInSecs=%0.2f | Output=%6.2f = %6.2f + p:%5.2f + i:%5.2f + d:%5.2f ***\n", 
-      //  input,
-      //  error,
-      //  setPointInSeconds,
-      //  convertOutputToUtilisation(output), 
-      //  convertOutputToUtilisation(lastOutput), 
-      //  convertOutputToUtilisation(outputP), 
-      //  convertOutputToUtilisation(outputI),
-      //  convertOutputToUtilisation(outputD)    
-      //  );    
-      
       *myOutput = output;
       lastLastInput = lastInput;
       lastError = error;

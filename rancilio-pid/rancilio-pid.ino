@@ -21,13 +21,13 @@
 
 RemoteDebug Debug;
 
-//Define pins for outputs
+//Define pins for output
 #define pinRelayVentil    12
 #define pinRelayPumpe     13
 #define pinRelayHeater    14
 #define pinLed            15
 
-const char* sysVersion PROGMEM  = "Version 2.1.0 beta5";
+const char* sysVersion PROGMEM  = "Version 2.1.0 beta6";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -66,7 +66,6 @@ unsigned int blynk_max_incremental_backoff = 5 ; // At most backoff <mqtt_max_in
 
 
 // MQTT
-//how to set general connect_timeout AND read_timeout (socket timeout)?
 #include "src/PubSubClient/PubSubClient.h"
 //#include <PubSubClient.h>  // uncomment this line AND delete src/PubSubClient/ folder, if you want to use system lib
 const int MQTT_MAX_PUBLISH_SIZE = 120; //see https://github.com/knolleary/pubsubclient/blob/master/src/PubSubClient.cpp
@@ -120,7 +119,11 @@ int i = 0;
 *****************************************************/
 const unsigned int windowSizeSeconds = 5;            // How often should PID.compute() run? must be >= 1sec
 unsigned int windowSize = windowSizeSeconds * 1000;  // 1000=100% heater power => resolution used in TSR() and PID.compute().
-unsigned int isrCounter = 0; // TODO remove windowSize - 500;          // counter for ISR
+volatile unsigned int isrCounter = 0;                // counter for heater ISR  //TODO byte +isrWakeupTime(=1000000) would be faster/safer
+const int isrWakeupTime = 50000 ; // div 5000 => 10ms 
+const float heater_overextending_factor = 1.2;
+unsigned int heater_overextending_isrCounter = windowSize * heater_overextending_factor;
+unsigned long pidComputeLastRunTime = 0;
 double Input = 0, Output = 0;
 double previousInput = 0;
 double previousOutput = 0;
@@ -167,7 +170,7 @@ const double outerZoneTemperatureDifference = 1;
    PID with Bias (steadyPower) Temperature Controller
 *****************************************************/
 #include "PIDBias.h"
-double steadyPower = STEADYPOWER; // in percent . TODO EEPROM every 35 min on change?
+double steadyPower = STEADYPOWER; // in percent 
 double PreviousSteadyPower = 0;
 int burstShot      = 0;   // this is 1, when the user wants to immediatly set the heater power to the value specified in burstPower
 double burstPower  = 20;  // in percent
@@ -234,14 +237,16 @@ unsigned long eeprom_save_interval = 28*60*1000UL;  //save every 28min
 unsigned long last_eeprom_save = 0;
 char debugline[100];
 unsigned long output_timestamp = 0;
-volatile byte bpidComputeHasRun = 0;
-unsigned long last_micro = 0;
-unsigned long last_micro_sum = 0;
-unsigned long last_micro2 = 0;
-unsigned long last_micro2_sum = 0;
 unsigned long all_services_lastReconnectAttemptTime = 0;
 unsigned long all_services_min_reconnect_interval = 160000; // 160sec minimum wait-time between service reconnections
 bool force_offline = FORCE_OFFLINE;
+
+unsigned long loops = 0;
+unsigned long max_micros = 0;
+unsigned long last_report_micros = 0;
+unsigned long cur_micros_previous_loop = 0;
+const unsigned long loop_report_count = 100;
+
 
 /********************************************************
    DISPLAY
@@ -277,13 +282,14 @@ DallasTemperature sensors(&oneWire); // Pass our oneWire reference to Dallas Tem
 DeviceAddress sensorDeviceAddress; // arrays to hold device address
 
 /********************************************************
-   B+B Sensors TSIC 306
+   TSIC 30x TEMP
 ******************************************************/
-#include "src/TSIC/TSIC.h"
-TSIC Sensor1(2, NO_VCC_PIN, TSIC_30x);    // VCCpin must be un-used due to custom lib
 uint16_t temperature = 0;
 float Temperatur_C = 0;
-int refreshTempPreviousTimeSpend = 0;
+volatile uint16_t temp_value[2] = {0};
+volatile byte tsicDataAvailable = 0;
+unsigned int isrCounterStripped = 0;
+const int isrCounterFrame = 1000;
 
 /********************************************************
    BLYNK
@@ -403,7 +409,7 @@ bool mqtt_working() {
 }
 
 bool in_sensitive_phase() {
-  return (Input >=110 || brewing || activeState==4);
+  return (Input >=110 || brewing || activeState==4 || isrCounter > 1000);
 }
 
 /********************************************************
@@ -452,7 +458,7 @@ boolean mqtt_publish(char* reading, char* payload) {
   if (!MQTT_ENABLE || force_offline || mqtt_disabled_temporary) return true;
   char topic[MQTT_MAX_PUBLISH_SIZE];
   snprintf(topic, MQTT_MAX_PUBLISH_SIZE, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
-  if (!mqtt_working()) {
+  if (!mqtt_working()) {  // TODO this DEBUG stuff shall be removed
     DEBUG_print("Not connected to mqtt server. Cannot publish(%s %s)\n", topic, payload);
     return false;
   }
@@ -567,7 +573,7 @@ double getAverageTemperature(int lookback) {
   if (count > 0) {
     return averageInput / count;
   } else {
-    DEBUG_print("getAverageTemperature() returned 0");
+    DEBUG_print("getAverageTemperature() returned 0\n");
     return 0;
   }
 }
@@ -607,66 +613,70 @@ void refreshBrewReadyHardwareLed(boolean brewReady) {
   }
 }
 
-/********************************************************
-  auto-tune TSIC read cycle
-*****************************************************/
-void tsicAutoTune(unsigned long start, unsigned long stop) {
-  const int auto_tuning_enable_refreshTemp = 15000; //after how many seconds since start should be begin tuning
-  const int spend_time_threshold = 16;  //this might not yet be optimally choosen
-  unsigned long spend_time=stop-start;
-  if (start > auto_tuning_enable_refreshTemp) {
-    if (spend_time <= 3 || spend_time >= spend_time_threshold) {
-      if (tsic_stable_count <= 5) {
-        if (tsic_validate_count == 0) {
-          if (estimated_cycle_refreshTemp < 95) {
-            if (spend_time >= 40) { //room for improvements
-              estimated_cycle_refreshTemp += 2;
-            } else {
-              estimated_cycle_refreshTemp += 1;
-            }
-            tsic_validate_count = 2;     //should be an even number to trigger flapping
-          } else {
-            estimated_cycle_refreshTemp = 25;
-          }
-          tsic_stable_count = 0;
-        } else {
-          tsic_validate_count -= 1;
+/*****************************************************
+ * fast temperature reading with TSIC 306
+ * Code by Adrian with minor adaptions
+******************************************************/
+void ICACHE_RAM_ATTR readTSIC() { //executed every ~100ms by interrupt
+  isrCounterStripped = isrCounter % isrCounterFrame;
+  if (isrCounterStripped >= (isrCounterFrame - 20 - 100) && isrCounterStripped < (isrCounterFrame - 20)) {
+    byte strobelength = 6;
+    byte timeout = 0;
+    for (byte ByteNr=0; ByteNr<2; ++ByteNr) {
+      if (ByteNr) {                                    //measure strobetime between bytes
+        for (timeout = 0; digitalRead(2); ++timeout){
+          delayMicroseconds(10);
+          if (timeout > 20) return;
         }
-      } else {
-        if (tsic_stable_count >= 1) {
-          tsic_stable_count -= 1;
-        }
-        if (tsic_stable_count == 5) {
-          DEBUG_print("estimated_cycle_refreshTemp: unstable=%u (time_spend_reading_sensor=%lu)\n", estimated_cycle_refreshTemp, spend_time);
-          tsic_stable_count = 0;
+        strobelength = 0;
+        for (timeout = 0; !digitalRead(2); ++timeout) {    // wait for rising edge
+          ++strobelength;
+          delayMicroseconds(10);
+          if (timeout > 20) return;
         }
       }
-      estimated_cycle_refreshTemp_stable_next_save = millis() + 900000;  //15min timer
-    } else {  //we are in target range
-      if (tsic_stable_count <= 10) {
-            tsic_stable_count += 1;
-      } else {
-        tsic_validate_count = 0;
-        if (estimated_cycle_refreshTemp_stable_next_save != 0 && (millis() >= estimated_cycle_refreshTemp_stable_next_save)) {
-          estimated_cycle_refreshTemp_stable_next_save = 0;
-          DEBUG_print("estimated_cycle_refreshTemp: stable=%u (time_spend_reading_sensor=%lu)\n", estimated_cycle_refreshTemp, spend_time);
-          noInterrupts();
-          sync_eeprom();  //TODO do we really need to save it
-          interrupts();
+      for (byte i=0; i<9; ++i) {
+        for (timeout = 0; digitalRead(2); ++timeout) {    // wait for falling edge
+          delayMicroseconds(10);
+          if (timeout > 20) return;
+        }
+        if (!i) temp_value[ByteNr] = 0;            //reset byte before start measuring
+        delayMicroseconds(10 * strobelength);
+        temp_value[ByteNr] <<= 1;
+        if (digitalRead(2)) temp_value[ByteNr] |= 1;        // Read bit
+        for (timeout = 0; !digitalRead(2); ++timeout) {     // wait for rising edge
+          delayMicroseconds(10);
+          if (timeout > 20) return;
         }
       }
     }
-    best_time_to_call_refreshTemp = millis() + (round((float)refreshTempInterval / estimated_cycle_refreshTemp)) *estimated_cycle_refreshTemp;
-  } else {
-    best_time_to_call_refreshTemp = millis() + refreshTempInterval;
+    tsicDataAvailable++;
   }
-  /* Uncomment to debug
-  if (stop-start > spend_time_threshold) {
-    DEBUG_print("TSIC Auto-Tune: next_refreshTemp=%lu(#%u) | Temperatur_C=%0.3f | time_spend_reading_sensor=%lu\n", 
-               best_time_to_call_refreshTemp -  millis(), estimated_cycle_refreshTemp, Temperatur_C, spend_time);
-  }
-  */
 }
+
+double getTSICvalue() {
+    byte parity1 = 0;
+    byte parity2 = 0;
+    noInterrupts();                               //no ISRs because temp_value might change during reading
+    uint16_t temperature1 = temp_value[0];        //get high significant bits from ISR
+    uint16_t temperature2 = temp_value[1];        //get low significant bits from ISR
+    interrupts();
+    for (uint8_t i = 0; i < 9; ++i) {
+      if (temperature1 & (1 << i)) ++parity1;
+      if (temperature2 & (1 << i)) ++parity2;
+    }
+    if (!(parity1 % 2) && !(parity2 % 2)) {       // check parities
+      temperature1 >>= 1;                           // delete parity bits
+      temperature2 >>= 1;
+      temperature = (temperature1 << 8) + temperature2;        //joints high and low significant figures
+      // TSIC 20x,30x
+      return (float((temperature * 250L) >> 8) - 500) / 10;
+      // TSIC 50x
+      // return (float((temperature * 175L) >> 9) - 100) / 10;
+    }
+    else return -50;    //set to -50 if reading failed
+}
+
 
 /********************************************************
   check sensor value. If < 0 or difference between old and new >10, then increase error.
@@ -674,29 +684,29 @@ void tsicAutoTune(unsigned long start, unsigned long stop) {
 *****************************************************/
 boolean checkSensor(float tempInput, float temppreviousInput) {
   boolean sensorOK = false;
-  /********************************************************
-    sensor error
-  ******************************************************/
-  if ( ( tempInput < 0 || tempInput > 150 || fabs(tempInput - temppreviousInput) > 5) && !sensorError) {
-    error++;
-    sensorOK = false;
-    DEBUG_print("temperature sensor reading: consec_errors=%d, temp_current=%0.2f, temp_prev=%0.2f\n", error, tempInput, temppreviousInput);
-  } else {
-    error = 0;
-    sensorOK = true;
+  if (!sensorError) {
+    if ( ( tempInput < 0 || tempInput > 150 || fabs(tempInput - temppreviousInput) > 5)) {
+      error++;
+      DEBUG_print("temperature sensor reading: consec_errors=%d, temp_current=%0.2f, temp_prev=%0.2f\n", error, tempInput, temppreviousInput);
+    } else {
+      error = 0;
+      sensorOK = true;
+    }
+    if (error >= maxErrorCounter) {
+      sensorError = true;
+      snprintf(debugline, sizeof(debugline), "temperature sensor malfunction: temp_current=%0.2f, temp_prev=%0.2f", tempInput, previousInput);
+      ERROR_println(debugline);
+      mqtt_publish("events", debugline);
+    }
+  } else if (TempSensorRecovery == 1 &&
+             (!(tempInput < 0 || tempInput > 150))) {
+      sensorError = false;
+      error = 0;
+      sensorOK = true;
   }
-
-  if (error >= maxErrorCounter && !sensorError) {
-    sensorError = true;
-    snprintf(debugline, sizeof(debugline), "temperature sensor malfunction: temp_current=%0.2f, temp_prev=%0.2f", tempInput, previousInput);
-    ERROR_println(debugline);
-    mqtt_publish("events", debugline);
-  } else if (error == 0 && TempSensorRecovery == 1) { //Safe-guard: prefer to stop heating forever if sensor is flapping!
-    sensorError = false;
-  }
-
   return sensorOK;
 }
+
 
 /********************************************************
   Refresh temperature.
@@ -704,12 +714,9 @@ boolean checkSensor(float tempInput, float temppreviousInput) {
   If the value is not valid, new data is not stored.
 *****************************************************/
 void refreshTemp() {
-  /********************************************************
-    Temp. Request
-  ******************************************************/
   unsigned long currentMillistemp = millis();
   previousInput = getCurrentTemperature() ;
-  long millis_elapsed = currentMillistemp - previousMillistemp ;
+  long millis_elapsed = currentMillistemp - previousMillistemp ;  //TODO move this code. not needed for ISR
   if ( floor(millis_elapsed / refreshTempInterval) >= 2) {
       snprintf(debugline, sizeof(debugline), "Main loop() hang. Number of refreshTemp() calls missed=%g, millis_elapsed=%lu\n", floor(millis_elapsed / refreshTempInterval) -1, millis_elapsed);
       ERROR_println(debugline);
@@ -728,26 +735,18 @@ void refreshTemp() {
   }
   if (TempSensor == 2)
   {
-    if (currentMillistemp >= best_time_to_call_refreshTemp)
-    {
-      previousMillistemp = currentMillistemp;
-      // variable "temperature" must be set to zero, before reading new data
-      // getTemperature only updates if data is valid, otherwise "temperature" will still hold old values
-      temperature = 0;
-      unsigned long start = millis();
-      Sensor1.getTemperature(&temperature);
-      unsigned long stop = millis();
-      // temperature must be between 0x000 and 0x7FF(=DEC2047)
-      Temperatur_C = Sensor1.calc_Celsius(&temperature);
-      // Temperature_C must be -50C < Temperature_C <= 150C
-      if (checkSensor(Temperatur_C, previousInput)) {
-        updateTemperatureHistory(Temperatur_C);
-        Input = getAverageTemperature(5);
-      } else {
-        stop = start + 999;  //tsicAutoTune should handle this like an error
+      if (tsicDataAvailable >0) {
+        previousMillistemp = currentMillistemp;
+        //unsigned long start = millis();
+        Temperatur_C = getTSICvalue();
+        tsicDataAvailable = 0;
+        //unsigned long stop = millis();
+        //DEBUG_print("%lu | temp=%0.2f | time_spend=%lu\n", start, Temperatur_C, stop-start);
+        if (checkSensor(Temperatur_C, previousInput)) {
+            updateTemperatureHistory(Temperatur_C);
+            Input = getAverageTemperature(5);
+        }
       }
-      tsicAutoTune(start, stop);
-    }
   }
 }
 
@@ -933,6 +932,7 @@ void sendToBlynk() {
   }
 }
 
+
 /********************************************************
     state Detection
 ******************************************************/
@@ -1078,16 +1078,26 @@ void updateState() {
   }
 }
 
-void printPidStatus() {
-  if (bpidComputeHasRun > 0) {
-    /*
-    if (bpidComputeHasRun > 1) {
-      snprintf(debugline, sizeof(debugline), "Main loop() hang for at least %u seconds", (unsigned int)(windowSizeSeconds)*(bpidComputeHasRun-1) );
-      ERROR_println(debugline);
-      mqtt_publish("events", debugline);
+
+/***********************************
+ * PID & HEATER ISR
+ ***********************************/
+void pidCompute() {
+  float Output_save;
+  //certain activeState set Output to fixed values
+  if (activeState == 1 || activeState == 2 || activeState == 4) {
+    Output_save = Output;
+  }
+  if ( bPID.Compute() ) {
+    isrCounter = 0; // Attention: heater might not shutdown if bPid.SetSampleTime(), windowSize, timer1_write() and are not set correctly!
+    unsigned long delay = millis()+30 - pidComputeLastRunTime - windowSize;
+    if (delay > 30 && delay < 100000000) {
+      DEBUG_print("pidCompute() delayed execution detected of %lu ms (loop() hangs).\n", delay);
     }
-    */
-    bpidComputeHasRun = 0;
+    pidComputeLastRunTime = millis();
+    if (activeState == 1 || activeState == 2 || activeState == 4) {
+      Output = Output_save;
+    }
     DEBUG_print("Input=%6.2f | error=%5.2f delta=%5.2f | Output=%6.2f = b:%5.2f + p:%5.2f + i:%5.2f(%5.2f) + d:%5.2f\n", 
       Input,
       (setPoint - Input),
@@ -1098,25 +1108,28 @@ void printPidStatus() {
       convertOutputToUtilisation(bPID.GetSumOutputI()),
       convertOutputToUtilisation(bPID.GetOutputI()),
       convertOutputToUtilisation(bPID.GetOutputD())
-      );
+    );
   }
 }
-
+ 
 void ICACHE_RAM_ATTR onTimer1ISR() {
-  timer1_write(50000); // set interrupt time to 10ms
-  if ( bPID.Compute() ) {  //TODO think about moving compute() to loop()!
-    isrCounter = 0;  // Attention: heater might not shutdown if bPid.SetSampleTime(), windowSize, timer1_write() and are not set correctly!
-    //TODO add emergency check if loop() has not cleared this variable in time!!
-    if (bpidComputeHasRun < 56) {
-      bpidComputeHasRun += 1;
+  timer1_write(isrWakeupTime); // set interrupt time to 10ms
+  if (isrCounter >= heater_overextending_isrCounter ) {
+    //turn off when when compute() is not run in time (safetly measure)
+    if (digitalRead(pinRelayHeater) == HIGH) {
+      digitalWrite(pinRelayHeater, LOW);
+      ERROR_print("ISR has stopped heater because pid.Compute() had not run for quite some time\n");
+      //TODO: add more emergency handling?
     }
-  }
-  if (isrCounter >= Output) {
+  } /* else if (isrCounter > windowSize) {
+    //dont change output when overextending withing overextending_factor threshold
+    DEBUG_print("over extending due to processing delays\n");
+  } */ else if (isrCounter >= Output) {  // max(Output) = windowSize
     digitalWrite(pinRelayHeater, LOW);
   } else {
     digitalWrite(pinRelayHeater, HIGH);
   }
-  if (isrCounter <= windowSize) {
+  if (isrCounter <= (heater_overextending_isrCounter + 100)) {
     isrCounter += 10; // += 10 because one tick = 10ms
   }
 }
@@ -1126,6 +1139,18 @@ void ICACHE_RAM_ATTR onTimer1ISR() {
  * LOOP()
  ***********************************/
 void loop() {
+
+
+  refreshTemp();        // save new temperature values
+  testEmergencyStop();  // test if Temp is to high
+  pidCompute();         // call PID for Output calculation
+  brew();   //start brewing if button pressed
+  if (millis() > lastCheckBrewReady + refreshTempInterval) {
+    brewReady = checkBrewReady(setPoint, marginOfFluctuation, 40);
+    lastCheckBrewReady = millis();
+  }
+  refreshBrewReadyHardwareLed(brewReady);
+  
   if (!wifi_working()) {
     checkWifi();
   } else {
@@ -1173,11 +1198,11 @@ void loop() {
 
     //Check mqtt connection
     if (MQTT_ENABLE && !force_offline && !mqtt_disabled_temporary) {
-      unsigned long now = millis();
-      mqtt_client.loop(); // mqtt client connected, do mqtt housekeeping
       if (!mqtt_working()) {
         mqtt_reconnect();
       } else {
+        mqtt_client.loop(); // mqtt client connected, do mqtt housekeeping  //ABC
+        unsigned long now = millis();
         if (now >= lastMQTTStatusReportTime + lastMQTTStatusReportInterval) {
           lastMQTTStatusReportTime = now;
           //TODO performance?: use beginPublish() and endPublish() instead
@@ -1197,18 +1222,6 @@ void loop() {
     }
   }
 
-  unsigned long startT;
-  unsigned long stopT;
-
-  refreshTemp();   //read new temperature values
-  testEmergencyStop();  // test if Temp is to high
-  brew();   //start brewing if button pressed
-  if (millis() > lastCheckBrewReady + refreshTempInterval) {
-    brewReady = checkBrewReady(setPoint, marginOfFluctuation, 40);
-    lastCheckBrewReady = millis();
-  }
-  refreshBrewReadyHardwareLed(brewReady);
-
   //check if PID should run or not. If not, set to manuel and force output to zero
   if (pidON == 0 && pidMode == 1) {
     pidMode = 0;
@@ -1224,6 +1237,7 @@ void loop() {
       output_timestamp = millis();
     }
   }
+  
   if (burstShot == 1 && pidMode == 1) {
     burstShot = 0;
     bPID.SetBurst(burstPower);
@@ -1274,7 +1288,6 @@ void loop() {
       bPID.SetTunings(aggKp, aggKi, aggKd);
     }
 
-    printPidStatus();
     sendToBlynk();
 
     unsigned long currentMillisDisplay = millis();
@@ -1295,7 +1308,6 @@ void loop() {
       }
     }
     digitalWrite(pinRelayHeater, LOW); //Stop heating
-    //DISPLAY AUSGABE
     unsigned long currentMillisDisplay = millis();
     if (currentMillisDisplay >= previousMillisDisplay + intervalDisplay) {
       previousMillisDisplay = currentMillisDisplay;
@@ -1315,7 +1327,6 @@ void loop() {
       }
     }
     digitalWrite(pinRelayHeater, LOW); //Stop heating
-    //DISPLAY AUSGABE
     unsigned long currentMillisDisplay = millis();
     if (currentMillisDisplay >= previousMillisDisplay + intervalDisplay) {
       previousMillisDisplay = currentMillisDisplay;
@@ -1340,7 +1351,6 @@ void loop() {
     interrupts();
   }
   Debug.handle();
-  yield();
 }
 
 
@@ -1564,6 +1574,13 @@ void setup() {
   }
 
   /********************************************************
+   Ini PID
+  ******************************************************/
+  bPID.SetSampleTime(windowSize);
+  bPID.SetOutputLimits(0, windowSize);
+  bPID.SetMode(AUTOMATIC);
+
+  /********************************************************
      BLYNK & Fallback offline
   ******************************************************/
   if (!force_offline) {
@@ -1677,30 +1694,24 @@ void setup() {
   }
 
   if (TempSensor == 2) {
+    isrCounter = 950;  //required
+    attachInterrupt(digitalPinToInterrupt(2), readTSIC, RISING); //activate TSIC reading
+    delay(200);
     while (true) {
-      temperature = 0;
-      Sensor1.getTemperature(&temperature);
-      previousInput = Sensor1.calc_Celsius(&temperature);
-      delay(400);
-      temperature = 0;
-      Sensor1.getTemperature(&temperature);
-      Input = Sensor1.calc_Celsius(&temperature);
+      previousInput = getTSICvalue();
+      DEBUG_print("setup previousInput=%0.2f\n", previousInput);
+      delay(200);
+      Input = getTSICvalue();
+      DEBUG_print("setup Input=%0.2f\n", Input);
       if (checkSensor(Input, previousInput)) {
         updateTemperatureHistory(Input);
         break;
       }
       displaymessage("rancilio", "Temp. sensor defect", "", "");
       ERROR_print("Temp. sensor defect. Cannot read consistant values. Retrying\n");
-      delay(400);
+      delay(1000);
     }
   }
-
-  /********************************************************
-     Ini PID
-  ******************************************************/
-  bPID.SetSampleTime(windowSize);
-  bPID.SetOutputLimits(0, windowSize);
-  bPID.SetMode(AUTOMATIC);
 
   /********************************************************
      REST INIT()
@@ -1711,6 +1722,7 @@ void setup() {
   previousMillisDisplay = currentTime + 50;
   previousMillisBlynk = currentTime + 800;
   lastMQTTStatusReportTime = currentTime + 300;
+  pidComputeLastRunTime = currentTime;
 
   /********************************************************
     Timer1 ISR - Initialisierung
@@ -1718,10 +1730,11 @@ void setup() {
     TIM_DIV16 = 1,  //5MHz (5 ticks/us - 1677721.4 us max)
     TIM_DIV256 = 3  //312.5Khz (1 tick = 3.2us - 26843542.4 us max)
   ******************************************************/
+  isrCounter = 0;
   timer1_isr_init();
   timer1_attachInterrupt(onTimer1ISR);
   timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
-  timer1_write(50000); // set interrupt time to 10ms
+  timer1_write(isrWakeupTime); // set interrupt time to 10ms
   DEBUG_print("End of setup()\n");
 }
 

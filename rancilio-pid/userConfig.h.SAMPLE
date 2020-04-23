@@ -26,7 +26,7 @@
 
 #define BREWDETECTION 1                // 0 = off ,1 = Software
 #define BREWDETECTION_SENSITIVITY 1.0 // If temperature decreased within the last 3 seconds by this amount, then a brew is detected (BREWDETECTION must be 1)
-#define BREWDETECTION_POWER 70   // 70(default)=heater utiilization (in percent) during detected brew (BREWDETECTION must be 1)
+#define BREWDETECTION_POWER 75   // 75(default)=heater utiilization (in percent) during detected brew (BREWDETECTION must be 1)
 
 #define BREW_READY_DETECTION 0.3 // 0 = off, [0.0 - 30.0] = enable. If measured temperature of the last 6 seconds has been within this defined margin around the SET_POINT, we are able to brew. (recommended value 0.2) 
 #define BREW_READY_LED 0         // 0=off, 1=LED at GPO Pin15 will lighten when BREW_READY_DETECTION triggers

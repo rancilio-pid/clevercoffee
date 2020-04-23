@@ -2,7 +2,7 @@
 
 BLEEDING EDGE MASTER VERSION 
 
-Version 2.1.0 beta5
+Version 2.1.0 beta6
 
 based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 
@@ -190,6 +190,16 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
 3. Compile, upload and enjoy!
 
 # Changelog
+- 2.1.0_beta6:
+  - Complete rewrite of "TSIC sensor read" based on the excellent ISR code by Adrian. (Thanks Adrian!)
+    - Optimized "TSIC sensor read" to further increase performance.
+    - Currently it takes <4ms to collect sensor data instead of the previous 78ms).
+    - Fix: "sensor errors" do not occur anymore.
+  - PID calculations are moved from ISR to loop(). This improves stability even further.
+  - Overall stability better by honoring critical processes.
+  - Fix: sensorErrors had been detected but not handled correctly in all places (eg display).
+  - Fix: After power on, the 5 second wait time until heater starts is removed.
+  - Some other tunings.
 - 2.1.0_beta5:
   - Fix: TSIC Bug causes restarts. (Thanks to pbeh & helgo for the debug logs)
   - Fix: Brew detection optimized.
@@ -327,7 +337,7 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
 
 # Special Thanks
 To the great work of the rancilio-pid.de team, just to mention a few: andreas, markus, toppo78, miau.  
-Also to the nice people in the rancilio chat and the ones who contribute and give very much appreciated feedback like helge!  
+Also to the nice people in the rancilio chat and the ones who contribute and give very much appreciated feedback like helge and Adrian!  
   
 !! Thank you so much for the tasty cup of coffee I enjoy each day !!  
 
