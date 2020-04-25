@@ -29,10 +29,14 @@ class PIDBias
 	
     void SetMode(int Mode);               // * sets PIDBias to either Manual (0) or Auto (non-0)
 
-    bool Compute();                       // * performs the PIDBias calculation.  it should be
+    int Compute();                       // * performs the PIDBias calculation.  it should be
                                           //   called every time loop() cycles. ON/OFF and
                                           //   calculation frequency can be set using SetMode
                                           //   SetSampleTime respectively
+                                          // returns:
+                                          // 1 := when compute is run
+                                          // 0 := compute not run yet
+                                          // 2 := time for compute to run, but pid is disabled
 
     void SetOutputLimits(double, double); // * clamps the output to a specific range. 0-255 by default, but
 										                      //   it's likely the user will want to change this depending on

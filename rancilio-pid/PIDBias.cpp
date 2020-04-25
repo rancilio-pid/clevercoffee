@@ -47,15 +47,18 @@ PIDBias::PIDBias(double* Input, double* Output, double* steadyPower, double* Set
     lastTime = millis();
 }
 
-bool PIDBias::Compute()
+int PIDBias::Compute()
 {
-   if(!inAuto) return false;
    unsigned long now = millis();
    unsigned long timeChange = (now - lastTime);
-   double steadyPowerOutput = convertUtilisationToOutput(*mySteadyPower);
-   const double setPointBand = 0.1;
-   if(timeChange >= SampleTime)
-   {
+   if(timeChange >= SampleTime) {
+      double steadyPowerOutput = convertUtilisationToOutput(*mySteadyPower);
+      const double setPointBand = 0.1;
+      if(!inAuto) {
+        lastTime = now;
+        return 2;  // compute should run, but PID is disabled
+      }
+
       lastOutput = *myOutput;
       double input = *myInput;
       double error = *mySetpoint - input;
@@ -157,9 +160,10 @@ bool PIDBias::Compute()
       lastError = error;
       lastInput = input;
       lastTime = now;
-      return true;
+      return 1;  //compute did run
+   } else {
+    return 0;  //compute shall not run yet
    }
-   else return false;
 }
 
 void PIDBias::SetTunings(double Kp, double Ki, double Kd)

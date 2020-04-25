@@ -27,7 +27,7 @@ RemoteDebug Debug;
 #define pinRelayHeater    14
 #define pinLed            15
 
-const char* sysVersion PROGMEM  = "Version 2.1.0 beta6";
+const char* sysVersion PROGMEM  = "Version 2.1.0 beta7";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -515,19 +515,17 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   Emergency Stop when temp too high
 *****************************************************/
 void testEmergencyStop(){
-  if (getCurrentTemperature() >= emergency_temperature){
+  if (getCurrentTemperature() >= emergency_temperature) {
     if (emergencyStop != true) {
       snprintf(debugline, sizeof(debugline), "EmergencyStop because temperature>%u (temperature=%0.2f)", emergency_temperature, getCurrentTemperature());
       ERROR_println(debugline);
       mqtt_publish("events", debugline);
+      emergencyStop = true;
     }
-    emergencyStop = true;
-  } else if (getCurrentTemperature() < 100) {
-    if (emergencyStop == true) {
-      snprintf(debugline, sizeof(debugline), "EmergencyStop ended because temperature<100 (temperature=%0.2f)", getCurrentTemperature());
-      ERROR_println(debugline);
-      mqtt_publish("events", debugline);
-    }
+  } else if (emergencyStop == true && getCurrentTemperature() < 100) {
+    snprintf(debugline, sizeof(debugline), "EmergencyStop ended because temperature<100 (temperature=%0.2f)", getCurrentTemperature());
+    ERROR_println(debugline);
+    mqtt_publish("events", debugline);
     emergencyStop = false;
   }
 }
@@ -655,6 +653,17 @@ void ICACHE_RAM_ATTR readTSIC() { //executed every ~100ms by interrupt
 }
 
 double getTSICvalue() {
+    /*
+    unsigned long now = millis();  //ABC
+    if ( now <= 15000 ) return 115;
+    if ( now <= 25000 ) return 117;
+    if (now <= 28000) return 113;
+    if (now <= 30000) return 109;
+    if (now <= 32000) return 105;
+    if (now <= 34000) return 101;
+    if (now <= 36000) return 97;
+    return 93;
+    */
     byte parity1 = 0;
     byte parity2 = 0;
     noInterrupts();                               //no ISRs because temp_value might change during reading
@@ -714,16 +723,16 @@ boolean checkSensor(float tempInput, float temppreviousInput) {
   If the value is not valid, new data is not stored.
 *****************************************************/
 void refreshTemp() {
-  unsigned long currentMillistemp = millis();
   previousInput = getCurrentTemperature() ;
-  long millis_elapsed = currentMillistemp - previousMillistemp ;  //TODO move this code. not needed for ISR
-  if ( floor(millis_elapsed / refreshTempInterval) >= 2) {
-      snprintf(debugline, sizeof(debugline), "Main loop() hang. Number of refreshTemp() calls missed=%g, millis_elapsed=%lu\n", floor(millis_elapsed / refreshTempInterval) -1, millis_elapsed);
-      ERROR_println(debugline);
-      mqtt_publish("events", debugline);
-  }  
   if (TempSensor == 1)
   {
+    unsigned long currentMillistemp = millis();
+    long millis_elapsed = currentMillistemp - previousMillistemp ;
+    if ( floor(millis_elapsed / refreshTempInterval) >= 2) {
+        snprintf(debugline, sizeof(debugline), "Main loop() hang: refreshTemp() missed=%g, millis_elapsed=%lu, isrCounter=%u", floor(millis_elapsed / refreshTempInterval) -1, millis_elapsed, isrCounter);
+        ERROR_println(debugline);
+        mqtt_publish("events", debugline);
+    }
     if (currentMillistemp >= previousMillistemp + refreshTempInterval)
     {
       previousMillistemp = currentMillistemp;
@@ -735,8 +744,8 @@ void refreshTemp() {
   }
   if (TempSensor == 2)
   {
-      if (tsicDataAvailable >0) {
-        previousMillistemp = currentMillistemp;
+      if (tsicDataAvailable >0) { // TODO Failsafe? || currentMillistemp >= previousMillistemp + 1.2* refreshTempInterval ) {
+        //previousMillistemp = currentMillistemp;
         //unsigned long start = millis();
         Temperatur_C = getTSICvalue();
         tsicDataAvailable = 0;
@@ -1082,17 +1091,19 @@ void updateState() {
 /***********************************
  * PID & HEATER ISR
  ***********************************/
+unsigned long pidComputeDelay = 0;
 void pidCompute() {
   float Output_save;
   //certain activeState set Output to fixed values
   if (activeState == 1 || activeState == 2 || activeState == 4) {
     Output_save = Output;
   }
-  if ( bPID.Compute() ) {
+  int ret = bPID.Compute();
+  if ( ret == 1) {  // compute() did run successfully
     isrCounter = 0; // Attention: heater might not shutdown if bPid.SetSampleTime(), windowSize, timer1_write() and are not set correctly!
-    unsigned long delay = millis()+30 - pidComputeLastRunTime - windowSize;
-    if (delay > 30 && delay < 100000000) {
-      DEBUG_print("pidCompute() delayed execution detected of %lu ms (loop() hangs).\n", delay);
+    pidComputeDelay = millis()+5 - pidComputeLastRunTime - windowSize;
+    if (pidComputeDelay > 50 && pidComputeDelay < 100000000) {
+      DEBUG_print("pidCompute() delayed execution detected of %lu ms (loop() hangs).\n", pidComputeDelay);
     }
     pidComputeLastRunTime = millis();
     if (activeState == 1 || activeState == 2 || activeState == 4) {
@@ -1109,6 +1120,13 @@ void pidCompute() {
       convertOutputToUtilisation(bPID.GetOutputI()),
       convertOutputToUtilisation(bPID.GetOutputD())
     );
+  } else if (ret == 2) { // PID is disabled but compute() should have run
+    isrCounter = 0;
+    pidComputeLastRunTime = millis();
+    DEBUG_print("Input=%6.2f | error=%5.2f delta=%5.2f | Output=  0.00 (PID disabled)\n",
+      Input,
+      (setPoint - Input),
+      pastTemperatureChange(10)/2);
   }
 }
  
@@ -1139,8 +1157,6 @@ void ICACHE_RAM_ATTR onTimer1ISR() {
  * LOOP()
  ***********************************/
 void loop() {
-
-
   refreshTemp();        // save new temperature values
   testEmergencyStop();  // test if Temp is to high
   pidCompute();         // call PID for Output calculation
@@ -1201,7 +1217,7 @@ void loop() {
       if (!mqtt_working()) {
         mqtt_reconnect();
       } else {
-        mqtt_client.loop(); // mqtt client connected, do mqtt housekeeping  //ABC
+        mqtt_client.loop(); // mqtt client connected, do mqtt housekeeping
         unsigned long now = millis();
         if (now >= lastMQTTStatusReportTime + lastMQTTStatusReportInterval) {
           lastMQTTStatusReportTime = now;
@@ -1228,7 +1244,7 @@ void loop() {
     bPID.SetMode(pidMode);
     Output = 0 ;
     DEBUG_print("Current config has disabled PID\n");
-  } else if (pidON == 1 && pidMode == 0) {
+  } else if (pidON == 1 && pidMode == 0 && !emergencyStop) {
     Output = 0; // safety: be 100% sure that PID.compute() starts fresh.
     pidMode = 1;
     bPID.SetMode(pidMode);

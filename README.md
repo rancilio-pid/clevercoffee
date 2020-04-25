@@ -2,7 +2,7 @@
 
 BLEEDING EDGE MASTER VERSION 
 
-Version 2.1.0 beta6
+Version 2.1.0 beta7
 
 based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 
@@ -190,6 +190,8 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
 3. Compile, upload and enjoy!
 
 # Changelog
+- 2.1.0_beta7:
+  - Fix: When an EmergencyStop is triggered, PID does not restart again.
 - 2.1.0_beta6:
   - Complete rewrite of "TSIC sensor read" based on the excellent ISR code by Adrian. (Thanks Adrian!)
     - Optimized "TSIC sensor read" to further increase performance.
