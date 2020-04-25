@@ -51,4 +51,9 @@
 #define STARTKP 50   // Start Kp during coldstart
 #define STARTTN 150  // Start Tn during cold start
 
+//backflush values
+#define FILLTIME 3000       // time in ms the pump is running
+#define FLUSHTIME 6000      // time in ms the 3-way valve is open -> backflush
+#define MAXFLUSHCYCLES 5      // number of cycles the backflush should run; 0 = disabled
+
 #endif // _userConfig_H
