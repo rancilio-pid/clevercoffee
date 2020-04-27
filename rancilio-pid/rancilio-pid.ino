@@ -27,7 +27,7 @@ RemoteDebug Debug;
 #define pinRelayHeater    14
 #define pinLed            15
 
-const char* sysVersion PROGMEM  = "Version 2.1.0 beta7";
+const char* sysVersion PROGMEM  = "Version 2.1.0 master";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file

@@ -2,7 +2,7 @@
 
 BLEEDING EDGE MASTER VERSION 
 
-Version 2.1.0 beta7
+Version 2.1.0 master
 
 based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 
@@ -190,50 +190,30 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
 3. Compile, upload and enjoy!
 
 # Changelog
-- 2.1.0_beta7:
-  - Fix: When an EmergencyStop is triggered, PID does not restart again.
-- 2.1.0_beta6:
+- 2.1.0_master:
+  - Networking:
+    - Huge improvements in handling unstable WIFI networks and mqtt/blynk service unavailabilities.
+    - You can disable/enable WIFI, MQTT or Blynk in userConfig.h and stil have a flawlessly working PID controller. Blynk is no longer an hard requirement!
+    - Offline Modus is fixed and enhanced. If userConfig.h's FORCE_OFFLINE is enabled, then PID fully is working without networking. Ideal in situations when there is no connectivity or you dont want to rely on it.
+    - Fix of EEPROM functionality: PID settings are correctly saved in EERPOM and correctly used if there are WIFI issues.
+    - Instead of using dynamic IPs (over DHCPd) you have the option to set a static IP.
+    - If blynk or mqtt is not working during startup, do not retry the connection periodically (configurable by userconfig.h DISABLE_SERVICES_ON_STARTUP_ERRORS)
+  - New PID Variable "BREWDETECTION_POWER" introduced which defines the heater power during brewing.
   - Complete rewrite of "TSIC sensor read" based on the excellent ISR code by Adrian. (Thanks Adrian!)
     - Optimized "TSIC sensor read" to further increase performance.
     - Currently it takes <4ms to collect sensor data instead of the previous 78ms).
     - Fix: "sensor errors" do not occur anymore.
-  - PID calculations are moved from ISR to loop(). This improves stability even further.
-  - Overall stability better by honoring critical processes.
-  - Fix: sensorErrors had been detected but not handled correctly in all places (eg display).
-  - Fix: After power on, the 5 second wait time until heater starts is removed.
-  - Some other tunings.
-- 2.1.0_beta5:
-  - Fix: TSIC Bug causes restarts. (Thanks to pbeh & helgo for the debug logs)
-  - Fix: Brew detection optimized.
-  - Fix: Eeprom save did not sync back to blynk.
-  - BrewDetection is more sensitive.
-  - Renamed BREW_POWER to BREWDETECTION_POWER (default is 70%).
-- 2.1.0_beta4:
-  - New PID Variable "BREW_POWER" introduced which defines the heater power during brewing.
-  - Debug Output should show correct output values in all situations.
-  - Library path adapted to support Arduino under Linux.
-  - Fix: Restart TSIC algorithmen when a sensor error occured.
-- 2.1.0_beta3:
-  - Fix: Reimplemented and refactored Wifi stack (again)
-  - Safetly feature: Done start brewing if the brew-button is switched "on" on startup
-- 2.1.0_beta2:
-  - Feature: Auto-tuning of tsic sensor read interval to reduce loop() freezes from 70ms to <15ms.
-  - Fix crashes when saving to eeprom.
-- 2.1.0_beta1:
-  - You can disable/enable WIFI, MQTT or Blynk in userConfig.h and stil have a flawlessly working PID controller. Blynk is no longer an hard requirement!
-  - Offline Modus is fixed and enhanced. If userConfig.h's FORCE_OFFLINE is enabled, then PID fully is working without networking. Ideal in situations when there is no connectivity or you dont want to rely on it.
-  - Instead of using dynamic IPs (over DHCPd) you have the option to set a static IP.
-  - Fix of EEPROM functionality: PID settings are correctly saved in EERPOM and correctly used if there are WIFI issues.
-  - Huge improvements in handling unstable WIFI networks and mqtt/blynk service unavailabilities.
-  - Code Tunings all over the place to increase performance and therefor stability 
-    - Reduce loop() freezes from 70ms to 12ms when data is send to blynk.
-    - too many to mention.
-  - Set non-critical (service) network timeouts to 2sec.
-  - If blynk or mqtt is not working during startup, do not retry the connection periodically (configurable by userconfig.h DISABLE_SERVICES_ON_STARTUP_ERRORS)
-  - Fix: WLAN reconnection attempts might reboot the arduino.
-  - Some system libs are optimized in performance and stability (src/ folder).
+  - Performance/Stability:
+    - Some system libs are optimized in performance and stability (src/ folder).
+    - Remove all unneeded external libraries which are installed in system's arduino search path.
+    - Code Tunings all over the place to increase performance and therefor stability.
+    - Overall stability better by honoring critical processes.
   - Debuglogs can also be accessed via browser (see documentation).
-  - Remove all unneeded external libraries which are installed in system's arduino search path.
+  - PID calculations are moved from ISR to loop(). This improves stability even further.
+  - Fix: Brew detection optimized.
+  - Safetly feature: Done start brewing if the brew-button is switched "on" on startup
+  - Fix: After power on, the 5 second wait time until heater starts is removed.
+  - Library path adapted to support Arduino under Linux.
 - 2.0.3_beta2:
   - Wifi disconnects handled better.
   - Implement blynk reconnect exponential backoff.

@@ -23,9 +23,9 @@
 
 #include "PIDBias.h"
 
-double PIDBias::signnum_c(double x) {
-  if (x >= 0.0) return 1.0;
-  if (x < 0.0) return -1.0;
+int PIDBias::signnum_c(double x) {
+  if (x >= 0.0) return 1;
+  if (x < 0.0) return -1;
 }
 
 PIDBias::PIDBias(double* Input, double* Output, double* steadyPower, double* Setpoint,
@@ -36,8 +36,6 @@ PIDBias::PIDBias(double* Input, double* Output, double* steadyPower, double* Set
     mySetpoint = Setpoint;
     mySteadyPower = steadyPower;
     inAuto = MANUAL;
-    lastInput = *myInput;
-    lastLastInput = *myInput;
     lastOutput = *myOutput;
     steadyPowerDefault = *mySteadyPower;
     steadyPowerOffset = 0;
@@ -156,9 +154,7 @@ int PIDBias::Compute()
       if (output > outMax) output = outMax;
       else if(output < outMin) output = outMin;
       *myOutput = output;
-      lastLastInput = lastInput;
       lastError = error;
-      lastInput = input;
       lastTime = now;
       return 1;  //compute did run
    } else {
@@ -216,8 +212,6 @@ void PIDBias::SetMode(int Mode)
 
 void PIDBias::Initialize()
 {
-   lastInput = *myInput;
-   lastLastInput = *myInput;
    lastOutput = *myOutput;
    burstOutput = 0;
    sumOutputD = 0;

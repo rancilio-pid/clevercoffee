@@ -67,7 +67,7 @@ class PIDBias
   double GetLastOutput();
   void SetBurst(double);
   void SetSumOutputI(double);
-  double signnum_c(double);
+  int signnum_c(double);
   void SetFilterSumOutputI(double);
   void SetSteadyPowerOffset(double);
   void SetAutoTune(boolean);
@@ -102,7 +102,7 @@ class PIDBias
   double *mySteadyPower;
 	unsigned long lastTime;
   unsigned long lastTrigger;
-  double lastInput, lastLastInput, lastOutput, lastError;
+  double lastOutput, lastError;
 	unsigned long SampleTime;
 	double outMin, outMax;
 	bool inAuto;
