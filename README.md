@@ -2,11 +2,11 @@
 
 BLEEDING EDGE MASTER VERSION 
 
-Version 2.0.3 beta2
+Version 2.1.0 master
 
 based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 
-# Most important features compared to rancilio-pid master (Version 1.9.7):
+# Most important features compared to rancilio-pid master:
 1. New PID Controller "Multi-state PID with steadyPower (Bias)"
    - Distinct PID settings dependend on the current "state" of the maschine. 
    - Most of the settings are either static or semi-automatically tuned, which does not require an PHD (German: Diplom) to understand.
@@ -21,29 +21,31 @@ based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
    - PidController offers feature like filtering, special handling of setPoint crossings and more (hard-coded)
    - PID Controller is now integral part of the software and not an external library.
 1. Beautify display output with new icons (thanks to helge!)
+1. Freely choose if you want the software use WIFI, BLYNK and MQTT. Everythink can be enabled/disabled and stil have a flawlessly working PID controller.
+1. Offline Modus is fixed and enhanced. If userConfig.h's FORCE_OFFLINE is enabled, then PID fully is working without networking. Ideal in situations when there is no connectivity or you dont want to rely on it.
+1. Huge performance tunings and improvements under the hood which stabilizes the system (eg in situations of bad WIFI, hardware issues,..).
 1. MQTT support to integrate maschine in smart-home solutions and to easier extract details for graphing/alerting.
-1. Added RemoteDebug over telnet so that we dont need USB to debug/tune pid anymore (https://github.com/JoaoLopesF/RemoteDebug)
+1. Added RemoteDebug over telnet so that we dont need USB to debug/tune pid anymore (https://github.com/JoaoLopesF/RemoteDebug). While using OTA updates you can remotely debug and update the software!
 1. "Brew Ready" Detection implemented, which detects when the temperature has stabilized at setPoint. It can send an
    MQTT event or have hardware pin 15 triggered (which can be used to turn a LED on).
 1. All heater power relevant settings are now set and given in percent (and not absolute output) and therefore better to understand
 1. Safetly toogle added to shutdown heater on sensor malfunction (TEMPSENSORRECOVERY)
 1. Many useful functions to be used internally getAverageTemperature(), pastTemperatureChange() + updateTemperatureHistory())
-1. Much tunings and improvements under the hood which stabilizes the system.
 
 # ATTENTION:
-- EEPROM has changed. Therefore you have to connect to blynk at least once after flashing, and manually set correct settings in blynk app (see screenshots for default values).
 - This software is tested thoroughly with the pid-only hardware solution on Silvia 5e, and with a permanently run full-hardware solution on an 10 year old Silvia. I am grateful for any further feedback. 
 - Please monitor our maschine's temperature closely the first few run times. The muti-state pid controller should never lead to temperatures greater than 5 degress above setpoint!
 
-# Additional important information
-- Installation is as explained on http://rancilio-pid.de/ but with following adapations:
-- Copy file userConfig.h.SAMPLE to userConfig.h and edit this file accordingly.
-- Additional Arduino dependency on PubSubClient (tested with Version 2.7.0). 
-  Please install this lib by using Arduino->Sketch->Include Library->"Library Manager".
-  ![Library Manager](https://github.com/medlor/ranciliopid/blob/master/arduino-docs/PubSubClient_Dep.jpg)
-- Additional Arduino dependency on RemoteDebug (tested with Version 3.0.5). 
-  Please install this lib by using Arduino->Sketch->Include Library->"Library Manager".
-  ![Library Manager](https://github.com/medlor/ranciliopid/blob/master/arduino-docs/RemoteDebug_Dep.jpg)
+# Instructions on how to migrate from official rancilio to bleeding-edge
+Installation is as explained on http://rancilio-pid.de/ but with following adapations:
+1. Make screenshots of the official "Blynk App Dashboard" so that you can revert anytime.
+1. Copy file userConfig.h.SAMPLE to userConfig.h and edit this file accordingly.
+1. (Optional) Enable blynk in userConfig and build the "Blynk App Dashboard" as described below.
+   OR just disable blynk in userConfig, enable debug logs and use one of the methods described in "Debugging Howto" to monitor the first few runs.
+1. Flash and enjoy your espresso.
+1. No tuning should be required normally. If you want/need to then use the method described below.
+
+# Additional information
 - If you see the following error during compile "Height incorrect, please fix Adafruit_SSD1306.h!", then search for the file Adafruit_SSD1306.h in your Documents/ folder and adapt Line 72ff to match following code:
   ```
   #define SSD1306_128_64
@@ -51,10 +53,6 @@ based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
   //#define SSD1306_96_16
   ```
   Also check and fix all files matching "Adafruit_SSD1306.h" in your Documents/ subfolder!!
-- If you want to increase the inactivity timeout you have to manually edit the file "RemoteDebugCfg.h" which is somewhere in a subpath below $USER/Documents/. Just search for the line "#define MAX_TIME_INACTIVE 600000" and replace the number. Example :
-  ```
-  #define MAX_TIME_INACTIVE 18000000
-  ```
 
 # Blynk App Dashboard
 Unfortunately you have to manually build your dashboard (config does not fit in QR code).
@@ -88,6 +86,7 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
   Outerzone P := V30  
   Outerzone I := V31  
   Outerzone D := V32  
+  BrewPower   := V36  
   SteadyPower := V41  
   SteadyPower Offset Time := V43  
   SteadyPower Offset Power := V42  
@@ -142,12 +141,23 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
    ```
    #define DEBUGMODE
    ```
-1. Getting logs
-   - Download [putty](https://the.earth.li/~sgtatham/putty/latest/w64/putty.exe) for windows or use telnet in linux to connect to port 23 of the rancilio-maschine's IP-address: 
-     <p align="center">
-     <img src="https://github.com/medlor/ranciliopid/blob/master/pictures/putty/putty.jpg" height="300">
-     </p>
-     Or for linux: bash> $ telnet ip-address 23
+1. Getting debug logs 
+   - on windows
+     - Download [putty](https://the.earth.li/~sgtatham/putty/latest/w64/putty.exe) for windows or use telnet in linux to connect to port 23 of the rancilio-maschine's IP-address: 
+       <p align="center">
+       <img src="https://github.com/medlor/ranciliopid/blob/master/pictures/putty/putty.jpg" height="300">
+       </p>
+   - on linux
+     ```
+     sh> $ telnet rancilio-ip-address 23
+     ```
+   - on andriod, following apps are recommended
+     - [Fing](https://play.google.com/store/apps/details?id=com.overlook.android.fing)
+     - [JuiceSSH](https://play.google.com/store/apps/details?id=com.sonelli.juicessh)
+     - Just open Fing, search for your "rancilio device" as defined in userConfig.h's HOSTNAME, then press on the device -> "Offene Ports finden" -> "Porr 23" -> "Verbinden mit Telnet-Client"
+     - To export the protocol just long press on one of the log-lines and choose "save/share".
+   - with Web-Browser
+     - Open the file ```rancilio-pid\src\RemoteDebugApp\index.html``` with firefox/chrome and enter your rancilio-ip in the upper left field.
 1. Explanation of the PID log line
    ```
    [0m(D p:^5000ms) 435 Input= 93.46 | error= 0.54 delta= 2.45 | Output= 27.88 = b:52.10 + p: 0.86 + i: 0.00( 0.00) + d:-25.09
@@ -170,13 +180,40 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
 - Required configuration in config.h:
   - #define BREW_READY_LED 1
   - #define BREW_READY_DETECTION 0.2  # or any other value
+  - <p align="center">
+    <img src="https://github.com/medlor/ranciliopid/blob/2.1.0_beta/pictures/hardware-led/rancilio-brewReadyLed.jpg" height="300">
+    </p>
 
-# Update instructions
+# Instructions on how to update to the latest version of bleeding-edge
 1. Just overwrite all existing files with a newly released version.
 2. Open your userConfig.h file, which had not been overwritten in previous step, and manually check (line by line!) that all updates to the new file userConfig.h.SAMPLE are reflected in your own userConfig.h. 
 3. Compile, upload and enjoy!
 
 # Changelog
+- 2.1.0_master:
+  - Networking:
+    - Huge improvements in handling unstable WIFI networks and mqtt/blynk service unavailabilities.
+    - You can disable/enable WIFI, MQTT or Blynk in userConfig.h and stil have a flawlessly working PID controller. Blynk is no longer an hard requirement!
+    - Offline Modus is fixed and enhanced. If userConfig.h's FORCE_OFFLINE is enabled, then PID fully is working without networking. Ideal in situations when there is no connectivity or you dont want to rely on it.
+    - Fix of EEPROM functionality: PID settings are correctly saved in EERPOM and correctly used if there are WIFI issues.
+    - Instead of using dynamic IPs (over DHCPd) you have the option to set a static IP.
+    - If blynk or mqtt is not working during startup, do not retry the connection periodically (configurable by userconfig.h DISABLE_SERVICES_ON_STARTUP_ERRORS)
+  - New PID Variable "BREWDETECTION_POWER" introduced which defines the heater power during brewing.
+  - Complete rewrite of "TSIC sensor read" based on the excellent ISR code by Adrian. (Thanks Adrian!)
+    - Optimized "TSIC sensor read" to further increase performance.
+    - Currently it takes <4ms to collect sensor data instead of the previous 78ms).
+    - Fix: "sensor errors" do not occur anymore.
+  - Performance/Stability:
+    - Some system libs are optimized in performance and stability (src/ folder).
+    - Remove all unneeded external libraries which are installed in system's arduino search path.
+    - Code Tunings all over the place to increase performance and therefor stability.
+    - Overall stability better by honoring critical processes.
+  - Debuglogs can also be accessed via browser (see documentation).
+  - PID calculations are moved from ISR to loop(). This improves stability even further.
+  - Fix: Brew detection optimized.
+  - Safetly feature: Done start brewing if the brew-button is switched "on" on startup
+  - Fix: After power on, the 5 second wait time until heater starts is removed.
+  - Library path adapted to support Arduino under Linux.
 - 2.0.3_beta2:
   - Wifi disconnects handled better.
   - Implement blynk reconnect exponential backoff.
@@ -282,7 +319,7 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
 
 # Special Thanks
 To the great work of the rancilio-pid.de team, just to mention a few: andreas, markus, toppo78, miau.  
-Also to the nice people in the rancilio chat and the ones who contribute and give very much appreciated feedback like helge!  
+Also to the nice people in the rancilio chat and the ones who contribute and give very much appreciated feedback like helge and Adrian!  
   
 !! Thank you so much for the tasty cup of coffee I enjoy each day !!  
 

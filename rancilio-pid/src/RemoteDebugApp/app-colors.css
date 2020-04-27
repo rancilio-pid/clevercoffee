@@ -1,0 +1,44 @@
+/* Style for RemoteDebugApp web page  */
+/* Main colors, used in othes css */
+
+:root {
+
+    /* General */
+
+    --content-color: #212121; 
+    --disabled-color: #708090;
+    
+    /* Debug levels */
+
+    --verbose-color: rgb(60, 179, 113);
+    --debug-color: rgb(0, 128, 0);
+    --info-color: rgb(218, 165, 32);
+    /* --warning-color: rgb(160, 82, 45); */
+    --warning-color: rgb(238, 64, 0);
+    --error-color: rgb(255, 0, 0);
+
+    /* --verbose-color: #2E8B57;
+    --debug-color: #00b400;
+    --info-color: #E6E600;
+    --warning-color: #FF8C00;
+    --error-color: #ff0000; */
+
+    /* --verbose-color: #1aa40d;
+    --debug-color: #2fb11e;
+    --info-color: #aead24;
+    --warning-color: #33bbc7;
+    --error-color: #c33820; */
+
+    /* Console table */
+
+    --ct-prof-green-bgcolor: var(--debug-color);
+    --ct-prof-green-color: #000;
+    --ct-prof-yellow-bgcolor: var(--info-color);
+    --ct-prof-yellow-color: #000;
+    --ct-prof-orange-bgcolor: #CDCD00;
+    --ct-prof-orange-color: #000;
+    --ct-prof-red-bgcolor: var(--info-color);
+    --ct-prof-red-color: #000;
+}
+
+/* End */

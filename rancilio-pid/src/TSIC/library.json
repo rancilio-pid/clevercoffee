@@ -1,0 +1,13 @@
+{
+  "name": "TSIC by Schm1tz1",
+  "keywords": "TSIC, 206, 306, 506, digital, temperature, sensor",
+  "description": "Library for TSIC digital temperature sensors (type 206/306/506 and similar).",
+  "repository":
+  {
+    "type": "git",
+    "url": "https://github.com/Schm1tz1/arduino-tsic"
+  },
+  "frameworks": "arduino",
+  "platforms": "*"
+}
+

@@ -22,23 +22,21 @@ class PIDBias
   #define AUTOMATIC	1
   #define MANUAL	0
 
-  #ifndef DEBUGMODE
-  #define DEBUG_printLib(fmt, ...)
-  #else
-  #define DEBUG_printLib(fmt, ...) if ((*myDebug).isActive((*myDebug).DEBUG))   (*myDebug).printf("%0u " fmt, millis()/1000, ##__VA_ARGS__)
-  #endif
-
   //commonly used functions **************************************************************************
     PIDBias(double*, double*, double*, double*,        // * constructor.  links the PIDBias to the Input, Output, and 
-        double, double, double, RemoteDebug*);//   Setpoint.  Initial tuning parameters are also set here.
+        double, double, double);          //   Setpoint.  Initial tuning parameters are also set here.
                                           //   (overload for specifying proportional mode)
 	
     void SetMode(int Mode);               // * sets PIDBias to either Manual (0) or Auto (non-0)
 
-    bool Compute();                       // * performs the PIDBias calculation.  it should be
+    int Compute();                       // * performs the PIDBias calculation.  it should be
                                           //   called every time loop() cycles. ON/OFF and
                                           //   calculation frequency can be set using SetMode
                                           //   SetSampleTime respectively
+                                          // returns:
+                                          // 1 := when compute is run
+                                          // 0 := compute not run yet
+                                          // 2 := time for compute to run, but pid is disabled
 
     void SetOutputLimits(double, double); // * clamps the output to a specific range. 0-255 by default, but
 										                      //   it's likely the user will want to change this depending on
@@ -69,7 +67,7 @@ class PIDBias
   double GetLastOutput();
   void SetBurst(double);
   void SetSumOutputI(double);
-  double signnum_c(double);
+  int signnum_c(double);
   void SetFilterSumOutputI(double);
   void SetSteadyPowerOffset(double);
   void SetAutoTune(boolean);
@@ -102,10 +100,9 @@ class PIDBias
   double *mySetpoint;           //   PIDBias, freeing the user from having to constantly tell us
                                 //   what these values are.  with pointers we'll just know.
   double *mySteadyPower;
-  RemoteDebug *myDebug;
 	unsigned long lastTime;
   unsigned long lastTrigger;
-  double lastInput, lastLastInput, lastOutput, lastError;
+  double lastOutput, lastError;
 	unsigned long SampleTime;
 	double outMin, outMax;
 	bool inAuto;
