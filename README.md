@@ -75,7 +75,7 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
   HeaterPower := V23  
   Temperature Error := V11  
   Temperature Change (last 10 sec) := V35  
-  CurrentTemp/TargetTemp (Type: SuperChart) := V2/V3  
+  CurrentTemp/TargetTemp (Type: SuperChart) := V2/V7  
   HeaterPower := V23  
   Water Temp changes :=V35  
 
