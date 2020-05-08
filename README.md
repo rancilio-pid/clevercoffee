@@ -2,7 +2,7 @@
 
 BLEEDING EDGE MASTER VERSION 
 
-Version 2.1.0 master
+Version 2.2.0 beta
 
 based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 
@@ -33,7 +33,7 @@ based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 1. Many useful functions to be used internally getAverageTemperature(), pastTemperatureChange() + updateTemperatureHistory())
 
 # ATTENTION:
-- This software is tested thoroughly with the pid-only hardware solution on Silvia 5e, and with a permanently run full-hardware solution on an 10 year old Silvia. I am grateful for any further feedback. 
+- This software is tested thoroughly with the pid-only hardware solution on Silvia 5e, and with a permanently run full-hardware solution on an 10 year old Silvia. Also a 10 year old Gaggia is tested successfully. I am grateful for any further feedback. 
 - Please monitor our maschine's temperature closely the first few run times. The muti-state pid controller should never lead to temperatures greater than 5 degress above setpoint!
 
 # Instructions on how to migrate from official rancilio to bleeding-edge
@@ -44,15 +44,6 @@ Installation is as explained on http://rancilio-pid.de/ but with following adapa
    OR just disable blynk in userConfig, enable debug logs and use one of the methods described in "Debugging Howto" to monitor the first few runs.
 1. Flash and enjoy your espresso.
 1. No tuning should be required normally. If you want/need to then use the method described below.
-
-# Additional information
-- If you see the following error during compile "Height incorrect, please fix Adafruit_SSD1306.h!", then search for the file Adafruit_SSD1306.h in your Documents/ folder and adapt Line 72ff to match following code:
-  ```
-  #define SSD1306_128_64
-  //#define SSD1306_128_32
-  //#define SSD1306_96_16
-  ```
-  Also check and fix all files matching "Adafruit_SSD1306.h" in your Documents/ subfolder!!
 
 # Blynk App Dashboard
 Unfortunately you have to manually build your dashboard (config does not fit in QR code).
@@ -114,6 +105,9 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
 - Open App, Search newly create project, Open the "Project Settings" then devices-> Master -> Master and Press "Refresh Token". Use this token in the rancilio software as auth token.
 
 # Tunings instructions
+```
+This step is optional: To my knowledge no tuning is required, because the default PID values already produce steady < 0.1 degree derivation to the setpoint within 600sec of power-up (independent of the espresso hardware).
+```
 1. Enable debug mode and have a look at the logs
 1. Adjust coldstart (state 1 and state 2):
    - The goal is to adapt "StartTemp" that after power-on of the cold (<50 Celcius) maschine and upon reaching "state 3" the temperature is around 0.5 Celcius below setPoint. 
@@ -190,6 +184,16 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
 3. Compile, upload and enjoy!
 
 # Changelog
+- 2.2.0 beta_1:
+  - Display functionality improved:
+    - Replaced display lib Adafruit_SSD1306.h with U8G2. Direct support for SH1106_128X64 and SSD1306_128X64 via userConfig.
+    - Completly new display widgets which show informations according to active PID state.
+    - Support for icon collections to easily customize/share display widgets. Icon collection "simple" and "smiley" included. (TODO: sample movies)
+    - Support for simple icon animations.
+    - Service Status Icons are displayed if enabled in userConfig.
+    - New DEFINES in userConfig.h. Update your config.
+  - Improvement: Blynk On/Off button re-inits PID state similar to when machine power is turned on.
+  - Fix: If DISABLE_SERVICES_ON_STARTUP_ERRORS=1 then WIFI reconnect attempts are also denied.
 - 2.1.0_master:
   - Networking:
     - Huge improvements in handling unstable WIFI networks and mqtt/blynk service unavailabilities.

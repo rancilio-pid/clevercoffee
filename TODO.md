@@ -1,8 +1,11 @@
 # TODO
+- re-test blynk QR Code 
+- make starttemp auto-tuned.
+- Implement an automatic "steam mode".
 - mqtt events/ should deliver json not string.
 - String replacement (https://cpp4arduino.com/2020/02/07/how-to-format-strings-without-the-string-class.html)
-- make starttemp auto-tuned.
 - convert all float to lu.
+
 
 # TODO Tests
 

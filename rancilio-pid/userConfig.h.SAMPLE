@@ -1,5 +1,5 @@
 /********************************************************
- * Version 2.1.0
+ * Version 2.2.0
  * Config must be configured by the user
  *****************************************************/
 
@@ -7,22 +7,18 @@
 #define _userConfig_H  
 
 /********************************************************
- * Vorab-Konfig
+ * General settings
  *****************************************************/
+#define MACHINE_TYPE "rancilio"  // supported values are "rancilio" and "gaggia".
+ 
 #define FORCE_OFFLINE 0       // 0=default | 1=no WIFI is required at all and Blynk&MQTT will be disabled.
 #define DISABLE_SERVICES_ON_STARTUP_ERRORS 1 // 1=on (default) when a service cannot be connected during startup, never retry | 0=off Try reconnecting to service during regular operations.
-#define DISPLAY 0             // 0=Deaktiviert, 2=Externes 128x64 Display
 #define ONLYPID 1             // 1=Nur PID ohne Preinfussion, 0=PID + Preinfussion
 #define TEMPSENSOR 2          // 1=DS19B20; 2=TSIC306
 #define TEMPSENSORRECOVERY 0  // 1 = on (default), 2= off. If off, temp sensor errors will stop the heater until power cycle
 #define TRIGGERTYPE HIGH      // LOW = low trigger, HIGH = high trigger relay
 #define OTA true              // true=activate update via OTA
 #define GRAFANA 0             // 0=default(off), 1=enable grafana visualisation by Markus (simply ask him for free access)
-
-#define EMERGENCY_TEMP 116    // If temperature is higher then notifications are send via display/debug/mqtt.
-                              // Reason might be an error OR the user wants to steam milk.
-#define EMERGENCY_TEXT "Emergency Stop!"  // Any short text to be displayed when temperature is >EMERGENCY_TEMP. Eg "Steam Milk!"
-#define EMERGENCY_ICON "rancilio"  // icon displayed when temperature is >EMERGENCY_TEMP. Allowed values are "rancilio" or "steam"
 
 #define BREWDETECTION 1                // 0 = off ,1 = Software
 #define BREWDETECTION_SENSITIVITY 1.0 // If temperature decreased within the last 3 seconds by this amount, then a brew is detected (BREWDETECTION must be 1)
@@ -33,6 +29,20 @@
 
 //#define DEBUGMODE              // to enable Debug uncomment this line. Afterwards you can connect via telnet to pot 23 to see debug logs.
 
+
+/*******   
+ * Display Settings
+ *******/       
+#define DISPLAY 0                         // 0=Deaktiviert, 1=SH1106_128X64, 2=SSD1306_128X64
+#define ICON_COLLECTION 0                 // 0:="simple", 1:="smiley"
+#define DISPLAY_TEXT "Bleeding-Edge PID"  // Text is displayed on bootup (max 21 chars)
+#define EMERGENCY_TEXT "Emergency Stop!"  // Any short text to be displayed when temperature is >EMERGENCY_TEMP. Eg "Steam Milk!"
+#define EMERGENCY_ICON "rancilio"     // icon displayed when temperature is >EMERGENCY_TEMP. Allowed values are "rancilio" or "steam"
+#define EMERGENCY_TEMP 116         // If temperature is higher then notifications are send via display/debug/mqtt.
+                                   // Reason might be an error OR the user wants to steam milk.
+#define ENABLE_FAILURE_STATUS_ICONS 1  // 1 = on (default), 0 = off. If enabled show status icons if services are offline.
+
+
 /*******   
  * General PID values
  *******/
@@ -42,9 +52,9 @@
                                       // How long should this additional power be delivered (in s)
 #define STEADYPOWER_OFFSET 1.8        // How much power should be added? (in %) (Rancilio Silvia 5E: 1.8, ...)
 
-#define SETPOINT 97     // Temperature SetPoint
-#define STARTTEMP 83.5  // If temperature is below this value then Coldstart state should be triggered
-                        // (Rancilio Silvia 5E: 83.5 , ...)
+#define SETPOINT 93     // Temperature SetPoint
+#define STARTTEMP 80.0  // If temperature is below this value then Coldstart state should be triggered
+                        // (Rancilio Silvia 5E: 80.0 , ...)
 
 // Inner Zone PID values
 #define AGGKP 80        // Kp (Rancilio Silvia 5E: 80, ...)
