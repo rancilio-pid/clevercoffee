@@ -33,7 +33,7 @@ based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 1. Many useful functions to be used internally getAverageTemperature(), pastTemperatureChange() + updateTemperatureHistory())
 
 # ATTENTION:
-- This software is tested thoroughly with the pid-only hardware solution on Silvia 5e, and with a permanently run full-hardware solution on an 10 year old Silvia. Also a 10 year old Gaggia is tested successfully. I am grateful for any further feedback. 
+- This software is tested thoroughly with the pid-only hardware solution on Silvia 5e, and with a permanently run full-hardware solution on an 10 year old Silvia. Also a 10 year old Gaggia Classic is tested successfully. I am grateful for any further feedback. 
 - Please monitor our maschine's temperature closely the first few run times. The muti-state pid controller should never lead to temperatures greater than 5 degress above setpoint!
 
 # Instructions on how to migrate from official rancilio to bleeding-edge
@@ -106,7 +106,8 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
 
 # Tunings instructions
 ```
-This step is optional: To my knowledge no tuning is required, because the default PID values already produce steady < 0.1 degree derivation to the setpoint within 600sec of power-up (independent of the espresso hardware).
+This step is optional: To my knowledge no tuning is required, because the default PID values already produce steady < 0.1 degree variance 
+to the setpoint within 600sec of power-up (independent of the espresso hardware).
 ```
 1. Enable debug mode and have a look at the logs
 1. Adjust coldstart (state 1 and state 2):
@@ -184,6 +185,9 @@ This step is optional: To my knowledge no tuning is required, because the defaul
 3. Compile, upload and enjoy!
 
 # Changelog
+- 2.2.0 beta_2:
+  - Fix: PID State "brewing" is correctly detected when ONLYPID=0. (Thanks Helge)
+  - Fix: Minor other fixes.
 - 2.2.0 beta_1:
   - Display functionality improved:
     - Replaced display lib Adafruit_SSD1306.h with U8G2. Direct support for SH1106_128X64 and SSD1306_128X64 via userConfig.

@@ -1,5 +1,5 @@
 /********************************************************
- * Version 2.1.0 BLEEDING EDGE MASTER
+ * BLEEDING EDGE FORK OF RANCILIO-PID.
  *   
  * This enhancement implementation is based on the
  * great work of the rancilio-pid (http://rancilio-pid.de/)
@@ -27,7 +27,7 @@ RemoteDebug Debug;
 #define pinRelayHeater    14
 #define pinLed            15
 
-const char* sysVersion PROGMEM  = "2.2.0 beta_1";
+const char* sysVersion PROGMEM  = "2.2.0 beta_2";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -656,7 +656,7 @@ void ICACHE_RAM_ATTR readTSIC() { //executed every ~100ms by interrupt
 }
 
 double getTSICvalue() {
-    /*
+  /*
     unsigned long now = millis();
     if ( now <= 15000 ) return 115;
     if ( now <= 33000 ) return 117;
@@ -987,8 +987,8 @@ void updateState() {
     {
       bPID.SetFilterSumOutputI(100);
       bPID.SetAutoTune(false);
-      if ( (Input > setPoint - outerZoneTemperatureDifference && pastTemperatureChange(5) >= 0) ||
-          pastTemperatureChange(10) >= 0.5) {
+      if ( (!OnlyPID && !brewing) || 
+           (OnlyPID && ((Input > setPoint - outerZoneTemperatureDifference && pastTemperatureChange(5) >= 0) || pastTemperatureChange(10) >= 0.5)) ) {
         DEBUG_print("Out Zone Detection: pastTemperatureChange(5)=%0.2f | pastTemperatureChange(10)=%0.2f\n", pastTemperatureChange(5), pastTemperatureChange(10));  
         snprintf(debugline, sizeof(debugline), "** End of Brew. Transition to step 3 (normal mode)");
         DEBUG_println(debugline);
@@ -1045,8 +1045,9 @@ void updateState() {
       if (brewDetectionSensitivity != 0 && brewDetection == 1) {
         //enable brew-detection if not already running and diff temp is > brewDetectionSensitivity
         const float brewDetectionAverageSensitivity = 0.4;
-        if ( (pastTemperatureChange(3) <= -brewDetectionSensitivity)
-             && Input < setPoint - outerZoneTemperatureDifference) {
+        if ( (!OnlyPID && brewing) || (OnlyPID && (pastTemperatureChange(3) <= -brewDetectionSensitivity)
+                        && Input < setPoint - outerZoneTemperatureDifference)
+           ) {
           DEBUG_print("Brew Detection: past(3)=%0.2f past(5)=%0.2f | Avg(3)=%0.2f | Avg(10)=%0.2f Avg(20)=%0.2f\n", pastTemperatureChange(3), pastTemperatureChange(5), getAverageTemperature(3), getAverageTemperature(10), getAverageTemperature(20));  
           if (OnlyPID == 1) {
             bezugsZeit = 0 ;
@@ -1351,7 +1352,7 @@ void loop() {
     char line2[17];
     snprintf(line2, sizeof(line2), "%0.0f\xB0""C", getCurrentTemperature());
     if (EMERGENCY_ICON == "steam") {
-      displaymessage(7, EMERGENCY_TEXT, line2);
+      displaymessage(7, EMERGENCY_TEXT, "");
     } else {
       displaymessage(0, EMERGENCY_TEXT, line2);
     }
@@ -1619,7 +1620,7 @@ void displaymessage(int activeState, char* displaymessagetext, char* displaymess
 
       //display current and target temperature
       if (activeState > 0 && activeState != 4) {
-        if (Input > 100) {
+        if (Input - 100 > FLT_EPSILON) {
           align_right = align_right_3digits;
         } else {
           align_right = align_right_2digits;
@@ -1632,6 +1633,7 @@ void displaymessage(int activeState, char* displaymessagetext, char* displaymess
         u8g2.println("C");
         u8g2.setFont(u8g2_font_open_iconic_embedded_1x_t);
         u8g2.drawGlyph(align_right-11, 3+7, 0x0046);
+        
         if (setPoint >= 100) {
           align_right = align_right_3digits;
         } else {
@@ -1651,6 +1653,7 @@ void displaymessage(int activeState, char* displaymessagetext, char* displaymess
         u8g2.setFont(u8g2_font_profont22_tf);
         u8g2.setCursor(align_right, 3);
         if (bezugsZeit < 10000) u8g2.print("0");
+        // TODO: Use print(u8x8_u8toa(value, digits)) or print(u8x8_u16toa(value, digits)) to print numbers with constant width (numbers are prefixed with 0 if required).
         u8g2.print(bezugsZeit / 1000);
         u8g2.setFont(u8g2_font_profont10_tf);
         u8g2.println("s");
