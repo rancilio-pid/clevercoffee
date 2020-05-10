@@ -185,9 +185,12 @@ to the setpoint within 600sec of power-up (independent of the espresso hardware)
 3. Compile, upload and enjoy!
 
 # Changelog
+- 2.2.0 beta_3:
+  - Change steam icon for simple collection.
+  - Remove EMERGENCY_TEXT define.
 - 2.2.0 beta_2:
   - Fix: PID State "brewing" is correctly detected when ONLYPID=0. (Thanks Helge)
-  - Fix: Minor other fixes.
+  - Fix: Other minor fixes.
 - 2.2.0 beta_1:
   - Display functionality improved:
     - Replaced display lib Adafruit_SSD1306.h with U8G2. Direct support for SH1106_128X64 and SSD1306_128X64 via userConfig.

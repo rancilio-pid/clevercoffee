@@ -27,7 +27,7 @@ RemoteDebug Debug;
 #define pinRelayHeater    14
 #define pinLed            15
 
-const char* sysVersion PROGMEM  = "2.2.0 beta_2";
+const char* sysVersion PROGMEM  = "2.2.0 beta_3";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -1352,9 +1352,9 @@ void loop() {
     char line2[17];
     snprintf(line2, sizeof(line2), "%0.0f\xB0""C", getCurrentTemperature());
     if (EMERGENCY_ICON == "steam") {
-      displaymessage(7, EMERGENCY_TEXT, "");
+      displaymessage(7, "", "");
     } else {
-      displaymessage(0, EMERGENCY_TEXT, line2);
+      displaymessage(0, "Emergency Stop!", line2);
     }
 
   } else {
