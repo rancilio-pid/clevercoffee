@@ -1,5 +1,5 @@
 /********************************************************
-   Version 1.9.8 MASTER (30.03.2020)
+   Version 1.9.9 MASTER (18.04.2020)
   Key facts: major revision
   - Check the PIN Ports in the CODE!
   - Find your changerate of the machine, can be wrong, test it!
@@ -38,7 +38,7 @@
 //#include "Arduino.h"
 #include <EEPROM.h>
 
-const char* sysVersion PROGMEM  = "Version 1.9.8 Master";
+const char* sysVersion PROGMEM  = "Version 1.9.9 Master";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -51,7 +51,8 @@ const int Brewdetection = BREWDETECTION;
 const int fallback = FALLBACK;
 const int triggerType = TRIGGERTYPE;
 const boolean ota = OTA;
-const int grafana=GRAFANA;
+const int grafana = GRAFANA;
+const int coldstart_pid = COLDSTART_PID ;
 
 // Wifi
 const char* hostname = HOSTNAME;
@@ -1177,21 +1178,24 @@ if (WiFi.status() == WL_CONNECTED && Offlinemodus == 0) {
     pidMode = 1;
     bPID.SetMode(pidMode);
   }
-
-
-
   //Sicherheitsabfrage
-  if (!sensorError && Input > 0 && !emergencyStop) {
-
-    //Set PID if first start of machine detected
-    if (Input < starttemp && kaltstart) {
+  if (!sensorError && Input > 0 && !emergencyStop) {  
+      if (coldstart_pid == 1 ) {  // default starttemp
+      starttemp = setPoint  ;
+      startKp = 50 ;
+      startTn = 130 ;
+      } 
+   //Set PID if first start of machine detected
+     if (Input < starttemp && kaltstart) {
+        //default PID Mode 
       if (startTn != 0) {
         startKi = startKp / startTn;
       } else {
         startKi = 0 ;
       }
-      bPID.SetTunings(startKp, startKi, 0);
-    } else {
+      bPID.SetTunings(startKp, startKi, 0, P_ON_M);
+      }    
+     else if (timerBrewdetection == 0) {    //Prevent overwriting of brewdetection values
       // calc ki, kd
       if (aggTn != 0) {
         aggKi = aggKp / aggTn ;
@@ -1199,10 +1203,9 @@ if (WiFi.status() == WL_CONNECTED && Offlinemodus == 0) {
         aggKi = 0 ;
       }
       aggKd = aggTv * aggKp ;
-      bPID.SetTunings(aggKp, aggKi, aggKd);
+      bPID.SetTunings(aggKp, aggKi, aggKd, PonE);
       kaltstart = false;
     }
-
     //if brew detected, set PID values
     brewdetection();
     if ( millis() - timeBrewdetection  < brewtimersoftware * 1000 && timerBrewdetection == 1) {
