@@ -1,5 +1,5 @@
 /********************************************************
- * Version 2.1.0 BLEEDING EDGE MASTER
+ * BLEEDING EDGE FORK OF RANCILIO-PID.
  *   
  * This enhancement implementation is based on the
  * great work of the rancilio-pid (http://rancilio-pid.de/)
@@ -8,7 +8,7 @@
  * 
  *****************************************************/
 
-#include "icon.h"
+#include <Arduino.h>
 
 //Libraries for OTA
 #include <ArduinoOTA.h>
@@ -27,7 +27,7 @@ RemoteDebug Debug;
 #define pinRelayHeater    14
 #define pinLed            15
 
-const char* sysVersion PROGMEM  = "Version 2.1.0 master";
+const char* sysVersion PROGMEM  = "2.2.0 master";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -95,11 +95,14 @@ PubSubClient mqtt_client(espClient);
 ******************************************************/
 int pidON = 1 ;             // 1 = control loop in closed loop
 int relayON, relayOFF;      // used for relay trigger type. Do not change!
-int activeState = 3;        // 1:= Coldstart required (maschine is cold) 
+int activeState = 3;        // (0:= undefined / EMERGENCY_TEMP reached)
+                            // 1:= Coldstart required (maschine is cold) 
                             // 2:= Stabilize temperature after coldstart
                             // 3:= (default) Inner Zone detected (temperature near setPoint)
                             // 4:= Brew detected
                             // 5:= Outer Zone detected (temperature outside of "inner zone")
+                            // (6:= steam mode activated (TODO))
+                            // (7:= steam ready)
 boolean emergencyStop = false; // Notstop bei zu hoher Temperatur
 
 /********************************************************
@@ -174,7 +177,6 @@ double steadyPower = STEADYPOWER; // in percent
 double PreviousSteadyPower = 0;
 int burstShot      = 0;   // this is 1, when the user wants to immediatly set the heater power to the value specified in burstPower
 double burstPower  = 20;  // in percent
-int testTrigger    = 0;
 
 // If the espresso hardware itself is cold, we need additional power for steadyPower to hold the water temperature
 double steadyPowerOffset   = STEADYPOWER_OFFSET;  // heater power (in percent) which should be added to steadyPower during steadyPowerOffset_Time
@@ -193,7 +195,7 @@ const int analogPin      = 0; // will be use in case of hardware
 int brewing              = 0;
 int brewswitch           = 0;
 bool waitingForBrewSwitchOff = false;
-double totalbrewtime     = 0;
+unsigned long totalbrewtime = 0;
 unsigned long bezugsZeit = 0;
 unsigned long startZeit  = 0;
 unsigned long previousBrewCheck = 0;
@@ -251,25 +253,28 @@ const unsigned long loop_report_count = 100;
 /********************************************************
    DISPLAY
 ******************************************************/
-//#include <U8x8lib.h>
-//#ifdef U8X8_HAVE_HW_SPI
-//#include <SPI.h>
-//#endif
-//U8X8_SSD1306_128X32_UNIVISION_SW_I2C u8x8(/* clock=*/ 5, /* data=*/ 4, /* reset=*/ 16);   //Display initalisieren  
-                        
-// Display 128x64
-#include <Wire.h>
-#include <Adafruit_GFX.h>
-//#include <ACROBOTIC_SSD1306.h>
-#include <Adafruit_SSD1306.h>
-#define OLED_RESET 16
-Adafruit_SSD1306 display(OLED_RESET);
-#define XPOS 0
-#define YPOS 1
-#define DELTAY 2
-#if (SSD1306_LCDHEIGHT != 64)
-#error("Height incorrect, please fix Adafruit_SSD1306.h!");
+#include "icon.h"
+#if (ICON_COLLECTION == 1)
+#include "icon_smiley.h"
+#else
+#include "icon_simple.h"
 #endif
+#include <U8g2lib.h>
+#include <Wire.h>
+#define OLED_RESET 16     //Output pin for dispaly reset pin
+#define OLED_SCL 5        //Output pin for dispaly clock pin
+#define OLED_SDA 4        //Output pin for dispaly data pin
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+#if (DISPLAY == 1)
+// Attention: refresh takes around 42ms!
+U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);   //e.g. 1.3"
+#else
+U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);  //e.g. 0.96"
+#endif
+unsigned long previousMillisDisplay = 0;  // initialisation at the end of init()
+const long intervalDisplay = 1000;     // Update für Display   //TODO: Sync this with global isrCounter
+boolean image_flip = true;
 
 /********************************************************
    DALLAS TEMP
@@ -302,8 +307,6 @@ const int isrCounterFrame = 1000;
 unsigned long previousMillisBlynk = 0;
 const long intervalBlynk = 1000;      // Update Intervall zur App
 int blynksendcounter = 1;
-unsigned long previousMillisDisplay;  // initialisation at the end of init()
-const long intervalDisplay = 500;     // Update für Display
 bool blynk_sync_run_once = false;
 String PreviousError = "";
 String PreviousOutputString = "";
@@ -654,15 +657,22 @@ void ICACHE_RAM_ATTR readTSIC() { //executed every ~100ms by interrupt
 
 double getTSICvalue() {
     /*
-    unsigned long now = millis();  //ABC
+    unsigned long now = millis();
     if ( now <= 15000 ) return 115;
     if ( now <= 25000 ) return 117;
-    if (now <= 28000) return 113;
-    if (now <= 30000) return 109;
-    if (now <= 32000) return 105;
-    if (now <= 34000) return 101;
-    if (now <= 36000) return 97;
-    return 93;
+    if (now <= 30000) return 113;
+    if (now <= 33000) return 109;
+    if (now <= 36000) return 105;
+    if (now <= 39000) return 101;
+    if (now <= 41000) return 97;
+    return 92;
+    */
+    /*
+    unsigned long now = millis();
+    if ( now <= 15000 ) return 88;
+    if ( now <= 25000 ) return 91;
+    if (now <= 28000) return 92;
+    return 93; 
     */
     byte parity1 = 0;
     byte parity2 = 0;
@@ -675,9 +685,9 @@ double getTSICvalue() {
       if (temperature2 & (1 << i)) ++parity2;
     }
     if (!(parity1 % 2) && !(parity2 % 2)) {       // check parities
-      temperature1 >>= 1;                           // delete parity bits
+      temperature1 >>= 1;                         // delete parity bits
       temperature2 >>= 1;
-      temperature = (temperature1 << 8) + temperature2;        //joints high and low significant figures
+      temperature = (temperature1 << 8) + temperature2; //joints high and low significant figures
       // TSIC 20x,30x
       return (float((temperature * 250L) >> 8) - 500) / 10;
       // TSIC 50x
@@ -787,7 +797,7 @@ void brew() {
   
         //if (aktuelleZeit >= lastBrewMessage + 500) {
         //  lastBrewMessage = aktuelleZeit;
-        //  DEBUG_print("brew(): bezugsZeit=%lu totalbrewtime=%0.1f\n", bezugsZeit/1000, totalbrewtime/1000);
+        //  DEBUG_print("brew(): bezugsZeit=%lu totalbrewtime=%lu\n", bezugsZeit/1000, totalbrewtime/1000);
         //}
         if (bezugsZeit <= totalbrewtime) {
           if (bezugsZeit <= preinfusion*1000) {
@@ -830,6 +840,7 @@ void brew() {
  *****************************************************/
  void checkWifi() {checkWifi(false, wifiConnectWaitTime); }
  void checkWifi(bool force_connect, unsigned long wifiConnectWaitTime_tmp) {
+  if (force_offline) return;  //remove this to allow wifi reconnects even when DISABLE_SERVICES_ON_STARTUP_ERRORS=1 
   if ((!force_connect) && (wifi_working() || in_sensitive_phase())) return;
   if (force_connect || (millis() > lastWifiConnectionAttempt + 5000 + (wifiReconnectInterval * wifiReconnects))) {
     lastWifiConnectionAttempt = millis();
@@ -839,7 +850,7 @@ void brew() {
     WiFi.disconnect(true);    // Delete SDK WiFi config
     WiFi.setSleepMode(WIFI_NONE_SLEEP);  // needed for some disconnection bugs?
     //WiFi.setSleep(false);              // needed?
-    //displaymessage("rancilio", "1: Connect Wifi to:", ssid, "");
+    //displaymessage(0, "Connecting Wifi", "");
     #ifdef STATIC_IP
     IPAddress STATIC_IP;      //ip(192, 168, 10, 177);
     IPAddress STATIC_GATEWAY; //gateway(192, 168, 10, 1);
@@ -950,7 +961,7 @@ void updateState() {
     case 1: // state 1 running, that means full heater power. Check if target temp is reached
     {
       bPID.SetFilterSumOutputI(100);
-      if (Input >= starttemp) {
+      if (Input >= starttemp  || !pidMode ) {
         snprintf(debugline, sizeof(debugline), "** End of Coldstart. Transition to step 2 (constant steadyPower)");
         DEBUG_println(debugline);
         mqtt_publish("events", debugline);
@@ -963,7 +974,7 @@ void updateState() {
     {
       bPID.SetFilterSumOutputI(30);
       double tempChange = pastTemperatureChange(20);
-      if ( (Input - setPoint >= 0) || (Input - setPoint <= -20) || (Input - setPoint <= 0  && tempChange <= 0.3)) {
+      if ( (Input - setPoint >= 0) || (Input - setPoint <= -20) || (Input - setPoint <= 0  && tempChange <= 0.3) || !pidMode ) {
         snprintf(debugline, sizeof(debugline), "** End of stabilizing. Transition to step 3 (normal mode)");
         DEBUG_println(debugline);
         mqtt_publish("events", debugline);
@@ -976,8 +987,8 @@ void updateState() {
     {
       bPID.SetFilterSumOutputI(100);
       bPID.SetAutoTune(false);
-      if ( (Input > setPoint - outerZoneTemperatureDifference && pastTemperatureChange(5) >= 0) ||
-          pastTemperatureChange(10) >= 0.5) {
+      if ( (!OnlyPID && !brewing) || 
+           (OnlyPID && ((Input > setPoint - outerZoneTemperatureDifference && pastTemperatureChange(5) >= 0) || pastTemperatureChange(10) >= 0.5)) ) {
         DEBUG_print("Out Zone Detection: pastTemperatureChange(5)=%0.2f | pastTemperatureChange(10)=%0.2f\n", pastTemperatureChange(5), pastTemperatureChange(10));  
         snprintf(debugline, sizeof(debugline), "** End of Brew. Transition to step 3 (normal mode)");
         DEBUG_println(debugline);
@@ -992,7 +1003,7 @@ void updateState() {
     case 5: // state 5 in outerZone
     {
       bPID.SetFilterSumOutputI(9);
-      if (Input > setPoint - outerZoneTemperatureDifference) {
+      if ( fabs(Input - setPoint) < outerZoneTemperatureDifference) {
         snprintf(debugline, sizeof(debugline), "** End of outerZone. Transition to step 3 (normal mode)");
         DEBUG_println(debugline);
         mqtt_publish("events", debugline);
@@ -1005,6 +1016,8 @@ void updateState() {
     case 3: // normal PID mode
     default:
     {
+      if (!pidMode) break;
+
       //set maximum allowed filterSumOutputI based on error/marginOfFluctuation
       if ( Input >= setPoint - marginOfFluctuation) {
         bPID.SetFilterSumOutputI(1.0);
@@ -1032,14 +1045,15 @@ void updateState() {
       if (brewDetectionSensitivity != 0 && brewDetection == 1) {
         //enable brew-detection if not already running and diff temp is > brewDetectionSensitivity
         const float brewDetectionAverageSensitivity = 0.4;
-        if ( (pastTemperatureChange(3) <= -brewDetectionSensitivity)
-             && Input < setPoint - outerZoneTemperatureDifference) {
+        if ( (!OnlyPID && brewing) || (OnlyPID && (pastTemperatureChange(3) <= -brewDetectionSensitivity)
+                        && Input < setPoint - outerZoneTemperatureDifference)
+           ) {
           DEBUG_print("Brew Detection: past(3)=%0.2f past(5)=%0.2f | Avg(3)=%0.2f | Avg(10)=%0.2f Avg(20)=%0.2f\n", pastTemperatureChange(3), pastTemperatureChange(5), getAverageTemperature(3), getAverageTemperature(10), getAverageTemperature(20));  
-          testTrigger = 0;
           if (OnlyPID == 1) {
             bezugsZeit = 0 ;
           }
-          timeBrewDetection = millis() ;
+          const int timeBrewDetectionOffset = 2 * 1000;
+          timeBrewDetection = millis() - timeBrewDetectionOffset ;
           timerBrewDetection = 1 ;
           mqtt_publish("brewDetected", "1");
           snprintf(debugline, sizeof(debugline), "** End of normal mode. Transition to step 4 (brew)");
@@ -1052,8 +1066,8 @@ void updateState() {
       }
 
       /* STATE 5 (OUTER ZONE) DETECTION */
-      if ( (Input > starttemp - coldStartStep1ActivationOffset && 
-            Input < setPoint - outerZoneTemperatureDifference) || testTrigger  ) {
+      if ( Input > starttemp - coldStartStep1ActivationOffset && 
+           (fabs(Input - setPoint) > outerZoneTemperatureDifference) ) { 
         //DEBUG_print("Out Zone Detection: Avg(3)=%0.2f | Avg(5)=%0.2f Avg(20)=%0.2f Avg(2)=%0.2f\n", getAverageTemperature(3), getAverageTemperature(5), getAverageTemperature(20), getAverageTemperature(2));  
         snprintf(debugline, sizeof(debugline), "** End of normal mode. Transition to step 5 (outerZone)");
         DEBUG_println(debugline);
@@ -1304,13 +1318,8 @@ void loop() {
       bPID.SetTunings(aggKp, aggKi, aggKd);
     }
 
+    displaymessage(activeState, "", "");
     sendToBlynk();
-
-    unsigned long currentMillisDisplay = millis();
-    if (currentMillisDisplay >= previousMillisDisplay + intervalDisplay) {
-      previousMillisDisplay = currentMillisDisplay;
-      displaymessage("brew", "", "", "");
-    }
 
   } else if (sensorError) {
     //Deactivate PID
@@ -1324,12 +1333,9 @@ void loop() {
       }
     }
     digitalWrite(pinRelayHeater, LOW); //Stop heating
-    unsigned long currentMillisDisplay = millis();
-    if (currentMillisDisplay >= previousMillisDisplay + intervalDisplay) {
-      previousMillisDisplay = currentMillisDisplay;
-      snprintf(debugline, sizeof(debugline), "Temp: %0.2f", getCurrentTemperature());
-      displaymessage("rancilio", "Check Temp. Sensor!", debugline, "");
-    }
+    char line2[17];
+    snprintf(line2, sizeof(line2), "Temp. %0.2f", getCurrentTemperature());
+    displaymessage(0, "Check Temp. Sensor!", line2);
     
   } else if (emergencyStop) {
     //Deactivate PID
@@ -1343,16 +1349,14 @@ void loop() {
       }
     }
     digitalWrite(pinRelayHeater, LOW); //Stop heating
-    unsigned long currentMillisDisplay = millis();
-    if (currentMillisDisplay >= previousMillisDisplay + intervalDisplay) {
-      previousMillisDisplay = currentMillisDisplay;
-      char line2[17];
-      char line3[17];
-      snprintf(line2, sizeof(line2), "Temp: %0.2f", getCurrentTemperature());
-      snprintf(line3, sizeof(line3), "Temp > %u", emergency_temperature);
-      displaymessage(EMERGENCY_ICON, EMERGENCY_TEXT, line2, line3);
+    char line2[17];
+    snprintf(line2, sizeof(line2), "%0.0f\xB0""C", getCurrentTemperature());
+    if (EMERGENCY_ICON == "steam") {
+      displaymessage(7, "", "");
+    } else {
+      displaymessage(0, "Emergency Stop!", line2);
     }
-    
+
   } else {
     if ( millis() - output_timestamp > 15000) {
        ERROR_print("unknown error\n");
@@ -1534,6 +1538,176 @@ void sync_eeprom(bool startup_read, bool force_read) {
 
 
 /***********************************
+ * DISPLAY
+ ***********************************/
+void u8g2_prepare(void) {
+  //u8g2.setBusClock(400000);  //any use?
+  u8g2.setFont(u8g2_font_profont11_tf);
+  u8g2.setFontRefHeightExtendedText();
+  u8g2.setDrawColor(1);
+  u8g2.setFontPosTop();
+  u8g2.setFontDirection(0);
+}
+
+void displaymessage(int activeState, char* displaymessagetext, char* displaymessagetext2) {
+  if (Display > 0) {
+    unsigned long currentMillisDisplay = millis();
+    if (currentMillisDisplay >= previousMillisDisplay + intervalDisplay || previousMillisDisplay == 0) {
+      previousMillisDisplay = currentMillisDisplay;
+      image_flip = !image_flip;
+      unsigned int align_right;
+      const unsigned int align_right_2digits = LCDWidth - 56;
+      const unsigned int align_right_3digits = LCDWidth - 56 - 12;
+      const unsigned int align_right_2digits_decimal = LCDWidth - 56 +28;
+      u8g2.clearBuffer();
+      u8g2.setBitmapMode(1);
+      //u8g2.drawFrame(0, 0, 128, 64);
+
+      //display icons
+      switch(activeState) {
+        case 1:
+        case 2:
+          if (image_flip) {
+            u8g2.drawXBMP(0,0, icon_width, icon_height, coldstart_rotate_bits);
+          } else {
+            u8g2.drawXBMP(0,0, icon_width, icon_height, coldstart_bits);
+          }
+          break;
+        case 4: //brew
+          if (image_flip) {
+            u8g2.drawXBMP(0,0, icon_width, icon_height, brewing_bits);
+          } else {
+            u8g2.drawXBMP(0,0, icon_width, icon_height, brewing_rotate_bits);
+          }
+          break;
+        case 3: 
+          if (brewReady) {
+            if (image_flip) {
+              u8g2.drawXBMP(0,0, icon_width, icon_height, brew_ready_bits);
+            } else {
+              u8g2.drawXBMP(0,0, icon_width, icon_height, brew_ready_rotate_bits);
+            }
+          } else {  //inner zone
+            if (image_flip) {
+              u8g2.drawXBMP(0,0, icon_width, icon_height, brew_acceptable_bits);
+            } else {
+              u8g2.drawXBMP(0,0, icon_width, icon_height, brew_acceptable_rotate_bits);
+            }
+          }
+          break;
+        case 5:
+          if (image_flip) {
+            u8g2.drawXBMP(0,0, icon_width, icon_height, outer_zone_bits);
+          } else {
+            u8g2.drawXBMP(0,0, icon_width, icon_height, outer_zone_rotate_bits);
+          }
+          break;
+        case 7:  //steam possible
+          if (image_flip) {
+            u8g2.drawXBMP(0,0, icon_width, icon_height, steam_bits);
+          } else {
+            u8g2.drawXBMP(0,0, icon_width, icon_height, steam_rotate_bits);
+          }
+          break;
+        default:
+          if (MACHINE_TYPE == "rancilio") {
+            u8g2.drawXBMP(41,0, rancilio_logo_width, rancilio_logo_height, rancilio_logo_bits);
+          } else if (MACHINE_TYPE == "gaggia") {
+            u8g2.drawXBMP(1, 0, gaggia_logo_width, gaggia_logo_height, gaggia_logo_bits);
+          }
+          break;
+      }
+
+      //display current and target temperature
+      if (activeState > 0 && activeState != 4) {
+        if (Input - 100 > FLT_EPSILON) {
+          align_right = align_right_3digits;
+        } else {
+          align_right = align_right_2digits;
+        }
+        u8g2.setFont(u8g2_font_profont22_tf);
+        u8g2.setCursor(align_right, 3);
+        u8g2.print(Input, 1);
+        u8g2.setFont(u8g2_font_profont10_tf);
+        u8g2.print((char)176);
+        u8g2.println("C");
+        u8g2.setFont(u8g2_font_open_iconic_embedded_1x_t);
+        u8g2.drawGlyph(align_right-11, 3+7, 0x0046);
+
+        if (Input <= 105) { //only show setpoint if we are not steaming
+          if (setPoint >= 100) {
+            align_right = align_right_3digits;
+          } else {
+            align_right = align_right_2digits;
+          }
+          u8g2.setFont(u8g2_font_profont22_tf);
+          u8g2.setCursor(align_right, 20);
+          u8g2.print(setPoint, 1);
+          u8g2.setFont(u8g2_font_profont10_tf);
+          u8g2.print((char)176);
+          u8g2.println("C");
+          u8g2.setFont(u8g2_font_open_iconic_other_1x_t);
+          u8g2.drawGlyph(align_right - 11 , 20+7, 0x047);
+        }
+
+      } else if (activeState == 4) {
+        totalbrewtime = (preinfusion + preinfusionpause + brewtime) * 1000;
+        align_right = align_right_2digits_decimal;
+        u8g2.setFont(u8g2_font_profont22_tf);
+        u8g2.setCursor(align_right, 3);
+        if (bezugsZeit < 10000) u8g2.print("0");
+        // TODO: Use print(u8x8_u8toa(value, digits)) or print(u8x8_u16toa(value, digits)) to print numbers with constant width (numbers are prefixed with 0 if required).
+        u8g2.print(bezugsZeit / 1000);
+        u8g2.setFont(u8g2_font_profont10_tf);
+        u8g2.println("s");
+        if (totalbrewtime >0) { 
+          u8g2.setFont(u8g2_font_open_iconic_embedded_1x_t);
+          u8g2.drawGlyph(align_right-11, 3+7, 0x0046);
+          u8g2.setFont(u8g2_font_profont22_tf);
+          u8g2.setCursor(align_right, 20);
+          u8g2.print(totalbrewtime / 1000);
+          u8g2.setFont(u8g2_font_profont10_tf);
+          u8g2.println("s");
+          u8g2.setFont(u8g2_font_open_iconic_other_1x_t);
+          u8g2.drawGlyph(align_right-11 , 20+7, 0x047);
+        }
+      }
+
+      //(optional) add 2 text lines 
+      u8g2.setFont(u8g2_font_profont11_tf);
+      u8g2.setCursor(ALIGN_CENTER(displaymessagetext), 44);  // 9 pixel space between lines
+      u8g2.print(displaymessagetext);
+      u8g2.setCursor(ALIGN_CENTER(displaymessagetext2), 53);
+      u8g2.print(displaymessagetext2);
+
+      //add status icons
+      #if (ENABLE_FAILURE_STATUS_ICONS == 1)
+      if (image_flip) {
+        byte icon_y = 64-(status_icon_height-1);
+        byte icon_counter = 0;
+        if ((!force_offline && !wifi_working()) || (force_offline && !FORCE_OFFLINE)) {
+          u8g2.drawXBMP(0, 64-status_icon_height+1, status_icon_width, status_icon_height, wifi_not_ok_bits);
+          u8g2.drawXBMP(icon_counter*(status_icon_width-1) , icon_y, status_icon_width, status_icon_height, wifi_not_ok_bits);
+          icon_counter++;
+        }
+        if (BLYNK_ENABLE && !blynk_working()) {
+          u8g2.drawXBMP(icon_counter*(status_icon_width-1), icon_y, status_icon_width, status_icon_height, blynk_not_ok_bits);
+          icon_counter++;
+        }
+        if (MQTT_ENABLE && !mqtt_working()) {
+          u8g2.drawXBMP(icon_counter*(status_icon_width-1), icon_y, status_icon_width, status_icon_height, mqtt_not_ok_bits);
+          icon_counter++;
+        }
+      }
+      #endif    
+
+      u8g2.sendBuffer();
+    }
+  }
+}
+
+
+/***********************************
  * SETUP()
  ***********************************/
 void setup() {
@@ -1571,16 +1745,13 @@ void setup() {
   digitalWrite(pinLed, LOW);
   #endif
 
-  if (Display == 2) {
-    /********************************************************
-      DISPLAY 128x64
-    ******************************************************/
-    display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3C (for the 128x64)  for AZ Deliv. Display
-    //display.begin(SSD1306_SWITCHCAPVCC, 0x3D);  // initialize with the I2C addr 0x3D (for the 128x64)
-    display.clearDisplay();
+  DEBUG_print("\nMachine: %s\nVersion: %s\n", MACHINE_TYPE, sysVersion);
+  if (Display > 0) {
+    u8g2.begin();
+    u8g2_prepare();
+    u8g2.clearBuffer();
   }
-  DEBUG_print("\nVersion: %s\n", sysVersion);
-  displaymessage("rancilio", sysVersion, "", "");
+  displaymessage(0, (char*) DISPLAY_TEXT,  (char*) sysVersion);
   delay(1000);
 
   //if brewswitch is already "on" on startup, then we brew should not start automatically
@@ -1609,11 +1780,10 @@ void setup() {
         blynk_disabled_temporary = true;
         lastWifiConnectionAttempt = millis();
       }
-      displaymessage("rancilio", "Cannot connect to Wifi:", ssid, "");
+      displaymessage(0, "Cant connect to Wifi", "");
       delay(1000);
     } else {
       DEBUG_print("IP address: %s\n", WiFi.localIP().toString().c_str());
-      //displaymessage("rancilio", "2: Wifi connected, ", "try mqtt/Blynk   ", "");
 
       // Connect to MQTT-Service
       if (MQTT_ENABLE) {
@@ -1624,7 +1794,7 @@ void setup() {
         if (!mqtt_reconnect(true)) {
           if (DISABLE_SERVICES_ON_STARTUP_ERRORS) mqtt_disabled_temporary = true;
           ERROR_print("Cannot connect to MQTT. Disabling...\n");
-          displaymessage("rancilio", "Cannot connect to MQTT:", "", "");
+          displaymessage(0, "Cant connect to MQTT", "");
           delay(1000);
         }
       }
@@ -1635,10 +1805,10 @@ void setup() {
         if (!Blynk.connect(5000)) {
           if (DISABLE_SERVICES_ON_STARTUP_ERRORS) blynk_disabled_temporary = true;
           ERROR_print("Cannot connect to Blynk. Disabling...\n");
-          displaymessage("rancilio", "Cannot connect to Blynk:", "", "");
+          displaymessage(0, "Cant connect to Blynk", "");
           delay(1000);
         } else {
-          //displaymessage("rancilio", "3: Blynk connected", "sync all variables...", "");
+          //displaymessage(0, "3: Blynk connected", "sync all variables...");
           DEBUG_print("Blynk is online, get latest values\n");
           unsigned long started = millis();
           while (blynk_working() && (millis() < started + 2000))
@@ -1670,7 +1840,7 @@ void setup() {
   /********************************************************
      OTA
   ******************************************************/
-  if (ota && !force_offline ) {
+  if (ota && !force_offline) {
     //wifi connection is done during blynk connection
     ArduinoOTA.setHostname(OTAhost);  //  Device name for OTA
     ArduinoOTA.setPassword(OTApass);  //  Password for OTA
@@ -1688,7 +1858,7 @@ void setup() {
   /********************************************************
      TEMP SENSOR
   ******************************************************/
-  //displaymessage("rancilio", "Init. vars", "", "");
+  //displaymessage(0, "Init. vars", "");
   if (TempSensor == 1) {
     sensors.begin();
     sensors.getAddress(sensorDeviceAddress, 0);
@@ -1703,7 +1873,7 @@ void setup() {
         updateTemperatureHistory(Input);
         break;
       }
-      displaymessage("rancilio", "Temp. sensor defect", "", "");
+      displaymessage(0, "Temp. sensor defect", "");
       ERROR_print("Temp. sensor defect. Cannot read consistant values. Retrying\n");
       delay(400);
     }
@@ -1723,7 +1893,7 @@ void setup() {
         updateTemperatureHistory(Input);
         break;
       }
-      displaymessage("rancilio", "Temp. sensor defect", "", "");
+      displaymessage(0, "Temp. sensor defect", "");
       ERROR_print("Temp. sensor defect. Cannot read consistant values. Retrying\n");
       delay(1000);
     }
@@ -1735,7 +1905,7 @@ void setup() {
   //Initialisation MUST be at the very end of the init(), otherwise the time comparison in loop() will have a big offset
   unsigned long currentTime = millis();
   previousMillistemp = currentTime;
-  previousMillisDisplay = currentTime + 50;
+  previousMillisDisplay = 0;
   previousMillisBlynk = currentTime + 800;
   lastMQTTStatusReportTime = currentTime + 300;
   pidComputeLastRunTime = currentTime;
@@ -1752,75 +1922,4 @@ void setup() {
   timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
   timer1_write(isrWakeupTime); // set interrupt time to 10ms
   DEBUG_print("End of setup()\n");
-}
-
-/********************************************************
-  Displayausgabe
-*****************************************************/
-char float2stringChar[8];
-char* float2string(float in) {
-  snprintf(float2stringChar, sizeof(float2stringChar), "%3d.%1d", (int) in, (int) (in*10) % 10);
-  return float2stringChar;
-}
-void displaymessage(String logo, String displaymessagetext, String displaymessagetext2, String displaymessagetext3) {
-  if (Display == 2 && !sensorError) {
-    /********************************************************
-       DISPLAY AUSGABE
-    ******************************************************/
-    display.clearDisplay();
-    display.setTextSize(1);
-    display.setTextColor(WHITE);
-    display.drawRoundRect(0, 0, 128, 64, 1, WHITE);
-    if (logo == "rancilio") {
-      display.drawBitmap(41,2, rancilio_logo_bits,rancilio_logo_width, rancilio_logo_height, WHITE);
-      display.setCursor(2, 47);
-      display.println(displaymessagetext);
-      display.println(displaymessagetext2);
-      display.print(displaymessagetext3);
-      
-    } else if (logo == "steam") {
-      display.drawBitmap(83,20, steam_logo_bits, steam_logo_width, steam_logo_height, WHITE);
-      
-      display.setCursor(8, 8);
-      display.setTextSize(2);
-      display.setTextColor(WHITE);
-      display.print(float2string(Input));   //temperature line
-      display.setTextSize(1);
-      display.print(" ");
-      display.print((char)247);
-      display.println("C");
-      
-      display.setCursor(10, 25); 
-      display.println(displaymessagetext);  // description line
-
-    } else if (logo == "brew") {
-      display.drawBitmap(83,20, brew_logo_bits, brew_logo_width, brew_logo_height, WHITE);
-      
-      display.setCursor(8, 8);
-      display.setTextSize(2);
-      display.setTextColor(WHITE);
-      display.print(float2string(Input)); //temperature line
-      display.setTextSize(1);
-      display.print(" ");
-      display.print((char)247);
-      display.println("C");
-
-      display.setCursor(25, 25); 
-      display.print(setPoint, 1);      //setPoint line
-      display.print(" ");
-      display.print((char)247);
-      display.println("C");
-
-      display.setCursor(10, 55);       // preinfusion line
-      display.print(bezugsZeit / 1000);
-      if (ONLYPID == 0) {
-        display.print("/");
-        display.print(totalbrewtime / 1000); 
-      }
-      display.print(" ");
-      display.println("sec.");
-    }
-    
-    display.display();
-  }
 }
