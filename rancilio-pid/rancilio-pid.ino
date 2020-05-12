@@ -27,7 +27,7 @@ RemoteDebug Debug;
 #define pinRelayHeater    14
 #define pinLed            15
 
-const char* sysVersion PROGMEM  = "2.2.0 beta_3";
+const char* sysVersion PROGMEM  = "2.2.0 master";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -656,16 +656,16 @@ void ICACHE_RAM_ATTR readTSIC() { //executed every ~100ms by interrupt
 }
 
 double getTSICvalue() {
-  /*
+    /*
     unsigned long now = millis();
     if ( now <= 15000 ) return 115;
-    if ( now <= 33000 ) return 117;
-    if (now <= 38000) return 113;
-    if (now <= 40000) return 109;
-    if (now <= 42000) return 105;
-    if (now <= 44000) return 101;
-    if (now <= 46000) return 97;
-    return 93; //TODO remove
+    if ( now <= 25000 ) return 117;
+    if (now <= 30000) return 113;
+    if (now <= 33000) return 109;
+    if (now <= 36000) return 105;
+    if (now <= 39000) return 101;
+    if (now <= 41000) return 97;
+    return 92;
     */
     /*
     unsigned long now = millis();

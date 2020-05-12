@@ -2,7 +2,7 @@
 
 BLEEDING EDGE MASTER VERSION 
 
-Version 2.2.0 beta
+Version 2.2.0 master
 
 based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 
@@ -20,7 +20,6 @@ based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
    - steadyPowerOffset is introduced which compensates the increased temperature loss when the maschine (brew head etc.) are still very cold.
    - PidController offers feature like filtering, special handling of setPoint crossings and more (hard-coded)
    - PID Controller is now integral part of the software and not an external library.
-1. Beautify display output with new icons (thanks to helge!)
 1. Freely choose if you want the software use WIFI, BLYNK and MQTT. Everythink can be enabled/disabled and stil have a flawlessly working PID controller.
 1. Offline Modus is fixed and enhanced. If userConfig.h's FORCE_OFFLINE is enabled, then PID fully is working without networking. Ideal in situations when there is no connectivity or you dont want to rely on it.
 1. Huge performance tunings and improvements under the hood which stabilizes the system (eg in situations of bad WIFI, hardware issues,..).
@@ -29,6 +28,7 @@ based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 1. "Brew Ready" Detection implemented, which detects when the temperature has stabilized at setPoint. It can send an
    MQTT event or have hardware pin 15 triggered (which can be used to turn a LED on).
 1. All heater power relevant settings are now set and given in percent (and not absolute output) and therefore better to understand
+1. Support for customizable item collections to beautify display output (thanks to helge!)
 1. Safetly toogle added to shutdown heater on sensor malfunction (TEMPSENSORRECOVERY)
 1. Many useful functions to be used internally getAverageTemperature(), pastTemperatureChange() + updateTemperatureHistory())
 
@@ -176,8 +176,25 @@ to the setpoint within 600sec of power-up (independent of the espresso hardware)
   - #define BREW_READY_LED 1
   - #define BREW_READY_DETECTION 0.2  # or any other value
   - <p align="center">
-    <img src="https://github.com/medlor/ranciliopid/blob/2.1.0_beta/pictures/hardware-led/rancilio-brewReadyLed.jpg" height="300">
+    <img src="https://github.com/medlor/ranciliopid/blob/master/pictures/hardware-led/rancilio-brewReadyLed.jpg" height="300">
     </p>
+
+# Instructions on how to create new icon collections
+1. Clone the file rancilio-pid\icon_simple.h to a custom filename, eg icon_myown.h .
+2. Use gimp of any other "paint" program to create 45x45 pixel black/white .xbm files.
+3. Open created .xbm files with any word-editor and paste the hex-codes into the specfic section in icon_myown.h . Following sections/pictures are supported:
+   - coldstart
+   - outer_zone (>1 degree off from setpoint)
+   - brew_acceptable (<0.3 degree off from setpoint)
+   - brew_ready (<0.3 degree off from setpoint for at least 40seconds)
+   - brewing (brew is detected)
+   - steam (steam is ready/in-progress)
+4. Change the define ICON_COLLECTION in userConfig.h to 1.
+5. Overwrite icon_smiley.h with our created file icon_myown.h .
+6. Send me your icon collection, so that I can add it permanently in future versions.
+Existing collections are shown here: 
+- [simple](https://github.com/medlor/ranciliopid/blob/master/pictures/icons/bleeding_edge_rancilio_pid_simple_2.2.0.mp4)
+- [smiley](https://github.com/medlor/ranciliopid/blob/master/pictures/icons/bleeding_edge_rancilio_pid_smiley_2.2.0.mp4)
 
 # Instructions on how to update to the latest version of bleeding-edge
 1. Just overwrite all existing files with a newly released version.
@@ -185,22 +202,18 @@ to the setpoint within 600sec of power-up (independent of the espresso hardware)
 3. Compile, upload and enjoy!
 
 # Changelog
-- 2.2.0 beta_3:
-  - Change steam icon for simple collection.
-  - Remove EMERGENCY_TEXT define.
-- 2.2.0 beta_2:
-  - Fix: PID State "brewing" is correctly detected when ONLYPID=0. (Thanks Helge)
-  - Fix: Other minor fixes.
-- 2.2.0 beta_1:
+- 2.2.0_master:
   - Display functionality improved:
     - Replaced display lib Adafruit_SSD1306.h with U8G2. Direct support for SH1106_128X64 and SSD1306_128X64 via userConfig.
     - Completly new display widgets which show informations according to active PID state.
-    - Support for icon collections to easily customize/share display widgets. Icon collection "simple" and "smiley" included. (TODO: sample movies)
+    - Support for icon collections to easily customize/share display widgets. Icon collection "simple" and "smiley" included.
     - Support for simple icon animations.
     - Service Status Icons are displayed if enabled in userConfig.
     - New DEFINES in userConfig.h. Update your config.
   - Improvement: Blynk On/Off button re-inits PID state similar to when machine power is turned on.
-  - Fix: If DISABLE_SERVICES_ON_STARTUP_ERRORS=1 then WIFI reconnect attempts are also denied.
+  - Fix: If DISABLE_SERVICES_ON_STARTUP_ERRORS=1 then WIFI reconnect attempts are also prevented.
+  - Remove define EMERGENCY_TEXT.
+  - Fix: PID State "brewing" is correctly detected when ONLYPID=0. (Thanks Helge)
 - 2.1.0_master:
   - Networking:
     - Huge improvements in handling unstable WIFI networks and mqtt/blynk service unavailabilities.
