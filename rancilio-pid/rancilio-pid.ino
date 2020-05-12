@@ -516,7 +516,7 @@ void refreshTemp() {
       temperature = 0;
       Sensor1.getTemperature(&temperature);
       Temperatur_C = Sensor1.calc_Celsius(&temperature);
-     // Temperatur_C = random(50,55);
+      //Temperatur_C = random(50,52);
       if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function
       Input = Temperatur_C;
       //Input = random(50,70) ;// test value
@@ -616,16 +616,20 @@ void brew() {
  void checkWifi(){
    if (Offlinemodus == 1 || brewcounter > 11) return;
    int statusTemp = WiFi.status();
+   DEBUG_println("wlanstatuscheck");
    // check WiFi connection:
    if (statusTemp != WL_CONNECTED) {
      // (optional) "offline" part of code
-
+    DEBUG_println("not connected");
       // check delay:
      if (millis() - lastWifiConnectionAttempt >= wifiConnectionDelay) {
+      DEBUG_println("innerwificonnectloop");
        lastWifiConnectionAttempt = millis();      
        // attempt to connect to Wifi network:
+       WiFi.disconnect();
        WiFi.begin(ssid, pass); 
-       delay(5000);    //will not work without delay
+       delay(1000);    //will not work without delay
+       yield();
        wifiReconnects++;    
      }
 
@@ -967,6 +971,7 @@ void setup() {
         would try to act as both a client and an access-point and could cause
         network-issues with your other WiFi-devices on your WiFi-network. */
       WiFi.mode(WIFI_STA);
+      WiFi.persistent(false);
       WiFi.begin(ssid, pass);
       DEBUG_print("Connecting to ");
       DEBUG_print(ssid);
