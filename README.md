@@ -170,8 +170,7 @@ to the setpoint within 600sec of power-up (independent of the espresso hardware)
 1. If you need help or have questions, just send me the logs in the [rancilio-pid chat](https://chat.rancilio-pid.de/).
 
 # How to use a simple LED as brewReady signal
-- The easiest way is to use arduino GPIO15. For this to work you have to connect a resistor and in parallel another resistor with the led in series. This has to be connected between GPIO Pin 15 and GROUND.  
-- A technical description can be found here https://www.forward.com.au/pfod/ESP8266/GPIOpins/index.html
+- The easiest way is to use arduino GPIO15. For this to work you have to connect a resistor (R3) and in parallel another resistor (R7) with the led (LED2) in series. This has to be connected between GPIO Pin 15 and GROUND as seen in [Schematic](https://www.forward.com.au/pfod/ESP8266/GPIOpins/index.html (R3, R7, LED2).
 - Required configuration in config.h:
   - #define BREW_READY_LED 1
   - #define BREW_READY_DETECTION 0.2  # or any other value
