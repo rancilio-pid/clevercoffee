@@ -783,7 +783,7 @@ void printScreen() {
       u8g2.drawLine(15, 61, 117, 61);
 
       //draw current temp in icon
-      if (abs(Input  - setPoint) < 0.3) {
+      if (fabs(Input  - setPoint) < 0.3) {
         if (isrCounter < 500) {
           u8g2.drawLine(9, 48, 9, 58 - (Input  / 2));
           u8g2.drawLine(10, 48, 10, 58 - (Input  / 2));
