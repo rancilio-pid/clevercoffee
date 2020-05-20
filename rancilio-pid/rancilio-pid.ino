@@ -27,7 +27,7 @@ RemoteDebug Debug;
 #define pinRelayHeater    14
 #define pinLed            15
 
-const char* sysVersion PROGMEM  = "2.2.0 master";
+const char* sysVersion PROGMEM  = "2.3.0 beta_1";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -177,6 +177,8 @@ double steadyPower = STEADYPOWER; // in percent
 double PreviousSteadyPower = 0;
 int burstShot      = 0;   // this is 1, when the user wants to immediatly set the heater power to the value specified in burstPower
 double burstPower  = 20;  // in percent
+
+const int timeBrewDetectionOffset = 5 * 1000;  //compensate for lag in software brew-detection
 
 // If the espresso hardware itself is cold, we need additional power for steadyPower to hold the water temperature
 double steadyPowerOffset   = STEADYPOWER_OFFSET;  // heater power (in percent) which should be added to steadyPower during steadyPowerOffset_Time
@@ -980,6 +982,23 @@ void updateState() {
         mqtt_publish("events", debugline);
         bPID.SetSumOutputI(0);
         activeState = 3;
+        //auto-tune starttemp
+        tempChange = pastTemperatureChange(10);
+        if (Input - setPoint >= 0) {
+          if (tempChange > 0.5 && tempChange <= 0.15) {
+            starttemp -= 0.5;
+            DEBUG_print("Auto-Tune starttemp(%0.2f -= %0.2f)\n", starttemp, 0.5);
+          } else if (tempChange > 0.15) {
+            starttemp -= 1;
+            DEBUG_print("Auto-Tune starttemp(%0.2f -= %0.2f)\n", starttemp, 1);
+          }
+        } else if (Input - setPoint <= -0.8) {
+          starttemp += 0.3;
+          DEBUG_print("Auto-Tune starttemp(%0.2f += %0.2f)\n", starttemp, 0.3);
+        }
+        noInterrupts();
+        sync_eeprom();
+        interrupts();
       }
       break;
     }
@@ -1044,16 +1063,17 @@ void updateState() {
       /* STATE 4 (BREW) DETECTION */
       if (brewDetectionSensitivity != 0 && brewDetection == 1) {
         //enable brew-detection if not already running and diff temp is > brewDetectionSensitivity
-        const float brewDetectionAverageSensitivity = 0.4;
         if ( (!OnlyPID && brewing) || (OnlyPID && (pastTemperatureChange(3) <= -brewDetectionSensitivity)
                         && Input < setPoint - outerZoneTemperatureDifference)
            ) {
           DEBUG_print("Brew Detection: past(3)=%0.2f past(5)=%0.2f | Avg(3)=%0.2f | Avg(10)=%0.2f Avg(20)=%0.2f\n", pastTemperatureChange(3), pastTemperatureChange(5), getAverageTemperature(3), getAverageTemperature(10), getAverageTemperature(20));  
-          if (OnlyPID == 1) {
+          //Sample: Brew Detection: past(3)=-1.70 past(5)=-2.10 | Avg(3)=91.50 | Avg(10)=92.52 Avg(20)=92.81
+          if (OnlyPID) {
             bezugsZeit = 0 ;
-          }
-          const int timeBrewDetectionOffset = 2 * 1000;
-          timeBrewDetection = millis() - timeBrewDetectionOffset ;
+            timeBrewDetection = millis() - timeBrewDetectionOffset;
+          } //else {  //not needed for hardware brew detection
+            //timeBrewDetection = millis();            
+          //}
           timerBrewDetection = 1 ;
           mqtt_publish("brewDetected", "1");
           snprintf(debugline, sizeof(debugline), "** End of normal mode. Transition to step 4 (brew)");
@@ -1086,7 +1106,7 @@ void updateState() {
     if (Input - setPoint >= 0.4) {
       bPID.SetSteadyPowerOffset(0);
       steadyPowerOffset_Activated = 0;
-      snprintf(debugline, sizeof(debugline), "Disabled steadyPowerOffset because its too large or starttemp too high");
+      snprintf(debugline, sizeof(debugline), "ATTENTION: Disabled steadyPowerOffset because its too large or starttemp too high");
       ERROR_println(debugline);
       mqtt_publish("events", debugline);
       bPID.SetAutoTune(true);
@@ -1308,14 +1328,18 @@ void loop() {
 
     /* state 3: Inner zone reached = "normal" low power mode */
     } else {
-      if (pidMode == 1) bPID.SetMode(AUTOMATIC);
-      if (aggTn != 0) {
-        aggKi = aggKp / aggTn ;
+      if (!pidMode) {
+        Output = 0;
       } else {
-        aggKi = 0 ;
+        bPID.SetMode(AUTOMATIC);
+        if (aggTn != 0) {
+          aggKi = aggKp / aggTn ;
+        } else {
+          aggKi = 0 ;
+        }
+        aggKd = aggTv * aggKp ;
+        bPID.SetTunings(aggKp, aggKi, aggKd);
       }
-      aggKd = aggTv * aggKp ;
-      bPID.SetTunings(aggKp, aggKi, aggKd);
     }
 
     displaymessage(activeState, "", "");

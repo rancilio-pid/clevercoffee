@@ -2,7 +2,7 @@
 
 BLEEDING EDGE MASTER VERSION 
 
-Version 2.2.0 master
+Version 2.3.0 beta
 
 based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 
@@ -201,6 +201,9 @@ Existing collections are shown here:
 3. Compile, upload and enjoy!
 
 # Changelog
+- 2.3.0_beta_1:
+  - Auto-tuning for starttemp is implemented. No need to adapt the STARTTEMP accordingly when SETPOINT is modified.
+  - Fix: If PID is manually disabled, heater utilization is correctly reported as 0%.
 - 2.2.0_master:
   - Display functionality improved:
     - Replaced display lib Adafruit_SSD1306.h with U8G2. Direct support for SH1106_128X64 and SSD1306_128X64 via userConfig.
