@@ -890,8 +890,13 @@ void sendToBlynk() {
 
   if (currentMillisBlynk - previousMillisBlynk >= intervalBlynk) {
 
-    while (!client.connect("arduino", "try", "try")) {
-      delay(1000);
+    //MQTT
+    if (MQTT == 1) {
+      if (client.connect("arduino", "try", "try")) {
+        DEBUG_println("MQTT connected");
+      } else {
+        DEBUG_println("MQTT connection failed");
+      }
     }
 
     previousMillisBlynk = currentMillisBlynk;
