@@ -902,29 +902,24 @@ void sendToBlynk() {
     previousMillisBlynk = currentMillisBlynk;
     if (Blynk.connected()) {
       if (blynksendcounter == 1) {
-        Blynk.virtualWrite(V2, Input);
-        Blynk.syncVirtual(V2);
+        Blynk.virtualWrite(V2, Input);        
         //MQTT
         if (MQTT == 1) {
           client.publish("/temp", String(Input));
         }
       }
       if (blynksendcounter == 2) {
-        Blynk.virtualWrite(V23, Output);
-        Blynk.syncVirtual(V23);
+        Blynk.virtualWrite(V23, Output);        
       }
       if (blynksendcounter == 3) {
-        Blynk.virtualWrite(V7, setPoint);
-        Blynk.syncVirtual(V7);
+        Blynk.virtualWrite(V7, setPoint);        
         client.publish("/setPoint", String(setPoint));
       }
       if (blynksendcounter == 4) {
-        Blynk.virtualWrite(V35, heatrateaverage);
-        Blynk.syncVirtual(V35);
+        Blynk.virtualWrite(V35, heatrateaverage);        
       }
       if (blynksendcounter == 5) {
-        Blynk.virtualWrite(V36, heatrateaveragemin);
-        Blynk.syncVirtual(V36);
+        Blynk.virtualWrite(V36, heatrateaveragemin);        
       }
       if (grafana == 1 && blynksendcounter >= 6) {
         Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint );
