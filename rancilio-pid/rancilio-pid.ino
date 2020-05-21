@@ -670,7 +670,6 @@ void brew() {
 *****************************************************/
 void initOfflineMode() {
   displayMessage("", "", "", "", "Begin Fallback,", "No Wifi");
-  delay(1000);
   DEBUG_println("Start offline mode with eeprom values, no wifi:(");
   Offlinemodus = 1 ;
 
