@@ -912,8 +912,11 @@ void sendToBlynk() {
         Blynk.virtualWrite(V23, Output);        
       }
       if (blynksendcounter == 3) {
-        Blynk.virtualWrite(V7, setPoint);        
+        Blynk.virtualWrite(V7, setPoint);  
+        //MQTT
+        if (MQTT == 1) {
         client.publish("/setPoint", String(setPoint));
+        }
       }
       if (blynksendcounter == 4) {
         Blynk.virtualWrite(V35, heatrateaverage);        
@@ -1041,7 +1044,7 @@ void setup() {
 
   if (MQTT == 1) {
     //MQTT
-    client.begin(MQTTSERVER, net);
+      client.begin(MQTTSERVER, net);
   }
 
   /********************************************************
