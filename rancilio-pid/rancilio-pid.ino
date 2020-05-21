@@ -27,7 +27,7 @@ RemoteDebug Debug;
 #define pinRelayHeater    14
 #define pinLed            15
 
-const char* sysVersion PROGMEM  = "2.3.0 beta_1";
+const char* sysVersion PROGMEM  = "2.3.0 beta_2";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -181,7 +181,7 @@ double burstPower  = 20;  // in percent
 const int timeBrewDetectionOffset = 5 * 1000;  //compensate for lag in software brew-detection
 
 // If the espresso hardware itself is cold, we need additional power for steadyPower to hold the water temperature
-double steadyPowerOffset   = STEADYPOWER_OFFSET;  // heater power (in percent) which should be added to steadyPower during steadyPowerOffset_Time
+double steadyPowerOffset   = STEADYPOWER_OFFSET;  // heater power (in percent) which should be added to steadyPower during steadyPowerOffset_Time  //TODO add backoff
 int steadyPowerOffset_Time = STEADYPOWER_OFFSET_TIME;  // timeframe (in ms) for which steadyPowerOffset_Activated should be active
 unsigned long steadyPowerOffset_Activated = 0;
 
@@ -234,7 +234,8 @@ const int brew_ready_led_enabled = 0;   // 0 = disable functionality
 float marginOfFluctuation = 0;          // 0 = disable functionality
 #endif
 char* blynkReadyLedColor = "#000000";
-unsigned long lastCheckBrewReady = 0 ;
+unsigned long lastCheckBrewReady = 0;
+unsigned long brewReadyStatisticStart = 0;    //used to determime the time it takes to reach brewReady==true
 bool brewReady = false;
 const int expected_eeprom_version = 3;        // EEPROM values are saved according to this versions layout. Increase if a new layout is implemented.
 unsigned long eeprom_save_interval = 28*60*1000UL;  //save every 28min
@@ -995,6 +996,9 @@ void updateState() {
         } else if (Input - setPoint <= -0.8) {
           starttemp += 0.3;
           DEBUG_print("Auto-Tune starttemp(%0.2f += %0.2f)\n", starttemp, 0.3);
+        } else if (Input - setPoint >= -0.5) {
+          starttemp -= 0.1;
+          DEBUG_print("Auto-Tune starttemp(%0.2f -= %0.2f)\n", starttemp, 0.1);
         }
         noInterrupts();
         sync_eeprom();
@@ -1016,6 +1020,7 @@ void updateState() {
         bPID.SetSumOutputI(0);
         timerBrewDetection = 0 ;
         activeState = 3;
+        brewReadyStatisticStart = millis();
       }
       break;
     }
@@ -1196,8 +1201,12 @@ void loop() {
   pidCompute();         // call PID for Output calculation
   brew();   //start brewing if button pressed
   if (millis() > lastCheckBrewReady + refreshTempInterval) {
-    brewReady = checkBrewReady(setPoint, marginOfFluctuation, 40);
     lastCheckBrewReady = millis();
+    bool brewReadyCurrent = checkBrewReady(setPoint, marginOfFluctuation, 60);
+    if (!brewReady && brewReadyCurrent) {
+      DEBUG_print("brewReady after %lu seconds\n", lastCheckBrewReady - brewReadyStatisticStart);
+    }
+    brewReady = brewReadyCurrent;
   }
   refreshBrewReadyHardwareLed(brewReady);
   
@@ -1287,14 +1296,6 @@ void loop() {
       output_timestamp = millis();
     }
   }
-  
-  if (burstShot == 1 && pidMode == 1) {
-    burstShot = 0;
-    bPID.SetBurst(burstPower);
-    snprintf(debugline, sizeof(debugline), "BURST Output=%0.2f", convertOutputToUtilisation(Output));
-    DEBUG_println(debugline);
-    mqtt_publish("events", debugline);
-  }
 
   //Sicherheitsabfrage
   if (!sensorError && !emergencyStop && Input > 0) {
@@ -1302,11 +1303,11 @@ void loop() {
 
     /* state 1: Water is very cold, set heater to full power */
     if (activeState == 1) {
-      Output = windowSize;  //fix mqtt to show correct values
+      Output = windowSize;
 
     /* state 2: ColdstartTemp reached. Now stabilizing temperature after coldstart */
     } else if (activeState == 2) {
-      Output = convertUtilisationToOutput(steadyPower);  //fix mqtt to show correct values
+      Output = convertUtilisationToOutput(steadyPower + ((steadyPowerOffset_Activated) ? steadyPowerOffset: 0));
 
     /* state 4: Brew detected. Increase heater power */
     } else if (activeState == 4) {
@@ -1340,6 +1341,14 @@ void loop() {
         aggKd = aggTv * aggKp ;
         bPID.SetTunings(aggKp, aggKi, aggKd);
       }
+    }
+
+    if (burstShot == 1 && pidMode == 1) {
+      burstShot = 0;
+      bPID.SetBurst(burstPower);
+      snprintf(debugline, sizeof(debugline), "BURST Output=%0.2f", convertOutputToUtilisation(Output));
+      DEBUG_println(debugline);
+      mqtt_publish("events", debugline);
     }
 
     displaymessage(activeState, "", "");

@@ -201,6 +201,11 @@ Existing collections are shown here:
 3. Compile, upload and enjoy!
 
 # Changelog
+- 2.3.0_beta_2:
+  - Trigger brewReady when temperature is stable for 60sec (prev: 40s).
+  - PID State 2 (stabilize coldstart) also adds steadyPowerOffset.
+  - Add logs for brewReadyStatistic.
+  - Fix: burstShot working again.
 - 2.3.0_beta_1:
   - Auto-tuning for starttemp is implemented. No need to adapt the STARTTEMP accordingly when SETPOINT is modified.
   - Fix: If PID is manually disabled, heater utilization is correctly reported as 0%.
