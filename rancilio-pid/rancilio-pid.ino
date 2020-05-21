@@ -1,12 +1,12 @@
 /********************************************************
-   Version 1.9.9 beta (30.03.2020)
+   Version 1.9.9 beta (21.05.2020) MQTT
 ******************************************************/
 
 /********************************************************
   INCLUDES
 ******************************************************/
 #include <ArduinoOTA.h>
-#include <WiFiUdp.h>
+/*#include <WiFiUdp.h>*/
 #include <EEPROM.h>
 #include "userConfig.h" // needs to be configured by the user
 #include <U8g2lib.h>
@@ -16,6 +16,7 @@
 #include "TSIC.h"       //Library for TSIC temp sensor
 #include <BlynkSimpleEsp8266.h>
 #include "icon.h"   //user icons for display
+#include <MQTT.h>
 
 /********************************************************
   DEFINES
@@ -50,7 +51,7 @@
 /********************************************************
    DISPLAY constructor, select the one needed for your display
 ******************************************************/
-//U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);   //e.g. 1.3"																					
+//U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);   //e.g. 1.3"
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);    //e.g. 0.96"
 
 /********************************************************
@@ -91,6 +92,10 @@ unsigned long lastBlynkConnectionAttempt = millis();
 const unsigned long fillTime = FILLTIME;
 const unsigned long flushTime = FLUSHTIME;
 int maxflushCycles = MAXFLUSHCYCLES;
+
+//MQTT
+WiFiClient net;
+MQTTClient client;
 
 /********************************************************
    declarations
@@ -552,7 +557,7 @@ void refreshTemp() {
         movAvg();
       } else if (firstreading != 0) {
         firstreading = 0;
-      } 
+      }
     }
   }
   if (TempSensor == 2)
@@ -572,7 +577,7 @@ void refreshTemp() {
         movAvg();
       } else if (firstreading != 0) {
         firstreading = 0;
-      } 
+      }
     }
   }
 }
@@ -664,7 +669,7 @@ void brew() {
   during boot
 *****************************************************/
 void initOfflineMode() {
-  displayMessage("","","","","Begin Fallback,", "No Wifi");
+  displayMessage("", "", "", "", "Begin Fallback,", "No Wifi");
   delay(1000);
   DEBUG_println("Start offline mode with eeprom values, no wifi:(");
   Offlinemodus = 1 ;
@@ -688,7 +693,7 @@ void initOfflineMode() {
     EEPROM.get(120, brewtimersoftware);
     EEPROM.get(130, brewboarder);
   } else {
-    displayMessage("","","","","No eeprom,", "Values");
+    displayMessage("", "", "", "", "No eeprom,", "Values");
     DEBUG_println("No working eeprom value, I am sorry, but use default offline value  :)");
     delay(1000);
   }
@@ -711,7 +716,7 @@ void checkWifi() {
         DEBUG_print("Attempting WIFI reconnection: ");
         DEBUG_println(wifiReconnects);
         if (!setupDone) {
-          displayMessage("","","","","Wifi reconnect:", String(wifiReconnects));
+          displayMessage("", "", "", "", "Wifi reconnect:", String(wifiReconnects));
         }
         WiFi.disconnect();
         WiFi.begin(ssid, pass);   // attempt to connect to Wifi network
@@ -885,19 +890,29 @@ void sendToBlynk() {
   unsigned long currentMillistemp = 0;
 
   if (currentMillisBlynk - previousMillisBlynk >= intervalBlynk) {
+
+    while (!client.connect("arduino", "try", "try")) {
+      delay(1000);
+    }
+
     previousMillisBlynk = currentMillisBlynk;
     if (Blynk.connected()) {
       if (blynksendcounter == 1) {
         Blynk.virtualWrite(V2, Input);
         Blynk.syncVirtual(V2);
+        //MQTT
+        if (MQTT == 1) {
+          client.publish("/temp", String(Input));
+        }
       }
       if (blynksendcounter == 2) {
         Blynk.virtualWrite(V23, Output);
         Blynk.syncVirtual(V23);
       }
       if (blynksendcounter == 3) {
-        Blynk.virtualWrite(V3, setPoint);
-        Blynk.syncVirtual(V3);
+        Blynk.virtualWrite(V7, setPoint);
+        Blynk.syncVirtual(V7);
+        client.publish("/setPoint", String(setPoint));
       }
       if (blynksendcounter == 4) {
         Blynk.virtualWrite(V35, heatrateaverage);
@@ -1016,8 +1031,20 @@ void ICACHE_RAM_ATTR onTimer1ISR() {
   bPID.Compute();
 }
 
+//MQTT
+void messageReceived(String &topic, String &payload) {
+  DEBUG_println("incoming: " + topic + " - " + payload);
+  setPoint = payload.toDouble();
+}
+
 void setup() {
   DEBUGSTART(115200);
+
+  if (MQTT == 1) {
+    //MQTT
+    client.begin(MQTTSERVER, net);
+  }
+
   /********************************************************
     Define trigger type
   ******************************************************/
@@ -1220,6 +1247,12 @@ void setup() {
 void loop() {
   //Only do Wifi stuff, if Wifi is connected
   if (WiFi.status() == WL_CONNECTED && Offlinemodus == 0) {
+
+    //MQTT
+    if (MQTT == 1) {
+      client.loop();
+    }
+
     ArduinoOTA.handle();  // For OTA
     // Disable interrupt it OTA is starting, otherwise it will not work
     ArduinoOTA.onStart([]() {
@@ -1245,10 +1278,16 @@ void loop() {
     checkWifi();
   }
 
+  //MQTT
+  if (MQTT == 1) {
+    client.subscribe("/solltemp");
+    client.onMessage(messageReceived);
+  }
 
   refreshTemp();   //read new temperature values
   testEmergencyStop();  // test if Temp is to high
   brew();   //start brewing if button pressed
+
   sendToBlynk();
 
 
@@ -1323,15 +1362,15 @@ void loop() {
       Output = 0 ;
     }
 
-    digitalWrite(pinRelayHeater, LOW); //Stop heating    
-    
+    digitalWrite(pinRelayHeater, LOW); //Stop heating
+
     displayEmergencyStop();
 
   } else if (backflushON || backflushState > 10) {
     if (backflushState == 43) {
-      displayMessage("Backflush finished", "Please reset brewswitch...","","","","");
+      displayMessage("Backflush finished", "Please reset brewswitch...", "", "", "", "");
     } else if (backflushState == 10) {
-      displayMessage("Backflush activated", "Please set brewswitch...","","","","");
+      displayMessage("Backflush activated", "Please set brewswitch...", "", "", "", "");
     } else if ( backflushState > 10) {
       displayMessage("Backflush running:", String(flushCycles), "from", String(maxflushCycles), "", "");
     }
