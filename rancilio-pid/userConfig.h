@@ -1,5 +1,5 @@
 /********************************************************
-  Version 1.4 (06.04.2020)
+  Version 1.4 (21.05.2020)
   Config must be configured by the user
 ******************************************************/
 
@@ -21,7 +21,10 @@
 #define WIFICINNECTIONDELAY 10000 // delay between reconnects in ms
 #define MAXWIFIRECONNECTS 5  // maximum number of reconnects; use -1 to set to maximum ("deactivated")
 #define MACHINELOGO 1        // 1 = Rancilio, 2 = Gaggia
+#define MQTT 0               // 1 = MQTT enabled, 2 = MQTT disabled
 
+//MQTT
+#define MQTTSERVER "10.10.11.117"
 // Wifi & Blynk 
 #define HOSTNAME "rancilio"
 #define AUTH "blynkauthcode"
