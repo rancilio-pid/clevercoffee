@@ -24,7 +24,7 @@
 #define MQTT 0               // 1 = MQTT enabled, 2 = MQTT disabled
 
 //MQTT
-#define MQTTSERVER "10.10.11.117"
+#define MQTTSERVER "mqttserver"
 // Wifi & Blynk 
 #define HOSTNAME "rancilio"
 #define AUTH "blynkauthcode"

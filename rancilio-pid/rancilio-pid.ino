@@ -6,12 +6,10 @@
   INCLUDES
 ******************************************************/
 #include <ArduinoOTA.h>
-/*#include <WiFiUdp.h>*/
 #include <EEPROM.h>
 #include "userConfig.h" // needs to be configured by the user
 #include <U8g2lib.h>
 #include "PID_v1.h" //for PID calculation
-#include <OneWire.h>    //Library for one wire communication to temp sensor
 #include <DallasTemperature.h>    //Library for dallas temp sensor
 #include "TSIC.h"       //Library for TSIC temp sensor
 #include <BlynkSimpleEsp8266.h>
@@ -869,6 +867,15 @@ void printScreen() {
         } else {
           u8g2.drawXBMP(60, 2, 8, 8, blynk_NOK_u8g2);
         }
+        if (MQTT == 1) {
+          if (client.connect("arduino", "try", "try")) {
+            u8g2.setCursor(77, 2);
+            u8g2.print("MQTT");
+          } else {
+            u8g2.setCursor(77, 2);
+            u8g2.print("");
+          }
+        }
       } else {
         u8g2.setCursor(40, 2);
         u8g2.print("Offlinemodus");
@@ -902,27 +909,27 @@ void sendToBlynk() {
     previousMillisBlynk = currentMillisBlynk;
     if (Blynk.connected()) {
       if (blynksendcounter == 1) {
-        Blynk.virtualWrite(V2, Input);        
+        Blynk.virtualWrite(V2, Input);
         //MQTT
         if (MQTT == 1) {
           client.publish("/temp", String(Input));
         }
       }
       if (blynksendcounter == 2) {
-        Blynk.virtualWrite(V23, Output);        
+        Blynk.virtualWrite(V23, Output);
       }
       if (blynksendcounter == 3) {
-        Blynk.virtualWrite(V7, setPoint);  
+        Blynk.virtualWrite(V7, setPoint);
         //MQTT
         if (MQTT == 1) {
-        client.publish("/setPoint", String(setPoint));
+          client.publish("/setPoint", String(setPoint));
         }
       }
       if (blynksendcounter == 4) {
-        Blynk.virtualWrite(V35, heatrateaverage);        
+        Blynk.virtualWrite(V35, heatrateaverage);
       }
       if (blynksendcounter == 5) {
-        Blynk.virtualWrite(V36, heatrateaveragemin);        
+        Blynk.virtualWrite(V36, heatrateaveragemin);
       }
       if (grafana == 1 && blynksendcounter >= 6) {
         Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint );
@@ -1044,7 +1051,7 @@ void setup() {
 
   if (MQTT == 1) {
     //MQTT
-      client.begin(MQTTSERVER, net);
+    client.begin(MQTTSERVER, net);
   }
 
   /********************************************************
