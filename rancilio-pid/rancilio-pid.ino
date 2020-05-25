@@ -517,7 +517,7 @@ void movAvg() {
 *****************************************************/
 boolean checkSensor(float tempInput) {
   boolean sensorOK = false;
-  boolean badCondition = ( tempInput < 0 || tempInput > 150 || fabs(tempInput - previousInput) > 25);
+  boolean badCondition = ( tempInput < 0 || tempInput > 150 || fabs(tempInput - previousInput) > 5);
   if ( badCondition && !sensorError) {
     error++;
     sensorOK = false;
