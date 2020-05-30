@@ -21,13 +21,7 @@
 
 RemoteDebug Debug;
 
-//Define pins for output
-#define pinRelayVentil    12
-#define pinRelayPumpe     13
-#define pinRelayHeater    14
-#define pinLed            15
-
-const char* sysVersion PROGMEM  = "2.3.0 beta_2";
+const char* sysVersion PROGMEM  = "2.3.0 beta_3";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -113,7 +107,7 @@ double readingstemp[numReadings];       // the readings from Temp
 float readingstime[numReadings];        // the readings from time
 int readIndex = 0;                      // the index of the current reading
 int totaltime = 0 ;                     // the running time
-unsigned long  timeBrewDetection = 0 ;
+unsigned long  lastBrewTime = 0 ;
 int timerBrewDetection = 0 ;
 int i = 0;
 
@@ -133,7 +127,7 @@ double previousOutput = 0;
 int pidMode = 1;                   //1 = Automatic, 0 = Manual
 
 double setPoint = SETPOINT;
-double starttemp = STARTTEMP;      //TODO add auto-tune
+double starttemp = STARTTEMP;
 
 // State 1: Coldstart PID values
 const int coldStartStep1ActivationOffset = 5;
@@ -178,14 +172,16 @@ double PreviousSteadyPower = 0;
 int burstShot      = 0;   // this is 1, when the user wants to immediatly set the heater power to the value specified in burstPower
 double burstPower  = 20;  // in percent
 
-const int timeBrewDetectionOffset = 5 * 1000;  //compensate for lag in software brew-detection
+const int lastBrewTimeOffset = 3 * 1000;  //compensate for lag in software brew-detection
 
 // If the espresso hardware itself is cold, we need additional power for steadyPower to hold the water temperature
-double steadyPowerOffset   = STEADYPOWER_OFFSET;  // heater power (in percent) which should be added to steadyPower during steadyPowerOffset_Time  //TODO add backoff
-int steadyPowerOffset_Time = STEADYPOWER_OFFSET_TIME;  // timeframe (in ms) for which steadyPowerOffset_Activated should be active
+double steadyPowerOffset     = STEADYPOWER_OFFSET;  // heater power (in percent) which should be added to steadyPower during steadyPowerOffset_Time
+double steadyPowerOffsetModified = steadyPowerOffset;
+int steadyPowerOffset_Time   = STEADYPOWER_OFFSET_TIME;  // timeframe (in ms) for which steadyPowerOffset_Activated should be active
 unsigned long steadyPowerOffset_Activated = 0;
+unsigned long lastUpdateSteadyPowerOffset = 0;  //last time steadyPowerOffset was updated
 
-PIDBias bPID(&Input, &Output, &steadyPower, &setPoint, aggKp, aggKi, aggKd);
+PIDBias bPID(&Input, &Output, &steadyPower, &steadyPowerOffsetModified, &steadyPowerOffset_Activated, &steadyPowerOffset_Time, &setPoint, aggKp, aggKi, aggKd);
 
 /********************************************************
    Analog Schalter Read
@@ -193,7 +189,7 @@ PIDBias bPID(&Input, &Output, &steadyPower, &setPoint, aggKp, aggKi, aggKd);
 double brewtime          = BREWTIME;
 double preinfusion       = PREINFUSION;
 double preinfusionpause  = PREINFUSION_PAUSE;
-const int analogPin      = 0; // will be use in case of hardware
+const int analogPin      = 0; // A0 pin to be used for button detection (either external multibuttons or brew-button)
 int brewing              = 0;
 int brewswitch           = 0;
 bool waitingForBrewSwitchOff = false;
@@ -202,6 +198,8 @@ unsigned long bezugsZeit = 0;
 unsigned long startZeit  = 0;
 unsigned long previousBrewCheck = 0;
 unsigned long lastBrewMessage   = 0;
+
+unsigned long previousControlButtonCheck = 0;
 
 /********************************************************
    Sensor check
@@ -284,10 +282,10 @@ boolean image_flip = true;
 ******************************************************/
 #include <OneWire.h>
 #include <DallasTemperature.h>
-#define ONE_WIRE_BUS 2         // Data wire is plugged into port 2 on the Arduino
-OneWire oneWire(ONE_WIRE_BUS); // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
+#define ONE_WIRE_BUS pinTemperature  // Data wire is plugged into port 2 on the Arduino
+OneWire oneWire(ONE_WIRE_BUS);       // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
 DallasTemperature sensors(&oneWire); // Pass our oneWire reference to Dallas Temperature.
-DeviceAddress sensorDeviceAddress; // arrays to hold device address
+DeviceAddress sensorDeviceAddress;   // arrays to hold device address
 
 /********************************************************
    TSIC 30x TEMP
@@ -328,11 +326,12 @@ BLYNK_CONNECTED() {
 }
 // This is called when Smartphone App is opened
 BLYNK_APP_CONNECTED() {
-  DEBUG_print("App Connected.\n");
+  DEBUG_print("Blynk Client Connected.\n");
+  print_settings();
 }
 // This is called when Smartphone App is closed
 BLYNK_APP_DISCONNECTED() {
-  DEBUG_print("App Disconnected.\n");
+  DEBUG_print("Blynk Client Disconnected.\n");
 }
 BLYNK_WRITE(V4) {
   aggKp = param.asDouble();
@@ -586,6 +585,18 @@ double getCurrentTemperature() {
   return readingstemp[readIndex];
 }
 
+double getTemperature(int lookback) {
+  if (lookback >= numReadings) lookback=numReadings -1;
+  int offset = lookback % numReadings;
+  int historicIndex = (readIndex - offset);
+  if ( historicIndex < 0 ) {
+    historicIndex += numReadings;
+  }
+  //ignore not yet initialized values
+  if (readingstime[historicIndex] == 0) return 0;
+  return readingstemp[historicIndex];
+}
+
 //returns heater utilization in percent
 double convertOutputToUtilisation(double Output) {
   return (100 * Output) / windowSize;
@@ -628,27 +639,27 @@ void ICACHE_RAM_ATTR readTSIC() { //executed every ~100ms by interrupt
     byte timeout = 0;
     for (byte ByteNr=0; ByteNr<2; ++ByteNr) {
       if (ByteNr) {                                    //measure strobetime between bytes
-        for (timeout = 0; digitalRead(2); ++timeout){
+        for (timeout = 0; digitalRead(pinTemperature); ++timeout){
           delayMicroseconds(10);
           if (timeout > 20) return;
         }
         strobelength = 0;
-        for (timeout = 0; !digitalRead(2); ++timeout) {    // wait for rising edge
+        for (timeout = 0; !digitalRead(pinTemperature); ++timeout) {    // wait for rising edge
           ++strobelength;
           delayMicroseconds(10);
           if (timeout > 20) return;
         }
       }
       for (byte i=0; i<9; ++i) {
-        for (timeout = 0; digitalRead(2); ++timeout) {    // wait for falling edge
+        for (timeout = 0; digitalRead(pinTemperature); ++timeout) {    // wait for falling edge
           delayMicroseconds(10);
           if (timeout > 20) return;
         }
         if (!i) temp_value[ByteNr] = 0;            //reset byte before start measuring
         delayMicroseconds(10 * strobelength);
         temp_value[ByteNr] <<= 1;
-        if (digitalRead(2)) temp_value[ByteNr] |= 1;        // Read bit
-        for (timeout = 0; !digitalRead(2); ++timeout) {     // wait for rising edge
+        if (digitalRead(pinTemperature)) temp_value[ByteNr] |= 1;        // Read bit
+        for (timeout = 0; !digitalRead(pinTemperature); ++timeout) {     // wait for rising edge
           delayMicroseconds(10);
           if (timeout > 20) return;
         }
@@ -752,7 +763,7 @@ void refreshTemp() {
       sensors.requestTemperatures();  
       if (!checkSensor(sensors.getTempCByIndex(0), previousInput)) return;  //if sensor data is not valid, abort function
       updateTemperatureHistory(sensors.getTempCByIndex(0));
-      Input = getAverageTemperature(5);
+      Input = getAverageTemperature(5);  //TODO: perhaps it is better to use 3 instead of emperically tested best value of 5
     }
   }
   if (TempSensor == 2)
@@ -766,11 +777,33 @@ void refreshTemp() {
         //DEBUG_print("%lu | temp=%0.2f | time_spend=%lu\n", start, Temperatur_C, stop-start);
         if (checkSensor(Temperatur_C, previousInput)) {
             updateTemperatureHistory(Temperatur_C);
-            Input = getAverageTemperature(5);
+            Input = getAverageTemperature(5);  //TODO: perhaps it is better to use 3 instead of emperically tested best value of 5
         }
       }
   }
 }
+
+
+/********************************************************
+    PreInfusion, Brew , if not Only PID
+******************************************************/
+int checkControlButtons() {
+  //TODO add DEFINE
+  if ( millis() >= previousControlButtonCheck + 50 ) {  //50ms
+    previousControlButtonCheck = millis();
+    int signal = analogRead(analogPin);  ///CCC
+    //DEBUG_print("ControlButton signal: %d\n", signal);
+    if (signal > 830 && signal < 840) {
+      return 1; 
+    } else if (signal > 900 && signal < 910) {
+      return 2; 
+    } else if (signal > 985 && signal < 995) {
+      return 3; 
+    }
+  }
+  return 0;
+}
+
 
 /********************************************************
     PreInfusion, Brew , if not Only PID
@@ -976,33 +1009,45 @@ void updateState() {
     case 2: // state 2 running, that means heater is on steadyState and we are waiting to temperature to stabilize
     {
       bPID.SetFilterSumOutputI(30);
-      double tempChange = pastTemperatureChange(20);
-      if ( (Input - setPoint >= 0) || (Input - setPoint <= -20) || (Input - setPoint <= 0  && tempChange <= 0.3) || !pidMode ) {
+      //double tempChange = pastTemperatureChange(20);
+      if ( (Input - setPoint >= 0) || (Input - setPoint <= -20) || 
+           (Input - setPoint <= 0  && pastTemperatureChange(20) <= 0.3) || 
+           (Input - setPoint >= -0.7  && pastTemperatureChange(10) >= 0.4) ||
+           !pidMode ) {
         snprintf(debugline, sizeof(debugline), "** End of stabilizing. Transition to step 3 (normal mode)");
         DEBUG_println(debugline);
         mqtt_publish("events", debugline);
         bPID.SetSumOutputI(0);
         activeState = 3;
+        bPID.SetAutoTune(true);
         //auto-tune starttemp
-        tempChange = pastTemperatureChange(10);
-        if (Input - setPoint >= 0) {
-          if (tempChange > 0.5 && tempChange <= 0.15) {
-            starttemp -= 0.5;
-            DEBUG_print("Auto-Tune starttemp(%0.2f -= %0.2f)\n", starttemp, 0.5);
-          } else if (tempChange > 0.15) {
-            starttemp -= 1;
-            DEBUG_print("Auto-Tune starttemp(%0.2f -= %0.2f)\n", starttemp, 1);
+        if (millis() < 400000 && steadyPowerOffset_Activated > 0) {  //ugly hack to only adapt setPoint after power-on
+          double tempChange = pastTemperatureChange(10);
+          if (Input - setPoint >= 0) {
+            if (tempChange > 0.5 && tempChange <= 0.15) {
+              DEBUG_print("Auto-Tune starttemp(%0.2f -= %0.2f) | steadyPowerOffset=%0.2f | steadyPowerOffsetTime=%d\n", starttemp, 0.5, steadyPowerOffset, steadyPowerOffset_Time);  //ABC
+              starttemp -= 0.5;
+            } else if (tempChange > 0.15) {
+              DEBUG_print("Auto-Tune starttemp(%0.2f -= %0.2f) | steadyPowerOffset=%0.2f | steadyPowerOffsetTime=%d\n", starttemp, 1.0, steadyPowerOffset, steadyPowerOffset_Time);
+              starttemp -= 1;
+            }
+          } else if (Input - setPoint >= -0.7 && tempChange >= 0.4) {  //TODO working correctly with 0.4?
+            DEBUG_print("Auto-Tune starttemp(%0.2f -= %0.2f) | steadyPowerOffset=%0.2f | steadyPowerOffsetTime=%d\n", starttemp, 0.7, steadyPowerOffset, steadyPowerOffset_Time);
+            starttemp -= 0.7;
+          } else if (Input - setPoint <= -1.2) {
+            DEBUG_print("Auto-Tune starttemp(%0.2f += %0.2f) | steadyPowerOffset=%0.2f | steadyPowerOffsetTime=%d\n", starttemp, 0.5, steadyPowerOffset, steadyPowerOffset_Time);
+            starttemp += 0.5;
+          } else if (Input - setPoint <= -0.8) {
+            DEBUG_print("Auto-Tune starttemp(%0.2f += %0.2f) | steadyPowerOffset=%0.2f | steadyPowerOffsetTime=%d\n", starttemp, 0.2, steadyPowerOffset, steadyPowerOffset_Time);
+            starttemp += 0.2;
+          } else if (Input - setPoint >= -0.5) {
+            DEBUG_print("Auto-Tune starttemp(%0.2f -= %0.2f) | steadyPowerOffset=%0.2f | steadyPowerOffsetTime=%d\n", starttemp, 0.1, steadyPowerOffset, steadyPowerOffset_Time);
+            starttemp -= 0.1;
           }
-        } else if (Input - setPoint <= -0.8) {
-          starttemp += 0.3;
-          DEBUG_print("Auto-Tune starttemp(%0.2f += %0.2f)\n", starttemp, 0.3);
-        } else if (Input - setPoint >= -0.5) {
-          starttemp -= 0.1;
-          DEBUG_print("Auto-Tune starttemp(%0.2f -= %0.2f)\n", starttemp, 0.1);
+          noInterrupts();  //TODO only update if starttemp is changed
+          sync_eeprom();
+          interrupts();
         }
-        noInterrupts();
-        sync_eeprom();
-        interrupts();
       }
       break;
     }
@@ -1010,23 +1055,35 @@ void updateState() {
     {
       bPID.SetFilterSumOutputI(100);
       bPID.SetAutoTune(false);
+      const double brewDetectionOffSensitivity = 0.7;
       if ( (!OnlyPID && !brewing) || 
-           (OnlyPID && ((Input > setPoint - outerZoneTemperatureDifference && pastTemperatureChange(5) >= 0) || pastTemperatureChange(10) >= 0.5)) ) {
-        DEBUG_print("Out Zone Detection: pastTemperatureChange(5)=%0.2f | pastTemperatureChange(10)=%0.2f\n", pastTemperatureChange(5), pastTemperatureChange(10));  
-        snprintf(debugline, sizeof(debugline), "** End of Brew. Transition to step 3 (normal mode)");
+           (OnlyPID && bezugsZeit >= 4000 && (bezugsZeit >= brewtime*1000 || pastTemperatureChange(2) >= brewDetectionOffSensitivity ) )
+           //(OnlyPID && ((Input > setPoint - outerZoneTemperatureDifference && pastTemperatureChange(5) >= 0) ||  //BBB
+           //              pastTemperatureChange(10) >= 0.5)
+           // ) 
+        ) {
+        DEBUG_print("Out Zone Detection: past(2)=%0.2f, past(3)=%0.2f | past(5)=%0.2f | past(10)=%0.2f | bezugsZeit=%lu\n", pastTemperatureChange(2), pastTemperatureChange(3), pastTemperatureChange(5), pastTemperatureChange(10), bezugsZeit / 1000);
+        DEBUG_print("t(0)=%0.2f | t(1)=%0.2f | t(2)=%0.2f | t(3)=%0.2f | t(5)=%0.2f | t(10)=%0.2f | t(13)=%0.2f\n", getTemperature(0), getTemperature(1), getTemperature(2), getTemperature(3), getTemperature(5), getTemperature(7), getTemperature(10), getTemperature(13));
+        //snprintf(debugline, sizeof(debugline), "** End of Brew. Transition to step 3 (normal mode)"); //TODO
+        snprintf(debugline, sizeof(debugline), "** End of Brew. Transition to step 2 (constant steadyPower)");
         DEBUG_println(debugline);
         mqtt_publish("events", debugline);
-        bPID.SetAutoTune(true);
+        //bPID.SetAutoTune(true);
+        bPID.SetAutoTune(false);
         bPID.SetSumOutputI(0);
         timerBrewDetection = 0 ;
-        activeState = 3;
+        activeState = 2;  //TODO 3
         brewReadyStatisticStart = millis();
       }
       break;
     }
     case 5: // state 5 in outerZone
     {
-      bPID.SetFilterSumOutputI(9);
+      if (Input >= setPoint - outerZoneTemperatureDifference - 1.5) {
+        bPID.SetFilterSumOutputI(4.5);
+      } else {
+        bPID.SetFilterSumOutputI(9);
+      }
       if ( fabs(Input - setPoint) < outerZoneTemperatureDifference) {
         snprintf(debugline, sizeof(debugline), "** End of outerZone. Transition to step 3 (normal mode)");
         DEBUG_println(debugline);
@@ -1043,23 +1100,27 @@ void updateState() {
       if (!pidMode) break;
 
       //set maximum allowed filterSumOutputI based on error/marginOfFluctuation
-      if ( Input >= setPoint - marginOfFluctuation) {
+      if (Input >= setPoint - marginOfFluctuation) {
+        if (bPID.GetFilterSumOutputI() != 1.0) {
+          bPID.SetFilterSumOutputI(0);
+        }
         bPID.SetFilterSumOutputI(1.0);
       } else if ( Input >= setPoint - 0.5) {
-        bPID.SetFilterSumOutputI(4.5);
+        bPID.SetFilterSumOutputI(2.0);
       } else {
-        bPID.SetFilterSumOutputI(6);
+        bPID.SetFilterSumOutputI(4.5);
       } 
       
       /* STATE 1 (COLDSTART) DETECTION */
-      if ( Input <= starttemp - coldStartStep1ActivationOffset) {
+      if (Input <= starttemp - coldStartStep1ActivationOffset) {
         snprintf(debugline, sizeof(debugline), "** End of normal mode. Transition to step 1 (coldstart)");
         DEBUG_println(debugline);
         mqtt_publish("events", debugline);
-        bPID.SetSteadyPowerOffset(steadyPowerOffset);
         steadyPowerOffset_Activated = millis();
-        bPID.SetAutoTune(false);  //do not tune during powerOffset
-        DEBUG_print("Enable steadyPowerOffset (steadyPower += %0.2f)\n", steadyPowerOffset);
+        DEBUG_print("Enable steadyPowerOffset (max %0.2f)\n", steadyPowerOffset);
+        //bPID.SetSteadyPowerOffset(steadyPowerOffset);  //ABC
+        //setSteadyPowerOffset();
+        bPID.SetAutoTune(false);  //do not tune during coldstart + phase2
         bPID.SetSumOutputI(0);
         activeState = 1;
         break;
@@ -1068,16 +1129,18 @@ void updateState() {
       /* STATE 4 (BREW) DETECTION */
       if (brewDetectionSensitivity != 0 && brewDetection == 1) {
         //enable brew-detection if not already running and diff temp is > brewDetectionSensitivity
-        if ( (!OnlyPID && brewing) || (OnlyPID && (pastTemperatureChange(3) <= -brewDetectionSensitivity)
-                        && Input < setPoint - outerZoneTemperatureDifference)
+        if ( (!OnlyPID && brewing) || 
+             ( OnlyPID && (pastTemperatureChange(3) <= -brewDetectionSensitivity) && 
+               fabs(getTemperature(5) - setPoint) <= outerZoneTemperatureDifference && 
+               millis() - lastBrewTime >= BREWDETECTION_WAIT * 1000)  //BBB
            ) {
-          DEBUG_print("Brew Detection: past(3)=%0.2f past(5)=%0.2f | Avg(3)=%0.2f | Avg(10)=%0.2f Avg(20)=%0.2f\n", pastTemperatureChange(3), pastTemperatureChange(5), getAverageTemperature(3), getAverageTemperature(10), getAverageTemperature(20));  
+          DEBUG_print("Brew Detect: prev(5)=%0.2f past(3)=%0.2f past(5)=%0.2f | Avg(3)=%0.2f | Avg(10)=%0.2f Avg(2)=%0.2f\n", getTemperature(5), pastTemperatureChange(3), pastTemperatureChange(5), getAverageTemperature(3), getAverageTemperature(10), getAverageTemperature(2));  
           //Sample: Brew Detection: past(3)=-1.70 past(5)=-2.10 | Avg(3)=91.50 | Avg(10)=92.52 Avg(20)=92.81
           if (OnlyPID) {
             bezugsZeit = 0 ;
-            timeBrewDetection = millis() - timeBrewDetectionOffset;
+            lastBrewTime = millis() - lastBrewTimeOffset;  //TODO change this to 3?
           } //else {  //not needed for hardware brew detection
-            //timeBrewDetection = millis();            
+            //lastBrewTime = millis();            
           //}
           timerBrewDetection = 1 ;
           mqtt_publish("brewDetected", "1");
@@ -1109,20 +1172,25 @@ void updateState() {
   // steadyPowerOffset_Activated handling
   if ( steadyPowerOffset_Activated >0 ) {
     if (Input - setPoint >= 0.4) {
-      bPID.SetSteadyPowerOffset(0);
+      //bPID.SetSteadyPowerOffset(0);
       steadyPowerOffset_Activated = 0;
       snprintf(debugline, sizeof(debugline), "ATTENTION: Disabled steadyPowerOffset because its too large or starttemp too high");
       ERROR_println(debugline);
       mqtt_publish("events", debugline);
+      //bPID.UpdateSteadyPowerOffset(steadyPowerOffset_Activated, steadyPowerOffset_Time*1000);
       bPID.SetAutoTune(true);
-    }
-    if (millis() >= steadyPowerOffset_Activated + steadyPowerOffset_Time*1000) {
+    } else if (millis() >= steadyPowerOffset_Activated + steadyPowerOffset_Time*1000) {
       //DEBUG_print("millis=%lu | steadyPowerOffset_Activated=%0.2f | steadyPowerOffset_Time=%d\n", millis(), steadyPowerOffset_Activated, steadyPowerOffset_Time*1000);
-      bPID.SetSteadyPowerOffset(0);
+      //bPID.SetSteadyPowerOffset(0);
       steadyPowerOffset_Activated = 0;
-      DEBUG_print("Disable steadyPowerOffset (steadyPower -= %0.2f)\n", steadyPowerOffset);
+      DEBUG_print("Disable steadyPowerOffset\n");
+      //bPID.UpdateSteadyPowerOffset(steadyPowerOffset_Activated, steadyPowerOffset_Time*1000);
       bPID.SetAutoTune(true);
-    }
+    } //else if (millis() >= lastUpdateSteadyPowerOffset + 10000) {
+      //bPID.UpdateSteadyPowerOffset(steadyPowerOffset_Activated, steadyPowerOffset_Time*1000);
+      //lastUpdateSteadyPowerOffset = millis();  //remove var
+      //DEBUG_print("Updated steadyPowerOffset=%0.2f\n", bPID.GetSteadyPowerOffset());  //TODO remove
+    //}
   }
 }
 
@@ -1142,7 +1210,7 @@ void pidCompute() {
     isrCounter = 0; // Attention: heater might not shutdown if bPid.SetSampleTime(), windowSize, timer1_write() and are not set correctly!
     pidComputeDelay = millis()+5 - pidComputeLastRunTime - windowSize;
     if (pidComputeDelay > 50 && pidComputeDelay < 100000000) {
-      DEBUG_print("pidCompute() delayed execution detected of %lu ms (loop() hangs).\n", pidComputeDelay);
+      DEBUG_print("pidCompute() delayed execution detected of %lu ms (loop() hangs)\n", pidComputeDelay);
     }
     pidComputeLastRunTime = millis();
     if (activeState == 1 || activeState == 2 || activeState == 4) {
@@ -1153,7 +1221,7 @@ void pidCompute() {
       (setPoint - Input),
       pastTemperatureChange(10)/2,
       convertOutputToUtilisation(Output),
-      steadyPower + ((steadyPowerOffset_Activated) ? steadyPowerOffset: 0),
+      steadyPower + bPID.GetSteadyPowerOffsetCalculated(),
       convertOutputToUtilisation(bPID.GetOutputP()),
       convertOutputToUtilisation(bPID.GetSumOutputI()),
       convertOutputToUtilisation(bPID.GetOutputI()),
@@ -1162,26 +1230,25 @@ void pidCompute() {
   } else if (ret == 2) { // PID is disabled but compute() should have run
     isrCounter = 0;
     pidComputeLastRunTime = millis();
-    DEBUG_print("Input=%6.2f | error=%5.2f delta=%5.2f | Output=  0.00 (PID disabled)\n",
+    DEBUG_print("Input=%6.2f | error=%5.2f delta=%5.2f | Output=%6.2f (PID disabled)\n",
       Input,
       (setPoint - Input),
-      pastTemperatureChange(10)/2);
+      pastTemperatureChange(10)/2,
+      convertOutputToUtilisation(Output));
   }
 }
  
 void ICACHE_RAM_ATTR onTimer1ISR() {
   timer1_write(isrWakeupTime); // set interrupt time to 10ms
-  if (isrCounter >= heater_overextending_isrCounter ) {
+  if (isrCounter >= heater_overextending_isrCounter) {
     //turn off when when compute() is not run in time (safetly measure)
-    if (digitalRead(pinRelayHeater) == HIGH) {
-      digitalWrite(pinRelayHeater, LOW);
-      ERROR_print("ISR has stopped heater because pid.Compute() had not run for quite some time\n");
-      //TODO: add more emergency handling?
-    }
-  } /* else if (isrCounter > windowSize) {
+    digitalWrite(pinRelayHeater, LOW);
+    ERROR_print("ISR has stopped heater because pid.Compute() had not run for quite some time\n");
+    //TODO: add more emergency handling?
+  } else if (isrCounter > windowSize) {
     //dont change output when overextending withing overextending_factor threshold
-    DEBUG_print("over extending due to processing delays\n");
-  } */ else if (isrCounter >= Output) {  // max(Output) = windowSize
+    //DEBUG_print("over extending due to processing delays\n");
+  } else if (isrCounter >= Output) {  // max(Output) = windowSize
     digitalWrite(pinRelayHeater, LOW);
   } else {
     digitalWrite(pinRelayHeater, HIGH);
@@ -1204,11 +1271,18 @@ void loop() {
     lastCheckBrewReady = millis();
     bool brewReadyCurrent = checkBrewReady(setPoint, marginOfFluctuation, 60);
     if (!brewReady && brewReadyCurrent) {
-      DEBUG_print("brewReady after %lu seconds\n", lastCheckBrewReady - brewReadyStatisticStart);
+      snprintf(debugline, sizeof(debugline), "brewReady (stable last 60 secs. Tuning took %lu secs)", (lastCheckBrewReady - brewReadyStatisticStart) / 1000);
+      DEBUG_println(debugline);
+      mqtt_publish("events", debugline);
     }
     brewReady = brewReadyCurrent;
   }
   refreshBrewReadyHardwareLed(brewReady);
+  //TODO: Readd sometime
+  //int controlButtonPressed = checkControlButtons();
+  //if (controlButtonPressed != 0) {
+  //  DEBUG_print("Pressed Button: %d\n", controlButtonPressed);
+  //}
   
   if (!wifi_working()) {
     checkWifi();
@@ -1307,13 +1381,13 @@ void loop() {
 
     /* state 2: ColdstartTemp reached. Now stabilizing temperature after coldstart */
     } else if (activeState == 2) {
-      Output = convertUtilisationToOutput(steadyPower + ((steadyPowerOffset_Activated) ? steadyPowerOffset: 0));
+      Output = convertUtilisationToOutput(steadyPower + bPID.GetSteadyPowerOffsetCalculated());
 
     /* state 4: Brew detected. Increase heater power */
     } else if (activeState == 4) {
       Output = convertUtilisationToOutput(brewDetectionPower);
       if (OnlyPID == 1 && timerBrewDetection == 1){
-        bezugsZeit = millis() - timeBrewDetection;
+        bezugsZeit = millis() - lastBrewTime;
       }
 
     /* state 5: Outer Zone reached. More power than in inner zone */
@@ -1569,6 +1643,19 @@ void sync_eeprom(bool startup_read, bool force_read) {
   DEBUG_print("EEPROM: sync_eeprom() finished.\n");
 }
 
+void print_settings() {
+  DEBUG_print("========================\n");
+  DEBUG_print("Machine: %s | Version: %s\n", MACHINE_TYPE, sysVersion);
+  DEBUG_print("aggKp: %0.2f | aggTn: %0.2f | aggTv: %0.2f\n", aggKp, aggTn, aggTv);
+  DEBUG_print("aggoKp: %0.2f | aggoTn: %0.2f | aggoTv: %0.2f\n", aggoKp, aggoTn, aggoTv);
+  DEBUG_print("setPoint: %0.2f | starttemp: %0.2f | burstPower: %0.2f\n", setPoint, starttemp, burstPower);
+  DEBUG_print("brewDetection: %d |brewDetectionSensitivity: %0.2f | brewDetectionPower: %0.2f\n", brewDetection, brewDetectionSensitivity, brewDetectionPower);
+  DEBUG_print("brewtime: %0.2f | preinfusion: %0.2f | preinfusionpause: %0.2f\n", brewtime, preinfusion, preinfusionpause);
+  DEBUG_print("steadyPower: %0.2f | steadyPowerOffset: %0.2f | steadyPowerOffset_Time: %d\n", steadyPower, steadyPowerOffset, steadyPowerOffset_Time);
+  DEBUG_print("estimated_cycle_refreshTemp: %d\n", estimated_cycle_refreshTemp);
+  DEBUG_print("========================\n");
+}
+
 
 /***********************************
  * DISPLAY
@@ -1751,6 +1838,7 @@ void setup() {
   Debug.showColors(true); // Colors
   Debug.setSerialEnabled(true); // log to Serial also
   //Serial.setDebugOutput(true); // enable diagnostic output of WiFi libraries
+  Debug.setCallBackNewClient(&print_settings);
 
   /********************************************************
     Define trigger type
@@ -1861,15 +1949,8 @@ void setup() {
    *  Additionally this function honors changed values in userConfig.h (changed values have priority)
   ******************************************************/
   sync_eeprom(true, !blynk_working());
+  print_settings();
 
-  DEBUG_print("Active settings:\n");
-  DEBUG_print("aggKp: %0.2f | aggTn: %0.2f | aggTv: %0.2f\n", aggKp, aggTn, aggTv);
-  DEBUG_print("aggoKp: %0.2f | aggoTn: %0.2f | aggoTv: %0.2f\n", aggoKp, aggoTn, aggoTv);
-  DEBUG_print("setPoint: %0.2f | starttemp: %0.2f | burstPower: %0.2f\n", setPoint, starttemp, burstPower);
-  DEBUG_print("brewDetection: %d |brewDetectionSensitivity: %0.2f | brewDetectionPower: %0.2f\n", brewDetection, brewDetectionSensitivity, brewDetectionPower);
-  DEBUG_print("brewtime: %0.2f | preinfusion: %0.2f | preinfusionpause: %0.2f\n", brewtime, preinfusion, preinfusionpause);
-  DEBUG_print("steadyPower: %0.2f | steadyPowerOffset: %0.2f | steadyPowerOffset_Time: %d\n", steadyPower, steadyPowerOffset, steadyPowerOffset_Time);
-  DEBUG_print("estimated_cycle_refreshTemp: %d\n", estimated_cycle_refreshTemp);
   /********************************************************
      OTA
   ******************************************************/
@@ -1914,14 +1995,12 @@ void setup() {
 
   if (TempSensor == 2) {
     isrCounter = 950;  //required
-    attachInterrupt(digitalPinToInterrupt(2), readTSIC, RISING); //activate TSIC reading
+    attachInterrupt(digitalPinToInterrupt(pinTemperature), readTSIC, RISING); //activate TSIC reading
     delay(200);
     while (true) {
       previousInput = getTSICvalue();
-      DEBUG_print("setup previousInput=%0.2f\n", previousInput);
       delay(200);
       Input = getTSICvalue();
-      DEBUG_print("setup Input=%0.2f\n", Input);
       if (checkSensor(Input, previousInput)) {
         updateTemperatureHistory(Input);
         break;

@@ -1,5 +1,5 @@
 /********************************************************
- * Version 2.2.0
+ * Version 2.3.0
  * Config must be configured by the user
  *****************************************************/
 
@@ -20,14 +20,28 @@
 #define OTA true              // true=activate update via OTA
 #define GRAFANA 0             // 0=default(off), 1=enable grafana visualisation by Markus (simply ask him for free access)
 
-#define BREWDETECTION 1                // 0 = off ,1 = Software
-#define BREWDETECTION_SENSITIVITY 1.0 // If temperature decreased within the last 3 seconds by this amount, then a brew is detected (BREWDETECTION must be 1)
-#define BREWDETECTION_POWER 75   // 75(default)=heater utiilization (in percent) during detected brew (BREWDETECTION must be 1)
+#define BREWTIME        30.0  // length of time of the brewing (in sec). Used to limit brew time via hardware (ONLYPID=0) or visually (ONLYPID=1).
+
+#define BREWDETECTION 1               // 0 = off ,1 = on (Software/Hardware)
+#define BREWDETECTION_SENSITIVITY 0.6 // If temperature drops in the past 5 seconds by this amount, then a brew is detected (BREWDETECTION must be 1)
+#define BREWDETECTION_WAIT 90         // (ONLYPID=1) 90=default: Software based BrewDetection is disabled after brewing for this number of seconds
+#define BREWDETECTION_POWER 100       // heater utiilization (in percent) during brew (BREWDETECTION must be 1)
+                                      // 100 (recommended)
 
 #define BREW_READY_DETECTION 0.3 // 0 = off, [0.0 - 30.0] = enable. If measured temperature of the last 6 seconds has been within this defined margin around the SET_POINT, we are able to brew. (recommended value 0.2) 
 #define BREW_READY_LED 0         // 0=off, 1=LED at GPO Pin15 will lighten when BREW_READY_DETECTION triggers
 
 //#define DEBUGMODE              // to enable Debug uncomment this line. Afterwards you can connect via telnet to pot 23 to see debug logs.
+
+
+/*******   
+ * Hardware GPIO Pin Mapping (just change values but don't comment)
+ *******/
+#define pinTemperature    2    // read temperature (TSIC)
+#define pinRelayHeater    14   // trigger relais used to heat water
+#define pinRelayVentil    12   // (ONLYPID=0) trigger relais used to open (three-way) valve
+#define pinRelayPumpe     13   // (ONLYPID=0) trigger relais used to activate the water pump
+#define pinLed            15   // (BREW_READY_LED=1) brewReady LED
 
 
 /*******   
@@ -45,11 +59,11 @@
 /*******   
  * General PID values
  *******/
-#define STEADYPOWER 5.4 // Constant power of heater to accomodate against loss of heat to environment (in %)
-                        // (Rancilio Silvia 5E: 5.4 , ...)
-#define STEADYPOWER_OFFSET_TIME 11*60 // If brew group is very cold, we need to put additional power to the heater: 
+#define STEADYPOWER 4.8 // Constant power of heater to accomodate against loss of heat to environment (in %)
+                        // (Rancilio Silvia 5E: 4.8 , ...)
+#define STEADYPOWER_OFFSET_TIME 13*60 // If brew group is very cold, we need to put additional power to the heater: 
                                       // How long should this additional power be delivered (in s)
-#define STEADYPOWER_OFFSET 1.8        // How much power should be added? (in %) (Rancilio Silvia 5E: 1.8, ...)
+#define STEADYPOWER_OFFSET 2.6        // How much power should be added? (in %) (Rancilio Silvia 5E: 2.6, ...)
 
 #define SETPOINT 93     // Temperature SetPoint
 #define STARTTEMP 80.0  // If temperature is below this value then Coldstart state should be triggered
@@ -67,11 +81,11 @@
 
 
 /*******   
- * Preinfussion settings (only useful when ONLYPID=0) 
+ * Preinfussion settings (only useful when ONLYPID=0)
  *******/
-#define PREINFUSION       2   // length of time of the pre-infusion (in sec)
-#define PREINFUSION_PAUSE 5   // length of time of the pre-infusion pause (time in between the pre-infussion and brewing) (in sec)
-#define BREWTIME          25  // length of time of the brewing (in sec)
+#define PREINFUSION       1.5   //  length of time of the pre-infusion (in sec) 
+#define PREINFUSION_PAUSE 2     // length of time of the pre-infusion pause (time in between the pre-infussion and brewing) (in sec) 
+// dont forget to adapt BREWTIME mentioned above
 
 
 /*******   

@@ -106,29 +106,20 @@ Please stick to the following screenshots and use the "virtual pin mapping" as d
 
 # Tunings instructions
 ```
-This step is optional: To my knowledge no tuning is required, because the default PID values already produce steady < 0.1 degree variance 
-to the setpoint within 600sec of power-up (independent of the espresso hardware).
+This step is optional: To my knowledge no tuning is required because all important settings are auto-tuned after a few runs (<10) and test shows that the PID then produces steady < 0.1 degree variance to the setpoint within 600sec of power-up (independent of the espresso hardware).
 ```
 1. Enable debug mode and have a look at the logs
-1. Adjust coldstart (state 1 and state 2):
-   - The goal is to adapt "StartTemp" that after power-on of the cold (<50 Celcius) maschine and upon reaching "state 3" the temperature is around 0.5 Celcius below setPoint. 
-   - Loglines to look for:
-     - State 3 is reached: "\*\* End of Brew. Transition to step 3 (normal mode)".
-       If this is >1 Celcius below setPoint, then increase "StartTemp" by this amount.
-       If this is >0.5 Celcius above setPoint, then decrease "StartTemp" by this amount.
-     - "StartTemp" too high: "Disabled steadyPowerOffset because its too large or starttemp too high"
-       Probably you have to decrease setPoint by at least 1 Celcius.
-1. After this is configured correctly, you can determine your steadyPower value. 
-   - The maschine including the case and brew head to be hot by having it run for at least 1h (for Siliva 5E just power-on the maschine again when it turned off)
-   - Check the "SteadyPower" value in the logs or the blynk app. This value is normally around 4-6% and is your optimum value. Set this value in your userConfig.h and check regularly if this is still set. 
-   - During regular operations the auto-tuning will adapt this value by up to 1 Celcius up/down. This is normal.
-1. After this is configured correctly, you can configure your steadyPowerOffset and steadyPowerOffsetTime.
+1. Validate STARTTEMP is correctly set:
+   - As long as there are "Auto-Tune starttemp .*" logs the auto-tuning is still calibrating. Dont be overly concerned for changes <=0.3 degree. This might be totally normal because of climate changes in the room.
+   - The auto-tuning goal is to adapt "StartTemp" that upon reaching "state 3" the temperature is at most 0.5 Celcius below setPoint. 
+     - Logline when state 3 is reached: "\*\* End of stabilizing. Transition to step 3 (normal mode)".
+   - Loglines like "StartTemp" too high: "Disabled steadyPowerOffset because its too large or starttemp too high" are a bad sign and should never occur after tuning, because this will delay reaching state3 for up to 2 additonal minutes.
+   - Loglines like "brewReady (stable last 60 secs. Tuning took XX secs)" tell you how many seconds it took to reach the setPoint.
+1. After previous step is completed, validate steadyPowerOffset and steadyPowerOffsetTime.
    - When the maschine's metal is cold additional heat is lost. By configuring an additional power to the heater (steadyPowerOffset in percent) for steadyPowerOffsetTime seconds (counting from power-on) you can compensate this.
-   - When the maschine is cold and the heater-power to reach the setPoint quickly enough is not sufficient, you can increase steadyPowerOffset.
-   - When the maschine is cold, coldstart is correctly configured and after reaching "state 3" the temperature is falling rapidly and > 1.5 Celcius below setPoint, you probably should increase steadyPowerOffset also.
-1. After this is configured correctly, you should configure the PID values for inner-zone and outer-zone.
-   - These settings should be tuned very carefully because small changes might have huge impacts.
-   - k := tune in 5 steps. Mostly useful when the temperature is not coming closer to the setPoint, even over a longer period.
+   - When "Attention: steadyPowerOffset is probably too high (%0.2f -= %0.2f) (moving up at setPoint)" is reported even after many runs (this garantees auto-tuning is stable), then steadyPowerOffset probably should be decreased in userConfig.h by 0.1 Celcius.
+   - When the maschine is cold started, the previous steps are correctly configured and after reaching "state 3" the temperature is still falling steadily over a longer time (>30seconds), you probably should increase steadyPowerOffset by 0.1 Celcius steps.
+1. All other values should not be changed. If you you want to improve calibration logic the debug log is very helpful. You can also ask me for assistance.
 
 # Debugging Howto
 1. Enable debugging
@@ -201,9 +192,20 @@ Existing collections are shown here:
 3. Compile, upload and enjoy!
 
 # Changelog
+- 2.3.0_beta_3:
+  - ATTENTION: New default values in userConfig.h. It is recommended to intially use default values for STEADYPOWER, STEADYPOWER_OFFSET_TIME, STEADYPOWER_OFFSET, STARTTEMP, BREWDETECTION_POWER, BREWDETECTION_SENSITIVITY. Additionally BREWTIME is from now on also used in ONLYPID=1.
+  - Improve PID:
+    - steadyPowerOffset is gradually decreased over time to better compensate warmup of maschine.
+    - steadyPowerOffset is taken into consideration of pid calculation.
+    - Once-only output manipulation added when temp is stable but not at setpoint.
+    - PID's I parameter filter is reduced in certain situations more strictly.
+  - Brew Detection optimized and (for ONLYPID=1) additionally uses userConfig.h's BREWTIME as maximum brew time.
+  - When connecting by telnet/blynk the hardware- and software configuration is printed to debug log.
+  - Fix: Heater overextending handling working as intended.
+  - GPIO Pin Mapping moved to userConfig.h. Therefore you have to adapt your userConfig.h file.
 - 2.3.0_beta_2:
-  - Trigger brewReady when temperature is stable for 60sec (prev: 40s).
   - PID State 2 (stabilize coldstart) also adds steadyPowerOffset.
+  - Trigger brewReady when temperature is stable for 60sec (prev: 40s).
   - Add logs for brewReadyStatistic.
   - Fix: burstShot working again.
 - 2.3.0_beta_1:
