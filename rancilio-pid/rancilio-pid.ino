@@ -47,10 +47,14 @@
 #define ONE_WIRE_BUS 2  // Data wire is plugged into port 2 on the Arduino
 
 /********************************************************
-   DISPLAY constructor, select the one needed for your display
+   DISPLAY constructor, change if needed
 ******************************************************/
-//U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);   //e.g. 1.3"
+//DISPLAY constructor, change if needed
+#if DISPLAY == 1
+U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);   //e.g. 1.3"
+#elif DISPLAY == 2
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);    //e.g. 0.96"
+#endif
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
