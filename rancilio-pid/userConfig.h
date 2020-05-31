@@ -23,6 +23,7 @@
 #define MAXWIFIRECONNECTS 5  // maximum number of reconnects; use -1 to set to maximum ("deactivated")
 #define MACHINELOGO 1        // 1 = Rancilio, 2 = Gaggia
 #define MQTT 0               // 1 = MQTT enabled, 2 = MQTT disabled
+#define COLDSTART_PID 1      // 1 = default COLDStart Values , 2 = eigene Werte via Blynk 
 
 //MQTT
 #define MQTTSERVER "mqttserver"
@@ -31,7 +32,6 @@
 #define AUTH "blynkauthcode"
 #define D_SSID "wlanname"
 #define PASS "wlanpass"
-#define BLYNKPORT 8080
 
 // OTA
 #define OTAHOST "Rancilio"   // Name to be shown in ARUDINO IDE Port
