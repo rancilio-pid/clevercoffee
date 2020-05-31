@@ -1,5 +1,5 @@
 /********************************************************
-   Version 1.9.9 beta (21.05.2020) MQTT
+   Version 2.1.0  (29.05.2020) MQTT
 ******************************************************/
 
 /********************************************************
@@ -293,6 +293,15 @@ BLYNK_WRITE(V40) {
   backflushON =  param.asInt();
 }
 
+#if (coldstart_pid == 2 )  // 2=?Blynk values, else default starttemp from config
+  BLYNK_WRITE(V11) {
+  startKp = param.asDouble();
+  }
+  BLYNK_WRITE(V14)
+  {
+    startTn = param.asDouble();
+  }
+ #endif
 
 
 /********************************************************
@@ -382,8 +391,8 @@ void backflush() {
 *****************************************************/
 void u8g2_prepare(void) {
   //u8g2.setFont(u8g2_font_6x12_tf);
-  //u8g2.setFont(u8g2_font_profont11_tf);
-  u8g2.setFont(u8g2_font_IPAandRUSLCD_tf);
+  u8g2.setFont(u8g2_font_profont11_tf);
+  //u8g2.setFont(u8g2_font_IPAandRUSLCD_tf);
   u8g2.setFontRefHeightExtendedText();
   u8g2.setDrawColor(1);
   u8g2.setFontPosTop();
@@ -573,6 +582,7 @@ void refreshTemp() {
       temperature = 0;
       Sensor1.getTemperature(&temperature);
       Temperatur_C = Sensor1.calc_Celsius(&temperature);
+      //Temperatur_C = random(130,131);
       if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
       Input = Temperatur_C;
       if (Brewdetection != 0) {
