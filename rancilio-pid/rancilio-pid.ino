@@ -52,7 +52,7 @@
 //DISPLAY constructor, change if needed
 #if DISPLAY == 1
 U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);   //e.g. 1.3"
-#elif DISPLAY == 2
+#else
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);    //e.g. 0.96"
 #endif
 
