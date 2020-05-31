@@ -11,7 +11,7 @@
 #include <U8g2lib.h>
 #include "PID_v1.h" //for PID calculation
 #include <DallasTemperature.h>    //Library for dallas temp sensor
-#include "TSIC.h"       //Library for TSIC temp sensor
+#include "ZACwire.h"       //Library for TSIC temp sensor
 #include <BlynkSimpleEsp8266.h>
 #include "icon.h"   //user icons for display
 #include <MQTT.h>
@@ -217,9 +217,8 @@ DeviceAddress sensorDeviceAddress;     // arrays to hold device address
 /********************************************************
    Temp Sensors TSIC 306
 ******************************************************/
-TSIC Sensor1(ONE_WIRE_BUS);   // only Signalpin, VCCpin unused by default
-uint16_t temperature = 0;     // internal variable used to read temeprature
-float Temperatur_C = 0;       // internal variable that holds the converted temperature in °C
+ZACwire<ONE_WIRE_BUS> Sensor1;   // only Signalpin, VCCpin unused by default
+float Temperatur_C;       // internal variable that holds the converted temperature in °C
 
 /********************************************************
    BLYNK
@@ -798,13 +797,9 @@ void refreshTemp() {
     if (currentMillistemp - previousMillistemp >= intervaltempmestsic)
     {
       previousMillistemp = currentMillistemp;
-      /*  variable "temperature" must be set to zero, before reading new data
-            getTemperature only updates if data is valid, otherwise "temperature" will still hold old values
-      */
-      temperature = 0;
-      Sensor1.getTemperature(&temperature);
-      Temperatur_C = Sensor1.calc_Celsius(&temperature);
-      //Temperatur_C = random(130,131);
+       
+      // getTemp() only updates if data is valid, otherwise "Input" will still hold old values
+      Temperatur_C = Sensor1.getTemp();
       if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
       Input = Temperatur_C;
       if (Brewdetection != 0) {
@@ -1375,11 +1370,7 @@ void setup() {
       readingchangerate[thisReading] = 0;
     }
   }
-  if (TempSensor == 2) {
-    temperature = 0;
-    Sensor1.getTemperature(&temperature);
-    Input = Sensor1.calc_Celsius(&temperature);
-  }
+  if (TempSensor == 2) Input = Sensor1.getTemp();
 
   //Initialisation MUST be at the very end of the init(), otherwise the time comparision in loop() will have a big offset
   unsigned long currentTime = millis();
