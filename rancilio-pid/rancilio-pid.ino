@@ -15,6 +15,7 @@
 #include <BlynkSimpleEsp8266.h>
 #include "icon.h"   //user icons for display
 #include <MQTT.h>
+#include <IotWebConf.h>
 
 /********************************************************
   DEFINES
@@ -233,6 +234,19 @@ unsigned long previousMillisDisplay;  // initialisation at the end of init()
 const unsigned long intervalDisplay = 500;
 
 /********************************************************
+   WiFi manager test
+******************************************************/
+// -- Initial name of the Thing. Used e.g. as SSID of the own Access Point.
+const char thingName[] = "RancilioAP";
+
+// -- Initial password to connect to the Thing, when it creates an own Access Point.
+const char wifiInitialApPassword[] = "Rancilio1234";
+
+DNSServer dnsServer;
+WebServer server(80);
+IotWebConf iotWebConf(thingName, &dnsServer, &server, wifiInitialApPassword);
+
+/********************************************************
    BLYNK define pins and read values
 ******************************************************/
 BLYNK_CONNECTED() {
@@ -294,15 +308,222 @@ BLYNK_WRITE(V40) {
 }
 
 #if (coldstart_pid == 2 )  // 2=?Blynk values, else default starttemp from config
-  BLYNK_WRITE(V11) {
+BLYNK_WRITE(V11) {
   startKp = param.asDouble();
-  }
-  BLYNK_WRITE(V14)
-  {
-    startTn = param.asDouble();
-  }
- #endif
+}
+BLYNK_WRITE(V14)
+{
+  startTn = param.asDouble();
+}
+#endif
 
+// wifi manager test
+void handleRoot()
+{
+  // -- Let IotWebConf test and handle captive portal requests.
+  if (iotWebConf.handleCaptivePortal())
+  {
+    // -- Captive portal request were already served.
+    return;
+  }
+  String s = "<!DOCTYPE html><html lang=\"en\"><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\"/>";
+  s += "<title>IotWebConf 01 Minimal</title></head><body>Hello world!";
+  s += "Go to <a href='config'>configure page</a> to change settings.";
+  s += "</body></html>\n";
+
+  server.send(200, "text/html", s);
+}
+
+void saveToEEPROM() {
+  DEBUG_print(F("Info: saving parameter to EEPROM..."));
+  EEPROM.begin(104);   // open eeprom
+  EEPROM.put(0, aggKp);
+  EEPROM.put(8, aggTn);
+  EEPROM.put(16, aggTv);
+  EEPROM.put(24, setPoint);
+  EEPROM.put(32, brewtime);
+  EEPROM.put(40, preinfusion);
+  EEPROM.put(48, preinfusionpause);
+  EEPROM.put(56, startKp);
+  EEPROM.put(64, aggbKp);
+  EEPROM.put(72, aggbTn);
+  EEPROM.put(80, aggbTv);
+  EEPROM.put(88, brewtimersoftware);
+  EEPROM.put(96, brewboarder);
+  EEPROM.commit();    // close eeprom
+}
+
+bool readFromEEPROM() {
+  double dummy;
+  DEBUG_print(F("Info: reading parameter from EEPROM..."));
+  if (iotWebConf.getState() > 1) {
+    //DEBUG_println(F("INIT: skipping fallback, no WiFi config present"));
+    EEPROM.begin(104);     // open eeprom
+  }
+  EEPROM.get(0, dummy);  // check first value, if it is numerical
+  if (!isnan(dummy)) {
+    EEPROM.get(0, aggKp);
+    EEPROM.get(8, aggTn);
+    EEPROM.get(16, aggTv);
+    EEPROM.get(24, setPoint);
+    EEPROM.get(32, brewtime);
+    EEPROM.get(40, preinfusion);
+    EEPROM.get(48, preinfusionpause);
+    EEPROM.get(56, startKp);
+    EEPROM.get(64, aggbKp);
+    EEPROM.get(72, aggbTn);
+    EEPROM.get(80, aggbTv);
+    EEPROM.get(88, brewtimersoftware);
+    EEPROM.get(96, brewboarder);
+    DEBUG_println(F("done"));
+    return true;
+  } else {
+    return false;
+    DEBUG_println(F("failed"));
+    DEBUG_println(F("ERROR: no valid EEPROM values found!"));
+    // TODO dispaly message
+  }
+}
+
+/*****************************************************
+  WiFi connection function, also used for reconnecting
+  abort function if offline, or brew is running
+*****************************************************/
+void connectWifi(const char* ssid, const char* password) {
+  if (Offlinemodus == 1 || brewcounter > 11) return;
+  if (setupDone == false) {
+    unsigned long started = millis();
+    DEBUG_print(F("INIT: Initializing WiFi (timeout 20s) ... "));
+    WiFi.hostname(hostname);
+    /* Explicitly set the ESP8266 to be a WiFi-client, otherwise, it by default,
+      would try to act as both a client and an access-point and could cause
+      network-issues with your other WiFi-devices on your WiFi-network. */
+    WiFi.mode(WIFI_STA);
+    WiFi.persistent(false);   // needed, otherwise exceptions are triggered \o.O/
+    WiFi.setSleepMode(WIFI_NONE_SLEEP); // needed to prevent other bugs
+    WiFi.begin(ssid, pass);
+    DEBUG_println(F("done"));
+    DEBUG_print(F("INIT: Connecting WiFi to: "));
+    DEBUG_print(ssid);
+    DEBUG_print("...");
+    // wait up to 20 seconds for connection:
+    while ((WiFi.status() != WL_CONNECTED) && (millis() - started < 20000))
+    {
+      yield();    //Prevent Watchdog trigger
+    }
+    if (WiFi.status() != WL_CONNECTED) {
+      WiFi.disconnect(true);    // disconnect Wifi, erase Wifi credentials
+      DEBUG_println(F("ERROR: Failed to connect to WiFi!"));
+    } else {
+      DEBUG_println(F("done"));
+      DEBUG_print(F("INFO: local IP: "));
+      DEBUG_println(WiFi.localIP());
+      DEBUG_print(F("INFO: MAC address: "));
+      DEBUG_println(WiFi.macAddress());
+    }
+  } else {
+    WiFi.persistent(false);   // needed, otherwise exceptions are triggered \o.O/
+    WiFi.disconnect(true);
+    WiFi.setSleepMode(WIFI_NONE_SLEEP); // needed to prevent other bugs
+    WiFi.begin(ssid, pass);
+    // TODO, add status on display? see old checkWifi function
+  }
+}
+
+void initBlynk() {
+  if ( Offlinemodus == 1) {
+    return;
+  }
+  DEBUG_print(F("INIT: Initializing Blynk (timeout 20s) ... "));
+  if (WiFi.status() == WL_CONNECTED) {
+    Blynk.config(auth, blynkaddress, blynkport) ;
+    Blynk.connect(20000);   //try blynk connection
+    if (Blynk.connected()) {
+      DEBUG_println(F("done"));
+      Blynk.syncAll();
+    } else {
+      DEBUG_println(F("failed"));
+    }
+  }
+}
+
+void initWiFi2() {
+  if ( Offlinemodus == 1) {
+    return;
+  }
+  DEBUG_print(F("INIT: Initializing WiFi Manager ... "));
+  iotWebConf.skipApStartup(); // Calling this method before the init will force IotWebConf to connect immediately to the configured WiFi network.
+  iotWebConf.setWifiConnectionHandler(&connectWifi);    // define custom wifi connect handler
+
+  iotWebConf.init();    // -- Initializing the configuration.
+
+  // -- Set up required URL handlers on the web server.
+  server.on("/", handleRoot);
+  server.on("/config", [] { iotWebConf.handleConfig(); });
+  server.onNotFound([]() {
+    iotWebConf.handleNotFound();
+  });
+  DEBUG_println(F("done"));
+  iotWebConf.doLoop();    // call once , so connection is established during setup
+}
+
+/********************************************************
+  Initialize Wifi network
+******************************************************/
+void initWiFi() {
+  if ( Offlinemodus == 1) {
+    return;
+  }
+  unsigned long started = millis();
+  DEBUG_print(F("INIT: Initializing WiFi (timeout 20s) ... "));
+  WiFi.hostname(hostname);
+  /* Explicitly set the ESP8266 to be a WiFi-client, otherwise, it by default,
+    would try to act as both a client and an access-point and could cause
+    network-issues with your other WiFi-devices on your WiFi-network. */
+  WiFi.mode(WIFI_STA);
+  WiFi.persistent(false);   // needed, otherwise exceptions are triggered \o.O/
+  WiFi.setSleepMode(WIFI_NONE_SLEEP); // needed to prevent other bugs
+  WiFi.begin(ssid, pass);
+  DEBUG_println(F("done"));
+  DEBUG_print(F("INIT: Connecting WiFi to: "));
+  DEBUG_print(ssid);
+  DEBUG_print("...");
+  // wait up to 20 seconds for connection:
+  while ((WiFi.status() != WL_CONNECTED) && (millis() - started < 20000))
+  {
+    yield();    //Prevent Watchdog trigger
+  }
+
+  if (WiFi.status() != WL_CONNECTED) {
+    WiFi.disconnect(true);    // disconnect Wifi, erase Wifi credentials
+    DEBUG_println(F("ERROR: Failed to connect to WiFi!"));
+  } else {
+    DEBUG_println(F("done"));
+    DEBUG_print(F("INFO: local IP: "));
+    DEBUG_println(WiFi.localIP());
+    DEBUG_print(F("INFO: MAC address: "));
+    DEBUG_println(WiFi.macAddress());
+  }
+}
+
+void initFallback() {
+  // if state = 1 = not configured, the eeprom is kept open by iotwebconf!
+  DEBUG_print(F("INIT: Initializing fallback values ... "));
+  if (Blynk.connected() == true) {
+    if (iotWebConf.getState() == 1) {
+      DEBUG_println(F("INIT: skipping fallback, no WiFi config present"));
+      return;
+    }
+    saveToEEPROM();
+    DEBUG_println(F("new values saved"));
+  } else {
+    if (readFromEEPROM()) {
+      DEBUG_println(F("no Blynk connection, old values restored"));
+    } else {
+      DEBUG_println(F("no Blynk, and no valid values found in EEPROM"));
+    }
+  }
+}
 
 /********************************************************
   Emergency stop inf temp is to high
@@ -1102,96 +1323,10 @@ void setup() {
   /********************************************************
      BLYNK & Fallback offline
   ******************************************************/
-  if (Offlinemodus == 0) {
-    WiFi.hostname(hostname);
-    unsigned long started = millis();
-    displayLogo("1: Connect Wifi to:", ssid);
-    /* Explicitly set the ESP8266 to be a WiFi-client, otherwise, it by default,
-      would try to act as both a client and an access-point and could cause
-      network-issues with your other WiFi-devices on your WiFi-network. */
-    WiFi.mode(WIFI_STA);
-    WiFi.persistent(false);   //needed, otherwise exceptions are triggered \o.O/
-    WiFi.begin(ssid, pass);
-    DEBUG_print("Connecting to ");
-    DEBUG_print(ssid);
-    DEBUG_println(" ...");
-
-    // wait up to 20 seconds for connection:
-    while ((WiFi.status() != WL_CONNECTED) && (millis() - started < 20000))
-    {
-      yield();    //Prevent Watchdog trigger
-    }
-
-    checkWifi();    //try to reconnect
-
-    if (WiFi.status() == WL_CONNECTED) {
-      DEBUG_println("WiFi connected");
-      DEBUG_println("IP address: ");
-      DEBUG_println(WiFi.localIP());
-      DEBUG_println("Wifi works, now try Blynk (timeout 30s)");
-      if (fallback == 0) {
-        displayLogo("Connect to Blynk", "no Fallback");
-      } else if (fallback == 1) {
-        displayLogo("2: Wifi connected, ", "try Blynk   ");
-      }
-      delay(1000);
-
-      //try blynk connection
-      Blynk.config(auth, blynkaddress, blynkport) ;
-      Blynk.connect(30000);
-
-      if (Blynk.connected() == true) {
-        displayLogo("3: Blynk connected", "sync all variables...");
-        DEBUG_println("Blynk is online");
-        if (fallback == 1) {
-          DEBUG_println("sync all variables and write new values to eeprom");
-          // Blynk.run() ;
-          Blynk.syncVirtual(V4);
-          Blynk.syncVirtual(V5);
-          Blynk.syncVirtual(V6);
-          Blynk.syncVirtual(V7);
-          Blynk.syncVirtual(V8);
-          Blynk.syncVirtual(V9);
-          Blynk.syncVirtual(V10);
-          Blynk.syncVirtual(V11);
-          Blynk.syncVirtual(V12);
-          Blynk.syncVirtual(V13);
-          Blynk.syncVirtual(V14);
-          Blynk.syncVirtual(V30);
-          Blynk.syncVirtual(V31);
-          Blynk.syncVirtual(V32);
-          Blynk.syncVirtual(V33);
-          Blynk.syncVirtual(V34);
-          // Blynk.syncAll();  //sync all values from Blynk server
-          // Werte in den eeprom schreiben
-          // ini eeprom mit begin
-          EEPROM.begin(1024);
-          EEPROM.put(0, aggKp);
-          EEPROM.put(10, aggTn);
-          EEPROM.put(20, aggTv);
-          EEPROM.put(30, setPoint);
-          EEPROM.put(40, brewtime);
-          EEPROM.put(50, preinfusion);
-          EEPROM.put(60, preinfusionpause);
-          EEPROM.put(90, aggbKp);
-          EEPROM.put(100, aggbTn);
-          EEPROM.put(110, aggbTv);
-          EEPROM.put(120, brewtimersoftware);
-          EEPROM.put(130, brewboarder);
-          // eeprom schließen
-          EEPROM.commit();
-        }
-      } else {
-        DEBUG_println("No connection to Blynk");
-      }
-
-    } else {
-      displayLogo("No ", "WIFI");
-      DEBUG_println("No WIFI");
-      WiFi.disconnect(true);
-      delay(1000);
-    }
-  }
+  //initWiFi();
+  initWiFi2();
+  initBlynk();
+  initFallback();   // must be called after initBlynk();
 
   /********************************************************
      OTA
@@ -1299,7 +1434,7 @@ void loop() {
     }
     wifiReconnects = 0;   //reset wifi reconnects if connected
   } else {
-    checkWifi();
+    //checkWifi();
   }
 
   //MQTT
@@ -1311,7 +1446,7 @@ void loop() {
   refreshTemp();   //read new temperature values
   testEmergencyStop();  // test if Temp is to high
   brew();   //start brewing if button pressed
-
+  iotWebConf.doLoop(); // -- doLoop should be called as frequently as possible.
   sendToBlynk();
 
 
