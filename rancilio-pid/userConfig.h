@@ -22,7 +22,7 @@
 #define WIFICINNECTIONDELAY 10000 // delay between reconnects in ms
 #define MAXWIFIRECONNECTS 5  // maximum number of reconnects; use -1 to set to maximum ("deactivated")
 #define MACHINELOGO 1        // 1 = Rancilio, 2 = Gaggia
-#define MQTT 0               // 1 = MQTT enabled, 2 = MQTT disabled
+#define MQTT 0               // 1 = MQTT enabled, 0 = MQTT disabled
 #define COLDSTART_PID 1      // 1 = default COLDStart Values , 2 = eigene Werte via Blynk 
 
 //MQTT
