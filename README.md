@@ -161,10 +161,12 @@ This step is optional: To my knowledge no tuning is required because all importa
 1. If you need help or have questions, just send me the logs in the [rancilio-pid chat](https://chat.rancilio-pid.de/).
 
 # How to use a simple LED as brewReady signal
-- The easiest way is to use arduino GPIO15. For this to work you have to connect a resistor (R3) and in parallel another resistor (R7) with the led (LED2) in series. This has to be connected between GPIO Pin 15 and GROUND as seen in [Schematic](https://www.forward.com.au/pfod/ESP8266/GPIOpins/index.html (R3, R7, LED2).
+- The easiest way is to use the un-used arduino GPIO16 (D0). In this case it is advised to add a small resistor between the LED and voltage/ground.
+- Another possibility is to use arduino GPIO15. For this to work you have to connect a resistor (R3) and in parallel another resistor (R7) with the led (LED2) in series. This has to be connected between GPIO Pin 15 and GROUND as seen in [Schematic](https://www.forward.com.au/pfod/ESP8266/GPIOpins/index.html (R3, R7, LED2).
 - Required configuration in config.h:
   - #define BREW_READY_LED 1
   - #define BREW_READY_DETECTION 0.2  # or any other value
+  - #define pinLed 15  # or 16
   - <p align="center">
     <img src="https://github.com/medlor/ranciliopid/blob/master/pictures/hardware-led/rancilio-brewReadyLed.jpg" height="300">
     </p>
@@ -192,6 +194,10 @@ Existing collections are shown here:
 3. Compile, upload and enjoy!
 
 # Changelog
+- 2.3.0_beta_4:
+  - BREWDETECTION_POWER handling changed. If ONLY_PID==0, then configured POWER is applied to heater over the whole brew process. But if ONLY_PID==1, then it is applied only when temperature is 1.5 Celcius below setpoint.
+  - PID tunings
+  - Fix: Potential crash when toogling pid on/off
 - 2.3.0_beta_3:
   - ATTENTION: New default values in userConfig.h. It is recommended to intially use default values for STEADYPOWER, STEADYPOWER_OFFSET_TIME, STEADYPOWER_OFFSET, STARTTEMP, BREWDETECTION_POWER, BREWDETECTION_SENSITIVITY. Additionally BREWTIME is from now on also used in ONLYPID=1.
   - Improve PID:
@@ -207,7 +213,7 @@ Existing collections are shown here:
   - PID State 2 (stabilize coldstart) also adds steadyPowerOffset.
   - Trigger brewReady when temperature is stable for 60sec (prev: 40s).
   - Add logs for brewReadyStatistic.
-  - Fix: burstShot working again.
+  - Fix: burstPower working again.
 - 2.3.0_beta_1:
   - Auto-tuning for starttemp is implemented. No need to adapt the STARTTEMP accordingly when SETPOINT is modified.
   - Fix: If PID is manually disabled, heater utilization is correctly reported as 0%.

@@ -106,7 +106,7 @@ class PIDBias
                                 //   what these values are.  with pointers we'll just know.
   double *mySteadyPower;
 	unsigned long lastTime;
-  unsigned long lastTrigger;
+  unsigned long lastTrigger, lastTrigger2;
   double lastOutput, lastError;
 	unsigned long SampleTime;
 	double outMin, outMax;

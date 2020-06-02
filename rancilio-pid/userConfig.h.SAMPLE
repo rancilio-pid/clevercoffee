@@ -25,8 +25,9 @@
 #define BREWDETECTION 1               // 0 = off ,1 = on (Software/Hardware)
 #define BREWDETECTION_SENSITIVITY 0.6 // If temperature drops in the past 5 seconds by this amount, then a brew is detected (BREWDETECTION must be 1)
 #define BREWDETECTION_WAIT 90         // (ONLYPID=1) 90=default: Software based BrewDetection is disabled after brewing for this number of seconds
-#define BREWDETECTION_POWER 100       // heater utiilization (in percent) during brew (BREWDETECTION must be 1)
-                                      // 100 (recommended)
+#define BREWDETECTION_POWER 50        // heater utiilization (in percent) during brew (BREWDETECTION must be 1)
+                                      // (ONLYPID=0) BREWDETECTION_POWER is active during the whole brew.
+                                      // (ONLYPID=1) BREWDETECTION_POWER is only active when current temperature is 1.5 Celcius below SETPOINT.
 
 #define BREW_READY_DETECTION 0.3 // 0 = off, [0.0 - 30.0] = enable. If measured temperature of the last 6 seconds has been within this defined margin around the SET_POINT, we are able to brew. (recommended value 0.2) 
 #define BREW_READY_LED 0         // 0=off, 1=LED at GPO Pin15 will lighten when BREW_READY_DETECTION triggers
@@ -59,14 +60,14 @@
 /*******   
  * General PID values
  *******/
-#define STEADYPOWER 4.8 // Constant power of heater to accomodate against loss of heat to environment (in %)
-                        // (Rancilio Silvia 5E: 4.8 , ...)
-#define STEADYPOWER_OFFSET_TIME 13*60 // If brew group is very cold, we need to put additional power to the heater: 
-                                      // How long should this additional power be delivered (in s)
-#define STEADYPOWER_OFFSET 2.6        // How much power should be added? (in %) (Rancilio Silvia 5E: 2.6, ...)
+#define STEADYPOWER 4.6 // Constant power of heater to accomodate against loss of heat to environment (in %)
+                        // (Rancilio Silvia 5E: 4.6 , ...)
+#define STEADYPOWER_OFFSET_TIME 850   // If brew group is very cold, we need to put additional power to the heater: 
+                                      // How long should this additional power be delivered (in s) (Rancilio Silvia 5E: 850, ...)
+#define STEADYPOWER_OFFSET 3.0        // How much power should be added? (in %) (Rancilio Silvia 5E: 2.9, ...)
 
 #define SETPOINT 93     // Temperature SetPoint
-#define STARTTEMP 80.0  // If temperature is below this value then Coldstart state should be triggered
+#define STARTTEMP 80    // If temperature is below this value then Coldstart state should be triggered
                         // (Rancilio Silvia 5E: 80.0 , ...)
 
 // Inner Zone PID values
