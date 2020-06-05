@@ -194,6 +194,9 @@ Existing collections are shown here:
 3. Compile, upload and enjoy!
 
 # Changelog
+- 2.3.0_beta_5:
+  - Added Adrian's new library to read TSIC values at https://github.com/lebuni/ZACwire-Library
+  - Fix: No starttemp tuning when when maschine is already warm..
 - 2.3.0_beta_4:
   - BREWDETECTION_POWER handling changed. If ONLY_PID==0, then configured POWER is applied to heater over the whole brew process. But if ONLY_PID==1, then it is applied only when temperature is 1.5 Celcius below setpoint.
   - PID tunings

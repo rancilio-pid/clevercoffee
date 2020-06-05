@@ -20,6 +20,7 @@
                  12ms if only one virtualWrite() is called.
                  80-100ms per transferred attribute (virtualWrite+syncVirtual)
 - convert float/double to smaller bytes to improve performance (sprintf of float takes 0.3ms)
+- wifi costs 100micros/loop.
 
 # Sample brew detection
 (D p:^0004ms) 970 Input= 94.28 | error=-0.28 delta= 0.00 | Output=  4.95 b: 5.60 + p:-0.45 + i:-0.20(-0.20) + d:-0.00

@@ -154,12 +154,8 @@ int PIDBias::Compute()
       if ( steadyPowerAutoTune && error > setPointBand && pastTemperatureChange(20) <= 0.1 && pastTemperatureChange(20) >= 0 &&
                 sumOutputI == filterSumOutputI && (millis() - lastTrigger >20000) ) {
         //steadyPower auto-tuning
-        double offset = 0.05;
-        if (error > 0.5) {
-          offset = 0.1;
-        } else if (error > 1) {
-          offset = 0.15;
-        }
+        double offset = 0.1;
+        if (error > 1) offset = 0.15;
         if (steadyPowerOffsetCalculated >= 0.2) {
           offset *= 2;
         }
@@ -373,7 +369,7 @@ double PIDBias::CalculateSteadyPowerOffset() {
   if (steadyPowerOffsetCalculated < 0) {
     return 0;
   } else {
-    DEBUG_print("steadyPowerOffset=%0.2f\n", steadyPowerOffsetCalculated);  //TODO remove
+    //DEBUG_print("steadyPowerOffset=%0.2f\n", steadyPowerOffsetCalculated);  //TODO remove
     return steadyPowerOffsetCalculated;
   }
 }
