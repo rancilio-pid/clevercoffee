@@ -28,7 +28,7 @@ int PIDBias::signnum_c(double x) {
   if (x < 0.0) return -1;
 }
 
-PIDBias::PIDBias(double* Input, double* Output, double* steadyPower, double* steadyPowerOffset, unsigned long* steadyPowerOffset_Activated, int* steadyPowerOffset_Time, double* Setpoint,
+PIDBias::PIDBias(double* Input, double* Output, double* steadyPower, double* steadyPowerOffset, unsigned long* steadyPowerOffset_Activated, int* steadyPowerOffsetTime, double* Setpoint,
         double Kp, double Ki, double Kd)
 {
     myOutput = Output;
@@ -37,7 +37,7 @@ PIDBias::PIDBias(double* Input, double* Output, double* steadyPower, double* ste
     mySteadyPower = steadyPower;
     mySteadyPowerOffset = steadyPowerOffset;
     mySteadyPowerOffset_Activated = steadyPowerOffset_Activated;
-    mySteadyPowerOffset_Time = steadyPowerOffset_Time;
+    mySteadyPowerOffset_Time = steadyPowerOffsetTime;
     inAuto = MANUAL;
     lastOutput = *myOutput;
     steadyPowerDefault = *mySteadyPower;
@@ -76,8 +76,9 @@ int PIDBias::Compute()
       if ( sumOutputI > filterSumOutputI ) sumOutputI = filterSumOutputI;
 
       //reset sumI when at setPoint. This improves stabilization.
-      if ( signnum_c(error) * signnum_c(lastError) < 0 ) { //temperature curve crosses setPoint
+      if ( signnum_c(error) * signnum_c(lastError) < 0 && (millis() - lastTriggerCrossingSetPoint >30000) ) { //temperature crosses setPoint
         //DEBUG_print("Crossing setPoint\n");
+        lastTriggerCrossingSetPoint = millis();
         
         //moving upwards
         if ( sumOutputI > 0 ) {
@@ -87,11 +88,11 @@ int PIDBias::Compute()
               DEBUG_print("Attention: steadyPowerOffset is probably too high (%0.2f -= %0.2f) (moving up at setPoint)\n", steadyPowerOffsetCalculated, 0.2);
               *mySteadyPowerOffset -= 0.2;
               //TODO: perhaps we need to reduce steadyPowerOffset in eeprom (permanently)
-           } else if ( convertOutputToUtilisation(sumOutputI) >= 0.5 && pastTemperatureChange(20) >=0 && pastTemperatureChange(20) <= 0.1) {
+            } else if ( convertOutputToUtilisation(sumOutputI) >= 0.5 && pastTemperatureChange(20) >=0 && pastTemperatureChange(20) <= 0.1) {
               DEBUG_print("Auto-Tune steadyPower(%0.2f += %0.2f) (moving up with too much outputI)\n", *mySteadyPower, 0.15); //convertOutputToUtilisation(sumOutputI / 2));
               *mySteadyPower += 0.15; // convertOutputToUtilisation(sumOutputI / 2);
               //TODO: remember sumOutputI and restore it back to 1/2 when moving down later. only when we are moving up <0.2
-           } else if ( convertOutputToUtilisation(sumOutputI) >= 0.3 && pastTemperatureChange(20) >=0 && pastTemperatureChange(20) <= 0.1) {
+            } else if ( convertOutputToUtilisation(sumOutputI) >= 0.3 && pastTemperatureChange(20) >=0 && pastTemperatureChange(20) <= 0.1) {
               DEBUG_print("Auto-Tune steadyPower(%0.2f += %0.2f) (moving up with too much outputI)\n", *mySteadyPower, 0.1); //convertOutputToUtilisation(sumOutputI / 2));
               *mySteadyPower += 0.1; // convertOutputToUtilisation(sumOutputI / 2);
               //TODO: remember sumOutputI and restore it back to 1/2 when moving down later. only when we are moving up <0.2
@@ -301,6 +302,7 @@ void PIDBias::Initialize()
    sumOutputI = 0;
    lastTrigger = 0;
    lastTrigger2 = 0;
+   lastTriggerCrossingSetPoint = 0;
    steadyPowerAutoTune = true;
    steadyPowerDefault = *mySteadyPower;
    steadyPowerOffsetCalculated = *mySteadyPowerOffset;
@@ -343,14 +345,14 @@ void PIDBias::SetAutoTune(boolean steadyPowerAutoTune_set)
 }
 
 /*
-void PIDBias::UpdateSteadyPowerOffset(unsigned long steadyPowerOffset_Activated_in, unsigned long steadyPowerOffset_Time) {
-  if (steadyPowerOffset_Activated_in == 0 || steadyPowerOffset_Time <= 0) {
+void PIDBias::UpdateSteadyPowerOffset(unsigned long steadyPowerOffset_Activated_in, unsigned long steadyPowerOffsetTime) {
+  if (steadyPowerOffset_Activated_in == 0 || steadyPowerOffsetTime <= 0) {
     //bPID.SetSteadyPowerOffset(0);
     *mySteadyPowerOffset = 0;
     return;
   }
   unsigned long diff = millis() - steadyPowerOffset_Activated_in;
-  double steadyPowerOffsetPerMillisecond = *mySteadyPowerOffset / steadyPowerOffset_Time;
+  double steadyPowerOffsetPerMillisecond = *mySteadyPowerOffset / steadyPowerOffsetTime;
   *mySteadyPowerOffset -= (diff * steadyPowerOffsetPerMillisecond);
   if (*mySteadyPowerOffset < 0) {
     *mySteadyPowerOffset = 0;

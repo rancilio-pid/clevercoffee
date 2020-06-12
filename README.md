@@ -32,6 +32,9 @@ based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 1. Safetly toogle added to shutdown heater on sensor malfunction (TEMPSENSORRECOVERY)
 1. Many useful functions to be used internally getAverageTemperature(), pastTemperatureChange() + updateTemperatureHistory())
 
+# Sample bleeding edge performance
+- You can use the mqtt interface to export live data for monitoring purposes as can be seen in this [Grafana Dashboard](https://snapshot.raintank.io/dashboard/snapshot/lYe7XigrehSfVsvAWYifEwd2d5hNC0dl).
+
 # ATTENTION:
 - This software is tested thoroughly with the pid-only hardware solution on Silvia 5e, and with a permanently run full-hardware solution on an 10 year old Silvia. Also a 10 year old Gaggia Classic is tested successfully. I am grateful for any further feedback. 
 - Please monitor our maschine's temperature closely the first few run times. The muti-state pid controller should never lead to temperatures greater than 5 degress above setpoint!
@@ -194,6 +197,14 @@ Existing collections are shown here:
 3. Compile, upload and enjoy!
 
 # Changelog
+- 2.3.0_beta_6:
+  - Howto "Setup MQTT": https://github.com/medlor/bleeding-edge-ranciliopid/wiki/MQTT-Setup
+  - Bleeding-Edge settings can be configured remotely without the need of any service running in your network (no extra blynk or mqtt server needed! No extra raspi required.)
+  - MQTT fully implemented so you can publish and subscribe to configure settings and monitor states.
+  - Minor code restructuring.
+  - Added link to sample daily Grafana dashboard.
+  - Save pidON in eeprom.
+  - Updated userConfig.h.
 - 2.3.0_beta_5:
   - Added Adrian's new library to read TSIC values at https://github.com/lebuni/ZACwire-Library
   - Fix: No starttemp tuning when when maschine is already warm..
