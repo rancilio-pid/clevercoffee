@@ -6,7 +6,7 @@ Version 2.3.0 beta
 
 based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 
-# Most important features compared to rancilio-pid master:
+## Most important features compared to rancilio-pid master:
 1. New PID Controller "Multi-state PID with steadyPower (Bias)"
    - Auto-Tuning of all PID settings. No knowledge or special tunings required.
    - Distinct PID settings dependend on the current "state" of the maschine. 
@@ -34,49 +34,49 @@ based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 1. Safetly toogle added to shutdown heater on sensor malfunction (TEMPSENSORRECOVERY)
 1. Many useful functions to be used internally getAverageTemperature(), pastTemperatureChange() + updateTemperatureHistory())
 
-# ATTENTION:
+## ATTENTION:
 - This software is tested thoroughly with the pid-only hardware solution on Silvia 5e, and with a permanently run full-hardware solution on an 10 year old Silvia. Also a 10 year old Gaggia Classic is tested successfully. I am grateful for any further feedback. 
 - Please monitor our maschine's temperature closely the first few run times. The muti-state pid controller should never lead to temperatures greater than 5 degress above setpoint!
 
-# Sample bleeding-edge workings
+## Sample bleeding-edge workings
 - You can use the mqtt interface to export live data for monitoring purposes as can be seen in this [Grafana Dashboard](https://snapshot.raintank.io/dashboard/snapshot/lYe7XigrehSfVsvAWYifEwd2d5hNC0dl).
 
-# Instructions on how to migrate from official rancilio to bleeding-edge
+## Instructions on how to migrate from official rancilio to bleeding-edge
 Installation is as explained on http://rancilio-pid.de/ but with following adapations:
 1. Make screenshots of the official "Blynk App Dashboard" so that you can revert anytime.
 1. Copy file userConfig.h.SAMPLE to userConfig.h and edit this file accordingly.
-  - I propose to set MQTT_ENABLE=2 instead of blynk. But it is up to you.
-   ```
-   #define MQTT_ENABLE 2
-   ```
+   - I propose to set MQTT_ENABLE=2 instead of blynk. But it is up to you.
+     ```
+     #define MQTT_ENABLE 2
+     ```
 1. Copy contents of folder ranciliopid\arduino-libs to your arduino sketchbook location (normally C:\Users\YOUR_NAME\Documents\Arduino)
 1. Flash and enjoy your espresso.
 1. No tuning should be required normally. If you want/need to then use the method described below.
 
-# Instructions on how to update to the latest version of bleeding-edge
+## Instructions on how to update to the latest version of bleeding-edge
 1. Just overwrite all existing files with a newly released version.
 2. Open your userConfig.h file, which had not been overwritten in previous step, and manually check (line by line!) that all updates to the new file userConfig.h.SAMPLE are reflected in your own userConfig.h. 
 3. Compile, upload and enjoy!
 
-# Remote Control APIs
-## MQTT
+## Remote Control APIs
+### MQTT
 - Instructions can be found at https://github.com/medlor/bleeding-edge-ranciliopid/wiki/MQTT-Setup
-## Blynk
+### Blynk
 - Instructions can be found at https://github.com/medlor/bleeding-edge-ranciliopid/wiki/Blynk-Setup
 
-# Tunings instructions
+## Tunings instructions
 - Instructions can be found at https://github.com/medlor/bleeding-edge-ranciliopid/wiki/PID-Tuning
 
-# Debugging Howto
+## Debugging Howto
 - Instructions can be found at https://github.com/medlor/bleeding-edge-ranciliopid/wiki/Debugging-Howto
 
-# How to use a simple LED as brewReady signal
+## How to use a simple LED as brewReady signal
 - Instructions can be found at https://github.com/medlor/bleeding-edge-ranciliopid/wiki/How-to-use-a-simple-LED-as-brewReady-signal
 
-# Instructions on how to create new icon collections
+## Instructions on how to create new icon collections
 - Instructions can be found at https://github.com/medlor/bleeding-edge-ranciliopid/wiki/Instructions-on-how-to-create-new-icon-collections
 
-# Changelog
+## Changelog
 - 2.3.0_beta_8:
   - Fix: MQTT_ENABLE=0 had compile errors.
 - 2.3.0_beta_7:
