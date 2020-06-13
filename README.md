@@ -59,10 +59,10 @@ Installation is as explained on http://rancilio-pid.de/ but with following adapa
 3. Compile, upload and enjoy!
 
 ## Remote Control APIs
-### MQTT
-- Instructions can be found at https://github.com/medlor/bleeding-edge-ranciliopid/wiki/MQTT-Setup
-### Blynk
-- Instructions can be found at https://github.com/medlor/bleeding-edge-ranciliopid/wiki/Blynk-Setup
+- MQTT
+  - Instructions can be found at https://github.com/medlor/bleeding-edge-ranciliopid/wiki/MQTT-Setup
+- Blynk
+  - Instructions can be found at https://github.com/medlor/bleeding-edge-ranciliopid/wiki/Blynk-Setup
 
 ## Tunings instructions
 - Instructions can be found at https://github.com/medlor/bleeding-edge-ranciliopid/wiki/PID-Tuning
