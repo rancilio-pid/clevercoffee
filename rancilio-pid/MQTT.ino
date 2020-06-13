@@ -40,9 +40,9 @@ char* mqtt_build_topic(char* reading) {
 
 /* ------------------------------ */
 #if (MQTT_ENABLE == 0)  //MQTT Disabled
-boolean mqtt_publish(char* reading, char* payload) return true;
-boolean mqtt_reconnect(bool force_connect = false) return true;
-bool mqtt_working() return false;
+bool mqtt_publish(char* reading, char* payload) { return true; }
+bool mqtt_reconnect(bool force_connect = false) { return true; }
+bool mqtt_working() { return false; }
 
 /* ------------------------------ */
 #elif (MQTT_ENABLE == 1)  //MQTT Client
@@ -64,7 +64,7 @@ bool mqtt_publish(char* reading, char* payload) {
   } else {
     unsigned long currentMillis = millis();
     if (currentMillis > mqtt_dontPublishUntilTime) {
-      boolean ret = mqtt_client.publish(topic, payload, mqtt_flag_retained);
+      bool ret = mqtt_client.publish(topic, payload, mqtt_flag_retained);
       if (ret == false) {
         mqtt_dontPublishUntilTime = millis() + mqtt_dontPublishBackoffTime;
         ERROR_print("Error on publish. Wont publish the next %ul ms\n", mqtt_dontPublishBackoffTime);

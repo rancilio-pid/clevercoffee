@@ -23,7 +23,7 @@
 
 RemoteDebug Debug;
 
-const char* sysVersion PROGMEM  = "2.3.0 beta_6";
+const char* sysVersion PROGMEM  = "2.3.0 beta_8";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -34,7 +34,7 @@ const int TempSensor = TEMPSENSOR;
 const int TempSensorRecovery = TEMPSENSORRECOVERY;
 const int brewDetection = BREWDETECTION;
 const int triggerType = TRIGGERTYPE;
-const boolean ota = OTA;
+const bool ota = OTA;
 const int grafana=GRAFANA;
 
 // Wifi
@@ -81,7 +81,7 @@ char topic_will[256];
 char topic_set[256];
 unsigned long lastMQTTStatusReportTime = 0;
 unsigned long lastMQTTStatusReportInterval = 5000; //mqtt send status-report every 5 second
-const boolean mqtt_flag_retained = true;
+const bool mqtt_flag_retained = true;
 unsigned long mqtt_dontPublishUntilTime = 0;
 unsigned long mqtt_dontPublishBackoffTime = 60000; // Failsafe: dont publish if there are errors for 10 seconds
 unsigned long mqtt_lastReconnectAttemptTime = 0;
@@ -106,7 +106,7 @@ int activeState = 3;        // (0:= undefined / EMERGENCY_TEMP reached)
                             // 5:= Outer Zone detected (temperature outside of "inner zone")
                             // (6:= steam mode activated (TODO))
                             // (7:= steam ready)
-boolean emergencyStop = false; // Notstop bei zu hoher Temperatur
+bool emergencyStop = false; // Notstop bei zu hoher Temperatur
 
 /********************************************************
    history of temperatures
@@ -217,7 +217,7 @@ unsigned long previousControlButtonCheck = 0;
 /********************************************************
    Sensor check
 ******************************************************/
-boolean sensorError = false;
+bool sensorError = false;
 int error           = 0;
 int maxErrorCounter = 10 ;  //define maximum number of consecutive polls (of intervaltempmes* duration) to have errors
 
@@ -289,7 +289,7 @@ U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);  /
 #endif
 unsigned long previousMillisDisplay = 0;  // initialisation at the end of init()
 const long intervalDisplay = 1000;     // Update für Display   //TODO: Sync this with global isrCounter
-boolean image_flip = true;
+bool image_flip = true;
 
 /********************************************************
    DALLAS TEMP
@@ -536,8 +536,8 @@ bool checkBrewReady(double setPoint, float marginOfFluctuation, int lookback) {
   return true;
 }
 
-void refreshBrewReadyHardwareLed(boolean brewReady) {
-  static boolean lastBrewReady = false;
+void refreshBrewReadyHardwareLed(bool brewReady) {
+  static bool lastBrewReady = false;
   if (brew_ready_led_enabled && brewReady != lastBrewReady) {
       digitalWrite(pinLed, brewReady);
       lastBrewReady = brewReady;
@@ -635,8 +635,8 @@ double getTSICvalue() {
   check sensor value. If < 0 or difference between old and new >10, then increase error.
   If error is equal to maxErrorCounter, then set sensorError
 *****************************************************/
-boolean checkSensor(float tempInput, float temppreviousInput) {
-  boolean sensorOK = false;
+bool checkSensor(float tempInput, float temppreviousInput) {
+  bool sensorOK = false;
   if (!sensorError) {
     if ( ( tempInput < 0 || tempInput > 150 || fabs(tempInput - temppreviousInput) > 5)) {
       error++;

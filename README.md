@@ -8,6 +8,7 @@ based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 
 # Most important features compared to rancilio-pid master:
 1. New PID Controller "Multi-state PID with steadyPower (Bias)"
+   - Auto-Tuning of all PID settings. No knowledge or special tunings required.
    - Distinct PID settings dependend on the current "state" of the maschine. 
    - Most of the settings are either static or semi-automatically tuned, which does not require an PHD (German: Diplom) to understand.
    - Currently 5 states are implemented:
@@ -18,9 +19,10 @@ based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
      - Brewing
    - steadyPower is introduced which compensates the constant temperature loss due to environment
    - steadyPowerOffset is introduced which compensates the increased temperature loss when the maschine (brew head etc.) are still very cold.
-   - PidController offers feature like filtering, special handling of setPoint crossings and more (hard-coded)
+   - PidController offers feature like I-value filtering, special handling of setPoint crossings and more (hard-coded)
    - PID Controller is now integral part of the software and not an external library.
-1. Freely choose if you want the software use WIFI, BLYNK and MQTT. Everythink can be enabled/disabled and stil have a flawlessly working PID controller.
+1. Freely choose if you want the software to use WIFI, BLYNK and/or MQTT. Everythink can be enabled/disabled and stil have a flawlessly working PID controller.
+1. Additionally if you want to to depend on a remotely running service (eg. blynk server on raspi), you can activate a MQTT-Server on the arduino itself!
 1. Offline Modus is fixed and enhanced. If userConfig.h's FORCE_OFFLINE is enabled, then PID fully is working without networking. Ideal in situations when there is no connectivity or you dont want to rely on it.
 1. Huge performance tunings and improvements under the hood which stabilizes the system (eg in situations of bad WIFI, hardware issues,..).
 1. MQTT support to integrate maschine in smart-home solutions and to easier extract details for graphing/alerting.
@@ -32,173 +34,53 @@ based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 1. Safetly toogle added to shutdown heater on sensor malfunction (TEMPSENSORRECOVERY)
 1. Many useful functions to be used internally getAverageTemperature(), pastTemperatureChange() + updateTemperatureHistory())
 
-# Sample bleeding edge performance
-- You can use the mqtt interface to export live data for monitoring purposes as can be seen in this [Grafana Dashboard](https://snapshot.raintank.io/dashboard/snapshot/lYe7XigrehSfVsvAWYifEwd2d5hNC0dl).
-
 # ATTENTION:
 - This software is tested thoroughly with the pid-only hardware solution on Silvia 5e, and with a permanently run full-hardware solution on an 10 year old Silvia. Also a 10 year old Gaggia Classic is tested successfully. I am grateful for any further feedback. 
 - Please monitor our maschine's temperature closely the first few run times. The muti-state pid controller should never lead to temperatures greater than 5 degress above setpoint!
+
+# Sample bleeding-edge workings
+- You can use the mqtt interface to export live data for monitoring purposes as can be seen in this [Grafana Dashboard](https://snapshot.raintank.io/dashboard/snapshot/lYe7XigrehSfVsvAWYifEwd2d5hNC0dl).
 
 # Instructions on how to migrate from official rancilio to bleeding-edge
 Installation is as explained on http://rancilio-pid.de/ but with following adapations:
 1. Make screenshots of the official "Blynk App Dashboard" so that you can revert anytime.
 1. Copy file userConfig.h.SAMPLE to userConfig.h and edit this file accordingly.
-1. (Optional) Enable blynk in userConfig and build the "Blynk App Dashboard" as described below.
-   OR just disable blynk in userConfig, enable debug logs and use one of the methods described in "Debugging Howto" to monitor the first few runs.
+  - I propose to set MQTT_ENABLE=2 instead of blynk. But it is up to you.
+   ```
+   #define MQTT_ENABLE 2
+   ```
+1. Copy contents of folder ranciliopid\arduino-libs to your arduino sketchbook location (normally C:\Users\YOUR_NAME\Documents\Arduino)
 1. Flash and enjoy your espresso.
 1. No tuning should be required normally. If you want/need to then use the method described below.
-
-# Blynk App Dashboard
-Unfortunately you have to manually build your dashboard (config does not fit in QR code).
-Please stick to the following screenshots and use the "virtual pin mapping" as described:
-
-## Blynk application screenshots
-<p align="center">
-<img src="https://github.com/medlor/ranciliopid/blob/master/pictures/blynk-app/blynk_app_status.jpg" height="500">
-<img src="https://github.com/medlor/ranciliopid/blob/master/pictures/blynk-app/blynk_app_controller.jpg" height="500">
-<img src="https://github.com/medlor/ranciliopid/blob/master/pictures/blynk-app/blynk_app_controller2.jpg" height="500">
-<img src="https://github.com/medlor/ranciliopid/blob/master/pictures/blynk-app/blynk_app_preinfusion.jpg" height="500">
-</p>
-
-## Blynk Pin Mapping
-- Tab "Status":  
-  On/OFF (Type: Styled Button) := V13  
-  EspressoReady (Type: Led) := V14  
-  TargetTemp (Type: Numeric Input) := V7  
-  CurrentTemp (Type: Labeled Value) := V2  
-  HeaterPower := V23  
-  Temperature Error := V11  
-  Temperature Change (last 10 sec) := V35  
-  CurrentTemp/TargetTemp (Type: SuperChart) := V2/V7  
-  HeaterPower := V23  
-  Water Temp changes :=V35  
-
-- Tab "PID Controller":  
-  Interzone P := V4  
-  Interzone I := V5  
-  Interzone D := V6  
-  Outerzone P := V30  
-  Outerzone I := V31  
-  Outerzone D := V32  
-  BrewPower   := V36  
-  SteadyPower := V41  
-  SteadyPower Offset Time := V43  
-  SteadyPower Offset Power := V42  
-  StartTemp := V12  
-  Brew Detection Temperaturdrop := V34  
-  BurstShot (Type: Button) := V40  
-  BurstPower := V44  
-
-- Tab "Preinfusion":  
-  Brew Time := V8  
-  Preinfusion Time := V9  
-  Preinfusion Pause := V10  
-
-## Alternative way to clone blynk app dashboard (experimental)
-- Login to your server on which blynk is installed
-- install the programm jq (should be included in any distribution)
-- Shutdown blynk Service
-- Search for file in blynk/data which looks like <email>.Blynk.user. This is the config file. Make a backup of this file.
-- Download this project's config [rancilio_v2.json](https://github.com/medlor/ranciliopid/blob/master/blynk/rancilio_v2.json) and put it in the same folder as the config file.
-- Execute following command in this folder:
-  ```
-  jq --argjson blynkInfo "$(<rancilio_v2.json)" '.profile.dashBoards += [$blynkInfo]' YOUR_EMAIL.Blynk.user
-  ```
-- Startup blynk service
-- Open App, Search newly create project, Open the "Project Settings" then devices-> Master -> Master and Press "Refresh Token". Use this token in the rancilio software as auth token.
-
-# Tunings instructions
-```
-This step is optional: To my knowledge no tuning is required because all important settings are auto-tuned after a few runs (<10) and test shows that the PID then produces steady < 0.1 degree variance to the setpoint within 600sec of power-up (independent of the espresso hardware).
-```
-1. Enable debug mode and have a look at the logs
-1. Validate STARTTEMP is correctly set:
-   - As long as there are "Auto-Tune starttemp .*" logs the auto-tuning is still calibrating. Dont be overly concerned for changes <=0.3 degree. This might be totally normal because of climate changes in the room.
-   - The auto-tuning goal is to adapt "StartTemp" that upon reaching "state 3" the temperature is at most 0.5 Celcius below setPoint. 
-     - Logline when state 3 is reached: "\*\* End of stabilizing. Transition to step 3 (normal mode)".
-   - Loglines like "StartTemp" too high: "Disabled steadyPowerOffset because its too large or starttemp too high" are a bad sign and should never occur after tuning, because this will delay reaching state3 for up to 2 additonal minutes.
-   - Loglines like "brewReady (stable last 60 secs. Tuning took XX secs)" tell you how many seconds it took to reach the setPoint.
-1. After previous step is completed, validate steadyPowerOffset and steadyPowerOffsetTime.
-   - When the maschine's metal is cold additional heat is lost. By configuring an additional power to the heater (steadyPowerOffset in percent) for steadyPowerOffsetTime seconds (counting from power-on) you can compensate this.
-   - When "Attention: steadyPowerOffset is probably too high (%0.2f -= %0.2f) (moving up at setPoint)" is reported even after many runs (this garantees auto-tuning is stable), then steadyPowerOffset probably should be decreased in userConfig.h by 0.1 Celcius.
-   - When the maschine is cold started, the previous steps are correctly configured and after reaching "state 3" the temperature is still falling steadily over a longer time (>30seconds), you probably should increase steadyPowerOffset by 0.1 Celcius steps.
-1. All other values should not be changed. If you you want to improve calibration logic the debug log is very helpful. You can also ask me for assistance.
-
-# Debugging Howto
-1. Enable debugging
-   - Open your userConfig.h file and uncomment following line:
-   ```
-   #define DEBUGMODE
-   ```
-1. Getting debug logs 
-   - on windows
-     - Download [putty](https://the.earth.li/~sgtatham/putty/latest/w64/putty.exe) for windows or use telnet in linux to connect to port 23 of the rancilio-maschine's IP-address: 
-       <p align="center">
-       <img src="https://github.com/medlor/ranciliopid/blob/master/pictures/putty/putty.jpg" height="300">
-       </p>
-   - on linux
-     ```
-     sh> $ telnet rancilio-ip-address 23
-     ```
-   - on andriod, following apps are recommended
-     - [Fing](https://play.google.com/store/apps/details?id=com.overlook.android.fing)
-     - [JuiceSSH](https://play.google.com/store/apps/details?id=com.sonelli.juicessh)
-     - Just open Fing, search for your "rancilio device" as defined in userConfig.h's HOSTNAME, then press on the device -> "Offene Ports finden" -> "Porr 23" -> "Verbinden mit Telnet-Client"
-     - To export the protocol just long press on one of the log-lines and choose "save/share".
-   - with Web-Browser
-     - Open the file ```rancilio-pid\src\RemoteDebugApp\index.html``` with firefox/chrome and enter your rancilio-ip in the upper left field.
-1. Explanation of the PID log line
-   ```
-   [0m(D p:^5000ms) 435 Input= 93.46 | error= 0.54 delta= 2.45 | Output= 27.88 = b:52.10 + p: 0.86 + i: 0.00( 0.00) + d:-25.09
-   ```
-   - 435 := Time since power-on of the arduino (in seconds)
-   - Input= 93.46 := Current temperature
-   - error= 0.54  := Temperature difference calculated by (target_temp - current_temp)
-   - delta= 2.45  := Change in temperature in the last 10 seconds
-   - Output= 27.88 := Heater Power (in percent)  
-     which is calcucated by the sum of:
-     - b: 5.10        := steadyPower (in percent)
-     - p: 0.86        := PID Kp (in percent)
-     - i: 0.00( 0.00) := PID KiSum (KiLast) (in percent)
-     - d:-25.09       := PID Kd (in percent)
-1. If you need help or have questions, just send me the logs in the [rancilio-pid chat](https://chat.rancilio-pid.de/).
-
-# How to use a simple LED as brewReady signal
-- The easiest way is to use the un-used arduino GPIO16 (D0). In this case it is advised to add a small resistor between the LED and voltage/ground.
-- Another possibility is to use arduino GPIO15. For this to work you have to connect a resistor (R3) and in parallel another resistor (R7) with the led (LED2) in series. This has to be connected between GPIO Pin 15 and GROUND as seen in [Schematic](https://www.forward.com.au/pfod/ESP8266/GPIOpins/index.html (R3, R7, LED2).
-- Required configuration in config.h:
-  - #define BREW_READY_LED 1
-  - #define BREW_READY_DETECTION 0.2  # or any other value
-  - #define pinLed 15  # or 16
-  - <p align="center">
-    <img src="https://github.com/medlor/ranciliopid/blob/master/pictures/hardware-led/rancilio-brewReadyLed.jpg" height="300">
-    </p>
-
-# Instructions on how to create new icon collections
-1. Clone the file rancilio-pid\icon_simple.h to a custom filename, eg icon_myown.h .
-2. Use gimp of any other "paint" program to create 45x45 pixel black/white .xbm files.
-3. Open created .xbm files with any word-editor and paste the hex-codes into the specfic section in icon_myown.h . Following sections/pictures are supported:
-   - coldstart
-   - outer_zone (>1 degree off from setpoint)
-   - brew_acceptable (<0.3 degree off from setpoint)
-   - brew_ready (<0.3 degree off from setpoint for at least 40seconds)
-   - brewing (brew is detected)
-   - steam (steam is ready/in-progress)
-4. Change the define ICON_COLLECTION in userConfig.h to 1.
-5. Overwrite icon_smiley.h with our created file icon_myown.h .
-6. Send me your icon collection, so that I can add it permanently in future versions.
-Existing collections are shown here: 
-- [simple](https://github.com/medlor/ranciliopid/blob/master/pictures/icons/bleeding_edge_rancilio_pid_simple_2.2.0.mp4)
-- [smiley](https://github.com/medlor/ranciliopid/blob/master/pictures/icons/bleeding_edge_rancilio_pid_smiley_2.2.0.mp4)
 
 # Instructions on how to update to the latest version of bleeding-edge
 1. Just overwrite all existing files with a newly released version.
 2. Open your userConfig.h file, which had not been overwritten in previous step, and manually check (line by line!) that all updates to the new file userConfig.h.SAMPLE are reflected in your own userConfig.h. 
 3. Compile, upload and enjoy!
 
+# Remote Control APIs
+## MQTT
+- Instructions can be found at https://github.com/medlor/bleeding-edge-ranciliopid/wiki/MQTT-Setup
+## Blynk
+- Instructions can be found at https://github.com/medlor/bleeding-edge-ranciliopid/wiki/Blynk-Setup
+
+# Tunings instructions
+- Instructions can be found at https://github.com/medlor/bleeding-edge-ranciliopid/wiki/PID-Tuning
+
+# Debugging Howto
+- Instructions can be found at https://github.com/medlor/bleeding-edge-ranciliopid/wiki/Debugging-Howto
+
+# How to use a simple LED as brewReady signal
+- Instructions can be found at https://github.com/medlor/bleeding-edge-ranciliopid/wiki/How-to-use-a-simple-LED-as-brewReady-signal
+
+# Instructions on how to create new icon collections
+- Instructions can be found at https://github.com/medlor/bleeding-edge-ranciliopid/wiki/Instructions-on-how-to-create-new-icon-collections
+
 # Changelog
+- 2.3.0_beta_8:
+  - Fix: MQTT_ENABLE=0 had compile errors.
 - 2.3.0_beta_7:
-  - Copy contents of folder anciliopid\arduino-libs to your arduino sketchbook location (normally C:\Users\tobias\Documents\Arduino)
+  - Copy contents of folder ranciliopid\arduino-libs to your arduino sketchbook location (normally C:\Users\YOUR_NAME\Documents\Arduino)
   - Fix: userConfig.h: AUTH renamed to BLYNKAUTH
 - 2.3.0_beta_6:
   - Howto "Setup MQTT": https://github.com/medlor/bleeding-edge-ranciliopid/wiki/MQTT-Setup
