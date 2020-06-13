@@ -106,7 +106,7 @@
 
 // Blynk
 #define BLYNK_ENABLE 0       // 1=on (default. Blynk PID values overwrite userConfig.h settings) | 0=off (userConfig.h PID settings are used)
-#define AUTH "blynkauthcode"
+#define BLYNKAUTH "blynkauthcode"
 #define BLYNKADDRESS "any.blynk.server.adress"   // IP-Address of locally installed blynk server
 #define BLYNKPORT 8080
 

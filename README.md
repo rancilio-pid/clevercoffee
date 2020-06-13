@@ -197,6 +197,9 @@ Existing collections are shown here:
 3. Compile, upload and enjoy!
 
 # Changelog
+- 2.3.0_beta_7:
+  - Copy contents of folder anciliopid\arduino-libs to your arduino sketchbook location (normally C:\Users\tobias\Documents\Arduino)
+  - Fix: userConfig.h: AUTH renamed to BLYNKAUTH
 - 2.3.0_beta_6:
   - Howto "Setup MQTT": https://github.com/medlor/bleeding-edge-ranciliopid/wiki/MQTT-Setup
   - Bleeding-Edge settings can be configured remotely without the need of any service running in your network (no extra blynk or mqtt server needed! No extra raspi required.)
