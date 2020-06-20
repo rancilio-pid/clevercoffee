@@ -42,7 +42,7 @@
 #define pinRelayHeater    14   // trigger relais used to heat water
 #define pinRelayVentil    12   // (ONLYPID=0) trigger relais used to open (three-way) valve
 #define pinRelayPumpe     13   // (ONLYPID=0) trigger relais used to activate the water pump
-#define pinLed            15   // (BREW_READY_LED=1) brewReady LED
+#define pinLed            15   // (BREW_READY_LED=1) brewReady LED (16 is also "free" to use)
 
 
 /*******   

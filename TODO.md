@@ -4,13 +4,13 @@
 - screensaver
 - LED stripe support
 - Implement an automatic "steam mode".
-- Validate and add https://github.com/lebuni/ZACwire-Library
 - mqtt events/ should deliver json not string.
 - String replacement (https://cpp4arduino.com/2020/02/07/how-to-format-strings-without-the-string-class.html)
-- convert all float to lu.
+- convert all float to long.
 - Add telnet commands: https://github.com/JoaoLopesF/RemoteDebug/blob/7812322cc1724dd0e4c139f7353149ec8a96b4b9/examples/RemoteDebug_Advanced/RemoteDebug_Advanced.ino
 - Update PubSubClient 
 - Implement mqtt auth
+- display rotate
 
 
 

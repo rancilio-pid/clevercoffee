@@ -52,12 +52,10 @@ bool mqtt_working() {
 
 bool mqtt_publish(char* reading, char* payload) {
   if (!MQTT_ENABLE || force_offline || mqtt_disabled_temporary) return true;
+  if (!mqtt_working()) { return false; }
   char topic[MQTT_MAX_PUBLISH_SIZE];
   snprintf(topic, MQTT_MAX_PUBLISH_SIZE, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
-  if (!mqtt_working()) {  // TODO this DEBUG stuff shall be removed
-    //DEBUG_print("Not connected to mqtt server. Cannot publish(%s %s)\n", topic, payload);
-    return false;
-  }
+  
   if (strlen(topic) + strlen(payload) >= MQTT_MAX_PUBLISH_SIZE) {
     ERROR_print("mqtt_publish() wants to send too much data (len=%u)\n", strlen(topic) + strlen(payload));
     return false;
@@ -116,19 +114,16 @@ void mqtt_callback(char* topic, byte* data, unsigned int length) {
 }
 
 /* ------------------------------ */
-#elif (MQTT_ENABLE == 2)  //MQTT SERVER XXX
+#elif (MQTT_ENABLE == 2)
 bool mqtt_working() {
-  return ((MQTT_ENABLE >0) && (wifi_working())); // TODO? && (mqtt_client.connected()));
+  return ((MQTT_ENABLE >0) && (wifi_working()));
 }
 
 bool mqtt_publish(char* reading, char* payload) {
   if (!MQTT_ENABLE || force_offline || mqtt_disabled_temporary) return true;
   char topic[MQTT_MAX_PUBLISH_SIZE];
   snprintf(topic, MQTT_MAX_PUBLISH_SIZE, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
-  if (!mqtt_working()) {  // TODO this DEBUG stuff shall be removed
-    //DEBUG_print("Not connected to mqtt server. Cannot publish(%s %s)\n", topic, payload);
-    return false;
-  }
+  if (!mqtt_working()) { return false; }
   if (strlen(topic) + strlen(payload) >= MQTT_MAX_PUBLISH_SIZE) {
     ERROR_print("mqtt_publish() wants to send too much data (len=%u)\n", strlen(topic) + strlen(payload));
     return false;
@@ -153,30 +148,25 @@ bool mqtt_publish(char* reading, char* payload) {
 bool mqtt_reconnect(bool force_connect = false) { return true; }
 
 void mqtt_callback(uint32_t *client, const char* topic, uint32_t topic_len, const char *data, uint32_t length) {
-  //char* topic_str = malloc(topic_len+1);
   char topic_str[topic_len+1];
   os_memcpy(topic_str, topic, topic_len);
   topic_str[topic_len] = '\0';
-
-  //char* data_str = malloc(length+1);
   char data_str[length+1];
   os_memcpy(data_str, data, length);
   data_str[length] = '\0';
-
   //DEBUG_print("MQTT: %s = %s\n", topic_str, data_str);
-
   mqtt_parse(topic_str, data_str);
 }
 
 #endif
 
-void mqtt_parse(char* topic_str, char* data_str) {  ///XXX
+void mqtt_parse(char* topic_str, char* data_str) {
   char topic_pattern[255];
   char configVar[120];
   char cmd[64];
   double data_double;
   int data_int;
-  
+
   //DEBUG_print("mqtt_parse(%s, %s)\n", topic_str, data_str);
   snprintf(topic_pattern, sizeof(topic_pattern), "%s%s/%%[^\\/]/%%[^\\/]", mqtt_topic_prefix, hostname);
   //DEBUG_print("topic_pattern=%s\n",topic_pattern);
@@ -184,11 +174,10 @@ void mqtt_parse(char* topic_str, char* data_str) {  ///XXX
     //DEBUG_print("Ignoring topic (%s)\n", topic_str);
     return;
   }
-  //DEBUG_print("configVar(%s) = %s\n", configVar, data_str);
   if (strcmp(configVar, "brewtime") == 0) {
-    DEBUG_print("setting brewtime=%s\n", data_str);
     sscanf(data_str, "%lf", &data_double);
     if (data_double != brewtime) {
+      DEBUG_print("setting brewtime=%s\n", data_str);
       brewtime = data_double;
       mqtt_publish("brewtime", data_str);
       Blynk.virtualWrite(V8, String(brewtime, 1));
@@ -197,9 +186,9 @@ void mqtt_parse(char* topic_str, char* data_str) {  ///XXX
     return;
   }
   if (strcmp(configVar, "starttemp") == 0) {
-    DEBUG_print("setting starttemp=%s\n", data_str);
     sscanf(data_str, "%lf", &data_double);
     if (data_double != starttemp) {
+      DEBUG_print("setting starttemp=%s\n", data_str);
       starttemp = data_double;
       mqtt_publish("starttemp", data_str);
       Blynk.virtualWrite(V12, String(starttemp, 1));
@@ -208,9 +197,9 @@ void mqtt_parse(char* topic_str, char* data_str) {  ///XXX
     return;
   }
   if (strcmp(configVar, "setPoint") == 0) {
-    DEBUG_print("setting setPoint=%s\n", data_str);
     sscanf(data_str, "%lf", &data_double);
     if (data_double != setPoint) {
+      DEBUG_print("setting setPoint=%s\n", data_str);
       setPoint = data_double;
       mqtt_publish("setPoint", data_str);
       Blynk.virtualWrite(V7, String(setPoint, 1));
@@ -219,9 +208,9 @@ void mqtt_parse(char* topic_str, char* data_str) {  ///XXX
     return;
   }
   if (strcmp(configVar, "preinfusion") == 0) {
-    DEBUG_print("setting preinfusion=%s\n", data_str);
     sscanf(data_str, "%lf", &data_double);
     if (data_double != preinfusion) {
+      DEBUG_print("setting preinfusion=%s\n", data_str);
       preinfusion = data_double;
       mqtt_publish("preinfusion", data_str);
       Blynk.virtualWrite(V9, String(preinfusion, 1));
@@ -230,9 +219,9 @@ void mqtt_parse(char* topic_str, char* data_str) {  ///XXX
     return;
   }
   if (strcmp(configVar, "preinfusionpause") == 0) {
-    DEBUG_print("setting preinfusionpause=%s\n", data_str);
     sscanf(data_str, "%lf", &preinfusionpause);
     if (data_double != preinfusionpause) {
+      DEBUG_print("setting preinfusionpause=%s\n", data_str);
       preinfusionpause = data_double;
       mqtt_publish("preinfusionpause", data_str);
       Blynk.virtualWrite(V10, String(preinfusionpause, 1));
@@ -241,9 +230,9 @@ void mqtt_parse(char* topic_str, char* data_str) {  ///XXX
     return;
   }
   if (strcmp(configVar, "pidON") == 0) {
-    DEBUG_print("setting pidON=%s\n", data_str);
     sscanf(data_str, "%d", &data_int);
     if (data_int != pidON) {
+      DEBUG_print("setting pidON=%s\n", data_str);
       pidON = data_int;
       mqtt_publish("pidON", data_str);
       Blynk.virtualWrite(V13, String(pidON, 1));
@@ -252,9 +241,9 @@ void mqtt_parse(char* topic_str, char* data_str) {  ///XXX
     return;
   }
   if (strcmp(configVar, "brewDetectionSensitivity") == 0) {
-    DEBUG_print("setting brewDetectionSensitivity=%s\n", data_str);
     sscanf(data_str, "%lf", &data_double);
     if (data_double != brewDetectionSensitivity) {
+      DEBUG_print("setting brewDetectionSensitivity=%s\n", data_str);
       brewDetectionSensitivity = data_double;
       mqtt_publish("brewDetectionSensitivity", data_str);
       Blynk.virtualWrite(V34, String(brewDetectionSensitivity, 1));
@@ -263,9 +252,9 @@ void mqtt_parse(char* topic_str, char* data_str) {  ///XXX
     return;
   }
   if (strcmp(configVar, "brewDetectionPower") == 0) {
-    DEBUG_print("setting brewDetectionPower=%s\n", data_str);
     sscanf(data_str, "%lf", &data_double);
     if (data_double != brewDetectionPower) {
+      DEBUG_print("setting brewDetectionPower=%s\n", data_str);
       brewDetectionPower = data_double;
       mqtt_publish("brewDetectionPower", data_str);
       Blynk.virtualWrite(V36, String(brewDetectionPower, 1));
@@ -275,9 +264,9 @@ void mqtt_parse(char* topic_str, char* data_str) {  ///XXX
   }
   
   if (strcmp(configVar, "steadyPower") == 0) {
-    DEBUG_print("setting steadyPower=%s\n", data_str);
     sscanf(data_str, "%lf", &data_double);
     if (data_double != steadyPower) {
+      DEBUG_print("setting steadyPower=%s\n", data_str);
       steadyPower = data_double;
       mqtt_publish("steadyPower", data_str);
       Blynk.virtualWrite(V41, String(steadyPower, 1));
@@ -286,9 +275,9 @@ void mqtt_parse(char* topic_str, char* data_str) {  ///XXX
     return;
   }
   if (strcmp(configVar, "steadyPowerOffset") == 0) {
-    DEBUG_print("setting steadyPowerOffset=%s\n", data_str);
     sscanf(data_str, "%lf", &data_double);
     if (data_double != steadyPowerOffset) {
+      DEBUG_print("setting steadyPowerOffset=%s\n", data_str);
       steadyPowerOffset = data_double;
       mqtt_publish("steadyPowerOffset", data_str);
       Blynk.virtualWrite(V42, String(steadyPowerOffset, 1));
@@ -297,9 +286,9 @@ void mqtt_parse(char* topic_str, char* data_str) {  ///XXX
     return;
   }
   if (strcmp(configVar, "steadyPowerOffsetTime") == 0) {
-    DEBUG_print("setting steadyPowerOffsetTime=%s\n", data_str);
     sscanf(data_str, "%d", &data_int);
     if (data_double != steadyPowerOffsetTime) {
+      DEBUG_print("setting steadyPowerOffsetTime=%s\n", data_str);
       steadyPowerOffsetTime = data_double;
       mqtt_publish("steadyPowerOffsetTime", data_str);
       Blynk.virtualWrite(V43, String(steadyPowerOffsetTime, 1));
@@ -309,9 +298,9 @@ void mqtt_parse(char* topic_str, char* data_str) {  ///XXX
   }
   
   if (strcmp(configVar, "aggKp") == 0) {
-    DEBUG_print("setting aggKp=%s\n", data_str);
     sscanf(data_str, "%lf", &data_double);
     if (data_double != aggKp) {
+      DEBUG_print("setting aggKp=%s\n", data_str);
       aggKp = data_double;
       mqtt_publish("aggKp", data_str);
       Blynk.virtualWrite(V4, String(aggKp, 1));
@@ -320,9 +309,9 @@ void mqtt_parse(char* topic_str, char* data_str) {  ///XXX
     return;
   }
   if (strcmp(configVar, "aggTn") == 0) {
-    DEBUG_print("setting aggTn=%s\n", data_str);
     sscanf(data_str, "%lf", &data_double);
     if (data_double != aggTn) {
+      DEBUG_print("setting aggTn=%s\n", data_str);
       aggTn = data_double;
       mqtt_publish("aggTn", data_str);
       Blynk.virtualWrite(V5, String(aggTn, 1));
@@ -331,9 +320,9 @@ void mqtt_parse(char* topic_str, char* data_str) {  ///XXX
     return;
   }
   if (strcmp(configVar, "aggTv") == 0) {
-    DEBUG_print("setting aggTv=%s\n", data_str);
     sscanf(data_str, "%lf", &data_double);
     if (data_double != aggTv) {
+      DEBUG_print("setting aggTv=%s\n", data_str);
       aggTv = data_double;
       mqtt_publish("aggTv", data_str);
       Blynk.virtualWrite(V6, String(aggTv, 1));
@@ -341,11 +330,10 @@ void mqtt_parse(char* topic_str, char* data_str) {  ///XXX
     }
     return;
   }
-
   if (strcmp(configVar, "aggoKp") == 0) {
-    DEBUG_print("setting aggoKp=%s\n", data_str);
     sscanf(data_str, "%lf", &data_double);
     if (data_double != aggoKp) {
+      DEBUG_print("setting aggoKp=%s\n", data_str);
       aggoKp = data_double;
       mqtt_publish("aggoKp", data_str);
       Blynk.virtualWrite(V30, String(aggoKp, 1));
@@ -354,9 +342,9 @@ void mqtt_parse(char* topic_str, char* data_str) {  ///XXX
     return;
   }
   if (strcmp(configVar, "aggoTn") == 0) {
-    DEBUG_print("setting aggoTn=%s\n", data_str);
     sscanf(data_str, "%lf", &data_double);
     if (data_double != aggoTn) {
+      DEBUG_print("setting aggoTn=%s\n", data_str);
       aggoTn = data_double;
       mqtt_publish("aggoTnTn", data_str);
       Blynk.virtualWrite(V31, String(aggoTn, 1));
@@ -365,9 +353,9 @@ void mqtt_parse(char* topic_str, char* data_str) {  ///XXX
     return;
   }
   if (strcmp(configVar, "aggoTv") == 0) {
-    DEBUG_print("setting aggoTv=%s\n", data_str);
     sscanf(data_str, "%lf", &data_double);
     if (data_double != aggoTv) {
+      DEBUG_print("setting aggoTv=%s\n", data_str);
       aggoTv = data_double;
       mqtt_publish("aggoTv", data_str);
       Blynk.virtualWrite(V32, String(aggoTv, 1));

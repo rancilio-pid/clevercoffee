@@ -77,6 +77,9 @@ Installation is as explained on http://rancilio-pid.de/ but with following adapa
 - Instructions can be found at https://github.com/medlor/bleeding-edge-ranciliopid/wiki/Instructions-on-how-to-create-new-icon-collections
 
 ## Changelog
+- 2.3.0_beta_10:
+  - MQTT_ENABLE=1: Configuration retained in mqtt topics are now used on startup.
+  - Code cleanup
 - 2.3.0_beta_9:
   - Fix: src/ZACwire-Library is no longer a submodul (thanks wiki_yanniki)
 - 2.3.0_beta_8:
