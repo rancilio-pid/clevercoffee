@@ -23,7 +23,7 @@
 
 RemoteDebug Debug;
 
-const char* sysVersion PROGMEM  = "2.3.0 beta_10";
+const char* sysVersion PROGMEM  = "2.3.0";
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -715,20 +715,28 @@ void refreshTemp() {
 
 
 /********************************************************
-    PreInfusion, Brew , if not Only PID
+    Button Admin Menu
 ******************************************************/
 int checkControlButtons() {
   //TODO add DEFINE
-  if ( millis() >= previousControlButtonCheck + 50 ) {  //50ms
-    previousControlButtonCheck = millis();
-    int signal = analogRead(analogPin);  ///CCC
-    //DEBUG_print("ControlButton signal: %d\n", signal);
-    if (signal > 830 && signal < 840) {
+  if ( millis() >= previousControlButtonCheck + 100 ) {  //250ms
+    //previousControlButtonCheck = millis();
+    int signal = analogRead(analogPin);
+    if (signal > 137-20 && signal < 137+20) {
+      previousControlButtonCheck = millis() + 130;
       return 1; 
-    } else if (signal > 900 && signal < 910) {
+    } else if (signal > 418-20 && signal < 418+20) {
+      previousControlButtonCheck = millis() + 130;
       return 2; 
-    } else if (signal > 985 && signal < 995) {
+    } else if (signal > 570-20 && signal < 570+20) {
+      previousControlButtonCheck = millis() + 130;
       return 3; 
+    } else if (signal >850) {
+      previousControlButtonCheck = millis();
+      return 0;
+    } else {
+      previousControlButtonCheck = millis();
+      DEBUG_print("ControlButton signal: %d\n", signal);
     }
   }
   return 0;

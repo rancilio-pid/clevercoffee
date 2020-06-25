@@ -2,7 +2,7 @@
 
 BLEEDING EDGE MASTER VERSION 
 
-Version 2.3.0 beta
+Version 2.3.0
 
 based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
 
@@ -77,50 +77,52 @@ Installation is as explained on http://rancilio-pid.de/ but with following adapa
 - Instructions can be found at https://github.com/medlor/bleeding-edge-ranciliopid/wiki/Instructions-on-how-to-create-new-icon-collections
 
 ## Changelog
-- 2.3.0_beta_10:
-  - MQTT_ENABLE=1: Configuration retained in mqtt topics are now used on startup.
-  - Code cleanup
-- 2.3.0_beta_9:
-  - Fix: src/ZACwire-Library is no longer a submodul (thanks wiki_yanniki)
-- 2.3.0_beta_8:
-  - Fix: MQTT_ENABLE=0 had compile errors.
-- 2.3.0_beta_7:
-  - Copy contents of folder ranciliopid\arduino-libs to your arduino sketchbook location (normally C:\Users\YOUR_NAME\Documents\Arduino)
-  - Fix: userConfig.h: AUTH renamed to BLYNKAUTH
-- 2.3.0_beta_6:
-  - Howto "Setup MQTT": https://github.com/medlor/bleeding-edge-ranciliopid/wiki/MQTT-Setup
-  - Bleeding-Edge settings can be configured remotely without the need of any service running in your network (no extra blynk or mqtt server needed! No extra raspi required.)
+- 2.3.0 master:
+  - PID is completely auto-tuned and should work flawlessly after a few starts. No need to configure PID any longer. 
+  - Bleeding-Edge settings can be configured remotely without requiring a running service (blynk, mqtt-server) running in your network or internet. (No extra raspi required)
+    You can now freely choose which service you want to use:
+    1. Standalone without any network connectivity
+    2. MQTT Server (runs on bleeding-edge arduino) to not depend on a remotely running service
+    3. MQTT Client to connect to an mqtt-services (eg used by smart-home software)
   - MQTT fully implemented so you can publish and subscribe to configure settings and monitor states.
-  - Minor code restructuring.
-  - Added link to sample daily Grafana dashboard.
-  - Save pidON in eeprom.
-  - Updated userConfig.h.
-- 2.3.0_beta_5:
-  - Added Adrian's new library to read TSIC values at https://github.com/lebuni/ZACwire-Library
-  - Fix: No starttemp tuning when when maschine is already warm..
-- 2.3.0_beta_4:
-  - BREWDETECTION_POWER handling changed. If ONLY_PID==0, then configured POWER is applied to heater over the whole brew process. But if ONLY_PID==1, then it is applied only when temperature is 1.5 Celcius below setpoint.
-  - PID tunings
-  - Fix: Potential crash when toogling pid on/off
-- 2.3.0_beta_3:
-  - ATTENTION: New default values in userConfig.h. It is recommended to intially use default values for STEADYPOWER, STEADYPOWER_OFFSET_TIME, STEADYPOWER_OFFSET, STARTTEMP, BREWDETECTION_POWER, BREWDETECTION_SENSITIVITY. Additionally BREWTIME is from now on also used in ONLYPID=1.
+  - THANKS: Added Adrian's library to efficiently read TSIC values (https://github.com/lebuni/ZACwire-Library)
+  - ATTENTION: New default values in userConfig.h. 
+    - It is recommended to intially use default values for STEADYPOWER, STEADYPOWER_OFFSET_TIME, STEADYPOWER_OFFSET, STARTTEMP, BREWDETECTION_POWER, BREWDETECTION_SENSITIVITY. Additionally BREWTIME is from now on also used in ONLYPID=1.
+    - GPIO Pin Mapping moved to userConfig.h.
+  - ATTENTION: Installation process changed. Libs must be installed as described in "Instructions on how to migrate from official rancilio to bleeding-edge 
+    - Copy contents of folder ranciliopid\arduino-libs to your arduino sketchbook location (normally C:\Users\YOUR_NAME\Documents\Arduino)
   - Improve PID:
-    - steadyPowerOffset is gradually decreased over time to better compensate warmup of maschine.
-    - steadyPowerOffset is taken into consideration of pid calculation.
-    - Once-only output manipulation added when temp is stable but not at setpoint.
+    - Auto-tuning for starttemp is implemented. No need to adapt the STARTTEMP accordingly when SETPOINT is modified
+    - steadyPowerOffset is gradually decreased over time to better compensate the warm up of maschine.
+    - PID monitors and tunes steadyPowerOffset.
+    - One time PID manipulation logic added.
     - PID's I parameter filter is reduced in certain situations more strictly.
-  - Brew Detection optimized and (for ONLYPID=1) additionally uses userConfig.h's BREWTIME as maximum brew time.
-  - When connecting by telnet/blynk the hardware- and software configuration is printed to debug log.
-  - Fix: Heater overextending handling working as intended.
-  - GPIO Pin Mapping moved to userConfig.h. Therefore you have to adapt your userConfig.h file.
-- 2.3.0_beta_2:
-  - PID State 2 (stabilize coldstart) also adds steadyPowerOffset.
-  - Trigger brewReady when temperature is stable for 60sec (prev: 40s).
-  - Add logs for brewReadyStatistic.
+  - BrewDetection optimized:
+    - (ONLYPID=1) ATTENTION: The BREWTIME setting defines the time-frame of your "normal" brew (in seconds). 
+       When a brew is detected, the brew_timer starts and runs until BREWTIME is reached. During that time
+       the heater is heating with BREWDETECTION_POWER.
+    - BREWDETECTION_POWER behaviour changed: 
+      (ONLY_PID=0) The power is applied to heater during the complete brew process. 
+      (ONLY_PID=1) The power is applied until the brew_timer is larger than BREWTIME or the current temperature is 1.5 Celcius below setpoint.
+    - (ONLYPID=1) BREWDETECTION_WAIT setting added: After a brew is started the software based BrewDetection is disabled for this number of seconds to prevent the detection of another brew when flushing water.
+    - (ONLYPID=1) Software BrewDetection estimates the starttime of a brew, so that the brew counter in display is correct. 
+  - Debug Logs Improvements:
+    - Add logs for brewReadyStatistic
+    - When connecting by telnet/blynk the hardware- and software configuration is printed
+  - Documentation Updates:
+    - Enabled wiki at https://github.com/medlor/bleeding-edge-ranciliopid/wiki/
+      - eg. Howto "Setup MQTT": https://github.com/medlor/bleeding-edge-ranciliopid/wiki/MQTT-Setup
+    - Added link to sample daily Grafana dashboard.
+  - Fix: userConfig.h: AUTH renamed to BLYNKAUTH
+  - Fix: No starttemp tuning when when maschine is already warm.
   - Fix: burstPower working again.
-- 2.3.0_beta_1:
-  - Auto-tuning for starttemp is implemented. No need to adapt the STARTTEMP accordingly when SETPOINT is modified.
   - Fix: If PID is manually disabled, heater utilization is correctly reported as 0%.
+  - Fix: Heater overextending handling working as intended.
+  - Fix: Potential crash when toogling pid on/off
+  - Fix: Save pidON in eeprom.
+  - MQTT_ENABLE=1: Configuration retained in mqtt topics are now used on startup.
+  - Code cleanup and refactorings
+  - Trigger brewReady when temperature is stable for 60sec (prev: 40s).
 - 2.2.0_master:
   - Display functionality improved:
     - Replaced display lib Adafruit_SSD1306.h with U8G2. Direct support for SH1106_128X64 and SSD1306_128X64 via userConfig.
