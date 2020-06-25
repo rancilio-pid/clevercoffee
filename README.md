@@ -50,6 +50,7 @@ Installation is as explained on http://rancilio-pid.de/ but with following adapa
      #define MQTT_ENABLE 2
      ```
 1. Copy contents of folder ranciliopid\arduino-libs to your arduino sketchbook location (normally C:\Users\YOUR_NAME\Documents\Arduino)
+   - Important: Open arduino IDE and configure the setting Tools->"lwip Variant" -> "1.4 High Bandwidth"
 1. Flash and enjoy your espresso.
 1. No tuning should be required normally. If you want/need to then use the method described below.
 
