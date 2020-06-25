@@ -23,10 +23,8 @@ class PIDBias
   #define MANUAL	0
 
   //commonly used functions **************************************************************************
-    PIDBias(double*, double*, double*, double*,        // * constructor.  links the PIDBias to the Input, Output, and 
-        double, double, double);          //   Setpoint.  Initial tuning parameters are also set here.
-                                          //   (overload for specifying proportional mode)
-	
+    PIDBias(double*, double*, double*, double*, unsigned long*, int*, double*, double, double, double);
+
     void SetMode(int Mode);               // * sets PIDBias to either Manual (0) or Auto (non-0)
 
     int Compute();                       // * performs the PIDBias calculation.  it should be
@@ -41,8 +39,6 @@ class PIDBias
     void SetOutputLimits(double, double); // * clamps the output to a specific range. 0-255 by default, but
 										                      //   it's likely the user will want to change this depending on
 										                      //   the application
-	
-
 
   //available but not commonly used functions ********************************************************
     void SetTunings(double, double,       // * While most users will set the tunings once in the 
@@ -69,9 +65,15 @@ class PIDBias
   void SetSumOutputI(double);
   int signnum_c(double);
   void SetFilterSumOutputI(double);
-  void SetSteadyPowerOffset(double);
+  double GetFilterSumOutputI();
+  //void SetSteadyPowerOffset(double);
+  //double GetSteadyPowerOffset();
   void SetAutoTune(boolean);
   void SetSteadyPowerDefault(double);
+  double GetSteadyPowerOffset();
+  //void UpdateSteadyPowerOffset(unsigned long, unsigned long);
+  double CalculateSteadyPowerOffset();
+  double GetSteadyPowerOffsetCalculated();
 
   private:
 	void Initialize();
@@ -92,7 +94,10 @@ class PIDBias
   double burstOutput;
   double filterSumOutputI;
   double steadyPowerDefault;
-  double steadyPowerOffset;
+  double *mySteadyPowerOffset;
+  unsigned long* mySteadyPowerOffset_Activated;
+  int* mySteadyPowerOffset_Time;
+  double steadyPowerOffsetCalculated;
   boolean steadyPowerAutoTune;
 
   double *myInput;              // * Pointers to the Input, Output, and Setpoint variables
@@ -101,7 +106,7 @@ class PIDBias
                                 //   what these values are.  with pointers we'll just know.
   double *mySteadyPower;
 	unsigned long lastTime;
-  unsigned long lastTrigger;
+  unsigned long lastTrigger, lastTrigger2, lastTriggerCrossingSetPoint;
   double lastOutput, lastError;
 	unsigned long SampleTime;
 	double outMin, outMax;
