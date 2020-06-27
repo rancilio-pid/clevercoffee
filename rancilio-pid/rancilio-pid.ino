@@ -138,7 +138,7 @@ int firstreading = 1 ;          // Ini of the field, also used for sensor check
 double aggbKp = AGGBKP;
 double aggbTn = AGGBTN;
 double aggbTv = AGGBTV;
-#if (aggbTn == 0)
+#if aggbTn == 0
 double aggbKi = 0;
 #else
 double aggbKi = aggbKp / aggbTn;
@@ -191,13 +191,13 @@ double aggTn = AGGTN;
 double aggTv = AGGTV;
 double startKp = STARTKP;
 double startTn = STARTTN;
-#if (startTn == 0)
+#if startTn == 0
 double startKi = 0;
 #else
 double startKi = startKp / startTn;
 #endif
 
-#if (aggTn == 0)
+#if aggTn == 0
 double aggKi = 0;
 #else
 double aggKi = aggKp / aggTn;
@@ -293,11 +293,11 @@ BLYNK_WRITE(V40) {
   backflushON =  param.asInt();
 }
 
-#if (coldstart_pid == 2 )  // 2=?Blynk values, else default starttemp from config
-  BLYNK_WRITE(V11) {
+#if (COLDSTART_PID == 2)  // 2=?Blynk values, else default starttemp from config
+ BLYNK_WRITE(V11) {
   startKp = param.asDouble();
   }
-  BLYNK_WRITE(V14)
+ BLYNK_WRITE(V14)
   {
     startTn = param.asDouble();
   }
