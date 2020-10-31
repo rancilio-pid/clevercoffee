@@ -4,7 +4,10 @@ BLEEDING EDGE MASTER VERSION
 
 Version 2.3.0
 
-based on the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de
+forked of the Rancilio-Silvia PID for Arduino described at http://rancilio-pid.de.
+
+## Support / Contact
+You can chat with us directly using our [discord server](https://discord.gg/VA5ZeacFdw).
 
 ## Most important features compared to rancilio-pid master:
 1. New PID Controller "Multi-state PID with steadyPower (Bias)"
