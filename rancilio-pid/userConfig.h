@@ -23,7 +23,7 @@
 #define MAXWIFIRECONNECTS 5  // maximum number of reconnects; use -1 to set to maximum ("deactivated")
 #define MACHINELOGO 1        // 1 = Rancilio, 2 = Gaggia
 #define MQTT 0               // 1 = MQTT enabled, 0 = MQTT disabled
-#define COLDSTART_PID 1      // 1 = default COLDStart Values , 2 = eigene Werte via Blynk 
+#define COLDSTART_PID 1      // 1 = default COLDStart Values , 2 = eigene Werte via Blynk, Expertenmodusaktiv 
 #define DISPALYROTATE U8G2_R0   // rotate display clockwise: U8G2_R0 = no rotation; U8G2_R1 = 90°; U8G2_R2 = 180°; U8G2_R3 = 270°
 
 //MQTT
