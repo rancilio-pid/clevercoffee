@@ -1,10 +1,12 @@
 # ranciliopid
 
-Mehr zum Projekt findet ihr auf der [Rancilio PID Website](http://rancilio-pid.de/).
+Unsere Projektwebseite findet ihr hier: [Rancilio PID Website](http://rancilio-pid.de/).
 
-Hier geht es zum deutschen Handbuch hier in Github: [Link](http://manual.rancilio-pid.de/de/)
+Wir empfehlen euch gerne unser Handbuch hier in Github zu erst anzuschauen,
+hier geht es zum deutschen Handbuch: [Link] (http://manual.rancilio-pid.de/de/)
 
-Unseren Chat für die gemeinsame Zusammenarbeit und Fragen [Link](https://chat.rancilio-pid.de)
+Unseren Chat für die gemeinsame Zusammenarbeit und Fragen findet ihr hier: [Link](https://chat.rancilio-pid.de)
+Ihr seid herzlich Willkommen uns gemeinsam bei der Mission zu besseren Espresso zu helfen. 
 
 MASTER VERSION
 
