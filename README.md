@@ -1,4 +1,4 @@
-# PID 
+# Rancilio PID 
 
 Unsere Projektwebseite findet ihr hier: [Rancilio PID Website](http://rancilio-pid.de/).
 
