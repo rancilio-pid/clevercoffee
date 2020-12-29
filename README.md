@@ -27,3 +27,5 @@ MASTER VERSION
 
 Version 2.1.2  (28.12.2020) ADD ZACwire-Lib
 
+Vielen Dank an jeden einzelnen Unterstützer!
+
