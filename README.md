@@ -13,13 +13,14 @@ Was nach einem Umbau möglich ist:
  * Geringer Platzbedarf, passt problemlos in die meisten kleineren Espressomaschinen
  * Die serienmäßige Verkabelung der Maschine bleibt erhalten und wird nur erweitert. Die Maschine kann nach dem Umbau problemlos wieder zurückgerüstet werden.
  * Aktive User-Community im Projektchat mit schnellem Support
-Anregungen zur Weiterentwicklung der Software werden von uns gerne aufgenommen. User-Input ist immer willkommen und bringt den PID weiter!
+ * Support seit 3 Jahren mit kontinuerlichen Anpassungen
 
 Wir empfehlen euch gerne unser Handbuch hier in Github zu erst anzuschauen,
 hier geht es zum deutschen Handbuch: [Link](http://manual.rancilio-pid.de/de/)
 
 Unseren Chat für die gemeinsame Zusammenarbeit und Fragen findet ihr hier: [Link](https://chat.rancilio-pid.de)
 
+Anregungen zur Weiterentwicklung der Software werden von uns gerne aufgenommen. User-Input ist immer willkommen und bringt den PID weiter!
 Ihr seid herzlich Willkommen uns gemeinsam bei der Mission zu besseren Espresso zu helfen. 
 
 MASTER VERSION
