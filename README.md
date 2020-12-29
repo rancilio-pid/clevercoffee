@@ -1,10 +1,11 @@
 # ranciliopid
 Rancilio-Silvia PID für Arduino http://rancilio-pid.de
 
-Hier geht es zum deutschen Handbuch: Link
+Hier geht es zum deutschen Handbuch hier in Github: [Link](./en/index.md)
 
-Mehr zum Projekt findet ihr auf der Rancilio PID Website.
+Mehr zum Projekt findet ihr auf der [Rancilio PID Website](http://rancilio-pid.de/).
 
+Unseren Chat für die gemeinsame Zusammenarbeit und Fragen [Link](https://chat.rancilio-pid.de)
 
 MASTER VERSION
 
