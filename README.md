@@ -3,6 +3,7 @@
 Unsere Projektwebseite findet ihr hier: [Rancilio PID Website](http://rancilio-pid.de/).
 
 Was nach einem Umbau möglich ist: 
+ * Automatischer Kaltstart für das perfekte Erreichen der Soll-Temperatur innerhalb von 8 bis 12 Minuten (je nach Maschine) 
  * Regelung der Brühtemperatur mit einer Genauigkeit von bis zu +/- 0,1°
  * Steuerung der Brühzeit inkl. Pre-Infusion in der Ausbaustufe „Vollausbau“ möglich
  * Bedienung über eine Smartphone-App (iOS & Android)
