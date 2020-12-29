@@ -25,5 +25,5 @@ Ihr seid herzlich Willkommen uns gemeinsam bei der Mission zu besseren Espresso 
 
 MASTER VERSION
 
-Version 2.1.2  (28.12.2020) ADD ZACwire (New TSIC lib)
+Version 2.1.2  (28.12.2020) ADD ZACwire-Lib
 
