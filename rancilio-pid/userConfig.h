@@ -27,7 +27,11 @@
 #define DISPALYROTATE U8G2_R0   // rotate display clockwise: U8G2_R0 = no rotation; U8G2_R1 = 90°; U8G2_R2 = 180°; U8G2_R3 = 270°
 
 //MQTT
-#define MQTTSERVER "mqttserver"
+#define MQTT_USERNAME "myuser"
+#define MQTT_PASSWORD "mypass"
+#define MQTT_TOPIC_PREFIX "custom/Küche."  // topic will be "<MQTT_TOPIC_PREFIX><HOSTNAME>/<READING>"
+#define MQTT_SERVER_IP "XXX.XXX.XXX.XXX"       // IP-Address of locally installed mqtt server
+#define MQTT_SERVER_PORT 1883    
 // Wifi & Blynk 
 #define HOSTNAME "rancilio"
 #define AUTH "blynkauthcode"
