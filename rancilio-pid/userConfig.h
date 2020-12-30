@@ -1,5 +1,5 @@
 /********************************************************
-  Version 1.4 (21.05.2020)
+  Version 1.5 (30.12.2020) Last-Change "PIN BELEGUNG" in userConfig.h verschoben
   Config must be configured by the user
 ******************************************************/
 
@@ -60,5 +60,18 @@
 #define FILLTIME 3000       // time in ms the pump is running
 #define FLUSHTIME 6000      // time in ms the 3-way valve is open -> backflush
 #define MAXFLUSHCYCLES 5      // number of cycles the backflush should run; 0 = disabled
+
+//PIN BELEGUNG
+#define ONE_WIRE_BUS 2  // TEMP SENSOR PIN
+
+#define pinRelayVentil    12    //Output pin for 3-way-valve
+#define pinRelayPumpe     13    //Output pin for pump
+#define pinRelayHeater    14    //Output pin for heater
+
+#define OLED_RESET 16     //Output pin for dispaly reset pin
+#define OLED_SCL 5        //Output pin for dispaly clock pin
+#define OLED_SDA 4        //Output pin for dispaly data pin
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels  
 
 #endif // _userConfig_H

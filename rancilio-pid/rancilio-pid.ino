@@ -1,5 +1,7 @@
 /********************************************************
-   Version 2.1.2  (28.12.2020) ADD ZACwire (New TSIC lib)
+   Version 2.1.2-hotfix1  (30.12.2020) 
+   * ADD ZACwire (New TSIC lib)
+   * Auslagern der PIN Belegung in die UserConfig
 ******************************************************/
 
 /********************************************************
@@ -33,18 +35,6 @@
 #define DEBUG_print(a) Serial.print(a);
 #define DEBUGSTART(a) Serial.begin(a);
 #endif
-
-#define pinRelayVentil    12    //Output pin for 3-way-valve
-#define pinRelayPumpe     13    //Output pin for pump
-#define pinRelayHeater    14    //Output pin for heater
-
-#define OLED_RESET 16     //Output pin for dispaly reset pin
-#define OLED_SCL 5        //Output pin for dispaly clock pin
-#define OLED_SDA 4        //Output pin for dispaly data pin
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels  
-
-#define ONE_WIRE_BUS 2  // Data wire is plugged into port 2 on the Arduino
 
 /********************************************************
    DISPLAY constructor, change if needed
@@ -106,7 +96,7 @@ int pidON = 1 ;                 // 1 = control loop in closed loop
 int relayON, relayOFF;          // used for relay trigger type. Do not change!
 boolean kaltstart = true;       // true = Rancilio started for first time
 boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
-const char* sysVersion PROGMEM  = "Version 2.1.2 MASTER";   //System version
+const char* sysVersion PROGMEM  = "Version 2.1.2-h1 MASTER";   //System version
 int inX = 0, inY = 0, inOld = 0, inSum = 0; //used for filter()
 int bars = 0; //used for getSignalStrength()
 boolean brewDetected = 0;
