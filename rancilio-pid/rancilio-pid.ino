@@ -15,8 +15,8 @@
 #include <DallasTemperature.h>    //Library for dallas temp sensor
 #include <BlynkSimpleEsp8266.h>
 #include "icon.h"   //user icons for display
-#include <MQTT.h>
 #include <ZACwire.h> //NEW TSIC LIB
+#include <PubSubClient.h>
 
 /********************************************************
   DEFINES
@@ -87,7 +87,17 @@ int maxflushCycles = MAXFLUSHCYCLES;
 
 //MQTT
 WiFiClient net;
-MQTTClient client;
+PubSubClient mqtt(net);
+const char* mqtt_server_ip = MQTT_SERVER_IP;
+const int mqtt_server_port = MQTT_SERVER_PORT;
+const char* mqtt_username = MQTT_USERNAME;
+const char* mqtt_password = MQTT_PASSWORD;
+const char* mqtt_topic_prefix = MQTT_TOPIC_PREFIX;
+char topic_will[256];
+char topic_set[256];
+unsigned long lastMQTTConnectionAttempt = millis();
+unsigned int MQTTReCnctFlag;  // Blynk Reconnection Flag
+unsigned int MQTTReCnctCount = 0;  // Blynk Reconnection counter
 
 /********************************************************
    declarations
@@ -758,6 +768,63 @@ void checkBlynk() {
   }
 }
 
+
+
+/*******************************************************
+   Check if MQTT is connected, if not reconnect
+   abort function if offline, or brew is running
+   MQTT is also using maxWifiReconnects!
+*****************************************************/
+void checkMQTT(){
+  if (Offlinemodus == 1 || brewcounter > 11) return;
+  if ((millis() - lastMQTTConnectionAttempt >= wifiConnectionDelay) && (MQTTReCnctCount <= maxWifiReconnects)) {
+    int statusTemp = mqtt.connected();
+    if (statusTemp != 1) {   // check Blynk connection status
+      lastMQTTConnectionAttempt = millis();        // Reconnection Timer Function
+      MQTTReCnctCount++;  // Increment reconnection Counter
+      DEBUG_print("Attempting MQTT reconnection: ");
+      DEBUG_println(MQTTReCnctCount);
+      if (mqtt.connect(hostname, mqtt_username, mqtt_password,topic_will,0,0,"exit") == true);{
+        mqtt.subscribe(topic_set);
+      }  // Try to reconnect to the server; connect() is a blocking function, watch the timeout!
+    }
+  }
+}
+
+/*******************************************************
+   Convert double, float int and uint to char
+   for MQTT Publish
+*****************************************************/
+char number2string_double[22];
+char* number2string(double in) {
+  snprintf(number2string_double, sizeof(number2string_double), "%0.2f", in);
+  return number2string_double;
+}
+char number2string_float[22];
+char* number2string(float in) {
+  snprintf(number2string_float, sizeof(number2string_float), "%0.2f", in);
+  return number2string_float;
+}
+char number2string_int[22];
+char* number2string(int in) {
+  snprintf(number2string_int, sizeof(number2string_int), "%d", in);
+  return number2string_int;
+}
+char number2string_uint[22];
+char* number2string(unsigned int in) {
+  snprintf(number2string_uint, sizeof(number2string_uint), "%u", in);
+  return number2string_uint;
+}
+
+/*******************************************************
+   Publish Data to MQTT
+*****************************************************/
+bool mqtt_publish(char* reading, char* payload) {
+  char topic[120];
+  snprintf(topic, 120, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
+  mqtt.publish(topic,payload);
+  }
+
 /********************************************************
     send data to display
 ******************************************************/
@@ -874,7 +941,7 @@ void printScreen() {
           u8g2.drawXBMP(60, 2, 8, 8, blynk_NOK_u8g2);
         }
         if (MQTT == 1) {
-          if (client.connect("arduino", "try", "try")) {
+          if (mqtt.connect(hostname, mqtt_username, mqtt_password)) { 
             u8g2.setCursor(77, 2);
             u8g2.print("MQTT");
           } else {
@@ -905,11 +972,7 @@ void sendToBlynk() {
 
     //MQTT
     if (MQTT == 1) {
-      if (client.connect("arduino", "try", "try")) {
-        DEBUG_println("MQTT connected");
-      } else {
-        DEBUG_println("MQTT connection failed");
-      }
+      checkMQTT();
     }
 
     previousMillisBlynk = currentMillisBlynk;
@@ -918,7 +981,7 @@ void sendToBlynk() {
         Blynk.virtualWrite(V2, Input);
         //MQTT
         if (MQTT == 1) {
-          client.publish("/temp", String(Input));
+          mqtt_publish("temperature", number2string(Input));
         }
       }
       if (blynksendcounter == 2) {
@@ -928,7 +991,7 @@ void sendToBlynk() {
         Blynk.virtualWrite(V7, setPoint);
         //MQTT
         if (MQTT == 1) {
-          client.publish("/setPoint", String(setPoint));
+          mqtt_publish("setPoint", number2string(setPoint));
         }
       }
       if (blynksendcounter == 4) {
@@ -1047,9 +1110,40 @@ void ICACHE_RAM_ATTR onTimer1ISR() {
 }
 
 //MQTT
-void messageReceived(String &topic, String &payload) {
+void mqtt_callback(char* topic, byte* data, unsigned int length) {
   //DEBUG_println("incoming: " + topic + " - " + payload);
-  setPoint = payload.toDouble();
+  char topic_str[255];
+  os_memcpy(topic_str, topic, sizeof(topic_str));
+  topic_str[255] = '\0';
+  char data_str[length+1];
+  os_memcpy(data_str, data, length);
+  data_str[length] = '\0';
+  //DEBUG_print("MQTT: %s = %s\n", topic_str, data_str);
+  char topic_pattern[255];
+  char configVar[120];
+  char cmd[64];
+  double data_double;
+  int data_int;
+
+  //DEBUG_print("mqtt_parse(%s, %s)\n", topic_str, data_str);
+  snprintf(topic_pattern, sizeof(topic_pattern), "%s%s/%%[^\\/]/%%[^\\/]", mqtt_topic_prefix, hostname);
+  //DEBUG_print("topic_pattern=%s\n",topic_pattern);
+  if ( (sscanf( topic_str, topic_pattern , &configVar, &cmd) != 2) || (strcmp(cmd, "set") != 0) ) {
+    //DEBUG_print("Ignoring topic (%s)\n", topic_str);
+    return;
+  }
+  if (strcmp(configVar, "setPoint") == 0) {
+    sscanf(data_str, "%lf", &data_double);
+    setPoint = data_double;
+    return;
+  }
+  if (strcmp(configVar, "brewtime") == 0) {
+    sscanf(data_str, "%lf", &data_double);
+    brewtime = data_double * 1000;
+    return;
+  }
+
+
 }
 
 void setup() {
@@ -1057,7 +1151,11 @@ void setup() {
 
   if (MQTT == 1) {
     //MQTT
-    client.begin(MQTTSERVER, net);
+    snprintf(topic_will, sizeof(topic_will), "%s%s/%s", mqtt_topic_prefix, hostname, "will");
+    snprintf(topic_set, sizeof(topic_set), "%s%s/+/%s", mqtt_topic_prefix, hostname, "set");
+    mqtt.setServer(mqtt_server_ip, mqtt_server_port);
+    mqtt.setCallback(mqtt_callback);
+    checkMQTT();
   }
 
   /********************************************************
@@ -1259,11 +1357,15 @@ void setup() {
 
 void loop() {
   //Only do Wifi stuff, if Wifi is connected
-  if (WiFi.status() == WL_CONNECTED && Offlinemodus == 0) {
+  if (WiFi.status() == WL_CONNECTED && Offlinemodus == 0) { 
 
     //MQTT
     if (MQTT == 1) {
-      client.loop();
+      checkMQTT();
+      if (mqtt.connected() == 1)
+      {
+        mqtt.loop();
+      }
     }
 
     ArduinoOTA.handle();  // For OTA
@@ -1291,11 +1393,7 @@ void loop() {
     checkWifi();
   }
 
-  //MQTT
-  if (MQTT == 1) {
-    client.subscribe("/solltemp");
-    client.onMessage(messageReceived);
-  }
+
 
   refreshTemp();   //read new temperature values
   testEmergencyStop();  // test if Temp is to high
