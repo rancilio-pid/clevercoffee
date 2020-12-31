@@ -209,7 +209,7 @@ DeviceAddress sensorDeviceAddress;     // arrays to hold device address
 uint16_t temperature = 0;     // internal variable used to read temeprature
 float Temperatur_C = 0;       // internal variable that holds the converted temperature in °C
 
-ZACwire<2> Sensor2(306);    // set pin "2" to receive signal from the TSic "306"
+ZACwire<ONE_WIRE_BUS> Sensor2(306);    // set pin "2" to receive signal from the TSic "306"
 
 
 /********************************************************
