@@ -264,19 +264,16 @@ BLYNK_WRITE(V7) {
 BLYNK_WRITE(V8) {
   brewtime = param.asDouble() * 1000;
   mqtt_publish("brewtime", number2string(brewtime));
-
 }
 
 BLYNK_WRITE(V9) {
   preinfusion = param.asDouble() * 1000;
   mqtt_publish("preinfusion", number2string(preinfusion));
-
 }
 
 BLYNK_WRITE(V10) {
   preinfusionpause = param.asDouble() * 1000;
   mqtt_publish("preinfusionpause", number2string(preinfusionpause));
-
 }
 BLYNK_WRITE(V13)
 {
@@ -1150,25 +1147,27 @@ void mqtt_callback(char* topic, byte* data, unsigned int length) {
     setPoint = data_double;
     if (Blynk.connected()) { Blynk.virtualWrite(V7, setPoint);}
     mqtt_publish("setPoint", number2string(setPoint));
-
     return;
   }
   if (strcmp(configVar, "brewtime") == 0) {
     sscanf(data_str, "%lf", &data_double);
     brewtime = data_double;
     if (Blynk.connected()) { Blynk.virtualWrite(V8, brewtime);}
+    mqtt_publish("brewtime", number2string(brewtime));
     return;
   }
   if (strcmp(configVar, "preinfusion") == 0) {
     sscanf(data_str, "%lf", &data_double);
     preinfusion = data_double;
     if (Blynk.connected()) { Blynk.virtualWrite(V9, preinfusion);}
+    mqtt_publish("preinfusion", number2string(preinfusion));
     return;
   }
   if (strcmp(configVar, "preinfusionpause") == 0) {
     sscanf(data_str, "%lf", &data_double);
     preinfusion = data_double;
     if (Blynk.connected()) { Blynk.virtualWrite(V10, preinfusionpause);}
+    mqtt_publish("preinfusionpause", number2string(preinfusionpause));
     return;
   }
 
