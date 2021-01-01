@@ -823,7 +823,7 @@ char* number2string(unsigned int in) {
 bool mqtt_publish(char* reading, char* payload) {
   char topic[120];
   snprintf(topic, 120, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
-  mqtt.publish(topic,payload);
+  mqtt.publish(topic,payload,true);
   }
 
 /********************************************************
