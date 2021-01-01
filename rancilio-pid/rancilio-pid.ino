@@ -263,17 +263,17 @@ BLYNK_WRITE(V7) {
 
 BLYNK_WRITE(V8) {
   brewtime = param.asDouble() * 1000;
-  mqtt_publish("brewtime", number2string(brewtime));
+  mqtt_publish("brewtime", number2string(brewtime/1000));
 }
 
 BLYNK_WRITE(V9) {
   preinfusion = param.asDouble() * 1000;
-  mqtt_publish("preinfusion", number2string(preinfusion));
+  mqtt_publish("preinfusion", number2string(preinfusion/1000));
 }
 
 BLYNK_WRITE(V10) {
   preinfusionpause = param.asDouble() * 1000;
-  mqtt_publish("preinfusionpause", number2string(preinfusionpause));
+  mqtt_publish("preinfusionpause", number2string(preinfusionpause/1000));
 }
 BLYNK_WRITE(V13)
 {
@@ -791,6 +791,7 @@ void checkMQTT(){
       DEBUG_println(MQTTReCnctCount);
       if (mqtt.connect(hostname, mqtt_username, mqtt_password,topic_will,0,0,"exit") == true);{
         mqtt.subscribe(topic_set);
+        DEBUG_println("Subscribe to MQTT Topics");
       }  // Try to reconnect to the server; connect() is a blocking function, watch the timeout!
     }
   }
@@ -825,7 +826,7 @@ char* number2string(unsigned int in) {
    Publish Data to MQTT
 *****************************************************/
 bool mqtt_publish(char* reading, char* payload) {
-  if (MQTT == 1):{
+  if (MQTT == 1){
     char topic[120];
     snprintf(topic, 120, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
     mqtt.publish(topic,payload,true);
@@ -949,7 +950,7 @@ void printScreen() {
           u8g2.drawXBMP(60, 2, 8, 8, blynk_NOK_u8g2);
         }
         if (MQTT == 1) {
-          if (mqtt.connect(hostname, mqtt_username, mqtt_password)) { 
+          if (mqtt.connected() == 1) { 
             u8g2.setCursor(77, 2);
             u8g2.print("MQTT");
           } else {
@@ -1121,14 +1122,12 @@ void ICACHE_RAM_ATTR onTimer1ISR() {
 
 
 void mqtt_callback(char* topic, byte* data, unsigned int length) {
-  //DEBUG_println("incoming: " + topic + " - " + payload);
   char topic_str[255];
   os_memcpy(topic_str, topic, sizeof(topic_str));
   topic_str[255] = '\0';
   char data_str[length+1];
   os_memcpy(data_str, data, length);
   data_str[length] = '\0';
-  //DEBUG_print("MQTT: %s = %s\n", topic_str, data_str);
   char topic_pattern[255];
   char configVar[120];
   char cmd[64];
