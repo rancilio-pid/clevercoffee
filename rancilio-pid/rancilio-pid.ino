@@ -258,18 +258,25 @@ BLYNK_WRITE(V6) {
 
 BLYNK_WRITE(V7) {
   setPoint = param.asDouble();
+  mqtt_publish("setPoint", number2string(setPoint));
 }
 
 BLYNK_WRITE(V8) {
   brewtime = param.asDouble() * 1000;
+  mqtt_publish("brewtime", number2string(brewtime));
+
 }
 
 BLYNK_WRITE(V9) {
   preinfusion = param.asDouble() * 1000;
+  mqtt_publish("preinfusion", number2string(preinfusion));
+
 }
 
 BLYNK_WRITE(V10) {
   preinfusionpause = param.asDouble() * 1000;
+  mqtt_publish("preinfusionpause", number2string(preinfusionpause));
+
 }
 BLYNK_WRITE(V13)
 {
