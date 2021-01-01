@@ -828,10 +828,13 @@ char* number2string(unsigned int in) {
    Publish Data to MQTT
 *****************************************************/
 bool mqtt_publish(char* reading, char* payload) {
-  char topic[120];
-  snprintf(topic, 120, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
-  mqtt.publish(topic,payload,true);
+  if (MQTT == 1):{
+    char topic[120];
+    snprintf(topic, 120, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
+    mqtt.publish(topic,payload,true);
   }
+  }
+
 
 /********************************************************
     send data to display
@@ -987,10 +990,7 @@ void sendToBlynk() {
     if (Blynk.connected()) {
       if (blynksendcounter == 1) {
         Blynk.virtualWrite(V2, Input);
-        //MQTT
-        if (MQTT == 1) {
-          mqtt_publish("temperature", number2string(Input));
-        }
+        mqtt_publish("temperature", number2string(Input));
       }
       if (blynksendcounter == 2) {
         Blynk.virtualWrite(V23, Output);
@@ -998,9 +998,7 @@ void sendToBlynk() {
       if (blynksendcounter == 3) {
         Blynk.virtualWrite(V7, setPoint);
         //MQTT
-        if (MQTT == 1) {
-          mqtt_publish("setPoint", number2string(setPoint));
-        }
+        mqtt_publish("setPoint", number2string(setPoint));
       }
       if (blynksendcounter == 4) {
         Blynk.virtualWrite(V35, heatrateaverage);
@@ -1010,11 +1008,9 @@ void sendToBlynk() {
       }
       if (grafana == 1 && blynksendcounter >= 6) {
         Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint );
-        if (MQTT == 1){
-          mqtt_publish("HeaterPower", number2string(Output));
-          mqtt_publish("Kp", number2string(bPID.GetKp()));
-          mqtt_publish("Ki", number2string(bPID.GetKi()));
-        }
+        mqtt_publish("HeaterPower", number2string(Output));
+        mqtt_publish("Kp", number2string(bPID.GetKp()));
+        mqtt_publish("Ki", number2string(bPID.GetKi()));
         blynksendcounter = 0;
       } else if (grafana == 0 && blynksendcounter >= 5) {
         blynksendcounter = 0;
@@ -1153,6 +1149,8 @@ void mqtt_callback(char* topic, byte* data, unsigned int length) {
     sscanf(data_str, "%lf", &data_double);
     setPoint = data_double;
     if (Blynk.connected()) { Blynk.virtualWrite(V7, setPoint);}
+    mqtt_publish("setPoint", number2string(setPoint));
+
     return;
   }
   if (strcmp(configVar, "brewtime") == 0) {
