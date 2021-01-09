@@ -38,18 +38,16 @@
 #define MQTT_SERVER_PORT 1883    
 // Wifi & Blynk 
 #define HOSTNAME "rancilio"
-#define AUTH "296da16b0626443caf96bff568be4ead"
-#define D_SSID "FRITZ!Box 7560 TW"
-#define PASS "73529858617456203989"
+#define AUTH "myauth"
+#define D_SSID "myssid"
+#define PASS "mypass"
 
 // OTA
-#define OTAHOST "Rancilio"   // Name to be shown in ARUDINO IDE Port
-#define OTAPASS "12345"    // Password for OTA updtates
+#define OTAHOST ""   // Name to be shown in ARUDINO IDE Port
+#define OTAPASS ""    // Password for OTA updtates
 
 
-//#define BLYNKADDRESS "blynk.remoteapp.de"         // IP-Address of used blynk server
-# define BLYNKADDRESS "192.168.2.170"
-// define BLYNKADDRESS "raspberrypi.local"
+#define BLYNKADDRESS "blynk.remoteapp.de"         // IP-Address of used blynk server
 #define BLYNKPORT 8080  //Port for blynk server
 
 
