@@ -1,6 +1,6 @@
 /********************************************************
-  Version 1.6 (09.01.2021)
-  Last-Change: Template Config für das Display eingeführt
+  Version 1.5 (30.12.2020)
+  Last-Change: Last-Change "PIN BELEGUNG" in userConfig.h verschoben
   Config must be configured by the user
 ******************************************************/
 
