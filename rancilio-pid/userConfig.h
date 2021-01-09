@@ -10,8 +10,10 @@
    Vorab-Konfig
 ******************************************************/
 // 
-#define DISPLAY 2            // 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64)
-#define DISPLAYTEMPLATE 1    // 1: Standard Display Template, 2: Minimal Template, see git Handbook for further
+#define DISPLAY 2            
+// 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64)
+#define DISPLAYTEMPLATE 2    
+// 1: Standard Display Template, 2: Minimal Template, see git Handbook for further
 #define OFFLINEMODUS 0       // 0 = Blynk and WIFI are used; 1 = offline mode (only preconfigured values in code are used!)
 #define ONLYPID 1            // 1 = Only PID, no preinfusion; 0 = PID and preinfusion
 #define TEMPSENSOR 2         // 2 = TSIC306
@@ -25,7 +27,7 @@
 #define MAXWIFIRECONNECTS 5  // maximum number of reconnects; use -1 to set to maximum ("deactivated")
 #define MACHINELOGO 1        // 1 = Rancilio, 2 = Gaggia
 #define MQTT 0               // 1 = MQTT enabled, 0 = MQTT disabled
-#define COLDSTART_PID 1      // 1 = default COLDStart Values , 2 = eigene Werte via Blynk, Expertenmodusaktiv 
+#define COLDSTART_PID 2     // 1 = default COLDStart Values , 2 = eigene Werte via Blynk, Expertenmodusaktiv 
 #define DISPALYROTATE U8G2_R0   // rotate display clockwise: U8G2_R0 = no rotation; U8G2_R1 = 90°; U8G2_R2 = 180°; U8G2_R3 = 270°
 
 //MQTT
@@ -36,17 +38,19 @@
 #define MQTT_SERVER_PORT 1883    
 // Wifi & Blynk 
 #define HOSTNAME "rancilio"
-#define AUTH "blynkauthcode"
-#define D_SSID "wlanname"
-#define PASS "wlanpass"
+#define AUTH "296da16b0626443caf96bff568be4ead"
+#define D_SSID "FRITZ!Box 7560 TW"
+#define PASS "73529858617456203989"
 
 // OTA
 #define OTAHOST "Rancilio"   // Name to be shown in ARUDINO IDE Port
-#define OTAPASS "otapass"    // Password for OTA updates
+#define OTAPASS "12345"    // Password for OTA updtates
 
-#define BLYNKADDRESS "blynk.remoteapp.de"         // IP-Address of used blynk server
-#define BLYNKPORT 8080  //Port for blynk server
+
+//#define BLYNKADDRESS "blynk.remoteapp.de"         // IP-Address of used blynk server
+# define BLYNKADDRESS "192.168.2.170"
 // define BLYNKADDRESS "raspberrypi.local"
+#define BLYNKPORT 8080  //Port for blynk server
 
 
 //PID - values for offline brewdetection

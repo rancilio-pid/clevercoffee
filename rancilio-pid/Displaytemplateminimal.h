@@ -76,7 +76,7 @@ void printScreen()
       }
 
       // Für Statusinfos
-      if (Offline == 0) {
+      if (Offlinemodus == 0) {
         getSignalStrength();
         if (WiFi.status() != WL_CONNECTED) {
           u8g2.drawFrame(116, 28, 12, 12);
