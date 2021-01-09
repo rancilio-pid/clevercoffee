@@ -25,7 +25,7 @@
 #define MQTT 0               // 1 = MQTT enabled, 0 = MQTT disabled
 #define COLDSTART_PID 1      // 1 = default COLDStart Values , 2 = eigene Werte via Blynk, Expertenmodusaktiv 
 #define DISPALYROTATE U8G2_R0   // rotate display clockwise: U8G2_R0 = no rotation; U8G2_R1 = 90°; U8G2_R2 = 180°; U8G2_R3 = 270°
-
+#define ETRIGGER 0  // 0: no Trigger (for Raniclio without E) 1: Trigger for CPU of Rancilio E
 //MQTT
 #define MQTT_USERNAME "myuser"
 #define MQTT_PASSWORD "mypass"
@@ -72,10 +72,14 @@
 #define pinRelayPumpe     13    //Output pin for pump
 #define pinRelayHeater    14    //Output pin for heater
 
-#define OLED_RESET 16     //Output pin for dispaly reset pin
+//#define OLED_RESET 16     //Output pin for dispaly reset pin
 #define OLED_SCL 5        //Output pin for dispaly clock pin
 #define OLED_SDA 4        //Output pin for dispaly data pin
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels  
+
+// Siliva E Version 
+#define ETRIGGERTIME 60 // Seconds, time for Trigger Signal
+#define pinETrigger 16
 
 #endif // _userConfig_H

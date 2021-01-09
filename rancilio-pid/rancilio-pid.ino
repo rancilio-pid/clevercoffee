@@ -239,7 +239,8 @@ const unsigned long intervalDisplay = 500;
   Trigger for Rancilio E Machine
 ******************************************************/
 unsigned long previousMillisETrigger ;  // initialisation at the end of init()
-const unsigned long intervalETrigger = ETriggerTime ; // in Seconds
+const unsigned long intervalETrigger = ETRIGGERTIME ; // in Seconds
+int ETrigger = ETRIGGER ;
 
 /********************************************************
    BLYNK define pins and read values
@@ -1157,12 +1158,12 @@ void mqtt_callback(char* topic, byte* data, unsigned int length) {
 *****************************************************/
 //unsigned long previousMillisETrigger ;  // initialisation at the end of init()
 //const unsigned long intervalETrigger = ETriggerTime ; // in Seconds
-void ETrigger() 
+void ETriggervoid() 
 {
   //Static variable only one time is 0 
   static int ETriggeractive = 0;
   unsigned long currentMillisETrigger = millis();
-  if (Etrigger == 1) // E Trigger is active from userconfig
+  if (ETrigger == 1) // E Trigger is active from userconfig
   { 
     // 
     if (currentMillisETrigger - previousMillisETrigger >= intervalETrigger) 
@@ -1217,7 +1218,7 @@ void setup() {
   digitalWrite(pinRelayVentil, relayOFF);
   digitalWrite(pinRelayPumpe, relayOFF);
   digitalWrite(pinRelayHeater, LOW);
-  if (Etrigger == 1 { 
+  if (ETrigger == 1) { 
   pinMode(pinETrigger, OUTPUT);
   }
 
@@ -1443,7 +1444,7 @@ void loop() {
   sendToBlynk();
   if(ETRIGGER == 1) // E-Trigger active then void Etrigger() 
   {
-    ETrigger();
+    ETriggervoid();
   }
   
 
