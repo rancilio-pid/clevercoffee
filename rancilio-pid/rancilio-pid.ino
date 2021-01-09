@@ -236,6 +236,12 @@ unsigned long previousMillisDisplay;  // initialisation at the end of init()
 const unsigned long intervalDisplay = 500;
 
 /********************************************************
+  Trigger for Rancilio E Machine
+******************************************************/
+unsigned long previousMillisETrigger ;  // initialisation at the end of init()
+const unsigned long intervalETrigger = ETriggerTime ; // in Seconds
+
+/********************************************************
    BLYNK define pins and read values
 ******************************************************/
 BLYNK_CONNECTED() {
@@ -1146,6 +1152,37 @@ void mqtt_callback(char* topic, byte* data, unsigned int length) {
 
 
 }
+/*******************************************************
+  Trigger for 
+*****************************************************/
+//unsigned long previousMillisETrigger ;  // initialisation at the end of init()
+//const unsigned long intervalETrigger = ETriggerTime ; // in Seconds
+void ETrigger() 
+{
+  //Static variable only one time is 0 
+  static int ETriggeractive = 0;
+  unsigned long currentMillisETrigger = millis();
+  if (Etrigger == 1) // E Trigger is active from userconfig
+  { 
+    // 
+    if (currentMillisETrigger - previousMillisETrigger >= intervalETrigger) 
+    {  // check 
+      ETriggeractive = 1 ;
+      previousMillisETrigger = currentMillisETrigger;
+      digitalWrite(pinETrigger, HIGH);
+    }
+    // 10 Seconds later
+    else if (ETriggeractive == 1 && previousMillisETrigger+(10*1000) < currentMillisETrigger) 
+    {
+    digitalWrite(pinETrigger, LOW);
+    ETriggeractive = 0;
+    }
+  } 
+}
+
+
+
+
 
 void setup() {
   DEBUGSTART(115200);
@@ -1180,6 +1217,9 @@ void setup() {
   digitalWrite(pinRelayVentil, relayOFF);
   digitalWrite(pinRelayPumpe, relayOFF);
   digitalWrite(pinRelayHeater, LOW);
+  if (Etrigger == 1 { 
+  pinMode(pinETrigger, OUTPUT);
+  }
 
   /********************************************************
     DISPLAY 128x64
@@ -1340,6 +1380,7 @@ void setup() {
   windowStartTime = currentTime;
   previousMillisDisplay = currentTime;
   previousMillisBlynk = currentTime;
+  previousMillisETrigger = currentTime; 
 
   /********************************************************
     Timer1 ISR - Initialisierung
@@ -1399,8 +1440,13 @@ void loop() {
   refreshTemp();   //read new temperature values
   testEmergencyStop();  // test if Temp is to high
   brew();   //start brewing if button pressed
-
   sendToBlynk();
+  if(ETRIGGER == 1) // E-Trigger active then void Etrigger() 
+  {
+    ETrigger();
+  }
+  
+
 
 
   //check if PID should run or not. If not, set to manuel and force output to zero
@@ -1487,5 +1533,6 @@ void loop() {
       displayMessage("Backflush running:", String(flushCycles), "from", String(maxflushCycles), "", "");
     }
   }
+
 
 }
