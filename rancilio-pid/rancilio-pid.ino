@@ -1,5 +1,5 @@
 /********************************************************
-   Version 2.1.2-hotfix2  (30.12.2020) 
+   Version 2.2.0  (09.01.2021) 
    * ADD ZACwire (New TSIC lib)
    * Auslagern der PIN Belegung in die UserConfig
    * Change MQTT Lib to PubSubClient | thx to pbeh
