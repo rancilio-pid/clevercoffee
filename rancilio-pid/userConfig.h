@@ -43,8 +43,8 @@
 #define PASS "mypass"
 
 // OTA
-#define OTAHOST ""   // Name to be shown in ARUDINO IDE Port
-#define OTAPASS ""    // Password for OTA updtates
+#define OTAHOST "rancilio"   // Name to be shown in ARUDINO IDE Port
+#define OTAPASS "otapass"    // Password for OTA updtates
 
 
 #define BLYNKADDRESS "blynk.remoteapp.de"         // IP-Address of used blynk server
