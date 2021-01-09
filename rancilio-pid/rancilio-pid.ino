@@ -240,7 +240,7 @@ const unsigned long intervalDisplay = 500;
 ******************************************************/
 unsigned long previousMillisETrigger ;  // initialisation at the end of init()
 const unsigned long intervalETrigger = ETRIGGERTIME ; // in Seconds
-int ETrigger = ETRIGGER ;
+
 
 /********************************************************
    BLYNK define pins and read values
@@ -1163,7 +1163,7 @@ void ETriggervoid()
   //Static variable only one time is 0 
   static int ETriggeractive = 0;
   unsigned long currentMillisETrigger = millis();
-  if (ETrigger == 1) // E Trigger is active from userconfig
+  if (ETRIGGER == 1) // E Trigger is active from userconfig
   { 
     // 
     if (currentMillisETrigger - previousMillisETrigger >= intervalETrigger) 
