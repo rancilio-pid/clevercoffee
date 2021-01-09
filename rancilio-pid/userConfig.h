@@ -1,5 +1,6 @@
 /********************************************************
-  Version 1.5 (30.12.2020) Last-Change "PIN BELEGUNG" in userConfig.h verschoben
+  Version 1.6 (09.01.2021) 
+  Last Change: Displaytemplate
   Config must be configured by the user
 ******************************************************/
 
@@ -10,10 +11,8 @@
    Vorab-Konfig
 ******************************************************/
 // 
-#define DISPLAY 2            
-// 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64)
-#define DISPLAYTEMPLATE 2    
-// 1: Standard Display Template, 2: Minimal Template, see git Handbook for further
+#define DISPLAY 2            // 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64)
+#define DISPLAYTEMPLATE 2    // 1: Standard Display Template, 2: Minimal Template, see git Handbook for further
 #define OFFLINEMODUS 0       // 0 = Blynk and WIFI are used; 1 = offline mode (only preconfigured values in code are used!)
 #define ONLYPID 1            // 1 = Only PID, no preinfusion; 0 = PID and preinfusion
 #define TEMPSENSOR 2         // 2 = TSIC306
@@ -43,7 +42,7 @@
 #define PASS "mypass"
 
 // OTA
-#define OTAHOST "rancilio"   // Name to be shown in ARUDINO IDE Port
+#define OTAHOST "Rancilio"   // Name to be shown in ARUDINO IDE Port
 #define OTAPASS "otapass"    // Password for OTA updtates
 
 
