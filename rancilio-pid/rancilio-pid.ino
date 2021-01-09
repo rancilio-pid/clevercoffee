@@ -1218,7 +1218,7 @@ void setup() {
   digitalWrite(pinRelayVentil, relayOFF);
   digitalWrite(pinRelayPumpe, relayOFF);
   digitalWrite(pinRelayHeater, LOW);
-  if (ETrigger == 1) { 
+  if (ETRIGGER == 1) { 
   pinMode(pinETrigger, OUTPUT);
   }
 
