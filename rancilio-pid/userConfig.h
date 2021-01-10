@@ -12,7 +12,7 @@
 ******************************************************/
 // Display
 #define DISPLAY 2            // 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64)
-#define DISPLAYTEMPLATE 2    // 1: Standard Display Template, 2: Minimal Template, see git Handbook for further
+#define DISPLAYTEMPLATE 1    // 1: Standard Display Template, 2: Minimal Template, see git Handbook for further
 #define MACHINELOGO 1        // 1 = Rancilio, 2 = Gaggia
 #define DISPALYROTATE U8G2_R0   // rotate display clockwise: U8G2_R0 = no rotation; U8G2_R1 = 90°; U8G2_R2 = 180°; U8G2_R3 = 270°
 
@@ -28,17 +28,17 @@
 // PID & Hardware
 #define ONLYPID 1            // 1 = Only PID, no preinfusion; 0 = PID and preinfusion
 #define BREWDETECTION 1      // 0 = off; 1 = Software; 2 = Hardware
-#define COLDSTART_PID 2     // 1 = default COLDStart Values , 2 = eigene Werte via Blynk, Expertenmodusaktiv 
+#define COLDSTART_PID 1     // 1 = default COLDStart Values , 2 = eigene Werte via Blynk, Expertenmodusaktiv 
 #define TRIGGERTYPE HIGH     // LOW = low trigger, HIGH = high trigger relay
 
 // Wifi 
 #define HOSTNAME "Rancilio"
-#define D_SSID "FRITZ!Box 7560 TW"
-#define PASS "73529858617456203989"
+#define D_SSID "myssid"
+#define PASS "mypass"
 
 // OTA
 #define OTAHOST "Rancilio"   // Name to be shown in ARUDINO IDE Port
-#define OTAPASS "12345"    // Password for OTA updtates
+#define OTAPASS "otapass"    // Password for OTA updtates
 
 //MQTT
 #define MQTT_USERNAME "myuser"
@@ -48,8 +48,8 @@
 #define MQTT_SERVER_PORT 1883    
 
 // BLynk
-#define AUTH "296da16b0626443caf96bff568be4ead"
-#define BLYNKADDRESS "192.168.2.170"         // IP-Address of used blynk server
+#define AUTH "myauth"
+#define BLYNKADDRESS "blynk.remoteapp.de"         // IP-Address of used blynk server
 #define BLYNKPORT 8080  //Port for blynk server
 
 
