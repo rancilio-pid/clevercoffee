@@ -32,9 +32,5 @@ Ihr seid herzlich Willkommen uns gemeinsam bei der Mission zu besseren Espresso 
 Anregungen zur Weiterentwicklung der Software werden von uns gerne aufgenommen. User-Input ist immer willkommen und bringt den PID weiter!
 Ihr seid herzlich Willkommen uns gemeinsam bei der Mission zu besseren Espresso zu helfen. 
 
-MASTER VERSION
-
-Version 2.2.0  (11.01.2021) ADD MQTT Support
-
 Vielen Dank an jeden einzelnen Unterstützer!
 
