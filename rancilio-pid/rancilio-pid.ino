@@ -1217,7 +1217,8 @@ void setup() {
   /********************************************************
      BLYNK & Fallback offline
   ******************************************************/
-  if (Offlinemodus == 0) {
+  if (Offlinemodus == 0) 
+  {
     WiFi.hostname(hostname);
     unsigned long started = millis();
     displayLogo("1: Connect Wifi to:", ssid);
@@ -1239,7 +1240,8 @@ void setup() {
 
     checkWifi();    //try to reconnect
 
-    if (WiFi.status() == WL_CONNECTED) {
+    if (WiFi.status() == WL_CONNECTED)
+    {
       DEBUG_println("WiFi connected");
       DEBUG_println("IP address: ");
       DEBUG_println(WiFi.localIP());
@@ -1306,7 +1308,6 @@ void setup() {
         DEBUG_println(dummy);
         if (!isnan(dummy)) 
         {
-          displayLogo("Blynk not works", "but use eeprom :)");
           EEPROM.get(0, aggKp);
           EEPROM.get(10, aggTn);
           EEPROM.get(20, aggTv);
@@ -1319,9 +1320,11 @@ void setup() {
           EEPROM.get(110, aggbTv);
           EEPROM.get(120, brewtimersoftware);
           EEPROM.get(130, brewboarder);
-        }
-
-    } else {
+        } 
+      }
+    }
+    else 
+    {
       displayLogo("No ", "WIFI");
       DEBUG_println("No WIFI");
       WiFi.disconnect(true);
