@@ -1217,7 +1217,8 @@ void setup() {
   /********************************************************
      BLYNK & Fallback offline
   ******************************************************/
-  if (Offlinemodus == 0) {
+  if (Offlinemodus == 0) 
+  {
     WiFi.hostname(hostname);
     unsigned long started = millis();
     displayLogo("1: Connect Wifi to:", ssid);
@@ -1239,7 +1240,8 @@ void setup() {
 
     checkWifi();    //try to reconnect
 
-    if (WiFi.status() == WL_CONNECTED) {
+    if (WiFi.status() == WL_CONNECTED)
+    {
       DEBUG_println("WiFi connected");
       DEBUG_println("IP address: ");
       DEBUG_println(WiFi.localIP());
@@ -1296,11 +1298,34 @@ void setup() {
           // eeprom schließen
           EEPROM.commit();
         }
-      } else {
+      } else 
+      {
         DEBUG_println("No connection to Blynk");
+        EEPROM.begin(1024);  // open eeprom
+        double dummy; // check if eeprom values are numeric (only check first value in eeprom)
+        EEPROM.get(0, dummy);
+        DEBUG_print("check eeprom 0x00 in dummy: ");
+        DEBUG_println(dummy);
+        if (!isnan(dummy)) 
+        {
+           displayLogo("3: Blynk not connected", "use eeprom values..");
+          EEPROM.get(0, aggKp);
+          EEPROM.get(10, aggTn);
+          EEPROM.get(20, aggTv);
+          EEPROM.get(30, setPoint);
+          EEPROM.get(40, brewtime);
+          EEPROM.get(50, preinfusion);
+          EEPROM.get(60, preinfusionpause);
+          EEPROM.get(90, aggbKp);
+          EEPROM.get(100, aggbTn);
+          EEPROM.get(110, aggbTv);
+          EEPROM.get(120, brewtimersoftware);
+          EEPROM.get(130, brewboarder);
+        } 
       }
-
-    } else {
+    }
+    else 
+    {
       displayLogo("No ", "WIFI");
       DEBUG_println("No WIFI");
       WiFi.disconnect(true);
