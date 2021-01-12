@@ -1296,9 +1296,30 @@ void setup() {
           // eeprom schließen
           EEPROM.commit();
         }
-      } else {
+      } else 
+      {
         DEBUG_println("No connection to Blynk");
-      }
+        EEPROM.begin(1024);  // open eeprom
+        double dummy; // check if eeprom values are numeric (only check first value in eeprom)
+        EEPROM.get(0, dummy);
+        DEBUG_print("check eeprom 0x00 in dummy: ");
+        DEBUG_println(dummy);
+        if (!isnan(dummy)) 
+        {
+          displayLogo("Blynk not works", "but use eeprom :)");
+          EEPROM.get(0, aggKp);
+          EEPROM.get(10, aggTn);
+          EEPROM.get(20, aggTv);
+          EEPROM.get(30, setPoint);
+          EEPROM.get(40, brewtime);
+          EEPROM.get(50, preinfusion);
+          EEPROM.get(60, preinfusionpause);
+          EEPROM.get(90, aggbKp);
+          EEPROM.get(100, aggbTn);
+          EEPROM.get(110, aggbTv);
+          EEPROM.get(120, brewtimersoftware);
+          EEPROM.get(130, brewboarder);
+        }
 
     } else {
       displayLogo("No ", "WIFI");
