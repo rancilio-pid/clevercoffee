@@ -1,5 +1,5 @@
 /********************************************************
-   Version 2.2.0 (11.01.2021) 
+   Version 2.2.1 (11.01.2021) 
    * ADD ZACwire (New TSIC lib)
    * Auslagern der PIN Belegung in die UserConfig
    * Change MQTT Lib to PubSubClient | thx to pbeh
@@ -691,7 +691,6 @@ void initOfflineMode() {
   displayMessage("", "", "", "", "Begin Fallback,", "No Wifi");
   DEBUG_println("Start offline mode with eeprom values, no wifi:(");
   Offlinemodus = 1 ;
-
   EEPROM.begin(1024);  // open eeprom
   double dummy; // check if eeprom values are numeric (only check first value in eeprom)
   EEPROM.get(0, dummy);
@@ -1298,9 +1297,30 @@ void setup() {
         }
       } else {
         DEBUG_println("No connection to Blynk");
-      }
+        EEPROM.begin(1024);  // open eeprom
+        double dummy; // check if eeprom values are numeric (only check first value in eeprom)
+        EEPROM.get(0, dummy);
+        DEBUG_print("check eeprom 0x00 in dummy: "); // Wifi geht, aber Blynk nicht, nimm alte eeprom Werte
+        DEBUG_println(dummy); 
+        if (!isnan(dummy)) 
+        {
+          displayLogo(" No Blynk","but use old eeprom value :)");
+          EEPROM.get(0, aggKp);
+          EEPROM.get(10, aggTn);
+          EEPROM.get(20, aggTv);
+          EEPROM.get(30, setPoint);
+          EEPROM.get(40, brewtime);
+          EEPROM.get(50, preinfusion);
+          EEPROM.get(60, preinfusionpause);
+          EEPROM.get(90, aggbKp);
+          EEPROM.get(100, aggbTn);
+          EEPROM.get(110, aggbTv);
+          EEPROM.get(120, brewtimersoftware);
+          EEPROM.get(130, brewboarder);
+        }
 
-    } else {
+    } else 
+    {
       displayLogo("No ", "WIFI");
       DEBUG_println("No WIFI");
       WiFi.disconnect(true);
