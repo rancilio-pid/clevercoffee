@@ -1308,6 +1308,7 @@ void setup() {
         DEBUG_println(dummy);
         if (!isnan(dummy)) 
         {
+           displayLogo("3: Blynk not connected", "use eeprom values..");
           EEPROM.get(0, aggKp);
           EEPROM.get(10, aggTn);
           EEPROM.get(20, aggTv);
