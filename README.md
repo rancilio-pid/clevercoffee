@@ -2,7 +2,7 @@
 
 ## Version
 MASTER VERSION
-Version 2.3.1  (11.01.2021) ADD MQTT Support
+Version 2.3.1  (12.01.2021) ADD MQTT Support
 
 ## Hinweise
 Unsere Projektwebseite findet ihr hier: [Rancilio PID Website](http://rancilio-pid.de/).
