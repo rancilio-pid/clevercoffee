@@ -1154,7 +1154,7 @@ void mqtt_callback(char* topic, byte* data, unsigned int length) {
 
 }
 /*******************************************************
-  Trigger for 
+  Trigger for E-Silivia
 *****************************************************/
 //unsigned long previousMillisETrigger ;  // initialisation at the end of init()
 //const unsigned long intervalETrigger = ETriggerTime ; // in Seconds
@@ -1166,14 +1166,14 @@ void ETriggervoid()
   if (ETRIGGER == 1) // E Trigger is active from userconfig
   { 
     // 
-    if (currentMillisETrigger - previousMillisETrigger >= intervalETrigger) 
+    if (currentMillisETrigger - previousMillisETrigger >= (1000*intervalETrigger))  //s to ms * 1000
     {  // check 
       ETriggeractive = 1 ;
       previousMillisETrigger = currentMillisETrigger;
       digitalWrite(pinETrigger, HIGH);
     }
     // 10 Seconds later
-    else if (ETriggeractive == 1 && previousMillisETrigger+(10*1000) < currentMillisETrigger) 
+    else if (ETriggeractive == 1 && previousMillisETrigger+(10*1000) < (currentMillisETrigger))
     {
     digitalWrite(pinETrigger, LOW);
     ETriggeractive = 0;
