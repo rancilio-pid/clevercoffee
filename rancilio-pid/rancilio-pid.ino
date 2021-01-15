@@ -1,5 +1,5 @@
 /********************************************************
-   Version 2.2.1 (12.01.2021) 
+   Version 2.4.0 (15.01.2021) 
    * ADD ZACwire (New TSIC lib)
    * Auslagern der PIN Belegung in die UserConfig
    * Change MQTT Lib to PubSubClient | thx to pbeh
@@ -37,15 +37,7 @@
 #define DEBUGSTART(a) Serial.begin(a);
 #endif
 
-/********************************************************
-   DISPLAY constructor, change if needed
-******************************************************/
-//DISPLAY constructor, change if needed
-#if DISPLAY == 1
-U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);   //e.g. 1.3"
-#else
-U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);    //e.g. 0.96"
-#endif
+
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -107,7 +99,7 @@ int pidON = 1 ;                 // 1 = control loop in closed loop
 int relayON, relayOFF;          // used for relay trigger type. Do not change!
 boolean kaltstart = true;       // true = Rancilio started for first time
 boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
-const char* sysVersion PROGMEM  = "Version 2.2.1 MASTER";   //System version
+const char* sysVersion PROGMEM  = "Version 2.4.0 MASTER";   //System version
 int inX = 0, inY = 0, inOld = 0, inSum = 0; //used for filter()
 int bars = 0; //used for getSignalStrength()
 boolean brewDetected = 0;
@@ -231,9 +223,6 @@ unsigned long previousMillisBlynk;  // initialisation at the end of init()
 const unsigned long intervalBlynk = 1000;
 int blynksendcounter = 1;
 
-//Update für Display
-unsigned long previousMillisDisplay;  // initialisation at the end of init()
-const unsigned long intervalDisplay = 500;
 
 /********************************************************
    BLYNK define pins and read values
@@ -301,13 +290,14 @@ BLYNK_WRITE(V40) {
 }
 
 #if (COLDSTART_PID == 2)  // 2=?Blynk values, else default starttemp from config
- BLYNK_WRITE(V11) {
-  startKp = param.asDouble();
-  }
- BLYNK_WRITE(V14)
-  {
-    startTn = param.asDouble();
-  }
+  BLYNK_WRITE(V11) 
+    {
+    startKp = param.asDouble();
+    }
+  BLYNK_WRITE(V14)
+    {
+      startTn = param.asDouble();
+    }
  #endif
 
 
@@ -393,87 +383,6 @@ void backflush() {
 }
 
 
-/********************************************************
-  initialize u8g2 display
-*****************************************************/
-void u8g2_prepare(void) {
-  //u8g2.setFont(u8g2_font_6x12_tf);
-  u8g2.setFont(u8g2_font_profont11_tf);
-  //u8g2.setFont(u8g2_font_IPAandRUSLCD_tf);
-  u8g2.setFontRefHeightExtendedText();
-  u8g2.setDrawColor(1);
-  u8g2.setFontPosTop();
-  u8g2.setFontDirection(0);
-  u8g2.setDisplayRotation(DISPALYROTATE);
-}
-
-/********************************************************
-  DISPLAY - print message
-*****************************************************/
-void displayMessage(String text1, String text2, String text3, String text4, String text5, String text6) {
-  u8g2.clearBuffer();
-  u8g2.setCursor(0, 0);
-  u8g2.print(text1);
-  u8g2.setCursor(0, 10);
-  u8g2.print(text2);
-  u8g2.setCursor(0, 20);
-  u8g2.print(text3);
-  u8g2.setCursor(0, 30);
-  u8g2.print(text4);
-  u8g2.setCursor(0, 40);
-  u8g2.print(text5);
-  u8g2.setCursor(0, 50);
-  u8g2.print(text6);
-  u8g2.sendBuffer();
-}
-
-/********************************************************
-  DISPLAY - print logo and message at boot
-*****************************************************/
-void displayLogo(String displaymessagetext, String displaymessagetext2) {
-  u8g2.clearBuffer();
-  u8g2.drawStr(0, 47, displaymessagetext.c_str());
-  u8g2.drawStr(0, 55, displaymessagetext2.c_str());
-  //Rancilio startup logo
-  if (machineLogo == 1) {
-    u8g2.drawXBMP(41, 2, startLogoRancilio_width, startLogoRancilio_height, startLogoRancilio_bits);
-  } else if (machineLogo == 2) {
-    u8g2.drawXBMP(0, 2, startLogoGaggia_width, startLogoGaggia_height, startLogoGaggia_bits);
-  }
-  u8g2.sendBuffer();
-}
-
-/********************************************************
-  DISPLAY - EmergencyStop
-*****************************************************/
-void displayEmergencyStop(void) {
-  u8g2.clearBuffer();
-  u8g2.drawXBMP(0, 0, logo_width, logo_height, logo_bits_u8g2);   //draw temp icon
-  u8g2.setCursor(32, 24);
-  u8g2.print("Ist :  ");
-  u8g2.print(Input, 1);
-  u8g2.print(" ");
-  u8g2.print((char)176);
-  u8g2.print("C");
-  u8g2.setCursor(32, 34);
-  u8g2.print("Soll:  ");
-  u8g2.print(setPoint, 1);
-  u8g2.print(" ");
-  u8g2.print((char)176);
-  u8g2.print("C");
-
-  //draw current temp in icon
-  if (isrCounter < 500) {
-    u8g2.drawLine(9, 48, 9, 5);
-    u8g2.drawLine(10, 48, 10, 4);
-    u8g2.drawLine(11, 48, 11, 3);
-    u8g2.drawLine(12, 48, 12, 4);
-    u8g2.drawLine(13, 48, 13, 5);
-    u8g2.setCursor(32, 4);
-    u8g2.print("HEATING STOPPED");
-  }
-  u8g2.sendBuffer();
-}
 
 /********************************************************
   Read analog input pin
@@ -833,140 +742,6 @@ bool mqtt_publish(char* reading, char* payload) {
   }
   }
 
-
-/********************************************************
-    send data to display
-******************************************************/
-void printScreen() {
-  unsigned long currentMillisDisplay = millis();
-  if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
-    previousMillisDisplay = currentMillisDisplay;
-    if (!sensorError) {
-      u8g2.clearBuffer();
-      u8g2.drawXBMP(0, 0, logo_width, logo_height, logo_bits_u8g2);   //draw temp icon
-      u8g2.setCursor(32, 14);
-      u8g2.print("Ist :  ");
-      u8g2.print(Input, 1);
-      u8g2.print(" ");
-      u8g2.print((char)176);
-      u8g2.print("C");
-      u8g2.setCursor(32, 24);
-      u8g2.print("Soll:  ");
-      u8g2.print(setPoint, 1);
-      u8g2.print(" ");
-      u8g2.print((char)176);
-      u8g2.print("C");
-
-      // Draw heat bar
-      u8g2.drawLine(15, 58, 117, 58);
-      u8g2.drawLine(15, 58, 15, 61);
-      u8g2.drawLine(117, 58, 117, 61);
-
-      u8g2.drawLine(16, 59, (Output / 10) + 16, 59);
-      u8g2.drawLine(16, 60, (Output / 10) + 16, 60);
-      u8g2.drawLine(15, 61, 117, 61);
-
-      //draw current temp in icon
-      if (fabs(Input  - setPoint) < 0.3) {
-        if (isrCounter < 500) {
-          u8g2.drawLine(9, 48, 9, 58 - (Input  / 2));
-          u8g2.drawLine(10, 48, 10, 58 - (Input  / 2));
-          u8g2.drawLine(11, 48, 11, 58 - (Input  / 2));
-          u8g2.drawLine(12, 48, 12, 58 - (Input  / 2));
-          u8g2.drawLine(13, 48, 13, 58 - (Input  / 2));
-        }
-      } else if (Input > 106) {
-        u8g2.drawLine(9, 48, 9, 5);
-        u8g2.drawLine(10, 48, 10, 4);
-        u8g2.drawLine(11, 48, 11, 3);
-        u8g2.drawLine(12, 48, 12, 4);
-        u8g2.drawLine(13, 48, 13, 5);
-      } else {
-        u8g2.drawLine(9, 48, 9, 58 - (Input  / 2));
-        u8g2.drawLine(10, 48, 10, 58 - (Input  / 2));
-        u8g2.drawLine(11, 48, 11, 58 - (Input  / 2));
-        u8g2.drawLine(12, 48, 12, 58 - (Input  / 2));
-        u8g2.drawLine(13, 48, 13, 58 - (Input  / 2));
-      }
-
-      //draw setPoint line
-      u8g2.drawLine(18, 58 - (setPoint / 2), 23, 58 - (setPoint / 2));
-
-      // PID Werte ueber heatbar
-      u8g2.setCursor(40, 48);
-
-      u8g2.print(bPID.GetKp(), 0); // P
-      u8g2.print("|");
-      if (bPID.GetKi() != 0) {
-        u8g2.print(bPID.GetKp() / bPID.GetKi(), 0);;
-      } // I
-      else
-      {
-        u8g2.print("0");
-      }
-      u8g2.print("|");
-      u8g2.print(bPID.GetKd() / bPID.GetKp(), 0); // D
-      u8g2.setCursor(98, 48);
-      if (Output < 99) {
-        u8g2.print(Output / 10, 1);
-      } else {
-        u8g2.print(Output / 10, 0);
-      }
-      u8g2.print("%");
-
-      // Brew
-      u8g2.setCursor(32, 34);
-      u8g2.print("Brew:  ");
-      u8g2.print(bezugsZeit / 1000, 1);
-      u8g2.print("/");
-      if (ONLYPID == 1) {
-        u8g2.print(brewtimersoftware, 0);             // deaktivieren wenn Preinfusion ( // voransetzen )
-      }
-      else
-      {
-        u8g2.print(totalbrewtime / 1000);            // aktivieren wenn Preinfusion
-      }
-      //draw box
-      u8g2.drawFrame(0, 0, 128, 64);
-
-      // Für Statusinfos
-      u8g2.drawFrame(32, 0, 84, 12);
-      if (Offlinemodus == 0) {
-        getSignalStrength();
-        if (WiFi.status() == WL_CONNECTED) {
-          u8g2.drawXBMP(40, 2, 8, 8, antenna_OK_u8g2);
-          for (int b = 0; b <= bars; b++) {
-            u8g2.drawVLine(45 + (b * 2), 10 - (b * 2), b * 2);
-          }
-        } else {
-          u8g2.drawXBMP(40, 2, 8, 8, antenna_NOK_u8g2);
-          u8g2.setCursor(88, 2);
-          u8g2.print("RC: ");
-          u8g2.print(wifiReconnects);
-        }
-        if (Blynk.connected()) {
-          u8g2.drawXBMP(60, 2, 11, 8, blynk_OK_u8g2);
-        } else {
-          u8g2.drawXBMP(60, 2, 8, 8, blynk_NOK_u8g2);
-        }
-        if (MQTT == 1) {
-          if (mqtt.connected() == 1) { 
-            u8g2.setCursor(77, 2);
-            u8g2.print("MQTT");
-          } else {
-            u8g2.setCursor(77, 2);
-            u8g2.print("");
-          }
-        }
-      } else {
-        u8g2.setCursor(40, 2);
-        u8g2.print("Offlinemodus");
-      }
-      u8g2.sendBuffer();
-    }
-  }
-}
-
 /********************************************************
   send data to Blynk server
 *****************************************************/
@@ -1171,6 +946,29 @@ void mqtt_callback(char* topic, byte* data, unsigned int length) {
   }
 
 }
+/********************************************************
+   DISPLAY Define & template
+******************************************************/
+//DISPLAY constructor, change if needed
+#if  DISPLAY == 1
+    U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);   //e.g. 1.3"
+#endif
+#if DISPLAY == 2
+    U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);    //e.g. 0.96"
+#endif
+//Update für Display
+unsigned long previousMillisDisplay;  // initialisation at the end of init()
+const unsigned long intervalDisplay = 500;
+
+//DISPLAY constructor, change if needed
+#if (DISPLAY == 1 || DISPLAY == 2) 
+  #if (DISPLAYTEMPLATE == 1)
+      #include "Displaytemplatestandard.h"
+  #endif    
+  #if (DISPLAYTEMPLATE == 2)
+      #include "Displaytemplateminimal.h"
+  #endif    
+#endif
 
 void setup() {
   DEBUGSTART(115200);
@@ -1405,6 +1203,8 @@ void setup() {
   timer1_write(6250); // set interrupt time to 20ms
   setupDone = true;
 }
+
+
 
 void loop() {
   //Only do Wifi stuff, if Wifi is connected
