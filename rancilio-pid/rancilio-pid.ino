@@ -1,5 +1,5 @@
 /********************************************************
-   Version 2.1.2-hotfix2  (30.12.2020) 
+   Version 2.2.1 (12.01.2021) 
    * ADD ZACwire (New TSIC lib)
    * Auslagern der PIN Belegung in die UserConfig
    * Change MQTT Lib to PubSubClient | thx to pbeh
@@ -99,7 +99,7 @@ int pidON = 1 ;                 // 1 = control loop in closed loop
 int relayON, relayOFF;          // used for relay trigger type. Do not change!
 boolean kaltstart = true;       // true = Rancilio started for first time
 boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
-const char* sysVersion PROGMEM  = "Version 2.1.2-h1 MASTER";   //System version
+const char* sysVersion PROGMEM  = "Version 2.2.1 MASTER";   //System version
 int inX = 0, inY = 0, inOld = 0, inSum = 0; //used for filter()
 int bars = 0; //used for getSignalStrength()
 boolean brewDetected = 0;
@@ -247,18 +247,22 @@ BLYNK_WRITE(V6) {
 
 BLYNK_WRITE(V7) {
   setPoint = param.asDouble();
+  mqtt_publish("setPoint", number2string(setPoint));
 }
 
 BLYNK_WRITE(V8) {
   brewtime = param.asDouble() * 1000;
+  mqtt_publish("brewtime", number2string(brewtime/1000));
 }
 
 BLYNK_WRITE(V9) {
   preinfusion = param.asDouble() * 1000;
+  mqtt_publish("preinfusion", number2string(preinfusion/1000));
 }
 
 BLYNK_WRITE(V10) {
   preinfusionpause = param.asDouble() * 1000;
+  mqtt_publish("preinfusionpause", number2string(preinfusionpause/1000));
 }
 BLYNK_WRITE(V13)
 {
@@ -696,6 +700,7 @@ void checkMQTT(){
       DEBUG_println(MQTTReCnctCount);
       if (mqtt.connect(hostname, mqtt_username, mqtt_password,topic_will,0,0,"exit") == true);{
         mqtt.subscribe(topic_set);
+        DEBUG_println("Subscribe to MQTT Topics");
       }  // Try to reconnect to the server; connect() is a blocking function, watch the timeout!
     }
   }
@@ -730,12 +735,12 @@ char* number2string(unsigned int in) {
    Publish Data to MQTT
 *****************************************************/
 bool mqtt_publish(char* reading, char* payload) {
-  char topic[120];
-  snprintf(topic, 120, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
-  mqtt.publish(topic,payload);
+  if (MQTT == 1){
+    char topic[120];
+    snprintf(topic, 120, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
+    mqtt.publish(topic,payload,true);
   }
-
-
+  }
 
 /********************************************************
   send data to Blynk server
@@ -758,10 +763,7 @@ void sendToBlynk() {
     if (Blynk.connected()) {
       if (blynksendcounter == 1) {
         Blynk.virtualWrite(V2, Input);
-        //MQTT
-        if (MQTT == 1) {
-          mqtt_publish("temperature", number2string(Input));
-        }
+        mqtt_publish("temperature", number2string(Input));
       }
       if (blynksendcounter == 2) {
         Blynk.virtualWrite(V23, Output);
@@ -769,9 +771,7 @@ void sendToBlynk() {
       if (blynksendcounter == 3) {
         Blynk.virtualWrite(V7, setPoint);
         //MQTT
-        if (MQTT == 1) {
-          mqtt_publish("setPoint", number2string(setPoint));
-        }
+        mqtt_publish("setPoint", number2string(setPoint));
       }
       if (blynksendcounter == 4) {
         Blynk.virtualWrite(V35, heatrateaverage);
@@ -781,6 +781,9 @@ void sendToBlynk() {
       }
       if (grafana == 1 && blynksendcounter >= 6) {
         Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint );
+        mqtt_publish("HeaterPower", number2string(Output));
+        mqtt_publish("Kp", number2string(bPID.GetKp()));
+        mqtt_publish("Ki", number2string(bPID.GetKi()));
         blynksendcounter = 0;
       } else if (grafana == 0 && blynksendcounter >= 5) {
         blynksendcounter = 0;
@@ -888,16 +891,18 @@ void ICACHE_RAM_ATTR onTimer1ISR() {
   bPID.Compute();
 }
 
-//MQTT
+/********************************************************
+    MQTT Callback Function: set Parameters through MQTT
+******************************************************/
+
+
 void mqtt_callback(char* topic, byte* data, unsigned int length) {
-  //DEBUG_println("incoming: " + topic + " - " + payload);
   char topic_str[255];
   os_memcpy(topic_str, topic, sizeof(topic_str));
   topic_str[255] = '\0';
   char data_str[length+1];
   os_memcpy(data_str, data, length);
   data_str[length] = '\0';
-  //DEBUG_print("MQTT: %s = %s\n", topic_str, data_str);
   char topic_pattern[255];
   char configVar[120];
   char cmd[64];
@@ -914,14 +919,31 @@ void mqtt_callback(char* topic, byte* data, unsigned int length) {
   if (strcmp(configVar, "setPoint") == 0) {
     sscanf(data_str, "%lf", &data_double);
     setPoint = data_double;
+    if (Blynk.connected()) { Blynk.virtualWrite(V7, setPoint);}
+    mqtt_publish("setPoint", number2string(setPoint));
     return;
   }
   if (strcmp(configVar, "brewtime") == 0) {
     sscanf(data_str, "%lf", &data_double);
     brewtime = data_double * 1000;
+    if (Blynk.connected()) { Blynk.virtualWrite(V8, brewtime/1000);}
+    mqtt_publish("brewtime", number2string(brewtime/1000));
     return;
   }
-
+  if (strcmp(configVar, "preinfusion") == 0) {
+    sscanf(data_str, "%lf", &data_double);
+    preinfusion = data_double *1000;
+    if (Blynk.connected()) { Blynk.virtualWrite(V9, preinfusion/1000);}
+    mqtt_publish("preinfusion", number2string(preinfusion/1000));
+    return;
+  }
+  if (strcmp(configVar, "preinfusionpause") == 0) {
+    sscanf(data_str, "%lf", &data_double);
+    preinfusion = data_double * 1000;
+    if (Blynk.connected()) { Blynk.virtualWrite(V10, preinfusionpause/1000);}
+    mqtt_publish("preinfusionpause", number2string(preinfusionpause/1000));
+    return;
+  }
 
 }
 /********************************************************
@@ -993,7 +1015,8 @@ void setup() {
   /********************************************************
      BLYNK & Fallback offline
   ******************************************************/
-  if (Offlinemodus == 0) {
+  if (Offlinemodus == 0) 
+  {
     WiFi.hostname(hostname);
     unsigned long started = millis();
     displayLogo("1: Connect Wifi to:", ssid);
@@ -1015,7 +1038,8 @@ void setup() {
 
     checkWifi();    //try to reconnect
 
-    if (WiFi.status() == WL_CONNECTED) {
+    if (WiFi.status() == WL_CONNECTED)
+    {
       DEBUG_println("WiFi connected");
       DEBUG_println("IP address: ");
       DEBUG_println(WiFi.localIP());
@@ -1059,7 +1083,7 @@ void setup() {
           EEPROM.begin(1024);
           EEPROM.put(0, aggKp);
           EEPROM.put(10, aggTn);
-          EEPROM.put(20, aggTv);
+          EEPROM.put(20, aggTv);  
           EEPROM.put(30, setPoint);
           EEPROM.put(40, brewtime);
           EEPROM.put(50, preinfusion);
@@ -1072,11 +1096,34 @@ void setup() {
           // eeprom schließen
           EEPROM.commit();
         }
-      } else {
+      } else 
+      {
         DEBUG_println("No connection to Blynk");
+        EEPROM.begin(1024);  // open eeprom
+        double dummy; // check if eeprom values are numeric (only check first value in eeprom)
+        EEPROM.get(0, dummy);
+        DEBUG_print("check eeprom 0x00 in dummy: ");
+        DEBUG_println(dummy);
+        if (!isnan(dummy)) 
+        {
+           displayLogo("3: Blynk not connected", "use eeprom values..");
+          EEPROM.get(0, aggKp);
+          EEPROM.get(10, aggTn);
+          EEPROM.get(20, aggTv);
+          EEPROM.get(30, setPoint);
+          EEPROM.get(40, brewtime);
+          EEPROM.get(50, preinfusion);
+          EEPROM.get(60, preinfusionpause);
+          EEPROM.get(90, aggbKp);
+          EEPROM.get(100, aggbTn);
+          EEPROM.get(110, aggbTv);
+          EEPROM.get(120, brewtimersoftware);
+          EEPROM.get(130, brewboarder);
+        } 
       }
-
-    } else {
+    }
+    else 
+    {
       displayLogo("No ", "WIFI");
       DEBUG_println("No WIFI");
       WiFi.disconnect(true);
