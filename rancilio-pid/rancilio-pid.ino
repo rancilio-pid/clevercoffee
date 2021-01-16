@@ -1,5 +1,5 @@
 /********************************************************
-   Version 2.4.0 (15.01.2021) 
+   Version 2.4.1 (15.01.2021) 
    * ADD ZACwire (New TSIC lib)
    * Auslagern der PIN Belegung in die UserConfig
    * Change MQTT Lib to PubSubClient | thx to pbeh
@@ -99,7 +99,7 @@ int pidON = 1 ;                 // 1 = control loop in closed loop
 int relayON, relayOFF;          // used for relay trigger type. Do not change!
 boolean kaltstart = true;       // true = Rancilio started for first time
 boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
-const char* sysVersion PROGMEM  = "Version 2.4.0 MASTER";   //System version
+const char* sysVersion PROGMEM  = "Version 2.4.1 MASTER";   //System version
 int inX = 0, inY = 0, inOld = 0, inSum = 0; //used for filter()
 int bars = 0; //used for getSignalStrength()
 boolean brewDetected = 0;
@@ -224,6 +224,7 @@ const unsigned long intervalBlynk = 1000;
 int blynksendcounter = 1;
 
 
+
 /********************************************************
    BLYNK define pins and read values
 ******************************************************/
@@ -299,6 +300,11 @@ BLYNK_WRITE(V40) {
       startTn = param.asDouble();
     }
  #endif
+/********************************************************
+  Trigger for Rancilio E Machine
+******************************************************/
+unsigned long previousMillisETrigger ;  // initialisation at the end of init()
+const unsigned long intervalETrigger = ETRIGGERTIME ; // in Seconds
 
 
 /********************************************************
@@ -946,6 +952,34 @@ void mqtt_callback(char* topic, byte* data, unsigned int length) {
   }
 
 }
+/*******************************************************
+  Trigger for E-Silivia
+*****************************************************/
+//unsigned long previousMillisETrigger ;  // initialisation at the end of init()
+//const unsigned long intervalETrigger = ETriggerTime ; // in Seconds
+void ETriggervoid() 
+{
+  //Static variable only one time is 0 
+  static int ETriggeractive = 0;
+  unsigned long currentMillisETrigger = millis();
+  if (ETRIGGER == 1) // E Trigger is active from userconfig
+  { 
+    // 
+    if (currentMillisETrigger - previousMillisETrigger >= (1000*intervalETrigger))  //s to ms * 1000
+    {  // check 
+      ETriggeractive = 1 ;
+      previousMillisETrigger = currentMillisETrigger;
+      digitalWrite(pinETrigger, HIGH);
+    }
+    // 10 Seconds later
+    else if (ETriggeractive == 1 && previousMillisETrigger+(10*1000) < (currentMillisETrigger))
+    {
+    digitalWrite(pinETrigger, LOW);
+    ETriggeractive = 0;
+    }
+  } 
+}
+
 /********************************************************
    DISPLAY Define & template
 ******************************************************/
@@ -1003,6 +1037,10 @@ void setup() {
   digitalWrite(pinRelayVentil, relayOFF);
   digitalWrite(pinRelayPumpe, relayOFF);
   digitalWrite(pinRelayHeater, LOW);
+  if (ETRIGGER == 1) 
+  { 
+    pinMode(pinETrigger, OUTPUT);
+  }
 
   /********************************************************
     DISPLAY 128x64
@@ -1188,6 +1226,7 @@ void setup() {
   windowStartTime = currentTime;
   previousMillisDisplay = currentTime;
   previousMillisBlynk = currentTime;
+  previousMillisETrigger = currentTime; 
 
   /********************************************************
     Timer1 ISR - Initialisierung
@@ -1251,7 +1290,11 @@ void loop() {
   brew();   //start brewing if button pressed
 
   sendToBlynk();
-
+   if(ETRIGGER == 1) // E-Trigger active then void Etrigger() 
+  {
+    ETriggervoid();
+  }
+  
 
   //check if PID should run or not. If not, set to manuel and force output to zero
   if (pidON == 0 && pidMode == 1) {
