@@ -87,7 +87,7 @@
 #define pinRelayPumpe     13    //Output pin for pump
 #define pinRelayHeater    14    //Output pin for heater
 
-#define OLED_RESET 16     //Output pin for dispaly reset pin
+//#define OLED_RESET 16     //Output pin for dispaly reset pin
 #define OLED_SCL 5        //Output pin for dispaly clock pin
 #define OLED_SDA 4        //Output pin for dispaly data pin
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
