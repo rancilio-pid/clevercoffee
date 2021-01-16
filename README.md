@@ -1,4 +1,4 @@
-# Rancilio PID 
+# Rancilio PID meets Clevercoffee
 
 ## Version
 MASTER VERSION
