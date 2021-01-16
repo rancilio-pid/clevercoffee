@@ -602,8 +602,11 @@ void brew() {
   Switch to offline modeif maxWifiReconnects were exceeded
   during boot
 *****************************************************/
-void initOfflineMode() {
-  displayMessage("", "", "", "", "Begin Fallback,", "No Wifi");
+void initOfflineMode() 
+{
+  #if DISPLAY != 0
+    displayMessage("", "", "", "", "Begin Fallback,", "No Wifi");
+  #endif
   DEBUG_println("Start offline mode with eeprom values, no wifi:(");
   Offlinemodus = 1 ;
 
@@ -626,7 +629,9 @@ void initOfflineMode() {
     EEPROM.get(120, brewtimersoftware);
     EEPROM.get(130, brewboarder);
   } else {
-    displayMessage("", "", "", "", "No eeprom,", "Values");
+    #if DISPLAY != 0
+      displayMessage("", "", "", "", "No eeprom,", "Values");
+     #endif
     DEBUG_println("No working eeprom value, I am sorry, but use default offline value  :)");
     delay(1000);
   }
@@ -649,7 +654,9 @@ void checkWifi() {
         DEBUG_print("Attempting WIFI reconnection: ");
         DEBUG_println(wifiReconnects);
         if (!setupDone) {
-          displayMessage("", "", "", "", "Wifi reconnect:", String(wifiReconnects));
+           #if DISPLAY != 0
+            displayMessage("", "", "", "", "Wifi reconnect:", String(wifiReconnects));
+          #endif
         }
         WiFi.disconnect();
         WiFi.begin(ssid, pass);   // attempt to connect to Wifi network
@@ -1045,10 +1052,12 @@ void setup() {
   /********************************************************
     DISPLAY 128x64
   ******************************************************/
-  u8g2.begin();
-  u8g2_prepare();
-  displayLogo(sysVersion, "");
-  delay(2000);
+  #if DISPLAY != 0
+    u8g2.begin();
+    u8g2_prepare();
+    displayLogo(sysVersion, "");
+    delay(2000);
+  #endif
 
   /********************************************************
      BLYNK & Fallback offline
@@ -1057,7 +1066,9 @@ void setup() {
   {
     WiFi.hostname(hostname);
     unsigned long started = millis();
-    displayLogo("1: Connect Wifi to:", ssid);
+    #if DISPLAY != 0
+      displayLogo("1: Connect Wifi to:", ssid);
+    #endif
     /* Explicitly set the ESP8266 to be a WiFi-client, otherwise, it by default,
       would try to act as both a client and an access-point and could cause
       network-issues with your other WiFi-devices on your WiFi-network. */
@@ -1083,9 +1094,13 @@ void setup() {
       DEBUG_println(WiFi.localIP());
       DEBUG_println("Wifi works, now try Blynk (timeout 30s)");
       if (fallback == 0) {
-        displayLogo("Connect to Blynk", "no Fallback");
+        #if DISPLAY != 0
+          displayLogo("Connect to Blynk", "no Fallback");
+        #endif
       } else if (fallback == 1) {
-        displayLogo("2: Wifi connected, ", "try Blynk   ");
+        #if DISPLAY != 0
+          displayLogo("2: Wifi connected, ", "try Blynk   ");
+        #endif
       }
       delay(1000);
 
@@ -1093,10 +1108,14 @@ void setup() {
       Blynk.config(auth, blynkaddress, blynkport) ;
       Blynk.connect(30000);
 
-      if (Blynk.connected() == true) {
-        displayLogo("3: Blynk connected", "sync all variables...");
+      if (Blynk.connected() == true) 
+      {
+        #if DISPLAY != 0
+          displayLogo("3: Blynk connected", "sync all variables...");
+        #endif
         DEBUG_println("Blynk is online");
-        if (fallback == 1) {
+        if (fallback == 1) 
+        {
           DEBUG_println("sync all variables and write new values to eeprom");
           // Blynk.run() ;
           Blynk.syncVirtual(V4);
@@ -1144,7 +1163,9 @@ void setup() {
         DEBUG_println(dummy);
         if (!isnan(dummy)) 
         {
+          #if DISPLAY != 0
            displayLogo("3: Blynk not connected", "use eeprom values..");
+          #endif 
           EEPROM.get(0, aggKp);
           EEPROM.get(10, aggTn);
           EEPROM.get(20, aggTv);
@@ -1161,8 +1182,10 @@ void setup() {
       }
     }
     else 
-    {
-      displayLogo("No ", "WIFI");
+    { 
+      #if DISPLAY != 0
+        displayLogo("No ", "WIFI");
+      #endif
       DEBUG_println("No WIFI");
       WiFi.disconnect(true);
       delay(1000);
@@ -1309,8 +1332,9 @@ void loop() {
   //Sicherheitsabfrage
   if (!sensorError && Input > 0 && !emergencyStop && backflushState == 10 && (backflushON == 0 || brewcounter > 10)) {
     brewdetection();  //if brew detected, set PID values
-    printScreen();  // refresh display
-
+      #if DISPLAY != 0
+        printScreen();  // refresh display
+      #endif
     //Set PID if first start of machine detected
     if (Input < setPoint && kaltstart) {
       if (startTn != 0) {
@@ -1355,9 +1379,9 @@ void loop() {
     }
 
     digitalWrite(pinRelayHeater, LOW); //Stop heating
-
-    displayMessage("Error, Temp: ", String(Input), "Check Temp. Sensor!", "", "", ""); //DISPLAY AUSGABE
-
+      #if DISPLAY != 0
+        displayMessage("Error, Temp: ", String(Input), "Check Temp. Sensor!", "", "", ""); //DISPLAY AUSGABE
+      #endif 
   } else if (emergencyStop) {
 
     //Deactivate PID
@@ -1368,16 +1392,22 @@ void loop() {
     }
 
     digitalWrite(pinRelayHeater, LOW); //Stop heating
-
-    displayEmergencyStop();
-
+    #if DISPLAY != 0
+      displayEmergencyStop();
+    #endif 
   } else if (backflushON || backflushState > 10) {
     if (backflushState == 43) {
-      displayMessage("Backflush finished", "Please reset brewswitch...", "", "", "", "");
+      #if DISPLAY != 0
+        displayMessage("Backflush finished", "Please reset brewswitch...", "", "", "", "");
+      #endif 
     } else if (backflushState == 10) {
-      displayMessage("Backflush activated", "Please set brewswitch...", "", "", "", "");
+      #if DISPLAY != 0
+        displayMessage("Backflush activated", "Please set brewswitch...", "", "", "", "");
+      #endif
     } else if ( backflushState > 10) {
-      displayMessage("Backflush running:", String(flushCycles), "from", String(maxflushCycles), "", "");
+      #if DISPLAY != 0
+        displayMessage("Backflush running:", String(flushCycles), "from", String(maxflushCycles), "", "");
+      #endif
     }
   }
 
