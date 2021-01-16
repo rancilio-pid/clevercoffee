@@ -55,7 +55,7 @@
 
 // BLynk
 #define AUTH "myauth"
-#define BLYNKADDRESS "blynk.remoteapp.de"         // IP-Address of used blynk server
+#define BLYNKADDRESS "blynk.clevercoffee.de"         // IP-Address of used blynk server
 #define BLYNKPORT 8080  //Port for blynk server
 
 
