@@ -1,5 +1,5 @@
 /********************************************************
-  Version 1.6 (09.01.2021) 
+  Version 1.7 (16.01.2021) 
   Last Change: Displaytemplate, new order of items
   Config must be configured by the user
 ******************************************************/
@@ -30,6 +30,12 @@
 #define BREWDETECTION 1      // 0 = off; 1 = Software; 2 = Hardware
 #define COLDSTART_PID 1     // 1 = default COLDStart Values , 2 = eigene Werte via Blynk, Expertenmodusaktiv 
 #define TRIGGERTYPE HIGH     // LOW = low trigger, HIGH = high trigger relay
+
+//E-Trigger
+#define ETRIGGER 0  // 0: no Trigger (for Raniclio without E) 1: Trigger for CPU of Rancilio E
+#define ETRIGGERTIME 60 // Seconds, time between for Trigger Signal
+#define pinETrigger 16
+
 
 // Wifi 
 #define HOSTNAME "Rancilio"
