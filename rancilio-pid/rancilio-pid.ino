@@ -147,6 +147,7 @@ const int PonE = PONE;
 const int analogPin = 0; // AI0 will be used
 int brewcounter = 10;
 int brewswitch = 0;
+boolean brewswitchWasOFF = false;
 double brewtime = 25000;  //brewtime in ms
 double totalbrewtime = 0; //total brewtime set in softare or blynk
 double preinfusion = 2000;  //preinfusion time in ms
