@@ -519,17 +519,27 @@ void refreshTemp() {
 /********************************************************
     PreInfusion, Brew , if not Only PID
 ******************************************************/
-void brew() {
-  if (OnlyPID == 0) {
+void brew() 
+{
+  if (OnlyPID == 0) 
+  {
     readAnalogInput();
     unsigned long currentMillistemp = millis();
 
-    if (brewswitch < 1000 && brewcounter > 10) {   //abort function for state machine from every state
+    if (brewswitch < 1000 && brewcounter > 10)
+    {
+      //abort function for state machine from every state
       brewcounter = 43;
     }
 
     if (brewcounter > 10) {
       bezugsZeit = currentMillistemp - startZeit;
+    }
+    if (brewswitch < 1000 && firstreading == 0 ) 
+    {   //check if brewswitch was turned off at least once, last time,
+      brewswitchWasOFF = true;
+      //DEBUG_println("brewswitch value")
+      //DEBUG_println(brewswitch)
     }
 
     totalbrewtime = preinfusion + preinfusionpause + brewtime;    // running every cycle, in case changes are done during brew
@@ -537,7 +547,7 @@ void brew() {
     // state machine for brew
     switch (brewcounter) {
       case 10:    // waiting step for brew switch turning on
-        if (brewswitch > 1000 && backflushState == 10 && backflushON == 0) {
+        if (brewswitch > 1000 && backflushState == 10 && backflushON == 0 && brewswitchWasOFF) {
           startZeit = millis();
           brewcounter = 20;
           kaltstart = false;    // force reset kaltstart if shot is pulled
