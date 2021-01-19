@@ -306,8 +306,7 @@ BLYNK_WRITE(V40) {
 ******************************************************/
 unsigned long previousMillisETrigger ;  // initialisation at the end of init()
 const unsigned long intervalETrigger = ETRIGGERTIME ; // in Seconds
-
-
+int relayETriggerON, relayETriggerOFF;    
 /********************************************************
   Emergency stop inf temp is to high
 *****************************************************/
@@ -987,12 +986,12 @@ void ETriggervoid()
     {  // check 
       ETriggeractive = 1 ;
       previousMillisETrigger = currentMillisETrigger;
-      digitalWrite(pinETrigger, HIGH);
+      digitalWrite(pinETrigger, relayETriggerON);
     }
     // 10 Seconds later
     else if (ETriggeractive == 1 && previousMillisETrigger+(10*1000) < (currentMillisETrigger))
     {
-    digitalWrite(pinETrigger, LOW);
+    digitalWrite(pinETrigger, relayETriggerOFF);
     ETriggeractive = 0;
     }
   } 
@@ -1046,6 +1045,14 @@ void setup() {
     relayOFF = HIGH;
   }
 
+  if (TRIGGERRELAYTYPE)
+  {
+    relayETriggerON = HIGH;
+    relayETriggerOFF  = LOW;
+  } else {
+    relayETriggerON  = LOW;
+    relayETriggerOFF  = HIGH;
+  }
   /********************************************************
     Init Pins
   ******************************************************/
