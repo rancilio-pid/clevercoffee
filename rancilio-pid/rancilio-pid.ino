@@ -986,12 +986,12 @@ void ETriggervoid()
     {  // check 
       ETriggeractive = 1 ;
       previousMillisETrigger = currentMillisETrigger;
-      digitalWrite(pinETrigger, relayETriggerON);
+      digitalWrite(PINETRIGGER, relayETriggerON);
     }
     // 10 Seconds later
     else if (ETriggeractive == 1 && previousMillisETrigger+(10*1000) < (currentMillisETrigger))
     {
-    digitalWrite(pinETrigger, relayETriggerOFF);
+    digitalWrite(PINETRIGGER, relayETriggerOFF);
     ETriggeractive = 0;
     }
   } 
@@ -1064,7 +1064,7 @@ void setup() {
   digitalWrite(pinRelayHeater, LOW);
   if (ETRIGGER == 1) 
   { 
-    pinMode(pinETrigger, OUTPUT);
+    pinMode(PINETRIGGER, OUTPUT);
   }
 
   /********************************************************
@@ -1351,7 +1351,8 @@ void loop() {
   if (!sensorError && Input > 0 && !emergencyStop && backflushState == 10 && (backflushON == 0 || brewcounter > 10)) {
     brewdetection();  //if brew detected, set PID values
       #if DISPLAY != 0
-        printScreen();  // refresh display
+          displayShottimer() ;
+          printScreen();  // refresh display
       #endif
     //Set PID if first start of machine detected
     if (Input < setPoint && kaltstart) {
@@ -1387,23 +1388,24 @@ void loop() {
       }
     }
 
-  } else if (sensorError) {
-
+  } else if (sensorError) 
+  {
     //Deactivate PID
-    if (pidMode == 1) {
+    if (pidMode == 1) 
+    {
       pidMode = 0;
       bPID.SetMode(pidMode);
       Output = 0 ;
     }
-
     digitalWrite(pinRelayHeater, LOW); //Stop heating
       #if DISPLAY != 0
         displayMessage("Error, Temp: ", String(Input), "Check Temp. Sensor!", "", "", ""); //DISPLAY AUSGABE
       #endif 
-  } else if (emergencyStop) {
-
+  } else if (emergencyStop) 
+  {
     //Deactivate PID
-    if (pidMode == 1) {
+    if (pidMode == 1) 
+    {
       pidMode = 0;
       bPID.SetMode(pidMode);
       Output = 0 ;
@@ -1413,7 +1415,8 @@ void loop() {
     #if DISPLAY != 0
       displayEmergencyStop();
     #endif 
-  } else if (backflushON || backflushState > 10) {
+  } 
+  else if (backflushON || backflushState > 10) {
     if (backflushState == 43) {
       #if DISPLAY != 0
         displayMessage("Backflush finished", "Please reset brewswitch...", "", "", "", "");
