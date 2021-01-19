@@ -6,6 +6,7 @@
 
 void printScreen() 
 {
+  if (SHOTTIMER == 1 && bezugsZeit > 0) return; 
   unsigned long currentMillisDisplay = millis();
   if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
     previousMillisDisplay = currentMillisDisplay;
