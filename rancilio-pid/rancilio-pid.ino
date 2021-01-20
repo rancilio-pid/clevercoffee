@@ -1,6 +1,7 @@
 /********************************************************
-   Version 2.4.1 (15.01.2021) 
+   Version 2.5.0 (20.01.2021) 
    * ADD ZACwire (New TSIC lib)
+   * Shottimer und Displaytemplates
    * Auslagern der PIN Belegung in die UserConfig
    * Change MQTT Lib to PubSubClient | thx to pbeh
 ******************************************************/
