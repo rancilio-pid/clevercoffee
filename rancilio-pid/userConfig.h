@@ -15,6 +15,7 @@
 #define DISPLAYTEMPLATE 1    // 1: Standard Display Template, 2: Minimal Template, see git Handbook for further
 #define MACHINELOGO 1        // 1 = Rancilio, 2 = Gaggia
 #define DISPALYROTATE U8G2_R0   // rotate display clockwise: U8G2_R0 = no rotation; U8G2_R1 = 90°; U8G2_R2 = 180°; U8G2_R3 = 270°
+#define SHOTTIMER  1 // 0: no SHOTTIMER, 1: SHOTTIMER
 
 // Wlan and Connection
 #define OFFLINEMODUS 0       // 0 = Blynk and WIFI are used; 1 = offline mode (only preconfigured values in code are used!)
