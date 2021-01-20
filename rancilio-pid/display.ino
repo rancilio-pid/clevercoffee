@@ -101,10 +101,7 @@
             u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
             u8g2.setFont(u8g2_font_profont22_tf);
             u8g2.setCursor(64, 25);
-             if (ONLYPID == 1) 
-             {
-                u8g2.print(bezugsZeit / 1000, 1);
-             }
+            u8g2.print(bezugsZeit / 1000, 1);
             u8g2.setFont(u8g2_font_profont11_tf);
             u8g2.sendBuffer();
         }
