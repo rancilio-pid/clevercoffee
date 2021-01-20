@@ -35,7 +35,7 @@
 //E-Trigger
 #define ETRIGGER 0  // 0: no Trigger (for Raniclio without E) 1: Trigger for CPU of Rancilio E
 #define ETRIGGERTIME 60 // Seconds, time between for Trigger Signal
-#define pinETrigger 16
+#define PINETRIGGER 16 // Pin for Etrigger Relay
 #define TRIGGERRELAYTYPE HIGH  // LOW = low trigger, HIGH = high trigger relay for ETrigger
 
 

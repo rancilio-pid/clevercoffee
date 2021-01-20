@@ -2,7 +2,7 @@
 
 ## Version
 MASTER VERSION
-Version 2.4.0  (15.01.2021) ADD Displaytemplate
+Version 2.4.1  (15.01.2021) ADD Displaytemplate
 
 ## Hinweise
 Unsere Projektwebseite findet ihr hier: [Rancilio PID Website](http://rancilio-pid.de/).
