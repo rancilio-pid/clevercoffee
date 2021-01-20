@@ -100,7 +100,7 @@ int pidON = 1 ;                 // 1 = control loop in closed loop
 int relayON, relayOFF;          // used for relay trigger type. Do not change!
 boolean kaltstart = true;       // true = Rancilio started for first time
 boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
-const char* sysVersion PROGMEM  = "Version 2.4.1 MASTER";   //System version
+const char* sysVersion PROGMEM  = "Version 2.5.0 MASTER";   //System version
 int inX = 0, inY = 0, inOld = 0, inSum = 0; //used for filter()
 int bars = 0; //used for getSignalStrength()
 boolean brewDetected = 0;
@@ -988,12 +988,12 @@ void ETriggervoid()
     {  // check 
       ETriggeractive = 1 ;
       previousMillisETrigger = currentMillisETrigger;
-      digitalWrite(pinETrigger, HIGH);
+      digitalWrite(PINETRIGGER, HIGH);
     }
     // 10 Seconds later
     else if (ETriggeractive == 1 && previousMillisETrigger+(10*1000) < (currentMillisETrigger))
     {
-    digitalWrite(pinETrigger, LOW);
+    digitalWrite(PINETRIGGER, LOW);
     ETriggeractive = 0;
     }
   } 
@@ -1058,7 +1058,7 @@ void setup() {
   digitalWrite(pinRelayHeater, LOW);
   if (ETRIGGER == 1) 
   { 
-    pinMode(pinETrigger, OUTPUT);
+    pinMode(PINETRIGGER, OUTPUT);
   }
 
   /********************************************************
