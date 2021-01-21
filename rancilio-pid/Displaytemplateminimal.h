@@ -3,7 +3,7 @@
 ******************************************************/
 void printScreen() 
 {
-  if (SHOTTIMER == 1 && bezugsZeit > 0) return; 
+  if ((SHOTTIMER == 1 && bezugsZeit > 0|| (SHOTTIMER == 1 && millis() >= bezugszeit_last_Millis && bezugszeit_last_Millis+3000 >= millis())) return; 
   unsigned long currentMillisDisplay = millis();
   if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
     previousMillisDisplay = currentMillisDisplay;
