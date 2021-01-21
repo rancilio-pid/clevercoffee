@@ -104,6 +104,17 @@
             u8g2.print(bezugsZeit / 1000, 1);
             u8g2.setFont(u8g2_font_profont11_tf);
             u8g2.sendBuffer();
+            
+        }
+        if (millis() >= bezugszeit_last_Millis && bezugszeit_last_Millis+3000 >= millis()&& bezugszeit_last_Millis < totalbrewtime)
+        {
+           u8g2.clearBuffer();
+           u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
+           u8g2.setFont(u8g2_font_profont22_tf);
+           u8g2.setCursor(64, 25);
+           u8g2.print((bezugszeit_last_Millis - startZeit) / 1000, 1);
+           u8g2.setFont(u8g2_font_profont11_tf);
+           u8g2.sendBuffer();
         }
     }
 
