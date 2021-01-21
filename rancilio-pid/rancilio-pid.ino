@@ -54,6 +54,7 @@ const int grafana = GRAFANA;
 const unsigned long wifiConnectionDelay = WIFICINNECTIONDELAY;
 const unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
 int machineLogo = MACHINELOGO;
+const unsigned long brewswitchDelay = BREWSWITCHDELAY;
 
 // Wifi
 const char* hostname = HOSTNAME;
