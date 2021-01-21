@@ -95,7 +95,7 @@ void printScreen()
       }
       else
       {
-        u8g2.print(totalbrewtime / 1000);            // aktivieren wenn Preinfusion
+        u8g2.print(totalbrewtime / 1000, 1);            // aktivieren wenn Preinfusion und eine Nachkommastelle oder alternativ keine
       }
       //draw box
       u8g2.drawFrame(0, 0, 128, 64);
