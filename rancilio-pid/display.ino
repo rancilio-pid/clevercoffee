@@ -106,9 +106,11 @@
             u8g2.sendBuffer();
             
         }
-        if (millis() >= bezugszeit_last_Millis && bezugszeit_last_Millis+3000 >= millis()&& bezugszeit_last_Millis < totalbrewtime)
+        if (millis() >= bezugszeit_last_Millis && // direkt nach Erstellen von bezugszeit_last_mills (passiert beim ausschalten des Brühschalters, case 43 im Code) soll gestartet werden
+        bezugszeit_last_Millis+brewswitchDelay >= millis() && // soll solange laufen, bis millis() den brewswitchDelay aufgeholt hat, damit kann die Anzeigedauer gesteuert werden
+        bezugszeit_last_Millis < totalbrewtime) // wenn die totalbrewtime automatisch erreicht wird, soll nichts gemacht werden, da sonst falsche Zeit angezeigt wird, da Schalter später betätigt wird als totalbrewtime
         {
-           u8g2.clearBuffer();
+            u8g2.clearBuffer();
            u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
            u8g2.setFont(u8g2_font_profont22_tf);
            u8g2.setCursor(64, 25);
