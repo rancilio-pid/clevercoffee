@@ -153,7 +153,8 @@ double brewtime = 25000;  //brewtime in ms
 double totalbrewtime = 0; //total brewtime set in softare or blynk
 double preinfusion = 2000;  //preinfusion time in ms
 double preinfusionpause = 5000;   //preinfusion pause time in ms
-unsigned long bezugsZeit = 0;   //total brewed time
+double bezugsZeit = 0;   //total brewed time
+double bezugszeit_last_Millis = 0; // for shottimer delay after disarmed button
 unsigned long startZeit = 0;    //start time of brew
 const unsigned long analogreadingtimeinterval = 10 ; // ms
 unsigned long previousMillistempanalogreading ; // ms for analogreading
@@ -599,6 +600,7 @@ void brew()
         if (brewswitch < 1000) {
           digitalWrite(pinRelayVentil, relayOFF);
           digitalWrite(pinRelayPumpe, relayOFF);
+          bezugszeit_last_Millis = millis();  // for shottimer delay after disarmed button
           currentMillistemp = 0;
           bezugsZeit = 0;
           brewDetected = 0; //rearm brewdetection
