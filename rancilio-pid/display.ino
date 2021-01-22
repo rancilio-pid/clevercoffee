@@ -106,7 +106,7 @@
             u8g2.sendBuffer();
             
         }
-        if (millis() >= bezugszeit_last_Millis && // direkt nach Erstellen von bezugszeit_last_mills (passiert beim ausschalten des Brühschalters, case 43 im Code) soll gestartet werden
+        if (SHOTTIMER == 1 && millis() >= bezugszeit_last_Millis && // direkt nach Erstellen von bezugszeit_last_mills (passiert beim ausschalten des Brühschalters, case 43 im Code) soll gestartet werden
         bezugszeit_last_Millis+brewswitchDelay >= millis() && // soll solange laufen, bis millis() den brewswitchDelay aufgeholt hat, damit kann die Anzeigedauer gesteuert werden
         bezugszeit_last_Millis < totalbrewtime) // wenn die totalbrewtime automatisch erreicht wird, soll nichts gemacht werden, da sonst falsche Zeit angezeigt wird, da Schalter später betätigt wird als totalbrewtime
         {
