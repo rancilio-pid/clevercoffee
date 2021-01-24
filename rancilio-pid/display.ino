@@ -90,9 +90,10 @@
     void displayShottimer(void) 
      {
         if (
+            (
             (bezugsZeit > 0 && ONLYPID == 1) || // Bezugszeit bei Only PID  
             (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42) // oder Bezug bei nicht only PID über brewcounter
-            && SHOTTIMER == 1
+            ) && SHOTTIMER == 1
             ) // Shotimer muss 1 = True sein und Bezug vorliegen
         {
             // Dann Zeit anzeigen
