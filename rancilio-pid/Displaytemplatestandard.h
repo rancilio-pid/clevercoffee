@@ -88,7 +88,7 @@ void printScreen()
       // Brew
       u8g2.setCursor(32, 34);
       u8g2.print("Brew:  ");
-      u8g2.print(bezugsZeit / 1000, 1);
+      u8g2.print(bezugsZeit / 1000, 0);
       u8g2.print("/");
       if (ONLYPID == 1) {
         u8g2.print(brewtimersoftware, 0);             // deaktivieren wenn Preinfusion ( // voransetzen )
