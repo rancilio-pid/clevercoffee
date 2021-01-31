@@ -1,5 +1,5 @@
 /********************************************************
-   Version 2.5.0 (20.01.2021) 
+   Version 2.6.0 (31.01.2021) 
    * ADD ZACwire (New TSIC lib)
    * Shottimer und Displaytemplates
    * Auslagern der PIN Belegung in die UserConfig
@@ -54,6 +54,7 @@ const int grafana = GRAFANA;
 const unsigned long wifiConnectionDelay = WIFICINNECTIONDELAY;
 const unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
 int machineLogo = MACHINELOGO;
+const unsigned long brewswitchDelay = BREWSWITCHDELAY;
 
 // Wifi
 const char* hostname = HOSTNAME;
@@ -100,7 +101,7 @@ int pidON = 1 ;                 // 1 = control loop in closed loop
 int relayON, relayOFF;          // used for relay trigger type. Do not change!
 boolean kaltstart = true;       // true = Rancilio started for first time
 boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
-const char* sysVersion PROGMEM  = "Version 2.5.0 MASTER";   //System version
+const char* sysVersion PROGMEM  = "Version 2.6.0 MASTER";   //System version
 int inX = 0, inY = 0, inOld = 0, inSum = 0; //used for filter()
 int bars = 0; //used for getSignalStrength()
 boolean brewDetected = 0;
@@ -153,7 +154,8 @@ double brewtime = 25000;  //brewtime in ms
 double totalbrewtime = 0; //total brewtime set in softare or blynk
 double preinfusion = 2000;  //preinfusion time in ms
 double preinfusionpause = 5000;   //preinfusion pause time in ms
-unsigned long bezugsZeit = 0;   //total brewed time
+double bezugsZeit = 0;   //total brewed time
+double bezugszeit_last_Millis = 0; // for shottimer delay after disarmed button
 unsigned long startZeit = 0;    //start time of brew
 const unsigned long analogreadingtimeinterval = 10 ; // ms
 unsigned long previousMillistempanalogreading ; // ms for analogreading
@@ -600,6 +602,7 @@ void brew()
         if (brewswitch < 1000) {
           digitalWrite(pinRelayVentil, relayOFF);
           digitalWrite(pinRelayPumpe, relayOFF);
+          bezugszeit_last_Millis = millis();  // for shottimer delay after disarmed button
           currentMillistemp = 0;
           bezugsZeit = 0;
           brewDetected = 0; //rearm brewdetection
