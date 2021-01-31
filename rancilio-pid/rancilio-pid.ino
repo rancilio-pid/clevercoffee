@@ -270,6 +270,7 @@ BLYNK_WRITE(V10) {
 BLYNK_WRITE(V13)
 {
   pidON = param.asInt();
+  mqtt_publish("pidON", number2string(pidON));
 }
 BLYNK_WRITE(V30)
 {
@@ -505,7 +506,7 @@ void refreshTemp() {
       */
       temperature = 0;
       Temperatur_C = Sensor2.getTemp();
-      //Temperatur_C = random(130,131);
+      //Temperatur_C = random(93,94);
       if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
       Input = Temperatur_C;
       if (Brewdetection != 0) {
@@ -805,9 +806,16 @@ void sendToBlynk() {
       }
       if (grafana == 1 && blynksendcounter >= 6) {
         Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint );
-        mqtt_publish("HeaterPower", number2string(Output));
-        mqtt_publish("Kp", number2string(bPID.GetKp()));
-        mqtt_publish("Ki", number2string(bPID.GetKi()));
+         if (MQTT == 1)
+         {
+            mqtt_publish("HeaterPower", number2string(Output));
+            mqtt_publish("Kp", number2string(bPID.GetKp()));
+            mqtt_publish("Ki", number2string(bPID.GetKi()));
+            mqtt_publish("pidON", number2string(pidON));
+            mqtt_publish("brewtime", number2string(brewtime/1000));
+            mqtt_publish("preinfusionpause", number2string(preinfusionpause/1000));
+            mqtt_publish("preinfusion", number2string(preinfusion/1000));
+         }
         blynksendcounter = 0;
       } else if (grafana == 0 && blynksendcounter >= 5) {
         blynksendcounter = 0;
@@ -933,39 +941,50 @@ void mqtt_callback(char* topic, byte* data, unsigned int length) {
   double data_double;
   int data_int;
 
-  //DEBUG_print("mqtt_parse(%s, %s)\n", topic_str, data_str);
+
+
+ // DEBUG_print("mqtt_parse(%s, %s)\n", topic_str, data_str);
   snprintf(topic_pattern, sizeof(topic_pattern), "%s%s/%%[^\\/]/%%[^\\/]", mqtt_topic_prefix, hostname);
-  //DEBUG_print("topic_pattern=%s\n",topic_pattern);
+  DEBUG_println(topic_pattern);
   if ( (sscanf( topic_str, topic_pattern , &configVar, &cmd) != 2) || (strcmp(cmd, "set") != 0) ) {
-    //DEBUG_print("Ignoring topic (%s)\n", topic_str);
+  DEBUG_print(topic_str);
     return;
   }
+  DEBUG_println(topic_str);
+  DEBUG_println(data_str);
   if (strcmp(configVar, "setPoint") == 0) {
     sscanf(data_str, "%lf", &data_double);
-    setPoint = data_double;
-    if (Blynk.connected()) { Blynk.virtualWrite(V7, setPoint);}
     mqtt_publish("setPoint", number2string(setPoint));
+    if (Blynk.connected()) { Blynk.virtualWrite(V7, String(data_double));}
+    setPoint = data_double;
     return;
   }
   if (strcmp(configVar, "brewtime") == 0) {
     sscanf(data_str, "%lf", &data_double);
-    brewtime = data_double * 1000;
-    if (Blynk.connected()) { Blynk.virtualWrite(V8, brewtime/1000);}
+    if (Blynk.connected()) { Blynk.virtualWrite(V8, String(data_double));}
     mqtt_publish("brewtime", number2string(brewtime/1000));
+    brewtime = data_double * 1000 ;
     return;
   }
   if (strcmp(configVar, "preinfusion") == 0) {
     sscanf(data_str, "%lf", &data_double);
-    preinfusion = data_double *1000;
-    if (Blynk.connected()) { Blynk.virtualWrite(V9, preinfusion/1000);}
+    if (Blynk.connected()) { Blynk.virtualWrite(V9, String(data_double));}
     mqtt_publish("preinfusion", number2string(preinfusion/1000));
+    preinfusion = data_double * 1000;
     return;
   }
   if (strcmp(configVar, "preinfusionpause") == 0) {
     sscanf(data_str, "%lf", &data_double);
-    preinfusion = data_double * 1000;
-    if (Blynk.connected()) { Blynk.virtualWrite(V10, preinfusionpause/1000);}
+    if (Blynk.connected()) { Blynk.virtualWrite(V10, String(data_double));}
     mqtt_publish("preinfusionpause", number2string(preinfusionpause/1000));
+    preinfusionpause = data_double * 1000;
+    return;
+  }
+    if (strcmp(configVar, "pidON") == 0) {
+    sscanf(data_str, "%lf", &data_double);
+    if (Blynk.connected())  { Blynk.virtualWrite(V13,String(data_double));}
+    mqtt_publish("pidON", number2string(pidON));
+    pidON = data_double ;
     return;
   }
 
