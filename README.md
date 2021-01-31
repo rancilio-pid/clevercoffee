@@ -2,7 +2,7 @@
 
 ## Version
 MASTER VERSION
-Version 2.5.0  (20.01.2021) ADD Shottimer
+Version 2.6.0  (31.01.2021) ADD Shottimer with delay
 
 ## Hinweise
 Unsere Projektwebseite findet ihr hier: [Rancilio PID Website](http://rancilio-pid.de/).
