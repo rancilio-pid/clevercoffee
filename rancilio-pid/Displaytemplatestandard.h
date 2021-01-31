@@ -6,7 +6,9 @@
 
 void printScreen() 
 {
-  if (SHOTTIMER == 1 && bezugsZeit > 0) return; 
+  if ((SHOTTIMER == 1 && bezugsZeit > 0) || 
+  (SHOTTIMER == 1 && millis() >= bezugszeit_last_Millis && bezugszeit_last_Millis+brewswitchDelay >= millis())) // sobald der Brühschalter umgelegt wird, brewswitchDelay abgelaufen
+  return;
   unsigned long currentMillisDisplay = millis();
   if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
     previousMillisDisplay = currentMillisDisplay;
@@ -86,14 +88,14 @@ void printScreen()
       // Brew
       u8g2.setCursor(32, 34);
       u8g2.print("Brew:  ");
-      u8g2.print(bezugsZeit / 1000, 1);
+      u8g2.print(bezugsZeit / 1000, 0);
       u8g2.print("/");
       if (ONLYPID == 1) {
         u8g2.print(brewtimersoftware, 0);             // deaktivieren wenn Preinfusion ( // voransetzen )
       }
       else
       {
-        u8g2.print(totalbrewtime / 1000);            // aktivieren wenn Preinfusion
+        u8g2.print(totalbrewtime / 1000, 1);            // aktivieren wenn Preinfusion und eine Nachkommastelle oder alternativ keine
       }
       //draw box
       u8g2.drawFrame(0, 0, 128, 64);
