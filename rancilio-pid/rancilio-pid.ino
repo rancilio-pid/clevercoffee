@@ -1043,6 +1043,9 @@ const unsigned long intervalDisplay = 500;
   #if (DISPLAYTEMPLATE == 2)
       #include "Displaytemplateminimal.h"
   #endif    
+  #if (DISPLAYTEMPLATE == 3)
+      #include "Displaytemplatetemponly.h"
+  #endif   
 #endif
 
 void setup() {
