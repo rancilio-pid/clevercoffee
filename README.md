@@ -2,7 +2,7 @@
 
 ## Version
 MASTER VERSION
-Version 2.6.1  (31.01.2021) ADD Shottimer with delay
+Version 2.6.2  (01.02.2021) ADD new Template for the Display
 
 ## Hinweise
 Unsere Projektwebseite findet ihr hier: [Rancilio PID Website](http://rancilio-pid.de/).
