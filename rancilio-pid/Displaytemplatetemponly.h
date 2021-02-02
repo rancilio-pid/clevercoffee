@@ -3,6 +3,10 @@
 ******************************************************/
 void printScreen() 
 {
+  // Abbruch der Anzeige, Return, wenn Shottimer läuft. 
+  if ((SHOTTIMER == 1 && bezugsZeit > 0) || 
+  (SHOTTIMER == 1 && millis() >= bezugszeit_last_Millis && bezugszeit_last_Millis+brewswitchDelay >= millis())) // sobald der Brühschalter umgelegt wird, brewswitchDelay abgelaufen
+  return;
   unsigned long currentMillisDisplay = millis();
   if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
     previousMillisDisplay = currentMillisDisplay;
