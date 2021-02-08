@@ -12,7 +12,8 @@
 ******************************************************/
 // Display
 #define DISPLAY 2            // 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64)
-#define DISPLAYTEMPLATE 3    // 1: Standard Display Template, 2: Minimal Template, 3: only Temperatur see git Handbook for further informatiomn
+#define DISPLAYTEMPLATE 3   
+ // 1: Standard Display Template, 2: Minimal Template, 3: only Temperatur, 20: vertical Display see git Handbook for further informatiomn
 #define MACHINELOGO 1        // 1 = Rancilio, 2 = Gaggia
 #define DISPALYROTATE U8G2_R0   // rotate display clockwise: U8G2_R0 = no rotation; U8G2_R1 = 90°; U8G2_R2 = 180°; U8G2_R3 = 270°
 #define SHOTTIMER  1 // 0: no SHOTTIMER, 1: SHOTTIMER

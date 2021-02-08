@@ -228,6 +228,70 @@ const unsigned long intervalBlynk = 1000;
 int blynksendcounter = 1;
 
 
+/********************************************************
+  Get Wifi signal strength and set bars for display
+*****************************************************/
+void getSignalStrength() {
+  if (Offlinemodus == 1) return;
+
+  long rssi;
+  if (WiFi.status() == WL_CONNECTED) {
+    rssi = WiFi.RSSI();
+  } else {
+    rssi = -100;
+  }
+
+  if (rssi >= -50) {
+    bars = 4;
+  } else if (rssi < -50 & rssi >= -65) {
+    bars = 3;
+  } else if (rssi < -65 & rssi >= -75) {
+    bars = 2;
+  } else if (rssi < -75 & rssi >= -80) {
+    bars = 1;
+  } else {
+    bars = 0;
+  }
+}
+
+
+/********************************************************
+   DISPLAY Define & template
+******************************************************/
+//DISPLAY constructor, change if needed
+#if  DISPLAY == 1
+    U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);   //e.g. 1.3"
+#endif
+#if DISPLAY == 2
+    U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);    //e.g. 0.96"
+#endif
+//Update für Display
+unsigned long previousMillisDisplay;  // initialisation at the end of init()
+const unsigned long intervalDisplay = 500;
+
+//Standard Display or vertikal?
+#if (DISPLAY == 1 || DISPLAY == 2) // Display is used 
+  #if (DISPLAYTEMPLATE < 20) // normal templates
+    #include "display.h"  
+  #endif  
+  #if (DISPLAYTEMPLATE >= 20) // vertical templates 
+    #include "Displayrotateupright.h"  
+  #endif  
+  #if (DISPLAYTEMPLATE == 1)
+      #include "Displaytemplatestandard.h"
+  #endif    
+  #if (DISPLAYTEMPLATE == 2)
+      #include "Displaytemplateminimal.h"
+  #endif    
+  #if (DISPLAYTEMPLATE == 3)
+      #include "Displaytemplatetemponly.h"
+  #endif   
+  #if (DISPLAYTEMPLATE == 20)
+      #include "Displaytemplateupright.h"
+  #endif   
+#endif
+
+
 
 /********************************************************
    BLYNK define pins and read values
@@ -878,31 +942,14 @@ int filter(int input) {
   return inSum;
 }
 
-/********************************************************
-  Get Wifi signal strength and set bars for display
-*****************************************************/
-void getSignalStrength() {
-  if (Offlinemodus == 1) return;
 
-  long rssi;
-  if (WiFi.status() == WL_CONNECTED) {
-    rssi = WiFi.RSSI();
-  } else {
-    rssi = -100;
-  }
 
-  if (rssi >= -50) {
-    bars = 4;
-  } else if (rssi < -50 & rssi >= -65) {
-    bars = 3;
-  } else if (rssi < -65 & rssi >= -75) {
-    bars = 2;
-  } else if (rssi < -75 & rssi >= -80) {
-    bars = 1;
-  } else {
-    bars = 0;
-  }
-}
+
+
+
+
+
+
 
 /********************************************************
     Timer 1 - ISR for PID calculation and heat realay output
@@ -1020,33 +1067,6 @@ void ETriggervoid()
     }
   } 
 }
-
-/********************************************************
-   DISPLAY Define & template
-******************************************************/
-//DISPLAY constructor, change if needed
-#if  DISPLAY == 1
-    U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);   //e.g. 1.3"
-#endif
-#if DISPLAY == 2
-    U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);    //e.g. 0.96"
-#endif
-//Update für Display
-unsigned long previousMillisDisplay;  // initialisation at the end of init()
-const unsigned long intervalDisplay = 500;
-
-//DISPLAY constructor, change if needed
-#if (DISPLAY == 1 || DISPLAY == 2) 
-  #if (DISPLAYTEMPLATE == 1)
-      #include "Displaytemplatestandard.h"
-  #endif    
-  #if (DISPLAYTEMPLATE == 2)
-      #include "Displaytemplateminimal.h"
-  #endif    
-  #if (DISPLAYTEMPLATE == 3)
-      #include "Displaytemplatetemponly.h"
-  #endif   
-#endif
 
 void setup() {
   DEBUGSTART(115200);
@@ -1379,8 +1399,10 @@ void loop() {
     brewdetection();  //if brew detected, set PID values
       #if DISPLAY != 0
           displayShottimer() ;
-          heatinglogo(); 
-          OFFlogo(); 
+          #if DISPLAYTEMPLATE < 20 // not in vertikal template
+            heatinglogo(); 
+          #endif
+           OFFlogo(); 
           printScreen();  // refresh display
       #endif
     //Set PID if first start of machine detected
