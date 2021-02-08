@@ -1379,6 +1379,8 @@ void loop() {
     brewdetection();  //if brew detected, set PID values
       #if DISPLAY != 0
           displayShottimer() ;
+          heatinglogo(); 
+          OFFlogo(); 
           printScreen();  // refresh display
       #endif
     //Set PID if first start of machine detected

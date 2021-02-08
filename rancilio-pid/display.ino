@@ -120,5 +120,89 @@
            u8g2.sendBuffer();
         }
     }
+      void heatinglogo(void) 
+    {
+        if (OFFLINEGLOGO == 1 && pidON == 0)  // wenn Offline kein Symbol anzeigen vom Kaltstart
+        return; 
+      
+        if (HEATINGLOGO > 0 && kaltstart == 1 && (Input < setPoint-1)) 
+        {
+           // Für Statusinfos
+           u8g2.clearBuffer();
+           u8g2.drawFrame(8, 0, 110, 12);
+            if (Offlinemodus == 0) 
+            {
+                  getSignalStrength();
+                if (WiFi.status() == WL_CONNECTED) 
+                {
+                    u8g2.drawXBMP(40, 2, 8, 8, antenna_OK_u8g2);
+                    for (int b = 0; b <= bars; b++) 
+                    {
+                    u8g2.drawVLine(45 + (b * 2), 10 - (b * 2), b * 2);
+                    }
+                } else 
+                {
+                    u8g2.drawXBMP(40, 2, 8, 8, antenna_NOK_u8g2);
+                    u8g2.setCursor(88, 2);
+                    u8g2.print("RC: ");
+                    u8g2.print(wifiReconnects);
+                }
+                if (Blynk.connected()) 
+                {
+                    u8g2.drawXBMP(60, 2, 11, 8, blynk_OK_u8g2);
+                } 
+                else 
+                {
+                    u8g2.drawXBMP(60, 2, 8, 8, blynk_NOK_u8g2);
+                }
+                if (MQTT == 1) 
+                {
+                    if (mqtt.connect(hostname, mqtt_username, mqtt_password)) 
+                     { 
+                        u8g2.setCursor(77, 2);
+                      u8g2.print("MQTT");
+                    } else 
+                    {
+                        u8g2.setCursor(77, 2);
+                        u8g2.print("");
+                    }
+                }
+            } 
+            else 
+            {
+                u8g2.setCursor(40, 2);
+                u8g2.print("Offlinemodus");
+            }
+            if (HEATINGLOGO == 1) // rancilio logo
+            {
+    
+                u8g2.drawXBMP(0, 14, Rancilio_Silvia_Logo_width, Rancilio_Silvia_Logo_height, Rancilio_Silvia_Logo);
+                u8g2.drawXBMP(53,14, Heiz_Logo_width, Heiz_Logo_height, Heiz_Logo);
+                u8g2.setFont(u8g2_font_profont22_tf);
+              //  u8g2.setCursor(64, 25);
+              //  u8g2.print((bezugszeit_last_Millis - startZeit) / 1000, 1);
+              //  u8g2.setFont(u8g2_font_profont11_tf);
+            }
+               // Temperatur
+          u8g2.setCursor(92, 30);
+          u8g2.setFont(u8g2_font_profont17_tf);
+          u8g2.print(Input,1);         
+          u8g2.sendBuffer();
+      }
+    }
+    void OFFlogo(void) 
+    {
+     if (OFFLINEGLOGO == 1 && pidON == 0) 
+     {
+       u8g2.clearBuffer();
+       u8g2.drawXBMP(38,0, OFFLogo_width, OFFLogo_height, OFFLogo); 
+       u8g2.setCursor(0, 55);
+       u8g2.setFont(u8g2_font_profont10_tf);
+       u8g2.print("PID is disabled manually");   
+       u8g2.sendBuffer();
+     }
+
+    }
+
 
 #endif
