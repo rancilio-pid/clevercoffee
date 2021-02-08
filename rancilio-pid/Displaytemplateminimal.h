@@ -3,7 +3,10 @@
 ******************************************************/
 void printScreen() 
 {
-  if ((SHOTTIMER == 1 && bezugsZeit > 0) || 
+  if (
+  (HEATINGLOGO > 0 && kaltstart == 1) ||
+  (OFFLINEGLOGO == 1 && pidON == 0)   ||
+  (SHOTTIMER == 1 && bezugsZeit > 0) || 
   (SHOTTIMER == 1 && millis() >= bezugszeit_last_Millis && bezugszeit_last_Millis+brewswitchDelay >= millis())) // sobald der Brühschalter umgelegt wird, brewswitchDelay abgelaufen
   return;
   unsigned long currentMillisDisplay = millis();
@@ -79,18 +82,23 @@ void printScreen()
       }
 
       // Für Statusinfos
-      if (Offlinemodus == 0) {
+      if (Offlinemodus == 0) 
+      {
         getSignalStrength();
-        if (WiFi.status() != WL_CONNECTED) {
+        if (WiFi.status() != WL_CONNECTED) 
+        {
           u8g2.drawFrame(116, 28, 12, 12);
           u8g2.drawXBMP(118, 30, 8, 8, antenna_NOK_u8g2);
-        } else {
-          if (!Blynk.connected()) {
+        } else 
+        {
+          if (!Blynk.connected()) 
+          {
             u8g2.drawFrame(116, 28, 12, 12);
             u8g2.drawXBMP(118, 30, 8, 8, blynk_NOK_u8g2);
           }
         }
-      } else {
+      } else 
+      {
         u8g2.drawFrame(116, 28, 12, 12);
         u8g2.setCursor(120, 30);
         u8g2.print("O");

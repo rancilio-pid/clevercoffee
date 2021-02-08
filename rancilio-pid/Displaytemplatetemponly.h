@@ -4,7 +4,10 @@
 void printScreen() 
 {
   // Abbruch der Anzeige, Return, wenn Shottimer läuft. 
-  if ((SHOTTIMER == 1 && bezugsZeit > 0) || 
+  if (
+  (HEATINGLOGO > 0 && kaltstart == 1) ||
+  (OFFLINEGLOGO == 1 && pidON == 0)   ||
+  (SHOTTIMER == 1 && bezugsZeit > 0) || 
   (SHOTTIMER == 1 && millis() >= bezugszeit_last_Millis && bezugszeit_last_Millis+brewswitchDelay >= millis())) // sobald der Brühschalter umgelegt wird, brewswitchDelay abgelaufen
   return;
   unsigned long currentMillisDisplay = millis();
@@ -22,12 +25,12 @@ void printScreen()
       if (Input < 99.999) {
         u8g2.setCursor(13, 12);
         u8g2.setFont(u8g2_font_fub35_tf);
-        u8g2.print(Input);
+        u8g2.print(Input,1);
       }
       else {
         u8g2.setCursor(-1, 12);
         u8g2.setFont(u8g2_font_fub35_tf);
-        u8g2.print(Input);
+        u8g2.print(Input,1);
       }
     }
   } else {
