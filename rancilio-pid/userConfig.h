@@ -1,5 +1,5 @@
 /********************************************************
-  Version 1.9 (01.02.2021) 
+  Version 2.0 (08.02.2021) 
   Last Change: E-Trigger Siliva E
   Config must be configured by the user
 ******************************************************/
