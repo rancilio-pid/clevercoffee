@@ -1,6 +1,7 @@
 
 #if (DISPLAY == 1 || DISPLAY == 2)  
 
+    int displaystatus = 0 ; 
     /********************************************************
      initialize u8g2 display
     *****************************************************/
@@ -89,8 +90,9 @@
     }
     void displayShottimer(void) 
      {
-        if (
-            (
+        displaystatus = 0 ;// Indiktator für Reset Bezug im Display
+        if 
+            ((
             (bezugsZeit > 0 && ONLYPID == 1) || // Bezugszeit bei Only PID  
             (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42) // oder Bezug bei nicht only PID über brewcounter
             ) && SHOTTIMER == 1
@@ -98,6 +100,7 @@
         {
             // Dann Zeit anzeigen
             u8g2.clearBuffer();
+            displaystatus = 1 ;// Indiktator für Bezug im Display
            // u8g2.drawXBMP(0, 0, logo_width, logo_height, logo_bits_u8g2);   //draw temp icon
             u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
             u8g2.setFont(u8g2_font_profont22_tf);
@@ -111,7 +114,8 @@
         bezugszeit_last_Millis+brewswitchDelay >= millis() && // soll solange laufen, bis millis() den brewswitchDelay aufgeholt hat, damit kann die Anzeigedauer gesteuert werden
         bezugszeit_last_Millis < totalbrewtime) // wenn die totalbrewtime automatisch erreicht wird, soll nichts gemacht werden, da sonst falsche Zeit angezeigt wird, da Schalter später betätigt wird als totalbrewtime
         {
-            u8g2.clearBuffer();
+           displaystatus = 1 ;// Indiktator für Bezug im Display
+           u8g2.clearBuffer();
            u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
            u8g2.setFont(u8g2_font_profont22_tf);
            u8g2.setCursor(64, 25);
@@ -202,7 +206,10 @@
     }
     void OFFlogo(void) 
     {
-     if (OFFLINEGLOGO == 1 && pidON == 0) 
+     if (
+         (OFFLINEGLOGO == 1 && pidON == 0) && 
+         displaystatus == 0
+        )
      {
        u8g2.clearBuffer();
        u8g2.drawXBMP(38,0, OFFLogo_width, OFFLogo_height, OFFLogo); 
