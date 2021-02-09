@@ -17,7 +17,7 @@
 #define MACHINELOGO 1        // 1 = Rancilio, 2 = Gaggia
 #define DISPALYROTATE U8G2_R0   // rotate display clockwise: U8G2_R0 = no rotation; U8G2_R1 = 90°; U8G2_R2 = 180°; U8G2_R3 = 270°
 #define SHOTTIMER  1 // 0 = deactivated, 1 =  SHOTTIMER
-#define HEATINGLOGO 1 // 0 = deactivated, 1 =  HEATINGLOGO Rancilio  2: HEATINGLOGO Gaggia 
+#define HEATINGLOGO 2 // 0 = deactivated, 1 =  HEATINGLOGO Rancilio  2: HEATINGLOGO Gaggia 
 #define OFFLINEGLOGO 1 // 0 = deactivated, 1 =  offline Logo
 #define BREWSWITCHDELAY 3000 // time in ms
 
@@ -42,27 +42,27 @@
 #define PINETRIGGER 16 // Pin for Etrigger Relay
 #define TRIGGERRELAYTYPE HIGH  // LOW = low trigger, HIGH = high trigger relay for ETrigger
 
-
 // Wifi 
 #define HOSTNAME "Rancilio"
-#define D_SSID "myssid"
-#define PASS "mypass"
+#define D_SSID "FRITZ!Box 7560 TW"
+#define PASS "73529858617456203989"
 
 // OTA
 #define OTAHOST "Rancilio"   // Name to be shown in ARUDINO IDE Port
-#define OTAPASS "otapass"    // Password for OTA updtates
+#define OTAPASS "12345"    // Password for OTA updtates
 
 //MQTT
 #define MQTT_USERNAME "myuser"
-#define MQTT_PASSWORD "mypass"
+#define MQTT_PASSWORD "mqtt"
 #define MQTT_TOPIC_PREFIX "custom/Küche."  // topic will be "<MQTT_TOPIC_PREFIX><HOSTNAME>/<READING>"
-#define MQTT_SERVER_IP "XXX.XXX.XXX.XXX"       // IP-Address of locally installed mqtt server
+#define MQTT_SERVER_IP "192.168.2.170"       // IP-Address of locally installed mqtt server
 #define MQTT_SERVER_PORT 1883    
 
 // BLynk
-#define AUTH "myauth"
-#define BLYNKADDRESS "blynk.clevercoffee.de"         // IP-Address of used blynk server
+#define AUTH "296da16b0626443caf96bff568be4ead"
+#define BLYNKADDRESS "192.168.2.170"         // IP-Address of used blynk server
 #define BLYNKPORT 8080  //Port for blynk server
+
 
 
 
