@@ -183,6 +183,16 @@
               //  u8g2.print((bezugszeit_last_Millis - startZeit) / 1000, 1);
               //  u8g2.setFont(u8g2_font_profont11_tf);
             }
+            if (HEATINGLOGO == 2) // Gaggia Logo
+            {
+                u8g2.drawXBMP(0, 14, Gaggia_Classic_Logo_width, Gaggia_Classic_Logo_height, Gaggia_Classic_Logo);
+                u8g2.drawXBMP(53,14, Heiz_Logo_width, Heiz_Logo_height, Heiz_Logo);
+                u8g2.setFont(u8g2_font_profont22_tf);
+              //  u8g2.setCursor(64, 25);
+              //  u8g2.print((bezugszeit_last_Millis - startZeit) / 1000, 1);
+              //  u8g2.setFont(u8g2_font_profont11_tf);
+            }
+
                // Temperatur
           u8g2.setCursor(92, 30);
           u8g2.setFont(u8g2_font_profont17_tf);
@@ -202,6 +212,4 @@
        u8g2.sendBuffer();
      }
     }
-
-
 #endif
