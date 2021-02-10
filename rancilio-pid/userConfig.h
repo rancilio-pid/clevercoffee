@@ -43,24 +43,24 @@
 #define TRIGGERRELAYTYPE HIGH  // LOW = low trigger, HIGH = high trigger relay for ETrigger
 
 // Wifi 
-#define HOSTNAME "rancilio"
-#define D_SSID "wlanname"
-#define PASS "wlanpass"
+#define HOSTNAME "Rancilio"
+#define D_SSID "myssid"
+#define PASS "mypass"
 
 // OTA
 #define OTAHOST "Rancilio"   // Name to be shown in ARUDINO IDE Port
-#define OTAPASS "otapass"    // Password for OTA updates
+#define OTAPASS "otapass"    // Password for OTA updtates
 
 //MQTT
 #define MQTT_USERNAME "myuser"
-#define MQTT_PASSWORD "mymqtt"
+#define MQTT_PASSWORD "mypass"
 #define MQTT_TOPIC_PREFIX "custom/Küche."  // topic will be "<MQTT_TOPIC_PREFIX><HOSTNAME>/<READING>"
-#define MQTT_SERVER_IP "IP"       // IP-Address of locally installed mqtt server
+#define MQTT_SERVER_IP "XXX.XXX.XXX.XXX"       // IP-Address of locally installed mqtt server
 #define MQTT_SERVER_PORT 1883    
 
 // BLynk
-#define AUTH "blynkauthcode"
-#define BLYNKADDRESS "blynk.remoteapp.de"          // IP-Address of used blynk server
+#define AUTH "myauth"
+#define BLYNKADDRESS "blynk.clevercoffee.de"         // IP-Address of used blynk server
 #define BLYNKPORT 8080  //Port for blynk server
 
 
