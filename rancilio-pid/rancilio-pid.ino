@@ -958,7 +958,7 @@ void brewdetection()
     if (currentMillisVoltagesensorreading - previousMillisVoltagesensorreading >= (intervalVoltagesensor))
     {
       previousMillisVoltagesensorreading = millis();
-      if (digitalRead(pinVoltageSensor) == VoltageSensorON) 
+      if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorON) 
       {
         DEBUG_println("HW Brew - Voltage Sensor -  detected") ;
         timeBrewdetection = millis() ;
@@ -1164,7 +1164,7 @@ void setup() {
   }
   if (BREWDETECTION == 3) // IF Voltage sensor selected 
   { 
-    pinMode(pinVoltageSensor, INPUT);
+    pinMode(PINVOLTAGESENSOR, INPUT);
   }
 
   /********************************************************

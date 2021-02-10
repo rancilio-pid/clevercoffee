@@ -32,14 +32,15 @@
 
 // PID & Hardware
 #define ONLYPID 1            // 1 = Only PID, no preinfusion; 0 = PID and preinfusion
-#define BREWDETECTION 1      // 0 = off; 1 = Software; 2 = Hardware
+#define BREWDETECTION 3      // 0 = off; 1 = Software; 2 = Hardware; 3 = Only PID Hardware
 #define COLDSTART_PID 1     // 1 = default COLDStart Values , 2 = eigene Werte via Blynk, Expertenmodusaktiv 
 #define TRIGGERTYPE HIGH     // LOW = low trigger, HIGH = high trigger relay
+#define VOLTAGESENSORTYPE LOW 
+#define 
 
 //E-Trigger
 #define ETRIGGER 0  // 0: no Trigger (for Raniclio without E) 1: Trigger for CPU of Rancilio E
 #define ETRIGGERTIME 60 // Seconds, time between for Trigger Signal
-#define PINETRIGGER 16 // Pin for Etrigger Relay
 #define TRIGGERRELAYTYPE HIGH  // LOW = low trigger, HIGH = high trigger relay for ETrigger
 
 // Wifi 
@@ -90,6 +91,8 @@
 //PIN BELEGUNG
 #define ONE_WIRE_BUS 2  // TEMP SENSOR PIN
 
+#define PINETRIGGER       99 // Pin for Etrigger Relay
+#define PINVOLTAGESENSOR  16    //Input pin for volatage sensor
 #define pinRelayVentil    12    //Output pin for 3-way-valve
 #define pinRelayPumpe     13    //Output pin for pump
 #define pinRelayHeater    14    //Output pin for heater
