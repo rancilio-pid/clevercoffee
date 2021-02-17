@@ -578,7 +578,7 @@ void refreshTemp() {
       */
       temperature = 0;
       Temperatur_C = Sensor2.getTemp();
-      //Temperatur_C = random(93,94);
+      Temperatur_C = random(80,81);
       if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
       Input = Temperatur_C;
       if (Brewdetection != 0) {
@@ -1164,7 +1164,7 @@ void setup() {
   }
   if (BREWDETECTION == 3) // IF Voltage sensor selected 
   { 
-    pinMode(PINVOLTAGESENSOR, INPUT);
+    pinMode(PINVOLTAGESENSOR, INPUT_PULLUP);
   }
 
   /********************************************************
