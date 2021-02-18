@@ -32,7 +32,7 @@
 
 // PID & Hardware
 #define ONLYPID 1            // 1 = Only PID, no preinfusion; 0 = PID and preinfusion
-#define BREWDETECTION 1      // 0 = off; 1 = Software; 2 = Hardware; 3 = Only PID Hardware
+#define BREWDETECTION 3     // 0 = off; 1 = Software; 2 = Hardware; 3 = Only PID Hardware
 #define COLDSTART_PID 2     // 1 = default COLDStart Values , 2 = eigene Werte via Blynk, Expertenmodusaktiv 
 #define TRIGGERTYPE HIGH     // LOW = low trigger, HIGH = high trigger relay
 #define VOLTAGESENSORTYPE HIGH 
@@ -45,26 +45,24 @@
 
 // Wifi 
 #define HOSTNAME "Rancilio"
-#define D_SSID "FRITZ!Box 7560 TW"
-#define PASS "73529858617456203989"
+#define D_SSID "myssid"
+#define PASS "mypass"
 
 // OTA
 #define OTAHOST "Rancilio"   // Name to be shown in ARUDINO IDE Port
-#define OTAPASS "12345"    // Password for OTA updtates
+#define OTAPASS "otapass"    // Password for OTA updtates
 
 //MQTT
 #define MQTT_USERNAME "myuser"
-#define MQTT_PASSWORD "mqtt"
+#define MQTT_PASSWORD "mypass"
 #define MQTT_TOPIC_PREFIX "custom/Küche."  // topic will be "<MQTT_TOPIC_PREFIX><HOSTNAME>/<READING>"
-#define MQTT_SERVER_IP "192.168.2.170"       // IP-Address of locally installed mqtt server
+#define MQTT_SERVER_IP "XXX.XXX.XXX.XXX"       // IP-Address of locally installed mqtt server
 #define MQTT_SERVER_PORT 1883    
 
 // BLynk
-#define AUTH "296da16b0626443caf96bff568be4ead"
-#define BLYNKADDRESS "192.168.2.170"         // IP-Address of used blynk server
+#define AUTH "myauth"
+#define BLYNKADDRESS "blynk.clevercoffee.de"         // IP-Address of used blynk server
 #define BLYNKPORT 8080  //Port for blynk server
-
-
 
 //PID - offline values
 #define SETPOINT 95  // Temperatur setpoint
