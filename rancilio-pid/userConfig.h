@@ -12,7 +12,7 @@
 ******************************************************/
 // Display
 #define DISPLAY 2            // 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64)
-#define DISPLAYTEMPLATE 3   
+#define DISPLAYTEMPLATE 1  
  // 1: Standard Display Template, 2: Minimal Template, 3: only Temperatur, 20: vertical Display see git Handbook for further information
 #define MACHINELOGO 1        // 1 = Rancilio, 2 = Gaggia
 #define DISPALYROTATE U8G2_R0   // rotate display clockwise: U8G2_R0 = no rotation; U8G2_R1 = 90°; U8G2_R2 = 180°; U8G2_R3 = 270°
@@ -32,11 +32,11 @@
 
 // PID & Hardware
 #define ONLYPID 1            // 1 = Only PID, no preinfusion; 0 = PID and preinfusion
-#define BREWDETECTION 3      // 0 = off; 1 = Software; 2 = Hardware; 3 = Only PID Hardware
-#define COLDSTART_PID 1     // 1 = default COLDStart Values , 2 = eigene Werte via Blynk, Expertenmodusaktiv 
+#define BREWDETECTION 1      // 0 = off; 1 = Software; 2 = Hardware; 3 = Only PID Hardware
+#define COLDSTART_PID 2     // 1 = default COLDStart Values , 2 = eigene Werte via Blynk, Expertenmodusaktiv 
 #define TRIGGERTYPE HIGH     // LOW = low trigger, HIGH = high trigger relay
-#define VOLTAGESENSORTYPE LOW 
-#define 
+#define VOLTAGESENSORTYPE HIGH 
+#define PINMODEVOLTAGESENSOR INPUT // Mode INPUT_PULLUP, INPUT or INPUT_PULLDOWN_16 (Only Pin 16)
 
 //E-Trigger
 #define ETRIGGER 0  // 0: no Trigger (for Raniclio without E) 1: Trigger for CPU of Rancilio E
@@ -45,25 +45,24 @@
 
 // Wifi 
 #define HOSTNAME "Rancilio"
-#define D_SSID "myssid"
-#define PASS "mypass"
+#define D_SSID "FRITZ!Box 7560 TW"
+#define PASS "73529858617456203989"
 
 // OTA
 #define OTAHOST "Rancilio"   // Name to be shown in ARUDINO IDE Port
-#define OTAPASS "otapass"    // Password for OTA updtates
+#define OTAPASS "12345"    // Password for OTA updtates
 
 //MQTT
 #define MQTT_USERNAME "myuser"
-#define MQTT_PASSWORD "mypass"
+#define MQTT_PASSWORD "mqtt"
 #define MQTT_TOPIC_PREFIX "custom/Küche."  // topic will be "<MQTT_TOPIC_PREFIX><HOSTNAME>/<READING>"
-#define MQTT_SERVER_IP "XXX.XXX.XXX.XXX"       // IP-Address of locally installed mqtt server
+#define MQTT_SERVER_IP "192.168.2.170"       // IP-Address of locally installed mqtt server
 #define MQTT_SERVER_PORT 1883    
 
 // BLynk
-#define AUTH "myauth"
-#define BLYNKADDRESS "blynk.clevercoffee.de"         // IP-Address of used blynk server
+#define AUTH "296da16b0626443caf96bff568be4ead"
+#define BLYNKADDRESS "192.168.2.170"         // IP-Address of used blynk server
 #define BLYNKPORT 8080  //Port for blynk server
-
 
 
 
@@ -92,7 +91,8 @@
 #define ONE_WIRE_BUS 2  // TEMP SENSOR PIN
 
 #define PINETRIGGER       99 // Pin for Etrigger Relay
-#define PINVOLTAGESENSOR  16    //Input pin for volatage sensor
+#define PINVOLTAGESENSOR  15    //Input pin for volatage sensor
+
 #define pinRelayVentil    12    //Output pin for 3-way-valve
 #define pinRelayPumpe     13    //Output pin for pump
 #define pinRelayHeater    14    //Output pin for heater

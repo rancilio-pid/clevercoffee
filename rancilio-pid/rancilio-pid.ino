@@ -578,7 +578,7 @@ void refreshTemp() {
       */
       temperature = 0;
       Temperatur_C = Sensor2.getTemp();
-      Temperatur_C = random(80,81);
+      //Temperatur_C = random(40,41);
       if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
       Input = Temperatur_C;
       if (Brewdetection != 0) {
@@ -907,7 +907,8 @@ void brewdetection()
 
   // Brew detecion == 1 software solution , == 2 hardware == 3 Voltagesensor 
   if (Brewdetection == 1) 
-  {
+  {  // Bezugstimmer für SW aktivieren
+    // Bezugstimmer für SW deaktivieren nach ende BD PID
     if (millis() - timeBrewdetection > brewtimersoftware * 1000)
     {
       timerBrewdetection = 0 ;    //rearm brewdetection
@@ -924,13 +925,19 @@ void brewdetection()
     }
   } else if (Brewdetection == 3) 
   {
-    if (millis() - timeBrewdetection > brewtimersoftware * 1000)
+    if 
+     (
+      (digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF) && 
+       brewDetected == 1
+       )
+      {
+        brewDetected = 0;
+        bezugsZeit = 0 ; 
+        DEBUG_println("HW Brew - Voltage Sensor - End") ;
+      }
+    if (millis() - timeBrewdetection > brewtimersoftware * 1000) // reset PID Brew
     {
       timerBrewdetection = 0 ;    //rearm brewdetection
-      if (OnlyPID == 1) 
-      {
-        bezugsZeit = 0 ;    // brewdetection is used in OnlyPID mode to detect a start of brew, and set the bezugsZeit
-      }
     }
   }
 
@@ -954,15 +961,25 @@ void brewdetection()
     }  
   } else if (Brewdetection == 3) // voltage sensor 
   {
-    unsigned long currentMillisVoltagesensorreading = millis();
-    if (currentMillisVoltagesensorreading - previousMillisVoltagesensorreading >= (intervalVoltagesensor))
+    // Bezugszeit hochzaehlen    
+    if (( digitalRead(PINVOLTAGESENSOR) == VoltageSensorON) && brewDetected == 1)
+       {
+       bezugsZeit = millis() - timeBrewdetection ;
+       }
+    unsigned long currentMillisVoltagesensorreading = millis();   
+    if (
+        (currentMillisVoltagesensorreading - previousMillisVoltagesensorreading >= (intervalVoltagesensor)) //Abfrageinterval
+        && brewDetected == 0 // nur einmalig auslösen
+       )
     {
       previousMillisVoltagesensorreading = millis();
       if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorON) 
       {
-        DEBUG_println("HW Brew - Voltage Sensor -  detected") ;
+        DEBUG_println("HW Brew - Voltage Sensor -  Start") ;
         timeBrewdetection = millis() ;
         timerBrewdetection = 1 ;
+        brewDetected = 1;
+        bezugsZeit = millis();
       }
     }
   }
@@ -1164,7 +1181,7 @@ void setup() {
   }
   if (BREWDETECTION == 3) // IF Voltage sensor selected 
   { 
-    pinMode(PINVOLTAGESENSOR, INPUT_PULLUP);
+    pinMode(PINVOLTAGESENSOR, PINMODEVOLTAGESENSOR);
   }
 
   /********************************************************
@@ -1487,9 +1504,6 @@ void loop() {
       }
       aggbKd = aggbTv * aggbKp ;
       bPID.SetTunings(aggbKp, aggbKi, aggbKd) ;
-      if (OnlyPID == 1) {
-        bezugsZeit = millis() - timeBrewdetection ;
-      }
     }
 
   } else if (sensorError) 
