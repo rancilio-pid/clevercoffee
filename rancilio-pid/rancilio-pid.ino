@@ -944,7 +944,7 @@ void brewdetection()
 
   if (Brewdetection == 1) 
   {
-    if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 ) 
+    if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 && !kaltstart ) 
     {
       DEBUG_println("SW Brew detected") ;
       timeBrewdetection = millis() ;
