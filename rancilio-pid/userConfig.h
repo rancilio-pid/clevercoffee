@@ -34,7 +34,6 @@
 // E-Trigger
 #define ETRIGGER 0                 // 0 = no trigger (for Rancilio except Rancilio E), 1 = trigger for CPU of Rancilio E
 #define ETRIGGERTIME 60            // seconds, time between trigger signal
-#define PINETRIGGER 16             // PIN for E-Trigger relay
 #define TRIGGERRELAYTYPE HIGH      // LOW = low trigger, HIGH = high trigger relay for E-Trigger
 
 // Wifi 
@@ -88,6 +87,7 @@
 #define pinRelayPumpe 13           // Output pin for pump
 #define pinRelayHeater 14          // Output pin for heater
 //#define OLED_RESET 16              // Output pin for dispaly reset pin
+#define PINETRIGGER 16             // PIN for E-Trigger relay
 #define OLED_SCL 5                 // Output pin for dispaly clock pin
 #define OLED_SDA 4                 // Output pin for dispaly data pin
 #define SCREEN_WIDTH 128           // OLED display width, in pixels
