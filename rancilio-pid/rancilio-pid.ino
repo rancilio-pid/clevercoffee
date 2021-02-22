@@ -16,6 +16,7 @@
 #include "icon.h"   //user icons for display
 #include <ZACwire.h> //NEW TSIC LIB
 #include <PubSubClient.h>
+#include "TSIC.h"       //Library for TSIC temp sensor
 
 /********************************************************
   DEFINES
@@ -213,9 +214,11 @@ DeviceAddress sensorDeviceAddress;     // arrays to hold device address
 uint16_t temperature = 0;     // internal variable used to read temeprature
 float Temperatur_C = 0;       // internal variable that holds the converted temperature in °C
 
+#if ONE_WIRE_BUS == 16 
+TSIC Sensor1(ONE_WIRE_BUS);   // only Signalpin, VCCpin unused by default
+#else 
 ZACwire<ONE_WIRE_BUS> Sensor2(306);    // set pin "2" to receive signal from the TSic "306"
-
-
+#endif
 /********************************************************
    BLYNK
 ******************************************************/
@@ -568,7 +571,13 @@ void refreshTemp() {
             getTemperature only updates if data is valid, otherwise "temperature" will still hold old values
       */
       temperature = 0;
-      Temperatur_C = Sensor2.getTemp();
+       #if (ONE_WIRE_BUS == 16)
+         Sensor1.getTemperature(&temperature);
+         Input = Sensor1.calc_Celsius(&temperature);
+         #endif
+       #if (ONE_WIRE_BUS != 16)
+        Input = Sensor2.getTemp();
+       #endif
       //Temperatur_C = random(93,94);
       if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
       Input = Temperatur_C;
@@ -1287,7 +1296,13 @@ void setup() {
 
   if (TempSensor == 2) {
     temperature = 0;
-    Input = Sensor2.getTemp();
+    #if (ONE_WIRE_BUS == 16)
+         Sensor1.getTemperature(&temperature);
+         Input = Sensor1.calc_Celsius(&temperature);
+    #endif
+    #if (ONE_WIRE_BUS != 16)
+        Input = Sensor2.getTemp();
+     #endif
   }
 
   /********************************************************
@@ -1302,7 +1317,13 @@ void setup() {
   }
   if (TempSensor == 2) {
     temperature = 0;
-    Input = Sensor2.getTemp();
+    #if (ONE_WIRE_BUS == 16)
+         Sensor1.getTemperature(&temperature);
+         Input = Sensor1.calc_Celsius(&temperature);
+    #endif
+    #if (ONE_WIRE_BUS != 16)
+        Input = Sensor2.getTemp();
+     #endif
   }
 
   //Initialisation MUST be at the very end of the init(), otherwise the time comparision in loop() will have a big offset
