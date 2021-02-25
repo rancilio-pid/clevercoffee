@@ -1,6 +1,6 @@
 /********************************************************
-   Version 2.7.2 (10.02.2021) 
-   * New Displaytemplates 
+   Version 2.7.3 (25.02.2021) 
+   * Voltagessenor
 ******************************************************/
 
 /********************************************************
@@ -105,7 +105,7 @@ int pidON = 1 ;                 // 1 = control loop in closed loop
 int relayON, relayOFF;          // used for relay trigger type. Do not change!
 boolean kaltstart = true;       // true = Rancilio started for first time
 boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
-const char* sysVersion PROGMEM  = "Version 2.7.1 MASTER";   //System version
+const char* sysVersion PROGMEM  = "Version 2.7.3 MASTER";   //System version
 int inX = 0, inY = 0, inOld = 0, inSum = 0; //used for filter()
 int bars = 0; //used for getSignalStrength()
 boolean brewDetected = 0;
