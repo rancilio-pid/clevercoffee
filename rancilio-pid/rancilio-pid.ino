@@ -584,7 +584,7 @@ void refreshTemp() {
        #if (ONE_WIRE_BUS != 16)
         Temperatur_C = Sensor2.getTemp();
        #endif
-      //Temperatur_C = random(93,94);
+      Temperatur_C = random(93,94);
       if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
       Input = Temperatur_C;
       if (Brewdetection != 0) {
@@ -919,28 +919,29 @@ void brewdetection()
      bezugsZeit = millis() - timeBrewdetection ;
      }
     // Bezugstimmer für SW deaktivieren nach ende BD PID
-    if (millis() - timeBrewdetection > brewtimersoftware * 1000)
+    if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1 )
     {
       timerBrewdetection = 0 ;    //rearm brewdetection
+      bezugszeit_last_Millis = millis(); // Bezugszeit für Delay 
+      bezugsZeit = 0 ;
      }
   } else if (Brewdetection == 2) 
   {
-    if (millis() - timeBrewdetection > brewtimersoftware * 1000) 
+    if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1 ) 
     {
       timerBrewdetection = 0 ;  //rearm brewdetection
     }
   } else if (Brewdetection == 3) 
   {
     if 
-     (
-      (digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF) && brewDetected == 1
-       )
+     ((digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF) && brewDetected == 1)
       {
         brewDetected = 0;
         bezugsZeit = 0 ; 
         DEBUG_println("HW Brew - Voltage Sensor - End") ;
+        bezugszeit_last_Millis = millis(); // Bezugszeit für Delay 
       }
-    if (millis() - timeBrewdetection > brewtimersoftware * 1000) // reset PID Brew
+    if (millis() - timeBrewdetection > brewtimersoftware * 1000 && brewDetected == 1 ) // reset PID Brew
     {
       timerBrewdetection = 0 ;    //rearm brewdetection
     }
