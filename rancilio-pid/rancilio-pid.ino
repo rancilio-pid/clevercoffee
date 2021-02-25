@@ -1,6 +1,6 @@
 /********************************************************
-   Version 2.7.3 (25.02.2021) 
-   * Voltagessenor
+   Version 2.7.2 (10.02.2021) 
+   * New Displaytemplates 
 ******************************************************/
 
 /********************************************************
@@ -105,7 +105,7 @@ int pidON = 1 ;                 // 1 = control loop in closed loop
 int relayON, relayOFF;          // used for relay trigger type. Do not change!
 boolean kaltstart = true;       // true = Rancilio started for first time
 boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
-const char* sysVersion PROGMEM  = "Version 2.7.3 MASTER";   //System version
+const char* sysVersion PROGMEM  = "Version 2.7.1 MASTER";   //System version
 int inX = 0, inY = 0, inOld = 0, inSum = 0; //used for filter()
 int bars = 0; //used for getSignalStrength()
 boolean brewDetected = 0;
@@ -914,15 +914,15 @@ void brewdetection()
   // Brew detecion == 1 software solution , == 2 hardware == 3 Voltagesensor 
   if (Brewdetection == 1) 
   {  // Bezugstimmer für SW aktivieren
+     if (timerBrewdetection == 1)
+    {
+     bezugsZeit = millis() - timeBrewdetection ;
+     }
     // Bezugstimmer für SW deaktivieren nach ende BD PID
     if (millis() - timeBrewdetection > brewtimersoftware * 1000)
     {
       timerBrewdetection = 0 ;    //rearm brewdetection
-      if (OnlyPID == 1) 
-      {
-        bezugsZeit = 0 ;    // brewdetection is used in OnlyPID mode to detect a start of brew, and set the bezugsZeit
-      }
-    }
+     }
   } else if (Brewdetection == 2) 
   {
     if (millis() - timeBrewdetection > brewtimersoftware * 1000) 
@@ -949,7 +949,7 @@ void brewdetection()
 
   if (Brewdetection == 1) 
   {
-    if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 && !abs(setPoint-Input)< 3 ) // BD PID only +/- 2 Grad Celsius
+    if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 && (setPoint-Input) < 3 ) // BD PID only +/- 2 Grad Celsius
     {
       DEBUG_println("SW Brew detected") ;
       timeBrewdetection = millis() ;
