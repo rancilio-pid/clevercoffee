@@ -2,7 +2,7 @@
 
 ## Version
 MASTER VERSION
-Version 2.7.1  (10.02.2021) ADD new Template for the Display
+Version 2.7.3  (25.02.2021) ADD new Template for the Display
 
 ## Hinweise
 Unsere Projektwebseite findet ihr hier: [Rancilio PID Website](http://rancilio-pid.de/).
@@ -17,10 +17,11 @@ Ihr seid herzlich Willkommen uns gemeinsam bei der Mission zu besseren Espresso 
 
 ## Was nach einem Umbau möglich ist
  * Automatischer Kaltstart für das perfekte Erreichen der Soll-Temperatur innerhalb von 8 bis 12 Minuten (je nach Maschine) 
+ * **NEU:** Brüherkennung per Sensor bei OnlyPID
  * **NEU:** Shottimer einstellbar, um die Bezugdauer zu sehen.
- * **NEU:** Aktuell 3 Displaydesgins für die Anzeige, Möglichkeit weitere Designs einfach einzubinden. 
- * **NEU:** Vertikales Template fürs Display 
- * **NEU:** Support für Siliva E Maschinen: Trigger mit definierbaren Intervall für ein Relais zum Überbrücken der Eco-Funktion
+ * Aktuell 3 Displaydesgins für die Anzeige, Möglichkeit weitere Designs einfach einzubinden. 
+ * Vertikales Template fürs Display 
+ * Support für Siliva E Maschinen: Trigger mit definierbaren Intervall für ein Relais zum Überbrücken der Eco-Funktion
  * Regelung der Brühtemperatur mit einer Genauigkeit von bis zu +/- 0,1°
  * Steuerung der Brühzeit inkl. Pre-Infusion in der Ausbaustufe „Vollausbau“ möglich
  * Bedienung über eine Smartphone-App (iOS & Android)
