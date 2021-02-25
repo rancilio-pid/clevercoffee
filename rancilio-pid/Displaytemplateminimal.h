@@ -1,12 +1,12 @@
 /********************************************************
     send data to display
 ******************************************************/
-void printScreen() 
+void printScreen()
 {
   if (
   (HEATINGLOGO > 0 && kaltstart == 1) ||
   (OFFLINEGLOGO == 1 && pidON == 0)   ||
-  (SHOTTIMER == 1 && bezugsZeit > 0) || 
+  (SHOTTIMER == 1 && bezugsZeit > 0) ||
   (SHOTTIMER == 1 && millis() >= bezugszeit_last_Millis && bezugszeit_last_Millis+brewswitchDelay >= millis())) // sobald der Brühschalter umgelegt wird, brewswitchDelay abgelaufen
   return;
   unsigned long currentMillisDisplay = millis();
@@ -24,29 +24,57 @@ void printScreen()
       //draw (blinking) temp
       if (fabs(Input - setPoint) < 0.3) {
         if (isrCounter < 500) {
+          if (Input < 99.999) {
+            u8g2.setCursor(2, 2);
+            u8g2.setFont(u8g2_font_profont22_tf);
+            u8g2.print(Input, 1);
+            u8g2.setFont(u8g2_font_open_iconic_arrow_2x_t);
+            u8g2.print(char(78));
+            u8g2.setCursor(78, 2);
+            u8g2.setFont(u8g2_font_profont22_tf);
+            u8g2.print(setPoint, 1);
+          }
+          else {
+            u8g2.setCursor(2, 2);
+            u8g2.setFont(u8g2_font_profont22_tf);
+            u8g2.print(Input, 0);
+            u8g2.setFont(u8g2_font_open_iconic_arrow_2x_t);
+            u8g2.print(char(78));
+            u8g2.setCursor(78, 2);
+            u8g2.setFont(u8g2_font_profont22_tf);
+            u8g2.print(setPoint, 1);
+          }
+        }  
+      } else {
+        if (Input < 99.999) {
           u8g2.setCursor(2, 2);
           u8g2.setFont(u8g2_font_profont22_tf);
           u8g2.print(Input, 1);
           u8g2.setFont(u8g2_font_open_iconic_arrow_2x_t);
-          u8g2.print(char(78));
-          u8g2.setCursor(78, 2);
+          u8g2.setCursor(56, 6);
+          if (pidMode == 1) {
+            u8g2.print(char(74));
+          } else {
+            u8g2.print(char(70));
+          }
+          u8g2.setCursor(79, 2);
+          u8g2.setFont(u8g2_font_profont22_tf);
+          u8g2.print(setPoint, 1);
+        } else {
+          u8g2.setCursor(2, 2);
+          u8g2.setFont(u8g2_font_profont22_tf);
+          u8g2.print(Input, 0);
+          u8g2.setFont(u8g2_font_open_iconic_arrow_2x_t);
+          u8g2.setCursor(56, 6);
+          if (pidMode == 1) {
+            u8g2.print(char(74));
+          } else {
+            u8g2.print(char(70));
+          }
+          u8g2.setCursor(79, 2);
           u8g2.setFont(u8g2_font_profont22_tf);
           u8g2.print(setPoint, 1);
         }
-      } else {
-        u8g2.setCursor(2, 2);
-        u8g2.setFont(u8g2_font_profont22_tf);
-        u8g2.print(Input, 1);
-        u8g2.setFont(u8g2_font_open_iconic_arrow_2x_t);
-        u8g2.setCursor(56, 6);
-        if (pidMode == 1) {
-          u8g2.print(char(74));
-        } else {
-          u8g2.print(char(70));
-        }
-        u8g2.setCursor(79, 2);
-        u8g2.setFont(u8g2_font_profont22_tf);
-        u8g2.print(setPoint, 1);
       }
 
 
@@ -82,22 +110,22 @@ void printScreen()
       }
 
       // Für Statusinfos
-      if (Offlinemodus == 0) 
+      if (Offlinemodus == 0)
       {
         getSignalStrength();
-        if (WiFi.status() != WL_CONNECTED) 
+        if (WiFi.status() != WL_CONNECTED)
         {
           u8g2.drawFrame(116, 28, 12, 12);
           u8g2.drawXBMP(118, 30, 8, 8, antenna_NOK_u8g2);
-        } else 
+        } else
         {
-          if (!Blynk.connected()) 
+          if (!Blynk.connected())
           {
             u8g2.drawFrame(116, 28, 12, 12);
             u8g2.drawXBMP(118, 30, 8, 8, blynk_NOK_u8g2);
           }
         }
-      } else 
+      } else
       {
         u8g2.drawFrame(116, 28, 12, 12);
         u8g2.setCursor(120, 30);

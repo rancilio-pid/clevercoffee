@@ -1,9 +1,6 @@
 /********************************************************
-   Version 2.7.0 (01.02.2021) 
-   * ADD ZACwire (New TSIC lib)
-   * Shottimer und Displaytemplates
-   * Auslagern der PIN Belegung in die UserConfig
-   * Change MQTT Lib to PubSubClient | thx to pbeh
+   Version 2.7.2 (10.02.2021) 
+   * New Displaytemplates 
 ******************************************************/
 
 /********************************************************
@@ -19,6 +16,7 @@
 #include "icon.h"   //user icons for display
 #include <ZACwire.h> //NEW TSIC LIB
 #include <PubSubClient.h>
+#include "TSIC.h"       //Library for TSIC temp sensor
 
 /********************************************************
   DEFINES
@@ -107,7 +105,7 @@ int pidON = 1 ;                 // 1 = control loop in closed loop
 int relayON, relayOFF;          // used for relay trigger type. Do not change!
 boolean kaltstart = true;       // true = Rancilio started for first time
 boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
-const char* sysVersion PROGMEM  = "Version 2.7.0 MASTER";   //System version
+const char* sysVersion PROGMEM  = "Version 2.7.1 MASTER";   //System version
 int inX = 0, inY = 0, inOld = 0, inSum = 0; //used for filter()
 int bars = 0; //used for getSignalStrength()
 boolean brewDetected = 0;
@@ -222,9 +220,11 @@ DeviceAddress sensorDeviceAddress;     // arrays to hold device address
 uint16_t temperature = 0;     // internal variable used to read temeprature
 float Temperatur_C = 0;       // internal variable that holds the converted temperature in °C
 
+#if ONE_WIRE_BUS == 16 
+TSIC Sensor1(ONE_WIRE_BUS);   // only Signalpin, VCCpin unused by default
+#else 
 ZACwire<ONE_WIRE_BUS> Sensor2(306);    // set pin "2" to receive signal from the TSic "306"
-
-
+#endif
 /********************************************************
    BLYNK
 ******************************************************/
@@ -577,8 +577,14 @@ void refreshTemp() {
             getTemperature only updates if data is valid, otherwise "temperature" will still hold old values
       */
       temperature = 0;
-      Temperatur_C = Sensor2.getTemp();
-      //Temperatur_C = random(40,41);
+       #if (ONE_WIRE_BUS == 16)
+         Sensor1.getTemperature(&temperature);
+         Temperatur_C = Sensor1.calc_Celsius(&temperature);
+         #endif
+       #if (ONE_WIRE_BUS != 16)
+        Temperatur_C = Sensor2.getTemp();
+       #endif
+      //Temperatur_C = random(93,94);
       if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
       Input = Temperatur_C;
       if (Brewdetection != 0) {
@@ -1360,7 +1366,13 @@ void setup() {
 
   if (TempSensor == 2) {
     temperature = 0;
-    Input = Sensor2.getTemp();
+    #if (ONE_WIRE_BUS == 16)
+         Sensor1.getTemperature(&temperature);
+         Input = Sensor1.calc_Celsius(&temperature);
+    #endif
+    #if (ONE_WIRE_BUS != 16)
+        Input = Sensor2.getTemp();
+     #endif
   }
 
   /********************************************************
@@ -1375,7 +1387,13 @@ void setup() {
   }
   if (TempSensor == 2) {
     temperature = 0;
-    Input = Sensor2.getTemp();
+    #if (ONE_WIRE_BUS == 16)
+         Sensor1.getTemperature(&temperature);
+         Input = Sensor1.calc_Celsius(&temperature);
+    #endif
+    #if (ONE_WIRE_BUS != 16)
+        Input = Sensor2.getTemp();
+     #endif
   }
 
   //Initialisation MUST be at the very end of the init(), otherwise the time comparision in loop() will have a big offset
