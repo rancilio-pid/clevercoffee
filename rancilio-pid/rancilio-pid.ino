@@ -933,8 +933,7 @@ void brewdetection()
   {
     if 
      (
-      (digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF) && 
-       brewDetected == 1
+      (digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF) && brewDetected == 1
        )
       {
         brewDetected = 0;
@@ -950,7 +949,7 @@ void brewdetection()
 
   if (Brewdetection == 1) 
   {
-    if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 && !kaltstart ) 
+    if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 && !abs(setPoint-Input)< 3 ) // BD PID only +/- 2 Grad Celsius
     {
       DEBUG_println("SW Brew detected") ;
       timeBrewdetection = millis() ;
