@@ -2,7 +2,7 @@
 
 ## Version
 MASTER VERSION
-Version 2.7.3  (25.02.2021) ADD new Template for the Display
+Version 2.7.3  (25.02.2021) - Brüherkennung per Sensor bei OnlyPID
 
 ## Hinweise
 Unsere Projektwebseite findet ihr hier: [Rancilio PID Website](http://rancilio-pid.de/).
