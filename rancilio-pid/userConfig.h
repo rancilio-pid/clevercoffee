@@ -30,6 +30,8 @@
 #define BREWDETECTION 1            // 0 = off, 1 = Software, 2 = Hardware
 #define COLDSTART_PID 1            // 1 = default coldstart values, 2 = custom values via blynk (expert mode activated) 
 #define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay
+#define VOLTAGESENSORTYPE HIGH 
+#define PINMODEVOLTAGESENSOR INPUT // Mode INPUT_PULLUP, INPUT or INPUT_PULLDOWN_16 (Only Pin 16)
 
 // E-Trigger
 #define ETRIGGER 0                 // 0 = no trigger (for Rancilio except Rancilio E), 1 = trigger for CPU of Rancilio E
@@ -86,6 +88,7 @@
 #define pinRelayVentil 12          // Output pin for 3-way-valve
 #define pinRelayPumpe 13           // Output pin for pump
 #define pinRelayHeater 14          // Output pin for heater
+#define PINVOLTAGESENSOR  15    //Input pin for volatage sensor
 //#define OLED_RESET 16              // Output pin for dispaly reset pin
 #define PINETRIGGER 16             // PIN for E-Trigger relay
 #define OLED_SCL 5                 // Output pin for dispaly clock pin
@@ -95,6 +98,6 @@
 
 // Historic (no settings)
 #define PONE 1                     // 1 = P_ON_E (default), 0 = P_ON_M (special PID mode, other PID-parameter are needed)
-#define TEMPSENSOR 2               // 2 = TSIC306
+#define TEMPSENSOR 2               // 2 = TSIC306 1=DS18B20
 
 #endif // _userConfig_H

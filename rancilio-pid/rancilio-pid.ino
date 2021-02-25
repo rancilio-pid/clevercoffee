@@ -47,6 +47,7 @@ const int TempSensor = TEMPSENSOR;
 const int Brewdetection = BREWDETECTION;
 const int fallback = FALLBACK;
 const int triggerType = TRIGGERTYPE;
+const int VoltageSensorType = VOLTAGESENSORTYPE;
 const boolean ota = OTA;
 const int grafana = GRAFANA;
 const unsigned long wifiConnectionDelay = WIFICINNECTIONDELAY;
@@ -91,6 +92,11 @@ char topic_set[256];
 unsigned long lastMQTTConnectionAttempt = millis();
 unsigned int MQTTReCnctFlag;  // Blynk Reconnection Flag
 unsigned int MQTTReCnctCount = 0;  // Blynk Reconnection counter
+
+//Voltage Sensor
+unsigned long previousMillisVoltagesensorreading = millis();
+const unsigned long intervalVoltagesensor= 200 ;
+int VoltageSensorON, VoltageSensorOFF;
 
 /********************************************************
    declarations
@@ -901,35 +907,86 @@ void sendToBlynk() {
 /********************************************************
     Brewdetection
 ******************************************************/
-void brewdetection() {
+void brewdetection() 
+{
   if (brewboarder == 0) return; //abort brewdetection if deactivated
 
-  // Brew detecion == 1 software solution , == 2 hardware
-  if (Brewdetection == 1) {
-    if (millis() - timeBrewdetection > brewtimersoftware * 1000) {
+  // Brew detecion == 1 software solution , == 2 hardware == 3 Voltagesensor 
+  if (Brewdetection == 1) 
+  {  // Bezugstimmer für SW aktivieren
+    // Bezugstimmer für SW deaktivieren nach ende BD PID
+    if (millis() - timeBrewdetection > brewtimersoftware * 1000)
+    {
       timerBrewdetection = 0 ;    //rearm brewdetection
-      if (OnlyPID == 1) {
+      if (OnlyPID == 1) 
+      {
         bezugsZeit = 0 ;    // brewdetection is used in OnlyPID mode to detect a start of brew, and set the bezugsZeit
       }
     }
-  } else if (Brewdetection == 2) {
-    if (millis() - timeBrewdetection > brewtimersoftware * 1000) {
+  } else if (Brewdetection == 2) 
+  {
+    if (millis() - timeBrewdetection > brewtimersoftware * 1000) 
+    {
       timerBrewdetection = 0 ;  //rearm brewdetection
+    }
+  } else if (Brewdetection == 3) 
+  {
+    if 
+     (
+      (digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF) && 
+       brewDetected == 1
+       )
+      {
+        brewDetected = 0;
+        bezugsZeit = 0 ; 
+        DEBUG_println("HW Brew - Voltage Sensor - End") ;
+      }
+    if (millis() - timeBrewdetection > brewtimersoftware * 1000) // reset PID Brew
+    {
+      timerBrewdetection = 0 ;    //rearm brewdetection
     }
   }
 
-  if (Brewdetection == 1) {
-    if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 ) {
+
+  if (Brewdetection == 1) 
+  {
+    if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 && !kaltstart ) 
+    {
       DEBUG_println("SW Brew detected") ;
       timeBrewdetection = millis() ;
       timerBrewdetection = 1 ;
     }
-  } else if (Brewdetection == 2) {
-    if (brewcounter > 10 && brewDetected == 0 && brewboarder != 0) {
+  } else if (Brewdetection == 2) 
+  {
+    if (brewcounter > 10 && brewDetected == 0 && brewboarder != 0) 
+    {
       DEBUG_println("HW Brew detected") ;
       timeBrewdetection = millis() ;
       timerBrewdetection = 1 ;
       brewDetected = 1;
+    }  
+  } else if (Brewdetection == 3) // voltage sensor 
+  {
+    // Bezugszeit hochzaehlen    
+    if (( digitalRead(PINVOLTAGESENSOR) == VoltageSensorON) && brewDetected == 1)
+       {
+       bezugsZeit = millis() - timeBrewdetection ;
+       }
+    unsigned long currentMillisVoltagesensorreading = millis();   
+    if (
+        (currentMillisVoltagesensorreading - previousMillisVoltagesensorreading >= (intervalVoltagesensor)) //Abfrageinterval
+        && brewDetected == 0 // nur einmalig auslösen
+       )
+    {
+      previousMillisVoltagesensorreading = millis();
+      if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorON) 
+      {
+        DEBUG_println("HW Brew - Voltage Sensor -  Start") ;
+        timeBrewdetection = millis() ;
+        timerBrewdetection = 1 ;
+        brewDetected = 1;
+        bezugsZeit = millis();
+      }
     }
   }
 }
@@ -1106,6 +1163,15 @@ void setup() {
     relayETriggerON  = LOW;
     relayETriggerOFF  = HIGH;
   }
+  if (VOLTAGESENSORTYPE)
+  {
+    VoltageSensorON = HIGH;
+    VoltageSensorOFF  = LOW;
+  } else {
+    VoltageSensorON = LOW;
+    VoltageSensorOFF  = HIGH;
+  }
+
   /********************************************************
     Init Pins
   ******************************************************/
@@ -1115,9 +1181,13 @@ void setup() {
   digitalWrite(pinRelayVentil, relayOFF);
   digitalWrite(pinRelayPumpe, relayOFF);
   digitalWrite(pinRelayHeater, LOW);
-  if (ETRIGGER == 1) 
+  if (ETRIGGER == 1) // IF Etrigger selected 
   { 
     pinMode(PINETRIGGER, OUTPUT);
+  }
+  if (BREWDETECTION == 3) // IF Voltage sensor selected 
+  { 
+    pinMode(PINVOLTAGESENSOR, PINMODEVOLTAGESENSOR);
   }
 
   /********************************************************
@@ -1333,7 +1403,7 @@ void setup() {
   previousMillisDisplay = currentTime;
   previousMillisBlynk = currentTime;
   previousMillisETrigger = currentTime; 
-
+  previousMillisVoltagesensorreading = currentTime;
   /********************************************************
     Timer1 ISR - Initialisierung
     TIM_DIV1 = 0,   //80MHz (80 ticks/us - 104857.588 us max)
@@ -1452,9 +1522,6 @@ void loop() {
       }
       aggbKd = aggbTv * aggbKp ;
       bPID.SetTunings(aggbKp, aggbKi, aggbKd) ;
-      if (OnlyPID == 1) {
-        bezugsZeit = millis() - timeBrewdetection ;
-      }
     }
 
   } else if (sensorError) 
