@@ -27,9 +27,10 @@
 
 // PID & Hardware
 #define ONLYPID 1                  // 1 = Only PID, 0 = PID and preinfusion
-#define BREWDETECTION 1            // 0 = off, 1 = Software, 2 = Hardware, 3 = Sensor/Hardware for Only PID 
+#define BREWDETECTION 1            // 0 = off, 1 = Software (Onlypid 0), 2 = Hardware (Onlypid 0), 3 = Sensor/Hardware for Only PID 
 #define COLDSTART_PID 1            // 1 = default coldstart values, 2 = custom values via blynk (expert mode activated) 
 #define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay
+// BREWDETECTION 3 configuration
 #define VOLTAGESENSORTYPE HIGH 
 #define PINMODEVOLTAGESENSOR INPUT // Mode INPUT_PULLUP, INPUT or INPUT_PULLDOWN_16 (Only Pin 16)
 
