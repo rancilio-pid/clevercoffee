@@ -1212,7 +1212,7 @@ void setup() {
     DISPLAY 128x64
   ******************************************************/
   #if DISPLAY != 0
-    u8g2.setI2CAddress(i2c_oled * 2);
+    u8g2.setI2CAddress(oled_i2c * 2);
     u8g2.begin();
     u8g2_prepare();
     displayLogo(sysVersion, "");
