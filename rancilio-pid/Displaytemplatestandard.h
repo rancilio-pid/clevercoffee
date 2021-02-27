@@ -67,7 +67,15 @@ void printScreen()
       //draw setPoint line
       u8g2.drawLine(18, 58 - (setPoint / 2), 23, 58 - (setPoint / 2));
 
-      // PID Werte ueber heatbar
+      // PID Werte & Wasser Warnung ueber heatbar
+      
+      if (percentage < 10.00) {
+        if (isrCounter < 500) {
+          u8g2.setCursor(40, 48);
+          u8g2.print("Wasser leer");
+             
+         }
+      } else {
       u8g2.setCursor(40, 48);
 
       u8g2.print(bPID.GetKp(), 0); // P
@@ -88,6 +96,7 @@ void printScreen()
         u8g2.print(Output / 10, 0);
       }
       u8g2.print("%");
+      }
 
       // Brew
       u8g2.setCursor(32, 34);
@@ -137,6 +146,9 @@ void printScreen()
         u8g2.setCursor(40, 2);
         u8g2.print("Offlinemodus");
       }
+ u8g2.setCursor(85, 2);
+            u8g2.printf("%.0f\n",percentage);   //display water level
+      u8g2.print((char)37);
       u8g2.sendBuffer();
     }
   }
