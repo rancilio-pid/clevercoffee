@@ -114,7 +114,7 @@ void printScreen()
       u8g2.drawFrame(0, 0, 128, 64);
 
       // Für Statusinfos
-      u8g2.drawFrame(32, 0, 84, 12);
+      u8g2.drawFrame(32, 0, 128, 12);
       if (Offlinemodus == 0) {
         getSignalStrength();
         if (WiFi.status() == WL_CONNECTED) {
@@ -146,7 +146,7 @@ void printScreen()
         u8g2.setCursor(40, 2);
         u8g2.print("Offlinemodus");
       }
- u8g2.setCursor(85, 2);
+ u8g2.setCursor(100, 2);
             u8g2.printf("%.0f\n",percentage);   //display water level
       u8g2.print((char)37);
       u8g2.sendBuffer();
