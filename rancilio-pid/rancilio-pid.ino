@@ -1507,7 +1507,7 @@ void loop() {
           printScreen();  // refresh display
       #endif
     //Set PID if first start of machine detected, Tempdiff kleiner gleich 2 Grad kein Kaltstart 
-    if (((Input < setPoint) <= -2) && kaltstart) {
+    if (((Input - setPoint) <= -2) && kaltstart) {
       if (startTn != 0) {
         startKi = startKp / startTn;
       } else {
