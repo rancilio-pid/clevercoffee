@@ -100,9 +100,10 @@ unsigned int MQTTReCnctCount = 0;  // Blynk Reconnection counter
 
 //TOF
 Adafruit_VL53L0X lox = Adafruit_VL53L0X();
+int calibration_mode = CALIBRATION_MODE;
 uint8_t tof_i2c = TOF_I2C;
-const int water_full = WATER_FULL;
-const int water_empty = WATER_EMPTY;
+int water_full = WATER_FULL;
+int water_empty = WATER_EMPTY;
 double distance;
 double percentage;
 
@@ -289,10 +290,10 @@ unsigned long previousMillisDisplay;  // initialisation at the end of init()
 const unsigned long intervalDisplay = 500;
 
 //Standard Display or vertikal?
-#if (calibration_mode == true)
+#if (calibration_mode == 1)
   #include "display.h"
   #endif
-#if (calibration_mode == false)
+#if (calibration_mode == 0)
  #if (DISPLAY == 1 || DISPLAY == 2) // Display is used 
   #if (DISPLAYTEMPLATE < 20) // normal templates
     #include "display.h"  
@@ -362,6 +363,19 @@ BLYNK_WRITE(V13)
   pidON = param.asInt();
   mqtt_publish("pidON", number2string(pidON));
 }
+BLYNK_WRITE(V25)
+{
+  calibration_mode = param.asInt();//
+}
+BLYNK_WRITE(V26)
+{
+  water_empty = param.asInt();//
+}
+BLYNK_WRITE(V27)
+{
+  water_full = param.asInt();//
+}
+
 BLYNK_WRITE(V30)
 {
   aggbKp = param.asDouble();//
@@ -895,13 +909,27 @@ void sendToBlynk() {
         //MQTT
         mqtt_publish("setPoint", number2string(setPoint));
       }
-      if (blynksendcounter == 4) {
-        Blynk.virtualWrite(V35, heatrateaverage);
+     
+     
+ 
+     if (blynksendcounter == 4) {
+        Blynk.virtualWrite(V25, calibration_mode);
       }
       if (blynksendcounter == 5) {
+        Blynk.virtualWrite(V26, water_empty);
+      }
+      if (blynksendcounter == 6) {
+        Blynk.virtualWrite(V27, water_full);
+      }  
+
+     
+      if (blynksendcounter == 7) {
+        Blynk.virtualWrite(V35, heatrateaverage);
+      }
+      if (blynksendcounter == 8) {
         Blynk.virtualWrite(V36, heatrateaveragemin);
       }
-      if (grafana == 1 && blynksendcounter >= 6) {
+      if (grafana == 1 && blynksendcounter >= 9) {
         Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint );
          if (MQTT == 1)
          {
@@ -914,7 +942,7 @@ void sendToBlynk() {
             mqtt_publish("preinfusion", number2string(preinfusion/1000));
          }
         blynksendcounter = 0;
-      } else if (grafana == 0 && blynksendcounter >= 5) {
+      } else if (grafana == 0 && blynksendcounter >= 8) {
         blynksendcounter = 0;
       }
       blynksendcounter++;
@@ -1296,6 +1324,9 @@ void setup() {
           Blynk.syncVirtual(V12);
           Blynk.syncVirtual(V13);
           Blynk.syncVirtual(V14);
+          Blynk.syncVirtual(V25);
+          Blynk.syncVirtual(V26);
+          Blynk.syncVirtual(V27);
           Blynk.syncVirtual(V30);
           Blynk.syncVirtual(V31);
           Blynk.syncVirtual(V32);
@@ -1446,7 +1477,7 @@ void setup() {
 }
 
 void loop() {
-  if (calibration_mode == true) {
+  if (calibration_mode == 1) {
       loopcalibrate();
   } else {
       looppid();
@@ -1461,13 +1492,18 @@ void loopcalibrate() {
       bPID.SetMode(pidMode);
       Output = 0 ;false;
     }
-
+if (Blynk.connected()) {  // If connected run as normal
+      Blynk.run();
+      blynkReCnctCount = 0; //reset blynk reconnects if connected
+    } else  {
+      checkBlynk();
+    }
     digitalWrite(pinRelayHeater, LOW); //Stop heating to be on the safe side ...
 
   VL53L0X_RangingMeasurementData_t measure;  //TOF Sensor measurement
   lox.rangingTest(&measure, false); // pass in 'true' to get debug data printout!
-  distance = measure.RangeMilliMeter;  //write new distence value in mm to 'distance'
-  u8g2.clearBuffer();                  //write distance to display for calibration
+  distance = measure.RangeMilliMeter;  //write new distence value to 'distance'
+  u8g2.clearBuffer();
         u8g2.setCursor(13, 12);
         u8g2.setFont(u8g2_font_fub20_tf);
         u8g2.printf("%.0f\n",distance );

@@ -38,9 +38,9 @@
 // TOF sensor for water level
 #define TOF 1                      // 0 = no TOF sensor connected; 1 = water level by TOF sensor
 #define TOF_I2C 0x29             // I2C address of TOF sensor; 0x29 by default
-#define CALIBRATION_MODE false     // enable to obtain water level calibration values, disable for normal PID operation
-#define WATER_FULL 158            // value for full water tank (=100%), obtained in calibration procedure (in mm)
-#define WATER_EMPTY 205           // value for empty water tank (=0%), obtained in calibration procedure (in mm)
+#define CALIBRATION_MODE 0     // 1 = enable to obtain water level calibration values; 0 = disable for normal PID operation; can also be done in Blynk
+#define WATER_FULL 102          // value for full water tank (=100%) obtained in calibration procedure (in mm); can also be set in Blynk
+#define WATER_EMPTY 205           // value for empty water tank (=0%) obtained in calibration procedure (in mm); can also be set in Blynk
 
 // E-Trigger
 #define ETRIGGER 0                 // 0 = no trigger (for Rancilio except Rancilio E), 1 = trigger for CPU of Rancilio E
