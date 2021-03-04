@@ -1,6 +1,7 @@
 /********************************************************
-   Version 2.7.3 (25.02.2021) 
-   * New Displaytemplates 
+   Version 2.8.0 (04.03.2021) 
+   * Fix coldstart near setpoint 
+   * Port for ESp32 
 ******************************************************/
 
 /********************************************************
@@ -12,7 +13,13 @@
 #include <U8g2lib.h>
 #include "PID_v1.h" //for PID calculation
 #include <DallasTemperature.h>    //Library for dallas temp sensor
-#include <BlynkSimpleEsp8266.h>
+#if defined(ESP8266) 
+  #include <BlynkSimpleEsp8266.h>WiFi.hostname(hostname);
+#endif
+#if defined(ESP32) 
+  #include <BlynkSimpleEsp32.h>
+  #include <os.h> 
+#endif
 #include "icon.h"   //user icons for display
 #include <ZACwire.h> //NEW TSIC LIB
 #include <PubSubClient.h>
@@ -105,7 +112,7 @@ int pidON = 1 ;                 // 1 = control loop in closed loop
 int relayON, relayOFF;          // used for relay trigger type. Do not change!
 boolean kaltstart = true;       // true = Rancilio started for first time
 boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
-const char* sysVersion PROGMEM  = "Version 2.7.3 MASTER";   //System version
+const char* sysVersion PROGMEM  = "Version 2.8.0 MASTER";   //System version
 int inX = 0, inY = 0, inOld = 0, inSum = 0; //used for filter()
 int bars = 0; //used for getSignalStrength()
 boolean brewDetected = 0;
@@ -220,7 +227,7 @@ DeviceAddress sensorDeviceAddress;     // arrays to hold device address
 uint16_t temperature = 0;     // internal variable used to read temeprature
 float Temperatur_C = 0;       // internal variable that holds the converted temperature in °C
 
-#if ONE_WIRE_BUS == 16 
+#if (ONE_WIRE_BUS == 16  && TEMPSENSOR  == 2) 
 TSIC Sensor1(ONE_WIRE_BUS);   // only Signalpin, VCCpin unused by default
 #else 
 ZACwire<ONE_WIRE_BUS> Sensor2(306);    // set pin "2" to receive signal from the TSic "306"
@@ -1017,24 +1024,8 @@ int filter(int input) {
 /********************************************************
     Timer 1 - ISR for PID calculation and heat realay output
 ******************************************************/
-void ICACHE_RAM_ATTR onTimer1ISR() {
-  timer1_write(6250); // set interrupt time to 20ms
 
-  if (Output <= isrCounter) {
-    digitalWrite(pinRelayHeater, LOW);
-  } else {
-    digitalWrite(pinRelayHeater, HIGH);
-  }
-
-  isrCounter += 20; // += 20 because one tick = 20ms
-  //set PID output as relais commands
-  if (isrCounter > windowSize) {
-    isrCounter = 0;
-  }
-
-  //run PID calculation
-  bPID.Compute();
-}
+ #include "ISR.h"  
 
 /********************************************************
     MQTT Callback Function: set Parameters through MQTT
@@ -1205,7 +1196,9 @@ void setup() {
   ******************************************************/
   if (Offlinemodus == 0) 
   {
-    WiFi.hostname(hostname);
+    #if defined(ESP8266)
+      WiFi.hostname(hostname);
+    #endif
     unsigned long started = millis();
     #if DISPLAY != 0
       displayLogo("1: Connect Wifi to:", ssid);
@@ -1216,6 +1209,9 @@ void setup() {
     WiFi.mode(WIFI_STA);
     WiFi.persistent(false);   //needed, otherwise exceptions are triggered \o.O/
     WiFi.begin(ssid, pass);
+    #if defined(ESP32) // ESP32
+     WiFi.setHostname(hostname); // for ESP32port
+    #endif
     DEBUG_print("Connecting to ");
     DEBUG_print(ssid);
     DEBUG_println(" ...");
@@ -1404,19 +1400,36 @@ void setup() {
   previousMillisBlynk = currentTime;
   previousMillisETrigger = currentTime; 
   previousMillisVoltagesensorreading = currentTime;
-  /********************************************************
+  setupDone = true;
+
+  #if defined(ESP8266) 
+    /********************************************************
+      Timer1 ISR - Initialisierung
+      TIM_DIV1 = 0,   //80MHz (80 ticks/us - 104857.588 us max)
+      TIM_DIV16 = 1,  //5MHz (5 ticks/us - 1677721.4 us max)
+      TIM_DIV256 = 3  //312.5Khz (1 tick = 3.2us - 26843542.4 us max)
+    ******************************************************/
+      timer1_isr_init();
+      timer1_attachInterrupt(onTimer1ISR);
+      //timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+      //timer1_write(50000); // set interrupt time to 10ms
+      timer1_enable(TIM_DIV256, TIM_EDGE, TIM_SINGLE);
+      timer1_write(6250); // set interrupt time to 20ms
+  #endif
+  #if defined(ESP32) // ESP32
+        /********************************************************
     Timer1 ISR - Initialisierung
     TIM_DIV1 = 0,   //80MHz (80 ticks/us - 104857.588 us max)
     TIM_DIV16 = 1,  //5MHz (5 ticks/us - 1677721.4 us max)
     TIM_DIV256 = 3  //312.5Khz (1 tick = 3.2us - 26843542.4 us max)
   ******************************************************/
-  timer1_isr_init();
-  timer1_attachInterrupt(onTimer1ISR);
-  //timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
-  //timer1_write(50000); // set interrupt time to 10ms
-  timer1_enable(TIM_DIV256, TIM_EDGE, TIM_SINGLE);
-  timer1_write(6250); // set interrupt time to 20ms
-  setupDone = true;
+    timer = timerBegin(0, 80, true); //m
+    timerAttachInterrupt(timer, &onTimer, true);//m
+    timerAlarmWrite(timer, 10000, true);//m
+    timerAlarmEnable(timer);//m
+    hw_timer_t * timer = NULL; //m
+  #endif
+  
 }
 
 
@@ -1493,8 +1506,8 @@ void loop() {
            OFFlogo(); 
           printScreen();  // refresh display
       #endif
-    //Set PID if first start of machine detected
-    if (Input < setPoint && kaltstart) {
+    //Set PID if first start of machine detected, Tempdiff kleiner gleich 2 Grad kein Kaltstart 
+    if (((Input < setPoint) <= -2) && kaltstart) {
       if (startTn != 0) {
         startKi = startKp / startTn;
       } else {

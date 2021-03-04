@@ -61,6 +61,7 @@
     void displayEmergencyStop(void) 
     {
         u8g2.clearBuffer();
+        u8g2.setFont(u8g2_font_profont11_tf); // set font
         u8g2.drawXBMP(0, 0, logo_width, logo_height, logo_bits_u8g2);   //draw temp icon
         u8g2.setCursor(32, 24);
         u8g2.print("Ist :  ");
@@ -132,7 +133,7 @@
         if (OFFLINEGLOGO == 1 && pidON == 0)  // wenn Offline kein Symbol anzeigen vom Kaltstart
         return; 
       
-        if (HEATINGLOGO > 0 && kaltstart == 1 && (Input < setPoint-1)) 
+        if (HEATINGLOGO > 0 && ((Input < setPoint) <= -2) && kaltstart) 
         {
            // Für Statusinfos
            u8g2.clearBuffer();
