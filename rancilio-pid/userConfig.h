@@ -12,7 +12,7 @@
 ******************************************************/
 // Display
 #define DISPLAY 2                  // 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64)
-#define DISPLAYTEMPLATE 3          // 1 = Standard Display Template, 2 = Minimal Template, 3 = only Temperatur, 20 = vertical Display see git Handbook for further information
+#define DISPLAYTEMPLATE 2          // 1 = Standard Display Template, 2 = Minimal Template, 3 = only Temperatur, 20 = vertical Display see git Handbook for further information
 #define MACHINELOGO 1              // 1 = Rancilio, 2 = Gaggia
 #define DISPALYROTATE U8G2_R0      // rotate display clockwise: U8G2_R0 = no rotation; U8G2_R1 = 90°; U8G2_R2 = 180°; U8G2_R3 = 270°
 #define SHOTTIMER 1                // 0 = deactivated, 1 = activated
@@ -41,8 +41,8 @@
 
 // Wifi 
 #define HOSTNAME "Rancilio"
-#define D_SSID "myssid"
-#define PASS "mypass"
+#define D_SSID "Haekelschwein"
+#define PASS "63473138886588137770"
 #define MAXWIFIRECONNECTS 5        // maximum number of reconnection attempts, use -1 to deactivate
 #define WIFICINNECTIONDELAY 10000  // delay between reconnects in ms
 
@@ -52,15 +52,15 @@
 #define OTAPASS "otapass"          // Password for OTA updtates
 
 // MQTT
-#define MQTT 0                     // 1 = MQTT enabled, 0 = MQTT disabled
-#define MQTT_USERNAME "myuser"
-#define MQTT_PASSWORD "mypass"
-#define MQTT_TOPIC_PREFIX "custom/Küche."  // topic will be "<MQTT_TOPIC_PREFIX><HOSTNAME>/<READING>"
-#define MQTT_SERVER_IP "XXX.XXX.XXX.XXX"  // IP-Address of locally installed mqtt server
+#define MQTT 1                     // 1 = MQTT enabled, 0 = MQTT disabled
+#define MQTT_USERNAME "mqtt"
+#define MQTT_PASSWORD "9FnMYHsJ3txETVh39XfC"
+#define MQTT_TOPIC_PREFIX ""  // topic will be "<MQTT_TOPIC_PREFIX><HOSTNAME>/<READING>"
+#define MQTT_SERVER_IP "192.168.178.72"  // IP-Address of locally installed mqtt server
 #define MQTT_SERVER_PORT 1883    
 
 // BLynk
-#define AUTH "myauth"
+#define AUTH "He7tON6CXXD0jf6wkrHfDb8o65GP6MxB"
 #define BLYNKADDRESS "blynk.clevercoffee.de"  // blynk-server IP-Address
 #define BLYNKPORT 8080             // blynk-server port
 
