@@ -74,6 +74,7 @@
 
 // PID - offline values
 #define SETPOINT 95                // Temperatur setpoint
+#define STEAMSETPOINT 120         // Temperatur setpoint
 #define AGGKP 69                   // Kp normal
 #define AGGTN 399                  // Tn
 #define AGGTV 0                    // Tv
@@ -100,6 +101,7 @@
 #define PINVOLTAGESENSOR  15    //Input pin for volatage sensor
 //#define OLED_RESET 16              // Output pin for dispaly reset pin
 #define PINETRIGGER 16             // PIN for E-Trigger relay
+#define STEAMONPIN 17             // STEAM active
 #define OLED_SCL 5                 // Output pin for dispaly clock pin
 #define OLED_SDA 4                 // Output pin for dispaly data pin
 #define SCREEN_WIDTH 128           // OLED display width, in pixels

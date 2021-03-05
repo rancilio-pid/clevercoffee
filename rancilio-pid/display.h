@@ -85,7 +85,7 @@
                 u8g2.drawLine(12, 48, 12, 4);
                 u8g2.drawLine(13, 48, 13, 5);
                 u8g2.setCursor(32, 4);
-                u8g2.print("HEATING STOPPED");
+                u8g2.print("PID STOPPED");
         }
         u8g2.sendBuffer();
     }
