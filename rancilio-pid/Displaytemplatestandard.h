@@ -70,7 +70,7 @@ void printScreen()
       //draw setPoint line
       u8g2.drawLine(18, 58 - (setPoint / 2), 23, 58 - (setPoint / 2));
 
-      // PID Werte ueber heatbar
+      // PID Werte ueber heatbar , TOF wenn aktiv
       if (percentage < 10.00 && TOF == 1) {
         if (isrCounter < 500) {
           u8g2.setCursor(40, 48);

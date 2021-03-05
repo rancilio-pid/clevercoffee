@@ -1468,12 +1468,14 @@ void setup() {
   
 }
 void loop() {
-  if (calibration_mode == 1) {
+  if (calibration_mode == 1 && TOF == 1) {
       loopcalibrate();
   } else {
       looppid();
   }
 }
+
+// TOF Calibrationsmode 
 void loopcalibrate() {
 //Deactivate PID
     if (pidMode == 1) 
