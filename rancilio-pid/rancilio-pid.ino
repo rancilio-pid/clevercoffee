@@ -14,7 +14,7 @@
 #include "PID_v1.h" //for PID calculation
 #include <DallasTemperature.h>    //Library for dallas temp sensor
 #if defined(ESP8266) 
-  #include <BlynkSimpleEsp8266.h>WiFi.hostname(hostname);
+  #include <BlynkSimpleEsp8266.h>
 #endif
 #if defined(ESP32) 
   #include <BlynkSimpleEsp32.h>
@@ -24,6 +24,8 @@
 #include <ZACwire.h> //NEW TSIC LIB
 #include <PubSubClient.h>
 #include "TSIC.h"       //Library for TSIC temp sensor
+#include <Adafruit_VL53L0X.h> //for TOF 
+
 
 /********************************************************
   DEFINES
@@ -42,7 +44,7 @@
 #define DEBUG_print(a) Serial.print(a);
 #define DEBUGSTART(a) Serial.begin(a);
 #endif
-
+#define HIGH_ACCURACY
 
 
 /********************************************************
@@ -61,6 +63,18 @@ const unsigned long wifiConnectionDelay = WIFICINNECTIONDELAY;
 const unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
 int machineLogo = MACHINELOGO;
 const unsigned long brewswitchDelay = BREWSWITCHDELAY;
+
+//Display
+uint8_t oled_i2c = OLED_I2C;
+
+Adafruit_VL53L0X lox = Adafruit_VL53L0X();
+int calibration_mode = CALIBRATION_MODE;
+uint8_t tof_i2c = TOF_I2C;
+int water_full = WATER_FULL;
+int water_empty = WATER_EMPTY;
+double distance;
+double percentage;
+
 
 // Wifi
 const char* hostname = HOSTNAME;
@@ -351,6 +365,19 @@ BLYNK_WRITE(V13)
   pidON = param.asInt();
   mqtt_publish("pidON", number2string(pidON));
 }
+BLYNK_WRITE(V25)
+{
+  calibration_mode = param.asInt();//
+}
+BLYNK_WRITE(V26)
+{
+  water_empty = param.asInt();//
+}
+BLYNK_WRITE(V27)
+{
+  water_full = param.asInt();//
+}
+
 BLYNK_WRITE(V30)
 {
   aggbKp = param.asDouble();//
@@ -1185,11 +1212,20 @@ void setup() {
     DISPLAY 128x64
   ******************************************************/
   #if DISPLAY != 0
+    u8g2.setI2CAddress(oled_i2c * 2);
     u8g2.begin();
     u8g2_prepare();
     displayLogo(sysVersion, "");
     delay(2000);
   #endif
+
+  /********************************************************
+    VL530L0x TOF sensor
+  ******************************************************/
+  if (TOF != 0) { 
+  lox.begin(tof_i2c); // initialize TOF sensor at I2C address
+  lox.setMeasurementTimingBudgetMicroSeconds(2000000);
+  }
 
   /********************************************************
      BLYNK & Fallback offline
@@ -1431,10 +1467,41 @@ void setup() {
   #endif
   
 }
-
-
-
 void loop() {
+  if (calibration_mode == 1) {
+      loopcalibrate();
+  } else {
+      looppid();
+  }
+}
+void loopcalibrate() {
+//Deactivate PID
+    if (pidMode == 1) 
+    {
+      pidMode = 0;
+      bPID.SetMode(pidMode);
+      Output = 0 ;false;
+    }
+if (Blynk.connected()) {  // If connected run as normal
+      Blynk.run();
+      blynkReCnctCount = 0; //reset blynk reconnects if connected
+    } else  {
+      checkBlynk();
+    }
+    digitalWrite(pinRelayHeater, LOW); //Stop heating to be on the safe side ...
+
+  VL53L0X_RangingMeasurementData_t measure;  //TOF Sensor measurement
+  lox.rangingTest(&measure, false); // pass in 'true' to get debug data printout!
+  distance = measure.RangeMilliMeter;  //write new distence value to 'distance'
+  u8g2.clearBuffer();
+        u8g2.setCursor(13, 12);
+        u8g2.setFont(u8g2_font_fub20_tf);
+        u8g2.printf("%.0f\n",distance );
+        u8g2.print("mm");
+      u8g2.sendBuffer();
+}
+
+void looppid() {
   //Only do Wifi stuff, if Wifi is connected
   if (WiFi.status() == WL_CONNECTED && Offlinemodus == 0) { 
 
@@ -1507,7 +1574,7 @@ void loop() {
           printScreen();  // refresh display
       #endif
     //Set PID if first start of machine detected, Tempdiff kleiner gleich 2 Grad kein Kaltstart 
-    if (((Input - setPoint) <= -2) && kaltstart) {
+    if ((Input - setPoint) && kaltstart) {
       if (startTn != 0) {
         startKi = startKp / startTn;
       } else {
