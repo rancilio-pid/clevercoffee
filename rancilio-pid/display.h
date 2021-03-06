@@ -93,14 +93,15 @@
      {
         displaystatus = 0 ;// Indiktator für Reset Bezug im Display
         if
-            (
-            (
-              (bezugsZeit > 0 && ONLYPID == 1) || // Bezugszeit bei Only PID
-              (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42) // oder Bezug bei nicht only PID über brewcounter
-            )
-            && Input < setPoint // Vermeidet, dass der Timer im Dampfmodus angezeigt wird indem die IST Temp kleiner als die Soll Temp sein muss
-            && SHOTTIMER == 1 // Shotimer muss 1 = True sein und Bezug vorliegen
-            )
+        ((
+          (
+            (bezugsZeit > 0)
+            && (ONLYPID == 1) // Bezugszeit bei Only PID
+          )
+          || (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42) // oder Bezug bei nicht only PID über brewcounter
+        )
+        && SHOTTIMER == 1 // Shotimer muss 1 = True sein und Bezug vorliegen
+        )
         {
             // Dann Zeit anzeigen
             u8g2.clearBuffer();
