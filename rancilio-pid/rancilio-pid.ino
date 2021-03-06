@@ -1182,10 +1182,12 @@ void checkSteamON()
   if (SteamON == 1) 
   {
     EmergencyStopTemp = 145;  
+    setPoint = SteamSetPoint ;
   }
    if (SteamON == 0) 
   {
     EmergencyStopTemp = 120;  
+    setPoint = BrewSetPoint ;
   }
 }
 
@@ -1610,7 +1612,6 @@ void looppid() {
 
   //Sicherheitsabfrage
   if (!sensorError && Input > 0 && !emergencyStop && backflushState == 10 && (backflushON == 0 || brewcounter > 10)) {
-    setPoint = BrewSetPoint;
     brewdetection();  //if brew detected, set PID values
       #if DISPLAY != 0
           displayShottimer() ;
@@ -1659,10 +1660,8 @@ void looppid() {
       } else {
         aggKi = 0 ;
       }
-      aggKd = aggTv * aggKp ;
       aggKi = 0 ;
       aggKd = 0 ;
-      setPoint = SteamSetPoint ;
       bPID.SetTunings(aggKp, aggKi, aggKd, PonE);
     }
 
