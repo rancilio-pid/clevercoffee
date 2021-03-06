@@ -1622,7 +1622,7 @@ void looppid() {
           printScreen();  // refresh display
       #endif
     //Set PID if first start of machine detected, and no SteamON
-    if (Input < BrewSetPoint-1) && kaltstart && SteamON == 0) {
+    if ((Input < BrewSetPoint-1) && kaltstart && SteamON == 0) {
       if (startTn != 0) {
         startKi = startKp / startTn;
       } else {
