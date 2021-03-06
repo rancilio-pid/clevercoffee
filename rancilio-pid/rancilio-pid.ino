@@ -640,7 +640,7 @@ void refreshTemp() {
        #if (ONE_WIRE_BUS != 16)
         Temperatur_C = Sensor2.getTemp();
        #endif
-      //Temperatur_C = random(93,94);
+      //Temperatur_C = 70;
       if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
       Input = Temperatur_C;
       if (Brewdetection != 0) {
@@ -1622,7 +1622,7 @@ void looppid() {
           printScreen();  // refresh display
       #endif
     //Set PID if first start of machine detected, and no SteamON
-    if ((Input - BrewSetPoint) && kaltstart && SteamON == 0) {
+    if (Input < BrewSetPoint-1) && kaltstart && SteamON == 0) {
       if (startTn != 0) {
         startKi = startKp / startTn;
       } else {

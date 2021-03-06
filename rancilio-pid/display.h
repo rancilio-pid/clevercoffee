@@ -133,7 +133,7 @@
         if (OFFLINEGLOGO == 1 && pidON == 0)  // wenn Offline kein Symbol anzeigen vom Kaltstart
         return; 
       
-        if (HEATINGLOGO > 0 && ((Input < setPoint) <= -2) && kaltstart) 
+        if (HEATINGLOGO > 0 && (Input < BrewSetPoint-1) && kaltstart) 
         {
            // Für Statusinfos
            u8g2.clearBuffer();
