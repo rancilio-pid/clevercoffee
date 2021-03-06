@@ -208,7 +208,8 @@ double Input, Output;
 double setPointTemp;
 double previousInput = 0;
 
-double setPoint = SETPOINT;
+double BrewSetPoint = SETPOINT;
+double setPoint = BrewSetPoint;
 double SteamSetPoint = STEAMSETPOINT;
 int    SteamON = 0;
 int    SteamFirstON = 0;
@@ -346,8 +347,8 @@ BLYNK_WRITE(V6) {
 }
 
 BLYNK_WRITE(V7) {
-  setPoint = param.asDouble();
-  mqtt_publish("setPoint", number2string(setPoint));
+  BrewSetPoint = param.asDouble();
+  mqtt_publish("BrewSetPoint", number2string(BrewSetPoint));
 }
 
 BLYNK_WRITE(V8) {
@@ -639,7 +640,7 @@ void refreshTemp() {
        #if (ONE_WIRE_BUS != 16)
         Temperatur_C = Sensor2.getTemp();
        #endif
-      Temperatur_C = random(93,94);
+      //Temperatur_C = random(93,94);
       if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
       Input = Temperatur_C;
       if (Brewdetection != 0) {
@@ -765,7 +766,7 @@ void initOfflineMode()
     EEPROM.get(0, aggKp);
     EEPROM.get(10, aggTn);
     EEPROM.get(20, aggTv);
-    EEPROM.get(30, setPoint);
+    EEPROM.get(30, BrewSetPoint);
     EEPROM.get(40, brewtime);
     EEPROM.get(50, preinfusion);
     EEPROM.get(60, preinfusionpause);
@@ -928,7 +929,7 @@ void sendToBlynk() {
         Blynk.virtualWrite(V23, Output);
       }
       if (blynksendcounter == 3) {
-        Blynk.virtualWrite(V7, setPoint);
+        Blynk.virtualWrite(V17, setPoint);
         //MQTT
         mqtt_publish("setPoint", number2string(setPoint));
       }
@@ -1006,7 +1007,7 @@ void brewdetection()
 
   if (Brewdetection == 1) 
   {
-    if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 && (setPoint-Input) < 3 ) // BD PID only +/- 2 Grad Celsius
+    if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 && (BrewSetPoint-Input) < 3 ) // BD PID only +/- 2 Grad Celsius
     {
       DEBUG_println("SW Brew detected") ;
       timeBrewdetection = millis() ;
@@ -1097,11 +1098,11 @@ void mqtt_callback(char* topic, byte* data, unsigned int length) {
   }
   DEBUG_println(topic_str);
   DEBUG_println(data_str);
-  if (strcmp(configVar, "setPoint") == 0) {
+  if (strcmp(configVar, "BrewSetPoint") == 0) {
     sscanf(data_str, "%lf", &data_double);
-    mqtt_publish("setPoint", number2string(setPoint));
+    mqtt_publish("BrewSetPoint", number2string(BrewSetPoint));
     if (Blynk.connected()) { Blynk.virtualWrite(V7, String(data_double));}
-    setPoint = data_double;
+    BrewSetPoint = data_double;
     return;
   }
   if (strcmp(configVar, "brewtime") == 0) {
@@ -1356,7 +1357,7 @@ void setup() {
           EEPROM.put(0, aggKp);
           EEPROM.put(10, aggTn);
           EEPROM.put(20, aggTv);  
-          EEPROM.put(30, setPoint);
+          EEPROM.put(30, BrewSetPoint);
           EEPROM.put(40, brewtime);
           EEPROM.put(50, preinfusion);
           EEPROM.put(60, preinfusionpause);
@@ -1384,7 +1385,7 @@ void setup() {
           EEPROM.get(0, aggKp);
           EEPROM.get(10, aggTn);
           EEPROM.get(20, aggTv);
-          EEPROM.get(30, setPoint);
+          EEPROM.get(30, BrewSetPoint);
           EEPROM.get(40, brewtime);
           EEPROM.get(50, preinfusion);
           EEPROM.get(60, preinfusionpause);
@@ -1421,7 +1422,7 @@ void setup() {
      Ini PID
   ******************************************************/
 
-  setPointTemp = setPoint;
+  //setPointTemp = BrewSetPoint;
   bPID.SetSampleTime(windowSize);
   bPID.SetOutputLimits(0, windowSize);
   bPID.SetMode(AUTOMATIC);
@@ -1609,6 +1610,7 @@ void looppid() {
 
   //Sicherheitsabfrage
   if (!sensorError && Input > 0 && !emergencyStop && backflushState == 10 && (backflushON == 0 || brewcounter > 10)) {
+    setPoint = BrewSetPoint;
     brewdetection();  //if brew detected, set PID values
       #if DISPLAY != 0
           displayShottimer() ;
@@ -1619,7 +1621,7 @@ void looppid() {
           printScreen();  // refresh display
       #endif
     //Set PID if first start of machine detected, and no SteamON
-    if ((Input - setPoint) && kaltstart && !SteamON) {
+    if ((Input - BrewSetPoint) && kaltstart && SteamON == 0) {
       if (startTn != 0) {
         startKi = startKp / startTn;
       } else {
@@ -1627,7 +1629,7 @@ void looppid() {
       }
       bPID.SetTunings(startKp, startKi, 0, P_ON_M);
     // normal PID
-    } else if (timerBrewdetection == 0 && !SteamON) {    //Prevent overwriting of brewdetection values
+    } else if (timerBrewdetection == 0 && SteamON == 0) {    //Prevent overwriting of brewdetection values
       // calc ki, kd
       if (aggTn != 0) {
         aggKi = aggKp / aggTn ;
@@ -1639,7 +1641,7 @@ void looppid() {
       kaltstart = false;
     }
     // BD PID
-    if ( millis() - timeBrewdetection  < brewtimersoftware * 1000 && timerBrewdetection == 1 && !SteamON) {
+    if ( millis() - timeBrewdetection  < brewtimersoftware * 1000 && timerBrewdetection == 1 && SteamON == 0) {
       // calc ki, kd
       if (aggbTn != 0) {
         aggbKi = aggbKp / aggbTn ;
@@ -1647,7 +1649,7 @@ void looppid() {
         aggbKi = 0 ;
       }
       aggbKd = aggbTv * aggbKp ;
-      bPID.SetTunings(aggbKp, aggbKi, aggbKd) ;
+      bPID.SetTunings(aggbKp, aggbKi, aggbKd, PonE) ;
     }
     // Steamon
     if (SteamON == 1)
@@ -1658,13 +1660,10 @@ void looppid() {
         aggKi = 0 ;
       }
       aggKd = aggTv * aggKp ;
-      double setpointSave = setPoint ;
-      DEBUG_println("Steammode");
+      aggKi = 0 ;
+      aggKd = 0 ;
       setPoint = SteamSetPoint ;
-      DEBUG_println(setPoint);
-      bPID.SetTunings(aggKp, aggKi, aggKd);
-      setPoint = setpointSave ;
-      DEBUG_println(setPoint);
+      bPID.SetTunings(aggKp, aggKi, aggKd, PonE);
     }
 
   } else if (sensorError) 
