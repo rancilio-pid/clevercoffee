@@ -24,27 +24,16 @@ void printScreen()
       //draw (blinking) temp
       if (fabs(Input - setPoint) < 0.3) {
         if (isrCounter < 500) {
-          if (Input < 99.999) {
             u8g2.setCursor(2, 2);
             u8g2.setFont(u8g2_font_profont22_tf);
             u8g2.print(Input, 1);
+            u8g2.setCursor(56, 6);
             u8g2.setFont(u8g2_font_open_iconic_arrow_2x_t);
             u8g2.print(char(78));
-            u8g2.setCursor(78, 2);
+            u8g2.setCursor(79, 2);
             u8g2.setFont(u8g2_font_profont22_tf);
             u8g2.print(setPoint, 1);
-          }
-          else {
-            u8g2.setCursor(2, 2);
-            u8g2.setFont(u8g2_font_profont22_tf);
-            u8g2.print(Input, 0);
-            u8g2.setFont(u8g2_font_open_iconic_arrow_2x_t);
-            u8g2.print(char(78));
-            u8g2.setCursor(78, 2);
-            u8g2.setFont(u8g2_font_profont22_tf);
-            u8g2.print(setPoint, 1);
-          }
-        }  
+        }
       } else {
         if (Input < 99.999) {
           u8g2.setCursor(2, 2);
@@ -63,17 +52,17 @@ void printScreen()
         } else {
           u8g2.setCursor(2, 2);
           u8g2.setFont(u8g2_font_profont22_tf);
-          u8g2.print(Input, 0);
+          u8g2.print(Input, 1);
           u8g2.setFont(u8g2_font_open_iconic_arrow_2x_t);
-          u8g2.setCursor(56, 6);
+          u8g2.setCursor(72, 6);
           if (pidMode == 1) {
             u8g2.print(char(74));
           } else {
             u8g2.print(char(70));
           }
-          u8g2.setCursor(79, 2);
+          u8g2.setCursor(95, 2);
           u8g2.setFont(u8g2_font_profont22_tf);
-          u8g2.print(setPoint, 1);
+          u8g2.print(setPoint, 0);
         }
       }
 
