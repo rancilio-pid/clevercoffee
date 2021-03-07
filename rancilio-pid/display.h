@@ -85,7 +85,7 @@
                 u8g2.drawLine(12, 48, 12, 4);
                 u8g2.drawLine(13, 48, 13, 5);
                 u8g2.setCursor(32, 4);
-                u8g2.print("HEATING STOPPED");
+                u8g2.print("PID STOPPED");
         }
         u8g2.sendBuffer();
     }
@@ -133,7 +133,7 @@
         if (OFFLINEGLOGO == 1 && pidON == 0)  // wenn Offline kein Symbol anzeigen vom Kaltstart
         return; 
       
-        if (HEATINGLOGO > 0 && ((Input < setPoint) <= -2) && kaltstart) 
+        if (HEATINGLOGO > 0 && (Input < BrewSetPoint-1) && kaltstart) 
         {
            // Für Statusinfos
            u8g2.clearBuffer();

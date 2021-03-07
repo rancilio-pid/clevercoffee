@@ -6,13 +6,16 @@
 
 void printScreen() 
 {
-  if (
+  if 
+  (
   (HEATINGLOGO > 0 && kaltstart == 1) ||
   (OFFLINEGLOGO == 1 && pidON == 0)   ||
   (SHOTTIMER == 1 && bezugsZeit > 0) || 
-  (SHOTTIMER == 1 && millis() >= bezugszeit_last_Millis && bezugszeit_last_Millis+brewswitchDelay >= millis())) // sobald der Brühschalter umgelegt wird, brewswitchDelay abgelaufen
+  (SHOTTIMER == 1 && millis() >= bezugszeit_last_Millis && bezugszeit_last_Millis+brewswitchDelay >= millis())
+  ) // sobald der Brühschalter umgelegt wird, brewswitchDelay abgelaufen
   return;
   unsigned long currentMillisDisplay = millis();
+
   if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
     previousMillisDisplay = currentMillisDisplay;
     if (!sensorError) {
@@ -67,28 +70,36 @@ void printScreen()
       //draw setPoint line
       u8g2.drawLine(18, 58 - (setPoint / 2), 23, 58 - (setPoint / 2));
 
-      // PID Werte ueber heatbar
-      u8g2.setCursor(40, 48);
-
-      u8g2.print(bPID.GetKp(), 0); // P
-      u8g2.print("|");
-      if (bPID.GetKi() != 0) {
-        u8g2.print(bPID.GetKp() / bPID.GetKi(), 0);;
-      } // I
-      else
+      // PID Werte ueber heatbar , TOF wenn aktiv
+      if (percentage < 10.00 && TOF == 1) {
+        if (isrCounter < 500) {
+          u8g2.setCursor(40, 48);
+          u8g2.print("Wasser leer");
+             
+         }
+      } else 
       {
-        u8g2.print("0");
-      }
-      u8g2.print("|");
-      u8g2.print(bPID.GetKd() / bPID.GetKp(), 0); // D
-      u8g2.setCursor(98, 48);
-      if (Output < 99) {
-        u8g2.print(Output / 10, 1);
-      } else {
-        u8g2.print(Output / 10, 0);
-      }
-      u8g2.print("%");
+        u8g2.setCursor(40, 48);
 
+        u8g2.print(bPID.GetKp(), 0); // P
+        u8g2.print("|");
+        if (bPID.GetKi() != 0) {
+          u8g2.print(bPID.GetKp() / bPID.GetKi(), 0);;
+        } // I
+        else
+        {
+          u8g2.print("0");
+        }
+        u8g2.print("|");
+        u8g2.print(bPID.GetKd() / bPID.GetKp(), 0); // D
+        u8g2.setCursor(98, 48);
+        if (Output < 99) {
+          u8g2.print(Output / 10, 1);
+        } else {
+          u8g2.print(Output / 10, 0);
+        }
+        u8g2.print("%");
+      }
       // Brew
       u8g2.setCursor(32, 34);
       u8g2.print("Brew:  ");
@@ -105,7 +116,7 @@ void printScreen()
       u8g2.drawFrame(0, 0, 128, 64);
 
       // Für Statusinfos
-      u8g2.drawFrame(32, 0, 84, 12);
+      u8g2.drawFrame(32, 0, 128, 12);
       if (Offlinemodus == 0) {
         getSignalStrength();
         if (WiFi.status() == WL_CONNECTED) {
@@ -137,6 +148,12 @@ void printScreen()
         u8g2.setCursor(40, 2);
         u8g2.print("Offlinemodus");
       }
+      if(TOF == 1) 
+        {
+          u8g2.setCursor(100, 2);
+          u8g2.printf("%.0f\n",percentage);   //display water level
+          u8g2.print((char)37);
+        }
       u8g2.sendBuffer();
     }
   }
