@@ -967,7 +967,7 @@ void sendToBlynk() {
 void brewdetection()
 {
   if (brewboarder == 0) return; //abort brewdetection if deactivated
-  if ((bezugsZeit == 0) && (Input > (BrewSetPoint - 1))) return; //abort brewdetection if not in temp window
+  if ((bezugsZeit == 0) && (fabs(Input - BrewSetPoint) > 1.5)) return; //abort brewdetection if not in temp window
   // Brew detecion == 1 software solution , == 2 hardware == 3 Voltagesensor
   if (Brewdetection == 1)
   {  // Bezugstimmer für SW aktivieren
