@@ -89,6 +89,32 @@
         }
         u8g2.sendBuffer();
     }
+
+/********************************************************
+     DISPLAY - SteamingMode
+    *****************************************************/
+    void displaySteamingMode(void) 
+    {
+        u8g2.clearBuffer();
+        u8g2.setFont(u8g2_font_profont11_tf); // set font
+        const char* displayText = "STEAMING - PID OFF";
+        u8g2.setCursor(((128 - u8g2.getStrWidth(displayText)) / 2), 1);
+        u8g2.print(displayText);
+        if (Input < 99.999) {
+            u8g2.setCursor(13, 12);
+            u8g2.setFont(u8g2_font_fub35_tf);
+            u8g2.print(Input, 1);
+        }
+        else {
+        u8g2.setCursor(-1, 12);
+        u8g2.setFont(u8g2_font_fub35_tf);
+        u8g2.print(Input, 1);
+        }
+        u8g2.sendBuffer();
+    }
+    /********************************************************
+     DISPLAY - ShotTimer
+    *****************************************************/
     void displayShottimer(void) 
      {
         displaystatus = 0 ;// Indiktator für Reset Bezug im Display
