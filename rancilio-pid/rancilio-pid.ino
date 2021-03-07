@@ -127,11 +127,8 @@ int pidON = 1 ;                 // 1 = control loop in closed loop
 int relayON, relayOFF;          // used for relay trigger type. Do not change!
 boolean kaltstart = true;       // true = Rancilio started for first time
 boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
-<<<<<<< Updated upstream
 double EmergencyStopTemp = 120; // Temp EmergencyStopTemp
-=======
 boolean steamingMode = false;       // Erkunng ob die Dampftaste den PID überbrückt
->>>>>>> Stashed changes
 const char* sysVersion PROGMEM  = "Version 2.8.0 MASTER";   //System version
 int inX = 0, inY = 0, inOld = 0, inSum = 0; //used for filter()
 int bars = 0; //used for getSignalStrength()
@@ -458,11 +455,7 @@ void Steaming() {
   Emergency stop inf temp is to high
 *****************************************************/
 void testEmergencyStop() {
-<<<<<<< Updated upstream
   if (Input > EmergencyStopTemp && emergencyStop == false) {
-=======
-  if (Input > 145 && emergencyStop == false) {
->>>>>>> Stashed changes
     emergencyStop = true;
   } else if (Input < 100 && emergencyStop == true) {
     emergencyStop = false;
@@ -1624,23 +1617,14 @@ void looppid() {
     checkWifi();
   }
 
-<<<<<<< Updated upstream
-  // voids
+// voids
     refreshTemp();   //read new temperature values
     testEmergencyStop();  // test if Temp is to high
     brew();   //start brewing if button pressed
     checkSteamON(); // check for steam
+    Steaming(); //Dampferkennung
     sendToBlynk();
-=======
 
-
-  refreshTemp();   //read new temperature values
-  testEmergencyStop();  // test if Temp is to high
-  brew();   //start brewing if button pressed
-  Steaming(); //Dampferkennung
-
-  sendToBlynk();
->>>>>>> Stashed changes
    if(ETRIGGER == 1) // E-Trigger active then void Etrigger() 
     { 
       ETriggervoid();
