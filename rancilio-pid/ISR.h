@@ -31,19 +31,26 @@
 #endif
 
 #if defined(ESP32) // ESP32
-void IRAM_ATTR onTimer(){ 
- //timer1_write(50000); // set interrupt time to 10ms 
-    timerAlarmWrite(timer, 10000, true); 
-  if (Output <= isrCounter) { 
-    digitalWrite(pinRelayHeater, LOW); 
-   // DEBUG_println("Power off!"); 
-  } else { 
-    digitalWrite(pinRelayHeater, HIGH); 
-   // DEBUG_println("Power on!"); 
-  } 
+  void IRAM_ATTR onTimer(){
+    
+    //timer1_write(50000); // set interrupt time to 10ms
+      timerAlarmWrite(timer, 10000, true);
+    if (Output <= isrCounter) {
+      digitalWrite(pinRelayHeater, LOW);
+      DEBUG_println("Power off!");
+    } else {
+      digitalWrite(pinRelayHeater, HIGH);
+      DEBUG_println("Power on!");
+    }
+  
+    isrCounter += 10; // += 10 because one tick = 10ms
+    //set PID output as relais commands
+    if (isrCounter > windowSize) {
+      isrCounter = 0;
+    }
+  
+    //run PID calculation
+    bPID.Compute();
+  }
 
-  isrCounter += 10; // += 10 because one tick = 10ms 
-  //set PID output as relais commands 
-  if (isrCounter > windowSize) { 
-    isrCounter = 0; 
  #endif   

@@ -19,6 +19,7 @@
 #if defined(ESP32) 
   #include <BlynkSimpleEsp32.h>
   #include <os.h> 
+      hw_timer_t * timer = NULL;
 #endif
 #include "icon.h"   //user icons for display
 #include <ZACwire.h> //NEW TSIC LIB
@@ -1508,7 +1509,6 @@ void setup() {
     timerAttachInterrupt(timer, &onTimer, true);//m
     timerAlarmWrite(timer, 10000, true);//m
     timerAlarmEnable(timer);//m
-    hw_timer_t * timer = NULL; //m
   #endif
   
 }
@@ -1566,15 +1566,31 @@ void looppid() {
     ArduinoOTA.handle();  // For OTA
     // Disable interrupt it OTA is starting, otherwise it will not work
     ArduinoOTA.onStart([]() {
+      
+      #if defined(ESP8266) 
       timer1_disable();
+      #endif
+      #if defined(ESP32) 
+      timerAlarmDisable(timer);
+      #endif
       digitalWrite(pinRelayHeater, LOW); //Stop heating
     });
     ArduinoOTA.onError([](ota_error_t error) {
+      #if defined(ESP8266) 
       timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+      #endif
+      #if defined(ESP32) 
+      timerAlarmDisable(timer);
+      #endif
     });
     // Enable interrupts if OTA is finished
     ArduinoOTA.onEnd([]() {
-      timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+      #if defined(ESP8266) 
+       timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+      #endif
+      #if defined(ESP32)
+        timerAlarmEnable(timer);
+      #endif
     });
 
     if (Blynk.connected()) {  // If connected run as normal
