@@ -19,7 +19,7 @@
 #if defined(ESP32) 
   #include <BlynkSimpleEsp32.h>
   #include <os.h> 
-      hw_timer_t * timer = NULL;
+  hw_timer_t * timer = NULL;
 #endif
 #include "icon.h"   //user icons for display
 #include <ZACwire.h> //NEW TSIC LIB
@@ -1008,7 +1008,7 @@ void brewdetection()
 
   if (Brewdetection == 1) 
   {
-    if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 && (BrewSetPoint-Input) < 3 ) // BD PID only +/- 2 Grad Celsius
+    if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 && (fabs(Input - BrewSetPoint) > 2.5) ) // BD PID only +/- 2 Grad Celsius
     {
       DEBUG_println("SW Brew detected") ;
       timeBrewdetection = millis() ;
@@ -1638,7 +1638,7 @@ void looppid() {
           printScreen();  // refresh display
       #endif
     //Set PID if first start of machine detected, and no SteamON
-    if ((Input < BrewSetPoint-1) && kaltstart && SteamON == 0) {
+    if ((Input < BrewSetPoint) && kaltstart && SteamON == 0) {
       if (startTn != 0) {
         startKi = startKp / startTn;
       } else {
@@ -1677,7 +1677,7 @@ void looppid() {
         aggKi = 0 ;
       }
       aggKi = 0 ;
-      aggKd = 0 ;
+      aggKd = aggTv * aggKp ;
       bPID.SetTunings(aggKp, aggKi, aggKd, PonE);
     }
 
