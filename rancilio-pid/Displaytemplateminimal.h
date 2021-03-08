@@ -22,7 +22,7 @@ void printScreen()
       u8g2.drawLine(16, 60, (Output / 10) + 16, 60);
 
       //draw (blinking) temp
-      if (fabs(Input - setPoint) < 0.3) {
+         if (fabs(Input - setPoint) < 0.3) {
         if (isrCounter < 500) {
           if (Input < 99.999) {
             u8g2.setCursor(2, 2);
