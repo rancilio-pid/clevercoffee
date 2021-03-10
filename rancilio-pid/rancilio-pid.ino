@@ -950,27 +950,13 @@ void sendToBlynk() {
         //MQTT
         mqtt_publish("setPoint", number2string(setPoint));
       }
-     
-     
- 
-     if (blynksendcounter == 4) {
-        Blynk.virtualWrite(V25, calibration_mode);
-      }
-      if (blynksendcounter == 5) {
-        Blynk.virtualWrite(V26, water_empty);
-      }
-      if (blynksendcounter == 6) {
-        Blynk.virtualWrite(V27, water_full);
-      }  
-
-     
-      if (blynksendcounter == 7) {
+      if (blynksendcounter == 4) {
         Blynk.virtualWrite(V35, heatrateaverage);
       }
-      if (blynksendcounter == 8) {
+      if (blynksendcounter == 5) {
         Blynk.virtualWrite(V36, heatrateaveragemin);
       }
-      if (grafana == 1 && blynksendcounter >= 9) {
+      if (grafana == 1 && blynksendcounter >= 6) {
         Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint );
          if (MQTT == 1)
          {
@@ -984,7 +970,7 @@ void sendToBlynk() {
             mqtt_publish("SteamON", number2string(SteamON));
          }
         blynksendcounter = 0;
-      } else if (grafana == 0 && blynksendcounter >= 8) {
+      } else if (grafana == 0 && blynksendcounter >= 5) {
         blynksendcounter = 0;
       }
       blynksendcounter++;
@@ -1294,13 +1280,7 @@ void setup() {
     delay(2000);
   #endif
 
-/********************************************************
-    VL530L0x TOF sensor
-  ******************************************************/
-  if (TOF != 0) { 
-  lox.begin(tof_i2c); // initialize TOF sensor at I2C address
-  lox.setMeasurementTimingBudgetMicroSeconds(2000000);
-  }
+
   /********************************************************
     VL530L0x TOF sensor
   ******************************************************/
@@ -1308,7 +1288,6 @@ void setup() {
   lox.begin(tof_i2c); // initialize TOF sensor at I2C address
   lox.setMeasurementTimingBudgetMicroSeconds(2000000);
   }
-
   /********************************************************
      BLYNK & Fallback offline
   ******************************************************/
