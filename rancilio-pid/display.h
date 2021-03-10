@@ -89,7 +89,23 @@
         }
         u8g2.sendBuffer();
     }
-    void displayShottimer(void) 
+    /********************************************************
+     DISPLAY - Calibrationmode
+    *****************************************************/   
+    void displayDistance(int display_distance)
+    {
+        u8g2.clearBuffer();
+        u8g2.setCursor(13, 12);
+        u8g2.setFont(u8g2_font_fub20_tf);
+        u8g2.printf("%d",display_distance);
+        u8g2.print("mm");
+      u8g2.sendBuffer();
+    }
+    /********************************************************
+     DISPLAY - Shottimer
+    *****************************************************/
+
+       void displayShottimer(void) 
      {
         displaystatus = 0 ;// Indiktator für Reset Bezug im Display
         if 
@@ -128,7 +144,11 @@
            u8g2.sendBuffer();
         }
     }
-      void heatinglogo(void) 
+      
+    /********************************************************
+     DISPLAY - Heatinglogo
+    *****************************************************/
+     void heatinglogo(void) 
     {
         if (OFFLINEGLOGO == 1 && pidON == 0)  // wenn Offline kein Symbol anzeigen vom Kaltstart
         return; 
@@ -208,7 +228,12 @@
           u8g2.sendBuffer();
       }
     }
-    void OFFlogo(void) 
+    
+    /********************************************************
+     DISPLAY - PID Off Logo
+    *****************************************************/
+
+     void OFFlogo(void) 
     {
      if (
          (OFFLINEGLOGO == 1 && pidON == 0) && 
