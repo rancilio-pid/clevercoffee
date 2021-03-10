@@ -28,6 +28,9 @@
 #include <Adafruit_VL53L0X.h> //for TOF 
 
 
+
+
+
 /********************************************************
   DEFINES
 ******************************************************/
@@ -84,6 +87,11 @@ const char* ssid = D_SSID;
 const char* pass = PASS;
 unsigned long lastWifiConnectionAttempt = millis();
 unsigned int wifiReconnects = 0; //actual number of reconnects
+
+#if (OFFLINEMODUS == 0) && (ssid == 'myssid')
+#error("Please add our own ssid!");
+#endif
+
 
 // OTA
 const char* OTAhost = OTAHOST;
