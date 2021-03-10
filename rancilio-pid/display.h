@@ -97,7 +97,7 @@
         u8g2.clearBuffer();
         u8g2.setCursor(13, 12);
         u8g2.setFont(u8g2_font_fub20_tf);
-        u8g2.printf("%.0f\n",display_distance );
+        u8g2.printf("%d",display_distance);
         u8g2.print("mm");
       u8g2.sendBuffer();
     }

@@ -1521,7 +1521,7 @@ void loop() {
   }
 }
 
-// TOF Calibrationsmode 
+// TOF Calibration_mode 
 void loopcalibrate() {
 //Deactivate PID
     if (pidMode == 1) 
@@ -1602,9 +1602,12 @@ void looppid() {
     if (TOF != 0) {
         VL53L0X_RangingMeasurementData_t measure;  //TOF Sensor measurement
         lox.rangingTest(&measure, false); // pass in 'true' to get debug data printout!
-        distance = measure.RangeMilliMeter;  //write new distence value to 'distance'
+        distance = measure.RangeMilliMeter;  //write new distance value to 'distance'
+        if (distance <= 1000)
+        {
         percentage = (100 / (water_empty - water_full))* (water_empty - distance); //calculate percentage of waterlevel
         }
+    }
   // voids
     refreshTemp();   //read new temperature values
     testEmergencyStop();  // test if Temp is to high
