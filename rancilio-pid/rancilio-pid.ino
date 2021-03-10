@@ -999,7 +999,7 @@ void brewdetection()
         DEBUG_println("HW Brew - Voltage Sensor - End") ;
         bezugszeit_last_Millis = millis(); // Bezugszeit für Delay 
       }
-    if (millis() - timeBrewdetection > brewtimersoftware * 1000 && brewDetected == 1 ) // reset PID Brew
+    if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1) // reset PID Brew
     {
       timerBrewdetection = 0 ;    //rearm brewdetection
     }
