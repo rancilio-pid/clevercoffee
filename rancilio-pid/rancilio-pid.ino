@@ -66,9 +66,10 @@ int machineLogo = MACHINELOGO;
 const unsigned long brewswitchDelay = BREWSWITCHDELAY;
 const boolean calibration_mode = CALIBRATION_MODE;
 
-//Display
+// Display
 uint8_t oled_i2c = OLED_I2C;
 
+// TOF
 Adafruit_VL53L0X lox = Adafruit_VL53L0X();
 int calibration_mode = CALIBRATION_MODE;
 uint8_t tof_i2c = TOF_I2C;
