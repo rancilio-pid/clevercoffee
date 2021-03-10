@@ -64,12 +64,11 @@ const unsigned long wifiConnectionDelay = WIFICINNECTIONDELAY;
 const unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
 int machineLogo = MACHINELOGO;
 const unsigned long brewswitchDelay = BREWSWITCHDELAY;
-const boolean calibration_mode = CALIBRATION_MODE;
 
-// Display
+//Display
 uint8_t oled_i2c = OLED_I2C;
 
-// TOF
+//TOF
 Adafruit_VL53L0X lox = Adafruit_VL53L0X();
 int calibration_mode = CALIBRATION_MODE;
 uint8_t tof_i2c = TOF_I2C;
@@ -116,15 +115,6 @@ char topic_set[256];
 unsigned long lastMQTTConnectionAttempt = millis();
 unsigned int MQTTReCnctFlag;  // Blynk Reconnection Flag
 unsigned int MQTTReCnctCount = 0;  // Blynk Reconnection counter
-
-//TOF
-Adafruit_VL53L0X lox = Adafruit_VL53L0X();
-int calibration_mode = CALIBRATION_MODE;
-uint8_t tof_i2c = TOF_I2C;
-int water_full = WATER_FULL;
-int water_empty = WATER_EMPTY;
-double distance;
-double percentage;
 
 //Voltage Sensor
 unsigned long previousMillisVoltagesensorreading = millis();
@@ -314,11 +304,7 @@ unsigned long previousMillisDisplay;  // initialisation at the end of init()
 const unsigned long intervalDisplay = 500;
 
 //Standard Display or vertikal?
-#if (calibration_mode == 1)
-  #include "display.h"
-  #endif
-#if (calibration_mode == 0)
- #if (DISPLAY == 1 || DISPLAY == 2) // Display is used 
+#if (DISPLAY == 1 || DISPLAY == 2) // Display is used 
   #if (DISPLAYTEMPLATE < 20) // normal templates
     #include "display.h"  
   #endif  
@@ -336,8 +322,7 @@ const unsigned long intervalDisplay = 500;
   #endif   
   #if (DISPLAYTEMPLATE == 20)
       #include "Displaytemplateupright.h"
-   #endif   
- #endif
+  #endif   
 #endif
 
 
@@ -1280,7 +1265,6 @@ void setup() {
     delay(2000);
   #endif
 
-
   /********************************************************
     VL530L0x TOF sensor
   ******************************************************/
@@ -1288,6 +1272,7 @@ void setup() {
   lox.begin(tof_i2c); // initialize TOF sensor at I2C address
   lox.setMeasurementTimingBudgetMicroSeconds(2000000);
   }
+
   /********************************************************
      BLYNK & Fallback offline
   ******************************************************/
