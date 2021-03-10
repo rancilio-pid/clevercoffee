@@ -1576,14 +1576,9 @@ if (Blynk.connected()) {  // If connected run as normal
   VL53L0X_RangingMeasurementData_t measure;  //TOF Sensor measurement
   lox.rangingTest(&measure, false); // pass in 'true' to get debug data printout!
   distance = measure.RangeMilliMeter;  //write new distence value to 'distance'
-
-  
-  u8g2.clearBuffer();
-        u8g2.setCursor(13, 12);
-        u8g2.setFont(u8g2_font_fub20_tf);
-        u8g2.printf("%.0f\n",distance );
-        u8g2.print("mm");
-      u8g2.sendBuffer();
+   #if DISPLAY !=0
+    displayDistance(distance);
+  #endif
 }
 
 void looppid() {
@@ -1639,7 +1634,12 @@ void looppid() {
   } else {
     checkWifi();
   }
-
+    if (TOF != 0) {
+        VL53L0X_RangingMeasurementData_t measure;  //TOF Sensor measurement
+        lox.rangingTest(&measure, false); // pass in 'true' to get debug data printout!
+        distance = measure.RangeMilliMeter;  //write new distence value to 'distance'
+        percentage = (100 / (water_empty - water_full))* (water_empty - distance); //calculate percentage of waterlevel
+        }
   // voids
     refreshTemp();   //read new temperature values
     testEmergencyStop();  // test if Temp is to high
