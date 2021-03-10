@@ -4,7 +4,7 @@
 void printScreen() 
 {
   if (
-  //(HEATINGLOGO > 0 && kaltstart == 1) ||
+  (HEATINGLOGO > 0 && (Input < BrewSetPoint-1) && kaltstart) ||
   (OFFLINEGLOGO == 1 && pidON == 0)   ||
   (SHOTTIMER == 1 && bezugsZeit > 0) || 
   (SHOTTIMER == 1 && millis() >= bezugszeit_last_Millis && bezugszeit_last_Millis+brewswitchDelay >= millis())) // sobald der Brühschalter umgelegt wird, brewswitchDelay abgelaufen
