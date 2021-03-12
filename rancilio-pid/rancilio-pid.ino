@@ -1013,7 +1013,7 @@ void brewdetection()
 
   if (Brewdetection == 1) 
   {
-    if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 && (fabs(Input - BrewSetPoint) > 2.5) ) // BD PID only +/- 2 Grad Celsius
+    if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 && (fabs(Input - BrewSetPoint) < 2.5) ) // BD PID only +/- 2 Grad Celsius
     {
       DEBUG_println("SW Brew detected") ;
       timeBrewdetection = millis() ;
