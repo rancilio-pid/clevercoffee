@@ -996,6 +996,12 @@ void brewdetection()
     }
   } else if (Brewdetection == 3) 
   {
+    // Bezugszeit hochzaehlen    
+    if (( digitalRead(PINVOLTAGESENSOR) == VoltageSensorON) && brewDetected == 1)
+       {
+       bezugsZeit = millis() - timeBrewdetection ;
+       }
+    //  OFF: Bezug zurücksetzen
     if 
      ((digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF) && brewDetected == 1)
       {
@@ -1013,7 +1019,7 @@ void brewdetection()
 
   if (Brewdetection == 1) 
   {
-    if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 && (fabs(Input - BrewSetPoint) < 2.5) ) // BD PID only +/- 2 Grad Celsius
+    if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 && (fabs(Input - BrewSetPoint) < 5) ) // BD PID only +/- 2 Grad Celsius
     {
       DEBUG_println("SW Brew detected") ;
       timeBrewdetection = millis() ;
@@ -1030,11 +1036,7 @@ void brewdetection()
     }  
   } else if (Brewdetection == 3) // voltage sensor 
   {
-    // Bezugszeit hochzaehlen    
-    if (( digitalRead(PINVOLTAGESENSOR) == VoltageSensorON) && brewDetected == 1)
-       {
-       bezugsZeit = millis() - timeBrewdetection ;
-       }
+
     unsigned long currentMillisVoltagesensorreading = millis();   
     if (
         (currentMillisVoltagesensorreading - previousMillisVoltagesensorreading >= (intervalVoltagesensor)) //Abfrageinterval
