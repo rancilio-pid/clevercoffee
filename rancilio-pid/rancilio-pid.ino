@@ -67,6 +67,7 @@ const unsigned long wifiConnectionDelay = WIFICINNECTIONDELAY;
 const unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
 int machineLogo = MACHINELOGO;
 const unsigned long brewswitchDelay = BREWSWITCHDELAY;
+int machinestate = 0;
 
 //Display
 uint8_t oled_i2c = OLED_I2C;
@@ -188,6 +189,7 @@ double preinfusion = 2000;  //preinfusion time in ms
 double preinfusionpause = 5000;   //preinfusion pause time in ms
 double bezugsZeit = 0;   //total brewed time
 double bezugszeit_last_Millis = 0; // for shottimer delay after disarmed button
+double bezugszeit_last = 0 ; 
 unsigned long startZeit = 0;    //start time of brew
 const unsigned long analogreadingtimeinterval = 10 ; // ms
 unsigned long previousMillistempanalogreading ; // ms for analogreading
@@ -740,7 +742,8 @@ void brew()
         if (brewswitch < 1000) {
           digitalWrite(pinRelayVentil, relayOFF);
           digitalWrite(pinRelayPumpe, relayOFF);
-          bezugszeit_last_Millis = millis();  // for shottimer delay after disarmed button
+          bezugszeit_last = bezugsZeit ;
+          // bezugszeit_last_Millis = millis();  // for shottimer delay after disarmed button
           currentMillistemp = 0;
           bezugsZeit = 0;
           brewDetected = 0; //rearm brewdetection
@@ -985,7 +988,7 @@ void brewdetection()
     if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1 )
     {
       timerBrewdetection = 0 ;    //rearm brewdetection
-      bezugszeit_last_Millis = millis(); // Bezugszeit für Delay 
+     // bezugszeit_last_Millis = millis(); // Bezugszeit für Delay 
       bezugsZeit = 0 ;
      }
   } else if (Brewdetection == 2) 
@@ -1000,6 +1003,7 @@ void brewdetection()
     if (( digitalRead(PINVOLTAGESENSOR) == VoltageSensorON) && brewDetected == 1)
        {
        bezugsZeit = millis() - timeBrewdetection ;
+       bezugszeit_last = bezugsZeit ;
        }
     //  OFF: Bezug zurücksetzen
     if 
@@ -1008,7 +1012,7 @@ void brewdetection()
         brewDetected = 0;
         bezugsZeit = 0 ; 
         DEBUG_println("HW Brew - Voltage Sensor - End") ;
-        bezugszeit_last_Millis = millis(); // Bezugszeit für Delay 
+     //   bezugszeit_last_Millis = millis(); // Bezugszeit für Delay 
       }
     if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1) // reset PID Brew
     {
@@ -1199,6 +1203,273 @@ void checkSteamON()
   }
 }
 
+void machinestatevoid() 
+{
+  /* 
+  00 = init
+  10 = kaltstart
+  19 = Setpoint -1 Celsius
+  20 = Setpoint überschritten, idel at setpoint
+  30 = Bezug 
+  35 = Nachlauf BD
+  40 = Dampf
+  80 = Emergency Stop
+  90 = PID Offline
+  100 = Sensorerror
+  */
+
+  
+  switch (machinestate) 
+  {
+    // init
+    case 0: 
+      if (Input < (BrewSetPoint-1) && kaltstart)
+      {
+        machinestate = 10 ; // kaltstart
+      }
+
+      if (emergencyStop)
+      {
+        machinestate = 80 ; // Emergency Stop
+      }
+     if (pidON == 0)
+      {
+        machinestate = 90 ; // offline
+      }
+     if(sensorError)
+      {
+        machinestate = 100 ;// sensorerror
+      }
+    break;
+
+     // kaltstart
+    case 10: 
+      if (Input >= (BrewSetPoint-1) && !kaltstart)
+      {
+        machinestate = 19 ;
+      }
+      if (SteamON == 1)
+      {
+        machinestate = 40 ; // Steam
+      }
+
+      if (SteamON == 1)
+      {
+        machinestate = 40 ; // switch to  Steam
+      }
+      if (emergencyStop)
+      {
+        machinestate = 80 ; // Emergency Stop
+      }
+     if (pidON == 0)
+      {
+        machinestate = 90 ; // offline
+      }
+     if(sensorError)
+      {
+        machinestate = 100 ;// sensorerror
+      }
+      // Setpoint -1 Celsius
+      case 19: 
+      if (Input >= (BrewSetPoint) && !kaltstart)
+      {
+        machinestate = 20 ;
+      }
+      if (SteamON == 1)
+      {
+        machinestate = 40 ; // Steam
+      }
+
+      if (SteamON == 1)
+      {
+        machinestate = 40 ; // switch to  Steam
+      }
+      if (emergencyStop)
+      {
+        machinestate = 80 ; // Emergency Stop
+      }
+     if (pidON == 0)
+      {
+        machinestate = 90 ; // offline
+      }
+     if(sensorError)
+      {
+        machinestate = 100 ;// sensorerror
+      }  
+    break;
+    // normal PID
+    case 20: 
+      if
+      (
+       (bezugsZeit > 0 && ONLYPID == 1) || // Bezugszeit bei Only PID  
+       (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42) 
+      )
+      {
+        machinestate = 30 ; // Brew
+      }
+      if (SteamON == 1)
+      {
+        machinestate = 40 ; // Steam
+      }
+
+      if (emergencyStop)
+      {
+        machinestate = 80 ; // Emergency Stop
+      }
+     if (pidON == 0)
+      {
+        machinestate = 90 ; // offline
+      }
+     if(sensorError)
+      {
+        machinestate = 100 ;// sensorerror
+      }
+    break;
+     // Brew
+    case 30:
+      if
+      (
+       (bezugsZeit > 35*1000 && Brewdetection == 1 && ONLYPID == 1 && timerBrewdetection == 1 ) ||  // 35 sec later and BD PID aktive SW Solution
+       (bezugsZeit == 0      && Brewdetection == 3 && ONLYPID == 1 && timerBrewdetection == 1 ) ||  // Voltagesensor reset bezugsZeit == 0
+       ((brewcounter == 10 || brewcounter == 43)   && ONLYPID == 0 && timerBrewdetection == 1 ) // switchoff BD PID aktive
+      )
+      {
+       if ((ONLYPID == 1 && timerBrewdetection == 3)||  ONLYPID == 0 ) // only delay of shotimer for voltagesensor or brewcounter
+       {
+       machinestate = 31 ;
+       }
+       if (ONLYPID == 1 && timerBrewdetection == 1) //direct to PID BD
+       {
+       machinestate = 35 ;
+       }
+      } 
+      if (SteamON == 1)
+      {
+        machinestate = 40 ; // Steam
+      }
+
+      if (emergencyStop)
+      {
+        machinestate = 80 ; // Emergency Stop
+      }
+     if (pidON == 0)
+      {
+        machinestate = 90 ; // offline
+      }
+     if(sensorError)
+      {
+        machinestate = 100 ;// sensorerror
+      }
+    break;
+    // Sec after shot finish
+    case 31: //bezugszeit_last_Millis
+      if ( millis()-bezugszeit_last_Millis > BREWSWITCHDELAY )
+      {
+       machinestate = 35 ;
+       bezugszeit_last = 0 ;
+      }
+      if (SteamON == 1)
+      {
+        machinestate = 40 ; // Steam
+      }
+
+      if (emergencyStop)
+      {
+        machinestate = 80 ; // Emergency Stop
+      }
+     if (pidON == 0)
+      {
+        machinestate = 90 ; // offline
+      }
+     if(sensorError)
+      {
+        machinestate = 100 ;// sensorerror
+      }
+    break;
+    // BD PID
+    case 35:
+      if (timerBrewdetection == 0)
+      {
+        machinestate = 20 ; // switch to normal PID
+      }
+      if (SteamON == 1)
+      {
+        machinestate = 40 ; // switch to  Steam
+      }
+
+      if (emergencyStop)
+      {
+        machinestate = 80 ; // Emergency Stop
+      }
+      if (pidON == 0)
+      {
+        machinestate = 90 ; // offline
+      }
+     if(sensorError)
+      {
+        machinestate = 100 ;// sensorerror
+      }
+    break;
+    // Steam
+    case 40:
+      if (SteamON == 0)
+      {
+        machinestate = 20 ; //  switch to normal
+      }
+
+     if (emergencyStop)
+      {
+        machinestate = 80 ; // Emergency Stop
+      }
+     if (pidON == 0)
+      {
+        machinestate = 90 ; // offline
+      }
+     if(sensorError)
+      {
+        machinestate = 100 ;// sensorerror
+      }
+    break;
+    // emergencyStop 
+    case 80: 
+      if (!emergencyStop)
+      {
+        machinestate = 20 ; // normal PID
+      }
+      if (pidON == 0)
+      {
+        machinestate = 90 ; // offline
+      }
+      if(sensorError)
+      {
+        machinestate = 100 ;
+      }
+    break;
+    // PID offline
+    case 90: 
+      if (pidON == 1)
+      {
+        if(kaltstart) 
+        {
+        machinestate = 10 ; // kaltstart 
+        }
+        if(!kaltstart) 
+        {
+        machinestate = 20 ; // normal PID
+        }
+      }
+      
+      if(sensorError)
+      {
+        machinestate = 100 ;
+      }
+    break;
+    // sensor error
+    case 100:
+    // Nothing
+    break;
+  } // switch case
+} // end void
 
 void setup() {
   DEBUGSTART(115200);
@@ -1620,6 +1891,7 @@ void looppid() {
     brew();   //start brewing if button pressed
     checkSteamON(); // check for steam
     sendToBlynk();
+    machinestatevoid() ; // calc machinestaze
    if(ETRIGGER == 1) // E-Trigger active then void Etrigger() 
     { 
       ETriggervoid();
@@ -1645,6 +1917,7 @@ void looppid() {
             heatinglogo(); 
           #endif
            OFFlogo(); 
+          steamLogo();
           printScreen();  // refresh display
       #endif
     //Set PID if first start of machine detected, and no SteamON
