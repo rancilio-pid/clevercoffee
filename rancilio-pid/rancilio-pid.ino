@@ -188,8 +188,8 @@ double totalbrewtime = 0; //total brewtime set in softare or blynk
 double preinfusion = 2000;  //preinfusion time in ms
 double preinfusionpause = 5000;   //preinfusion pause time in ms
 double bezugsZeit = 0;   //total brewed time
-double bezugszeit_last_Millis = 0; // for shottimer delay after disarmed button
-double bezugszeit_last = 0 ; 
+double lastbezugszeit_Millis = 0; // for shottimer delay after disarmed button
+double lastbezugszeit = 0 ; 
 unsigned long startZeit = 0;    //start time of brew
 const unsigned long analogreadingtimeinterval = 10 ; // ms
 unsigned long previousMillistempanalogreading ; // ms for analogreading
@@ -676,7 +676,7 @@ void brew()
       brewcounter = 43;
     }
 
-    if (brewcounter > 10) {
+    if (brewcounter > 10 && brewcounter < 43 ) {
       bezugsZeit = currentMillistemp - startZeit;
     }
     if (brewswitch < 1000 && firstreading == 0 ) 
@@ -694,6 +694,7 @@ void brew()
         if (brewswitch > 1000 && backflushState == 10 && backflushON == 0 && brewswitchWasOFF) {
           startZeit = millis();
           brewcounter = 20;
+          lastbezugszeit = 0;
           kaltstart = false;    // force reset kaltstart if shot is pulled
         } else {
           backflush();
@@ -728,6 +729,7 @@ void brew()
         brewcounter = 41;
         break;
       case 41:    //waiting time brew
+        lastbezugszeit = bezugsZeit;
         if (bezugsZeit > totalbrewtime) {
           brewcounter = 42;
         }
@@ -737,17 +739,17 @@ void brew()
         digitalWrite(pinRelayVentil, relayOFF);
         digitalWrite(pinRelayPumpe, relayOFF);
         brewcounter = 43;
+        bezugsZeit = 0;
         break;
       case 43:    // waiting for brewswitch off position
         if (brewswitch < 1000) {
           digitalWrite(pinRelayVentil, relayOFF);
           digitalWrite(pinRelayPumpe, relayOFF);
-          bezugszeit_last = bezugsZeit ;
-          // bezugszeit_last_Millis = millis();  // for shottimer delay after disarmed button
+          // lastbezugszeit_Millis = millis();  // for shottimer delay after disarmed button
           currentMillistemp = 0;
-          bezugsZeit = 0;
           brewDetected = 0; //rearm brewdetection
           brewcounter = 10;
+          bezugsZeit = 0;
         }
         break;
     }
@@ -988,7 +990,7 @@ void brewdetection()
     if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1 )
     {
       timerBrewdetection = 0 ;    //rearm brewdetection
-     // bezugszeit_last_Millis = millis(); // Bezugszeit für Delay 
+     // lastbezugszeit_Millis = millis(); // Bezugszeit für Delay 
       bezugsZeit = 0 ;
      }
   } else if (Brewdetection == 2) 
@@ -1003,7 +1005,7 @@ void brewdetection()
     if (( digitalRead(PINVOLTAGESENSOR) == VoltageSensorON) && brewDetected == 1)
        {
        bezugsZeit = millis() - timeBrewdetection ;
-       bezugszeit_last = bezugsZeit ;
+       lastbezugszeit = bezugsZeit ;
        }
     //  OFF: Bezug zurücksetzen
     if 
@@ -1012,7 +1014,7 @@ void brewdetection()
         brewDetected = 0;
         bezugsZeit = 0 ; 
         DEBUG_println("HW Brew - Voltage Sensor - End") ;
-     //   bezugszeit_last_Millis = millis(); // Bezugszeit für Delay 
+     //   lastbezugszeit_Millis = millis(); // Bezugszeit für Delay 
       }
     if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1) // reset PID Brew
     {
@@ -1054,7 +1056,7 @@ void brewdetection()
         timeBrewdetection = millis() ;
         timerBrewdetection = 1 ;
         brewDetected = 1;
-        bezugsZeit = millis();
+        lastbezugszeit = 0 ;
       }
     }
   }
@@ -1217,13 +1219,12 @@ void machinestatevoid()
   90 = PID Offline
   100 = Sensorerror
   */
-
-  
+  //DEBUG_println(machinestate);
   switch (machinestate) 
   {
     // init
     case 0: 
-      if (Input < (BrewSetPoint-1) && kaltstart)
+      if (Input < (BrewSetPoint-1) )
       {
         machinestate = 10 ; // kaltstart
       }
@@ -1244,7 +1245,7 @@ void machinestatevoid()
 
      // kaltstart
     case 10: 
-      if (Input >= (BrewSetPoint-1) && !kaltstart)
+      if (Input >= (BrewSetPoint-1) )
       {
         machinestate = 19 ;
       }
@@ -1271,7 +1272,7 @@ void machinestatevoid()
       }
       // Setpoint -1 Celsius
       case 19: 
-      if (Input >= (BrewSetPoint) && !kaltstart)
+      if (Input >= (BrewSetPoint))
       {
         machinestate = 20 ;
       }
@@ -1329,18 +1330,20 @@ void machinestatevoid()
     case 30:
       if
       (
-       (bezugsZeit > 35*1000 && Brewdetection == 1 && ONLYPID == 1 && timerBrewdetection == 1 ) ||  // 35 sec later and BD PID aktive SW Solution
-       (bezugsZeit == 0      && Brewdetection == 3 && ONLYPID == 1 && timerBrewdetection == 1 ) ||  // Voltagesensor reset bezugsZeit == 0
-       ((brewcounter == 10 || brewcounter == 43)   && ONLYPID == 0 && timerBrewdetection == 1 ) // switchoff BD PID aktive
+       (bezugsZeit > 35*1000 && Brewdetection == 1 && ONLYPID == 1  ) ||  // 35 sec later and BD PID aktive SW Solution
+       (bezugsZeit == 0      && Brewdetection == 3 && ONLYPID == 1  ) ||  // Voltagesensor reset bezugsZeit == 0
+       ((brewcounter == 10 || brewcounter == 43)   && ONLYPID == 0  ) // switchoff BD PID aktive
       )
       {
-       if ((ONLYPID == 1 && timerBrewdetection == 3)||  ONLYPID == 0 ) // only delay of shotimer for voltagesensor or brewcounter
+       if ((ONLYPID == 1 && Brewdetection == 3) || ONLYPID == 0 ) // only delay of shotimer for voltagesensor or brewcounter
        {
-       machinestate = 31 ;
+         machinestate = 31 ;
+         lastbezugszeit_Millis = millis() ; // for delay
+        
        }
-       if (ONLYPID == 1 && timerBrewdetection == 1) //direct to PID BD
+       if (ONLYPID == 1 && Brewdetection == 1 && timerBrewdetection == 1) //direct to PID BD
        {
-       machinestate = 35 ;
+         machinestate = 35 ;
        }
       } 
       if (SteamON == 1)
@@ -1362,11 +1365,11 @@ void machinestatevoid()
       }
     break;
     // Sec after shot finish
-    case 31: //bezugszeit_last_Millis
-      if ( millis()-bezugszeit_last_Millis > BREWSWITCHDELAY )
+    case 31: //lastbezugszeit_Millis
+      if ( millis()-lastbezugszeit_Millis > BREWSWITCHDELAY )
       {
        machinestate = 35 ;
-       bezugszeit_last = 0 ;
+       lastbezugszeit = 0 ;
       }
       if (SteamON == 1)
       {
@@ -1961,7 +1964,7 @@ void looppid() {
       }
       aggKi = 0 ;
       aggKd = aggTv * aggKp ;
-      bPID.SetTunings(aggKp, aggKi, aggKd, PonE);
+      bPID.SetTunings(100, 0, 0, PonE);
     }
 
   } else if (sensorError) 

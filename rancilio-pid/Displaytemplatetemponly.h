@@ -3,15 +3,14 @@
 ******************************************************/
 void printScreen() 
 {
-  // Abbruch der Anzeige, Return, wenn Shottimer läuft. 
-  if (
-  (HEATINGLOGO > 0 && (Input < BrewSetPoint-1) && kaltstart)  ||
-  (OFFLINEGLOGO == 1 && pidON == 0)   ||
-  (SHOTTIMER == 1 && bezugsZeit > 0) || 
-  (SHOTTIMER == 1 && millis() >= bezugszeit_last_Millis && bezugszeit_last_Millis+brewswitchDelay >= millis())) // sobald der Brühschalter umgelegt wird, brewswitchDelay abgelaufen
-  return;
+
   unsigned long currentMillisDisplay = millis();
-  if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
+  if
+    (
+     (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) &&
+     (machinestate == 19 || machinestate == 20 || machinestate == 35)
+    ) 
+   {
     previousMillisDisplay = currentMillisDisplay;
     if (!sensorError) {
       u8g2.clearBuffer();
