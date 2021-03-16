@@ -1,5 +1,5 @@
 /********************************************************
-   Version 2.8.0 (04.03.2021) 
+   Version 2.8.0 (16.03.2021) 
    * Fix coldstart near setpoint 
    * Port for ESp32 
 ******************************************************/
@@ -1230,7 +1230,11 @@ void machinestatevoid()
       {
         machinestate = 10 ; // kaltstart
       }
-
+      if (Input >= (BrewSetPoint-1) )
+      {
+        machinestate = 19 ; // machine is hot, jump to other state
+      }
+      
       if (emergencyStop)
       {
         machinestate = 80 ; // Emergency Stop
