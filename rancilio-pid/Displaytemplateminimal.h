@@ -7,7 +7,8 @@ void printScreen()
   if
   (
    (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) &&
-   (machinestate == 19 || machinestate == 20 || machinestate == 35)
+   (machinestate == 19 || machinestate == 20 || machinestate == 35) ||
+   ((machinestate == 30 || machinestate == 31)  && SHOTTIMER == 0) // shottimer == 0, auch Bezug anzeigen
    ) 
    {
     if (!sensorError) {
@@ -97,7 +98,7 @@ void printScreen()
         u8g2.print(totalbrewtime / 1000, 0);           // aktivieren wenn Preinfusion
       }
 
-      if (timerBrewdetection == 1 && brewcounter == 10) {
+      if (timerBrewdetection == 1 && brewcounter == 10 ) {
         u8g2.setFont(u8g2_font_profont11_tf);
         // Brew
         u8g2.setCursor(30, 40);
