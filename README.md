@@ -2,7 +2,7 @@
 
 ## Version
 MASTER VERSION
-Version 2.7.3  (25.02.2021) - Brüherkennung per Sensor bei OnlyPID
+Version 2.8.0  (18.03.2021) - Brüherkennung per Sensor bei OnlyPID
 
 ## Hinweise
 Unsere Projektwebseite findet ihr hier: [Rancilio PID Website](http://rancilio-pid.de/).
@@ -17,8 +17,10 @@ Ihr seid herzlich Willkommen uns gemeinsam bei der Mission zu besseren Espresso 
 
 ## Was nach einem Umbau möglich ist
  * Automatischer Kaltstart für das perfekte Erreichen der Soll-Temperatur innerhalb von 8 bis 12 Minuten (je nach Maschine) 
- * **NEU:** Brüherkennung per Sensor bei OnlyPID.[mehr dazu](https://manual.rancilio-pid.de/de/customization/brueherkennung.html).
- * **NEU:** Shottimer einstellbar, um die Bezugdauer zu sehen.
+ * **NEU** Steammodus via Pin oder Blynk APP mit Steam Displayausgabe und eigenen PID Regler und Temperatur (in der App unter Expertenmodus) 
+ * **NEU** Integration von einem Füllstandssensor. ([mehr dazu](https://manual.rancilio-pid.de/de/customization/waterlevel_tof.html).
+ * Brüherkennung per Sensor bei OnlyPID.[mehr dazu](https://manual.rancilio-pid.de/de/customization/brueherkennung.html).
+ * Shottimer einstellbar, um die Bezugdauer zu sehen.
  * Aktuell 3 Displaydesgins für die Anzeige, Möglichkeit weitere Designs einfach einzubinden. 
  * Vertikales Template fürs Display 
  * Support für Siliva E Maschinen: Trigger mit definierbaren Intervall für ein Relais zum Überbrücken der Eco-Funktion
