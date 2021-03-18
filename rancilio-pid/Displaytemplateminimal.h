@@ -6,7 +6,6 @@ void printScreen()
    unsigned long currentMillisDisplay = millis();
   if
   (
-   (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) &&
    (machinestate == 19 || machinestate == 20 || machinestate == 35) ||
    ((machinestate == 30 || machinestate == 31)  && SHOTTIMER == 0) ||// shottimer == 0, auch Bezug anzeigen
    ((machinestate == 10)  && HEATINGLOGO == 0) 

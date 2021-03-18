@@ -254,7 +254,7 @@ DeviceAddress sensorDeviceAddress;     // arrays to hold device address
 uint16_t temperature = 0;     // internal variable used to read temeprature
 float Temperatur_C = 0;       // internal variable that holds the converted temperature in °C
 
-#if (ONE_WIRE_BUS == 16  && TEMPSENSOR  == 2) 
+#if (ONE_WIRE_BUS == 16  && TEMPSENSOR  == 2 && defined(ESP8266)) 
 TSIC Sensor1(ONE_WIRE_BUS);   // only Signalpin, VCCpin unused by default
 #else 
 ZACwire<ONE_WIRE_BUS> Sensor2(306);    // set pin "2" to receive signal from the TSic "306"
@@ -641,7 +641,7 @@ void refreshTemp() {
             getTemperature only updates if data is valid, otherwise "temperature" will still hold old values
       */
       temperature = 0;
-       #if (ONE_WIRE_BUS == 16)
+       #if (ONE_WIRE_BUS == 16 && defined(ESP8266))
          Sensor1.getTemperature(&temperature);
          Temperatur_C = Sensor1.calc_Celsius(&temperature);
          #endif
@@ -1929,7 +1929,7 @@ void looppid() {
     brew();   //start brewing if button pressed
     checkSteamON(); // check for steam
     sendToBlynk();
-    machinestatevoid() ; // calc machinestaze
+    machinestatevoid() ; // calc machinestate
    if(ETRIGGER == 1) // E-Trigger active then void Etrigger() 
     { 
       ETriggervoid();
@@ -1950,14 +1950,21 @@ void looppid() {
   if (!sensorError && Input > 0 && !emergencyStop && backflushState == 10 && (backflushON == 0 || brewcounter > 10)) {
     brewdetection();  //if brew detected, set PID values
       #if DISPLAY != 0
+          unsigned long currentMillisDisplay = millis();
+          if (currentMillisDisplay - previousMillisDisplay >= 100) 
+          {
           displayShottimer() ;
-          #if DISPLAYTEMPLATE < 20 // not in vertikal template
-            heatinglogo(); 
-          #endif
-           OFFlogo(); 
-          steamLogo();
-          printScreen();  // refresh display
+          }
+          if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
+            previousMillisDisplay = currentMillisDisplay;
+            #if DISPLAYTEMPLATE < 20 // not in vertikal template
+              heatinglogo(); 
+              OFFlogo(); 
+              steamLogo();
+            #endif
+            printScreen();  // refresh display
       #endif
+      }
     //Set PID if first start of machine detected, and no SteamON
     if ((Input < BrewSetPoint) && kaltstart && SteamON == 0) {
       if (startTn != 0) {
