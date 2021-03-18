@@ -1999,7 +1999,7 @@ void looppid() {
       }
       aggKi = 0 ;
       aggKd = aggTv * aggKp ;
-      bPID.SetTunings(125, 0, 0, PonE);
+      bPID.SetTunings(150, 0, 0, PonE);
     }
 
   } else if (sensorError) 
