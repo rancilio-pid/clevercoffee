@@ -108,12 +108,7 @@
        void displayShottimer(void) 
      {
         displaystatus = 0 ;// Indiktator für Reset Bezug im Display
-        if 
-            ((
-            (bezugsZeit > 0 && ONLYPID == 1) || // Bezugszeit bei Only PID  
-            (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42) // oder Bezug bei nicht only PID über brewcounter
-            ) && SHOTTIMER == 1
-            ) // Shotimer muss 1 = True sein und Bezug vorliegen
+        if ((machinestate == 30 )  && SHOTTIMER == 1)  // Shotimer muss 1 = True sein und Bezug vorliegen
         {
             // Dann Zeit anzeigen
             u8g2.clearBuffer();
@@ -129,9 +124,7 @@
         }
         if 
         (
-        SHOTTIMER == 1 && millis() >= bezugszeit_last_Millis && // direkt nach Erstellen von bezugszeit_last_mills (passiert beim ausschalten des Brühschalters, case 43 im Code) soll gestartet werden
-        bezugszeit_last_Millis+brewswitchDelay >= millis() && // soll solange laufen, bis millis() den brewswitchDelay aufgeholt hat, damit kann die Anzeigedauer gesteuert werden
-        (ONLYPID == 0 && bezugszeit_last_Millis < totalbrewtime)
+        ((machinestate == 31)  &&  SHOTTIMER == 1) 
         ) // wenn die totalbrewtime automatisch erreicht wird, soll nichts gemacht werden, da sonst falsche Zeit angezeigt wird, da Schalter später betätigt wird als totalbrewtime
         {
            displaystatus = 1 ;// Indiktator für Bezug im Display
@@ -139,7 +132,7 @@
            u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
            u8g2.setFont(u8g2_font_profont22_tf);
            u8g2.setCursor(64, 25);
-           u8g2.print((bezugszeit_last_Millis - startZeit) / 1000, 1);
+           u8g2.print(lastbezugszeit/1000, 1);
            u8g2.setFont(u8g2_font_profont11_tf);
            u8g2.sendBuffer();
         }
@@ -150,10 +143,7 @@
     *****************************************************/
      void heatinglogo(void) 
     {
-        if (OFFLINEGLOGO == 1 && pidON == 0)  // wenn Offline kein Symbol anzeigen vom Kaltstart
-        return; 
-      
-        if (HEATINGLOGO > 0 && (Input < BrewSetPoint-1) && kaltstart) 
+         if (HEATINGLOGO  > 0 && machinestate == 10 ) 
         {
            // Für Statusinfos
            u8g2.clearBuffer();
@@ -235,16 +225,26 @@
 
      void OFFlogo(void) 
     {
-     if (
-         (OFFLINEGLOGO == 1 && pidON == 0) && 
-         displaystatus == 0
-        )
+     if (OFFLINEGLOGO == 1 && machinestate == 90)
      {
        u8g2.clearBuffer();
        u8g2.drawXBMP(38,0, OFFLogo_width, OFFLogo_height, OFFLogo); 
        u8g2.setCursor(0, 55);
        u8g2.setFont(u8g2_font_profont10_tf);
        u8g2.print("PID is disabled manually");   
+       u8g2.sendBuffer();
+     }
+    }
+    void steamLogo(void) 
+    {
+     if (machinestate == 40)
+     {
+       u8g2.clearBuffer();
+       u8g2.drawXBMP(0,0, steamlogo_width, steamlogo_height, steamlogo); 
+       u8g2.setCursor(64, 25);
+       u8g2.setFont(u8g2_font_profont22_tf);
+       u8g2.print(Input, 0);
+       u8g2.setCursor(64, 25);
        u8g2.sendBuffer();
      }
     }
