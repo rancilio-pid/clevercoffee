@@ -1,5 +1,5 @@
 /********************************************************
-   Version 2.8.0 (16.03.2021) 
+   Version 2.8.1 (20.03.2021) 
    * Fix coldstart near setpoint 
    * Port for ESp32 
 ******************************************************/
@@ -134,7 +134,7 @@ int relayON, relayOFF;          // used for relay trigger type. Do not change!
 boolean kaltstart = true;       // true = Rancilio started for first time
 boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
 double EmergencyStopTemp = 120; // Temp EmergencyStopTemp
-const char* sysVersion PROGMEM  = "Version 2.8.0 MASTER";   //System version
+const char* sysVersion PROGMEM  = "Version 2.8.1 MASTER";   //System version
 int inX = 0, inY = 0, inOld = 0, inSum = 0; //used for filter()
 int bars = 0; //used for getSignalStrength()
 boolean brewDetected = 0;
@@ -1423,7 +1423,7 @@ void machinestatevoid()
       }
       if
       (
-       (bezugsZeit > 0 && ONLYPID == 1) || // Bezugszeit bei Only PID  
+       //(bezugsZeit > 0 && ONLYPID == 1) || // New Brew inner BD not by Only pid
        (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42) 
       )
       {
