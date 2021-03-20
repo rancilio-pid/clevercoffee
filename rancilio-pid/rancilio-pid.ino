@@ -1423,7 +1423,7 @@ void machinestatevoid()
       }
       if
       (
-       //(bezugsZeit > 0 && ONLYPID == 1) || // New Brew inner BD not by Only pid
+       (bezugsZeit > 0 && ONLYPID == 1  && Brewdetection == 3) || // New Brew inner BD only by Only PID AND Voltage Sensor
        (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42) 
       )
       {
