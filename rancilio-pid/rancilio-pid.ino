@@ -1892,7 +1892,7 @@ void looppid() {
       timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
       #endif
       #if defined(ESP32) 
-      timerAlarmDisable(timer);
+      timerAlarmEnable(timer);
       #endif
     });
     // Enable interrupts if OTA is finished
