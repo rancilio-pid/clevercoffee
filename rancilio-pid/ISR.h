@@ -37,10 +37,8 @@
       timerAlarmWrite(timer, 10000, true);
     if (Output <= isrCounter) {
       digitalWrite(pinRelayHeater, LOW);
-      DEBUG_println("Power off!");
     } else {
       digitalWrite(pinRelayHeater, HIGH);
-      DEBUG_println("Power on!");
     }
   
     isrCounter += 10; // += 10 because one tick = 10ms
