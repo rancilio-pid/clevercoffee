@@ -28,10 +28,10 @@
 
 // PID & Hardware
 #define ONLYPID 1                  // 1 = Only PID, 0 = PID and preinfusion
+#define BREWMODE 1                 // 1 = NORMAL preinfusion ; 2 = Sale with weight
 #define BREWDETECTION 1            // 0 = off, 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = Sensor/Hardware for Only PID 
 #define COLDSTART_PID 1            // 1 = default coldstart values, 2 = custom values via blynk (expert mode activated) 
-#define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay
-// BREWDETECTION 3 configuration
+#define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay // BREWDETECTION 3 configuration
 #define VOLTAGESENSORTYPE HIGH 
 #define PINMODEVOLTAGESENSOR INPUT // Mode INPUT_PULLUP, INPUT or INPUT_PULLDOWN_16 (Only Pin 16)
 
@@ -46,6 +46,9 @@
 #define ETRIGGER 0                 // 0 = no trigger (for Rancilio except Rancilio E), 1 = trigger for CPU of Rancilio E
 #define ETRIGGERTIME 60            // seconds, time between trigger signal
 #define TRIGGERRELAYTYPE HIGH      // LOW = low trigger, HIGH = high trigger relay for E-Trigger
+
+//Weight SCALE
+#define WEIGHTSETPOINT 30 // Gramm ? 
 
 /// Wifi 
 #define HOSTNAME "Rancilio"
@@ -98,12 +101,14 @@
 #define pinRelayVentil 12          // Output pin for 3-way-valve
 #define pinRelayPumpe 13           // Output pin for pump
 #define pinRelayHeater 14          // Output pin for heater
-#define PINVOLTAGESENSOR  15    //Input pin for volatage sensor
-//#define OLED_RESET 16              // Output pin for dispaly reset pin
+#define PINVOLTAGESENSOR  15       //Input pin for volatage sensor
+//#define OLED_RESET 16            // Output pin for dispaly reset pin
 #define PINETRIGGER 16             // PIN for E-Trigger relay
-#define STEAMONPIN 17             // STEAM active
+#define STEAMONPIN 17              // STEAM active
 #define OLED_SCL 5                 // Output pin for dispaly clock pin
 #define OLED_SDA 4                 // Output pin for dispaly data pin
+#define HXDATPIN 99                // weight scale PIN 
+#define HXCLKPIN 99                // weight scale PIN  
 #define SCREEN_WIDTH 128           // OLED display width, in pixels
 #define SCREEN_HEIGHT 64           // OLED display height, in pixels  
 

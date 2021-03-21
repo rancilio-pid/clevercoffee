@@ -27,6 +27,9 @@
 #include "TSIC.h"       //Library for TSIC temp sensor
 #include <Adafruit_VL53L0X.h> //for TOF 
 
+#if (BREWMODE == 2)
+#include <HX711_ADC.h>
+#endif
 
 
 
@@ -67,6 +70,7 @@ const unsigned long wifiConnectionDelay = WIFICINNECTIONDELAY;
 const unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
 int machineLogo = MACHINELOGO;
 const unsigned long brewswitchDelay = BREWSWITCHDELAY;
+int BrewMode = BREWMODE ;
 int machinestate = 0;
 
 //Display
@@ -177,22 +181,11 @@ double brewboarder = 150 ;        // border for the detection, be carefull: to l
 const int PonE = PONE;
 
 /********************************************************
-   Analog Input
+   BREW INI 1= Normale Prefinfusion , 2 = Scale
 ******************************************************/
-const int analogPin = 0; // AI0 will be used
-int brewcounter = 10;
-int brewswitch = 0;
-boolean brewswitchWasOFF = false;
-double brewtime = 25000;  //brewtime in ms
-double totalbrewtime = 0; //total brewtime set in softare or blynk
-double preinfusion = 2000;  //preinfusion time in ms
-double preinfusionpause = 5000;   //preinfusion pause time in ms
-double bezugsZeit = 0;   //total brewed time
-double lastbezugszeitMillis = 0; // for shottimer delay after disarmed button
-double lastbezugszeit = 0 ; 
-unsigned long startZeit = 0;    //start time of brew
-const unsigned long analogreadingtimeinterval = 10 ; // ms
-unsigned long previousMillistempanalogreading ; // ms for analogreading
+#if (BREWMODE != 0) 
+  #include "brewini.h"
+#endif
 
 /********************************************************
    Sensor check
@@ -395,6 +388,12 @@ BLYNK_WRITE(V16) {
   SteamSetPoint = param.asDouble();
   mqtt_publish("SteamSetPoint", number2string(SteamSetPoint));
 }
+#if (BREWMODE == 2)
+BLYNK_WRITE(V17)
+{
+  weightSetpoint = param.asFloat();
+}
+#endif
 BLYNK_WRITE(V25)
 {
   calibration_mode = param.asInt();//
@@ -660,101 +659,11 @@ void refreshTemp() {
   }
 }
 
-/********************************************************
-    PreInfusion, Brew , if not Only PID
-******************************************************/
-void brew() 
-{
-  if (OnlyPID == 0) 
-  {
-    readAnalogInput();
-    unsigned long currentMillistemp = millis();
+/*******************************************************
+      BREWVOID.H
+*****************************************************/
 
-    if (brewswitch < 1000 && brewcounter > 10)
-    {
-      //abort function for state machine from every state
-      brewcounter = 43;
-    }
-
-    if (brewcounter > 10 && brewcounter < 43 ) {
-      bezugsZeit = currentMillistemp - startZeit;
-    }
-    if (brewswitch < 1000 && firstreading == 0 ) 
-    {   //check if brewswitch was turned off at least once, last time,
-      brewswitchWasOFF = true;
-      //DEBUG_println("brewswitch value")
-      //DEBUG_println(brewswitch)
-    }
-
-    totalbrewtime = preinfusion + preinfusionpause + brewtime;    // running every cycle, in case changes are done during brew
-
-    // state machine for brew
-    switch (brewcounter) {
-      case 10:    // waiting step for brew switch turning on
-        if (brewswitch > 1000 && backflushState == 10 && backflushON == 0 && brewswitchWasOFF) {
-          startZeit = millis();
-          brewcounter = 20;
-          lastbezugszeit = 0;
-          kaltstart = false;    // force reset kaltstart if shot is pulled
-        } else {
-          backflush();
-        }
-        break;
-      case 20:    //preinfusioon
-        DEBUG_println("Preinfusion");
-        digitalWrite(pinRelayVentil, relayON);
-        digitalWrite(pinRelayPumpe, relayON);
-        brewcounter = 21;
-        break;
-      case 21:    //waiting time preinfusion
-        if (bezugsZeit > preinfusion) {
-          brewcounter = 30;
-        }
-        break;
-      case 30:    //preinfusion pause
-        DEBUG_println("preinfusion pause");
-        digitalWrite(pinRelayVentil, relayON);
-        digitalWrite(pinRelayPumpe, relayOFF);
-        brewcounter = 31;
-        break;
-      case 31:    //waiting time preinfusion pause
-        if (bezugsZeit > preinfusion + preinfusionpause) {
-          brewcounter = 40;
-        }
-        break;
-      case 40:    //brew running
-        DEBUG_println("Brew started");
-        digitalWrite(pinRelayVentil, relayON);
-        digitalWrite(pinRelayPumpe, relayON);
-        brewcounter = 41;
-        break;
-      case 41:    //waiting time brew
-        lastbezugszeit = bezugsZeit;
-        if (bezugsZeit > totalbrewtime) {
-          brewcounter = 42;
-        }
-        break;
-      case 42:    //brew finished
-        DEBUG_println("Brew stopped");
-        digitalWrite(pinRelayVentil, relayOFF);
-        digitalWrite(pinRelayPumpe, relayOFF);
-        brewcounter = 43;
-        bezugsZeit = 0;
-        break;
-      case 43:    // waiting for brewswitch off position
-        if (brewswitch < 1000) {
-          digitalWrite(pinRelayVentil, relayOFF);
-          digitalWrite(pinRelayPumpe, relayOFF);
-          // lastbezugszeitMillis = millis();  // for shottimer delay after disarmed button
-          currentMillistemp = 0;
-          brewDetected = 0; //rearm brewdetection
-          brewcounter = 10;
-          bezugsZeit = 0;
-        }
-        break;
-    }
-  }
-}
+#include "brewvoid.h"
 
 /*******************************************************
   Switch to offline modeif maxWifiReconnects were exceeded
