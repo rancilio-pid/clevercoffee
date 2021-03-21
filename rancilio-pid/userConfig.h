@@ -20,7 +20,7 @@
 #define HEATINGLOGO 0              // 0 = deactivated, 1 = Rancilio, 2 = Gaggia 
 #define OFFLINEGLOGO 1             // 0 = deactivated, 1 = activated
 #define BREWSWITCHDELAY 3000       // time in ms
-#define LANGUAGE 2                 // 0 = DE, 1 = EN, 2 = ES
+#define LANGUAGE 1                 // 0 = DE, 1 = EN, 2 = ES
 
 // Offline mode
 #define OFFLINEMODUS 0             // 0 = Blynk and Wifi are used, 1 = offline mode (only preconfigured values in code are used!)

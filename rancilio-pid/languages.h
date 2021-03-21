@@ -49,8 +49,8 @@ static char *langstring_bckfactivated[] = {"Backflush activated", "Please set br
 static char *langstring_bckfrunning[] = {"Backflush running:", "from"};
 
 #elif LANGUAGE == 2 // ES
-static char *langstring_set_temp =      "T. obj:";
-static char *langstring_current_temp =  "T. act:";
+static char *langstring_set_temp =      "Obj:  ";
+static char *langstring_current_temp =  "T:    ";
 static char *langstring_brew =          "Brew:  ";
 static char *langstring_set_temp_rot_ur =      "O: ";
 static char *langstring_current_temp_rot_ur =  "T: ";
