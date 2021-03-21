@@ -12,15 +12,14 @@
 ******************************************************/
 // Display
 #define DISPLAY 2                  // 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64)
-#define OLED_I2C 0x3C		   // I2C address for OLED, 0x3C by default
-#define DISPLAYTEMPLATE 1          // 1 = Standard Display Template, 2 = Minimal Template, 3 = only Temperatur, 20 = vertical Display see git Handbook for further information
+#define OLED_I2C 0x3C       // I2C address for OLED, 0x3C by default
+#define DISPLAYTEMPLATE 3          // 1 = Standard Display Template, 2 = Minimal Template, 3 = only Temperatur, 20 = vertical Display see git Handbook for further information
 #define MACHINELOGO 1              // 1 = Rancilio, 2 = Gaggia
 #define DISPALYROTATE U8G2_R0      // rotate display clockwise: U8G2_R0 = no rotation; U8G2_R1 = 90°; U8G2_R2 = 180°; U8G2_R3 = 270°
-#define SHOTTIMER 1                // 0 = deactivated, 1 = activated
+#define SHOTTIMER 0                // 0 = deactivated, 1 = activated
 #define HEATINGLOGO 0              // 0 = deactivated, 1 = Rancilio, 2 = Gaggia 
 #define OFFLINEGLOGO 1             // 0 = deactivated, 1 = activated
 #define BREWSWITCHDELAY 3000       // time in ms
-#define LANGUAGE 1                 // 0 = DE, 1 = EN, 2 = ES
 
 // Offline mode
 #define OFFLINEMODUS 0             // 0 = Blynk and Wifi are used, 1 = offline mode (only preconfigured values in code are used!)
@@ -29,11 +28,11 @@
 
 // PID & Hardware
 #define ONLYPID 1                  // 1 = Only PID, 0 = PID and preinfusion
-#define BREWDETECTION 3            // 0 = off, 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = Sensor/Hardware for Only PID 
-#define COLDSTART_PID 2            // 1 = default coldstart values, 2 = custom values via blynk (expert mode activated) 
+#define BREWDETECTION 1            // 0 = off, 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = Sensor/Hardware for Only PID 
+#define COLDSTART_PID 1            // 1 = default coldstart values, 2 = custom values via blynk (expert mode activated) 
 #define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay
 // BREWDETECTION 3 configuration
-#define VOLTAGESENSORTYPE LOW 
+#define VOLTAGESENSORTYPE HIGH 
 #define PINMODEVOLTAGESENSOR INPUT // Mode INPUT_PULLUP, INPUT or INPUT_PULLDOWN_16 (Only Pin 16)
 
 // TOF sensor for water level
@@ -50,10 +49,8 @@
 
 /// Wifi 
 #define HOSTNAME "Rancilio"
-//#define D_SSID "myssid"
-//#define PASS "mypass"
-#define D_SSID "D45C Hyperoptic 1Gb Fibre 2.4Ghz"
-#define PASS "KYeK34722SpS"
+#define D_SSID "myssid"
+#define PASS "mypass"
 #define MAXWIFIRECONNECTS 5        // maximum number of reconnection attempts, use -1 to deactivate
 #define WIFICINNECTIONDELAY 10000  // delay between reconnects in ms
 
@@ -71,10 +68,8 @@
 #define MQTT_SERVER_PORT 1883    
 
 // BLynk
-//#define AUTH "myauth"
-#define AUTH "3mCy14d5-R7nLMu6_W2ydd4xGTJbsTbz"
-//#define BLYNKADDRESS "blynk.clevercoffee.de"  // blynk-server IP-Address
-#define BLYNKADDRESS "blynk.remoteapp.de"         // IP-Address of used blynk server
+#define AUTH "myauth"
+#define BLYNKADDRESS "blynk.clevercoffee.de"  // blynk-server IP-Address
 #define BLYNKPORT 8080             // blynk-server portver 
 
 // PID - offline values
@@ -103,7 +98,7 @@
 #define pinRelayVentil 12          // Output pin for 3-way-valve
 #define pinRelayPumpe 13           // Output pin for pump
 #define pinRelayHeater 14          // Output pin for heater
-#define PINVOLTAGESENSOR  16    //Input pin for volatage sensor
+#define PINVOLTAGESENSOR  15    //Input pin for volatage sensor
 //#define OLED_RESET 16              // Output pin for dispaly reset pin
 #define PINETRIGGER 16             // PIN for E-Trigger relay
 #define STEAMONPIN 17             // STEAM active
