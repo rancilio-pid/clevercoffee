@@ -189,7 +189,7 @@
             else 
             {
                 u8g2.setCursor(40, 2);
-                u8g2.print("Offlinemodus");
+                u8g2.print(langstring_offlinemod);
             }
             if (HEATINGLOGO == 1) // rancilio logo
             {

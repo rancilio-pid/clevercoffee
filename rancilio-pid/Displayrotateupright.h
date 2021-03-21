@@ -65,22 +65,22 @@ void displayEmergencyStop(void)
 {
     u8g2.clearBuffer();
     u8g2.setCursor(1, 34);
-    u8g2.print("I: ");
+    u8g2.print(langstring_current_temp_rot_ur);
     u8g2.print(Input, 1);
     u8g2.print(" ");
     u8g2.print((char)176);
     u8g2.print("C");
     u8g2.setCursor(1, 44);
-    u8g2.print("S: ");
+    u8g2.print(langstring_set_temp_rot_ur);
     u8g2.print(setPoint, 1);
     u8g2.print(" ");
     u8g2.print((char)176);
     u8g2.print("C");
     if (isrCounter < 500) {
       u8g2.setCursor(1, 4);
-      u8g2.print("HEATING");
+      u8g2.print(langstring_emergencyStop[0]);
       u8g2.setCursor(1, 14);
-      u8g2.print("STOPPED");
+      u8g2.print(langstring_emergencyStop[1]);
     }
     u8g2.sendBuffer();
 }
