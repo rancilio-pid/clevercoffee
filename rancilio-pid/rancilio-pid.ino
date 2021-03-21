@@ -254,7 +254,7 @@ DeviceAddress sensorDeviceAddress;     // arrays to hold device address
 uint16_t temperature = 0;     // internal variable used to read temeprature
 float Temperatur_C = 0;       // internal variable that holds the converted temperature in °C
 
-#if (ONE_WIRE_BUS == 16  && TEMPSENSOR  == 2 && defined(ESP8266)) 
+#if (ONE_WIRE_BUS == 16 && TEMPSENSOR  == 2 && defined(ESP8266) || defined(ESP32)) 
 TSIC Sensor1(ONE_WIRE_BUS);   // only Signalpin, VCCpin unused by default
 #else 
 ZACwire<ONE_WIRE_BUS> Sensor2(306);    // set pin "2" to receive signal from the TSic "306"
@@ -641,11 +641,11 @@ void refreshTemp() {
             getTemperature only updates if data is valid, otherwise "temperature" will still hold old values
       */
       temperature = 0;
-       #if (ONE_WIRE_BUS == 16 && defined(ESP8266))
+       #if ((ONE_WIRE_BUS == 16 && defined(ESP8266)) ||  defined(ESP32))
          Sensor1.getTemperature(&temperature);
          Temperatur_C = Sensor1.calc_Celsius(&temperature);
          #endif
-       #if (ONE_WIRE_BUS != 16)
+       #if (ONE_WIRE_BUS != 16 && defined(ESP8266))
         Temperatur_C = Sensor2.getTemp();
        #endif
       //Temperatur_C = 70;
@@ -1760,11 +1760,11 @@ void setup() {
 
   if (TempSensor == 2) {
     temperature = 0;
-    #if (ONE_WIRE_BUS == 16)
+    #if ((ONE_WIRE_BUS == 16 && defined(ESP8266)) ||  defined(ESP32))
          Sensor1.getTemperature(&temperature);
          Input = Sensor1.calc_Celsius(&temperature);
     #endif
-    #if (ONE_WIRE_BUS != 16)
+    #if (ONE_WIRE_BUS != 16 && defined(ESP8266))
         Input = Sensor2.getTemp();
      #endif
   }
@@ -1779,6 +1779,7 @@ void setup() {
       readingchangerate[thisReading] = 0;
     }
   }
+  /*
   if (TempSensor == 2) {
     temperature = 0;
     #if (ONE_WIRE_BUS == 16)
@@ -1788,7 +1789,7 @@ void setup() {
     #if (ONE_WIRE_BUS != 16)
         Input = Sensor2.getTemp();
      #endif
-  }
+  } */
 
   //Initialisation MUST be at the very end of the init(), otherwise the time comparision in loop() will have a big offset
   unsigned long currentTime = millis();
