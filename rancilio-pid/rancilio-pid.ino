@@ -562,7 +562,7 @@ void refreshTemp() {
        #if (ONE_WIRE_BUS != 16 && defined(ESP8266))
         Temperatur_C = Sensor2.getTemp();
        #endif
-      Temperatur_C = 70;
+      //Temperatur_C = 70;
       if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
       Input = Temperatur_C;
       if (Brewdetection != 0) {
