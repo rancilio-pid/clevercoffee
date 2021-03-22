@@ -98,6 +98,7 @@
 
 // Pin Layout
 #define ONE_WIRE_BUS 2             // Temp sensor pin
+#define PINBREWSWITCH 0            // 0: A0 Analog PIN ; >0 : DIGITAL PIN
 #define pinRelayVentil 12          // Output pin for 3-way-valve
 #define pinRelayPumpe 13           // Output pin for pump
 #define pinRelayHeater 14          // Output pin for heater
