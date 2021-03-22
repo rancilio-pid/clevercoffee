@@ -1,8 +1,18 @@
 /********************************************************
    Analog Input
 ******************************************************/
+
+#if PINBREWSWITCH == 0
+const int analogPin = 0; // AI0 will be used 
+#endif
+
+
+
+/********************************************************
+   Normal BREW
+******************************************************/
+
 #if (BREWMODE == 1) // old Brew MODE 
-const int analogPin = 0; // AI0 will be used
 int brewcounter = 10;
 int brewswitch = 0;
 boolean brewswitchWasOFF = false;
@@ -18,12 +28,10 @@ const unsigned long analogreadingtimeinterval = 10 ; // ms
 unsigned long previousMillistempanalogreading ; // ms for analogreading
 #endif
 
-#if (BREWMODE ==  2) 
 /********************************************************
-   Scale
+  BREW WITH SCALE
 ******************************************************/
-
-const int analogPin = 0; // AI0 will be used
+#if (BREWMODE ==  2) 
 int brewcounter = 10;
 int brewswitch = 0;
 boolean brewswitchWasOFF = false;

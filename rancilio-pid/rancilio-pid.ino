@@ -455,91 +455,6 @@ void testEmergencyStop() {
   }
 }
 
-
-void backflush() {
-  if (backflushState != 10 && backflushON == 0) {
-    backflushState = 43;    // force reset in case backflushON is reset during backflush!
-  } else if ( Offlinemodus == 1 || brewcounter > 10 || maxflushCycles <= 0 || backflushON == 0) {
-    return;
-  }
-
-  if (pidMode == 1) { //Deactivate PID
-    pidMode = 0;
-    bPID.SetMode(pidMode);
-    Output = 0 ;
-  }
-  digitalWrite(pinRelayHeater, LOW); //Stop heating
-
-  readAnalogInput();
-  unsigned long currentMillistemp = millis();
-
-  if (brewswitch < 1000 && backflushState > 10) {   //abort function for state machine from every state
-    backflushState = 43;
-  }
-
-  // state machine for brew
-  switch (backflushState) {
-    case 10:    // waiting step for brew switch turning on
-      if (brewswitch > 1000 && backflushON) {
-        startZeit = millis();
-        backflushState = 20;
-      }
-      break;
-    case 20:    //portafilter filling
-      DEBUG_println("portafilter filling");
-      digitalWrite(pinRelayVentil, relayON);
-      digitalWrite(pinRelayPumpe, relayON);
-      backflushState = 21;
-      break;
-    case 21:    //waiting time for portafilter filling
-      if (millis() - startZeit > FILLTIME) {
-        startZeit = millis();
-        backflushState = 30;
-      }
-      break;
-    case 30:    //flushing
-      DEBUG_println("flushing");
-      digitalWrite(pinRelayVentil, relayOFF);
-      digitalWrite(pinRelayPumpe, relayOFF);
-      flushCycles++;
-      backflushState = 31;
-      break;
-    case 31:    //waiting time for flushing
-      if (millis() - startZeit > flushTime && flushCycles < maxflushCycles) {
-        startZeit = millis();
-        backflushState = 20;
-      } else if (flushCycles >= maxflushCycles) {
-        backflushState = 43;
-      }
-      break;
-    case 43:    // waiting for brewswitch off position
-      if (brewswitch < 1000) {
-        DEBUG_println("backflush finished");
-        digitalWrite(pinRelayVentil, relayOFF);
-        digitalWrite(pinRelayPumpe, relayOFF);
-        currentMillistemp = 0;
-        flushCycles = 0;
-        backflushState = 10;
-      }
-      break;
-  }
-}
-
-
-
-/********************************************************
-  Read analog input pin
-*****************************************************/
-void readAnalogInput() {
-  unsigned long currentMillistemp = millis();
-  if (currentMillistemp - previousMillistempanalogreading >= analogreadingtimeinterval)
-  {
-    previousMillistempanalogreading = currentMillistemp;
-    brewswitch = filter(analogRead(analogPin));
-  }
-}
-
-
 /********************************************************
   Moving average - brewdetection (SW)
 *****************************************************/
@@ -647,7 +562,7 @@ void refreshTemp() {
        #if (ONE_WIRE_BUS != 16 && defined(ESP8266))
         Temperatur_C = Sensor2.getTemp();
        #endif
-      //Temperatur_C = 70;
+      Temperatur_C = 70;
       if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
       Input = Temperatur_C;
       if (Brewdetection != 0) {
@@ -1477,7 +1392,10 @@ void setup() {
   { 
     pinMode(PINVOLTAGESENSOR, PINMODEVOLTAGESENSOR);
   }
-
+  if (PINBREWSWITCH > 0) // IF Voltage sensor selected 
+  { 
+    pinMode(PINBREWSWITCH, INPUT);
+  }
   /********************************************************
     DISPLAY 128x64
   ******************************************************/

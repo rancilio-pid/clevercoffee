@@ -1,16 +1,120 @@
+
+
 /********************************************************
-    PreInfusion, Brew , if not Only PID
+    Digtalswitch OR Read analog input pin for BREW SWITCH
 ******************************************************/
 
+void checkbrewswitch()
+{
+  #if (PINBREWSWITCH > 0)
+    // Digital GIPO
+    brewswitch = digitalRead(PINBREWSWITCH);
+  #endif
+  // Digital Analog
+  #if (PINBREWSWITCH == 0)
+    unsigned long currentMillistemp = millis();
+    if (currentMillistemp - previousMillistempanalogreading >= analogreadingtimeinterval)
+    {
+      previousMillistempanalogreading = currentMillistemp;
+      if (filter(analogRead(analogPin)) > 1000 )
+      {
+        brewswitch = HIGH ; 
+      }
+      if (filter(analogRead(analogPin)) < 1000 )
+      {
+        brewswitch = LOW ;
+      }
+    }
+  #endif
+}
+/********************************************************
+   BACKFLUSH
+******************************************************/
+
+
+void backflush() {
+  if (backflushState != 10 && backflushON == 0) {
+    backflushState = 43;    // force reset in case backflushON is reset during backflush!
+  } else if ( Offlinemodus == 1 || brewcounter > 10 || maxflushCycles <= 0 || backflushON == 0) {
+    return;
+  }
+
+  if (pidMode == 1) { //Deactivate PID
+    pidMode = 0;
+    bPID.SetMode(pidMode);
+    Output = 0 ;
+  }
+  digitalWrite(pinRelayHeater, LOW); //Stop heating
+  
+  checkbrewswitch() ;
+  unsigned long currentMillistemp = millis();
+
+  if (brewswitch == LOW && backflushState > 10) {   //abort function for state machine from every state
+    backflushState = 43;
+  }
+
+  // state machine for brew
+  switch (backflushState) {
+    case 10:    // waiting step for brew switch turning on
+      if (brewswitch == HIGH && backflushON) {
+        startZeit = millis();
+        backflushState = 20;
+      }
+      break;
+    case 20:    //portafilter filling
+      DEBUG_println("portafilter filling");
+      digitalWrite(pinRelayVentil, relayON);
+      digitalWrite(pinRelayPumpe, relayON);
+      backflushState = 21;
+      break;
+    case 21:    //waiting time for portafilter filling
+      if (millis() - startZeit > FILLTIME) {
+        startZeit = millis();
+        backflushState = 30;
+      }
+      break;
+    case 30:    //flushing
+      DEBUG_println("flushing");
+      digitalWrite(pinRelayVentil, relayOFF);
+      digitalWrite(pinRelayPumpe, relayOFF);
+      flushCycles++;
+      backflushState = 31;
+      break;
+    case 31:    //waiting time for flushing
+      if (millis() - startZeit > flushTime && flushCycles < maxflushCycles) {
+        startZeit = millis();
+        backflushState = 20;
+      } else if (flushCycles >= maxflushCycles) {
+        backflushState = 43;
+      }
+      break;
+    case 43:    // waiting for brewswitch off position
+      if (brewswitch == LOW) {
+        DEBUG_println("backflush finished");
+        digitalWrite(pinRelayVentil, relayOFF);
+        digitalWrite(pinRelayPumpe, relayOFF);
+        currentMillistemp = 0;
+        flushCycles = 0;
+        backflushState = 10;
+      }
+      break;
+  }
+}
+
+
+
+/********************************************************
+    PreInfusion, Brew Normal
+******************************************************/
 #if (BREWMODE == 1) // old Brew MODE 
 void brew() 
 {
   if (OnlyPID == 0) 
   {
-    readAnalogInput();
+    checkbrewswitch() ;
     unsigned long currentMillistemp = millis();
 
-    if (brewswitch < 1000 && brewcounter > 10)
+    if (brewswitch == LOW && brewcounter > 10)
     {
       //abort function for state machine from every state
       brewcounter = 43;
@@ -19,7 +123,7 @@ void brew()
     if (brewcounter > 10 && brewcounter < 43 ) {
       bezugsZeit = currentMillistemp - startZeit;
     }
-    if (brewswitch < 1000 && firstreading == 0 ) 
+    if (brewswitch == LOW && firstreading == 0 ) 
     {   //check if brewswitch was turned off at least once, last time,
       brewswitchWasOFF = true;
       //DEBUG_println("brewswitch value")
@@ -31,7 +135,7 @@ void brew()
     // state machine for brew
     switch (brewcounter) {
       case 10:    // waiting step for brew switch turning on
-        if (brewswitch > 1000 && backflushState == 10 && backflushON == 0 && brewswitchWasOFF) {
+        if (brewswitch == HIGH && backflushState == 10 && backflushON == 0 && brewswitchWasOFF) {
           startZeit = millis();
           brewcounter = 20;
           lastbezugszeit = 0;
@@ -82,7 +186,7 @@ void brew()
         bezugsZeit = 0;
         break;
       case 43:    // waiting for brewswitch off position
-        if (brewswitch < 1000) {
+        if (brewswitch == LOW) {
           digitalWrite(pinRelayVentil, relayOFF);
           digitalWrite(pinRelayPumpe, relayOFF);
           // lastbezugszeitMillis = millis();  // for shottimer delay after disarmed button
@@ -138,6 +242,7 @@ void initScale() {
   u8g2.drawStr(0, 2, "Taring scale,");
   u8g2.drawStr(0, 12, "remove any load!");
   u8g2.drawStr(0, 22, "....");
+  delay(2000);
   u8g2.sendBuffer();
   LoadCell.start(stabilizingtime, _tare);
   if (LoadCell.getTareTimeoutFlag()) {
@@ -160,21 +265,21 @@ void brew()
 {
   if (OnlyPID == 0)
   {
-    readAnalogInput();
+    checkbrewswitch() ;
     unsigned long currentMillistemp = millis();
 
-    if (brewswitch < 1000 && brewcounter > 10)
+    if (brewswitch == LOW && brewcounter > 10)
     {
       //abort function for state machine from every state
       brewcounter = 43;
     }
 
-    if (brewcounter > 10) {
+    if (brewcounter > 10 && brewcounter < 43 ) {
       bezugsZeit = currentMillistemp - startZeit;
       weightBrew = weight - weightPreBrew;
 
     }
-    if (brewswitch < 1000 && firstreading == 0 )
+    if (brewswitch ==  LOW && firstreading == 0 )
     { //check if brewswitch was turned off at least once, last time,
       brewswitchWasOFF = true;
       //DEBUG_println("brewswitch value")
@@ -186,7 +291,7 @@ void brew()
     // state machine for brew
     switch (brewcounter) {
       case 10:    // waiting step for brew switch turning on
-        if (brewswitch > 1000 && backflushState == 10 && backflushON == 0 && brewswitchWasOFF) {
+        if (brewswitch == HIGH && backflushState == 10 && backflushON == 0 && brewswitchWasOFF) {
           startZeit = millis();
           brewcounter = 20;
           kaltstart = false;    // force reset kaltstart if shot is pulled
@@ -237,7 +342,7 @@ void brew()
         brewcounter = 43;
         break;
         case 43:    // waiting for brewswitch off position
-        if (brewswitch < 1000) {
+        if (brewswitch == LOW) {
           digitalWrite(pinRelayVentil, relayOFF);
           digitalWrite(pinRelayPumpe, relayOFF);
           //bezugszeit_last_Millis = millis();  // for shottimer delay after disarmed button
@@ -252,6 +357,4 @@ void brew()
     }
   }
 }
-
-
 #endif
