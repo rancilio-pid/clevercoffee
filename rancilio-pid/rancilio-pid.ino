@@ -389,7 +389,7 @@ BLYNK_WRITE(V16) {
   mqtt_publish("SteamSetPoint", number2string(SteamSetPoint));
 }
 #if (BREWMODE == 2)
-BLYNK_WRITE(V17)
+BLYNK_WRITE(V18)
 {
   weightSetpoint = param.asFloat();
 }
@@ -1488,6 +1488,13 @@ void setup() {
     displayLogo(sysVersion, "");
     delay(2000);
   #endif
+   /********************************************************
+    Init Scale
+  ******************************************************/
+  #if (BREWMODE == 2)
+    initScale() ;
+  #endif
+
 
   /********************************************************
     VL530L0x TOF sensor
@@ -1836,6 +1843,9 @@ void looppid() {
   // voids
     refreshTemp();   //read new temperature values
     testEmergencyStop();  // test if Temp is to high
+    #if (BREWMODE == 2)
+    checkWeight() ; // Check Weight Scale in the loop
+    #endif
     brew();   //start brewing if button pressed
     checkSteamON(); // check for steam
     sendToBlynk();
