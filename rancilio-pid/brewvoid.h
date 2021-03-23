@@ -138,6 +138,10 @@ void brew()
         if (brewswitch == HIGH && backflushState == 10 && backflushON == 0 && brewswitchWasOFF) {
           startZeit = millis();
           brewcounter = 20;
+          if (preinfusionpause == 0 || preinfusion == 0)
+          {
+          brewcounter = 40;
+          }
           lastbezugszeit = 0;
           kaltstart = false;    // force reset kaltstart if shot is pulled
         } else {
@@ -294,7 +298,12 @@ void brew()
         if (brewswitch == HIGH && backflushState == 10 && backflushON == 0 && brewswitchWasOFF) {
           startZeit = millis();
           brewcounter = 20;
+          if (preinfusionpause == 0 || preinfusion == 0)
+          {
+          brewcounter = 40;
+          }
           kaltstart = false;    // force reset kaltstart if shot is pulled
+          weightPreBrew = weight;
         } else {
           backflush();
         }
