@@ -82,6 +82,8 @@ int calibration_mode = CALIBRATION_MODE;
 uint8_t tof_i2c = TOF_I2C;
 int water_full = WATER_FULL;
 int water_empty = WATER_EMPTY;
+unsigned long previousMillisTOF;  // initialisation at the end of init()
+const unsigned long intervalTOF = 5000 ; //ms
 double distance;
 double percentage;
 
@@ -1675,29 +1677,40 @@ void loop() {
 }
 
 // TOF Calibration_mode 
-void loopcalibrate() {
-//Deactivate PID
-    if (pidMode == 1) 
-    {
-      pidMode = 0;
-      bPID.SetMode(pidMode);
-      Output = 0 ;false;
-    }
-if (Blynk.connected()) {  // If connected run as normal
+void loopcalibrate() 
+{
+    //Deactivate PID
+  if (pidMode == 1) 
+  {
+    pidMode = 0;
+    bPID.SetMode(pidMode);
+    Output = 0 ;false;
+  }
+  if (Blynk.connected()) 
+  {  // If connected run as normal
       Blynk.run();
       blynkReCnctCount = 0; //reset blynk reconnects if connected
-    } else  {
-      checkBlynk();
-    }
+  } else  
+  {
+    checkBlynk();
+  }
     digitalWrite(pinRelayHeater, LOW); //Stop heating to be on the safe side ...
 
-  VL53L0X_RangingMeasurementData_t measure;  //TOF Sensor measurement
-  lox.rangingTest(&measure, false); // pass in 'true' to get debug data printout!
-  distance = measure.RangeMilliMeter;  //write new distence value to 'distance'
-   #if DISPLAY !=0
-    displayDistance(distance);
-  #endif
+  unsigned long currentMillisTOF = millis();
+  if (currentMillisTOF - previousMillisTOF >= intervalTOF) 
+  {
+    previousMillisTOF = millis() ;
+    VL53L0X_RangingMeasurementData_t measure;  //TOF Sensor measurement
+    lox.rangingTest(&measure, false); // pass in 'true' to get debug data printout!
+    distance = measure.RangeMilliMeter;  //write new distence value to 'distance'
+    DEBUG_print(distance);
+    DEBUG_println("mm");
+    #if DISPLAY !=0
+        displayDistance(distance);
+    #endif
+  }  
 }
+
 
 void looppid() {
   //Only do Wifi stuff, if Wifi is connected
@@ -1753,12 +1766,18 @@ void looppid() {
     checkWifi();
   }
     if (TOF != 0) {
-        VL53L0X_RangingMeasurementData_t measure;  //TOF Sensor measurement
-        lox.rangingTest(&measure, false); // pass in 'true' to get debug data printout!
-        distance = measure.RangeMilliMeter;  //write new distance value to 'distance'
-        if (distance <= 1000)
+          unsigned long currentMillisTOF = millis();
+        if (currentMillisTOF - previousMillisTOF >= intervalTOF) 
         {
-        percentage = (100 / (water_empty - water_full))* (water_empty - distance); //calculate percentage of waterlevel
+          previousMillisTOF = millis() ;
+          VL53L0X_RangingMeasurementData_t measure;  //TOF Sensor measurement
+          lox.rangingTest(&measure, false); // pass in 'true' to get debug data printout!
+          distance = measure.RangeMilliMeter;  //write new distence value to 'distance'
+          if (distance <= 1000)
+          {
+            percentage = (100.00 / (water_empty - water_full)) * (water_empty - distance); //calculate percentage of waterlevel
+            DEBUG_println(percentage);
+          }
         }
     }
   // voids
