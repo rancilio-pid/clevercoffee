@@ -110,9 +110,9 @@ void backflush() {
 void brew() 
 {
   if (OnlyPID == 0) 
-  {
-    checkbrewswitch() ;
+  {    
     unsigned long currentMillistemp = millis();
+    checkbrewswitch() ;
 
     if (brewswitch == LOW && brewcounter > 10)
     {
@@ -134,16 +134,16 @@ void brew()
 
     // state machine for brew
     switch (brewcounter) {
-      case 10:    // waiting step for brew switch turning on
+    case 10:    // waiting step for brew switch turning on
         if (brewswitch == HIGH && backflushState == 10 && backflushON == 0 && brewswitchWasOFF) {
           startZeit = millis();
-          brewcounter = 20;
-          if (preinfusionpause == 0 || preinfusion == 0)
-          {
+          if (preinfusionpause == 0 || preinfusion == 0){
           brewcounter = 40;
+          } else {
+          brewcounter = 20;
           }
-          lastbezugszeit = 0;
           kaltstart = false;    // force reset kaltstart if shot is pulled
+          weightPreBrew = weight;
         } else {
           backflush();
         }
