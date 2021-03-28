@@ -1,4 +1,4 @@
-/********************************************************
+/******************************************************** 
    Version 2.8.1 (20.03.2021) 
    * Fix coldstart near setpoint 
    * Port for ESp32 
@@ -7,7 +7,7 @@
 /********************************************************
   INCLUDES
 ******************************************************/
-#include <ArduinoOTA.h>
+#include <ArduinoOTA.h> 
 #include <EEPROM.h>
 #include "userConfig.h" // needs to be configured by the user
 #include <U8g2lib.h>
@@ -23,7 +23,7 @@
 #endif
 #include "icon.h"   //user icons for display
 #include <ZACwire.h> //NEW TSIC LIB
-#include <PubSubClient.h>
+#include <PubSubClient.h>  
 #include "TSIC.h"       //Library for TSIC temp sensor
 #include <Adafruit_VL53L0X.h> //for TOF 
 
@@ -49,6 +49,8 @@
 #define DEBUGSTART(a) Serial.begin(a);
 #endif
 #define HIGH_ACCURACY
+
+#define SHOT_MAX_TIME_SEC (35*1000)
 
 
 /********************************************************
@@ -1356,7 +1358,7 @@ void machinestatevoid()
     case 30:
       if
       (
-       (bezugsZeit > 35*1000 && Brewdetection == 1 && ONLYPID == 1  ) ||  // 35 sec later and BD PID aktive SW Solution
+       (bezugsZeit > SHOT_MAX_TIME_SEC && Brewdetection == 1 && ONLYPID == 1  ) ||  // 35 sec later and BD PID aktive SW Solution
        (bezugsZeit == 0      && Brewdetection == 3 && ONLYPID == 1  ) ||  // Voltagesensor reset bezugsZeit == 0
        ((brewcounter == 10 || brewcounter == 43)   && ONLYPID == 0  ) // switchoff BD PID aktive
       )
