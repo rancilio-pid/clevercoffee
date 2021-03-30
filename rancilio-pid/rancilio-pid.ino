@@ -1,7 +1,7 @@
-/******************************************************** 
-   Version 2.8.1 (20.03.2021) 
-   * Fix coldstart near setpoint 
-   * Port for ESp32 
+/********************************************************
+   Version 2.9.0 (29.03.2021)  
+   * Port for ESP32 
+   * Scale weight
 ******************************************************/
 
 /********************************************************
@@ -27,6 +27,9 @@
 #include "TSIC.h"       //Library for TSIC temp sensor
 #include <Adafruit_VL53L0X.h> //for TOF 
 
+#if (BREWMODE == 2)
+#include <HX711_ADC.h>
+#endif
 
 
 
@@ -69,6 +72,7 @@ const unsigned long wifiConnectionDelay = WIFICINNECTIONDELAY;
 const unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
 int machineLogo = MACHINELOGO;
 const unsigned long brewswitchDelay = BREWSWITCHDELAY;
+int BrewMode = BREWMODE ;
 int machinestate = 0;
 
 //Display
@@ -80,6 +84,8 @@ int calibration_mode = CALIBRATION_MODE;
 uint8_t tof_i2c = TOF_I2C;
 int water_full = WATER_FULL;
 int water_empty = WATER_EMPTY;
+unsigned long previousMillisTOF;  // initialisation at the end of init()
+const unsigned long intervalTOF = 5000 ; //ms
 double distance;
 double percentage;
 
@@ -136,7 +142,7 @@ int relayON, relayOFF;          // used for relay trigger type. Do not change!
 boolean kaltstart = true;       // true = Rancilio started for first time
 boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
 double EmergencyStopTemp = 120; // Temp EmergencyStopTemp
-const char* sysVersion PROGMEM  = "Version 2.8.1 MASTER";   //System version
+const char* sysVersion PROGMEM  = "Version 2.9.0 SCALE";   //System version
 int inX = 0, inY = 0, inOld = 0, inSum = 0; //used for filter()
 int bars = 0; //used for getSignalStrength()
 boolean brewDetected = 0;
@@ -179,22 +185,11 @@ double brewboarder = 150 ;        // border for the detection, be carefull: to l
 const int PonE = PONE;
 
 /********************************************************
-   Analog Input
+   BREW INI 1= Normale Prefinfusion , 2 = Scale
 ******************************************************/
-const int analogPin = 0; // AI0 will be used
-int brewcounter = 10;
-int brewswitch = 0;
-boolean brewswitchWasOFF = false;
-double brewtime = 25000;  //brewtime in ms
-double totalbrewtime = 0; //total brewtime set in softare or blynk
-double preinfusion = 2000;  //preinfusion time in ms
-double preinfusionpause = 5000;   //preinfusion pause time in ms
-double bezugsZeit = 0;   //total brewed time
-double lastbezugszeitMillis = 0; // for shottimer delay after disarmed button
-double lastbezugszeit = 0 ; 
-unsigned long startZeit = 0;    //start time of brew
-const unsigned long analogreadingtimeinterval = 10 ; // ms
-unsigned long previousMillistempanalogreading ; // ms for analogreading
+#if (BREWMODE != 0) 
+  #include "brewini.h"
+#endif
 
 /********************************************************
    Sensor check
@@ -256,7 +251,7 @@ DeviceAddress sensorDeviceAddress;     // arrays to hold device address
 uint16_t temperature = 0;     // internal variable used to read temeprature
 float Temperatur_C = 0;       // internal variable that holds the converted temperature in °C
 
-#if (ONE_WIRE_BUS == 16  && TEMPSENSOR  == 2 && defined(ESP8266)) 
+#if (ONE_WIRE_BUS == 16 && TEMPSENSOR  == 2 && defined(ESP8266)) 
 TSIC Sensor1(ONE_WIRE_BUS);   // only Signalpin, VCCpin unused by default
 #else 
 ZACwire<ONE_WIRE_BUS> Sensor2(306);    // set pin "2" to receive signal from the TSic "306"
@@ -328,6 +323,9 @@ const unsigned long intervalDisplay = 500;
   #if (DISPLAYTEMPLATE == 3)
       #include "Displaytemplatetemponly.h"
   #endif   
+  #if (DISPLAYTEMPLATE == 4)
+      #include "Displaytemplatescale.h"
+  #endif   
   #if (DISPLAYTEMPLATE == 20)
       #include "Displaytemplateupright.h"
   #endif   
@@ -397,6 +395,12 @@ BLYNK_WRITE(V16) {
   SteamSetPoint = param.asDouble();
   mqtt_publish("SteamSetPoint", number2string(SteamSetPoint));
 }
+#if (BREWMODE == 2)
+BLYNK_WRITE(V18)
+{
+  weightSetpoint = param.asFloat();
+}
+#endif
 BLYNK_WRITE(V25)
 {
   calibration_mode = param.asInt();//
@@ -457,91 +461,6 @@ void testEmergencyStop() {
     emergencyStop = false;
   }
 }
-
-
-void backflush() {
-  if (backflushState != 10 && backflushON == 0) {
-    backflushState = 43;    // force reset in case backflushON is reset during backflush!
-  } else if ( Offlinemodus == 1 || brewcounter > 10 || maxflushCycles <= 0 || backflushON == 0) {
-    return;
-  }
-
-  if (pidMode == 1) { //Deactivate PID
-    pidMode = 0;
-    bPID.SetMode(pidMode);
-    Output = 0 ;
-  }
-  digitalWrite(pinRelayHeater, LOW); //Stop heating
-
-  readAnalogInput();
-  unsigned long currentMillistemp = millis();
-
-  if (brewswitch < 1000 && backflushState > 10) {   //abort function for state machine from every state
-    backflushState = 43;
-  }
-
-  // state machine for brew
-  switch (backflushState) {
-    case 10:    // waiting step for brew switch turning on
-      if (brewswitch > 1000 && backflushON) {
-        startZeit = millis();
-        backflushState = 20;
-      }
-      break;
-    case 20:    //portafilter filling
-      DEBUG_println("portafilter filling");
-      digitalWrite(pinRelayVentil, relayON);
-      digitalWrite(pinRelayPumpe, relayON);
-      backflushState = 21;
-      break;
-    case 21:    //waiting time for portafilter filling
-      if (millis() - startZeit > FILLTIME) {
-        startZeit = millis();
-        backflushState = 30;
-      }
-      break;
-    case 30:    //flushing
-      DEBUG_println("flushing");
-      digitalWrite(pinRelayVentil, relayOFF);
-      digitalWrite(pinRelayPumpe, relayOFF);
-      flushCycles++;
-      backflushState = 31;
-      break;
-    case 31:    //waiting time for flushing
-      if (millis() - startZeit > flushTime && flushCycles < maxflushCycles) {
-        startZeit = millis();
-        backflushState = 20;
-      } else if (flushCycles >= maxflushCycles) {
-        backflushState = 43;
-      }
-      break;
-    case 43:    // waiting for brewswitch off position
-      if (brewswitch < 1000) {
-        DEBUG_println("backflush finished");
-        digitalWrite(pinRelayVentil, relayOFF);
-        digitalWrite(pinRelayPumpe, relayOFF);
-        currentMillistemp = 0;
-        flushCycles = 0;
-        backflushState = 10;
-      }
-      break;
-  }
-}
-
-
-
-/********************************************************
-  Read analog input pin
-*****************************************************/
-void readAnalogInput() {
-  unsigned long currentMillistemp = millis();
-  if (currentMillistemp - previousMillistempanalogreading >= analogreadingtimeinterval)
-  {
-    previousMillistempanalogreading = currentMillistemp;
-    brewswitch = filter(analogRead(analogPin));
-  }
-}
-
 
 /********************************************************
   Moving average - brewdetection (SW)
@@ -647,8 +566,9 @@ void refreshTemp() {
          Sensor1.getTemperature(&temperature);
          Temperatur_C = Sensor1.calc_Celsius(&temperature);
          #endif
-       #if (ONE_WIRE_BUS != 16)
+       #if ((ONE_WIRE_BUS != 16 && defined(ESP8266)) || defined(ESP32))
         Temperatur_C = Sensor2.getTemp();
+        DEBUG_print(Temperatur_C);
        #endif
       //Temperatur_C = 70;
       if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
@@ -662,101 +582,11 @@ void refreshTemp() {
   }
 }
 
-/********************************************************
-    PreInfusion, Brew , if not Only PID
-******************************************************/
-void brew() 
-{
-  if (OnlyPID == 0) 
-  {
-    readAnalogInput();
-    unsigned long currentMillistemp = millis();
+/*******************************************************
+      BREWVOID.H
+*****************************************************/
 
-    if (brewswitch < 1000 && brewcounter > 10)
-    {
-      //abort function for state machine from every state
-      brewcounter = 43;
-    }
-
-    if (brewcounter > 10 && brewcounter < 43 ) {
-      bezugsZeit = currentMillistemp - startZeit;
-    }
-    if (brewswitch < 1000 && firstreading == 0 ) 
-    {   //check if brewswitch was turned off at least once, last time,
-      brewswitchWasOFF = true;
-      //DEBUG_println("brewswitch value")
-      //DEBUG_println(brewswitch)
-    }
-
-    totalbrewtime = preinfusion + preinfusionpause + brewtime;    // running every cycle, in case changes are done during brew
-
-    // state machine for brew
-    switch (brewcounter) {
-      case 10:    // waiting step for brew switch turning on
-        if (brewswitch > 1000 && backflushState == 10 && backflushON == 0 && brewswitchWasOFF) {
-          startZeit = millis();
-          brewcounter = 20;
-          lastbezugszeit = 0;
-          kaltstart = false;    // force reset kaltstart if shot is pulled
-        } else {
-          backflush();
-        }
-        break;
-      case 20:    //preinfusioon
-        DEBUG_println("Preinfusion");
-        digitalWrite(pinRelayVentil, relayON);
-        digitalWrite(pinRelayPumpe, relayON);
-        brewcounter = 21;
-        break;
-      case 21:    //waiting time preinfusion
-        if (bezugsZeit > preinfusion) {
-          brewcounter = 30;
-        }
-        break;
-      case 30:    //preinfusion pause
-        DEBUG_println("preinfusion pause");
-        digitalWrite(pinRelayVentil, relayON);
-        digitalWrite(pinRelayPumpe, relayOFF);
-        brewcounter = 31;
-        break;
-      case 31:    //waiting time preinfusion pause
-        if (bezugsZeit > preinfusion + preinfusionpause) {
-          brewcounter = 40;
-        }
-        break;
-      case 40:    //brew running
-        DEBUG_println("Brew started");
-        digitalWrite(pinRelayVentil, relayON);
-        digitalWrite(pinRelayPumpe, relayON);
-        brewcounter = 41;
-        break;
-      case 41:    //waiting time brew
-        lastbezugszeit = bezugsZeit;
-        if (bezugsZeit > totalbrewtime) {
-          brewcounter = 42;
-        }
-        break;
-      case 42:    //brew finished
-        DEBUG_println("Brew stopped");
-        digitalWrite(pinRelayVentil, relayOFF);
-        digitalWrite(pinRelayPumpe, relayOFF);
-        brewcounter = 43;
-        bezugsZeit = 0;
-        break;
-      case 43:    // waiting for brewswitch off position
-        if (brewswitch < 1000) {
-          digitalWrite(pinRelayVentil, relayOFF);
-          digitalWrite(pinRelayPumpe, relayOFF);
-          // lastbezugszeitMillis = millis();  // for shottimer delay after disarmed button
-          currentMillistemp = 0;
-          brewDetected = 0; //rearm brewdetection
-          brewcounter = 10;
-          bezugsZeit = 0;
-        }
-        break;
-    }
-  }
-}
+#include "brewvoid.h"
 
 /*******************************************************
   Switch to offline modeif maxWifiReconnects were exceeded
@@ -1570,7 +1400,10 @@ void setup() {
   { 
     pinMode(PINVOLTAGESENSOR, PINMODEVOLTAGESENSOR);
   }
-
+  if (PINBREWSWITCH > 0) // IF Voltage sensor selected 
+  { 
+    pinMode(PINBREWSWITCH, INPUT);
+  }
   /********************************************************
     DISPLAY 128x64
   ******************************************************/
@@ -1581,6 +1414,13 @@ void setup() {
     displayLogo(sysVersion, "");
     delay(2000);
   #endif
+   /********************************************************
+    Init Scale
+  ******************************************************/
+  #if (BREWMODE == 2)
+    initScale() ;
+  #endif
+
 
   /********************************************************
     VL530L0x TOF sensor
@@ -1762,11 +1602,11 @@ void setup() {
 
   if (TempSensor == 2) {
     temperature = 0;
-    #if (ONE_WIRE_BUS == 16)
+    #if (ONE_WIRE_BUS == 16 && defined(ESP8266))
          Sensor1.getTemperature(&temperature);
          Input = Sensor1.calc_Celsius(&temperature);
     #endif
-    #if (ONE_WIRE_BUS != 16)
+    #if ((ONE_WIRE_BUS != 16 && defined(ESP8266)) || defined(ESP32))
         Input = Sensor2.getTemp();
      #endif
   }
@@ -1781,6 +1621,7 @@ void setup() {
       readingchangerate[thisReading] = 0;
     }
   }
+  /*
   if (TempSensor == 2) {
     temperature = 0;
     #if (ONE_WIRE_BUS == 16)
@@ -1790,7 +1631,7 @@ void setup() {
     #if (ONE_WIRE_BUS != 16)
         Input = Sensor2.getTemp();
      #endif
-  }
+  } */
 
   //Initialisation MUST be at the very end of the init(), otherwise the time comparision in loop() will have a big offset
   unsigned long currentTime = millis();
@@ -1839,29 +1680,40 @@ void loop() {
 }
 
 // TOF Calibration_mode 
-void loopcalibrate() {
-//Deactivate PID
-    if (pidMode == 1) 
-    {
-      pidMode = 0;
-      bPID.SetMode(pidMode);
-      Output = 0 ;false;
-    }
-if (Blynk.connected()) {  // If connected run as normal
+void loopcalibrate() 
+{
+    //Deactivate PID
+  if (pidMode == 1) 
+  {
+    pidMode = 0;
+    bPID.SetMode(pidMode);
+    Output = 0 ;false;
+  }
+  if (Blynk.connected()) 
+  {  // If connected run as normal
       Blynk.run();
       blynkReCnctCount = 0; //reset blynk reconnects if connected
-    } else  {
-      checkBlynk();
-    }
+  } else  
+  {
+    checkBlynk();
+  }
     digitalWrite(pinRelayHeater, LOW); //Stop heating to be on the safe side ...
 
-  VL53L0X_RangingMeasurementData_t measure;  //TOF Sensor measurement
-  lox.rangingTest(&measure, false); // pass in 'true' to get debug data printout!
-  distance = measure.RangeMilliMeter;  //write new distence value to 'distance'
-   #if DISPLAY !=0
-    displayDistance(distance);
-  #endif
+  unsigned long currentMillisTOF = millis();
+  if (currentMillisTOF - previousMillisTOF >= intervalTOF) 
+  {
+    previousMillisTOF = millis() ;
+    VL53L0X_RangingMeasurementData_t measure;  //TOF Sensor measurement
+    lox.rangingTest(&measure, false); // pass in 'true' to get debug data printout!
+    distance = measure.RangeMilliMeter;  //write new distence value to 'distance'
+    DEBUG_print(distance);
+    DEBUG_println("mm");
+    #if DISPLAY !=0
+        displayDistance(distance);
+    #endif
+  }  
 }
+
 
 void looppid() {
   //Only do Wifi stuff, if Wifi is connected
@@ -1893,7 +1745,7 @@ void looppid() {
       timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
       #endif
       #if defined(ESP32) 
-      timerAlarmDisable(timer);
+      timerAlarmEnable(timer);
       #endif
     });
     // Enable interrupts if OTA is finished
@@ -1917,17 +1769,26 @@ void looppid() {
     checkWifi();
   }
     if (TOF != 0) {
-        VL53L0X_RangingMeasurementData_t measure;  //TOF Sensor measurement
-        lox.rangingTest(&measure, false); // pass in 'true' to get debug data printout!
-        distance = measure.RangeMilliMeter;  //write new distance value to 'distance'
-        if (distance <= 1000)
+          unsigned long currentMillisTOF = millis();
+        if (currentMillisTOF - previousMillisTOF >= intervalTOF) 
         {
-        percentage = (100 / (water_empty - water_full))* (water_empty - distance); //calculate percentage of waterlevel
+          previousMillisTOF = millis() ;
+          VL53L0X_RangingMeasurementData_t measure;  //TOF Sensor measurement
+          lox.rangingTest(&measure, false); // pass in 'true' to get debug data printout!
+          distance = measure.RangeMilliMeter;  //write new distence value to 'distance'
+          if (distance <= 1000)
+          {
+            percentage = (100.00 / (water_empty - water_full)) * (water_empty - distance); //calculate percentage of waterlevel
+            DEBUG_println(percentage);
+          }
         }
     }
   // voids
     refreshTemp();   //read new temperature values
     testEmergencyStop();  // test if Temp is to high
+    #if (BREWMODE == 2)
+    checkWeight() ; // Check Weight Scale in the loop
+    #endif
     brew();   //start brewing if button pressed
     checkSteamON(); // check for steam
     sendToBlynk();

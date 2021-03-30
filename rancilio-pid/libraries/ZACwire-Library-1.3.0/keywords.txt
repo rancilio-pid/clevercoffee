@@ -1,0 +1,4 @@
+ZACwire	KEYWORD1
+begin	KEYWORD2
+getTemp	KEYWORD2
+end	KEYWORD2

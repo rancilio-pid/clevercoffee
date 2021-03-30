@@ -1,0 +1,48 @@
+#######################################
+# Syntax Coloring Map For HX711_ADC
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+HX711_ADC	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+begin					KEYWORD2
+start					KEYWORD2
+startMultiple			KEYWORD2
+setGain					KEYWORD2
+tare					KEYWORD2
+tareNoDelay				KEYWORD2
+setCalFactor			KEYWORD2
+getCalFactor			KEYWORD2
+getData					KEYWORD2
+getSingleConversion		KEYWORD2
+getSingleConversionRaw	KEYWORD2
+getReadIndex			KEYWORD2
+getConversionTime		KEYWORD2
+getSPS					KEYWORD2
+getTareTimeoutFlag		KEYWORD2
+disableTareTimeout		KEYWORD2
+getSettlingTime			KEYWORD2
+powerDown				KEYWORD2
+powerUp					KEYWORD2
+getTareOffset			KEYWORD2
+getTareStatus			KEYWORD2
+setTareOffset			KEYWORD2
+setSamplesInUse			KEYWORD2
+getSamplesInUse			KEYWORD2
+refreshDataSet			KEYWORD2
+getDataSetStatus		KEYWORD2
+getNewCalibration		KEYWORD2
+getSignalTimeoutFlag	KEYWORD2
+
+
+
+#######################################
+# Constants (LITERAL1)
+#######################################
