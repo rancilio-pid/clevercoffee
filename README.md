@@ -2,7 +2,7 @@
 
 ## Version
 MASTER VERSION
-Version 2.8.0  (18.03.2021) - Brüherkennung per Sensor bei OnlyPID
+Version 2.9.0  (2.04.2021) - Integration Waage
 
 ## Hinweise
 Unsere Projektwebseite findet ihr hier: [Rancilio PID Website](http://rancilio-pid.de/).
@@ -17,6 +17,7 @@ Ihr seid herzlich Willkommen uns gemeinsam bei der Mission zu besseren Espresso 
 
 ## Was nach einem Umbau möglich ist
  * Automatischer Kaltstart für das perfekte Erreichen der Soll-Temperatur innerhalb von 8 bis 12 Minuten (je nach Maschine) 
+ * **NEU** Integration einer Waagefunktion. Dokumentation im Handbuch steht noch aus. 
  * **NEU** Steammodus via Pin oder Blynk APP mit Steam Displayausgabe und eigenen PID Regler und Temperatur (in der App unter Expertenmodus) 
  * **NEU** Integration von einem Füllstandssensor. [mehr dazu](https://manual.rancilio-pid.de/de/customization/waterlevel_tof.html).
  * Brüherkennung per Sensor bei OnlyPID.[mehr dazu](https://manual.rancilio-pid.de/de/customization/brueherkennung.html).
