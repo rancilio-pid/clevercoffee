@@ -47,10 +47,18 @@
         u8g2.drawStr(0, 47, displaymessagetext.c_str());
         u8g2.drawStr(0, 55, displaymessagetext2.c_str());
         //Rancilio startup logo
-        if (machineLogo == 1) {
-            u8g2.drawXBMP(41, 2, startLogoRancilio_width, startLogoRancilio_height, startLogoRancilio_bits);
-        } else if (machineLogo == 2) {
-            u8g2.drawXBMP(0, 2, startLogoGaggia_width, startLogoGaggia_height, startLogoGaggia_bits);
+        switch (machineLogo) {
+          case 1:
+          u8g2.drawXBMP(41, 2, startLogoRancilio_width, startLogoRancilio_height, startLogoRancilio_bits);
+          break;
+
+          case 2: 
+          u8g2.drawXBMP(0, 2, startLogoGaggia_width, startLogoGaggia_height, startLogoGaggia_bits);
+          break;
+
+          case 3:
+          u8g2.drawXBMP(22, 0, startLogoQuickMill_width, startLogoQuickMill_height, startLogoQuickMill_bits);
+          break;         
         }
         u8g2.sendBuffer();
     }
