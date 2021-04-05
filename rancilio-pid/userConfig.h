@@ -14,7 +14,7 @@
 #define DISPLAY 2                  // 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64)
 #define OLED_I2C 0x3C		           // I2C address for OLED, 0x3C by default
 #define DISPLAYTEMPLATE 3          // 1 = Standard Display Template, 2 = Minimal Template, 3 = only Temperatur, 4 = Scale Template, 20 = vertical Display see git Handbook for further information
-#define MACHINELOGO 1              // 1 = Rancilio, 2 = Gaggia
+#define MACHINELOGO 1              // 1 = Rancilio, 2 = Gaggia, 3 = QuickMill
 #define DISPALYROTATE U8G2_R0      // rotate display clockwise: U8G2_R0 = no rotation; U8G2_R1 = 90°; U8G2_R2 = 180°; U8G2_R3 = 270°
 #define SHOTTIMER 0                // 0 = deactivated, 1 = activated
 #define HEATINGLOGO 0              // 0 = deactivated, 1 = Rancilio, 2 = Gaggia 
