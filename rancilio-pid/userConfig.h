@@ -1,5 +1,5 @@
 /********************************************************
-  Version 2.2 (04.02.2021) 
+  Version 2.3 (05.04.2021) 
   Last Change: code cleanup
   Values must be configured by the user
 ******************************************************/
@@ -34,6 +34,7 @@
 #define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay // BREWDETECTION 3 configuration
 #define VOLTAGESENSORTYPE HIGH 
 #define PINMODEVOLTAGESENSOR INPUT // Mode INPUT_PULLUP, INPUT or INPUT_PULLDOWN_16 (Only Pin 16)
+#define PRESSURESENSOR 0           // 1 = pressure sensor connected to A0; PINBREWSWITCH must be set to the connected input!
 
 // TOF sensor for water level
 #define TOF 0                      // 0 = no TOF sensor connected; 1 = water level by TOF sensor
@@ -49,6 +50,15 @@
 
 //Weight SCALE
 #define WEIGHTSETPOINT 30          // Gramm 
+
+//Pressure sensor
+/*
+ * messure and verify "offset" value, should be 10% of ADC bit reading @supply volate (3.3V)
+ * same goes for "fullScale", should be 90%
+ */
+#define OFFSET      102            // 10% of ADC input @3.3V supply = 102
+#define FULLSCALE   922            // 90% of ADC input @3.3V supply = 922
+#define MAXPRESSURE 200
 
 /// Wifi 
 #define HOSTNAME "Rancilio"
@@ -98,7 +108,7 @@
 
 // Pin Layout
 #define ONE_WIRE_BUS 2             // Temp sensor pin
-#define PINBREWSWITCH 0            // 0: A0 Analog PIN ; >0 : DIGITAL PIN
+#define PINBREWSWITCH 0           // 0: A0 Analog PIN ; >0 : DIGITAL PIN (e.g. 15 if pressure sensor is used)
 #define pinRelayVentil 12          // Output pin for 3-way-valve
 #define pinRelayPumpe 13           // Output pin for pump
 #define pinRelayHeater 14          // Output pin for heater
@@ -116,5 +126,10 @@
 // Historic (no settings)
 #define PONE 1                     // 1 = P_ON_E (default), 0 = P_ON_M (special PID mode, other PID-parameter are needed)
 #define TEMPSENSOR 2               // 2 = TSIC306 1=DS18B20
+
+// defined compiler errors
+#if (PRESSURESENSOR == 1) & (PINBREWSWITCH == 0)
+#error Change PINBREWSWITCH or PRESSURESENSOR!
+#endif
 
 #endif // _userConfig_H
