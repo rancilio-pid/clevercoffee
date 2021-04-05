@@ -2,7 +2,7 @@
     send data to display
 ******************************************************/
 // Define some Displayoptions
-int blinkingtemp = 1  ;         // 0: blinking near setpoint, 1: blinking by heating far away from setpoint
+int blinkingtemp = 1  ;         // 0: blinking near setpoint, 1: blinking far away from setpoint
 float blinkingtempoffset = 0.3; // offset for blinking
 
 void printScreen() 
