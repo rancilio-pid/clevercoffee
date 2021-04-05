@@ -1,5 +1,5 @@
 /********************************************************
-   Version 2.9.0 (02.04.2021)  
+   Version 2.9.1 (05.04.2021)  
 ******************************************************/
 
 /********************************************************
@@ -130,6 +130,16 @@ unsigned long previousMillisVoltagesensorreading = millis();
 const unsigned long intervalVoltagesensor= 200 ;
 int VoltageSensorON, VoltageSensorOFF;
 
+//Pressure sensor
+#if (PRESSURESENSOR == 1) // Pressure sensor connected
+int offset = OFFSET;
+int fullScale = FULLSCALE;
+int maxPressure = MAXPRESSURE;
+float inputPressure = 0;
+const unsigned long intervalPressure = 200;
+unsigned long previousMillisPressure;  // initialisation at the end of init()
+#endif
+
 /********************************************************
    declarations
 ******************************************************/
@@ -138,7 +148,7 @@ int relayON, relayOFF;          // used for relay trigger type. Do not change!
 boolean kaltstart = true;       // true = Rancilio started for first time
 boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
 double EmergencyStopTemp = 120; // Temp EmergencyStopTemp
-const char* sysVersion PROGMEM  = "Version 2.9.0 MASTER";   //System version
+const char* sysVersion PROGMEM  = "Version 2.9.1 branch";   //System version
 int inX = 0, inY = 0, inOld = 0, inSum = 0; //used for filter()
 int bars = 0; //used for getSignalStrength()
 boolean brewDetected = 0;
@@ -441,6 +451,33 @@ BLYNK_WRITE(V40) {
       startTn = param.asDouble();
     }
  #endif
+
+
+#if (PRESSURESENSOR == 1) // Pressure sensor connected
+
+/********************************************************
+  Pressure sensor
+  Verify before installation: meassured analog input value (should be 3,300 V for 3,3 V supply) and respective ADC value (3,30 V = 1023)
+*****************************************************/
+void checkPressure() {
+  float inputPressureFilter = 0;
+  unsigned long currentMillisPressure = millis();
+  if (currentMillisPressure - previousMillisPressure >= intervalPressure)
+  {
+    previousMillisPressure = currentMillisPressure;
+    
+    inputPressure = ((analogRead(analogPin) - offset) * maxPressure * 0.0689476) / (fullScale - offset);    // pressure conversion and unit conversion [psi] -> [bar]
+    inputPressureFilter = filter(inputPressure);
+    DEBUG_print("pressure raw: ");
+    DEBUG_println(inputPressure);
+    DEBUG_print("pressure filtered: ");
+    DEBUG_print(inputPressureFilter);
+  }  
+}
+
+#endif
+
+ 
 /********************************************************
   Trigger for Rancilio E Machine
 ******************************************************/
@@ -1637,6 +1674,12 @@ void setup() {
   previousMillisBlynk = currentTime;
   previousMillisETrigger = currentTime; 
   previousMillisVoltagesensorreading = currentTime;
+  #if (BREWMODE ==  2) 
+  previousMillisScale = currentTime;
+  #endif
+  #if (PRESSURESENSOR == 1)
+  previousMillisPressure = currentTime;
+  #endif
   setupDone = true;
 
   #if defined(ESP8266) 
@@ -1784,6 +1827,9 @@ void looppid() {
     testEmergencyStop();  // test if Temp is to high
     #if (BREWMODE == 2)
     checkWeight() ; // Check Weight Scale in the loop
+    #endif
+    #if (PRESSURESENSOR == 1)
+    checkPressure();
     #endif
     brew();   //start brewing if button pressed
     checkSteamON(); // check for steam
