@@ -808,6 +808,7 @@ void brewdetection()
   if (brewboarder == 0) return; //abort brewdetection if deactivated
 
   // Brew detecion == 1 software solution , == 2 hardware == 3 Voltagesensor 
+
   if (Brewdetection == 1) 
   {  // Bezugstimmer für SW aktivieren
      if (timerBrewdetection == 1)
@@ -818,8 +819,10 @@ void brewdetection()
     if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1 )
     {
       timerBrewdetection = 0 ;    //rearm brewdetection
-     // lastbezugszeitMillis = millis(); // Bezugszeit für Delay 
-      bezugsZeit = 0 ;
+      if (machinestate != 30)  // Bei Onlypid = 1, bezugsZeit > 0, no reset of bezugsZeit
+      {
+        bezugsZeit = 0 ;
+      }
      }
   } else if (Brewdetection == 2) 
   {
@@ -850,9 +853,10 @@ void brewdetection()
       timerBrewdetection = 0 ;    //rearm brewdetection
     }
   }
+  
+  // Activate the BD 
 
-
-  if (Brewdetection == 1) 
+  if ( Brewdetection == 1) // SW BD
   {
     if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 && (fabs(Input - BrewSetPoint) < 5)) // BD PID only +/- 4 Grad Celsius, no detection if HW was active
     {
@@ -860,7 +864,7 @@ void brewdetection()
       timeBrewdetection = millis() ;
       timerBrewdetection = 1 ;
     }
-  } else if (Brewdetection == 2) 
+  } else if (Brewdetection == 2) // HW BD
   {
     if (brewcounter > 10 && brewDetected == 0 && brewboarder != 0) 
     {
@@ -871,13 +875,6 @@ void brewdetection()
     }  
   } else if (Brewdetection == 3) // voltage sensor 
   {
-
-    unsigned long currentMillisVoltagesensorreading = millis();   
-   // if (
-   //     (currentMillisVoltagesensorreading - previousMillisVoltagesensorreading >= (intervalVoltagesensor)) //Abfrageinterval
-   //     && brewDetected == 0 // nur einmalig auslösen
-   //    )
-   // {
       previousMillisVoltagesensorreading = millis();
       if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorON && brewDetected == 0 ) 
       {
@@ -888,7 +885,6 @@ void brewdetection()
         brewDetected = 1;
         lastbezugszeit = 0 ;
       }
-    //}
   }
 }
 
@@ -1184,9 +1180,9 @@ void machinestatevoid()
     case 30:
       if
       (
-       (bezugsZeit > 35*1000 && Brewdetection == 1 && ONLYPID == 1  ) ||  // 35 sec later and BD PID aktive SW Solution
+       (bezugsZeit > 35*1000 && Brewdetection == 1 && ONLYPID == 1  ) ||  // 35 sec later and BD PID active SW Solution
        (bezugsZeit == 0      && Brewdetection == 3 && ONLYPID == 1  ) ||  // Voltagesensor reset bezugsZeit == 0
-       ((brewcounter == 10 || brewcounter == 43)   && ONLYPID == 0  ) // switchoff BD PID aktive
+       ((brewcounter == 10 || brewcounter == 43)   && ONLYPID == 0  ) // After brew
       )
       {
        if ((ONLYPID == 1 && Brewdetection == 3) || ONLYPID == 0 ) // only delay of shotimer for voltagesensor or brewcounter
