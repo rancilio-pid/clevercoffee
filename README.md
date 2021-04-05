@@ -8,7 +8,7 @@ Version 2.9.0  (2.04.2021) - Integration Waage
 Unsere Projektwebseite findet ihr hier: [Rancilio PID Website](http://rancilio-pid.de/).
 
 Wir empfehlen euch gerne unser Handbuch hier in Github zu erst anzuschauen,
-hier geht es zum deutschen Handbuch: [Link](http://manual.rancilio-pid.de/de/)
+hier geht es zum deutschen Handbuch: [Link](https://rancilio-pid.github.io/ranciliopid-handbook/)
 
 Unseren Chat für die gemeinsame Zusammenarbeit und Fragen findet ihr hier: [Link](https://chat.rancilio-pid.de)
 
