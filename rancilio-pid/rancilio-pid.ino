@@ -29,9 +29,6 @@
 #include <HX711_ADC.h>
 #endif
 
-
-
-
 /********************************************************
   DEFINES
 ******************************************************/
@@ -819,7 +816,7 @@ void brewdetection()
     if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1 )
     {
       timerBrewdetection = 0 ;    //rearm brewdetection
-      if (machinestate != 30)  // Bei Onlypid = 1, bezugsZeit > 0, no reset of bezugsZeit
+      if (machinestate != 30)  // Bei Onlypid = 1, bezugsZeit > 0, no reset of bezugsZeit in case of brewing. 
       {
         bezugsZeit = 0 ;
       }
@@ -1394,7 +1391,15 @@ void setup() {
   }
   if (PINBREWSWITCH > 0) // IF Voltage sensor selected 
   { 
-    pinMode(PINBREWSWITCH, INPUT);
+    #if (defined(ESP8266) && PINBREWSWITCH == 16) 
+      pinMode(PINBREWSWITCH, INPUT_PULLDOWN_16);
+    #endif
+    #if (defined(ESP8266) && PINBREWSWITCH == 15) 
+      pinMode(PINBREWSWITCH, INPUT);
+    #endif
+    #if defined(ESP32) 
+      pinMode(PINBREWSWITCH, INPUT_PULLDOWN);
+    #endif
   }
   /********************************************************
     DISPLAY 128x64

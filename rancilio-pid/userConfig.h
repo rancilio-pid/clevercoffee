@@ -98,7 +98,7 @@
 
 // Pin Layout
 #define ONE_WIRE_BUS 2             // Temp sensor pin
-#define PINBREWSWITCH 0            // 0: A0 Analog PIN ; >0 : DIGITAL PIN
+#define PINBREWSWITCH 0           // 0: A0 Analog PIN ; >0 : DIGITAL PIN, ESP8266: ONLY USE PIN15 AND PIN16! 
 #define pinRelayVentil 12          // Output pin for 3-way-valve
 #define pinRelayPumpe 13           // Output pin for pump
 #define pinRelayHeater 14          // Output pin for heater
@@ -116,5 +116,13 @@
 // Historic (no settings)
 #define PONE 1                     // 1 = P_ON_E (default), 0 = P_ON_M (special PID mode, other PID-parameter are needed)
 #define TEMPSENSOR 2               // 2 = TSIC306 1=DS18B20
+
+
+// Check BrewSwitch
+#if (defined(ESP8266) && ((PINBREWSWITCH != 15 && PINBREWSWITCH != 0 && PINBREWSWITCH != 16 )))
+  #error("WRONG Brewswitch PIN for ESP8266, Only PIN 15 and PIN 16");  
+#endif
+
+
 
 #endif // _userConfig_H
