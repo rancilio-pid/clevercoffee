@@ -19,8 +19,8 @@ Ihr seid herzlich Willkommen uns gemeinsam bei der Mission zu besseren Espresso 
  * Automatischer Kaltstart für das perfekte Erreichen der Soll-Temperatur innerhalb von 8 bis 12 Minuten (je nach Maschine) 
  * **NEU** Integration einer Waagefunktion. Dokumentation im Handbuch steht noch aus. 
  * **NEU** Steammodus via Pin oder Blynk APP mit Steam Displayausgabe und eigenen PID Regler und Temperatur (in der App unter Expertenmodus) 
- * **NEU** Integration von einem Füllstandssensor. [mehr dazu](https://manual.rancilio-pid.de/de/customization/waterlevel_tof.html).
- * Brüherkennung per Sensor bei OnlyPID.[mehr dazu](https://manual.rancilio-pid.de/de/customization/brueherkennung.html).
+ * **NEU** Integration von einem Füllstandssensor. [mehr dazu](https://rancilio-pid.github.io/ranciliopid-handbook/de/customization/waterlevel_tof.html).
+ * Brüherkennung per Sensor bei OnlyPID.[mehr dazu](https://rancilio-pid.github.io/ranciliopid-handbook/de/customization/brueherkennung.html#konfiguration-der-erkennung.
  * Shottimer einstellbar, um die Bezugdauer zu sehen.
  * Aktuell 3 Displaydesgins für die Anzeige, Möglichkeit weitere Designs einfach einzubinden. 
  * Vertikales Template fürs Display 
