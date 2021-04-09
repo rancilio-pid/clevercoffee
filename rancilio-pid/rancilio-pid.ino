@@ -1400,17 +1400,23 @@ void setup() {
   { 
     #if (defined(ESP8266) && PINBREWSWITCH == 16) 
       pinMode(PINBREWSWITCH, INPUT_PULLDOWN_16);
-      pinMode(STEAMONPIN, INPUT_PULLDOWN_16);
     #endif
     #if (defined(ESP8266) && PINBREWSWITCH == 15) 
       pinMode(PINBREWSWITCH, INPUT);
-      pinMode(STEAMONPIN, INPUT);
     #endif
     #if defined(ESP32) 
       pinMode(PINBREWSWITCH, INPUT_PULLDOWN);
-      pinMode(STEAMONPIN, INPUT_PULLDOWN);
     #endif
   }
+    #if (defined(ESP8266) && STEAMONPIN == 16) 
+      pinMode(STEAMONPIN, INPUT_PULLDOWN_16);
+    #endif
+      #if (defined(ESP8266) && STEAMONPIN == 15) 
+    pinMode(STEAMONPIN, INPUT);
+    #endif
+    #if defined(ESP32) 
+      pinMode(STEAMONPIN, INPUT_PULLDOWN);
+    #endif
   /********************************************************
     DISPLAY 128x64
   ******************************************************/
