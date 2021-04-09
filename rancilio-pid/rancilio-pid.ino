@@ -348,14 +348,15 @@ BLYNK_WRITE(V6) {
 }
 
 BLYNK_WRITE(V7) {
-  BrewSetPoint = param.asDouble();
-  mqtt_publish("BrewSetPoint", number2string(BrewSetPoint));
   if (machinestate == 10) //antiwindup by coldstart 
   {
-    bPID.SetMode(MANUAL);
-    Output =0;
-    bPID.SetMode(AUTOMATIC);
+    bPID.SetOutputLimits(0.0, 1.0);  // Forces minimum up to 0.0
+    bPID.SetOutputLimits(-1.0, 0.0);  // Forces maximum down to 0.0
+    bPID.Compute() ;
+    bPID.SetOutputLimits(0, windowSize); // reset window
   }
+  BrewSetPoint = param.asDouble();
+  mqtt_publish("BrewSetPoint", number2string(BrewSetPoint));
 }
 
 BLYNK_WRITE(V8) {
