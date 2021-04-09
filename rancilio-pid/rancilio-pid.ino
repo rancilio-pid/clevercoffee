@@ -1396,16 +1396,19 @@ void setup() {
   { 
     pinMode(PINVOLTAGESENSOR, PINMODEVOLTAGESENSOR);
   }
-  if (PINBREWSWITCH > 0) // IF Voltage sensor selected 
+  if (PINBREWSWITCH > 0) // IF PINBREWSWITCH & Steam selected 
   { 
     #if (defined(ESP8266) && PINBREWSWITCH == 16) 
       pinMode(PINBREWSWITCH, INPUT_PULLDOWN_16);
+      pinMode(STEAMONPIN, INPUT_PULLDOWN_16);
     #endif
     #if (defined(ESP8266) && PINBREWSWITCH == 15) 
       pinMode(PINBREWSWITCH, INPUT);
+      pinMode(STEAMONPIN, INPUT);
     #endif
     #if defined(ESP32) 
       pinMode(PINBREWSWITCH, INPUT_PULLDOWN);
+      pinMode(STEAMONPIN, INPUT_PULLDOWN);
     #endif
   }
   /********************************************************
