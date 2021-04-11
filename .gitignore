@@ -5,3 +5,6 @@ rancilio-pid/.vscode/arduino.json
 rancilio-pid/.vscode/c_cpp_properties.json
 rancilio-pid/.vscode/settings.json
 .pio/*
+
+**/.DS_Store
+
