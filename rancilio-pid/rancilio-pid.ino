@@ -634,36 +634,24 @@ void initOfflineMode()
    abort function if offline, or brew is running
 *****************************************************/
 void checkWifi() {
-  if (Offlinemodus == 1 || brewcounter > 11) return;
-  do {
-    if ((millis() - lastWifiConnectionAttempt >= wifiConnectionDelay) && (wifiReconnects <= maxWifiReconnects)) {
-      int statusTemp = WiFi.status();
-      if (statusTemp != WL_CONNECTED) {   // check WiFi connection status
-        lastWifiConnectionAttempt = millis();
-        wifiReconnects++;
-        DEBUG_print("Attempting WIFI reconnection: ");
-        DEBUG_println(wifiReconnects);
-        if (!setupDone) {
-           #if DISPLAY != 0
-            displayMessage("", "", "", "", "Wifi reconnect:", String(wifiReconnects));
-          #endif
-        }
-        WiFi.disconnect();
-        WiFi.begin(ssid, pass);   // attempt to connect to Wifi network
-        int count = 1;
-        while (WiFi.status() != WL_CONNECTED && count <= 20) {
-          delay(100);   //give WIFI some time to connect
-          count++;      //reconnect counter, maximum waiting time for reconnect = 20*100ms
-        }
-      }
+  if (Offlinemodus == 1 || brewcounter > 11) { 
+    return;
+  }
+
+  if(WiFi.status() != WL_CONNECTED)
+  {
+    // Display during start up
+    if (!setupDone && DISPLAY != 0) {
+      displayMessage("", "", "", "", "Wifi reconnect:", String(wifiReconnects));
     }
-    yield();  //Prevent WDT trigger
-  } while ( !setupDone && wifiReconnects < maxWifiReconnects && WiFi.status() != WL_CONNECTED);   //if kaltstart ist still true when checkWifi() is called, then there was no WIFI connection at boot -> connect or offlinemode
+    
+    wifiReconnects++;
+    WiFi.reconnect();
+  }
 
   if (wifiReconnects >= maxWifiReconnects && !setupDone) {   // no wifi connection after boot, initiate offline mode (only directly after boot)
     initOfflineMode();
   }
-
 }
 
 /*******************************************************
@@ -1460,6 +1448,7 @@ void setup() {
       network-issues with your other WiFi-devices on your WiFi-network. */
     WiFi.mode(WIFI_STA);
     WiFi.persistent(false);   //needed, otherwise exceptions are triggered \o.O/
+     WiFi.setAutoReconnect(true);
     WiFi.begin(ssid, pass);
     #if defined(ESP32) // ESP32
      WiFi.setHostname(hostname); // for ESP32port
