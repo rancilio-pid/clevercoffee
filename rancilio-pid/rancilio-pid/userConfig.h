@@ -10,6 +10,15 @@
 /********************************************************
    Preconfiguration
 ******************************************************/
+
+enum MACHINE {
+	RancilioSylvia,
+	RancilioSylviaE,
+	Gaggia,
+	QuickMill
+};
+MACHINE machine = QuickMill;
+
 // Display
 #define DISPLAY 2                  // 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64)
 #define OLED_I2C 0x3C		           // I2C address for OLED, 0x3C by default

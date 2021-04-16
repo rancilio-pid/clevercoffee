@@ -68,6 +68,13 @@ const unsigned long brewswitchDelay = BREWSWITCHDELAY;
 int BrewMode = BREWMODE ;
 int machinestate = 0;
 
+// QuickMill thermoblock steam-mode (only for BREWDETECTION = 3)
+const int maxBrewDurationForSteamModeQM_ON =  200; // if brewtime is shorter steam-mode starts
+const int minPVSOffTimedForSteamModeQM_OFF = 1500; // if PVS-off-time is longer steam-mode ends
+double brewDuration = 0;
+unsigned long steamOffQM_tref = 0; // last time pinvoltagesensor was on
+bool steamQM_active = false;
+
 //Display
 uint8_t oled_i2c = OLED_I2C;
 
@@ -846,6 +853,7 @@ void brewdetection()
     if 
      ((digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF) && brewDetected == 1)
       {
+        brewDuration = bezugsZeit; // for QickMill thermoblock steam-mode
         brewDetected = 0;
         bezugsZeit = 0 ; 
         startZeit = 0;
@@ -1023,6 +1031,22 @@ void checkSteamON()
     SteamON = 0;
     
   }
+
+  /* 
+    monitor QuickMill thermoblock steam-mode
+  */
+  if (steamQM_active == true) {
+    if( checkSteamOffQM() == true ) { // if true: steam-mode can be turned off
+      SteamON = 0;
+      steamQM_active = false;
+      steamOffQM_tref = 0;
+    } 
+    else
+    {
+      SteamON = 1;
+    }
+  }
+
   if (SteamON == 1) 
   {
     EmergencyStopTemp = 145;  
@@ -1033,6 +1057,36 @@ void checkSteamON()
     EmergencyStopTemp = 120;  
     setPoint = BrewSetPoint ;
   }
+}
+
+void initSteamQM() 
+{
+  /*
+    Initialize monitoring for steam switch off for QuickMill thermoblock
+  */
+  steamOffQM_tref = millis(); // time when pinvoltagesensor changes from ON to OFF
+  steamQM_active = true;
+  brewDuration = 0;
+  SteamON = 1;
+}
+
+boolean checkSteamOffQM()
+{
+  /* 
+    Monitor pinvoltagesensor during active steam mode of QuickMill thermoblock.
+    Once the pinvolagesenor remains OFF for longer than a pump-pulse time peride 
+    the switch is turned off and steam mode finished.
+  */
+  if( digitalRead(PINVOLTAGESENSOR) == VoltageSensorON ) {
+    steamOffQM_tref = millis();
+  }
+
+  if( (millis() - steamOffQM_tref) > minPVSOffTimedForSteamModeQM_OFF ) {
+    steamOffQM_tref = 0;
+    return true;
+  }
+  
+  return false;
 }
 
 void machinestatevoid() 
@@ -1219,7 +1273,13 @@ void machinestatevoid()
       }
     break;
     // Sec after shot finish
-    case 31: //lastbezugszeitMillis
+    case 31: 
+      // QuickMill thermoblock steam-mode
+      if ( (brewDuration < maxBrewDurationForSteamModeQM_ON) && Brewdetection == 3 && machine == QuickMill )
+      {
+        initSteamQM();
+      }
+      //lastbezugszeitMillis
       if ( millis()-lastbezugszeitMillis > BREWSWITCHDELAY )
       {
        machinestate = 35 ;
