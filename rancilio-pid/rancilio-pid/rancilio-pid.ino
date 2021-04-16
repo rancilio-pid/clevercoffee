@@ -1839,8 +1839,8 @@ void looppid() {
               steamLogo();
             #endif
             printScreen();  // refresh display
+          }
       #endif
-      }
     //Set PID if first start of machine detected, and no SteamON
     if ((Input < BrewSetPoint) && kaltstart && SteamON == 0) {
       if (startTn != 0) {
