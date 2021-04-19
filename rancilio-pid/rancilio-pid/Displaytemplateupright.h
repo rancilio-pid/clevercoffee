@@ -17,13 +17,13 @@ void printScreen()
     if (!sensorError) {
       u8g2.clearBuffer();
       u8g2.setCursor(1, 14);
-      u8g2.print("I: ");
+      u8g2.print(langstring_current_temp_rot_ur);
       u8g2.print(Input, 1);
       u8g2.print(" ");
       u8g2.print((char)176);
       u8g2.print("C");
       u8g2.setCursor(1, 24);
-      u8g2.print("S: ");
+      u8g2.print(langstring_set_temp_rot_ur);
       u8g2.print(setPoint, 1);
       u8g2.print(" ");
       u8g2.print((char)176);
@@ -87,7 +87,7 @@ void printScreen()
 
       // Brew
       u8g2.setCursor(1, 34);
-      u8g2.print("B: ");
+      u8g2.print(langstring_brew_rot_ur);
       u8g2.print(bezugsZeit / 1000, 0);
       u8g2.print("/");
       if (ONLYPID == 1) {

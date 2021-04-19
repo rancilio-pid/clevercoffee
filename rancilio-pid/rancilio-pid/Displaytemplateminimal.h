@@ -88,7 +88,7 @@ void printScreen()
         u8g2.setCursor(36, 30);
       }
 
-      u8g2.print("Brew:  ");
+      u8g2.print(langstring_brew);
       u8g2.print(bezugsZeit / 1000, 0);
       u8g2.print("/");
       if (ONLYPID == 1) {

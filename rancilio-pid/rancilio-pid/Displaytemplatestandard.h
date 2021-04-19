@@ -22,13 +22,13 @@ void printScreen()
       u8g2.setFont(u8g2_font_profont11_tf); // set font
       u8g2.drawXBMP(0, 0, logo_width, logo_height, logo_bits_u8g2);   //draw temp icon
       u8g2.setCursor(32, 14);
-      u8g2.print("Ist :  ");
+      u8g2.print(langstring_current_temp);
       u8g2.print(Input, 1);
       u8g2.print(" ");
       u8g2.print((char)176);
       u8g2.print("C");
       u8g2.setCursor(32, 24);
-      u8g2.print("Soll:  ");
+      u8g2.print(langstring_set_temp);
       u8g2.print(setPoint, 1);
       u8g2.print(" ");
       u8g2.print((char)176);
@@ -73,7 +73,7 @@ void printScreen()
       if (percentage < 10.00 && TOF == 1) {
         if (isrCounter < 500) {
           u8g2.setCursor(40, 48);
-          u8g2.print("Wasser leer");
+          u8g2.print(langstring_wasserleer);
              
          }
       } else 
@@ -101,7 +101,7 @@ void printScreen()
       }
       // Brew
       u8g2.setCursor(32, 34);
-      u8g2.print("Brew:  ");
+      u8g2.print(langstring_brew);
       u8g2.print(bezugsZeit / 1000, 0);
       u8g2.print("/");
       if (ONLYPID == 1) {
@@ -145,7 +145,7 @@ void printScreen()
         }
       } else {
         u8g2.setCursor(40, 2);
-        u8g2.print("Offlinemodus");
+        u8g2.print(langstring_offlinemod);
       }
       if(TOF == 1) 
         {

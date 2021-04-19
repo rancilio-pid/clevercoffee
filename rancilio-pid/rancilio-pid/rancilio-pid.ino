@@ -10,6 +10,7 @@
 #include "userConfig.h" // needs to be configured by the user
 #include <U8g2lib.h>
 #include "PID_v1.h" //for PID calculation
+#include "languages.h" // for language translation
 #include <DallasTemperature.h>    //Library for dallas temp sensor
 #if defined(ESP8266) 
   #include <BlynkSimpleEsp8266.h>
@@ -652,7 +653,7 @@ void checkWifi() {
         DEBUG_println(wifiReconnects);
         if (!setupDone) {
            #if DISPLAY != 0
-            displayMessage("", "", "", "", "Wifi reconnect:", String(wifiReconnects));
+            displayMessage("", "", "", "", langstring_wifirecon, String(wifiReconnects));
           #endif
         }
         WiFi.disconnect();
@@ -1516,7 +1517,7 @@ void setup() {
     #endif
     unsigned long started = millis();
     #if DISPLAY != 0
-      displayLogo("1: Connect Wifi to:", ssid);
+      displayLogo(langstring_connectwifi1, ssid);
     #endif
     /* Explicitly set the ESP8266 to be a WiFi-client, otherwise, it by default,
       would try to act as both a client and an access-point and could cause
@@ -1547,11 +1548,11 @@ void setup() {
       DEBUG_println("Wifi works, now try Blynk (timeout 30s)");
       if (fallback == 0) {
         #if DISPLAY != 0
-          displayLogo("Connect to Blynk", "no Fallback");
+          displayLogo(langstring_connectblynk1[0], langstring_connectblynk1[1]);
         #endif
       } else if (fallback == 1) {
         #if DISPLAY != 0
-          displayLogo("2: Wifi connected, ", "try Blynk   ");
+          displayLogo(langstring_connectwifi2[0], langstring_connectwifi2[1]);
         #endif
       }
       delay(1000);
@@ -1563,7 +1564,7 @@ void setup() {
       if (Blynk.connected() == true) 
       {
         #if DISPLAY != 0
-          displayLogo("3: Blynk connected", "sync all variables...");
+          displayLogo(langstring_connectblynk2[0], langstring_connectblynk2[1]);
         #endif
         DEBUG_println("Blynk is online");
         if (fallback == 1) 
@@ -1637,7 +1638,7 @@ void setup() {
     else 
     { 
       #if DISPLAY != 0
-        displayLogo("No ", "WIFI");
+        displayLogo(langstring_nowifi[0], langstring_nowifi[1]); 
       #endif
       DEBUG_println("No WIFI");
       WiFi.disconnect(true);
@@ -1959,7 +1960,7 @@ void looppid() {
     }
     digitalWrite(pinRelayHeater, LOW); //Stop heating
       #if DISPLAY != 0
-        displayMessage("Error, Temp: ", String(Input), "Check Temp. Sensor!", "", "", ""); //DISPLAY AUSGABE
+        displayMessage(langstring_error_tsensor[0], String(Input), langstring_error_tsensor[1], "", "", ""); //DISPLAY AUSGABE
       #endif 
   } else if (emergencyStop) 
   {
@@ -1979,15 +1980,15 @@ void looppid() {
   else if (backflushON || backflushState > 10) {
     if (backflushState == 43) {
       #if DISPLAY != 0
-        displayMessage("Backflush finished", "Please reset brewswitch...", "", "", "", "");
+        displayMessage(langstring_bckffinished[0], langstring_bckffinished[1], "", "", "", "");
       #endif 
     } else if (backflushState == 10) {
       #if DISPLAY != 0
-        displayMessage("Backflush activated", "Please set brewswitch...", "", "", "", "");
+        displayMessage(langstring_bckfactivated[0], langstring_bckfactivated[1], "", "", "", "");
       #endif
     } else if ( backflushState > 10) {
       #if DISPLAY != 0
-        displayMessage("Backflush running:", String(flushCycles), "from", String(maxflushCycles), "", "");
+        displayMessage(langstring_bckfrunning[0], String(flushCycles), langstring_bckfrunning[1], String(maxflushCycles), "", "");
       #endif
     }
   }
