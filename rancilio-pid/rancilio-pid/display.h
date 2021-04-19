@@ -47,16 +47,20 @@
         u8g2.drawStr(0, 47, displaymessagetext.c_str());
         u8g2.drawStr(0, 55, displaymessagetext2.c_str());
         //Rancilio startup logo
-        switch (machineLogo) {
-          case 1:
+        switch (machine) {
+          case RancilioSilvia: //Rancilio
           u8g2.drawXBMP(41, 2, startLogoRancilio_width, startLogoRancilio_height, startLogoRancilio_bits);
           break;
 
-          case 2: 
+          case RancilioSilviaE: //Rancilio
+          u8g2.drawXBMP(41, 2, startLogoRancilio_width, startLogoRancilio_height, startLogoRancilio_bits);
+          break;
+          
+          case Gaggia: //Gaggia
           u8g2.drawXBMP(0, 2, startLogoGaggia_width, startLogoGaggia_height, startLogoGaggia_bits);
           break;
 
-          case 3:
+          case QuickMill: //Quickmill
           u8g2.drawXBMP(22, 0, startLogoQuickMill_width, startLogoQuickMill_height, startLogoQuickMill_bits);
           break;         
         }

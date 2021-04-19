@@ -63,7 +63,7 @@ const boolean ota = OTA;
 const int grafana = GRAFANA;
 const unsigned long wifiConnectionDelay = WIFICINNECTIONDELAY;
 const unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
-int machineLogo = MACHINELOGO;
+//int machineLogo = MACHINELOGO;
 const unsigned long brewswitchDelay = BREWSWITCHDELAY;
 int BrewMode = BREWMODE ;
 int machinestate = 0;
@@ -82,9 +82,7 @@ const unsigned long intervalTOF = 5000 ; //ms
 double distance;
 double percentage;
 
-
 // Wifi
-
 const char* hostname = HOSTNAME;
 const char* auth = AUTH;
 const char* ssid = D_SSID;
@@ -126,6 +124,15 @@ unsigned int MQTTReCnctCount = 0;  // Blynk Reconnection counter
 unsigned long previousMillisVoltagesensorreading = millis();
 const unsigned long intervalVoltagesensor= 200 ;
 int VoltageSensorON, VoltageSensorOFF;
+
+// QuickMill thermoblock steam-mode (only for BREWDETECTION = 3)
+const int maxBrewDurationForSteamModeQM_ON =  200; // if brewtime is shorter steam-mode starts
+const int minPVSOffTimedForSteamModeQM_OFF = 1500; // if PVS-off-time is longer steam-mode ends
+double brewDurationSteam = 0;
+unsigned long steamOffQM_tref = 0; // last time pinvoltagesensor was on
+bool steamQM_active = false;
+
+
 
 /********************************************************
    declarations
@@ -847,6 +854,7 @@ void brewdetection()
      ((digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF) && brewDetected == 1)
       {
         brewDetected = 0;
+        brewDurationSteam = bezugsZeit; // for Q
         bezugsZeit = 0 ; 
         startZeit = 0;
         DEBUG_println("HW Brew - Voltage Sensor - End") ;
@@ -1008,7 +1016,7 @@ void ETriggervoid()
   } 
 }
   /********************************************************
-   SteamON
+   SteamON & Quickmill
   ******************************************************/
 void checkSteamON() 
 {
@@ -1016,13 +1024,26 @@ void checkSteamON()
   if (digitalRead(STEAMONPIN) == HIGH) 
   {
     SteamON = 1;
-    
   } 
   if (digitalRead(STEAMONPIN) == LOW && SteamFirstON == 0) // if via blynk on, then SteamFirstON == 1, prevent override
   {
     SteamON = 0;
-    
   }
+  /*  monitor QuickMill thermoblock steam-mode*/
+  if (steamQM_active == true) 
+  {
+    if( checkSteamOffQM() == true ) 
+    { // if true: steam-mode can be turned off
+      SteamON = 0;
+      steamQM_active = false;
+      steamOffQM_tref = 0;
+    } 
+    else
+    {
+      SteamON = 1;
+    }
+  }
+
   if (SteamON == 1) 
   {
     EmergencyStopTemp = 145;  
@@ -1034,6 +1055,43 @@ void checkSteamON()
     setPoint = BrewSetPoint ;
   }
 }
+
+
+
+void initSteamQM() 
+{
+  /*
+    Initialize monitoring for steam switch off for QuickMill thermoblock
+  */
+  steamOffQM_tref = millis(); // time when pinvoltagesensor changes from ON to OFF
+  steamQM_active = true;
+  brewDurationSteam = 0;
+  SteamON = 1;
+}
+
+boolean checkSteamOffQM()
+{
+  /* 
+    Monitor pinvoltagesensor during active steam mode of QuickMill thermoblock.
+    Once the pinvolagesenor remains OFF for longer than a pump-pulse time peride 
+    the switch is turned off and steam mode finished.
+  */
+  if( digitalRead(PINVOLTAGESENSOR) == VoltageSensorON ) {
+    steamOffQM_tref = millis();
+  }
+
+  if( (millis() - steamOffQM_tref) > minPVSOffTimedForSteamModeQM_OFF ) {
+    steamOffQM_tref = 0;
+    return true;
+  }
+  
+  return false;
+}
+
+/********************************************************
+   machinestatevoid
+******************************************************/
+
 
 void machinestatevoid() 
 {
@@ -1228,6 +1286,11 @@ void machinestatevoid()
       if (SteamON == 1)
       {
         machinestate = 40 ; // Steam
+      }
+      // QuickMill thermoblock steam-mode
+      if ( (brewDurationSteam < maxBrewDurationForSteamModeQM_ON) && Brewdetection == 3 && machine == QuickMill )
+      {
+        initSteamQM();
       }
 
       if (emergencyStop)
