@@ -1,12 +1,12 @@
-rancilio-pid/userConfig.h
-rancilio-pid/userConfig.h-mb
-rancilio-pid/userConfig.h
-# rancilio-pid/.vscode/arduino.json
-# rancilio-pid/.vscode/c_cpp_properties.json
-# rancilio-pid/.vscode/settings.json
+# ignore actual user config
+rancilio-pid/rancilio-pid/userConfig.h
+
+# ignore PlatformIO build folder
 .pio/*
 
+# ignore Visual Studio Code configuration files
 **/.vscode
 
+# ignore macOS Finder configuration storage files
 **/.DS_Store
 
