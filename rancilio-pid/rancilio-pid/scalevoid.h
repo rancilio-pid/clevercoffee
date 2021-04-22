@@ -2,7 +2,7 @@
 /********************************************************
   CheckWeight
 ******************************************************/
-#if (BREWMODE == 2 || SHOTTIMER == 2 )
+#if (BREWMODE == 2 || ONLYPIDSCALE == 1)
   void checkWeight() {
     static boolean newDataReady = 0;
     unsigned long currentMillisScale = millis();

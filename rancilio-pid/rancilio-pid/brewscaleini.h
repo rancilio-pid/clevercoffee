@@ -27,7 +27,7 @@ unsigned long previousMillistempanalogreading ; // ms for analogreading
    SHOTTIMER WITH SCALE OR BREWMODE 2 (SCALE)
 ******************************************************/
 
-#if (SHOTTIMER ==  2 || BREWMODE == 2) 
+#if (ONLYPIDSCALE == 1|| BREWMODE == 2) 
 float weightSetpoint = WEIGHTSETPOINT;
 int shottimercounter = 10 ; 
 float calibrationValue = 3195.83; // use calibration example to get value

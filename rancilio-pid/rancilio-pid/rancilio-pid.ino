@@ -26,7 +26,7 @@
 #include "TSIC.h"       //Library for TSIC temp sensor
 #include <Adafruit_VL53L0X.h> //for TOF 
 
-#if (BREWMODE == 2 || SHOTTIMER == 2)
+#if (BREWMODE == 2 || ONLYPIDSCALE == 1)
 #include <HX711_ADC.h>
 #endif
 
@@ -1494,7 +1494,7 @@ void setup() {
    /********************************************************
     Init Scale by BREWMODE 2 or SHOTTIMER 2
   ******************************************************/
-  #if (BREWMODE == 2 || SHOTTIMER == 2)
+  #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
     initScale() ;
   #endif
 
@@ -1863,7 +1863,7 @@ void looppid() {
   // voids
     refreshTemp();   //read new temperature values
     testEmergencyStop();  // test if Temp is to high
-    #if (BREWMODE == 2 || SHOTTIMER == 2 )
+    #if (BREWMODE == 2 || ONLYPIDSCALE == 1 )
       checkWeight() ; // Check Weight Scale in the loop
     #endif
     brew();   //start brewing if button pressed
@@ -1874,7 +1874,7 @@ void looppid() {
     { 
       ETriggervoid();
     }  
-    if(SHOTTIMER == 2) // only by shottimer 2, scale
+    if(ONLYPIDSCALE == 1) // only by shottimer 2, scale
        { 
        shottimerscale() ;
     }  
