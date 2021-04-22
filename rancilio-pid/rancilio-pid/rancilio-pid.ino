@@ -1870,15 +1870,13 @@ void looppid() {
     checkSteamON(); // check for steam
     sendToBlynk();
     machinestatevoid() ; // calc machinestate
-   if(ETRIGGER == 1) // E-Trigger active then void Etrigger() 
+   if (ETRIGGER == 1) // E-Trigger active then void Etrigger() 
     { 
       ETriggervoid();
     }  
-    if(ONLYPIDSCALE == 1) // only by shottimer 2, scale
-       { 
+    #if (ONLYPIDSCALE == 1) // only by shottimer 2, scale
        shottimerscale() ;
-    }  
-
+    #endif
   
 
   //check if PID should run or not. If not, set to manuel and force output to zero
