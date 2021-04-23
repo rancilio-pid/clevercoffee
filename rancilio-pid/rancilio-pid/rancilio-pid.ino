@@ -26,7 +26,7 @@
 #include "TSIC.h"       //Library for TSIC temp sensor
 #include <Adafruit_VL53L0X.h> //for TOF 
 
-#if (BREWMODE == 2)
+#if (BREWMODE == 2 || ONLYPIDSCALE == 1)
 #include <HX711_ADC.h>
 #endif
 
@@ -186,11 +186,10 @@ double brewboarder = 150 ;        // border for the detection, be carefull: to l
 const int PonE = PONE;
 
 /********************************************************
-   BREW INI 1= Normale Prefinfusion , 2 = Scale
+   BREW INI 1 = Normale Prefinfusion , 2 = Scale & Shottimer = 2
 ******************************************************/
-#if (BREWMODE != 0) 
-  #include "brewini.h"
-#endif
+
+  #include "brewscaleini.h"
 
 /********************************************************
    Sensor check
@@ -591,10 +590,11 @@ void refreshTemp() {
 }
 
 /*******************************************************
-      BREWVOID.H
+      BREWVOID.H & SCALEVOID
 *****************************************************/
 
 #include "brewvoid.h"
+#include "scalevoid.h"
 
 /*******************************************************
   Switch to offline modeif maxWifiReconnects were exceeded
@@ -1492,9 +1492,9 @@ void setup() {
     delay(2000);
   #endif
    /********************************************************
-    Init Scale
+    Init Scale by BREWMODE 2 or SHOTTIMER 2
   ******************************************************/
-  #if (BREWMODE == 2)
+  #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
     initScale() ;
   #endif
 
@@ -1863,17 +1863,20 @@ void looppid() {
   // voids
     refreshTemp();   //read new temperature values
     testEmergencyStop();  // test if Temp is to high
-    #if (BREWMODE == 2)
-    checkWeight() ; // Check Weight Scale in the loop
+    #if (BREWMODE == 2 || ONLYPIDSCALE == 1 )
+      checkWeight() ; // Check Weight Scale in the loop
     #endif
     brew();   //start brewing if button pressed
     checkSteamON(); // check for steam
     sendToBlynk();
     machinestatevoid() ; // calc machinestate
-   if(ETRIGGER == 1) // E-Trigger active then void Etrigger() 
+   if (ETRIGGER == 1) // E-Trigger active then void Etrigger() 
     { 
       ETriggervoid();
     }  
+    #if (ONLYPIDSCALE == 1) // only by shottimer 2, scale
+       shottimerscale() ;
+    #endif
   
 
   //check if PID should run or not. If not, set to manuel and force output to zero
