@@ -71,7 +71,7 @@
         weightBrew = weight - weightPreBrew;
         if (bezugsZeit == 0) 
         {
-          shottimercounter = 0;
+          shottimercounter = 10;
         }
         break;
       }
