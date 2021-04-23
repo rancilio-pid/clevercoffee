@@ -129,10 +129,10 @@ int VoltageSensorON, VoltageSensorOFF;
 // QuickMill thermoblock steam-mode (only for BREWDETECTION = 3)
 const int maxBrewDurationForSteamModeQM_ON =  200; // if brewtime is shorter steam-mode starts
 const int minPVSOffTimedForSteamModeQM_OFF = 1500; // if PVS-off-time is longer steam-mode ends
-double brewDurationSteam = 0;
-unsigned long steamOffQM_tref = 0; // last time pinvoltagesensor was on
-bool steamQM_active = false;
-
+unsigned long timePVStoON = 0;                     // time pinvoltagesensor switched to ON
+unsigned long lastTimePVSwasON = 0;                // last time pinvoltagesensor was ON
+bool steamQM_active = false;                       // steam-mode is active
+bool brewSteamDetectedQM = false;                  // brew/steam detected, not sure yet what it is
 
 
 /********************************************************
@@ -855,7 +855,7 @@ void brewdetection()
      ((digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF) && brewDetected == 1)
       {
         brewDetected = 0;
-        brewDurationSteam = bezugsZeit; // for Q
+        timePVStoON = bezugsZeit; // for QuickMill
         bezugsZeit = 0 ; 
         startZeit = 0;
         DEBUG_println("HW Brew - Voltage Sensor - End") ;
@@ -888,6 +888,44 @@ void brewdetection()
     }  
   } else if (Brewdetection == 3) // voltage sensor 
   {
+    switch (machine) {
+
+      case QuickMill:
+
+      if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorON && brewDetected == 0 && brewSteamDetectedQM == 0 
+        && !steamQM_active) 
+      {
+        timeBrewdetection = millis();
+        timePVStoON = millis();
+        timerBrewdetection = 1;
+        brewDetected = 0;
+        lastbezugszeit = 0;
+        brewSteamDetectedQM = 1;
+      }
+
+      if (brewSteamDetectedQM == 1) 
+      {
+        if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF)
+        {
+          brewSteamDetectedQM = 0;
+
+          if (millis() - timePVStoON < maxBrewDurationForSteamModeQM_ON)
+          {
+            initSteamQM();
+          } else {
+            DEBUG_println("********** ERROR: neither brew nor steam for QuickMill **********");
+          }
+        } 
+        else if (millis() - timePVStoON > maxBrewDurationForSteamModeQM_ON)
+        {
+          startZeit = timePVStoON; 
+          brewDetected = 1;
+          brewSteamDetectedQM = 0;
+        }
+      }
+      break;
+
+      default:
       previousMillisVoltagesensorreading = millis();
       if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorON && brewDetected == 0 ) 
       {
@@ -898,6 +936,7 @@ void brewdetection()
         brewDetected = 1;
         lastbezugszeit = 0 ;
       }
+    }
   }
 }
 
@@ -1037,7 +1076,7 @@ void checkSteamON()
     { // if true: steam-mode can be turned off
       SteamON = 0;
       steamQM_active = false;
-      steamOffQM_tref = 0;
+      lastTimePVSwasON = 0;
     } 
     else
     {
@@ -1064,9 +1103,9 @@ void initSteamQM()
   /*
     Initialize monitoring for steam switch off for QuickMill thermoblock
   */
-  steamOffQM_tref = millis(); // time when pinvoltagesensor changes from ON to OFF
+  lastTimePVSwasON = millis(); // time when pinvoltagesensor changes from ON to OFF
   steamQM_active = true;
-  brewDurationSteam = 0;
+  timePVStoON = 0;
   SteamON = 1;
 }
 
@@ -1078,11 +1117,11 @@ boolean checkSteamOffQM()
     the switch is turned off and steam mode finished.
   */
   if( digitalRead(PINVOLTAGESENSOR) == VoltageSensorON ) {
-    steamOffQM_tref = millis();
+    lastTimePVSwasON = millis();
   }
 
-  if( (millis() - steamOffQM_tref) > minPVSOffTimedForSteamModeQM_OFF ) {
-    steamOffQM_tref = 0;
+  if( (millis() - lastTimePVSwasON) > minPVSOffTimedForSteamModeQM_OFF ) {
+    lastTimePVSwasON = 0;
     return true;
   }
   
@@ -1288,12 +1327,6 @@ void machinestatevoid()
       {
         machinestate = 40 ; // Steam
       }
-      // QuickMill thermoblock steam-mode
-      if ( (brewDurationSteam < maxBrewDurationForSteamModeQM_ON) && Brewdetection == 3 && machine == QuickMill )
-      {
-        initSteamQM();
-      }
-
       if (emergencyStop)
       {
         machinestate = 80 ; // Emergency Stop
