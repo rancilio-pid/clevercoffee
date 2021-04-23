@@ -32,7 +32,7 @@ MACHINE machine = RancilioSilvia;      //	RancilioSilvia, RancilioSilviaE, Gaggi
 #define OLED_I2C 0x3C		           // I2C address for OLED, 0x3C by default
 #define DISPLAYTEMPLATE 3          // 1 = Standard Display Template, 2 = Minimal Template, 3 = only Temperatur, 4 = Scale Template, 20 = vertical Display see git Handbook for further information
 #define DISPALYROTATE U8G2_R0      // rotate display clockwise: U8G2_R0 = no rotation; U8G2_R1 = 90°; U8G2_R2 = 180°; U8G2_R3 = 270°
-#define SHOTTIMER 0                // 0 = deactivated, 1 = activated 2 = with scale
+#define SHOTTIMER 1                // 0 = deactivated, 1 = activated 2 = with scale
 #define HEATINGLOGO 0              // 0 = deactivated, 1 = Rancilio, 2 = Gaggia 
 #define OFFLINEGLOGO 1             // 0 = deactivated, 1 = activated
 #define BREWSWITCHDELAY 3000       // time in ms
