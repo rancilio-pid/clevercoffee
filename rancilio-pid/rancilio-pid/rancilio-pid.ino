@@ -1031,20 +1031,22 @@ void checkSteamON()
     SteamON = 0;
   }
   /*  monitor QuickMill thermoblock steam-mode*/
-  if (steamQM_active == true) 
+  if (machine == QuickMill )
   {
-    if( checkSteamOffQM() == true ) 
-    { // if true: steam-mode can be turned off
-      SteamON = 0;
-      steamQM_active = false;
-      steamOffQM_tref = 0;
-    } 
-    else
+    if (steamQM_active == true) 
     {
-      SteamON = 1;
+      if( checkSteamOffQM() == true ) 
+      { // if true: steam-mode can be turned off
+        SteamON = 0;
+        steamQM_active = false;
+        steamOffQM_tref = 0;
+      } 
+      else
+      {
+        SteamON = 1;
+      }
     }
   }
-
   if (SteamON == 1) 
   {
     EmergencyStopTemp = 145;  
@@ -1348,7 +1350,7 @@ void machinestatevoid()
         machinestate = 20 ; //  switch to normal
       }
 
-      if (emergencyStop)
+       if (emergencyStop)
       {
         machinestate = 80 ; // Emergency Stop
       }
@@ -1360,6 +1362,7 @@ void machinestatevoid()
       {
         machinestate = 100 ;// sensorerror
       }
+    break;  
     case 50: 
     // Backflush
       if (backflushON == 0)
@@ -1379,8 +1382,6 @@ void machinestatevoid()
        {
          machinestate = 100 ;// sensorerror
        }
-
-
     break;
     // emergencyStop 
     case 80: 
@@ -1911,22 +1912,6 @@ void looppid()
 
   //check if PID should run or not. If not, set to manuel and force output to zero
   // OFFLINE
-  if (machinestate == 90) // Offline see machinestate.h
-  {
-    if (pidMode == 1)
-    { 
-      // Force PID shutdown
-      pidMode = 0;
-      bPID.SetMode(pidMode);
-      Output = 0 ;
-    }
-  } 
-  else if (machinestate != 90 && machinestate != 100 ) 
-  {
-    pidMode = 1;
-    bPID.SetMode(pidMode);
-  }
-
   //voids Display & BD
   brewdetection();  //if brew detected, set PID values
   #if DISPLAY != 0
@@ -1944,8 +1929,28 @@ void looppid()
         printScreen();  // refresh display
       }
   #endif
+  if (machinestate == 90 || machinestate == 100 || machinestate == 80) // Offline see machinestate.h
+  {
+    if (pidMode == 1)
+    { 
+      // Force PID shutdown
+      pidMode = 0;
+      bPID.SetMode(pidMode);
+      Output = 0 ;
+      digitalWrite(pinRelayHeater, LOW); //Stop heating
+    }
+  } 
+  else 
+  {
+    if (pidMode == 0)
+    {
+    pidMode = 1;
+    bPID.SetMode(pidMode);
+    }
+  }
+
   //Set PID if first start of machine detected, and no SteamON
-  if (machinestate == 10 && machinestate == 19) // Cold Start states 
+  if (machinestate == 10 || machinestate == 19) // Cold Start states 
   {
     if (startTn != 0) {
       startKi = startKp / startTn;
@@ -1968,7 +1973,7 @@ void looppid()
     kaltstart = false;
   }
   // BD PID
-  if (machinestate >= 31 && machinestate <= 35)  
+  if (machinestate >= 30 && machinestate <= 35)  
   {
     // calc ki, kd
     if (aggbTn != 0) {
@@ -1992,15 +1997,4 @@ void looppid()
     bPID.SetTunings(150, 0, 0, PonE);
   }
   //sensor error OR Emergency Stop
-  if (machinestate == 100 || machinestate == 80) 
-  {
-    //Deactivate PID
-    if (pidMode == 1) 
-    {
-      pidMode = 0;
-      bPID.SetMode(pidMode);
-      Output = 0 ;
-    }
-    digitalWrite(pinRelayHeater, LOW); //Stop heating
-  } 
 }

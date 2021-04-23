@@ -154,7 +154,7 @@
     /********************************************************
      DISPLAY - EmergencyStop
     *****************************************************/
-    if (machinestate == 90)
+    if (machinestate == 80)
     {
       u8g2.clearBuffer();
       u8g2.setFont(u8g2_font_profont11_tf); // set font
@@ -185,43 +185,7 @@
       }
        u8g2.sendBuffer();
     }
-      
     /********************************************************
-     DISPLAY - EmergencyStop
-    *****************************************************/
-    if (machinestate == 90)
-    {
-      u8g2.clearBuffer();
-      u8g2.setFont(u8g2_font_profont11_tf); // set font
-      u8g2.drawXBMP(0, 0, logo_width, logo_height, logo_bits_u8g2);   //draw temp icon
-      u8g2.setCursor(32, 24);
-      u8g2.print(langstring_current_temp);
-      u8g2.print(Input, 1);
-      u8g2.print(" ");
-      u8g2.print((char)176);
-      u8g2.print("C");
-      u8g2.setCursor(32, 34);
-      u8g2.print(langstring_set_temp);
-      u8g2.print(setPoint, 1);
-      u8g2.print(" ");
-      u8g2.print((char)176);
-      u8g2.print("C");
-
-     //draw current temp in icon
-      if (isrCounter < 500)
-      {
-        u8g2.drawLine(9, 48, 9, 5);
-        u8g2.drawLine(10, 48, 10, 4);
-        u8g2.drawLine(11, 48, 11, 3);
-        u8g2.drawLine(12, 48, 12, 4);
-        u8g2.drawLine(13, 48, 13, 5);
-        u8g2.setCursor(32, 4);
-        u8g2.print("PID STOPPED");
-      }
-       u8g2.sendBuffer();
-    }
-
-     /********************************************************
      DISPLAY - Heatinglogo
     *****************************************************/
     if (HEATINGLOGO  > 0 && machinestate == 10 ) 
