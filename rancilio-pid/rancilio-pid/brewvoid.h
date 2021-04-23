@@ -99,6 +99,24 @@ void backflush() {
       }
       break;
   }
+if (backflushON || backflushState > 10) 
+  {
+    if (backflushState == 43) {
+      #if DISPLAY != 0
+        displayMessage(langstring_bckffinished[0], langstring_bckffinished[1], "", "", "", "");
+      #endif 
+    } else if (backflushState == 10) {
+      #if DISPLAY != 0
+        displayMessage(langstring_bckfactivated[0], langstring_bckfactivated[1], "", "", "", "");
+      #endif
+    } else if ( backflushState > 10) {
+      #if DISPLAY != 0
+        displayMessage(langstring_bckfrunning[0], String(flushCycles), langstring_bckfrunning[1], String(maxflushCycles), "", "");
+      #endif
+    }
+  }
+
+
 }
 
 
