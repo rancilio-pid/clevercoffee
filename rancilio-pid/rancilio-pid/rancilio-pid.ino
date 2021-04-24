@@ -1896,6 +1896,7 @@ void looppid() {
   // voids
     refreshTemp();   //read new temperature values
     testEmergencyStop();  // test if Temp is to high
+    bPID.Compute();
     #if (BREWMODE == 2 || ONLYPIDSCALE == 1 )
       checkWeight() ; // Check Weight Scale in the loop
     #endif
