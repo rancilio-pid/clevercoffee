@@ -87,12 +87,12 @@
 
        void displayShottimer(void) 
      {
-        displaystatus = 0 ;// Indiktator für Reset Bezug im Display
+        
         if ((machinestate == 30 )  && SHOTTIMER == 1)  // Shotimer muss 1 = True sein und Bezug vorliegen
         {
             // Dann Zeit anzeigen
             u8g2.clearBuffer();
-            displaystatus = 1 ;// Indiktator für Bezug im Display
+            
            // u8g2.drawXBMP(0, 0, logo_width, logo_height, logo_bits_u8g2);   //draw temp icon
             u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
             u8g2.setFont(u8g2_font_profont22_tf);
@@ -109,7 +109,7 @@
           ) // wenn die totalbrewtime automatisch erreicht wird, 
             //soll nichts gemacht werden, da sonst falsche Zeit angezeigt wird, da Schalter später betätigt wird als totalbrewtime
           {
-            displaystatus = 1 ;// Indiktator für Bezug im Display
+            
             u8g2.clearBuffer();
             u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
             u8g2.setFont(u8g2_font_profont22_tf);
@@ -122,7 +122,7 @@
           {
               // Dann Zeit anzeigen
               u8g2.clearBuffer();
-              displaystatus = 1 ;// Indiktator für Bezug im Display
+              
             // u8g2.drawXBMP(0, 0, logo_width, logo_height, logo_bits_u8g2);   //draw temp icon
               u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
               u8g2.setFont(u8g2_font_profont22_tf);
@@ -142,7 +142,7 @@
           ) // wenn die totalbrewtime automatisch erreicht wird, soll nichts gemacht werden,
           // da sonst falsche Zeit angezeigt wird, da Schalter später betätigt wird als totalbrewtime
           {
-            displaystatus = 1 ;// Indiktator für Bezug im Display
+            
             u8g2.clearBuffer();
             u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
             u8g2.setFont(u8g2_font_profont22_tf);
