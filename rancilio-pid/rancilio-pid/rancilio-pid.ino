@@ -1141,7 +1141,7 @@ void machinestatevoid()
   00 = init
   10 = kaltstart
   19 = Setpoint -1 Celsius
-  20 = Setpoint überschritten, idel at setpoint
+  20 = Setpoint überschritten, idle at setpoint
   30 = Bezug 
   35 = Nachlauf BD
   40 = Dampf
