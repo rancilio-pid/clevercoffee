@@ -1072,12 +1072,14 @@ void checkSteamON()
   /*  monitor QuickMill thermoblock steam-mode*/
   if (machine == QuickMill )
   {
-     if (steamQM_active == true) {
-     if( checkSteamOffQM() == true ) { // if true: steam-mode can be turned off
-       SteamON = 0;
-       steamQM_active = false;
-       steamOffQM_tref = 0;
-     } 
+    if (steamQM_active == true) 
+    {
+      if( checkSteamOffQM() == true ) 
+      { // if true: steam-mode can be turned off
+        SteamON = 0;
+        steamQM_active = false;
+        lastTimePVSwasON = 0;
+      } 
       else
       {
         SteamON = 1;
