@@ -109,7 +109,6 @@
         ) // wenn die totalbrewtime automatisch erreicht wird, 
           //soll nichts gemacht werden, da sonst falsche Zeit angezeigt wird, da Schalter später betätigt wird als totalbrewtime
         {
-          displaystatus = 1 ;// Indiktator für Bezug im Display
           u8g2.clearBuffer();
           u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
           u8g2.setFont(u8g2_font_profont22_tf);
