@@ -102,22 +102,24 @@
             u8g2.sendBuffer();
             
         }
-          if 
-          (
-          ((machinestate == 31)  &&  SHOTTIMER == 1) 
-          ) // wenn die totalbrewtime automatisch erreicht wird, 
-            //soll nichts gemacht werden, da sonst falsche Zeit angezeigt wird, da Schalter später betätigt wird als totalbrewtime
-          {
-            
-            u8g2.clearBuffer();
-            u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
-            u8g2.setFont(u8g2_font_profont22_tf);
-            u8g2.setCursor(64, 25);
-            u8g2.print(lastbezugszeit/1000, 1);
-            u8g2.setFont(u8g2_font_profont11_tf);
-            u8g2.sendBuffer();
-          }
-          #if (ONLYPIDSCALE == 1)
+
+        if 
+        (
+        ((machinestate == 31)  &&  SHOTTIMER == 1) 
+        ) // wenn die totalbrewtime automatisch erreicht wird, 
+          //soll nichts gemacht werden, da sonst falsche Zeit angezeigt wird, da Schalter später betätigt wird als totalbrewtime
+        {
+          displaystatus = 1 ;// Indiktator für Bezug im Display
+          u8g2.clearBuffer();
+          u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
+          u8g2.setFont(u8g2_font_profont22_tf);
+          u8g2.setCursor(64, 25);
+          u8g2.print(lastbezugszeit/1000, 1);
+          u8g2.setFont(u8g2_font_profont11_tf);
+          u8g2.sendBuffer();
+        }
+        #if ONLYPIDSCALE == 1
+
           if ((machinestate == 30 )  && SHOTTIMER == 2)  // Shotimer muss 2 sein und Bezug vorliegen
           {
               // Dann Zeit anzeigen
