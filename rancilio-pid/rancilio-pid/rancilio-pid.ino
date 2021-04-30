@@ -134,6 +134,8 @@ unsigned long lastTimePVSwasON = 0;                // last time pinvoltagesensor
 bool steamQM_active = false;                       // steam-mode is active
 bool brewSteamDetectedQM = false;                  // brew/steam detected, not sure yet what it is
 
+bool coolingFlushDetectedQM = false;
+
 
 /********************************************************
    declarations
@@ -852,12 +854,13 @@ void brewdetection()
        }
     //  OFF: Bezug zurücksetzen
     if 
-     ((digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF) && brewDetected == 1)
+     ((digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF) && (brewDetected == 1 || coolingFlushDetectedQM == true) )
       {
         brewDetected = 0;
         timePVStoON = bezugsZeit; // for QuickMill
         bezugsZeit = 0 ; 
         startZeit = 0;
+        coolingFlushDetectedQM = false;
         DEBUG_println("HW Brew - Voltage Sensor - End") ;
      //   lastbezugszeitMillis = millis(); // Bezugszeit für Delay 
       }
@@ -892,6 +895,7 @@ void brewdetection()
 
       case QuickMill:
 
+      if (!coolingFlushDetectedQM) {
       if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorON && brewDetected == 0 && brewSteamDetectedQM == 0 
         && !steamQM_active) 
       {
@@ -918,10 +922,16 @@ void brewdetection()
         } 
         else if (millis() - timePVStoON > maxBrewDurationForSteamModeQM_ON)
         {
-          startZeit = timePVStoON; 
-          brewDetected = 1;
-          brewSteamDetectedQM = 0;
+          if( Input < BrewSetPoint + 2) {
+            startZeit = timePVStoON; 
+            brewDetected = 1;
+            brewSteamDetectedQM = 0;
+          } else {
+            coolingFlushDetectedQM = true;
+            brewSteamDetectedQM = 0;
+          }
         }
+      }
       }
       break;
 
@@ -1088,16 +1098,29 @@ void checkSteamON()
   }
   if (SteamON == 1) 
   {
-    EmergencyStopTemp = 145;  
     setPoint = SteamSetPoint ;
   }
    if (SteamON == 0) 
   {
-    EmergencyStopTemp = 120;  
     setPoint = BrewSetPoint ;
   }
 }
 
+void setEmergencyStopTemp()
+{
+  if (machinestate == 40 || machinestate == 45) 
+  {
+    if (EmergencyStopTemp != 145)
+      debugV("EmergencyStopTemp = 145");
+    EmergencyStopTemp = 145;  
+  }
+  else
+  {
+    if (EmergencyStopTemp != 120)
+      debugV("EmergencyStopTemp = 120");
+    EmergencyStopTemp = 120;  
+  }
+}
 
 
 void initSteamQM() 
@@ -1380,7 +1403,7 @@ void machinestatevoid()
     case 40:
       if (SteamON == 0)
       {
-        machinestate = 20 ; //  switch to normal
+        machinestate = 45 ; //  switch to cool down after steam
       }
 
        if (emergencyStop)
@@ -1396,6 +1419,17 @@ void machinestatevoid()
         machinestate = 100 ;// sensorerror
       }
     break;  
+
+    case 45: // cooling down after steam
+      if (Input < BrewSetPoint + 2) {
+        machinestate = 20; //  switch to normal
+      }
+      if (SteamON == 1)
+      {
+        machinestate = 40 ; // Steam
+      }
+    break;
+
     case 50: 
     // Backflush
       if (backflushON == 0)
@@ -1932,6 +1966,7 @@ void looppid()
   #endif
   brew();   //start brewing if button pressed
   checkSteamON(); // check for steam
+  setEmergencyStopTemp();
   sendToBlynk();
   machinestatevoid() ; // calc machinestate
   if (ETRIGGER == 1) // E-Trigger active then void Etrigger() 
