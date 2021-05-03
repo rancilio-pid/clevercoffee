@@ -1421,12 +1421,34 @@ void machinestatevoid()
     break;  
 
     case 45: // cooling down after steam
-      if (Input < BrewSetPoint + 2) {
+      if (Brewdetection == 1 && ONLYPID == 1)
+      {
+         if (heatrateaverage > 0 && Input < BrewSetPoint + 2) // Lokales Minimum der Temperatur
+         {
+            machinestate = 20;
+         } 
+      }
+      if ((Brewdetection == 3 || Brewdetection == 2) && Input < BrewSetPoint + 2) 
+      {
         machinestate = 20; //  switch to normal
       }
+
       if (SteamON == 1)
       {
         machinestate = 40 ; // Steam
+      }
+
+      if (emergencyStop)
+      {
+        machinestate = 80 ; // Emergency Stop
+      }
+      if (pidON == 0)
+      {
+        machinestate = 90 ; // offline
+      }
+      if(sensorError)
+      {
+        machinestate = 100 ;// sensorerror
       }
     break;
 
