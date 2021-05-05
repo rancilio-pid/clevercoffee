@@ -5,7 +5,7 @@
 ******************************************************/
 
 /********************************************************
-   Define Area, do not change anything here 
+   Define area, do not change anything here 
 ******************************************************/
 
 #ifndef _userConfig_H
@@ -46,7 +46,7 @@ MACHINE machine = RancilioSilvia;      //	RancilioSilvia, RancilioSilviaE, Gaggi
 // PID & Hardware
 #define ONLYPID 1                  // 1 = Only PID, 0 = PID and preinfusion
 #define ONLYPIDSCALE 0             // 0 = off , 1= OnlyPID with Scale
-#define BREWMODE 1                 // 1 = NORMAL preinfusion ; 2 = Sale with weight
+#define BREWMODE 1                 // 1 = NORMAL preinfusion ; 2 = Scale with weight
 #define BREWDETECTION 1            // 0 = off, 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = Sensor/Hardware for Only PID 
 #define COLDSTART_PID 1            // 1 = default coldstart values, 2 = custom values via blynk (expert mode activated) 
 #define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay // BREWDETECTION 3 configuration
