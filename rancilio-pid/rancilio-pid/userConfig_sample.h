@@ -5,7 +5,7 @@
 ******************************************************/
 
 /********************************************************
-   Define Area, do no change here 
+   Define area, do not change anything here 
 ******************************************************/
 
 #ifndef _userConfig_H
@@ -46,7 +46,7 @@ MACHINE machine = RancilioSilvia;      //	RancilioSilvia, RancilioSilviaE, Gaggi
 // PID & Hardware
 #define ONLYPID 1                  // 1 = Only PID, 0 = PID and preinfusion
 #define ONLYPIDSCALE 0             // 0 = off , 1= OnlyPID with Scale
-#define BREWMODE 1                 // 1 = NORMAL preinfusion ; 2 = Sale with weight
+#define BREWMODE 1                 // 1 = NORMAL preinfusion ; 2 = Scale with weight
 #define BREWDETECTION 1            // 0 = off, 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = Sensor/Hardware for Only PID 
 #define COLDSTART_PID 1            // 1 = default coldstart values, 2 = custom values via blynk (expert mode activated) 
 #define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay // BREWDETECTION 3 configuration
@@ -69,7 +69,7 @@ MACHINE machine = RancilioSilvia;      //	RancilioSilvia, RancilioSilviaE, Gaggi
 #define WEIGHTSETPOINT 30          // Gramm 
 
 /// Wifi 
-#define HOSTNAME "Rancilio"
+#define HOSTNAME "rancilio"
 #define D_SSID "myssid"
 #define PASS "mypass"
 #define MAXWIFIRECONNECTS 5        // maximum number of reconnection attempts, use -1 to deactivate
@@ -77,13 +77,13 @@ MACHINE machine = RancilioSilvia;      //	RancilioSilvia, RancilioSilviaE, Gaggi
 
 // OTA
 #define OTA true                   // true = OTA activated, false = OTA deactivated
-#define OTAHOST "Rancilio"         // Name to be shown in ARUDINO IDE Port
+#define OTAHOST "rancilio"         // Name to be shown in ARUDINO IDE Port
 #define OTAPASS "otapass"          // Password for OTA updtates
 
 // MQTT
 #define MQTT 0                     // 1 = MQTT enabled, 0 = MQTT disabled
-#define MQTT_USERNAME "myuser"
-#define MQTT_PASSWORD "mypass"
+#define MQTT_USERNAME "mymqttuser"
+#define MQTT_PASSWORD "mymqttpass"
 #define MQTT_TOPIC_PREFIX "custom/Küche."  // topic will be "<MQTT_TOPIC_PREFIX><HOSTNAME>/<READING>"
 #define MQTT_SERVER_IP "XXX.XXX.XXX.XXX"  // IP-Address of locally installed mqtt server
 #define MQTT_SERVER_PORT 1883    
