@@ -1,5 +1,5 @@
 /********************************************************
-   Version 2.9.1 (29.04.2021)  
+   Version 2.9.2 (05.05.2021)  
 ******************************************************/
 
 /********************************************************
@@ -145,7 +145,7 @@ int relayON, relayOFF;          // used for relay trigger type. Do not change!
 boolean kaltstart = true;       // true = Rancilio started for first time
 boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
 double EmergencyStopTemp = 120; // Temp EmergencyStopTemp
-const char* sysVersion PROGMEM  = "Version 2.9.1 MASTER";   //System version
+const char* sysVersion PROGMEM  = "Version 2.9.2 MASTER";   //System version
 int inX = 0, inY = 0, inOld = 0, inSum = 0; //used for filter()
 int bars = 0; //used for getSignalStrength()
 boolean brewDetected = 0;
@@ -793,7 +793,7 @@ void sendToBlynk() {
         Blynk.virtualWrite(V36, heatrateaveragemin);
       }
       if (grafana == 1 && blynksendcounter >= 6) {
-        Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint );
+        Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint, heatrateaverage );
          if (MQTT == 1)
          {
             mqtt_publish("HeaterPower", number2string(Output));
@@ -1111,13 +1111,13 @@ void setEmergencyStopTemp()
   if (machinestate == 40 || machinestate == 45) 
   {
     if (EmergencyStopTemp != 145)
-      debugV("EmergencyStopTemp = 145");
+    // debugV("EmergencyStopTemp = 145");
     EmergencyStopTemp = 145;  
   }
   else
   {
     if (EmergencyStopTemp != 120)
-      debugV("EmergencyStopTemp = 120");
+     // debugV("EmergencyStopTemp = 120");
     EmergencyStopTemp = 120;  
   }
 }
@@ -1278,6 +1278,7 @@ void machinestatevoid()
     break;
     // normal PID
     case 20: 
+      brewdetection();  //if brew detected, set PID values
       if
       (
        (bezugsZeit > 0 && ONLYPID == 1) || // Bezugszeit bei Only PID  
@@ -1306,6 +1307,7 @@ void machinestatevoid()
     break;
      // Brew
     case 30:
+      brewdetection();  
       if
       (
        (bezugsZeit > 35*1000 && Brewdetection == 1 && ONLYPID == 1  ) ||  // 35 sec later and BD PID active SW Solution
@@ -1344,6 +1346,7 @@ void machinestatevoid()
     break;
     // Sec after shot finish
     case 31: //lastbezugszeitMillis
+    brewdetection();  
       if ( millis()-lastbezugszeitMillis > BREWSWITCHDELAY )
       {
        machinestate = 35 ;
@@ -1368,6 +1371,7 @@ void machinestatevoid()
     break;
     // BD PID
     case 35:
+    brewdetection();  
       if (timerBrewdetection == 0)
       {
         machinestate = 20 ; // switch to normal PID
@@ -1423,7 +1427,8 @@ void machinestatevoid()
     case 45: // cooling down after steam
       if (Brewdetection == 1 && ONLYPID == 1)
       {
-         if (heatrateaverage > 0 && Input < BrewSetPoint + 2) // Lokales Minimum der Temperatur
+        // Ab lokalen Minumum wieder freigeben für state 20, dann wird bist Solltemp geheizt.
+         if (heatrateaverage > 0 && Input < BrewSetPoint + 2) 
          {
             machinestate = 20;
          } 
@@ -2003,7 +2008,7 @@ void looppid()
   //check if PID should run or not. If not, set to manuel and force output to zero
   // OFFLINE
   //voids Display & BD
-  brewdetection();  //if brew detected, set PID values
+  
   #if DISPLAY != 0
       unsigned long currentMillisDisplay = millis();
       if (currentMillisDisplay - previousMillisDisplay >= 100) 
@@ -2063,7 +2068,7 @@ void looppid()
     kaltstart = false;
   }
   // BD PID
-  if (machinestate >= 30 && machinestate <= 35)  
+  if ((machinestate >= 30 && machinestate <= 35) || machinestate == 45 )  
   {
     // calc ki, kd
     if (aggbTn != 0) {
