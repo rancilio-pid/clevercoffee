@@ -1425,6 +1425,14 @@ void machinestatevoid()
     break;  
 
     case 45: // cooling down after steam
+    if (Brewdetection == 2 || Brewdetection == 3) 
+      {
+        /*
+          Bei QuickMill Dampferkennung nur ueber Bezugsschalter moeglich, durch Aufruf von 
+          brewdetection() kann neuer Dampfbezug erkannt werden
+          */ 
+        brewdetection();
+      }
       if (Brewdetection == 1 && ONLYPID == 1)
       {
         // Ab lokalen Minumum wieder freigeben für state 20, dann wird bist Solltemp geheizt.
@@ -2068,7 +2076,7 @@ void looppid()
     kaltstart = false;
   }
   // BD PID
-  if ((machinestate >= 30 && machinestate <= 35) || machinestate == 45 )  
+  if (machinestate >= 30 && machinestate <= 35)  
   {
     // calc ki, kd
     if (aggbTn != 0) {
@@ -2080,15 +2088,15 @@ void looppid()
     bPID.SetTunings(aggbKp, aggbKi, aggbKd, PonE) ;
   }
   // Steam on
-  if (machinestate == 40) // STEAM
+  if (machinestate == 40 || machinestate == 45) // STEAM
   {
-      if (aggTn != 0) {
-      aggKi = aggKp / aggTn ;
-    } else {
-      aggKi = 0 ;
-    }
-    aggKi = 0 ;
-    aggKd = aggTv * aggKp ;
+    // if (aggTn != 0) {
+    //   aggKi = aggKp / aggTn ;
+    // } else {
+    //   aggKi = 0 ;
+    // }
+    // aggKi = 0 ;
+    // aggKd = aggTv * aggKp ;
     bPID.SetTunings(150, 0, 0, PonE);
   }
   //sensor error OR Emergency Stop
