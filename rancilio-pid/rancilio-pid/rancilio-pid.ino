@@ -30,6 +30,8 @@
 #include <HX711_ADC.h>
 #endif
 
+#include"RemoteDebug.h" // Debug via wifi
+
 /********************************************************
   DEFINES
 ******************************************************/
@@ -136,6 +138,9 @@ bool brewSteamDetectedQM = false;                  // brew/steam detected, not s
 
 bool coolingFlushDetectedQM = false;
 
+
+
+RemoteDebug Debug; // Debug via wifi
 
 /********************************************************
    declarations
@@ -861,6 +866,7 @@ void brewdetection()
         bezugsZeit = 0 ; 
         startZeit = 0;
         coolingFlushDetectedQM = false;
+        debugV("HW Brew - Voltage Sensor - End");
         DEBUG_println("HW Brew - Voltage Sensor - End") ;
      //   lastbezugszeitMillis = millis(); // Bezugszeit für Delay 
       }
@@ -905,28 +911,34 @@ void brewdetection()
         brewDetected = 0;
         lastbezugszeit = 0;
         brewSteamDetectedQM = 1;
+        debugV("setting brewSteamDetectedQM = 1 at time %f",(double)(millis() - startZeit)/1000);
       }
 
       if (brewSteamDetectedQM == 1) 
       {
         if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF)
         {
+          debugV("PVS OFF at time %f",(double)(millis() - startZeit)/1000);
           brewSteamDetectedQM = 0;
 
           if (millis() - timePVStoON < maxBrewDurationForSteamModeQM_ON)
           {
+            debugV("Dampfmodus QuickMill erkannt at time %f",(double)(millis() - startZeit)/1000);
             initSteamQM();
           } else {
+            debugV("********** ERROR: neither brew nor steam for QuickMill **********");
             DEBUG_println("********** ERROR: neither brew nor steam for QuickMill **********");
           }
         } 
         else if (millis() - timePVStoON > maxBrewDurationForSteamModeQM_ON)
         {
           if( Input < BrewSetPoint + 2) {
+            debugV("Bezugsmodus QuickMill erkannt at time %f",(double)(millis() - startZeit)/1000);
             startZeit = timePVStoON; 
             brewDetected = 1;
             brewSteamDetectedQM = 0;
           } else {
+            debugV("Cooling Flush QuickMill erkannt at time %f",(double)(millis() - startZeit)/1000);
             coolingFlushDetectedQM = true;
             brewSteamDetectedQM = 0;
           }
@@ -940,6 +952,7 @@ void brewdetection()
       if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorON && brewDetected == 0 ) 
       {
         DEBUG_println("HW Brew - Voltage Sensor -  Start") ;
+        debugV("HW Brew - Voltage Sensor -  Start") ;
         timeBrewdetection = millis() ;
         startZeit = millis() ;
         timerBrewdetection = 1 ;
@@ -1086,6 +1099,7 @@ void checkSteamON()
     {
       if( checkSteamOffQM() == true ) 
       { // if true: steam-mode can be turned off
+        debugV("QuickMill steam-mode OFF at time %f",(double)((millis() - startZeit)/1000));
         SteamON = 0;
         steamQM_active = false;
         lastTimePVSwasON = 0;
@@ -1128,6 +1142,7 @@ void initSteamQM()
   /*
     Initialize monitoring for steam switch off for QuickMill thermoblock
   */
+  debugV("QuickMill steam-mode ON at time %f",(double)((millis() - startZeit))/1000);
   lastTimePVSwasON = millis(); // time when pinvoltagesensor changes from ON to OFF
   steamQM_active = true;
   timePVStoON = 0;
@@ -1872,6 +1887,8 @@ void setup() {
     timerAlarmEnable(timer);//m
   #endif
   
+    Debug.begin(HOSTNAME); 
+
 }
 void loop() {
   if (calibration_mode == 1 && TOF == 1) {
@@ -1879,6 +1896,7 @@ void loop() {
   } else {
       looppid();
   }
+  Debug.handle();
 }
 
 // TOF Calibration_mode 
