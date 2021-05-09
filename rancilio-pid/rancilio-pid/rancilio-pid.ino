@@ -2106,7 +2106,7 @@ void looppid()
     bPID.SetTunings(aggbKp, aggbKi, aggbKd, PonE) ;
   }
   // Steam on
-  if (machinestate == 40 || machinestate == 45) // STEAM
+  if (machinestate == 40) // STEAM
   {
     // if (aggTn != 0) {
     //   aggKi = aggKp / aggTn ;
@@ -2117,5 +2117,28 @@ void looppid()
     // aggKd = aggTv * aggKp ;
     bPID.SetTunings(150, 0, 0, PonE);
   }
+
+  if (machinestate == 45) // cooling flush
+  {
+    switch (machine) {
+      
+      case QuickMill:
+        aggbKp = 150;
+        aggbKi = 0;
+        aggbKd = 0;
+      break;
+      
+      default:
+        // calc ki, kd
+        if (aggbTn != 0) {
+          aggbKi = aggbKp / aggbTn;
+        } else {
+          aggbKi = 0;
+        }
+        aggbKd = aggbTv * aggbKp;
+    }
+
+    bPID.SetTunings(aggbKp, aggbKi, aggbKd, PonE) ;
+  }  
   //sensor error OR Emergency Stop
 }
