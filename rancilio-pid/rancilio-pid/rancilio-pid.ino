@@ -30,6 +30,8 @@
 #include <HX711_ADC.h>
 #endif
 
+#include"RemoteDebug.h" // Debug via wifi
+
 /********************************************************
   DEFINES
 ******************************************************/
@@ -134,6 +136,7 @@ unsigned long lastTimePVSwasON = 0;                // last time pinvoltagesensor
 bool steamQM_active = false;                       // steam-mode is active
 bool brewSteamDetectedQM = false;                  // brew/steam detected, not sure yet what it is
 
+RemoteDebug Debug; // Debug via wifi
 
 /********************************************************
    declarations
@@ -1802,6 +1805,8 @@ void setup() {
     timerAlarmWrite(timer, 10000, true);//m
     timerAlarmEnable(timer);//m
   #endif
+
+  Debug.begin(HOSTNAME);  
   
 }
 void loop() {
@@ -1809,6 +1814,7 @@ void loop() {
       loopcalibrate();
   } else {
       looppid();
+      Debug.handle();
   }
 }
 
