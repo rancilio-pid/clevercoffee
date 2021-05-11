@@ -133,6 +133,7 @@ unsigned long timePVStoON = 0;                     // time pinvoltagesensor swit
 unsigned long lastTimePVSwasON = 0;                // last time pinvoltagesensor was ON
 bool steamQM_active = false;                       // steam-mode is active
 bool brewSteamDetectedQM = false;                  // brew/steam detected, not sure yet what it is
+bool coolingFlushDetectedQM = false;
 
 
 /********************************************************
@@ -852,12 +853,13 @@ void brewdetection()
        }
     //  OFF: Bezug zurücksetzen
     if 
-     ((digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF) && brewDetected == 1)
+     ((digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF) && (brewDetected == 1 || coolingFlushDetectedQM == true) )
       {
         brewDetected = 0;
         timePVStoON = bezugsZeit; // for QuickMill
         bezugsZeit = 0 ; 
         startZeit = 0;
+        coolingFlushDetectedQM = false;
         DEBUG_println("HW Brew - Voltage Sensor - End") ;
      //   lastbezugszeitMillis = millis(); // Bezugszeit für Delay 
       }
@@ -892,35 +894,43 @@ void brewdetection()
 
       case QuickMill:
 
-      if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorON && brewDetected == 0 && brewSteamDetectedQM == 0 
-        && !steamQM_active) 
+      if (!coolingFlushDetectedQM) 
       {
-        timeBrewdetection = millis();
-        timePVStoON = millis();
-        timerBrewdetection = 1;
-        brewDetected = 0;
-        lastbezugszeit = 0;
-        brewSteamDetectedQM = 1;
-      }
-
-      if (brewSteamDetectedQM == 1) 
-      {
-        if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF)
+        if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorON && brewDetected == 0 && brewSteamDetectedQM == 0 
+          && !steamQM_active) 
         {
-          brewSteamDetectedQM = 0;
+          timeBrewdetection = millis();
+          timePVStoON = millis();
+          timerBrewdetection = 1;
+          brewDetected = 0;
+          lastbezugszeit = 0;
+          brewSteamDetectedQM = 1;
+        }
 
-          if (millis() - timePVStoON < maxBrewDurationForSteamModeQM_ON)
+        if (brewSteamDetectedQM == 1) 
+        {
+          if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF)
           {
-            initSteamQM();
-          } else {
-            DEBUG_println("********** ERROR: neither brew nor steam for QuickMill **********");
+            brewSteamDetectedQM = 0;
+
+            if (millis() - timePVStoON < maxBrewDurationForSteamModeQM_ON)
+            {
+              initSteamQM();
+            } else {
+              DEBUG_println("********** ERROR: neither brew nor steam for QuickMill **********");
+            }
+          } 
+          else if (millis() - timePVStoON > maxBrewDurationForSteamModeQM_ON)
+          {
+            if( Input < BrewSetPoint + 2) {
+              startZeit = timePVStoON; 
+              brewDetected = 1;
+              brewSteamDetectedQM = 0;
+            } else {
+              coolingFlushDetectedQM = true;
+              brewSteamDetectedQM = 0;
+            }
           }
-        } 
-        else if (millis() - timePVStoON > maxBrewDurationForSteamModeQM_ON)
-        {
-          startZeit = timePVStoON; 
-          brewDetected = 1;
-          brewSteamDetectedQM = 0;
         }
       }
       break;
@@ -1088,16 +1098,27 @@ void checkSteamON()
   }
   if (SteamON == 1) 
   {
-    EmergencyStopTemp = 145;  
     setPoint = SteamSetPoint ;
   }
    if (SteamON == 0) 
   {
-    EmergencyStopTemp = 120;  
     setPoint = BrewSetPoint ;
   }
 }
 
+void setEmergencyStopTemp()
+{
+  if (machinestate == 40 || machinestate == 45) 
+  {
+    if (EmergencyStopTemp != 145)
+    EmergencyStopTemp = 145;  
+  }
+  else
+  {
+    if (EmergencyStopTemp != 120)
+    EmergencyStopTemp = 120;  
+  }
+}
 
 
 void initSteamQM() 
@@ -1255,6 +1276,7 @@ void machinestatevoid()
     break;
     // normal PID
     case 20: 
+      brewdetection();  //if brew detected, set PID values
       if
       (
        (bezugsZeit > 0 && ONLYPID == 1) || // Bezugszeit bei Only PID  
@@ -1283,6 +1305,7 @@ void machinestatevoid()
     break;
      // Brew
     case 30:
+      brewdetection();  
       if
       (
        (bezugsZeit > 35*1000 && Brewdetection == 1 && ONLYPID == 1  ) ||  // 35 sec later and BD PID active SW Solution
@@ -1321,6 +1344,7 @@ void machinestatevoid()
     break;
     // Sec after shot finish
     case 31: //lastbezugszeitMillis
+    brewdetection();  
       if ( millis()-lastbezugszeitMillis > BREWSWITCHDELAY )
       {
        machinestate = 35 ;
@@ -1345,6 +1369,7 @@ void machinestatevoid()
     break;
     // BD PID
     case 35:
+    brewdetection();  
       if (timerBrewdetection == 0)
       {
         machinestate = 20 ; // switch to normal PID
@@ -1380,7 +1405,7 @@ void machinestatevoid()
     case 40:
       if (SteamON == 0)
       {
-        machinestate = 20 ; //  switch to normal
+        machinestate = 45 ; //  switch to cool down after steam
       }
 
        if (emergencyStop)
@@ -1396,6 +1421,48 @@ void machinestatevoid()
         machinestate = 100 ;// sensorerror
       }
     break;  
+
+    case 45: // chill-mode after steam
+    if (Brewdetection == 2 || Brewdetection == 3) 
+      {
+        /*
+          Bei QuickMill Dampferkennung nur ueber Bezugsschalter moeglich, durch Aufruf von 
+          brewdetection() kann neuer Dampfbezug erkannt werden
+          */ 
+        brewdetection();
+      }
+      if (Brewdetection == 1 && ONLYPID == 1)
+      {
+        // Ab lokalen Minumum wieder freigeben für state 20, dann wird bist Solltemp geheizt.
+         if (heatrateaverage > 0 && Input < BrewSetPoint + 2) 
+         {
+            machinestate = 20;
+         } 
+      }
+      if ((Brewdetection == 3 || Brewdetection == 2) && Input < BrewSetPoint + 2) 
+      {
+        machinestate = 20; //  switch to normal
+      }
+
+      if (SteamON == 1)
+      {
+        machinestate = 40 ; // Steam
+      }
+
+      if (emergencyStop)
+      {
+        machinestate = 80 ; // Emergency Stop
+      }
+      if (pidON == 0)
+      {
+        machinestate = 90 ; // offline
+      }
+      if(sensorError)
+      {
+        machinestate = 100 ;// sensorerror
+      }
+    break;
+
     case 50: 
     // Backflush
       if (backflushON == 0)
@@ -1932,6 +1999,7 @@ void looppid()
   #endif
   brew();   //start brewing if button pressed
   checkSteamON(); // check for steam
+  setEmergencyStopTemp();
   sendToBlynk();
   machinestatevoid() ; // calc machinestate
   if (ETRIGGER == 1) // E-Trigger active then void Etrigger() 
@@ -1946,7 +2014,6 @@ void looppid()
   //check if PID should run or not. If not, set to manuel and force output to zero
   // OFFLINE
   //voids Display & BD
-  brewdetection();  //if brew detected, set PID values
   #if DISPLAY != 0
       unsigned long currentMillisDisplay = millis();
       if (currentMillisDisplay - previousMillisDisplay >= 100) 
@@ -2020,14 +2087,37 @@ void looppid()
   // Steam on
   if (machinestate == 40) // STEAM
   {
-      if (aggTn != 0) {
-      aggKi = aggKp / aggTn ;
-    } else {
-      aggKi = 0 ;
-    }
-    aggKi = 0 ;
-    aggKd = aggTv * aggKp ;
+    // if (aggTn != 0) {
+    //   aggKi = aggKp / aggTn ;
+    // } else {
+    //   aggKi = 0 ;
+    // }
+    // aggKi = 0 ;
+    // aggKd = aggTv * aggKp ;
     bPID.SetTunings(150, 0, 0, PonE);
   }
+
+  if (machinestate == 45) // chill-mode after steam
+  {
+    switch (machine) {
+      
+      case QuickMill:
+        aggbKp = 150;
+        aggbKi = 0;
+        aggbKd = 0;
+      break;
+      
+      default:
+        // calc ki, kd
+        if (aggbTn != 0) {
+          aggbKi = aggbKp / aggbTn;
+        } else {
+          aggbKi = 0;
+        }
+        aggbKd = aggbTv * aggbKp;
+    }
+
+    bPID.SetTunings(aggbKp, aggbKi, aggbKd, PonE) ;
+  }  
   //sensor error OR Emergency Stop
 }
