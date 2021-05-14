@@ -30,26 +30,16 @@
 #include <HX711_ADC.h>
 #endif
 
-#include"RemoteDebug.h" // Debug via wifi
+#include "debugFunctions.h"  // Definitionen der Funktionen zur Debugausgabe
+#include "periodicTrigger.h"
+
 
 /********************************************************
   DEFINES
 ******************************************************/
-#define DEBUGMODE   // Debug mode is active if #define DEBUGMODE is set
 
-//#define BLYNK_PRINT Serial    // In detail debugging for blynk
-//#define BLYNK_DEBUG
-
-#ifndef DEBUGMODE
-#define DEBUG_println(a)
-#define DEBUG_print(a)
-#define DEBUGSTART(a)
-#else
-#define DEBUG_println(a) Serial.println(a);
-#define DEBUG_print(a) Serial.print(a);
-#define DEBUGSTART(a) Serial.begin(a);
-#endif
 #define HIGH_ACCURACY
+
 
 
 /********************************************************
@@ -136,7 +126,8 @@ unsigned long lastTimePVSwasON = 0;                // last time pinvoltagesensor
 bool steamQM_active = false;                       // steam-mode is active
 bool brewSteamDetectedQM = false;                  // brew/steam detected, not sure yet what it is
 
-RemoteDebug Debug; // Debug via wifi
+int lastmachinestate = 0;
+periodicTrigger writeDebugTrigger(5000); // Trigger fuer Debugausgabe alle 5000 ms
 
 /********************************************************
    declarations
@@ -1458,6 +1449,25 @@ void machinestatevoid()
     // Nothing
     break;
   } // switch case
+  if (writeDebugTrigger.check()) 
+  {
+    DEBUG_printfE("");
+    DEBUG_printfE("----------------------------------------------");
+    DEBUG_printfI("  printf: testausgabe");
+    DEBUG_printfE("----------------------------------------------");
+
+    DEBUG_printfV("V DEBUG_printf");
+    DEBUG_printfD("D DEBUG_printf");
+    DEBUG_printfI("I DEBUG_printf");
+    DEBUG_printfW("W DEBUG_printf");
+    DEBUG_printfE("E DEBUG_printf %i - %8.3f",machinestate,5.2);
+    DEBUG_printfE("ssid: %s",ssid);
+  }
+
+  if (machinestate != lastmachinestate) { 
+    DEBUG_printfI("machinestate changed from %i to %i",lastmachinestate,machinestate);
+    lastmachinestate = machinestate;
+  }
 } // end void
 
 void setup() {
@@ -1806,16 +1816,22 @@ void setup() {
     timerAlarmEnable(timer);//m
   #endif
 
-  Debug.begin(HOSTNAME);  
-  
+  #if( DEBUGMETHOD == 2)
+    Debug.begin(HOSTNAME);
+  #endif  
 }
 void loop() {
   if (calibration_mode == 1 && TOF == 1) {
       loopcalibrate();
   } else {
       looppid();
-      Debug.handle();
-  }
+      #if (DEBUGMETHOD == 1)
+        debugHandle();
+      #endif
+      #if (DEBUGMETHOD == 2)
+        Debug.handle();
+      #endif
+    }
 }
 
 // TOF Calibration_mode 

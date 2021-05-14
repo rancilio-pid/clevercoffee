@@ -141,5 +141,6 @@ MACHINE machine = RancilioSilvia;      //	RancilioSilvia, RancilioSilviaE, Gaggi
   #error("WRONG Brewswitch PIN for ESP8266, Only PIN 15 and PIN 16");  
 #endif
 
+#define DEBUGMETHOD 1 // 0 = none, 1 = serial, 2 = RemoteDebug
 
 #endif // _userConfig_H
