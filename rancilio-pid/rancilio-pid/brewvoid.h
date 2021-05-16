@@ -38,6 +38,7 @@ void checkbrewswitch()
         unsigned long currentMillistemp = millis();
         if (currentMillistemp - previousMillistempanalogreading >= analogreadingtimeinterval)
         {
+          //DEBUG_println(analogRead(analogPin));
           previousMillistempanalogreading = currentMillistemp;
           if (filter(analogRead(analogPin)) > 1000 )
           {
@@ -57,7 +58,7 @@ void checkbrewswitch()
         {
           brewswitchTriggermillis = millis() ; 
           brewswitchTriggerCase = 20 ; 
-          DEBUG_println(" 10: brewswitchTrigger HIGH");
+          DEBUG_println("brewswitchTriggerCase 10:  HIGH");
         }
       break;
       case 20: 
@@ -67,32 +68,38 @@ void checkbrewswitch()
           // Brew 
           brewswitch = HIGH  ;
           brewswitchTriggerCase = 30 ;
-          DEBUG_println("20: Brew Trigger");
+          DEBUG_println("brewswitchTriggerCase 20: Brew Trigger");
         }
         // Button one 1sec pushed
         if (brewswitchTrigger == HIGH && (brewswitchTriggermillis+1000 <= millis() ))
         {
           // DO something
-           DEBUG_println("20: XXX Trigger");
+           DEBUG_println("brewswitchTriggerCase 20: XXX Trigger");
           brewswitchTriggerCase = 30 ;
         }
       break ;
       case 30:
         // Stop brewing
+        if (brewswitchTrigger == HIGH && brewswitch == LOW)
+        {
+          brewswitchTriggerCase = 40 ; 
+          brewswitchTriggermillis = millis() ;     
+          DEBUG_println("brewswitchTriggerCase 30: XXX Trigger LOW");
+        }
         if (brewswitchTrigger == HIGH && brewswitch == HIGH)
         {
           brewswitch = LOW  ;
           brewswitchTriggerCase = 40 ; 
           brewswitchTriggermillis = millis() ; 
-          DEBUG_println("30: Brew Trigger LOW");
+          DEBUG_println("brewswitchTriggerCase 30: Brew Trigger LOW");
         }
       break ;
       case 40:
         // wait 1 Sec until next brew, detection  
-        if (brewswitchTriggermillis+1000 <= millis() )
+        if (brewswitchTriggermillis+10000 <= millis() )
         {
           brewswitchTriggerCase = 10 ; 
-           DEBUG_println("40: Brew Trigger Next Loop");
+           DEBUG_println("brewswitchTriggerCase 40: Brew Trigger Next Loop");
         }
       break ;
     }
@@ -206,6 +213,7 @@ void brew()
     if (brewswitch == LOW && brewcounter > 10)
     {
       //abort function for state machine from every state
+      DEBUG_println("Brew stopped manually");
       brewcounter = 43;
     }
 
