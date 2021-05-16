@@ -6,26 +6,97 @@
 
 void checkbrewswitch()
 {
-  #if (PINBREWSWITCH > 0)
-    // Digital GIPO
-    brewswitch = digitalRead(PINBREWSWITCH);
+  #if BREWSWITCHTYPE == 1
+    #if (PINBREWSWITCH > 0)
+      // Digital GIPO
+      brewswitch = digitalRead(PINBREWSWITCH);
+    #endif
+    // Digital Analog
+    #if (PINBREWSWITCH == 0)
+      unsigned long currentMillistemp = millis();
+      if (currentMillistemp - previousMillistempanalogreading >= analogreadingtimeinterval)
+      {
+        previousMillistempanalogreading = currentMillistemp;
+        if (filter(analogRead(analogPin)) > 1000 )
+        {
+          brewswitch = HIGH ; 
+        }
+        if (filter(analogRead(analogPin)) < 1000 )
+        {
+          brewswitch = LOW ;
+        }
+      }
+    #endif
   #endif
-  // Digital Analog
-  #if (PINBREWSWITCH == 0)
-    unsigned long currentMillistemp = millis();
-    if (currentMillistemp - previousMillistempanalogreading >= analogreadingtimeinterval)
+  #if BREWSWITCHTYPE == 2 // TRIGGER
+    #if (PINBREWSWITCH > 0)
+        // Digital GIPO
+        brewswitchTrigger = digitalRead(PINBREWSWITCH);
+    #endif
+      // Digital Analog
+     #if (PINBREWSWITCH == 0)
+        unsigned long currentMillistemp = millis();
+        if (currentMillistemp - previousMillistempanalogreading >= analogreadingtimeinterval)
+        {
+          previousMillistempanalogreading = currentMillistemp;
+          if (filter(analogRead(analogPin)) > 1000 )
+          {
+            brewswitchTrigger = HIGH ; 
+          }
+          if (filter(analogRead(analogPin)) < 1000 )
+          {
+            brewswitchTrigger = LOW ;
+          }
+        }
+    #endif
+        // Triggersignal umsetzen in brewswitch
+    switch(brewswitchTriggerCase) 
     {
-      previousMillistempanalogreading = currentMillistemp;
-      if (filter(analogRead(analogPin)) > 1000 )
-      {
-        brewswitch = HIGH ; 
-      }
-      if (filter(analogRead(analogPin)) < 1000 )
-      {
-        brewswitch = LOW ;
-      }
+      case 10:
+        if (brewswitchTrigger == HIGH)
+        {
+          brewswitchTriggermillis = millis() ; 
+          brewswitchTriggerCase = 20 ; 
+          DEBUG_println(" 10: brewswitchTrigger HIGH");
+        }
+      break;
+      case 20: 
+        // only one push, brew
+        if (brewswitchTrigger == LOW)
+        { 
+          // Brew 
+          brewswitch = HIGH  ;
+          brewswitchTriggerCase = 30 ;
+          DEBUG_println("20: Brew Trigger");
+        }
+        // Button one 1sec pushed
+        if (brewswitchTrigger == HIGH && (brewswitchTriggermillis+1000 <= millis() ))
+        {
+          // DO something
+           DEBUG_println("20: XXX Trigger");
+          brewswitchTriggerCase = 30 ;
+        }
+      break ;
+      case 30:
+        // Stop brewing
+        if (brewswitchTrigger == HIGH && brewswitch == HIGH)
+        {
+          brewswitch = LOW  ;
+          brewswitchTriggerCase = 40 ; 
+          brewswitchTriggermillis = millis() ; 
+          DEBUG_println("30: Brew Trigger LOW");
+        }
+      break ;
+      case 40:
+        // wait 1 Sec until next brew, detection  
+        if (brewswitchTriggermillis+1000 <= millis() )
+        {
+          brewswitchTriggerCase = 10 ; 
+           DEBUG_println("40: Brew Trigger Next Loop");
+        }
+      break ;
     }
-  #endif
+   #endif
 }
 /********************************************************
    BACKFLUSH

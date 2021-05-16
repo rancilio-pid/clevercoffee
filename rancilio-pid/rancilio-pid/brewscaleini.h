@@ -11,6 +11,9 @@
 ******************************************************/
 int brewcounter = 10;
 int brewswitch = 0;
+int brewswitchTrigger = 0;
+unsigned long brewswitchTriggermillis = 0;
+int brewswitchTriggerCase = 0; 
 boolean brewswitchWasOFF = false;
 double brewtime = 25000;  //brewtime in ms
 double totalbrewtime = 0; //total brewtime set in softare or blynk
