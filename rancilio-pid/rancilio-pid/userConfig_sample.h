@@ -1,5 +1,5 @@
 /********************************************************
-  Version 2.2 (04.02.2021) 
+  Version 2.4 (17.05.2021) 
   Last Change: code cleanup
   Values must be configured by the user
 ******************************************************/
@@ -52,6 +52,7 @@ MACHINE machine = RancilioSilvia;      //	RancilioSilvia, RancilioSilviaE, Gaggi
 #define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay // BREWDETECTION 3 configuration
 #define VOLTAGESENSORTYPE HIGH 
 #define PINMODEVOLTAGESENSOR INPUT // Mode INPUT_PULLUP, INPUT or INPUT_PULLDOWN_16 (Only Pin 16)
+#define PRESSURESENSOR 0           // 1 = pressure sensor connected to A0; PINBREWSWITCH must be set to the connected input!
 
 // TOF sensor for water level
 #define TOF 0                      // 0 = no TOF sensor connected; 1 = water level by TOF sensor
@@ -67,6 +68,15 @@ MACHINE machine = RancilioSilvia;      //	RancilioSilvia, RancilioSilviaE, Gaggi
 
 //Weight SCALE
 #define WEIGHTSETPOINT 30          // Gramm 
+
+//Pressure sensor
+/*
+ * messure and verify "offset" value, should be 10% of ADC bit reading @supply volate (3.3V)
+ * same goes for "fullScale", should be 90%
+ */
+#define OFFSET      102            // 10% of ADC input @3.3V supply = 102
+#define FULLSCALE   922            // 90% of ADC input @3.3V supply = 922
+#define MAXPRESSURE 200
 
 /// Wifi 
 #define HOSTNAME "rancilio"
@@ -141,5 +151,9 @@ MACHINE machine = RancilioSilvia;      //	RancilioSilvia, RancilioSilviaE, Gaggi
   #error("WRONG Brewswitch PIN for ESP8266, Only PIN 15 and PIN 16");  
 #endif
 
+// defined compiler errors
+#if (PRESSURESENSOR == 1) & (PINBREWSWITCH == 0)
+#error Change PINBREWSWITCH or PRESSURESENSOR!
+#endif
 
 #endif // _userConfig_H
