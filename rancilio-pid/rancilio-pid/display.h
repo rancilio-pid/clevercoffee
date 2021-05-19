@@ -117,7 +117,7 @@
           u8g2.setFont(u8g2_font_profont11_tf);
           u8g2.sendBuffer();
         }
-        #if ONLYPIDSCALE == 1 || BREWMODE == 2
+        #if (ONLYPIDSCALE == 1 || BREWMODE == 2)
 
           if ((machinestate == 30 )  && SHOTTIMER == 2)  // Shotimer muss 2 sein und Bezug vorliegen
           {
