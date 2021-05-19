@@ -827,21 +827,21 @@ void sendToBlynk() {
       if (blynksendcounter == 5) {
         Blynk.virtualWrite(V36, heatrateaveragemin);
       }
-      if (grafana == 1 && blynksendcounter >= 6) {
-        Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint );
-         if (MQTT == 1)
-         {
-            mqtt_publish("HeaterPower", number2string(Output));
-            mqtt_publish("Kp", number2string(bPID.GetKp()));
-            mqtt_publish("Ki", number2string(bPID.GetKi()));
-            mqtt_publish("pidON", number2string(pidON));
-            mqtt_publish("brewtime", number2string(brewtime/1000));
-            mqtt_publish("preinfusionpause", number2string(preinfusionpause/1000));
-            mqtt_publish("preinfusion", number2string(preinfusion/1000));
-            mqtt_publish("SteamON", number2string(SteamON));
-         }
-        blynksendcounter = 0;
-      } else if (grafana == 0 && blynksendcounter >= 5) {
+      if (blynksendcounter >= 6) {
+        if (grafana == 1) {
+          Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint );
+        } 
+        if (MQTT == 1) {
+          mqtt_publish("HeaterPower", number2string(Output));
+          mqtt_publish("Kp", number2string(bPID.GetKp()));
+          mqtt_publish("Ki", number2string(bPID.GetKi()));
+          mqtt_publish("Kd", number2string(bPID.GetKd()));
+          mqtt_publish("pidON", number2string(pidON));
+          mqtt_publish("brewtime", number2string(brewtime/1000));
+          mqtt_publish("preinfusionpause", number2string(preinfusionpause/1000));
+          mqtt_publish("preinfusion", number2string(preinfusion/1000));
+          mqtt_publish("SteamON", number2string(SteamON));
+        }
         blynksendcounter = 0;
       }
       blynksendcounter++;
