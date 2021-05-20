@@ -477,7 +477,7 @@ void checkPressure() {
   {
     previousMillisPressure = currentMillisPressure;
     
-    inputPressure = ((analogRead(analogPin) - offset) * maxPressure * 0.0689476) / (fullScale - offset);    // pressure conversion and unit conversion [psi] -> [bar]
+    inputPressure = ((analogRead(PINPRESSURESENSOR) - offset) * maxPressure * 0.0689476) / (fullScale - offset);    // pressure conversion and unit conversion [psi] -> [bar]
     inputPressureFilter = filter(inputPressure);
     DEBUG_print("pressure raw: ");
     DEBUG_println(inputPressure);
@@ -1538,9 +1538,21 @@ void machinestatevoid()
     case 90: 
       if (pidON == 1)
       {
-        machinestate = 10 ; // kaltstart 
+        if(kaltstart) 
+        {
+          machinestate = 10 ; // kaltstart 
+        }
+        else if(!kaltstart && (Input > (BrewSetPoint-10) )) // Input higher BrewSetPoint-10, normal PID
+        {
+          machinestate = 20 ; // normal PID
+        } 
+        else if (Input <= (BrewSetPoint-10) )
+        {
+          machinestate = 10 ; // Input higher BrewSetPoint-10, kaltstart
+          kaltstart = true;
+        }
       }
-      
+
       if(sensorError)
       {
         machinestate = 100 ;
