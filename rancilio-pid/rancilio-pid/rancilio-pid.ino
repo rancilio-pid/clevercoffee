@@ -1538,14 +1538,7 @@ void machinestatevoid()
     case 90: 
       if (pidON == 1)
       {
-        if(kaltstart) 
-        {
         machinestate = 10 ; // kaltstart 
-        }
-        if(!kaltstart) 
-        {
-        machinestate = 20 ; // normal PID
-        }
       }
       
       if(sensorError)
