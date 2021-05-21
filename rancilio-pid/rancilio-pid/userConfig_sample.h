@@ -1,6 +1,6 @@
 /********************************************************
-  Version 2.4 (17.05.2021) 
-  Last Change: code cleanup
+  Version 2.5 (20.05.2021) 
+  Last Change: PINPRESSURESENSOR
   Values must be configured by the user
 ******************************************************/
 
@@ -131,7 +131,8 @@ MACHINE machine = RancilioSilvia;      //	RancilioSilvia, RancilioSilviaE, Gaggi
 
 // Pin Layout
 #define ONE_WIRE_BUS 2             // Temp sensor pin
-#define PINBREWSWITCH 0           // 0: A0 Analog PIN ; >0 : DIGITAL PIN, ESP8266: ONLY USE PIN15 AND PIN16! 
+#define PINBREWSWITCH 0            // 0: A0 (ESP8266) ; >0 : DIGITAL PIN, ESP32 OR ESP8266: ONLY USE PIN15 AND PIN16! 
+#define PINPRESSURESENSOR 99       // Pressuresensor 0: A0 (ESP8266), >0 ONLY ESP32 
 #define pinRelayVentil 12          // Output pin for 3-way-valve
 #define pinRelayPumpe 13           // Output pin for pump
 #define pinRelayHeater 14          // Output pin for heater
@@ -157,7 +158,7 @@ MACHINE machine = RancilioSilvia;      //	RancilioSilvia, RancilioSilviaE, Gaggi
 #endif
 
 // defined compiler errors
-#if (PRESSURESENSOR == 1) & (PINBREWSWITCH == 0)
+#if (PRESSURESENSOR == 1) && (PINPRESSURESENSOR == 0) && (PINBREWSWITCH == 0)
 #error Change PINBREWSWITCH or PRESSURESENSOR!
 #endif
 
