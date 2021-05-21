@@ -11,7 +11,10 @@
 ******************************************************/
 int brewcounter = 10;
 int brewswitch = 0;
-int brewswitchTrigger = 0;
+int brewswitchTrigger = LOW;
+int buttonStateBrewTrigger;             // the current reading from the input pin 
+unsigned long lastDebounceTimeBrewTrigger = 0;  // the last time the output pin was toggled
+unsigned long debounceDelayBrewTrigger = 50;   
 unsigned long brewswitchTriggermillis = 0;
 int brewswitchTriggerCase = 10; 
 boolean brewswitchWasOFF = false;

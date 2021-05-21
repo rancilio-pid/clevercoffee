@@ -29,9 +29,26 @@ void checkbrewswitch()
     #endif
   #endif
   #if BREWSWITCHTYPE == 2 // TRIGGER
-    #if (PINBREWSWITCH > 0)
-        // Digital GIPO
-        brewswitchTrigger = digitalRead(PINBREWSWITCH);
+    
+    #if (PINBREWSWITCH > 0) 
+
+        int reading = digitalRead(PINBREWSWITCH);
+
+        if (reading != brewswitchTrigger) {
+          // reset the debouncing timer
+          lastDebounceTimeBrewTrigger = millis();
+        }
+        if ((millis() - lastDebounceTimeBrewTrigger) > debounceDelayBrewTrigger) {
+          // whatever the reading is at, it's been there for longer than the debounce
+          // delay, so take it as the actual current state:
+
+          // if the button state has changed:
+          if (reading != buttonStateBrewTrigger) {
+            buttonStateBrewTrigger = reading;
+          }
+        }
+      brewswitchTrigger = reading;  
+      Serial.println(brewswitchTrigger);
     #endif
       // Digital Analog
      #if (PINBREWSWITCH == 0)
@@ -95,15 +112,15 @@ void checkbrewswitch()
         }
       break ;
       case 40:
-        // wait 1 Sec until next brew, detection  
-        if (brewswitchTriggermillis+10000 <= millis() )
+        // wait 5 Sec until next brew, detection  
+        if (brewswitchTriggermillis+5000 <= millis() )
         {
           brewswitchTriggerCase = 10 ; 
            DEBUG_println("brewswitchTriggerCase 40: Brew Trigger Next Loop");
         }
       break ;
     }
-   #endif
+  #endif
 }
 /********************************************************
    BACKFLUSH
