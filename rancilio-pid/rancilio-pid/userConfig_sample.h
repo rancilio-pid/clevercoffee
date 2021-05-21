@@ -41,7 +41,11 @@ MACHINE machine = RancilioSilvia;      //	RancilioSilvia, RancilioSilviaE, Gaggi
 // Offline mode
 #define OFFLINEMODUS 0             // 0 = Blynk and Wifi are used, 1 = offline mode (only preconfigured values in code are used!)
 #define FALLBACK 1                 // 1 = fallback to values stored in eeprom, 0 = deactivated
-#define GRAFANA 1                  // 1 = grafana visualisation (access required), 0 = off (default)
+
+// Visualisation
+#define GRAFANA 0                  // 1 = grafana visualisation on clevercoffee Server(access required), 2 = use other (local) influxDB and Grafana instances, 0 = off (default)
+#define INFLUXDB_HOST "XXX.XXX.XXX.XXX"   // Ip of local influxDB Server
+#define INFLUXDB_DBNAME "DATABASE_NAME"    // name of InfluxDB Database
 
 // PID & Hardware
 #define ONLYPID 1                  // 1 = Only PID, 0 = PID and preinfusion

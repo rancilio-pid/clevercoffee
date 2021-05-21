@@ -25,7 +25,10 @@
 #include <PubSubClient.h>
 #include "TSIC.h"       //Library for TSIC temp sensor
 #include <Adafruit_VL53L0X.h> //for TOF 
-
+#if (GRAFANA == 2)
+#include <InfluxDb.h>
+Influxdb influx(INFLUXDB_HOST);
+#endif
 #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
 #include <HX711_ADC.h>
 #endif
@@ -830,6 +833,22 @@ void sendToBlynk() {
       if (blynksendcounter >= 6) {
         if (grafana == 1) {
           Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint );
+        }
+        if (grafana == 2) {
+          // create dataset
+          InfluxData influx_clevercoffee("clevercoffee_PID");
+          influx_clevercoffee.addTag("Model", HOSTNAME);
+          influx_clevercoffee.addValue("HeaterPower", Output);
+          influx_clevercoffee.addValue("temperature", Input);
+          influx_clevercoffee.addValue("setPoint", setPoint);
+          influx_clevercoffee.addValue("SteamSetPoint", SteamSetPoint);
+          influx_clevercoffee.addValue("KP", bPID.GetKp());
+          influx_clevercoffee.addValue("KI", bPID.GetKi());
+          influx_clevercoffee.addValue("KD", bPID.GetKd());
+          influx_clevercoffee.addValue("PidON", pidON);
+          influx_clevercoffee.addValue("SteamON", SteamON);
+          // POST to influxDB
+          influx.write(influx_clevercoffee);
         } 
         if (MQTT == 1) {
           mqtt_publish("HeaterPower", number2string(Output));
@@ -1716,6 +1735,10 @@ void setup() {
       }
       delay(1000);
 
+      // set database name for local Grafana visualisation
+      if (grafana == 2){
+        influx.setDb(INFLUXDB_DBNAME);
+      }
       //try blynk connection
       Blynk.config(auth, blynkaddress, blynkport) ;
       Blynk.connect(30000);
