@@ -11,21 +11,12 @@
 #ifndef _userConfig_H
 #define _userConfig_H  
 
-// MACHINE 
-enum MACHINE {
-	RancilioSilvia,
-	RancilioSilviaE,
-	Gaggia,
-	QuickMill
-};
-
-
 /********************************************************
    Preconfiguration
 ******************************************************/
 
-// MACHINETYPE, use the exakt name of the machine 
-MACHINE machine = RancilioSilvia;      //	RancilioSilvia, RancilioSilviaE, Gaggia, QuickMill
+// MACHINETYPE 
+#define MACHINEID 0                //	0 = RancilioSilvia, 1 = RancilioSilviaE, 2 = Gaggia, 3 = QuickMill
 
 // Display
 #define DISPLAY 2                  // 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64)
@@ -147,6 +138,7 @@ MACHINE machine = RancilioSilvia;      //	RancilioSilvia, RancilioSilviaE, Gaggi
 #define PONE 1                     // 1 = P_ON_E (default), 0 = P_ON_M (special PID mode, other PID-parameter are needed)
 #define TEMPSENSOR 2               // 2 = TSIC306 1=DS18B20
 
+#define DEBUGMETHOD 1              // 0 = none, 1 = SerialDebug, 2 = RemoteDebug
 
 // Check BrewSwitch
 #if (defined(ESP8266) && ((PINBREWSWITCH != 15 && PINBREWSWITCH != 0 && PINBREWSWITCH != 16 )))

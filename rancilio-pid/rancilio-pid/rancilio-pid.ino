@@ -33,6 +33,16 @@
 /********************************************************
   DEFINES
 ******************************************************/
+
+// MACHINE 
+enum MACHINE {
+  RancilioSilvia,
+  RancilioSilviaE,
+  Gaggia,
+  QuickMill
+};
+MACHINE machine = (enum MACHINE) MACHINEID;      // RancilioSilvia, RancilioSilviaE, Gaggia, QuickMill
+
 #define DEBUGMODE   // Debug mode is active if #define DEBUGMODE is set
 
 //#define BLYNK_PRINT Serial    // In detail debugging for blynk
@@ -49,6 +59,11 @@
 #endif
 #define HIGH_ACCURACY
 
+#include "DebugStreamManager.h"
+DebugStreamManager debugStream;
+
+#include "PeriodicTrigger.h" // Trigger, der alle x Millisekunden auf true schaltet
+PeriodicTrigger writeDebugTrigger(5000); // trigger alle 5000 ms
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -68,6 +83,8 @@ const unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
 const unsigned long brewswitchDelay = BREWSWITCHDELAY;
 int BrewMode = BREWMODE ;
 int machinestate = 0;
+int lastmachinestate = 0;
+
 
 //Display
 uint8_t oled_i2c = OLED_I2C;
@@ -1563,7 +1580,20 @@ void machinestatevoid()
     // Nothing
     break;
   } // switch case
+  if (machinestate != lastmachinestate) { 
+    debugStream.writeI("new machinestate: %i -> %i",lastmachinestate, machinestate);
+    lastmachinestate = machinestate;
+  }
 } // end void
+
+void debugVerboseOutput()
+{
+  static PeriodicTrigger trigger(10000);
+  if(trigger.check()) 
+  {
+    debugStream.writeV("Tsoll=%5.1f  Tist=%5.1f",BrewSetPoint,Input);
+  }
+}
 
 void setup() {
   DEBUGSTART(115200);
@@ -1923,7 +1953,11 @@ void loop() {
       loopcalibrate();
   } else {
       looppid();
-  }
+
+      debugStream.handle();
+      debugVerboseOutput();
+
+    }
 }
 
 // TOF Calibration_mode 
