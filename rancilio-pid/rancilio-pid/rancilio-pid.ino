@@ -914,6 +914,7 @@ void brewdetection()
         startZeit = 0;
         coolingFlushDetectedQM = false;
         DEBUG_println("HW Brew - Voltage Sensor - End") ;
+        debugStream.writeI("HW Brew - Voltage Sensor - End  at time %f",(double)(millis() - startZeit)/1000);
      //   lastbezugszeitMillis = millis(); // Bezugszeit für Delay 
       }
     if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1) // reset PID Brew
@@ -958,6 +959,7 @@ void brewdetection()
           brewDetected = 0;
           lastbezugszeit = 0;
           brewSteamDetectedQM = 1;
+          debugStream.writeI("setting brewSteamDetectedQM = 1  at time %f",(double)(millis() - startZeit)/1000);
         }
 
         if (brewSteamDetectedQM == 1) 
@@ -968,18 +970,22 @@ void brewdetection()
 
             if (millis() - timePVStoON < maxBrewDurationForSteamModeQM_ON)
             {
+              debugStream.writeI("Dampfmodus QuickMill erkannt  at time %f",(double)(millis() - startZeit)/1000);
               initSteamQM();
             } else {
               DEBUG_println("********** ERROR: neither brew nor steam for QuickMill **********");
+              debugStream.writeE("********** ERROR: neither brew nor steam for QuickMill **********");
             }
           } 
           else if (millis() - timePVStoON > maxBrewDurationForSteamModeQM_ON)
           {
             if( Input < BrewSetPoint + 2) {
+              debugStream.writeI("Bezugsmodus QuickMill erkannt  at time %f",(double)(millis() - startZeit)/1000);
               startZeit = timePVStoON; 
               brewDetected = 1;
               brewSteamDetectedQM = 0;
             } else {
+              debugStream.writeI("Cooling Flush QuickMill erkannt  at time %f",(double)(millis() - startZeit)/1000);
               coolingFlushDetectedQM = true;
               brewSteamDetectedQM = 0;
             }
@@ -1597,6 +1603,7 @@ void debugVerboseOutput()
 
 void setup() {
   DEBUGSTART(115200);
+  debugStream.setup();
 
   if (MQTT == 1) {
     //MQTT
