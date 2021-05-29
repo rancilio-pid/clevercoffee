@@ -17,3 +17,14 @@ bool PeriodicTrigger::check()
 	else
 		return false;
 }
+
+bool PeriodicTrigger::reset()
+{
+	tref = millis();
+} 
+
+bool PeriodicTrigger::reset(int ms)
+{
+ 	triggerInterval = ms;
+	tref = millis();
+} 

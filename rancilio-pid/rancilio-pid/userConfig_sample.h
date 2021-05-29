@@ -139,6 +139,8 @@
 #define TEMPSENSOR 2               // 2 = TSIC306 1=DS18B20
 
 #define DEBUGMETHOD 1              // 0 = none, 1 = SerialDebug, 2 = RemoteDebug
+#define MAXLOGLINES 100            // Number of log lines (>=0) stored in logbook, (-> command "loghist" in terminal window)
+                                   // if set too large the ESP will run out of memory and reboot unexpectedly
 
 // Check BrewSwitch
 #if (defined(ESP8266) && ((PINBREWSWITCH != 15 && PINBREWSWITCH != 0 && PINBREWSWITCH != 16 )))

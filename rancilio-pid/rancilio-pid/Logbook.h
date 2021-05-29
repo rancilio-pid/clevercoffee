@@ -2,48 +2,73 @@
 #define Logbook_h
 
 #include "Arduino.h"
+#include "userConfig.h"
 
-#define MAXLOGLINES 500
+/*
+  line:  from 1 ... MAXLOGLINES
+  index: from 0 ... MAXLOGLINES-1
+         steht immer auf dem nächsten zu beschreibenden Eintrag
+*/
 
 class Logbook {
 
   public:
-  	Logbook();
+    Logbook();
 
-  	int append(String s)
-  	{
-  		int line_ = line;
-  		log[line] = s;
-  		id_last = line;
+    int append(String s)
+    {
+      Serial.println(index);
+      Serial.println(s);
+      Serial.println(index_first);
+      Serial.println(index_last);
+      Serial.println(maxlines);
+      Serial.println(length);
+      Serial.println("");
 
-  		line ++;
+      if (maxlines <= 0) return 0;
 
-  		if (length < maxlines) { length ++; }
-  		if (line == maxlines)  { line = 0; }
+      log[index] = s;
 
-  		id_first = (length == maxlines) ? (id_last + 1) % (length-1) : 0;
-  		
-  		return line_;
-  	}
+      // Laenge anpassen
+      if (length<maxlines) length++;
 
-  	int first();
-  	int last();
-  	int len();
+      // "Zeiger" aktualisieren
+      if (length < maxlines)
+      {
+        // index_first bleibt auf 0
+        index_last = index;
+        index++;
+      }
+      else
+      {
+        index_last  = index;
+        index_first = (index+1)%maxlines;
+        index = index_first;
+      }
 
-  	String getline( int i )
-  	{
-  		int id = (id_first + i) % (length);
-  		return log[id];
-  	}
+      return index;
+    }
+
+    int len();
+
+    String getline( int line )
+    {
+      if (line<1 || line>maxlines)
+      {
+        Serial.println("*** Error: Logbook::getline() index out of range!");
+        return "*** Error: Logbook::getline() index out of range!";
+      }
+
+      int index = (index_first + line-1) % (length);
+      return log[index];
+    }
 
   private:
-  	const int maxlines = MAXLOGLINES;
-    int line,id_first,id_last,length;
+    const int maxlines = MAXLOGLINES;
+    int index,index_first,index_last,length;
     
     String log[MAXLOGLINES];
 
 };
 
-
 #endif
-

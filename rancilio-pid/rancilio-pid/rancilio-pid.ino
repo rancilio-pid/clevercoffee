@@ -64,6 +64,7 @@ DebugStreamManager debugStream;
 
 #include "PeriodicTrigger.h" // Trigger, der alle x Millisekunden auf true schaltet
 PeriodicTrigger writeDebugTrigger(5000); // trigger alle 5000 ms
+PeriodicTrigger logbrew(500);
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -845,7 +846,8 @@ void sendToBlynk() {
         Blynk.virtualWrite(V36, heatrateaveragemin);
       }
       if (grafana == 1 && blynksendcounter >= 6) {
-        Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint );
+        // Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint );
+        Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint, heatrateaverage);
          if (MQTT == 1)
          {
             mqtt_publish("HeaterPower", number2string(Output));
@@ -960,10 +962,15 @@ void brewdetection()
           lastbezugszeit = 0;
           brewSteamDetectedQM = 1;
           debugStream.writeI("setting brewSteamDetectedQM = 1  at time %f",(double)(millis() - startZeit)/1000);
+          logbrew.reset();
+          debugStream.writeD("1 (T,hra) --> %6.2f %8.2f",Input,heatrateaverage);
         }
 
         if (brewSteamDetectedQM == 1) 
         {
+          if (logbrew.check())
+            debugStream.writeD("2 (T,hra) --> %6.2f %8.2f",Input,heatrateaverage);
+
           if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF)
           {
             brewSteamDetectedQM = 0;
@@ -1365,6 +1372,8 @@ void machinestatevoid()
      // Brew
     case 30:
       brewdetection();  
+      if (logbrew.check())
+          debugStream.writeD("3 (tB,T,hra) --> %5.2f %6.2f %8.2f",(double)(millis() - startZeit)/1000,Input,heatrateaverage);
       if
       (
        (bezugsZeit > 35*1000 && Brewdetection == 1 && ONLYPID == 1  ) ||  // 35 sec later and BD PID active SW Solution
@@ -1406,6 +1415,7 @@ void machinestatevoid()
     brewdetection();  
       if ( millis()-lastbezugszeitMillis > BREWSWITCHDELAY )
       {
+       debugStream.writeI("Bezugsdauer: %4.1f s",lastbezugszeit/1000);
        machinestate = 35 ;
        lastbezugszeit = 0 ;
       }

@@ -6,6 +6,8 @@ class PeriodicTrigger {
 public:
 	PeriodicTrigger(int millisec);
 	bool check();
+	bool reset();
+	bool reset(int millisec);
 
 private:
 	int triggerInterval;

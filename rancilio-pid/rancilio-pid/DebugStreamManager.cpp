@@ -40,10 +40,17 @@ void DebugStreamManager::writeE(const char* fmt, ...)
 	vsnprintf(buf, sizeof buf, fmt, args);
 	va_end(args);
 
-	debugE("%s",buf);
+	char time[15];
+	snprintf(time, 15, "t: %10.3f ",(double)(millis())/1000);
+
+	char str[1+sizeof(time)+sizeof(buf)];
+	strcpy(str,time);
+	strcat(str,buf);
+
+	debugE("%s",str);
 
 	// if (Debug.isActive(Debug.INFO)) {
-		logbook.append(buf);
+		logbook.append(str);
 	// }
 }
 
@@ -57,10 +64,17 @@ void DebugStreamManager::writeW(const char* fmt, ...)
 	vsnprintf(buf, sizeof buf, fmt, args);
 	va_end(args);
 
-	debugW("%s",buf);
+	char time[15];
+	snprintf(time, 15, "t: %10.3f ",(double)(millis())/1000);
+
+	char str[1+sizeof(time)+sizeof(buf)];
+	strcpy(str,time);
+	strcat(str,buf);
+
+	debugW("%s",str);
 
 	// if (Debug.isActive(Debug.INFO)) {
-		logbook.append(buf);
+		logbook.append(str);
 	// }
 }
 
@@ -74,11 +88,18 @@ void DebugStreamManager::writeI(const char* fmt, ...)
 	vsnprintf(buf, sizeof buf, fmt, args);
 	va_end(args);
 
-	debugI("%s",buf);
+	char time[15];
+	snprintf(time, 15, "t: %10.3f ",(double)(millis())/1000);
+
+	char str[1+sizeof(time)+sizeof(buf)];
+	strcpy(str,time);
+	strcat(str,buf);
+
+	debugI("%s",str);
 
     #if (DEBUGMETHOD == 1 || DEBUGMETHOD == 2)
 	// if (Debug.isActive(Debug.INFO)) {
-		logbook.append(buf);
+		logbook.append(str);
 	// }
     #endif
 }
@@ -93,10 +114,17 @@ void DebugStreamManager::writeD(const char* fmt, ...)
 	vsnprintf(buf, sizeof buf, fmt, args);
 	va_end(args);
 
-	debugD("%s",buf);
+	char time[15];
+	snprintf(time, 15, "t: %10.3f ",(double)(millis())/1000);
+
+	char str[1+sizeof(time)+sizeof(buf)];
+	strcpy(str,time);
+	strcat(str,buf);
+
+	debugD("%s",str);
 
 	// if (Debug.isActive(Debug.INFO)) {
-		logbook.append(buf);
+		logbook.append(str);
 	// }
 }
 
@@ -110,16 +138,21 @@ void DebugStreamManager::writeV(const char* fmt, ...)
 	vsnprintf(buf, sizeof buf, fmt, args);
 	va_end(args);
 
-	debugV("%s",buf);
+	char time[15];
+	snprintf(time, 15, "t: %10.3f ",(double)(millis())/1000);
+
+	char str[1+sizeof(time)+sizeof(buf)];
+	strcpy(str,time);
+	strcat(str,buf);
+	debugV("%s",str);
 
     #if (DEBUGMETHOD == 1 || DEBUGMETHOD == 2)
 	// if (Debug.isActive(Debug.VERBOSE)) {
-		logbook.append(buf);
+		// logbook.append(str);
 	// }
     #endif
 }
 #endif
-
 
 
 #if (DEBUGMETHOD == 2)
@@ -144,7 +177,7 @@ void DebugStreamManager::loghist()
 	debugA("     --- START loghist START ---");
 	debugA("");
 
-	for (int l=0; l < logbook.len(); l++) 
+	for (int l=1; l <= logbook.len(); l++) 
 	{
 
 		debugA("%5i: %s",l,logbook.getline(l).c_str());
