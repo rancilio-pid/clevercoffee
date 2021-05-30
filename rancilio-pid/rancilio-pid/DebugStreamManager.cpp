@@ -41,7 +41,7 @@ void DebugStreamManager::writeE(const char* fmt, ...)
 	va_end(args);
 
 	char time[15];
-	snprintf(time, 15, "t: %10.3f ",(double)(millis())/1000);
+	snprintf(time, 15, "t: %10.3f ",(double)(millis()%(long unsigned int)1e14)/1000);
 
 	char str[1+sizeof(time)+sizeof(buf)];
 	strcpy(str,time);
@@ -65,7 +65,7 @@ void DebugStreamManager::writeW(const char* fmt, ...)
 	va_end(args);
 
 	char time[15];
-	snprintf(time, 15, "t: %10.3f ",(double)(millis())/1000);
+	snprintf(time, 15, "t: %10.3f ",(double)(millis()%(long unsigned int)1e14)/1000);
 
 	char str[1+sizeof(time)+sizeof(buf)];
 	strcpy(str,time);
@@ -89,7 +89,7 @@ void DebugStreamManager::writeI(const char* fmt, ...)
 	va_end(args);
 
 	char time[15];
-	snprintf(time, 15, "t: %10.3f ",(double)(millis())/1000);
+	snprintf(time, 15, "t: %10.3f ",(double)(millis()%(long unsigned int)1e14)/1000);
 
 	char str[1+sizeof(time)+sizeof(buf)];
 	strcpy(str,time);
@@ -115,7 +115,7 @@ void DebugStreamManager::writeD(const char* fmt, ...)
 	va_end(args);
 
 	char time[15];
-	snprintf(time, 15, "t: %10.3f ",(double)(millis())/1000);
+	snprintf(time, 15, "t: %10.3f ",(double)(millis()%(long unsigned int)1e14)/1000);
 
 	char str[1+sizeof(time)+sizeof(buf)];
 	strcpy(str,time);
@@ -139,7 +139,7 @@ void DebugStreamManager::writeV(const char* fmt, ...)
 	va_end(args);
 
 	char time[15];
-	snprintf(time, 15, "t: %10.3f ",(double)(millis())/1000);
+	snprintf(time, 15, "t: %10.3f ",(double)(millis()%(long unsigned int)1e14)/1000);
 
 	char str[1+sizeof(time)+sizeof(buf)];
 	strcpy(str,time);
