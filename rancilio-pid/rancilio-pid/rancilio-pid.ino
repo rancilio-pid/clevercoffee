@@ -932,8 +932,8 @@ void brewdetection()
 
       if (!coolingFlushDetectedQM) 
       {
-        if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorON && brewDetected == 0 && brewSteamDetectedQM == 0 
-          && !steamQM_active) 
+        int pvs = digitalRead(PINVOLTAGESENSOR);
+        if (pvs == VoltageSensorON && brewDetected == 0 && brewSteamDetectedQM == 0 && !steamQM_active) 
         {
           timeBrewdetection = millis();
           timePVStoON = millis();
@@ -945,7 +945,7 @@ void brewdetection()
 
         if (brewSteamDetectedQM == 1) 
         {
-          if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF)
+          if (pvs == VoltageSensorOFF)
           {
             brewSteamDetectedQM = 0;
 
