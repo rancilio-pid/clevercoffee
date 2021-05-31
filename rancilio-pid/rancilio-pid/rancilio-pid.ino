@@ -34,7 +34,7 @@
   DEFINES
 ******************************************************/
 
-MACHINE machine = (enum MACHINE) MACHINEID;      // RancilioSilvia, RancilioSilviaE, Gaggia, QuickMill
+MACHINE machine = (enum MACHINE) MACHINEID;
 
 #define DEBUGMODE   // Debug mode is active if #define DEBUGMODE is set
 
