@@ -24,7 +24,7 @@ enum MACHINE {
 ******************************************************/
 
 // Machine 
-#define MACHINEID 0                //	0 = RancilioSilvia, 1 = RancilioSilviaE, 2 = Gaggia, 3 = QuickMill
+#define MACHINEID 0                //	see above list of supported machines
 
 // Display
 #define DISPLAY 2                  // 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64)
