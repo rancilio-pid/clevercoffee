@@ -11,11 +11,19 @@
 #ifndef _userConfig_H
 #define _userConfig_H  
 
+// List of supported machines
+enum MACHINE {
+  RancilioSilvia,   // MACHINEID 0
+  RancilioSilviaE,  // MACHINEID 1
+  Gaggia,           // MACHINEID 2
+  QuickMill         // MACHINEID 3
+};
+
 /********************************************************
    Preconfiguration
 ******************************************************/
 
-// MACHINETYPE 
+// Machine 
 #define MACHINEID 0                //	0 = RancilioSilvia, 1 = RancilioSilviaE, 2 = Gaggia, 3 = QuickMill
 
 // Display
