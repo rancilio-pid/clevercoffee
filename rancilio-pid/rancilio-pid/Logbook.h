@@ -17,13 +17,13 @@ class Logbook {
 
     int append(String s)
     {
-      Serial.println(index);
-      Serial.println(s);
-      Serial.println(index_first);
-      Serial.println(index_last);
-      Serial.println(maxlines);
-      Serial.println(length);
-      Serial.println("");
+      // Serial.println(index);
+      // Serial.println(s);
+      // Serial.println(index_first);
+      // Serial.println(index_last);
+      // Serial.println(maxlines);
+      // Serial.println(length);
+      // Serial.println("");
 
       if (maxlines <= 0) return 0;
 
@@ -55,7 +55,7 @@ class Logbook {
     {
       if (line<1 || line>maxlines)
       {
-        Serial.println("*** Error: Logbook::getline() index out of range!");
+        // Serial.println("*** Error: Logbook::getline() index out of range!");
         return "*** Error: Logbook::getline() index out of range!";
       }
 
