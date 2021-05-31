@@ -952,8 +952,8 @@ void brewdetection()
 
       if (!coolingFlushDetectedQM) 
       {
-        if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorON && brewDetected == 0 && brewSteamDetectedQM == 0 
-          && !steamQM_active) 
+        int pvs = digitalRead(PINVOLTAGESENSOR);
+        if (pvs == VoltageSensorON && brewDetected == 0 && brewSteamDetectedQM == 0 && !steamQM_active) 
         {
           timeBrewdetection = millis();
           timePVStoON = millis();
@@ -971,7 +971,7 @@ void brewdetection()
           if (logbrew.check())
             debugStream.writeD("2 (T,hra) --> %6.2f %8.2f",Input,heatrateaverage);
 
-          if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF)
+          if (pvs == VoltageSensorOFF)
           {
             brewSteamDetectedQM = 0;
 
