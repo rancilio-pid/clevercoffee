@@ -30,10 +30,13 @@
 #include <HX711_ADC.h>
 #endif
 
+#include "debugFunctions.h"  // Definitionen der Funktionen zur Debugausgabe
+#include "periodicTrigger.h"
+
+
 /********************************************************
   DEFINES
 ******************************************************/
-
 MACHINE machine = (enum MACHINE) MACHINEID;
 
 #define DEBUGMODE   // Debug mode is active if #define DEBUGMODE is set
@@ -58,6 +61,7 @@ DebugStreamManager debugStream;
 #include "PeriodicTrigger.h" // Trigger, der alle x Millisekunden auf true schaltet
 PeriodicTrigger writeDebugTrigger(5000); // trigger alle 5000 ms
 PeriodicTrigger logbrew(500);
+
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -155,6 +159,7 @@ float inputPressure = 0;
 const unsigned long intervalPressure = 200;
 unsigned long previousMillisPressure;  // initialisation at the end of init()
 #endif
+
 
 /********************************************************
    declarations
@@ -1994,17 +1999,18 @@ void setup() {
     timerAlarmWrite(timer, 10000, true);//m
     timerAlarmEnable(timer);//m
   #endif
-  
+
+  #if( DEBUGMETHOD == 2)
+    Debug.begin(HOSTNAME);
+  #endif  
 }
 void loop() {
   if (calibration_mode == 1 && TOF == 1) {
       loopcalibrate();
   } else {
       looppid();
-
       debugStream.handle();
       debugVerboseOutput();
-
     }
 }
 

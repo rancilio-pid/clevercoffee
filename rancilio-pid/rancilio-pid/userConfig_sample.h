@@ -155,6 +155,7 @@ enum MACHINE {
   #error("WRONG Brewswitch PIN for ESP8266, Only PIN 15 and PIN 16");  
 #endif
 
+
 // defined compiler errors
 #if (PRESSURESENSOR == 1) && (PINPRESSURESENSOR == 0) && (PINBREWSWITCH == 0)
 #error Change PINBREWSWITCH or PRESSURESENSOR!

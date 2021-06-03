@@ -1,0 +1,90 @@
+#######################################
+# Syntax Coloring Map For SerialDebug
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+debugSilence KEYWORD2
+debugAddFunctionVoid KEYWORD2
+debugAddFunctionStr KEYWORD2
+debugAddFunctionChar KEYWORD2
+debugAddFunctionInt KEYWORD2
+debugSetLastFunctionDescription KEYWORD2
+debugAddGlobalBoolean KEYWORD2
+debugAddGlobalChar KEYWORD2
+debugAddGlobalByte KEYWORD2
+debugAddGlobalInt KEYWORD2
+debugAddGlobalUInt KEYWORD2
+debugAddGlobalLong KEYWORD2
+debugAddGlobalULong KEYWORD2
+debugAddGlobalFloat KEYWORD2
+debugAddGlobalDouble KEYWORD2
+debugAddGlobalInt8_t KEYWORD2
+debugAddGlobalInt16_t KEYWORD2
+debugAddGlobalInt32_t KEYWORD2
+debugAddGlobalUInt8_t KEYWORD2
+debugAddGlobalUInt16_t KEYWORD2
+debugAddGlobalUInt32_t KEYWORD2
+debugAddGlobalCharArray KEYWORD2
+debugAddGlobalCharArray KEYWORD2
+debugAddGlobalString KEYWORD2
+debugAddGlobalString KEYWORD2
+debugSetLastGlobalDescription KEYWORD2
+debugAddWatchBoolean KEYWORD2
+debugAddWatchChar KEYWORD2
+debugAddWatchByte KEYWORD2
+debugAddWatchInt KEYWORD2
+debugAddWatchUInt KEYWORD2
+debugAddWatchLong KEYWORD2
+debugAddWatchULong KEYWORD2
+debugAddWatchFloat KEYWORD2
+debugAddWatchDouble KEYWORD2
+debugAddWatchInt8_t KEYWORD2
+debugAddWatchInt16_t KEYWORD2
+debugAddWatchInt32_t KEYWORD2
+debugAddWatchUInt8_t KEYWORD2
+debugAddWatchUInt16_t KEYWORD2
+debugAddWatchUInt32_t KEYWORD2
+debugAddWatchCharArray KEYWORD2
+debugAddWatchString KEYWORD2
+debugAddWatchBoolean KEYWORD2
+debugAddWatchChar KEYWORD2
+debugAddWatchByte KEYWORD2
+debugAddWatchInt KEYWORD2
+debugAddWatchUInt KEYWORD2
+debugAddWatchLong KEYWORD2
+debugAddWatchULong KEYWORD2
+debugAddWatchFloat KEYWORD2
+debugAddWatchDouble KEYWORD2
+debugAddWatchInt8_t KEYWORD2
+debugAddWatchInt16_t KEYWORD2
+debugAddWatchInt32_t KEYWORD2
+debugAddWatchUInt8_t KEYWORD2
+debugAddWatchUInt16_t KEYWORD2
+debugAddWatchUInt32_t KEYWORD2
+debugAddWatchCharArray KEYWORD2
+debugAddWatchString KEYWORD2
+debugAddWatchCross KEYWORD2
+debugAddWatchCross KEYWORD2
+debugA KEYWORD2
+debugV KEYWORD2
+debugD KEYWORD2
+debugI KEYWORD2
+debugW KEYWORD2
+debugE KEYWORD2
+debugIsrA KEYWORD2
+debugIsrV KEYWORD2
+debugIsrD KEYWORD2
+debugIsrI KEYWORD2
+debugIsrW KEYWORD2
+debugIsrE KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
