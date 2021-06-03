@@ -1,5 +1,5 @@
 /********************************************************
-   Version 2.9.1 (29.04.2021)  
+   Version 2.9.2 (29.04.2021)  
 ******************************************************/
 
 /********************************************************
@@ -37,9 +37,30 @@
 /********************************************************
   DEFINES
 ******************************************************/
+MACHINE machine = (enum MACHINE) MACHINEID;
 
+#define DEBUGMODE   // Debug mode is active if #define DEBUGMODE is set
+
+//#define BLYNK_PRINT Serial    // In detail debugging for blynk
+//#define BLYNK_DEBUG
+
+#ifndef DEBUGMODE
+#define DEBUG_println(a)
+#define DEBUG_print(a)
+#define DEBUGSTART(a)
+#else
+#define DEBUG_println(a) Serial.println(a);
+#define DEBUG_print(a) Serial.print(a);
+#define DEBUGSTART(a) Serial.begin(a);
+#endif
 #define HIGH_ACCURACY
 
+#include "DebugStreamManager.h"
+DebugStreamManager debugStream;
+
+#include "PeriodicTrigger.h" // Trigger, der alle x Millisekunden auf true schaltet
+PeriodicTrigger writeDebugTrigger(5000); // trigger alle 5000 ms
+PeriodicTrigger logbrew(500);
 
 
 /********************************************************
@@ -60,6 +81,8 @@ const unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
 const unsigned long brewswitchDelay = BREWSWITCHDELAY;
 int BrewMode = BREWMODE ;
 int machinestate = 0;
+int lastmachinestate = 0;
+
 
 //Display
 uint8_t oled_i2c = OLED_I2C;
@@ -125,9 +148,18 @@ unsigned long timePVStoON = 0;                     // time pinvoltagesensor swit
 unsigned long lastTimePVSwasON = 0;                // last time pinvoltagesensor was ON
 bool steamQM_active = false;                       // steam-mode is active
 bool brewSteamDetectedQM = false;                  // brew/steam detected, not sure yet what it is
+bool coolingFlushDetectedQM = false;
 
-int lastmachinestate = 0;
-periodicTrigger writeDebugTrigger(5000); // Trigger fuer Debugausgabe alle 5000 ms
+//Pressure sensor
+#if (PRESSURESENSOR == 1) // Pressure sensor connected
+int offset = OFFSET;
+int fullScale = FULLSCALE;
+int maxPressure = MAXPRESSURE;
+float inputPressure = 0;
+const unsigned long intervalPressure = 200;
+unsigned long previousMillisPressure;  // initialisation at the end of init()
+#endif
+
 
 /********************************************************
    declarations
@@ -137,7 +169,7 @@ int relayON, relayOFF;          // used for relay trigger type. Do not change!
 boolean kaltstart = true;       // true = Rancilio started for first time
 boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
 double EmergencyStopTemp = 120; // Temp EmergencyStopTemp
-const char* sysVersion PROGMEM  = "Version 2.9.1 MASTER";   //System version
+const char* sysVersion PROGMEM  = "Version 2.9.2 MASTER";   //System version
 int inX = 0, inY = 0, inOld = 0, inSum = 0; //used for filter()
 int bars = 0; //used for getSignalStrength()
 boolean brewDetected = 0;
@@ -446,6 +478,33 @@ BLYNK_WRITE(V40) {
       startTn = param.asDouble();
     }
  #endif
+
+
+#if (PRESSURESENSOR == 1) // Pressure sensor connected
+
+/********************************************************
+  Pressure sensor
+  Verify before installation: meassured analog input value (should be 3,300 V for 3,3 V supply) and respective ADC value (3,30 V = 1023)
+*****************************************************/
+void checkPressure() {
+  float inputPressureFilter = 0;
+  unsigned long currentMillisPressure = millis();
+  if (currentMillisPressure - previousMillisPressure >= intervalPressure)
+  {
+    previousMillisPressure = currentMillisPressure;
+    
+    inputPressure = ((analogRead(PINPRESSURESENSOR) - offset) * maxPressure * 0.0689476) / (fullScale - offset);    // pressure conversion and unit conversion [psi] -> [bar]
+    inputPressureFilter = filter(inputPressure);
+    DEBUG_print("pressure raw: ");
+    DEBUG_println(inputPressure);
+    DEBUG_print("pressure filtered: ");
+    DEBUG_print(inputPressureFilter);
+  }  
+}
+
+#endif
+
+ 
 /********************************************************
   Trigger for Rancilio E Machine
 ******************************************************/
@@ -785,7 +844,8 @@ void sendToBlynk() {
         Blynk.virtualWrite(V36, heatrateaveragemin);
       }
       if (grafana == 1 && blynksendcounter >= 6) {
-        Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint );
+        // Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint );
+        Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint, heatrateaverage);
          if (MQTT == 1)
          {
             mqtt_publish("HeaterPower", number2string(Output));
@@ -846,13 +906,15 @@ void brewdetection()
        }
     //  OFF: Bezug zurücksetzen
     if 
-     ((digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF) && brewDetected == 1)
+     ((digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF) && (brewDetected == 1 || coolingFlushDetectedQM == true) )
       {
         brewDetected = 0;
         timePVStoON = bezugsZeit; // for QuickMill
         bezugsZeit = 0 ; 
         startZeit = 0;
+        coolingFlushDetectedQM = false;
         DEBUG_println("HW Brew - Voltage Sensor - End") ;
+        debugStream.writeI("HW Brew - Voltage Sensor - End  at time %f",(double)(millis() - startZeit)/1000);
      //   lastbezugszeitMillis = millis(); // Bezugszeit für Delay 
       }
     if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1) // reset PID Brew
@@ -886,35 +948,53 @@ void brewdetection()
 
       case QuickMill:
 
-      if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorON && brewDetected == 0 && brewSteamDetectedQM == 0 
-        && !steamQM_active) 
+      if (!coolingFlushDetectedQM) 
       {
-        timeBrewdetection = millis();
-        timePVStoON = millis();
-        timerBrewdetection = 1;
-        brewDetected = 0;
-        lastbezugszeit = 0;
-        brewSteamDetectedQM = 1;
-      }
-
-      if (brewSteamDetectedQM == 1) 
-      {
-        if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF)
+        int pvs = digitalRead(PINVOLTAGESENSOR);
+        if (pvs == VoltageSensorON && brewDetected == 0 && brewSteamDetectedQM == 0 && !steamQM_active) 
         {
-          brewSteamDetectedQM = 0;
+          timeBrewdetection = millis();
+          timePVStoON = millis();
+          timerBrewdetection = 1;
+          brewDetected = 0;
+          lastbezugszeit = 0;
+          brewSteamDetectedQM = 1;
+          debugStream.writeI("setting brewSteamDetectedQM = 1  at time %f",(double)(millis() - startZeit)/1000);
+          logbrew.reset();
+          debugStream.writeD("1 (T,hra) --> %6.2f %8.2f",Input,heatrateaverage);
+        }
 
-          if (millis() - timePVStoON < maxBrewDurationForSteamModeQM_ON)
+        if (brewSteamDetectedQM == 1) 
+        {
+          if (logbrew.check())
+            debugStream.writeD("2 (T,hra) --> %6.2f %8.2f",Input,heatrateaverage);
+
+          if (pvs == VoltageSensorOFF)
           {
-            initSteamQM();
-          } else {
-            DEBUG_println("********** ERROR: neither brew nor steam for QuickMill **********");
+            brewSteamDetectedQM = 0;
+
+            if (millis() - timePVStoON < maxBrewDurationForSteamModeQM_ON)
+            {
+              debugStream.writeI("Dampfmodus QuickMill erkannt  at time %f",(double)(millis() - startZeit)/1000);
+              initSteamQM();
+            } else {
+              DEBUG_println("********** ERROR: neither brew nor steam for QuickMill **********");
+              debugStream.writeE("********** ERROR: neither brew nor steam for QuickMill **********");
+            }
+          } 
+          else if (millis() - timePVStoON > maxBrewDurationForSteamModeQM_ON)
+          {
+            if( Input < BrewSetPoint + 2) {
+              debugStream.writeI("Bezugsmodus QuickMill erkannt  at time %f",(double)(millis() - startZeit)/1000);
+              startZeit = timePVStoON; 
+              brewDetected = 1;
+              brewSteamDetectedQM = 0;
+            } else {
+              debugStream.writeI("Cooling Flush QuickMill erkannt  at time %f",(double)(millis() - startZeit)/1000);
+              coolingFlushDetectedQM = true;
+              brewSteamDetectedQM = 0;
+            }
           }
-        } 
-        else if (millis() - timePVStoON > maxBrewDurationForSteamModeQM_ON)
-        {
-          startZeit = timePVStoON; 
-          brewDetected = 1;
-          brewSteamDetectedQM = 0;
         }
       }
       break;
@@ -1082,16 +1162,27 @@ void checkSteamON()
   }
   if (SteamON == 1) 
   {
-    EmergencyStopTemp = 145;  
     setPoint = SteamSetPoint ;
   }
    if (SteamON == 0) 
   {
-    EmergencyStopTemp = 120;  
     setPoint = BrewSetPoint ;
   }
 }
 
+void setEmergencyStopTemp()
+{
+  if (machinestate == 40 || machinestate == 45) 
+  {
+    if (EmergencyStopTemp != 145)
+    EmergencyStopTemp = 145;  
+  }
+  else
+  {
+    if (EmergencyStopTemp != 120)
+    EmergencyStopTemp = 120;  
+  }
+}
 
 
 void initSteamQM() 
@@ -1249,6 +1340,7 @@ void machinestatevoid()
     break;
     // normal PID
     case 20: 
+      brewdetection();  //if brew detected, set PID values
       if
       (
        (bezugsZeit > 0 && ONLYPID == 1) || // Bezugszeit bei Only PID  
@@ -1277,6 +1369,9 @@ void machinestatevoid()
     break;
      // Brew
     case 30:
+      brewdetection();  
+      if (logbrew.check())
+          debugStream.writeD("3 (tB,T,hra) --> %5.2f %6.2f %8.2f",(double)(millis() - startZeit)/1000,Input,heatrateaverage);
       if
       (
        (bezugsZeit > 35*1000 && Brewdetection == 1 && ONLYPID == 1  ) ||  // 35 sec later and BD PID active SW Solution
@@ -1315,8 +1410,10 @@ void machinestatevoid()
     break;
     // Sec after shot finish
     case 31: //lastbezugszeitMillis
+    brewdetection();  
       if ( millis()-lastbezugszeitMillis > BREWSWITCHDELAY )
       {
+       debugStream.writeI("Bezugsdauer: %4.1f s",lastbezugszeit/1000);
        machinestate = 35 ;
        lastbezugszeit = 0 ;
       }
@@ -1339,6 +1436,7 @@ void machinestatevoid()
     break;
     // BD PID
     case 35:
+    brewdetection();  
       if (timerBrewdetection == 0)
       {
         machinestate = 20 ; // switch to normal PID
@@ -1374,7 +1472,7 @@ void machinestatevoid()
     case 40:
       if (SteamON == 0)
       {
-        machinestate = 20 ; //  switch to normal
+        machinestate = 45 ; //  switch to cool down after steam
       }
 
        if (emergencyStop)
@@ -1390,6 +1488,48 @@ void machinestatevoid()
         machinestate = 100 ;// sensorerror
       }
     break;  
+
+    case 45: // chill-mode after steam
+    if (Brewdetection == 2 || Brewdetection == 3) 
+      {
+        /*
+          Bei QuickMill Dampferkennung nur ueber Bezugsschalter moeglich, durch Aufruf von 
+          brewdetection() kann neuer Dampfbezug erkannt werden
+          */ 
+        brewdetection();
+      }
+      if (Brewdetection == 1 && ONLYPID == 1)
+      {
+        // Ab lokalen Minumum wieder freigeben für state 20, dann wird bist Solltemp geheizt.
+         if (heatrateaverage > 0 && Input < BrewSetPoint + 2) 
+         {
+            machinestate = 20;
+         } 
+      }
+      if ((Brewdetection == 3 || Brewdetection == 2) && Input < BrewSetPoint + 2) 
+      {
+        machinestate = 20; //  switch to normal
+      }
+
+      if (SteamON == 1)
+      {
+        machinestate = 40 ; // Steam
+      }
+
+      if (emergencyStop)
+      {
+        machinestate = 80 ; // Emergency Stop
+      }
+      if (pidON == 0)
+      {
+        machinestate = 90 ; // offline
+      }
+      if(sensorError)
+      {
+        machinestate = 100 ;// sensorerror
+      }
+    break;
+
     case 50: 
     // Backflush
       if (backflushON == 0)
@@ -1431,14 +1571,19 @@ void machinestatevoid()
       {
         if(kaltstart) 
         {
-        machinestate = 10 ; // kaltstart 
+          machinestate = 10 ; // kaltstart 
         }
-        if(!kaltstart) 
+        else if(!kaltstart && (Input > (BrewSetPoint-10) )) // Input higher BrewSetPoint-10, normal PID
         {
-        machinestate = 20 ; // normal PID
+          machinestate = 20 ; // normal PID
+        } 
+        else if (Input <= (BrewSetPoint-10) )
+        {
+          machinestate = 10 ; // Input higher BrewSetPoint-10, kaltstart
+          kaltstart = true;
         }
       }
-      
+
       if(sensorError)
       {
         machinestate = 100 ;
@@ -1449,29 +1594,24 @@ void machinestatevoid()
     // Nothing
     break;
   } // switch case
-  if (writeDebugTrigger.check()) 
-  {
-    DEBUG_printfE("");
-    DEBUG_printfE("----------------------------------------------");
-    DEBUG_printfI("  printf: testausgabe");
-    DEBUG_printfE("----------------------------------------------");
-
-    DEBUG_printfV("V DEBUG_printf");
-    DEBUG_printfD("D DEBUG_printf");
-    DEBUG_printfI("I DEBUG_printf");
-    DEBUG_printfW("W DEBUG_printf");
-    DEBUG_printfE("E DEBUG_printf %i - %8.3f",machinestate,5.2);
-    DEBUG_printfE("ssid: %s",ssid);
-  }
-
   if (machinestate != lastmachinestate) { 
-    DEBUG_printfI("machinestate changed from %i to %i",lastmachinestate,machinestate);
+    debugStream.writeI("new machinestate: %i -> %i",lastmachinestate, machinestate);
     lastmachinestate = machinestate;
   }
 } // end void
 
+void debugVerboseOutput()
+{
+  static PeriodicTrigger trigger(10000);
+  if(trigger.check()) 
+  {
+    debugStream.writeV("Tsoll=%5.1f  Tist=%5.1f",BrewSetPoint,Input);
+  }
+}
+
 void setup() {
   DEBUGSTART(115200);
+  debugStream.setup();
 
   if (MQTT == 1) {
     //MQTT
@@ -1538,7 +1678,7 @@ void setup() {
       pinMode(PINBREWSWITCH, INPUT);
     #endif
     #if defined(ESP32) 
-      pinMode(PINBREWSWITCH, INPUT_PULLDOWN);
+      pinMode(PINBREWSWITCH, INPUT);//
     #endif
   }
     #if (defined(ESP8266) && STEAMONPIN == 16) 
@@ -1787,6 +1927,12 @@ void setup() {
   previousMillisBlynk = currentTime;
   previousMillisETrigger = currentTime; 
   previousMillisVoltagesensorreading = currentTime;
+  #if (BREWMODE ==  2) 
+  previousMillisScale = currentTime;
+  #endif
+  #if (PRESSURESENSOR == 1)
+  previousMillisPressure = currentTime;
+  #endif
   setupDone = true;
 
   #if defined(ESP8266) 
@@ -1825,12 +1971,8 @@ void loop() {
       loopcalibrate();
   } else {
       looppid();
-      #if (DEBUGMETHOD == 1)
-        debugHandle();
-      #endif
-      #if (DEBUGMETHOD == 2)
-        Debug.handle();
-      #endif
+      debugStream.handle();
+      debugVerboseOutput();
     }
 }
 
@@ -1952,8 +2094,12 @@ void looppid()
   #if (BREWMODE == 2 || ONLYPIDSCALE == 1 )
     checkWeight() ; // Check Weight Scale in the loop
   #endif
+    #if (PRESSURESENSOR == 1)
+    checkPressure();
+    #endif
   brew();   //start brewing if button pressed
   checkSteamON(); // check for steam
+  setEmergencyStopTemp();
   sendToBlynk();
   machinestatevoid() ; // calc machinestate
   if (ETRIGGER == 1) // E-Trigger active then void Etrigger() 
@@ -1968,7 +2114,6 @@ void looppid()
   //check if PID should run or not. If not, set to manuel and force output to zero
   // OFFLINE
   //voids Display & BD
-  brewdetection();  //if brew detected, set PID values
   #if DISPLAY != 0
       unsigned long currentMillisDisplay = millis();
       if (currentMillisDisplay - previousMillisDisplay >= 100) 
@@ -2042,14 +2187,37 @@ void looppid()
   // Steam on
   if (machinestate == 40) // STEAM
   {
-      if (aggTn != 0) {
-      aggKi = aggKp / aggTn ;
-    } else {
-      aggKi = 0 ;
-    }
-    aggKi = 0 ;
-    aggKd = aggTv * aggKp ;
+    // if (aggTn != 0) {
+    //   aggKi = aggKp / aggTn ;
+    // } else {
+    //   aggKi = 0 ;
+    // }
+    // aggKi = 0 ;
+    // aggKd = aggTv * aggKp ;
     bPID.SetTunings(150, 0, 0, PonE);
   }
+
+  if (machinestate == 45) // chill-mode after steam
+  {
+    switch (machine) {
+      
+      case QuickMill:
+        aggbKp = 150;
+        aggbKi = 0;
+        aggbKd = 0;
+      break;
+      
+      default:
+        // calc ki, kd
+        if (aggbTn != 0) {
+          aggbKi = aggbKp / aggbTn;
+        } else {
+          aggbKi = 0;
+        }
+        aggbKd = aggbTv * aggbKp;
+    }
+
+    bPID.SetTunings(aggbKp, aggbKi, aggbKd, PonE) ;
+  }  
   //sensor error OR Emergency Stop
 }

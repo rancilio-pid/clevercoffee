@@ -11,6 +11,12 @@
 ******************************************************/
 int brewcounter = 10;
 int brewswitch = 0;
+int brewswitchTrigger = LOW;
+int buttonStateBrewTrigger;             // the current reading from the input pin 
+unsigned long lastDebounceTimeBrewTrigger = 0;  // the last time the output pin was toggled
+unsigned long debounceDelayBrewTrigger = 50;   
+unsigned long brewswitchTriggermillis = 0;
+int brewswitchTriggerCase = 10; 
 boolean brewswitchWasOFF = false;
 double brewtime = 25000;  //brewtime in ms
 double totalbrewtime = 0; //total brewtime set in softare or blynk
@@ -27,7 +33,7 @@ unsigned long previousMillistempanalogreading ; // ms for analogreading
    SHOTTIMER WITH SCALE OR BREWMODE 2 (SCALE)
 ******************************************************/
 
-#if (ONLYPIDSCALE == 1|| BREWMODE == 2) 
+#if (ONLYPIDSCALE == 1 || BREWMODE == 2) 
 float weightSetpoint = WEIGHTSETPOINT;
 int shottimercounter = 10 ; 
 float calibrationValue = 3195.83; // use calibration example to get value

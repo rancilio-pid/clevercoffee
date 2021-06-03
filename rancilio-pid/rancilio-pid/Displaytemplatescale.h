@@ -6,6 +6,7 @@ void printScreen()
   (
    (machinestate == 19 || machinestate == 20 || machinestate == 35) ||
    ((machinestate == 30 || machinestate == 31)  && SHOTTIMER == 0) ||// shottimer == 0, auch Bezug anzeigen
+   machinestate == 45 ||
    ((machinestate == 10)  && HEATINGLOGO == 0) ||
    ((machinestate == 90)  && OFFLINEGLOGO == 0) 
   ) 
@@ -120,10 +121,11 @@ void printScreen()
       u8g2.print(weightBrew, 1);
       u8g2.print(")");
     }
-        //MALTE print pressure
+    #if (PRESSURESENSOR == 1) // Pressure sensor connected
     u8g2.setCursor(32, 44);
     u8g2.print("P: ");
-    //u8g2.print(inputPressure,1);
+    u8g2.print(inputPressure,1);
+    #endif
 
       
       //draw box

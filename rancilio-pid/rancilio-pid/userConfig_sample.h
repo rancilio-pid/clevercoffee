@@ -1,6 +1,6 @@
 /********************************************************
-  Version 2.2 (04.02.2021) 
-  Last Change: code cleanup
+  Version 2.5 (20.05.2021) 
+  Last Change: PINPRESSURESENSOR
   Values must be configured by the user
 ******************************************************/
 
@@ -11,21 +11,20 @@
 #ifndef _userConfig_H
 #define _userConfig_H  
 
-// MACHINE 
+// List of supported machines
 enum MACHINE {
-	RancilioSilvia,
-	RancilioSilviaE,
-	Gaggia,
-	QuickMill
+  RancilioSilvia,   // MACHINEID 0
+  RancilioSilviaE,  // MACHINEID 1
+  Gaggia,           // MACHINEID 2
+  QuickMill         // MACHINEID 3
 };
-
 
 /********************************************************
    Preconfiguration
 ******************************************************/
 
-// MACHINETYPE, use the exakt name of the machine 
-MACHINE machine = RancilioSilvia;      //	RancilioSilvia, RancilioSilviaE, Gaggia, QuickMill
+// Machine 
+#define MACHINEID 0                //	see above list of supported machines
 
 // Display
 #define DISPLAY 2                  // 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64)
@@ -48,10 +47,12 @@ MACHINE machine = RancilioSilvia;      //	RancilioSilvia, RancilioSilviaE, Gaggi
 #define ONLYPIDSCALE 0             // 0 = off , 1= OnlyPID with Scale
 #define BREWMODE 1                 // 1 = NORMAL preinfusion ; 2 = Scale with weight
 #define BREWDETECTION 1            // 0 = off, 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = Sensor/Hardware for Only PID 
+#define BREWSWITCHTYPE 1              //  1 = normal Switch, 2 = Trigger Switch
 #define COLDSTART_PID 1            // 1 = default coldstart values, 2 = custom values via blynk (expert mode activated) 
 #define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay // BREWDETECTION 3 configuration
 #define VOLTAGESENSORTYPE HIGH 
 #define PINMODEVOLTAGESENSOR INPUT // Mode INPUT_PULLUP, INPUT or INPUT_PULLDOWN_16 (Only Pin 16)
+#define PRESSURESENSOR 0           // 1 = pressure sensor connected to A0; PINBREWSWITCH must be set to the connected input!
 
 // TOF sensor for water level
 #define TOF 0                      // 0 = no TOF sensor connected; 1 = water level by TOF sensor
@@ -67,6 +68,15 @@ MACHINE machine = RancilioSilvia;      //	RancilioSilvia, RancilioSilviaE, Gaggi
 
 //Weight SCALE
 #define WEIGHTSETPOINT 30          // Gramm 
+
+//Pressure sensor
+/*
+ * messure and verify "offset" value, should be 10% of ADC bit reading @supply volate (3.3V)
+ * same goes for "fullScale", should be 90%
+ */
+#define OFFSET      102            // 10% of ADC input @3.3V supply = 102
+#define FULLSCALE   922            // 90% of ADC input @3.3V supply = 922
+#define MAXPRESSURE 200
 
 /// Wifi 
 #define HOSTNAME "rancilio"
@@ -116,7 +126,8 @@ MACHINE machine = RancilioSilvia;      //	RancilioSilvia, RancilioSilviaE, Gaggi
 
 // Pin Layout
 #define ONE_WIRE_BUS 2             // Temp sensor pin
-#define PINBREWSWITCH 0           // 0: A0 Analog PIN ; >0 : DIGITAL PIN, ESP8266: ONLY USE PIN15 AND PIN16! 
+#define PINBREWSWITCH 0            // 0: A0 (ESP8266) ; >0 : DIGITAL PIN, ESP32 OR ESP8266: ONLY USE PIN15 AND PIN16! 
+#define PINPRESSURESENSOR 99       // Pressuresensor 0: A0 (ESP8266), >0 ONLY ESP32 
 #define pinRelayVentil 12          // Output pin for 3-way-valve
 #define pinRelayPumpe 13           // Output pin for pump
 #define pinRelayHeater 14          // Output pin for heater
@@ -135,12 +146,19 @@ MACHINE machine = RancilioSilvia;      //	RancilioSilvia, RancilioSilviaE, Gaggi
 #define PONE 1                     // 1 = P_ON_E (default), 0 = P_ON_M (special PID mode, other PID-parameter are needed)
 #define TEMPSENSOR 2               // 2 = TSIC306 1=DS18B20
 
+#define DEBUGMETHOD 1              // 0 = none, 1 = SerialDebug, 2 = RemoteDebug
+#define MAXLOGLINES 100            // Number of log lines (>=0) stored in logbook, (-> command "loghist" in terminal window)
+                                   // if set too large the ESP will run out of memory and reboot unexpectedly
 
 // Check BrewSwitch
 #if (defined(ESP8266) && ((PINBREWSWITCH != 15 && PINBREWSWITCH != 0 && PINBREWSWITCH != 16 )))
   #error("WRONG Brewswitch PIN for ESP8266, Only PIN 15 and PIN 16");  
 #endif
 
-#define DEBUGMETHOD 1 // 0 = none, 1 = serial, 2 = RemoteDebug
+
+// defined compiler errors
+#if (PRESSURESENSOR == 1) && (PINPRESSURESENSOR == 0) && (PINBREWSWITCH == 0)
+#error Change PINBREWSWITCH or PRESSURESENSOR!
+#endif
 
 #endif // _userConfig_H
