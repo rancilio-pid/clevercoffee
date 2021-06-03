@@ -1,17 +1,16 @@
-#ifndef periodicTrigger_h
-#define periodicTrigger_h
+#ifndef PeriodicTrigger_h
+#define PeriodicTrigger_h
 
-#include <Arduino.h>
-
-class periodicTrigger {
+class PeriodicTrigger {
 
 public:
-	periodicTrigger(int millisec);
+	PeriodicTrigger(int millisec);
 	bool check();
+	bool reset();
+	bool reset(int millisec);
 
 private:
 	int triggerInterval;
 	unsigned long tref;
 };
-
 #endif

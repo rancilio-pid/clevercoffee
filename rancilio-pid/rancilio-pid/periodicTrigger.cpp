@@ -1,12 +1,14 @@
-#include "periodicTrigger.h"
+#include "PeriodicTrigger.h"
 
-periodicTrigger::periodicTrigger(int ms) 
-{
+#include <Arduino.h>
+
+
+PeriodicTrigger::PeriodicTrigger(int ms) {
  	triggerInterval = ms;
  	tref = millis();
 }
 
-bool periodicTrigger::check() 
+bool PeriodicTrigger::check() 
 { 
 	if ((millis()-tref) > triggerInterval) {
 		tref += triggerInterval;
@@ -15,3 +17,14 @@ bool periodicTrigger::check()
 	else
 		return false;
 }
+
+bool PeriodicTrigger::reset()
+{
+	tref = millis();
+} 
+
+bool PeriodicTrigger::reset(int ms)
+{
+ 	triggerInterval = ms;
+	tref = millis();
+} 
