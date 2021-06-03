@@ -271,6 +271,7 @@
 
    if ( machinestate == 50 ) 
    {
+     u8g2.setFont(u8g2_font_profont11_tf); // set font
     if (backflushState == 43) 
     {
       #if DISPLAY != 0
