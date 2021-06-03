@@ -30,10 +30,6 @@
 #include <HX711_ADC.h>
 #endif
 
-#include "debugFunctions.h"  // Definitionen der Funktionen zur Debugausgabe
-#include "periodicTrigger.h"
-
-
 /********************************************************
   DEFINES
 ******************************************************/
@@ -1999,11 +1995,8 @@ void setup() {
     timerAlarmWrite(timer, 10000, true);//m
     timerAlarmEnable(timer);//m
   #endif
-
-  #if( DEBUGMETHOD == 2)
-    Debug.begin(HOSTNAME);
-  #endif  
 }
+
 void loop() {
   if (calibration_mode == 1 && TOF == 1) {
       loopcalibrate();
