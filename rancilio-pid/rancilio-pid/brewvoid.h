@@ -127,7 +127,8 @@ void checkbrewswitch()
 ******************************************************/
 
 
-void backflush() {
+void backflush() 
+{
   if (backflushState != 10 && backflushON == 0) {
     backflushState = 43;    // force reset in case backflushON is reset during backflush!
   } else if ( Offlinemodus == 1 || brewcounter > 10 || maxflushCycles <= 0 || backflushON == 0) {
@@ -149,7 +150,8 @@ void backflush() {
   }
 
   // state machine for brew
-  switch (backflushState) {
+  switch (backflushState) 
+  {
     case 10:    // waiting step for brew switch turning on
       if (brewswitch == HIGH && backflushON) {
         startZeit = millis();
@@ -194,24 +196,6 @@ void backflush() {
       }
       break;
   }
-if (backflushON || backflushState > 10) 
-  {
-    if (backflushState == 43) {
-      #if DISPLAY != 0
-        displayMessage(langstring_bckffinished[0], langstring_bckffinished[1], "", "", "", "");
-      #endif 
-    } else if (backflushState == 10) {
-      #if DISPLAY != 0
-        displayMessage(langstring_bckfactivated[0], langstring_bckfactivated[1], "", "", "", "");
-      #endif
-    } else if ( backflushState > 10) {
-      #if DISPLAY != 0
-        displayMessage(langstring_bckfrunning[0], String(flushCycles), langstring_bckfrunning[1], String(maxflushCycles), "", "");
-      #endif
-    }
-  }
-
-
 }
 
 

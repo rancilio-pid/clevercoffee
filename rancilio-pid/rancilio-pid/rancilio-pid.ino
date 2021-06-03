@@ -1260,6 +1260,12 @@ void machinestatevoid()
       {
         machinestate = 40 ; // switch to  Steam
       }
+
+      if (backflushON || backflushState > 10) 
+      {
+        machinestate = 50 ; // backflushON
+      }
+
       if (emergencyStop)
       {
         machinestate = 80 ; // Emergency Stop
@@ -1286,11 +1292,14 @@ void machinestatevoid()
       {
         machinestate = 30 ; // Brew
       }
-
-      
       if (SteamON == 1)
       {
         machinestate = 40 ; // Steam
+      }
+
+      if (backflushON || backflushState > 10) 
+      {
+        machinestate = 50 ; // backflushON
       }
 
       if (SteamON == 1)
@@ -1326,6 +1335,10 @@ void machinestatevoid()
         machinestate = 40 ; // Steam
       }
 
+      if (backflushON || backflushState > 10) 
+      {
+        machinestate = 50 ; // backflushON
+      }
       if (emergencyStop)
       {
         machinestate = 80 ; // Emergency Stop
@@ -1386,18 +1399,27 @@ void machinestatevoid()
        machinestate = 35 ;
        lastbezugszeit = 0 ;
       }
+
       if (SteamON == 1)
       {
         machinestate = 40 ; // Steam
       }
+
+     if (backflushON || backflushState > 10) 
+      {
+        machinestate = 50 ; // backflushON
+      }
+
       if (emergencyStop)
       {
         machinestate = 80 ; // Emergency Stop
       }
+
      if (pidON == 0)
       {
         machinestate = 90 ; // offline
       }
+
      if(sensorError)
       {
         machinestate = 100 ;// sensorerror
@@ -1424,6 +1446,11 @@ void machinestatevoid()
         machinestate = 40 ; // switch to  Steam
       }
 
+      if (backflushON || backflushState > 10) 
+      {
+        machinestate = 50 ; // backflushON
+      }
+
       if (emergencyStop)
       {
         machinestate = 80 ; // Emergency Stop
@@ -1448,6 +1475,12 @@ void machinestatevoid()
       {
         machinestate = 80 ; // Emergency Stop
       }
+
+      if (backflushON || backflushState > 10) 
+      {
+        machinestate = 50 ; // backflushON
+      }
+
       if (pidON == 0)
       {
         machinestate = 90 ; // offline
@@ -1483,6 +1516,11 @@ void machinestatevoid()
       if (SteamON == 1)
       {
         machinestate = 40 ; // Steam
+      }
+
+      if (backflushON || backflushState > 10) 
+      {
+        machinestate = 50 ; // backflushON
       }
 
       if (emergencyStop)
