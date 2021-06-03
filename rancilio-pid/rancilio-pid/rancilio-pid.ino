@@ -33,6 +33,9 @@
 /********************************************************
   DEFINES
 ******************************************************/
+
+MACHINE machine = (enum MACHINE) MACHINEID;
+
 #define DEBUGMODE   // Debug mode is active if #define DEBUGMODE is set
 
 //#define BLYNK_PRINT Serial    // In detail debugging for blynk
