@@ -52,6 +52,12 @@ MACHINE machine = (enum MACHINE) MACHINEID;
 #endif
 #define HIGH_ACCURACY
 
+#include "DebugStreamManager.h"
+DebugStreamManager debugStream;
+
+#include "PeriodicTrigger.h" // Trigger, der alle x Millisekunden auf true schaltet
+PeriodicTrigger writeDebugTrigger(5000); // trigger alle 5000 ms
+PeriodicTrigger logbrew(500);
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -71,6 +77,8 @@ const unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
 const unsigned long brewswitchDelay = BREWSWITCHDELAY;
 int BrewMode = BREWMODE ;
 int machinestate = 0;
+int lastmachinestate = 0;
+
 
 //Display
 uint8_t oled_i2c = OLED_I2C;
@@ -831,7 +839,8 @@ void sendToBlynk() {
         Blynk.virtualWrite(V36, heatrateaveragemin);
       }
       if (grafana == 1 && blynksendcounter >= 6) {
-        Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint );
+        // Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint );
+        Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint, heatrateaverage);
          if (MQTT == 1)
          {
             mqtt_publish("HeaterPower", number2string(Output));
@@ -900,6 +909,7 @@ void brewdetection()
         startZeit = 0;
         coolingFlushDetectedQM = false;
         DEBUG_println("HW Brew - Voltage Sensor - End") ;
+        debugStream.writeI("HW Brew - Voltage Sensor - End  at time %f",(double)(millis() - startZeit)/1000);
      //   lastbezugszeitMillis = millis(); // Bezugszeit für Delay 
       }
     if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1) // reset PID Brew
@@ -944,28 +954,38 @@ void brewdetection()
           brewDetected = 0;
           lastbezugszeit = 0;
           brewSteamDetectedQM = 1;
+          debugStream.writeI("setting brewSteamDetectedQM = 1  at time %f",(double)(millis() - startZeit)/1000);
+          logbrew.reset();
+          debugStream.writeD("1 (T,hra) --> %6.2f %8.2f",Input,heatrateaverage);
         }
 
         if (brewSteamDetectedQM == 1) 
         {
+          if (logbrew.check())
+            debugStream.writeD("2 (T,hra) --> %6.2f %8.2f",Input,heatrateaverage);
+
           if (pvs == VoltageSensorOFF)
           {
             brewSteamDetectedQM = 0;
 
             if (millis() - timePVStoON < maxBrewDurationForSteamModeQM_ON)
             {
+              debugStream.writeI("Dampfmodus QuickMill erkannt  at time %f",(double)(millis() - startZeit)/1000);
               initSteamQM();
             } else {
               DEBUG_println("********** ERROR: neither brew nor steam for QuickMill **********");
+              debugStream.writeE("********** ERROR: neither brew nor steam for QuickMill **********");
             }
           } 
           else if (millis() - timePVStoON > maxBrewDurationForSteamModeQM_ON)
           {
             if( Input < BrewSetPoint + 2) {
+              debugStream.writeI("Bezugsmodus QuickMill erkannt  at time %f",(double)(millis() - startZeit)/1000);
               startZeit = timePVStoON; 
               brewDetected = 1;
               brewSteamDetectedQM = 0;
             } else {
+              debugStream.writeI("Cooling Flush QuickMill erkannt  at time %f",(double)(millis() - startZeit)/1000);
               coolingFlushDetectedQM = true;
               brewSteamDetectedQM = 0;
             }
@@ -1345,6 +1365,8 @@ void machinestatevoid()
      // Brew
     case 30:
       brewdetection();  
+      if (logbrew.check())
+          debugStream.writeD("3 (tB,T,hra) --> %5.2f %6.2f %8.2f",(double)(millis() - startZeit)/1000,Input,heatrateaverage);
       if
       (
        (bezugsZeit > 35*1000 && Brewdetection == 1 && ONLYPID == 1  ) ||  // 35 sec later and BD PID active SW Solution
@@ -1386,6 +1408,7 @@ void machinestatevoid()
     brewdetection();  
       if ( millis()-lastbezugszeitMillis > BREWSWITCHDELAY )
       {
+       debugStream.writeI("Bezugsdauer: %4.1f s",lastbezugszeit/1000);
        machinestate = 35 ;
        lastbezugszeit = 0 ;
       }
@@ -1566,10 +1589,24 @@ void machinestatevoid()
     // Nothing
     break;
   } // switch case
+  if (machinestate != lastmachinestate) { 
+    debugStream.writeI("new machinestate: %i -> %i",lastmachinestate, machinestate);
+    lastmachinestate = machinestate;
+  }
 } // end void
+
+void debugVerboseOutput()
+{
+  static PeriodicTrigger trigger(10000);
+  if(trigger.check()) 
+  {
+    debugStream.writeV("Tsoll=%5.1f  Tist=%5.1f",BrewSetPoint,Input);
+  }
+}
 
 void setup() {
   DEBUGSTART(115200);
+  debugStream.setup();
 
   if (MQTT == 1) {
     //MQTT
@@ -1926,7 +1963,11 @@ void loop() {
       loopcalibrate();
   } else {
       looppid();
-  }
+
+      debugStream.handle();
+      debugVerboseOutput();
+
+    }
 }
 
 // TOF Calibration_mode 
