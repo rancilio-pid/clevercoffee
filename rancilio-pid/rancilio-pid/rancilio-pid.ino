@@ -1236,11 +1236,11 @@ void machinestatevoid()
   {
     // init
     case 0: 
-      if (Input < (BrewSetPoint-1) )
-      {
+      if (Input < (BrewSetPoint-1) && millis() > 30*1000 ) // After 30 sec
+       {
         machinestate = 10 ; // kaltstart
       }
-      if (Input >= (BrewSetPoint-1) )
+      if (Input >= (BrewSetPoint-1) && millis() > 30*1000 ) // After 30 sec
       {
         machinestate = 19 ; // machine is hot, jump to other state
       }
