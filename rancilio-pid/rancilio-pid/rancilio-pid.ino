@@ -572,7 +572,10 @@ boolean checkSensor(float tempInput) {
   if ( badCondition && !sensorError) {
     error++;
     sensorOK = false;
-    debugStream.writeW("*** WARNING: temperature sensor reading: consec_errors = %i, temp_current = %.1f",error,tempInput);
+    if (error >= 5) // warning after 5 times error
+    {
+     debugStream.writeW("*** WARNING: temperature sensor reading: consec_errors = %i, temp_current = %.1f",error,tempInput);
+    }
   } else if (badCondition == false && sensorOK == false) {
     error = 0;
     sensorOK = true;
@@ -1616,7 +1619,7 @@ void machinestatevoid()
     break;
     // sensor error
     case 100:
-    // Nothing
+      machinestate = 100 ;
     break;
   } // switch case
   if (machinestate != lastmachinestate) { 
@@ -1630,7 +1633,7 @@ void debugVerboseOutput()
   static PeriodicTrigger trigger(10000);
   if(trigger.check()) 
   {
-    debugStream.writeV("Tsoll=%5.1f  Tist=%5.1f",BrewSetPoint,Input);
+    debugStream.writeV("Tsoll=%5.1f  Tist=%5.1f Machinestate=%2i",BrewSetPoint,Input,machinestate);
   }
 }
 
@@ -2157,7 +2160,7 @@ void looppid()
       digitalWrite(pinRelayHeater, LOW); //Stop heating
     }
   } 
-  else 
+  else // no sensorerror, no pid off or no Emergency Stop
   {
     if (pidMode == 0)
     {
