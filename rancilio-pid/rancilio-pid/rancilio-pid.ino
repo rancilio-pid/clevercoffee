@@ -984,7 +984,7 @@ void brewdetection()
         }
       }
       break;
-
+      // no Quickmill: 
       default:
       previousMillisVoltagesensorreading = millis();
       if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorON && brewDetected == 0 ) 
@@ -2167,7 +2167,7 @@ void looppid()
   }
 
   //Set PID if first start of machine detected, and no SteamON
-  if (machinestate == 10 || machinestate == 19) // Cold Start states 
+  if (machinestate == 0 || machinestate == 10 || machinestate == 19) // Cold Start states 
   {
     if (startTn != 0) {
       startKi = startKp / startTn;
