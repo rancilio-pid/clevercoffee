@@ -572,14 +572,14 @@ boolean checkSensor(float tempInput) {
   if ( badCondition && !sensorError) {
     error++;
     sensorOK = false;
-    DEBUG_print("WARN: temperature sensor reading: consec_errors = ");    DEBUG_print(error);    DEBUG_print(", temp_current = ");    DEBUG_println(tempInput);
+    debugStream.writeW("*** WARNING: temperature sensor reading: consec_errors = %i, temp_current = %.1f",error,tempInput);
   } else if (badCondition == false && sensorOK == false) {
     error = 0;
     sensorOK = true;
   }
   if (error >= maxErrorCounter && !sensorError) {
     sensorError = true ;
-    DEBUG_print("ERROR: temperature sensor malfunction: emp_current = ");    DEBUG_println(tempInput);
+    debugStream.writeE("*** ERROR: temperature sensor malfunction: temp_current = %.1f",tempInput);
   } else if (error == 0 && sensorError) {
     sensorError = false ;
   }
@@ -654,14 +654,13 @@ void initOfflineMode()
   #if DISPLAY != 0
     displayMessage("", "", "", "", "Begin Fallback,", "No Wifi");
   #endif
-  DEBUG_println("Start offline mode with eeprom values, no wifi:(");
+  debugStream.writeI("Start offline mode with eeprom values, no wifi:(");
   Offlinemodus = 1 ;
 
   EEPROM.begin(1024);  // open eeprom
   double dummy; // check if eeprom values are numeric (only check first value in eeprom)
   EEPROM.get(0, dummy);
-  DEBUG_print("check eeprom 0x00 in dummy: ");
-  DEBUG_println(dummy);
+  debugStream.writeI("check eeprom 0x00 in dummy: %f",dummy);
   if (!isnan(dummy)) {
     EEPROM.get(0, aggKp);
     EEPROM.get(10, aggTn);
@@ -679,7 +678,7 @@ void initOfflineMode()
     #if DISPLAY != 0
       displayMessage("", "", "", "", "No eeprom,", "Values");
      #endif
-    DEBUG_println("No working eeprom value, I am sorry, but use default offline value  :)");
+    debugStream.writeI("No working eeprom value, I am sorry, but use default offline value  :)");
     delay(1000);
   }
   // eeeprom schließen
@@ -698,8 +697,7 @@ void checkWifi() {
       if (statusTemp != WL_CONNECTED) {   // check WiFi connection status
         lastWifiConnectionAttempt = millis();
         wifiReconnects++;
-        DEBUG_print("Attempting WIFI reconnection: ");
-        DEBUG_println(wifiReconnects);
+        debugStream.writeI("Attempting WIFI reconnection: %i",wifiReconnects);
         if (!setupDone) {
            #if DISPLAY != 0
             displayMessage("", "", "", "", langstring_wifirecon, String(wifiReconnects));
@@ -735,8 +733,7 @@ void checkBlynk() {
     if (statusTemp != 1) {   // check Blynk connection status
       lastBlynkConnectionAttempt = millis();        // Reconnection Timer Function
       blynkReCnctCount++;  // Increment reconnection Counter
-      DEBUG_print("Attempting blynk reconnection: ");
-      DEBUG_println(blynkReCnctCount);
+      debugStream.writeI("Attempting blynk reconnection: %i",blynkReCnctCount);
       Blynk.connect(3000);  // Try to reconnect to the server; connect() is a blocking function, watch the timeout!
     }
   }
@@ -756,11 +753,10 @@ void checkMQTT(){
     if (statusTemp != 1) {   // check Blynk connection status
       lastMQTTConnectionAttempt = millis();        // Reconnection Timer Function
       MQTTReCnctCount++;  // Increment reconnection Counter
-      DEBUG_print("Attempting MQTT reconnection: ");
-      DEBUG_println(MQTTReCnctCount);
+      debugStream.writeI("Attempting MQTT reconnection: %i",MQTTReCnctCount);
       if (mqtt.connect(hostname, mqtt_username, mqtt_password,topic_will,0,0,"exit") == true);{
         mqtt.subscribe(topic_set);
-        DEBUG_println("Subscribe to MQTT Topics");
+        debugStream.writeI("Subscribe to MQTT Topics");
       }  // Try to reconnect to the server; connect() is a blocking function, watch the timeout!
     }
   }
@@ -909,8 +905,7 @@ void brewdetection()
         bezugsZeit = 0 ; 
         startZeit = 0;
         coolingFlushDetectedQM = false;
-        DEBUG_println("HW Brew - Voltage Sensor - End") ;
-        debugStream.writeI("HW Brew - Voltage Sensor - End  at time %f",(double)(millis() - startZeit)/1000);
+        debugStream.writeI("HW Brew - Voltage Sensor - End");
      //   lastbezugszeitMillis = millis(); // Bezugszeit für Delay 
       }
     if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1) // reset PID Brew
@@ -925,7 +920,7 @@ void brewdetection()
   {
     if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 && (fabs(Input - BrewSetPoint) < 5)) // BD PID only +/- 4 Grad Celsius, no detection if HW was active
     {
-      DEBUG_println("SW Brew detected") ;
+      debugStream.writeI("SW Brew detected") ;
       timeBrewdetection = millis() ;
       timerBrewdetection = 1 ;
     }
@@ -933,7 +928,7 @@ void brewdetection()
   {
     if (brewcounter > 10 && brewDetected == 0 && brewboarder != 0) 
     {
-      DEBUG_println("HW Brew detected") ;
+      debugStream.writeI("HW Brew detected") ;
       timeBrewdetection = millis() ;
       timerBrewdetection = 1 ;
       brewDetected = 1;
@@ -955,38 +950,33 @@ void brewdetection()
           brewDetected = 0;
           lastbezugszeit = 0;
           brewSteamDetectedQM = 1;
-          debugStream.writeI("setting brewSteamDetectedQM = 1  at time %f",(double)(millis() - startZeit)/1000);
+          debugStream.writeI("Quick Mill: setting brewSteamDetectedQM = 1");
           logbrew.reset();
-          debugStream.writeD("1 (T,hra) --> %6.2f %8.2f",Input,heatrateaverage);
         }
 
         if (brewSteamDetectedQM == 1) 
         {
-          if (logbrew.check())
-            debugStream.writeD("2 (T,hra) --> %6.2f %8.2f",Input,heatrateaverage);
-
           if (pvs == VoltageSensorOFF)
           {
             brewSteamDetectedQM = 0;
 
             if (millis() - timePVStoON < maxBrewDurationForSteamModeQM_ON)
             {
-              debugStream.writeI("Dampfmodus QuickMill erkannt  at time %f",(double)(millis() - startZeit)/1000);
+              debugStream.writeI("Quick Mill: steam-mode detected");
               initSteamQM();
             } else {
-              DEBUG_println("********** ERROR: neither brew nor steam for QuickMill **********");
-              debugStream.writeE("********** ERROR: neither brew nor steam for QuickMill **********");
+              debugStream.writeE("*** ERROR: QuickMill: neither brew nor steam");
             }
           } 
           else if (millis() - timePVStoON > maxBrewDurationForSteamModeQM_ON)
           {
             if( Input < BrewSetPoint + 2) {
-              debugStream.writeI("Bezugsmodus QuickMill erkannt  at time %f",(double)(millis() - startZeit)/1000);
+              debugStream.writeI("Quick Mill: brew-mode detected");
               startZeit = timePVStoON; 
               brewDetected = 1;
               brewSteamDetectedQM = 0;
             } else {
-              debugStream.writeI("Cooling Flush QuickMill erkannt  at time %f",(double)(millis() - startZeit)/1000);
+              debugStream.writeI("Quick Mill: cooling-flush detected");
               coolingFlushDetectedQM = true;
               brewSteamDetectedQM = 0;
             }
@@ -999,7 +989,7 @@ void brewdetection()
       previousMillisVoltagesensorreading = millis();
       if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorON && brewDetected == 0 ) 
       {
-        DEBUG_println("HW Brew - Voltage Sensor -  Start") ;
+        debugStream.writeI("HW Brew - Voltage Sensor -  Start") ;
         timeBrewdetection = millis() ;
         startZeit = millis() ;
         timerBrewdetection = 1 ;
@@ -1379,8 +1369,9 @@ void machinestatevoid()
      // Brew
     case 30:
       brewdetection();  
+      // Ausgabe waehrend des Bezugs von Bruehzeit, Temp und heatrateaverage
       if (logbrew.check())
-          debugStream.writeD("3 (tB,T,hra) --> %5.2f %6.2f %8.2f",(double)(millis() - startZeit)/1000,Input,heatrateaverage);
+          debugStream.writeV("(tB,T,hra) --> %5.2f %6.2f %8.2f",(double)(millis() - startZeit)/1000,Input,heatrateaverage);
       if
       (
        (bezugsZeit > 35*1000 && Brewdetection == 1 && ONLYPID == 1  ) ||  // 35 sec later and BD PID active SW Solution
@@ -1771,9 +1762,7 @@ void setup() {
     #if defined(ESP32) // ESP32
      WiFi.setHostname(hostname); // for ESP32port
     #endif
-    DEBUG_print("Connecting to ");
-    DEBUG_print(ssid);
-    DEBUG_println(" ...");
+    debugStream.writeI("Connecting to %s ...",ssid);
 
     // wait up to 20 seconds for connection:
     while ((WiFi.status() != WL_CONNECTED) && (millis() - started < 20000))
@@ -1785,10 +1774,8 @@ void setup() {
 
     if (WiFi.status() == WL_CONNECTED)
     {
-      DEBUG_println("WiFi connected");
-      DEBUG_println("IP address: ");
-      DEBUG_println(WiFi.localIP());
-      DEBUG_println("Wifi works, now try Blynk (timeout 30s)");
+      debugStream.writeI("WiFi connected - IP = %i.%i.%i.%i",WiFi.localIP()[0],WiFi.localIP()[1],WiFi.localIP()[2],WiFi.localIP()[3]);
+      debugStream.writeI("Wifi works, now try Blynk (timeout 30s)");
       if (fallback == 0) {
         #if DISPLAY != 0
           displayLogo(langstring_connectblynk1[0], langstring_connectblynk1[1]);
@@ -1809,10 +1796,10 @@ void setup() {
         #if DISPLAY != 0
           displayLogo(langstring_connectblynk2[0], langstring_connectblynk2[1]);
         #endif
-        DEBUG_println("Blynk is online");
+        debugStream.writeI("Blynk is online");
         if (fallback == 1) 
         {
-          DEBUG_println("sync all variables and write new values to eeprom");
+          debugStream.writeI("sync all variables and write new values to eeprom");
           // Blynk.run() ;
           Blynk.syncVirtual(V4);
           Blynk.syncVirtual(V5);
@@ -1852,12 +1839,11 @@ void setup() {
         }
       } else 
       {
-        DEBUG_println("No connection to Blynk");
+        debugStream.writeI("No connection to Blynk");
         EEPROM.begin(1024);  // open eeprom
         double dummy; // check if eeprom values are numeric (only check first value in eeprom)
         EEPROM.get(0, dummy);
-        DEBUG_print("check eeprom 0x00 in dummy: ");
-        DEBUG_println(dummy);
+        debugStream.writeI("check eeprom 0x00 in dummy: %f",dummy);
         if (!isnan(dummy)) 
         {
           #if DISPLAY != 0
@@ -1883,7 +1869,7 @@ void setup() {
       #if DISPLAY != 0
         displayLogo(langstring_nowifi[0], langstring_nowifi[1]); 
       #endif
-      DEBUG_println("No WIFI");
+      debugStream.writeI("No WIFI");
       WiFi.disconnect(true);
       delay(1000);
     }
