@@ -164,7 +164,7 @@
     *****************************************************/
     void Displaymachinestate() 
     {
-      if (HEATINGLOGO  > 0 && machinestate == 10 ) 
+      if (HEATINGLOGO  > 0 && (machinestate == 0 || machinestate == 10 )) 
       {
         // Für Statusinfos
         u8g2.clearBuffer();
