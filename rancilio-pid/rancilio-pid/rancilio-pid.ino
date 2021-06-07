@@ -1633,7 +1633,7 @@ void debugVerboseOutput()
   static PeriodicTrigger trigger(10000);
   if(trigger.check()) 
   {
-    debugStream.writeV("Tsoll=%5.1f  Tist=%5.1f Machinestate=%2i",BrewSetPoint,Input,machinestate);
+    debugStream.writeV("Tsoll=%5.1f  Tist=%5.1f Machinestate=%2i KP=%4.2f KI=%4.2f KD=%4.2f",BrewSetPoint,Input,machinestate,bPID.GetKp(),bPID.GetKi(),bPID.GetKd());
   }
 }
 
