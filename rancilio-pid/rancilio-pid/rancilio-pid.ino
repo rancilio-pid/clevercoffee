@@ -1238,11 +1238,7 @@ void machinestatevoid()
         machinestate = 19 ; // machine is hot, jump to other state
       }
       
-      if (emergencyStop)
-      {
-        machinestate = 80 ; // Emergency Stop
-      }
-     if (pidON == 0)
+      if (pidON == 0)
       {
         machinestate = 90 ; // offline
       }
@@ -1283,10 +1279,6 @@ void machinestatevoid()
         machinestate = 50 ; // backflushON
       }
 
-      if (emergencyStop)
-      {
-        machinestate = 80 ; // Emergency Stop
-      }
      if (pidON == 0)
       {
         machinestate = 90 ; // offline
@@ -1323,10 +1315,7 @@ void machinestatevoid()
       {
         machinestate = 40 ; // switch to  Steam
       }
-      if (emergencyStop)
-      {
-        machinestate = 80 ; // Emergency Stop
-      }
+    
      if (pidON == 0)
       {
         machinestate = 90 ; // offline
