@@ -2,29 +2,30 @@
 
 #include <Arduino.h>
 
-
-PeriodicTrigger::PeriodicTrigger(int ms) {
- 	triggerInterval = ms;
- 	tref = millis();
+PeriodicTrigger::PeriodicTrigger(unsigned long ms)
+{
+    m_triggerInterval = ms;
+    m_tref            = millis();
 }
 
-bool PeriodicTrigger::check() 
-{ 
-	if ((millis()-tref) > triggerInterval) {
-		tref += triggerInterval;
-		return true;
-	}
-	else
-		return false;
+bool PeriodicTrigger::check()
+{
+    if ((millis() - m_tref) > m_triggerInterval)
+    {
+        m_tref += m_triggerInterval;
+        return true;
+    }
+    else
+        return false;
 }
 
-bool PeriodicTrigger::reset()
+void PeriodicTrigger::reset()
 {
-	tref = millis();
-} 
+    m_tref = millis();
+}
 
-bool PeriodicTrigger::reset(int ms)
+void PeriodicTrigger::reset(unsigned long ms)
 {
- 	triggerInterval = ms;
-	tref = millis();
-} 
+    m_triggerInterval = ms;
+    m_tref            = millis();
+}
