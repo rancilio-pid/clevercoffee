@@ -11,21 +11,20 @@
 #ifndef _userConfig_H
 #define _userConfig_H  
 
-// MACHINE 
+// List of supported machines
 enum MACHINE {
-	RancilioSilvia,
-	RancilioSilviaE,
-	Gaggia,
-	QuickMill
+  RancilioSilvia,   // MACHINEID 0
+  RancilioSilviaE,  // MACHINEID 1
+  Gaggia,           // MACHINEID 2
+  QuickMill         // MACHINEID 3
 };
-
 
 /********************************************************
    Preconfiguration
 ******************************************************/
 
-// MACHINETYPE, use the exakt name of the machine 
-MACHINE machine = RancilioSilvia;      //	RancilioSilvia, RancilioSilviaE, Gaggia, QuickMill
+// Machine 
+#define MACHINEID 0                //	see above list of supported machines
 
 // Display
 #define DISPLAY 2                  // 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64)
@@ -85,6 +84,9 @@ MACHINE machine = RancilioSilvia;      //	RancilioSilvia, RancilioSilviaE, Gaggi
 #define PASS "mypass"
 #define MAXWIFIRECONNECTS 5        // maximum number of reconnection attempts, use -1 to deactivate
 #define WIFICINNECTIONDELAY 10000  // delay between reconnects in ms
+#define DEBUGMETHOD 1              // 0 = none, 1 = SerialDebug, 2 = RemoteDebug
+#define MAXLOGLINES 100            // Number of log lines (>=0) stored in logbook, (-> command "loghist" in terminal window)
+                                   // if set too large the ESP will run out of memory and reboot unexpectedly
 
 // OTA
 #define OTA true                   // true = OTA activated, false = OTA deactivated
@@ -147,11 +149,11 @@ MACHINE machine = RancilioSilvia;      //	RancilioSilvia, RancilioSilviaE, Gaggi
 #define PONE 1                     // 1 = P_ON_E (default), 0 = P_ON_M (special PID mode, other PID-parameter are needed)
 #define TEMPSENSOR 2               // 2 = TSIC306 1=DS18B20
 
-
 // Check BrewSwitch
 #if (defined(ESP8266) && ((PINBREWSWITCH != 15 && PINBREWSWITCH != 0 && PINBREWSWITCH != 16 )))
   #error("WRONG Brewswitch PIN for ESP8266, Only PIN 15 and PIN 16");  
 #endif
+
 
 // defined compiler errors
 #if (PRESSURESENSOR == 1) && (PINPRESSURESENSOR == 0) && (PINBREWSWITCH == 0)

@@ -75,7 +75,7 @@ void checkbrewswitch()
         {
           brewswitchTriggermillis = millis() ; 
           brewswitchTriggerCase = 20 ; 
-          DEBUG_println("brewswitchTriggerCase 10:  HIGH");
+          debugStream.writeI("brewswitchTriggerCase 10:  HIGH");
         }
       break;
       case 20: 
@@ -85,13 +85,13 @@ void checkbrewswitch()
           // Brew 
           brewswitch = HIGH  ;
           brewswitchTriggerCase = 30 ;
-          DEBUG_println("brewswitchTriggerCase 20: Brew Trigger");
+          debugStream.writeI("brewswitchTriggerCase 20: Brew Trigger");
         }
         // Button one 1sec pushed
         if (brewswitchTrigger == HIGH && (brewswitchTriggermillis+1000 <= millis() ))
         {
           // DO something
-           DEBUG_println("brewswitchTriggerCase 20: XXX Trigger");
+           debugStream.writeI("brewswitchTriggerCase 20: XXX Trigger");
           brewswitchTriggerCase = 30 ;
         }
       break ;
@@ -101,14 +101,14 @@ void checkbrewswitch()
         {
           brewswitchTriggerCase = 40 ; 
           brewswitchTriggermillis = millis() ;     
-          DEBUG_println("brewswitchTriggerCase 30: XXX Trigger LOW");
+          debugStream.writeI("brewswitchTriggerCase 30: XXX Trigger LOW");
         }
         if (brewswitchTrigger == HIGH && brewswitch == HIGH)
         {
           brewswitch = LOW  ;
           brewswitchTriggerCase = 40 ; 
           brewswitchTriggermillis = millis() ; 
-          DEBUG_println("brewswitchTriggerCase 30: Brew Trigger LOW");
+          debugStream.writeI("brewswitchTriggerCase 30: Brew Trigger LOW");
         }
       break ;
       case 40:
@@ -116,7 +116,7 @@ void checkbrewswitch()
         if (brewswitchTriggermillis+5000 <= millis() )
         {
           brewswitchTriggerCase = 10 ; 
-           DEBUG_println("brewswitchTriggerCase 40: Brew Trigger Next Loop");
+           debugStream.writeI("brewswitchTriggerCase 40: Brew Trigger Next Loop");
         }
       break ;
     }
@@ -127,7 +127,8 @@ void checkbrewswitch()
 ******************************************************/
 
 
-void backflush() {
+void backflush() 
+{
   if (backflushState != 10 && backflushON == 0) {
     backflushState = 43;    // force reset in case backflushON is reset during backflush!
   } else if ( Offlinemodus == 1 || brewcounter > 10 || maxflushCycles <= 0 || backflushON == 0) {
@@ -149,7 +150,8 @@ void backflush() {
   }
 
   // state machine for brew
-  switch (backflushState) {
+  switch (backflushState) 
+  {
     case 10:    // waiting step for brew switch turning on
       if (brewswitch == HIGH && backflushON) {
         startZeit = millis();
@@ -157,7 +159,7 @@ void backflush() {
       }
       break;
     case 20:    //portafilter filling
-      DEBUG_println("portafilter filling");
+      debugStream.writeI("portafilter filling");
       digitalWrite(pinRelayVentil, relayON);
       digitalWrite(pinRelayPumpe, relayON);
       backflushState = 21;
@@ -169,7 +171,7 @@ void backflush() {
       }
       break;
     case 30:    //flushing
-      DEBUG_println("flushing");
+      debugStream.writeI("flushing");
       digitalWrite(pinRelayVentil, relayOFF);
       digitalWrite(pinRelayPumpe, relayOFF);
       flushCycles++;
@@ -185,7 +187,7 @@ void backflush() {
       break;
     case 43:    // waiting for brewswitch off position
       if (brewswitch == LOW) {
-        DEBUG_println("backflush finished");
+        debugStream.writeI("backflush finished");
         digitalWrite(pinRelayVentil, relayOFF);
         digitalWrite(pinRelayPumpe, relayOFF);
         currentMillistemp = 0;
@@ -194,24 +196,6 @@ void backflush() {
       }
       break;
   }
-if (backflushON || backflushState > 10) 
-  {
-    if (backflushState == 43) {
-      #if DISPLAY != 0
-        displayMessage(langstring_bckffinished[0], langstring_bckffinished[1], "", "", "", "");
-      #endif 
-    } else if (backflushState == 10) {
-      #if DISPLAY != 0
-        displayMessage(langstring_bckfactivated[0], langstring_bckfactivated[1], "", "", "", "");
-      #endif
-    } else if ( backflushState > 10) {
-      #if DISPLAY != 0
-        displayMessage(langstring_bckfrunning[0], String(flushCycles), langstring_bckfrunning[1], String(maxflushCycles), "", "");
-      #endif
-    }
-  }
-
-
 }
 
 
@@ -230,7 +214,7 @@ void brew()
     if (brewswitch == LOW && brewcounter > 10)
     {
       //abort function for state machine from every state
-      DEBUG_println("Brew stopped manually");
+      debugStream.writeI("Brew stopped manually");
       brewcounter = 43;
     }
 
@@ -263,7 +247,7 @@ void brew()
         }
         break;
       case 20:    //preinfusioon
-        DEBUG_println("Preinfusion");
+        debugStream.writeI("Preinfusion");
         digitalWrite(pinRelayVentil, relayON);
         digitalWrite(pinRelayPumpe, relayON);
         brewcounter = 21;
@@ -274,7 +258,7 @@ void brew()
         }
         break;
       case 30:    //preinfusion pause
-        DEBUG_println("preinfusion pause");
+        debugStream.writeI("preinfusion pause");
         digitalWrite(pinRelayVentil, relayON);
         digitalWrite(pinRelayPumpe, relayOFF);
         brewcounter = 31;
@@ -285,7 +269,7 @@ void brew()
         }
         break;
       case 40:    //brew running
-        DEBUG_println("Brew started");
+        debugStream.writeI("Brew started");
         digitalWrite(pinRelayVentil, relayON);
         digitalWrite(pinRelayPumpe, relayON);
         brewcounter = 41;
@@ -297,7 +281,7 @@ void brew()
         }
         break;
       case 42:    //brew finished
-        DEBUG_println("Brew stopped");
+        debugStream.writeI("Brew stopped");
         digitalWrite(pinRelayVentil, relayOFF);
         digitalWrite(pinRelayPumpe, relayOFF);
         brewcounter = 43;
@@ -364,7 +348,7 @@ void brew()
         }
         break;
       case 20:    //preinfusioon
-        DEBUG_println("Preinfusion");
+        debugStream.writeI("Preinfusion");
         digitalWrite(pinRelayVentil, relayON);
         digitalWrite(pinRelayPumpe, relayON);
         brewcounter = 21;
@@ -375,7 +359,7 @@ void brew()
         }
         break;
       case 30:    //preinfusion pause
-        DEBUG_println("preinfusion pause");
+        debugStream.writeI("preinfusion pause");
         digitalWrite(pinRelayVentil, relayON);
         digitalWrite(pinRelayPumpe, relayOFF);
         brewcounter = 31;
@@ -386,7 +370,7 @@ void brew()
         }
         break;
       case 40:    //brew running
-        DEBUG_println("Brew started");
+        debugStream.writeI("Brew started");
         digitalWrite(pinRelayVentil, relayON);
         digitalWrite(pinRelayPumpe, relayON);
         brewcounter = 41;
@@ -400,7 +384,7 @@ void brew()
         }
         break;
         case 42:    //brew finished
-        DEBUG_println("Brew stopped");
+        debugStream.writeI("Brew stopped");
         digitalWrite(pinRelayVentil, relayOFF);
         digitalWrite(pinRelayPumpe, relayOFF);
         brewcounter = 43;
