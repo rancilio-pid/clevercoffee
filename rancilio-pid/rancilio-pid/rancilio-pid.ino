@@ -1235,7 +1235,7 @@ void machinestatevoid()
         DEBUG_println(Input);
         DEBUG_println(machinestate);
       }
-      if (Input >= (BrewSetPoint-1) && Input < 150 ) // Prevent coldstart leave by Input 222
+      if (Input >= (BrewSetPoint-1) && Input < 150  ) // Prevent coldstart leave by Input 222
       {
         machinestate = 19 ; // machine is hot, jump to other state
         DEBUG_println(Input);
@@ -1894,48 +1894,28 @@ void setup() {
   /********************************************************
      TEMP SENSOR
   ******************************************************/
-  Input = 0 ;
-  int switchInitTemp = 0;
-  unsigned long MillisInitTemp;
-  while ( Input <= 0 || Input > 150 ) // get correct Temp
+  if (TempSensor == 1) 
   {
-      switch (switchInitTemp) 
-      {
-        case 0: 
-          if (TempSensor == 1) 
-          {
-            sensors.begin();
-            sensors.getAddress(sensorDeviceAddress, 0);
-            sensors.setResolution(sensorDeviceAddress, 10) ;
-            sensors.requestTemperatures();
-            Input = sensors.getTempCByIndex(0);
-          }
-          if (TempSensor == 2) 
-          {
-            temperature = 0;
-            #if (ONE_WIRE_BUS == 16 && defined(ESP8266))
-                Sensor1.getTemperature(&temperature);
-                Input = Sensor1.calc_Celsius(&temperature);
-            #endif
-            #if ((ONE_WIRE_BUS != 16 && defined(ESP8266)) || defined(ESP32))
-                Input = Sensor2.getTemp();
-            #endif
-          }
-        MillisInitTemp = millis();
-        switchInitTemp = 10; 
-        break;
-        case 10: 
-          if ( millis() > MillisInitTemp+1000)
-          {
-            switchInitTemp = 0; // 
-            DEBUG_print("wait for first correct Temp reading,temp:");
-            DEBUG_println(Input);
-            debugStream.writeW("wait for first correct Temp reading,temp: %.1f",Input);
-            yield(); // important for watchdog! 
-          }
-        break;
-      }
+    sensors.begin();
+    sensors.getAddress(sensorDeviceAddress, 0);
+    sensors.setResolution(sensorDeviceAddress, 10) ;
+    sensors.requestTemperatures();
+    Input = sensors.getTempCByIndex(0);
   }
+  if (TempSensor == 2) 
+  {
+    temperature = 0;
+    #if (ONE_WIRE_BUS == 16 && defined(ESP8266))
+        Sensor1.getTemperature(&temperature);
+        Input = Sensor1.calc_Celsius(&temperature);
+    #endif
+    #if ((ONE_WIRE_BUS != 16 && defined(ESP8266)) || defined(ESP32))
+        Input = Sensor2.getTemp();
+    #endif
+  }
+       
+      
+  
   
   /********************************************************
     movingaverage ini array
