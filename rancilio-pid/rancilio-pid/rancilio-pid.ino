@@ -1229,13 +1229,13 @@ void machinestatevoid()
   {
     // init
     case 0: 
-      if (Input < (BrewSetPoint-1) && millis() > 30*1000 && checkSensor(Input)) // After 30 sec
+      if (Input < (BrewSetPoint-1) && millis() > 30*1000 ) // After 30 sec
        {
         machinestate = 10 ; // kaltstart
         DEBUG_println(Input);
         DEBUG_println(machinestate);
       }
-      if (Input >= (BrewSetPoint-1) && millis() > 30*1000 && checkSensor(Input) ) // After 30 sec
+      if (Input >= (BrewSetPoint-1) && millis() > 30*1000 ) // After 30 sec
       {
         machinestate = 19 ; // machine is hot, jump to other state
         DEBUG_println(Input);
