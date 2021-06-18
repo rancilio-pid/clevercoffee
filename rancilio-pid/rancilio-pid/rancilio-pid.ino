@@ -77,6 +77,8 @@ const unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
 const unsigned long brewswitchDelay = BREWSWITCHDELAY;
 int BrewMode = BREWMODE ;
 int machinestate = 0;
+int machinestatecold = 0;
+unsigned long  machinestatecoldmillis = 0;
 int lastmachinestate = 0;
 
 
@@ -1229,15 +1231,9 @@ void machinestatevoid()
   {
     // init
     case 0: 
-      if (Input < (BrewSetPoint-1) && Input < 150  ) // Prevent coldstart leave by Input 222
+      if (Input < (BrewSetPoint-1) || Input < 150 ) // Prevent coldstart leave by Input 222
       {
         machinestate = 10 ; // kaltstart
-        DEBUG_println(Input);
-        DEBUG_println(machinestate);
-      }
-      if (Input >= (BrewSetPoint-1) && Input < 150  ) // Prevent coldstart leave by Input 222
-      {
-        machinestate = 19 ; // machine is hot, jump to other state
         DEBUG_println(Input);
         DEBUG_println(machinestate);
       }
@@ -1254,9 +1250,33 @@ void machinestatevoid()
 
      // kaltstart
     case 10: 
-      if (Input >= (BrewSetPoint-1) )
+      switch (machinestatecold) 
+      // one high Input let the state jump to 19. 
+      // switch (machinestatecold) prevent it, we wait 10 sec with new state. 
+      // during the 10 sec the Input has to be Input >= (BrewSetPoint-1),
+      // If not, reset machinestatecold
       {
-        machinestate = 19 ;
+        case 0:
+          if (Input >= (BrewSetPoint-1) && Input < 150 ) 
+          {
+            machinestatecoldmillis = millis(); // get millis for interval calc
+            machinestatecold = 10 ; // new state 
+            debugStream.writeV("Input >= (BrewSetPoint-1), wait 10 sec before machinestate 19");
+
+          }
+          break;
+        case 10: 
+          if (Input < (BrewSetPoint-1))
+          {
+            machinestatecold = 0 ;//  Input was only one time above BrewSetPoint, reset machinestatecold
+            debugStream.writeV("Reset timer for machinestate 19: Input < (BrewSetPoint-1)");
+          }
+          if (machinestatecoldmillis+10*1000 < millis() ) // 10 sec Input above BrewSetPoint, no set new state 
+          { 
+            machinestate = 19 ;
+            debugStream.writeV("10 sec Input >= (BrewSetPoint-1) finished, switch to state 19");
+          }
+          break;
       }
       if (SteamON == 1)
       {
