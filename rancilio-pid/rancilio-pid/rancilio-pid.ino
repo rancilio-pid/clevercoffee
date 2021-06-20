@@ -77,6 +77,8 @@ const unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
 const unsigned long brewswitchDelay = BREWSWITCHDELAY;
 int BrewMode = BREWMODE ;
 int machinestate = 0;
+int machinestatecold = 0;
+unsigned long  machinestatecoldmillis = 0;
 int lastmachinestate = 0;
 
 
@@ -603,7 +605,7 @@ void refreshTemp() {
     {
       previousMillistemp = currentMillistemp;
       sensors.requestTemperatures();
-      if (!checkSensor(sensors.getTempCByIndex(0)) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
+      if (!checkSensor(sensors.getTempCByIndex(0)) && firstreading == 0 ) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
       Input = sensors.getTempCByIndex(0);
       if (Brewdetection != 0) {
         movAvg();
@@ -627,7 +629,7 @@ void refreshTemp() {
          #endif
        #if ((ONE_WIRE_BUS != 16 && defined(ESP8266)) || defined(ESP32))
         Temperatur_C = Sensor2.getTemp();
-        DEBUG_print(Temperatur_C);
+        //DEBUG_println(Temperatur_C);
        #endif
       //Temperatur_C = 70;
       if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
@@ -1229,13 +1231,11 @@ void machinestatevoid()
   {
     // init
     case 0: 
-      if (Input < (BrewSetPoint-1) && millis() > 30*1000 ) // After 30 sec
-       {
-        machinestate = 10 ; // kaltstart
-      }
-      if (Input >= (BrewSetPoint-1) && millis() > 30*1000 ) // After 30 sec
+      if (Input < (BrewSetPoint-1) || Input < 150 ) // Prevent coldstart leave by Input 222
       {
-        machinestate = 19 ; // machine is hot, jump to other state
+        machinestate = 10 ; // kaltstart
+        DEBUG_println(Input);
+        DEBUG_println(machinestate);
       }
       
       if (pidON == 0)
@@ -1250,9 +1250,33 @@ void machinestatevoid()
 
      // kaltstart
     case 10: 
-      if (Input >= (BrewSetPoint-1) )
+      switch (machinestatecold) 
+      // one high Input let the state jump to 19. 
+      // switch (machinestatecold) prevent it, we wait 10 sec with new state. 
+      // during the 10 sec the Input has to be Input >= (BrewSetPoint-1),
+      // If not, reset machinestatecold
       {
-        machinestate = 19 ;
+        case 0:
+          if (Input >= (BrewSetPoint-1) && Input < 150 ) 
+          {
+            machinestatecoldmillis = millis(); // get millis for interval calc
+            machinestatecold = 10 ; // new state 
+            debugStream.writeV("Input >= (BrewSetPoint-1), wait 10 sec before machinestate 19");
+
+          }
+          break;
+        case 10: 
+          if (Input < (BrewSetPoint-1))
+          {
+            machinestatecold = 0 ;//  Input was only one time above BrewSetPoint, reset machinestatecold
+            debugStream.writeV("Reset timer for machinestate 19: Input < (BrewSetPoint-1)");
+          }
+          if (machinestatecoldmillis+10*1000 < millis() ) // 10 sec Input above BrewSetPoint, no set new state 
+          { 
+            machinestate = 19 ;
+            debugStream.writeV("10 sec Input >= (BrewSetPoint-1) finished, switch to state 19");
+          }
+          break;
       }
       if (SteamON == 1)
       {
@@ -1890,25 +1914,29 @@ void setup() {
   /********************************************************
      TEMP SENSOR
   ******************************************************/
-  if (TempSensor == 1) {
+  if (TempSensor == 1) 
+  {
     sensors.begin();
     sensors.getAddress(sensorDeviceAddress, 0);
     sensors.setResolution(sensorDeviceAddress, 10) ;
     sensors.requestTemperatures();
     Input = sensors.getTempCByIndex(0);
   }
-
-  if (TempSensor == 2) {
+  if (TempSensor == 2) 
+  {
     temperature = 0;
     #if (ONE_WIRE_BUS == 16 && defined(ESP8266))
-         Sensor1.getTemperature(&temperature);
-         Input = Sensor1.calc_Celsius(&temperature);
+        Sensor1.getTemperature(&temperature);
+        Input = Sensor1.calc_Celsius(&temperature);
     #endif
     #if ((ONE_WIRE_BUS != 16 && defined(ESP8266)) || defined(ESP32))
         Input = Sensor2.getTemp();
-     #endif
+    #endif
   }
-
+       
+      
+  
+  
   /********************************************************
     movingaverage ini array
   ******************************************************/
