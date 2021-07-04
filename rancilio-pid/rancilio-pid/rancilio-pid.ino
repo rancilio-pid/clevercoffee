@@ -80,7 +80,7 @@ int machinestate = 0;
 int machinestatecold = 0;
 unsigned long  machinestatecoldmillis = 0;
 int lastmachinestate = 0;
-
+int lastmachinestatepid = -1;
 
 //Display
 uint8_t oled_i2c = OLED_I2C;
@@ -2001,8 +2001,8 @@ void setup() {
     timerAlarmWrite(timer, 10000, true);//m
     timerAlarmEnable(timer);//m
   #endif
-  
 }
+
 void loop() {
   if (calibration_mode == 1 && TOF == 1) {
       loopcalibrate();
@@ -2194,6 +2194,11 @@ void looppid()
     } else {
       startKi = 0 ;
     }
+    if (lastmachinestatepid != machinestate)
+    {
+      debugStream.writeI("new PID-Values: P=%.1f  I=%.1f  D=%.1f",startKp,startKi,0);
+      lastmachinestatepid = machinestate;
+    }
     bPID.SetTunings(startKp, startKi, 0, P_ON_M);
   // normal PID
   } 
@@ -2206,6 +2211,11 @@ void looppid()
       aggKi = 0 ;
     }
     aggKd = aggTv * aggKp ;
+    if (lastmachinestatepid != machinestate)
+    {
+      debugStream.writeI("new PID-Values: P=%.1f  I=%.1f  D=%.1f",aggKp,aggKi,aggKd);
+      lastmachinestatepid = machinestate;
+    }
     bPID.SetTunings(aggKp, aggKi, aggKd, PonE);
     kaltstart = false;
   }
@@ -2219,6 +2229,11 @@ void looppid()
       aggbKi = 0 ;
     }
     aggbKd = aggbTv * aggbKp ;
+    if (lastmachinestatepid != machinestate)
+    {
+      debugStream.writeI("new PID-Values: P=%.1f  I=%.1f  D=%.1f",aggbKp,aggbKi,aggbKd);
+      lastmachinestatepid = machinestate;
+    }
     bPID.SetTunings(aggbKp, aggbKi, aggbKd, PonE) ;
   }
   // Steam on
@@ -2231,6 +2246,11 @@ void looppid()
     // }
     // aggKi = 0 ;
     // aggKd = aggTv * aggKp ;
+    if (lastmachinestatepid != machinestate)
+    {
+      debugStream.writeI("new PID-Values: P=%.1f  I=%.1f  D=%.1f",150,0,0);
+      lastmachinestatepid = machinestate;
+    }
     bPID.SetTunings(150, 0, 0, PonE);
   }
 
@@ -2254,6 +2274,11 @@ void looppid()
         aggbKd = aggbTv * aggbKp;
     }
 
+    if (lastmachinestatepid != machinestate)
+    {
+      debugStream.writeI("new PID-Values: P=%.1f  I=%.1f  D=%.1f",aggbKp,aggbKi,aggbKd);
+      lastmachinestatepid = machinestate;
+    }
     bPID.SetTunings(aggbKp, aggbKi, aggbKd, PonE) ;
   }  
   //sensor error OR Emergency Stop
