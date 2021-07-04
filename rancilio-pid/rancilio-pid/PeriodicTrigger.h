@@ -1,16 +1,17 @@
 #ifndef PeriodicTrigger_h
 #define PeriodicTrigger_h
 
-class PeriodicTrigger {
+class PeriodicTrigger
+{
 
-public:
-	PeriodicTrigger(int millisec);
-	bool check();
-	bool reset();
-	bool reset(int millisec);
+  public:
+    PeriodicTrigger(unsigned long millisec);
+    bool check();
+    void reset();
+    void reset(unsigned long millisec);
 
-private:
-	int triggerInterval;
-	unsigned long tref;
+  private:
+    unsigned long m_triggerInterval;
+    unsigned long m_tref;
 };
 #endif

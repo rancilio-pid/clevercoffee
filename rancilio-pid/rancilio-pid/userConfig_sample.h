@@ -79,7 +79,7 @@ enum MACHINE {
 #define MAXPRESSURE 200
 
 /// Wifi 
-#define HOSTNAME "rancilio"
+#define HOSTNAME "wifi-hostname"
 #define D_SSID "myssid"
 #define PASS "mypass"
 #define MAXWIFIRECONNECTS 5        // maximum number of reconnection attempts, use -1 to deactivate
@@ -90,7 +90,7 @@ enum MACHINE {
 
 // OTA
 #define OTA true                   // true = OTA activated, false = OTA deactivated
-#define OTAHOST "rancilio"         // Name to be shown in ARUDINO IDE Port
+#define OTAHOST "ota_hostname"         // Name to be shown in ARUDINO IDE Port
 #define OTAPASS "otapass"          // Password for OTA updtates
 
 // MQTT
@@ -102,7 +102,7 @@ enum MACHINE {
 #define MQTT_SERVER_PORT 1883    
 
 // BLynk
-#define AUTH "myauth"
+#define AUTH "blynk_auth"
 #define BLYNKADDRESS "blynk.clevercoffee.de"  // blynk-server IP-Address
 #define BLYNKPORT 8080             // blynk-server portver 
 
