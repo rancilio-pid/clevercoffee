@@ -1705,6 +1705,7 @@ void setup() {
   if (ETRIGGER == 1) // IF Etrigger selected 
   { 
     pinMode(PINETRIGGER, OUTPUT);
+    digitalWrite(PINETRIGGER, relayETriggerOFF);   //Set the E-Trigger OFF its, important for LOW Trigger Relais
   }
   if (BREWDETECTION == 3) // IF Voltage sensor selected 
   { 
