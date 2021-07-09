@@ -63,7 +63,7 @@ enum MACHINE {
 
 // E-Trigger
 #define ETRIGGER 0                 // 0 = no trigger (for Rancilio except Rancilio E), 1 = trigger for CPU of Rancilio E
-#define ETRIGGERTIME 60            // seconds, time between trigger signal
+#define ETRIGGERTIME 600            // seconds, time between trigger signal
 #define TRIGGERRELAYTYPE HIGH      // LOW = low trigger, HIGH = high trigger relay for E-Trigger
 
 //Weight SCALE
