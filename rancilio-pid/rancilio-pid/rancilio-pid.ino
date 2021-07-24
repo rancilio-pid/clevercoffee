@@ -12,6 +12,7 @@
 #include "PID_v1.h" //for PID calculation
 #include "languages.h" // for language translation
 #include <DallasTemperature.h>    //Library for dallas temp sensor
+#include "ButtonManager.h"  //Managing buttons and multiclick actions
 #if defined(ESP8266) 
   #include <BlynkSimpleEsp8266.h>
 #endif
@@ -84,6 +85,12 @@ int lastmachinestatepid = -1;
 
 //Display
 uint8_t oled_i2c = OLED_I2C;
+
+//Switches and Buttons
+ButtonManager brewSwitch(PINBREWSWITCH);
+ButtonManager steamSwitch(PINBTEAMSWITCH);
+ButtonManager waterSwitch(PINBWATERSWITCH);
+ButtonManager powerSwitch(PINBPOWERSWITCH);
 
 //TOF
 Adafruit_VL53L0X lox = Adafruit_VL53L0X();
@@ -1126,11 +1133,11 @@ void ETriggervoid()
 void checkSteamON() 
 {
 // check digital GIPO  
-  if (digitalRead(STEAMONPIN) == HIGH) 
+  if (digitalRead(PINSTEAMSWITCH) == HIGH) 
   {
     SteamON = 1;
   } 
-  if (digitalRead(STEAMONPIN) == LOW && SteamFirstON == 0) // if via blynk on, then SteamFirstON == 1, prevent override
+  if (digitalRead(PINSTEAMSWITCH) == LOW && SteamFirstON == 0) // if via blynk on, then SteamFirstON == 1, prevent override
   {
     SteamON = 0;
   }
@@ -1698,7 +1705,7 @@ void setup() {
   pinMode(pinRelayVentil, OUTPUT);
   pinMode(pinRelayPumpe, OUTPUT);
   pinMode(pinRelayHeater, OUTPUT);
-  pinMode(STEAMONPIN, INPUT);
+  pinMode(PINSTEAMSWITCH, INPUT);
   digitalWrite(pinRelayVentil, relayOFF);
   digitalWrite(pinRelayPumpe, relayOFF);
   digitalWrite(pinRelayHeater, LOW);
@@ -1723,14 +1730,14 @@ void setup() {
       pinMode(PINBREWSWITCH, INPUT);//
     #endif
   }
-    #if (defined(ESP8266) && STEAMONPIN == 16) 
-      pinMode(STEAMONPIN, INPUT_PULLDOWN_16);
+    #if (defined(ESP8266) && PINSTEAMSWITCH == 16) 
+      pinMode(PINSTEAMSWITCH, INPUT_PULLDOWN_16);
     #endif
-      #if (defined(ESP8266) && STEAMONPIN == 15) 
-    pinMode(STEAMONPIN, INPUT);
+      #if (defined(ESP8266) && PINSTEAMSWITCH == 15) 
+    pinMode(PINSTEAMSWITCH, INPUT);
     #endif
     #if defined(ESP32) 
-      pinMode(STEAMONPIN, INPUT_PULLDOWN);
+      pinMode(PINSTEAMSWITCH, INPUT_PULLDOWN);
     #endif
   /********************************************************
     DISPLAY 128x64
@@ -2135,6 +2142,10 @@ void looppid()
     #if (PRESSURESENSOR == 1)
     checkPressure();
     #endif
+  brewSwitch.tick();  //frequently check input states
+  steamSwitch.tick();
+  waterSwitch.tick();
+  powerSwitch.tick():
   brew();   //start brewing if button pressed
   checkSteamON(); // check for steam
   setEmergencyStopTemp();

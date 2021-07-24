@@ -137,7 +137,8 @@ enum MACHINE {
 #define PINVOLTAGESENSOR  15       //Input pin for volatage sensor
 //#define OLED_RESET 16            // Output pin for dispaly reset pin
 #define PINETRIGGER 16             // PIN for E-Trigger relay
-#define STEAMONPIN 17              // STEAM active
+#define PINSTEAMSWITCH 17          // STEAM Switch
+#define PINWATERSWITCH -1          // WATER Switch
 #define OLED_SCL 5                 // Output pin for dispaly clock pin
 #define OLED_SDA 4                 // Output pin for dispaly data pin
 #define HXDATPIN 99                // weight scale PIN 
