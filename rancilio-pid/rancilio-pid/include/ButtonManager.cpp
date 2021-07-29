@@ -203,7 +203,7 @@ int ButtonManager::getNumberClicks(void)
   return _nClicks;
 }
 
-bool ButtonManager::getDebouncedState(void)
+bool ButtonManager::getState(void)
 {
   return _debouncedState;
 }

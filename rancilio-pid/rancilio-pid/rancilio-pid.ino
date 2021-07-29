@@ -12,7 +12,7 @@
 #include "PID_v1.h" //for PID calculation
 #include "languages.h" // for language translation
 #include <DallasTemperature.h>    //Library for dallas temp sensor
-#include "ButtonManager.h"  //Managing buttons and multiclick actions
+#include "include/ButtonManager.h"  //Managing buttons and multiclick actions
 #if defined(ESP8266) 
   #include <BlynkSimpleEsp8266.h>
 #endif
@@ -88,9 +88,9 @@ uint8_t oled_i2c = OLED_I2C;
 
 //Switches and Buttons
 ButtonManager brewSwitch(PINBREWSWITCH);
-ButtonManager steamSwitch(PINBTEAMSWITCH);
-ButtonManager waterSwitch(PINBWATERSWITCH);
-ButtonManager powerSwitch(PINBPOWERSWITCH);
+ButtonManager steamSwitch(PINSTEAMSWITCH);
+ButtonManager waterSwitch(PINWATERSWITCH);
+ButtonManager powerSwitch(PINPOWERSWITCH);
 
 //TOF
 Adafruit_VL53L0X lox = Adafruit_VL53L0X();
@@ -2145,7 +2145,7 @@ void looppid()
   brewSwitch.tick();  //frequently check input states
   steamSwitch.tick();
   waterSwitch.tick();
-  powerSwitch.tick():
+  powerSwitch.tick();
   brew();   //start brewing if button pressed
   checkSteamON(); // check for steam
   setEmergencyStopTemp();

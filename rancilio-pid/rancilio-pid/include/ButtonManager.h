@@ -120,7 +120,7 @@ public:
   /*
    * return debounced state
    */
-  bool getDebouncedState(void);
+  bool getState(void);
 
   /*
    * return raw input signal
