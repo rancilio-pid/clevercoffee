@@ -13,7 +13,8 @@
     void ICACHE_RAM_ATTR onTimer1ISR() {
     timer1_write(6250); // set interrupt time to 20ms
 
-    if (Output <= isrCounter) {
+    if ((Output <= isrCounter) && (Output < windowSize)) {
+        // turn off for this window (only if PID doesn't desire 100% duty cycle)
         digitalWrite(pinRelayHeater, LOW);
     } else {
         digitalWrite(pinRelayHeater, HIGH);
@@ -35,7 +36,8 @@
     
     //timer1_write(50000); // set interrupt time to 10ms
       timerAlarmWrite(timer, 10000, true);
-    if (Output <= isrCounter) {
+    if ((Output <= isrCounter) && (Output < windowSize)) {
+      // turn off for this window (only if PID doesn't desire 100% duty cycle)
       digitalWrite(pinRelayHeater, LOW);
     } else {
       digitalWrite(pinRelayHeater, HIGH);
