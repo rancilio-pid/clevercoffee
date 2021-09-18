@@ -21,7 +21,7 @@
 
     isrCounter += 20; // += 20 because one tick = 20ms
     //set PID output as relais commands
-    if (isrCounter > windowSize) {
+    if (isrCounter >= windowSize) {
         isrCounter = 0;
     }
 
@@ -43,7 +43,7 @@
   
     isrCounter += 10; // += 10 because one tick = 10ms
     //set PID output as relais commands
-    if (isrCounter > windowSize) {
+    if (isrCounter >= windowSize) {
       isrCounter = 0;
     }
   
