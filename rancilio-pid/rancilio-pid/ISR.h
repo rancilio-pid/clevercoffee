@@ -13,8 +13,7 @@
     void ICACHE_RAM_ATTR onTimer1ISR() {
     timer1_write(6250); // set interrupt time to 20ms
 
-    if ((Output <= isrCounter) && (Output < windowSize)) {
-        // turn off for this window (only if PID doesn't desire 100% duty cycle)
+    if (Output <= isrCounter) {
         digitalWrite(pinRelayHeater, LOW);
     } else {
         digitalWrite(pinRelayHeater, HIGH);
@@ -22,7 +21,7 @@
 
     isrCounter += 20; // += 20 because one tick = 20ms
     //set PID output as relais commands
-    if (isrCounter > windowSize) {
+    if (isrCounter >= windowSize) {
         isrCounter = 0;
     }
 
@@ -36,8 +35,7 @@
     
     //timer1_write(50000); // set interrupt time to 10ms
       timerAlarmWrite(timer, 10000, true);
-    if ((Output <= isrCounter) && (Output < windowSize)) {
-      // turn off for this window (only if PID doesn't desire 100% duty cycle)
+    if (Output <= isrCounter) {
       digitalWrite(pinRelayHeater, LOW);
     } else {
       digitalWrite(pinRelayHeater, HIGH);
@@ -45,7 +43,7 @@
   
     isrCounter += 10; // += 10 because one tick = 10ms
     //set PID output as relais commands
-    if (isrCounter > windowSize) {
+    if (isrCounter >= windowSize) {
       isrCounter = 0;
     }
   
