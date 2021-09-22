@@ -20,8 +20,14 @@ void printScreen()
       u8g2.drawLine(16, 59, (Output / 10) + 16, 59);
       u8g2.drawLine(16, 60, (Output / 10) + 16, 60);
 
-      int numDecimalsInput = (Input < 99.999) ? 1 : 0;
-      int numDecimalsSetPoint = (setPoint < 99.999) ? 1 : 0;
+      int numDecimalsInput = 1;
+      if (Input > 99.999) {
+        numDecimalsInput = 0;
+      }
+      int numDecimalsSetPoint = 1;
+      if (setPoint > 99.999) {
+        numDecimalsSetPoint = 0;
+      }
 
       //draw (blinking) temp
       if (fabs(Input - setPoint) < 0.3)
