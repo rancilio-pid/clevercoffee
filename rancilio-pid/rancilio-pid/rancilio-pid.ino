@@ -1311,6 +1311,7 @@ void machinestatevoid()
       {
         machinestate = 100 ;// sensorerror
       }
+      break;
       // Setpoint -1 Celsius
       case 19: 
       if (Input >= (BrewSetPoint))
