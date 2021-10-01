@@ -795,13 +795,16 @@ char* number2string(unsigned int in) {
 /*******************************************************
    Publish Data to MQTT
 *****************************************************/
-bool mqtt_publish(char* reading, char* payload) {
-  if (MQTT == 1){
+bool mqtt_publish(char *reading, char *payload)
+{
+#if MQTT
     char topic[120];
     snprintf(topic, 120, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
-    mqtt.publish(topic,payload,true);
-  }
-  }
+    return mqtt.publish(topic, payload, true);
+#else
+    return false;
+#endif
+}
 
 /********************************************************
   send data to Blynk server
