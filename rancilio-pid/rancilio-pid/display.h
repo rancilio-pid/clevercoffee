@@ -88,7 +88,7 @@
        void displayShottimer(void) 
      {
         
-        if ((machinestate == 30 )  && SHOTTIMER == 1)  // Shotimer muss 1 = True sein und Bezug vorliegen
+        if ((machinestate == kBrew )  && SHOTTIMER == 1)  // Shotimer muss 1 = True sein und Bezug vorliegen
         {
             // Dann Zeit anzeigen
             u8g2.clearBuffer();
@@ -105,7 +105,7 @@
 
         if 
         (
-        ((machinestate == 31)  &&  SHOTTIMER == 1) 
+        ((machinestate == kShotTimerAfterBrew)  &&  SHOTTIMER == 1) 
         ) // wenn die totalbrewtime automatisch erreicht wird, 
           //soll nichts gemacht werden, da sonst falsche Zeit angezeigt wird, da Schalter später betätigt wird als totalbrewtime
         {
@@ -119,7 +119,7 @@
         }
         #if (ONLYPIDSCALE == 1 || BREWMODE == 2)
 
-          if ((machinestate == 30 )  && SHOTTIMER == 2)  // Shotimer muss 2 sein und Bezug vorliegen
+          if ((machinestate == kBrew )  && SHOTTIMER == 2)  // Shotimer muss 2 sein und Bezug vorliegen
           {
               // Dann Zeit anzeigen
               u8g2.clearBuffer();
@@ -139,7 +139,7 @@
           }
           if 
           (
-          ((machinestate == 31)  &&  SHOTTIMER == 2) 
+          ((machinestate == kShotTimerAfterBrew)  &&  SHOTTIMER == 2) 
           ) // wenn die totalbrewtime automatisch erreicht wird, soll nichts gemacht werden,
           // da sonst falsche Zeit angezeigt wird, da Schalter später betätigt wird als totalbrewtime
           {
@@ -164,7 +164,7 @@
     *****************************************************/
     void Displaymachinestate() 
     {
-      if (HEATINGLOGO  > 0 && (machinestate == 0 || machinestate == 10 )) 
+      if (HEATINGLOGO  > 0 && (machinestate == kInit || machinestate == kColdStart )) 
       {
         // Für Statusinfos
         u8g2.clearBuffer();
@@ -241,7 +241,7 @@
       /********************************************************
        DISPLAY - PID Off Logo
       *****************************************************/
-      if (OFFLINEGLOGO == 1 && machinestate == 90)
+      if (OFFLINEGLOGO == 1 && machinestate == kPidOffline)
       {
         u8g2.clearBuffer();
         u8g2.drawXBMP(38,0, OFFLogo_width, OFFLogo_height, OFFLogo); 
@@ -254,7 +254,7 @@
        DISPLAY - Steam
       *****************************************************/
 
-      if (machinestate == 40)
+      if (machinestate == kSteam)
       {
         u8g2.clearBuffer();
         u8g2.drawXBMP(0,0, steamlogo_width, steamlogo_height, steamlogo); 
@@ -269,7 +269,7 @@
        DISPLAY - Backflush
       *****************************************************/
 
-   if ( machinestate == 50 ) 
+   if ( machinestate == kBackflush ) 
    {
      u8g2.setFont(u8g2_font_profont11_tf); // set font
     if (backflushState == 43) 
@@ -294,7 +294,7 @@
       /********************************************************
        DISPLAY - PID Off Logo
       *****************************************************/
-      if (machinestate == 80)
+      if (machinestate == kEmergencyStop)
       {
         u8g2.clearBuffer();
         u8g2.setFont(u8g2_font_profont11_tf); // set font
@@ -328,7 +328,7 @@
       /********************************************************
        Sensor error
       *****************************************************/
-      if (machinestate == 100)
+      if (machinestate == kSensorError)
       {    
         displayMessage(langstring_error_tsensor[0], String(Input), langstring_error_tsensor[1], "", "", ""); //DISPLAY AUSGABE
       }
