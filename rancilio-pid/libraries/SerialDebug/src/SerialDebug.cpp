@@ -2381,7 +2381,7 @@ int8_t debugAddGlobalChar (const char* name, char* pointer) {
 
 	return addGlobal(name, pointer, DEBUG_TYPE_CHAR, 0);
 }
-int8_t debugAddGlobalByte (const char* name, byte* pointer) {
+int8_t debugAddGlobalByte (const char* name, uint8_t* pointer) {
 
 	return addGlobal(name, pointer, DEBUG_TYPE_BYTE, 0);
 }
@@ -2483,7 +2483,7 @@ int8_t debugAddGlobalChar (const __FlashStringHelper* name, char* pointer) {
 	return addGlobal(name, pointer, DEBUG_TYPE_CHAR, 0);
 }
 #ifndef BOARD_LOW_MEMORY // Not for low memory boards
-int8_t debugAddGlobalByte (const __FlashStringHelper* name, byte* pointer) {
+int8_t debugAddGlobalByte (const __FlashStringHelper* name, uint8_t* pointer) {
 
 	return addGlobal(name, pointer, DEBUG_TYPE_BYTE, 0);
 }
@@ -2674,7 +2674,7 @@ int8_t debugAddWatchChar (uint8_t globalNum, uint8_t operation, char value, bool
 	return ret;
 }
 
-int8_t debugAddWatchByte (const char* globalName, uint8_t operation, byte value, boolean allwaysStop) {
+int8_t debugAddWatchByte (const char* globalName, uint8_t operation, uint8_t value, boolean allwaysStop) {
 
 	uint8_t globalNum;
 
@@ -2685,7 +2685,7 @@ int8_t debugAddWatchByte (const char* globalName, uint8_t operation, byte value,
 	}
 }
 
-int8_t debugAddWatchByte (uint8_t globalNum, uint8_t operation, byte value, boolean allwaysStop) {
+int8_t debugAddWatchByte (uint8_t globalNum, uint8_t operation, uint8_t value, boolean allwaysStop) {
 
 	// Verify global type
 
@@ -2698,7 +2698,7 @@ int8_t debugAddWatchByte (uint8_t globalNum, uint8_t operation, byte value, bool
 	int8_t ret = addWatch(globalNum, operation, allwaysStop);
 
 	if (ret != -1) {
-		size_t size = sizeof(byte);
+		size_t size = sizeof(uint8_t);
 		_debugWatches[ret].pointerValue = malloc (size);
 		memcpy( _debugWatches[ret].pointerValue, &value, size);
 	}
@@ -3260,7 +3260,7 @@ int8_t debugAddWatchChar (const __FlashStringHelper* globalName, uint8_t operati
 	String name = String(globalName);
 	return debugAddWatchChar(name.c_str(), operation, value, allwaysStop);
 }
-int8_t debugAddWatchByte (const __FlashStringHelper* globalName, uint8_t operation, byte value, boolean allwaysStop) {
+int8_t debugAddWatchByte (const __FlashStringHelper* globalName, uint8_t operation, uint8_t value, boolean allwaysStop) {
 
 	String name = String(globalName);
 	return debugAddWatchByte(name.c_str(), operation, value, allwaysStop);
@@ -4957,8 +4957,8 @@ static boolean apllyOperation(uint8_t type1, void* pointer1, uint8_t operation, 
 
 			case DEBUG_TYPE_BYTE:
 				{
-					byte value1 = *(byte*) pointer1;
-					byte value2 = *(byte*) pointer2;
+					uint8_t value1 = *(uint8_t*) pointer1;
+					uint8_t value2 = *(uint8_t*) pointer2;
 
 					// Aplly operation
 
@@ -5605,7 +5605,7 @@ static void getStrValue(uint8_t type, void* pointer, uint8_t showLength, boolean
 			break;
 #ifndef BOARD_LOW_MEMORY // Not for low memory boards
 		case DEBUG_TYPE_BYTE:
-			response = String(*(byte*)pointer);
+			response = String(*(uint8_t*)pointer);
 			if (responseType) responseType = F("byte");
 			break;
 		case DEBUG_TYPE_U_INT:
@@ -5781,7 +5781,7 @@ static void updateValue(uint8_t typeFrom, void* pointerFrom, uint8_t typeTo, voi
 		case DEBUG_TYPE_BYTE:
 			{
 				// Alloc memory for pointer (if need) and copy value
-				size_t size = sizeof(byte);
+				size_t size = sizeof(uint8_t);
 				if (!*pointerTo) {
 					*pointerTo = malloc (size);
 				}
@@ -7110,7 +7110,7 @@ static void changeGlobal(Fields& fields) {
 				case DEBUG_TYPE_BYTE:
 					{
 						char change = value[0];
-						*(byte*)_debugGlobals[num].pointer = change;
+						*(uint8_t*)_debugGlobals[num].pointer = change;
 					}
 					break;
 #endif
