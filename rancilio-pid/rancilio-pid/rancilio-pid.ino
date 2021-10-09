@@ -1633,6 +1633,10 @@ void machinestatevoid()
 
     case kSensorError:
       machinestate = kSensorError ;
+      if (!sensorError)
+      {
+          machinestate = kInit;
+      }
     break;
   } // switch case
 
