@@ -1,5 +1,5 @@
 # ignore actual user config
-rancilio-pid/rancilio-pid/userConfig.h
+src/userConfig.h
 
 # ignore PlatformIO build folder
 .pio/*

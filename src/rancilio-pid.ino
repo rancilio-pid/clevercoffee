@@ -2529,4 +2529,6 @@ int writeSysParamsToBlynk(void)
     Blynk.virtualWrite(V18, weightSetpoint;
   }
   #endif
+
+  return 1;
 }
