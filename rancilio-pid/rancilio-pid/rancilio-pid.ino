@@ -307,6 +307,20 @@ unsigned long previousMillisBlynk;  // initialisation at the end of init()
 const unsigned long intervalBlynk = 1000;
 int blynksendcounter = 1;
 
+/********************************************************
+   HTTP Server
+******************************************************/
+#include "RancilioServer.h"
+std::vector<editable_t> editableVars = {
+    {"PID on?", kInteger, (void *)&pidON}, // ummm, why isn't pidON a boolean?
+    {"Start Kp", kDouble, (void *)&startKp},
+    {"Start Tn", kDouble, (void *)&startTn},
+    {"PID Kp", kDouble, (void *)&aggKp},
+    {"PID Tn", kDouble, (void *)&aggTn},
+    {"PID Tv", kDouble, (void *)&aggTv},
+    {"Set point", kDouble, (void *)&BrewSetPoint},
+    {"Brew Time", kDouble, (void *)&brewtime},
+};
 
 /********************************************************
   Get Wifi signal strength and set bars for display
@@ -1810,6 +1824,9 @@ void setup() {
           displayLogo(langstring_connectwifi2[0], langstring_connectwifi2[1]);
         #endif
       }
+
+      serverSetup();
+
       delay(1000);
 
       //try blynk connection
