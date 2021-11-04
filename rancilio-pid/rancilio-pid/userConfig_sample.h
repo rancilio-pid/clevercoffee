@@ -37,10 +37,13 @@ enum MACHINE {
 #define BREWSWITCHDELAY 3000       // time in ms
 #define LANGUAGE 1                 // LANGUAGE = 0 (DE), LANGUAGE = 1 (EN), LANGUAGE = 2 (ES)
 
-// Offline mode
+// Connectivity 
 #define OFFLINEMODUS 0             // 0 = Blynk and Wifi are used, 1 = offline mode (only preconfigured values in code are used!)
+#define BLYNK 1                    // 0 = no Blynk , 1 = Blynk
+#define LOCALHOST 1                // 0 = no 1 = OWN Website
 #define FALLBACK 1                 // 1 = fallback to values stored in eeprom, 0 = deactivated
 #define GRAFANA 1                  // 1 = grafana visualisation (access required), 0 = off (default)
+#define MQTT 1                     // 1 = MQTT enabled, 0 = MQTT disabled
 
 // PID & Hardware
 #define ONLYPID 1                  // 1 = Only PID, 0 = PID and preinfusion
@@ -94,7 +97,6 @@ enum MACHINE {
 #define OTAPASS "otapass"          // Password for OTA updtates
 
 // MQTT
-#define MQTT 0                     // 1 = MQTT enabled, 0 = MQTT disabled
 #define MQTT_USERNAME "mymqttuser"
 #define MQTT_PASSWORD "mymqttpass"
 #define MQTT_TOPIC_PREFIX "custom/Küche."  // topic will be "<MQTT_TOPIC_PREFIX><HOSTNAME>/<READING>"
