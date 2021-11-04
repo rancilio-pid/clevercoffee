@@ -304,7 +304,9 @@ ZACwire<ONE_WIRE_BUS> Sensor2(306);    // set pin "2" to receive signal from the
 ******************************************************/
 //Update Intervall zur App
 unsigned long previousMillisBlynk;  // initialisation at the end of init()
+unsigned long previousMillisMQTT;  // initialisation at the end of init()
 const unsigned long intervalBlynk = 1000;
+const unsigned long intervalMQTT = 5000;
 int blynksendcounter = 1;
 
 /********************************************************
@@ -394,7 +396,7 @@ const unsigned long intervalDisplay = 500;
    BLYNK define pins and read values
 ******************************************************/
 BLYNK_CONNECTED() {
-  if (Offlinemodus == 0) {
+  if (Offlinemodus == 0 && BLYNK == 1) {
     Blynk.syncAll();
     //rtc.begin();
   }
@@ -836,21 +838,17 @@ bool mqtt_publish(char *reading, char *payload)
   send data to Blynk server
 *****************************************************/
 
-void sendToBlynk() {
+void sendToBlynkMQTT() 
+{
   if (Offlinemodus == 1) return;
 
   unsigned long currentMillisBlynk = millis();
+  unsigned long currentMillisMQTT = millis();
   unsigned long currentMillistemp = 0;
-
-  if (currentMillisBlynk - previousMillisBlynk >= intervalBlynk) {
-
-    //MQTT
-    if (MQTT == 1) {
-      checkMQTT();
-    }
-
-    previousMillisBlynk = currentMillisBlynk;
-    if (Blynk.connected()) {
+  if ((currentMillisBlynk - previousMillisBlynk >= intervalBlynk) && (BLYNK == 1))
+  {
+    if (Blynk.connected()) 
+    {
       if (blynksendcounter == 1) {
         Blynk.virtualWrite(V2, Input);
         mqtt_publish("temperature", number2string(Input));
@@ -872,17 +870,6 @@ void sendToBlynk() {
       if (grafana == 1 && blynksendcounter >= 6) {
         // Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint );
         Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint, heatrateaverage);
-         if (MQTT == 1)
-         {
-            mqtt_publish("HeaterPower", number2string(Output));
-            mqtt_publish("Kp", number2string(bPID.GetKp()));
-            mqtt_publish("Ki", number2string(bPID.GetKi()));
-            mqtt_publish("pidON", number2string(pidON));
-            mqtt_publish("brewtime", number2string(brewtime/1000));
-            mqtt_publish("preinfusionpause", number2string(preinfusionpause/1000));
-            mqtt_publish("preinfusion", number2string(preinfusion/1000));
-            mqtt_publish("SteamON", number2string(SteamON));
-         }
         blynksendcounter = 0;
       } else if (grafana == 0 && blynksendcounter >= 5) {
         blynksendcounter = 0;
@@ -890,6 +877,20 @@ void sendToBlynk() {
       blynksendcounter++;
     }
   }
+  if ((currentMillisMQTT - previousMillisMQTT >= intervalMQTT) && (MQTT == 1)) 
+  {
+     previousMillisMQTT = currentMillisMQTT;
+              checkMQTT();
+              mqtt_publish("HeaterPower", number2string(Output));
+              mqtt_publish("Kp", number2string(bPID.GetKp()));
+              mqtt_publish("Ki", number2string(bPID.GetKi()));
+              mqtt_publish("pidON", number2string(pidON));
+              mqtt_publish("brewtime", number2string(brewtime/1000));
+              mqtt_publish("preinfusionpause", number2string(preinfusionpause/1000));
+              mqtt_publish("preinfusion", number2string(preinfusion/1000));
+              mqtt_publish("SteamON", number2string(SteamON));
+    }
+
 }
 
 /********************************************************
@@ -1807,7 +1808,12 @@ void setup() {
     if (WiFi.status() == WL_CONNECTED)
     {
       debugStream.writeI("WiFi connected - IP = %i.%i.%i.%i",WiFi.localIP()[0],WiFi.localIP()[1],WiFi.localIP()[2],WiFi.localIP()[3]);
-      debugStream.writeI("Wifi works, now try Blynk (timeout 30s)");
+      
+      if ( BLYNK == 1)
+      {
+        debugStream.writeI("Wifi works, now try Blynk (timeout 30s)");
+      }
+      
       if (fallback == 0) {
         #if DISPLAY != 0
           displayLogo(langstring_connectblynk1[0], langstring_connectblynk1[1]);
@@ -1818,86 +1824,89 @@ void setup() {
         #endif
       }
 
-      serverSetup();
+     serverSetup();
 
       delay(1000);
 
       //try blynk connection
-      Blynk.config(auth, blynkaddress, blynkport) ;
-      Blynk.connect(30000);
+      if ( BLYNK == 1)
+      {
+        Blynk.config(auth, blynkaddress, blynkport) ;
+        Blynk.connect(30000);
 
-      if (Blynk.connected() == true)
-      {
-        #if DISPLAY != 0
-          displayLogo(langstring_connectblynk2[0], langstring_connectblynk2[1]);
-        #endif
-        debugStream.writeI("Blynk is online");
-        if (fallback == 1)
-        {
-          debugStream.writeI("sync all variables and write new values to eeprom");
-          // Blynk.run() ;
-          Blynk.syncVirtual(V4);
-          Blynk.syncVirtual(V5);
-          Blynk.syncVirtual(V6);
-          Blynk.syncVirtual(V7);
-          Blynk.syncVirtual(V8);
-          Blynk.syncVirtual(V9);
-          Blynk.syncVirtual(V10);
-          Blynk.syncVirtual(V11);
-          Blynk.syncVirtual(V12);
-          Blynk.syncVirtual(V13);
-          Blynk.syncVirtual(V14);
-          Blynk.syncVirtual(V15);
-          Blynk.syncVirtual(V30);
-          Blynk.syncVirtual(V31);
-          Blynk.syncVirtual(V32);
-          Blynk.syncVirtual(V33);
-          Blynk.syncVirtual(V34);
-          // Blynk.syncAll();  //sync all values from Blynk server
-          // Werte in den eeprom schreiben
-          // ini eeprom mit begin
-          EEPROM.begin(1024);
-          EEPROM.put(0, aggKp);
-          EEPROM.put(10, aggTn);
-          EEPROM.put(20, aggTv);
-          EEPROM.put(30, BrewSetPoint);
-          EEPROM.put(40, brewtime);
-          EEPROM.put(50, preinfusion);
-          EEPROM.put(60, preinfusionpause);
-          EEPROM.put(90, aggbKp);
-          EEPROM.put(100, aggbTn);
-          EEPROM.put(110, aggbTv);
-          EEPROM.put(120, brewtimersoftware);
-          EEPROM.put(130, brewboarder);
-          // eeprom schließen
-          EEPROM.commit();
-        }
-      } else
-      {
-        debugStream.writeI("No connection to Blynk");
-        EEPROM.begin(1024);  // open eeprom
-        double dummy; // check if eeprom values are numeric (only check first value in eeprom)
-        EEPROM.get(0, dummy);
-        debugStream.writeI("check eeprom 0x00 in dummy: %f",dummy);
-        if (!isnan(dummy))
+        if (Blynk.connected() == true)
         {
           #if DISPLAY != 0
-           displayLogo("3: Blynk not connected", "use eeprom values..");
+            displayLogo(langstring_connectblynk2[0], langstring_connectblynk2[1]);
           #endif
-          EEPROM.get(0, aggKp);
-          EEPROM.get(10, aggTn);
-          EEPROM.get(20, aggTv);
-          EEPROM.get(30, BrewSetPoint);
-          EEPROM.get(40, brewtime);
-          EEPROM.get(50, preinfusion);
-          EEPROM.get(60, preinfusionpause);
-          EEPROM.get(90, aggbKp);
-          EEPROM.get(100, aggbTn);
-          EEPROM.get(110, aggbTv);
-          EEPROM.get(120, brewtimersoftware);
-          EEPROM.get(130, brewboarder);
+          debugStream.writeI("Blynk is online");
+          if (fallback == 1)
+          {
+            debugStream.writeI("sync all variables and write new values to eeprom");
+            // Blynk.run() ;
+            Blynk.syncVirtual(V4);
+            Blynk.syncVirtual(V5);
+            Blynk.syncVirtual(V6);
+            Blynk.syncVirtual(V7);
+            Blynk.syncVirtual(V8);
+            Blynk.syncVirtual(V9);
+            Blynk.syncVirtual(V10);
+            Blynk.syncVirtual(V11);
+            Blynk.syncVirtual(V12);
+            Blynk.syncVirtual(V13);
+            Blynk.syncVirtual(V14);
+            Blynk.syncVirtual(V15);
+            Blynk.syncVirtual(V30);
+            Blynk.syncVirtual(V31);
+            Blynk.syncVirtual(V32);
+            Blynk.syncVirtual(V33);
+            Blynk.syncVirtual(V34);
+            // Blynk.syncAll();  //sync all values from Blynk server
+            // Werte in den eeprom schreiben
+            // ini eeprom mit begin
+            EEPROM.begin(1024);
+            EEPROM.put(0, aggKp);
+            EEPROM.put(10, aggTn);
+            EEPROM.put(20, aggTv);
+            EEPROM.put(30, BrewSetPoint);
+            EEPROM.put(40, brewtime);
+            EEPROM.put(50, preinfusion);
+            EEPROM.put(60, preinfusionpause);
+            EEPROM.put(90, aggbKp);
+            EEPROM.put(100, aggbTn);
+            EEPROM.put(110, aggbTv);
+            EEPROM.put(120, brewtimersoftware);
+            EEPROM.put(130, brewboarder);
+            // eeprom schließen
+            EEPROM.commit();
+          }
+        } else
+        {
+          debugStream.writeI("No connection to Blynk");
+          EEPROM.begin(1024);  // open eeprom
+          double dummy; // check if eeprom values are numeric (only check first value in eeprom)
+          EEPROM.get(0, dummy);
+          debugStream.writeI("check eeprom 0x00 in dummy: %f",dummy);
+          if (!isnan(dummy))
+          {
+            #if DISPLAY != 0
+            displayLogo("3: Blynk not connected", "use eeprom values..");
+            #endif
+            EEPROM.get(0, aggKp);
+            EEPROM.get(10, aggTn);
+            EEPROM.get(20, aggTv);
+            EEPROM.get(30, BrewSetPoint);
+            EEPROM.get(40, brewtime);
+            EEPROM.get(50, preinfusion);
+            EEPROM.get(60, preinfusionpause);
+            EEPROM.get(90, aggbKp);
+            EEPROM.get(100, aggbTn);
+            EEPROM.get(110, aggbTv);
+            EEPROM.get(120, brewtimersoftware);
+            EEPROM.get(130, brewboarder);
+          }
         }
-      }
+     }
     }
     else
     {
@@ -1909,6 +1918,7 @@ void setup() {
       delay(1000);
     }
   }
+    
 
   /********************************************************
      OTA
@@ -1984,6 +1994,7 @@ void setup() {
   windowStartTime = currentTime;
   previousMillisDisplay = currentTime;
   previousMillisBlynk = currentTime;
+  previousMillisMQTT = currentTime;
   previousMillisETrigger = currentTime;
   previousMillisVoltagesensorreading = currentTime;
   #if (BREWMODE ==  2)
@@ -2156,7 +2167,7 @@ void looppid()
   brew();   //start brewing if button pressed
   checkSteamON(); // check for steam
   setEmergencyStopTemp();
-  sendToBlynk();
+  sendToBlynkMQTT();
   machinestatevoid() ; // calc machinestate
   if (ETRIGGER == 1) // E-Trigger active then void Etrigger()
   {
