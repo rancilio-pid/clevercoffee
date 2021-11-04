@@ -760,7 +760,7 @@ void checkWifi() {
    blynk is also using maxWifiReconnects!
 *****************************************************/
 void checkBlynk() {
-  if (Offlinemodus == 1 || brewcounter > 11) return;
+  if (Offlinemodus == 1 ||BLYNK == 0 || brewcounter > 11) return;
   if ((millis() - lastBlynkConnectionAttempt >= wifiConnectionDelay) && (blynkReCnctCount <= maxWifiReconnects)) {
     int statusTemp = Blynk.connected();
     if (statusTemp != 1) {   // check Blynk connection status
@@ -1823,9 +1823,17 @@ void setup() {
           displayLogo(langstring_connectwifi2[0], langstring_connectwifi2[1]);
         #endif
       }
+      
 
-     serverSetup();
+ /********************************************************
+    OWN Webside
+ ******************************************************/
+  if (LOCALHOST == 1)
+  {
+  serverSetup();
+  }  
 
+ /******************************************************/
       delay(1000);
 
       //try blynk connection
@@ -2053,7 +2061,7 @@ void loopcalibrate()
     bPID.SetMode(pidMode);
     Output = 0 ;false;
   }
-  if (Blynk.connected())
+  if (Blynk.connected() && BLYNK == 1)
   {  // If connected run as normal
       Blynk.run();
       blynkReCnctCount = 0; //reset blynk reconnects if connected
@@ -2126,7 +2134,7 @@ void looppid()
       #endif
     });
 
-    if (Blynk.connected())
+    if (Blynk.connected() && BLYNK == 1)
     {  // If connected run as normal
       Blynk.run();
       blynkReCnctCount = 0; //reset blynk reconnects if connected
