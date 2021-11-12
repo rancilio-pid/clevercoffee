@@ -4,11 +4,11 @@ void printScreen()
   unsigned long currentMillisDisplay = millis();
   if 
   (
-   (machinestate == 19 || machinestate == 20 || machinestate == 35) ||
-   ((machinestate == 30 || machinestate == 31)  && SHOTTIMER == 0) ||// shottimer == 0, auch Bezug anzeigen
-   machinestate == 45 ||
-   ((machinestate == 0 || machinestate == 10 ) && HEATINGLOGO == 0) ||
-   ((machinestate == 90)  && OFFLINEGLOGO == 0) 
+   (machinestate == kSetPointNegative || machinestate == kPidNormal || machinestate == kBrewDetectionTrailing) ||
+   ((machinestate == kBrew || machinestate == kShotTimerAfterBrew)  && SHOTTIMER == 0) ||// shottimer == 0, auch Bezug anzeigen
+   machinestate == kCoolDown ||
+   ((machinestate == kInit || machinestate == kColdStart ) && HEATINGLOGO == 0) ||
+   ((machinestate == kPidOffline)  && OFFLINEGLOGO == 0) 
   ) 
    {
       u8g2.clearBuffer();

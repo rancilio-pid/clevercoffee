@@ -59,6 +59,30 @@ DebugStreamManager debugStream;
 PeriodicTrigger writeDebugTrigger(5000); // trigger alle 5000 ms
 PeriodicTrigger logbrew(500);
 
+/********************************************************
+  Machine State
+******************************************************/
+
+enum MachineState {
+    kInit = 0,
+    kColdStart = 10,
+    kSetPointNegative = 19,
+    kPidNormal = 20,
+    kBrew = 30,
+    kShotTimerAfterBrew = 31,
+    kBrewDetectionTrailing = 35,
+    kSteam = 40,
+    kCoolDown = 45,
+    kBackflush = 50,
+    kEmergencyStop = 80,
+    kPidOffline = 90,
+    kSensorError = 100,
+};
+MachineState machinestate = kInit;
+int machinestatecold = 0;
+unsigned long  machinestatecoldmillis = 0;
+MachineState lastmachinestate = kInit;
+int lastmachinestatepid = -1;
 
 /********************************************************
   definitions below must be changed in the userConfig.h file
@@ -76,12 +100,7 @@ const unsigned long wifiConnectionDelay = WIFICINNECTIONDELAY;
 const unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
 //int machineLogo = MACHINELOGO;
 const unsigned long brewswitchDelay = BREWSWITCHDELAY;
-int BrewMode = BREWMODE ;
-int machinestate = 0;
-int machinestatecold = 0;
-unsigned long  machinestatecoldmillis = 0;
-int lastmachinestate = 0;
-int lastmachinestatepid = -1;
+int BrewMode = BREWMODE;
 
 //Display
 uint8_t oled_i2c = OLED_I2C;
@@ -386,13 +405,6 @@ BLYNK_WRITE(V6) {
 }
 
 BLYNK_WRITE(V7) {
-  if (machinestate == 10) //antiwindup by coldstart 
-  {
-    bPID.SetOutputLimits(0.0, 1.0);  // Forces minimum up to 0.0
-    bPID.SetOutputLimits(-1.0, 0.0);  // Forces maximum down to 0.0
-    bPID.Compute() ;
-    bPID.SetOutputLimits(0, windowSize); // reset window
-  }
   BrewSetPoint = param.asDouble();
   mqtt_publish("BrewSetPoint", number2string(BrewSetPoint));
 }
@@ -802,13 +814,16 @@ char* number2string(unsigned int in) {
 /*******************************************************
    Publish Data to MQTT
 *****************************************************/
-bool mqtt_publish(char* reading, char* payload) {
-  if (MQTT == 1){
+bool mqtt_publish(char *reading, char *payload)
+{
+#if MQTT
     char topic[120];
     snprintf(topic, 120, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
-    mqtt.publish(topic,payload,true);
-  }
-  }
+    return mqtt.publish(topic, payload, true);
+#else
+    return false;
+#endif
+}
 
 /********************************************************
   send data to Blynk server
@@ -1170,7 +1185,7 @@ void checkSteamON()
 
 void setEmergencyStopTemp()
 {
-  if (machinestate == 40 || machinestate == 45) 
+  if (machinestate == kSteam || machinestate == kCoolDown) 
   {
     if (EmergencyStopTemp != 145)
     EmergencyStopTemp = 145;  
@@ -1217,46 +1232,31 @@ boolean checkSteamOffQM()
    machinestatevoid
 ******************************************************/
 
-
 void machinestatevoid() 
 {
-  /* 
-  00 = init
-  10 = kaltstart
-  19 = Setpoint -1 Celsius
-  20 = Setpoint überschritten, idle at setpoint
-  30 = Bezug 
-  35 = Nachlauf BD
-  40 = Dampf
-  50 = Backflush
-  80 = Emergency Stop
-  90 = PID Offline
-  100 = Sensorerror
-  */
   //DEBUG_println(machinestate);
   switch (machinestate) 
   {
     // init
-    case 0: 
+    case kInit: 
       if (Input < (BrewSetPoint-1) || Input < 150 ) // Prevent coldstart leave by Input 222
       {
-        machinestate = 10 ; // kaltstart
+        machinestate = kColdStart;
         DEBUG_println(Input);
         DEBUG_println(machinestate);
       }
       
       if (pidON == 0)
       {
-        machinestate = 90 ; // offline
+        machinestate = kPidOffline;
       }
      if(sensorError)
       {
-        machinestate = 100 ;// sensorerror
+        machinestate = kSensorError;
       }
     break;
 
-     // kaltstart
-    case 10: 
+    case kColdStart: 
       switch (machinestatecold) 
       // one high Input let the state jump to 19. 
       // switch (machinestatecold) prevent it, we wait 10 sec with new state. 
@@ -1280,14 +1280,14 @@ void machinestatevoid()
           }
           if (machinestatecoldmillis+10*1000 < millis() ) // 10 sec Input above BrewSetPoint, no set new state 
           { 
-            machinestate = 19 ;
+            machinestate = kSetPointNegative ;
             debugStream.writeV("10 sec Input >= (BrewSetPoint-1) finished, switch to state 19");
           }
           break;
       }
       if (SteamON == 1)
       {
-        machinestate = 40 ; // Steam
+        machinestate = kSteam;
       }
 
       if
@@ -1297,32 +1297,33 @@ void machinestatevoid()
       )
       
       {
-        machinestate = 30 ; // Brew
+        machinestate = kBrew;
       }
 
       if (SteamON == 1)
       {
-        machinestate = 40 ; // switch to  Steam
+        machinestate = kSteam;
       }
 
       if (backflushON || backflushState > 10) 
       {
-        machinestate = 50 ; // backflushON
+        machinestate = kBackflush;
       }
 
      if (pidON == 0)
       {
-        machinestate = 90 ; // offline
+        machinestate = kPidOffline;
       }
      if(sensorError)
       {
-        machinestate = 100 ;// sensorerror
+        machinestate = kSensorError;
       }
+      break;
       // Setpoint -1 Celsius
-      case 19: 
+      case kSetPointNegative: 
       if (Input >= (BrewSetPoint))
       {
-        machinestate = 20 ;
+        machinestate = kPidNormal;
       }
       if
       (
@@ -1330,34 +1331,34 @@ void machinestatevoid()
        (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42) 
       )
       {
-        machinestate = 30 ; // Brew
+        machinestate = kBrew;
       }
       if (SteamON == 1)
       {
-        machinestate = 40 ; // Steam
+        machinestate = kSteam;
       }
 
       if (backflushON || backflushState > 10) 
       {
-        machinestate = 50 ; // backflushON
+        machinestate = kBackflush;
       }
 
       if (SteamON == 1)
       {
-        machinestate = 40 ; // switch to  Steam
+        machinestate = kSteam;
       }
     
      if (pidON == 0)
       {
-        machinestate = 90 ; // offline
+        machinestate = kPidOffline;
       }
      if(sensorError)
       {
-        machinestate = 100 ;// sensorerror
+        machinestate = kSensorError;
       }  
     break;
-    // normal PID
-    case 20: 
+
+    case kPidNormal: 
       brewdetection();  //if brew detected, set PID values
       if
       (
@@ -1365,32 +1366,32 @@ void machinestatevoid()
        (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42) 
       )
       {
-        machinestate = 30 ; // Brew
+        machinestate = kBrew;
       }
       if (SteamON == 1)
       {
-        machinestate = 40 ; // Steam
+        machinestate = kSteam;
       }
 
       if (backflushON || backflushState > 10) 
       {
-        machinestate = 50 ; // backflushON
+        machinestate = kBackflush;
       }
       if (emergencyStop)
       {
-        machinestate = 80 ; // Emergency Stop
+        machinestate = kEmergencyStop;
       }
      if (pidON == 0)
       {
-        machinestate = 90 ; // offline
+        machinestate = kPidOffline;
       }
      if(sensorError)
       {
-        machinestate = 100 ;// sensorerror
+        machinestate = kSensorError;
       }
     break;
-     // Brew
-    case 30:
+
+    case kBrew:
       brewdetection();  
       // Ausgabe waehrend des Bezugs von Bruehzeit, Temp und heatrateaverage
       if (logbrew.check())
@@ -1404,74 +1405,74 @@ void machinestatevoid()
       {
        if ((ONLYPID == 1 && Brewdetection == 3) || ONLYPID == 0 ) // only delay of shotimer for voltagesensor or brewcounter
        {
-         machinestate = 31 ;
+         machinestate = kShotTimerAfterBrew ;
          lastbezugszeitMillis = millis() ; // for delay
         
        }
        if (ONLYPID == 1 && Brewdetection == 1 && timerBrewdetection == 1) //direct to PID BD
        {
-         machinestate = 35 ;
+         machinestate = kBrewDetectionTrailing ;
        }
       } 
       if (SteamON == 1)
       {
-        machinestate = 40 ; // Steam
+        machinestate = kSteam;
       }
 
       if (emergencyStop)
       {
-        machinestate = 80 ; // Emergency Stop
+        machinestate = kEmergencyStop;
       }
      if (pidON == 0)
       {
-        machinestate = 90 ; // offline
+        machinestate = kPidOffline;
       }
      if(sensorError)
       {
-        machinestate = 100 ;// sensorerror
+        machinestate = kSensorError;
       }
     break;
-    // Sec after shot finish
-    case 31: //lastbezugszeitMillis
+
+    case kShotTimerAfterBrew: //lastbezugszeitMillis
     brewdetection();  
       if ( millis()-lastbezugszeitMillis > BREWSWITCHDELAY )
       {
        debugStream.writeI("Bezugsdauer: %4.1f s",lastbezugszeit/1000);
-       machinestate = 35 ;
+       machinestate = kBrewDetectionTrailing ;
        lastbezugszeit = 0 ;
       }
 
       if (SteamON == 1)
       {
-        machinestate = 40 ; // Steam
+        machinestate = kSteam;
       }
 
      if (backflushON || backflushState > 10) 
       {
-        machinestate = 50 ; // backflushON
+        machinestate = kBackflush;
       }
 
       if (emergencyStop)
       {
-        machinestate = 80 ; // Emergency Stop
+        machinestate = kEmergencyStop;
       }
 
      if (pidON == 0)
       {
-        machinestate = 90 ; // offline
+        machinestate = kPidOffline;
       }
 
      if(sensorError)
       {
-        machinestate = 100 ;// sensorerror
+        machinestate = kSensorError;
       }
     break;
-    // BD PID
-    case 35:
-    brewdetection();  
+
+    case kBrewDetectionTrailing:
+      brewdetection();
       if (timerBrewdetection == 0)
       {
-        machinestate = 20 ; // switch to normal PID
+        machinestate = kPidNormal;
       }
       if
       (
@@ -1479,60 +1480,60 @@ void machinestatevoid()
        (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42) 
       )
       {
-        machinestate = 30 ; // Brew
+        machinestate = kBrew;
       }
       
       if (SteamON == 1)
       {
-        machinestate = 40 ; // switch to  Steam
+        machinestate = kSteam;
       }
 
       if (backflushON || backflushState > 10) 
       {
-        machinestate = 50 ; // backflushON
+        machinestate = kBackflush;
       }
 
       if (emergencyStop)
       {
-        machinestate = 80 ; // Emergency Stop
+        machinestate = kEmergencyStop;
       }
       if (pidON == 0)
       {
-        machinestate = 90 ; // offline
+        machinestate = kPidOffline;
       }
      if(sensorError)
       {
-        machinestate = 100 ;// sensorerror
+        machinestate = kSensorError;
       }
     break;
-    // Steam
-    case 40:
+
+    case kSteam:
       if (SteamON == 0)
       {
-        machinestate = 45 ; //  switch to cool down after steam
+        machinestate = kCoolDown;
       }
 
        if (emergencyStop)
       {
-        machinestate = 80 ; // Emergency Stop
+        machinestate = kEmergencyStop;
       }
 
       if (backflushON || backflushState > 10) 
       {
-        machinestate = 50 ; // backflushON
+        machinestate = kBackflush;
       }
 
       if (pidON == 0)
       {
-        machinestate = 90 ; // offline
+        machinestate = kPidOffline;
       }
       if(sensorError)
       {
-        machinestate = 100 ;// sensorerror
+        machinestate = kSensorError;
       }
     break;  
 
-    case 45: // chill-mode after steam
+    case kCoolDown:
     if (Brewdetection == 2 || Brewdetection == 3) 
       {
         /*
@@ -1546,104 +1547,104 @@ void machinestatevoid()
         // Ab lokalen Minumum wieder freigeben für state 20, dann wird bist Solltemp geheizt.
          if (heatrateaverage > 0 && Input < BrewSetPoint + 2) 
          {
-            machinestate = 20;
+            machinestate = kPidNormal;
          } 
       }
       if ((Brewdetection == 3 || Brewdetection == 2) && Input < BrewSetPoint + 2) 
       {
-        machinestate = 20; //  switch to normal
+        machinestate = kPidNormal;
       }
 
       if (SteamON == 1)
       {
-        machinestate = 40 ; // Steam
+        machinestate = kSteam;
       }
 
       if (backflushON || backflushState > 10) 
       {
-        machinestate = 50 ; // backflushON
+        machinestate = kBackflush;
       }
 
       if (emergencyStop)
       {
-        machinestate = 80 ; // Emergency Stop
+        machinestate = kEmergencyStop;
       }
       if (pidON == 0)
       {
-        machinestate = 90 ; // offline
+        machinestate = kPidOffline;
       }
       if(sensorError)
       {
-        machinestate = 100 ;// sensorerror
+        machinestate = kSensorError;
       }
     break;
 
-    case 50: 
-    // Backflush
+    case kBackflush:
       if (backflushON == 0)
        {
-         machinestate = 20 ; //  switch to normal
+         machinestate = kPidNormal;
        }
 
       if (emergencyStop)
        {
-         machinestate = 80 ; // Emergency Stop
+         machinestate = kEmergencyStop;
        }
       if (pidON == 0)
        {
-         machinestate = 90 ; // offline
+         machinestate = kPidOffline;
        }
       if(sensorError)
        {
-         machinestate = 100 ;// sensorerror
+         machinestate = kSensorError;
        }
     break;
-    // emergencyStop 
-    case 80: 
+
+    case kEmergencyStop: 
       if (!emergencyStop)
       {
-        machinestate = 20 ; // normal PID
+        machinestate = kPidNormal;
       }
       if (pidON == 0)
       {
-        machinestate = 90 ; // offline
+        machinestate = kPidOffline;
       }
       if(sensorError)
       {
-        machinestate = 100 ;
+        machinestate = kSensorError ;
       }
     break;
-    // PID offline
-    case 90: 
+
+    case kPidOffline: 
       if (pidON == 1)
       {
         if(kaltstart) 
         {
-          machinestate = 10 ; // kaltstart 
+          machinestate = kColdStart;
         }
         else if(!kaltstart && (Input > (BrewSetPoint-10) )) // Input higher BrewSetPoint-10, normal PID
         {
-          machinestate = 20 ; // normal PID
+          machinestate = kPidNormal;
         } 
         else if (Input <= (BrewSetPoint-10) )
         {
-          machinestate = 10 ; // Input higher BrewSetPoint-10, kaltstart
+          machinestate = kColdStart; // Input 10C below set point, enter cold start
           kaltstart = true;
         }
       }
 
       if(sensorError)
       {
-        machinestate = 100 ;
+        machinestate = kSensorError ;
       }
     break;
-    // sensor error
-    case 100:
-      machinestate = 100 ;
+
+    case kSensorError:
+      machinestate = kSensorError ;
     break;
   } // switch case
+
   if (machinestate != lastmachinestate) { 
-    debugStream.writeI("new machinestate: %i -> %i",lastmachinestate, machinestate);
+    debugStream.writeI("new machinestate: %i -> %i", lastmachinestate, machinestate);
     lastmachinestate = machinestate;
   }
 } // end void
@@ -2178,7 +2179,7 @@ void looppid()
         printScreen();  // refresh display
       }
   #endif
-  if (machinestate == 90 || machinestate == 100 || machinestate == 80) // Offline see machinestate.h
+  if (machinestate == kPidOffline || machinestate == kSensorError || machinestate == kEmergencyStop) // Offline see machinestate.h
   {
     if (pidMode == 1)
     { 
@@ -2199,7 +2200,7 @@ void looppid()
   }
 
   //Set PID if first start of machine detected, and no SteamON
-  if (machinestate == 0 || machinestate == 10 || machinestate == 19) // Cold Start states 
+  if (machinestate == kInit || machinestate == kColdStart || machinestate == kSetPointNegative) // Cold Start states 
   {
     if (startTn != 0) {
       startKi = startKp / startTn;
@@ -2214,7 +2215,7 @@ void looppid()
     bPID.SetTunings(startKp, startKi, 0, P_ON_M);
   // normal PID
   } 
-  if (machinestate == 20 ) 
+  if (machinestate == kPidNormal ) 
   {    //Prevent overwriting of brewdetection values
     // calc ki, kd
     if (aggTn != 0) {
@@ -2249,7 +2250,7 @@ void looppid()
     bPID.SetTunings(aggbKp, aggbKi, aggbKd, PonE) ;
   }
   // Steam on
-  if (machinestate == 40) // STEAM
+  if (machinestate == kSteam) // STEAM
   {
     // if (aggTn != 0) {
     //   aggKi = aggKp / aggTn ;
@@ -2266,7 +2267,7 @@ void looppid()
     bPID.SetTunings(150, 0, 0, PonE);
   }
 
-  if (machinestate == 45) // chill-mode after steam
+  if (machinestate == kCoolDown) // chill-mode after steam
   {
     switch (machine) {
       
