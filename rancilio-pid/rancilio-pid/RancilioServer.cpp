@@ -11,8 +11,8 @@ String generateForm() {
    #else
    #error("not supported MCU");
    #endif
-    
-    String result = "<html><body><h2>ranciliopid</h2><p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p><form action=\"/post\" method=\"post\">";
+
+    String result = "<form action=\"/post\" method=\"post\">";
     int i = 0;
     for (editable_t e : editableVars) {
         result += "<label for=\"var";
@@ -46,14 +46,26 @@ String generateForm() {
 
         i++;
     }
-    result += "<input type=\"submit\"></form></body></html>";
+    result += "<input type=\"submit\"></form>";
     return result;
 }
 
+String staticProcessor(const String& var) {
+    if (var == "VARIABLES") {
+        return generateForm();
+    }
+    String varLower(var);
+    varLower.toLowerCase();
+    File file = SPIFFS.open("/html_fragments/" + varLower + ".html", "r");
+    if(file) {
+        String ret = file.readString();
+        file.close();
+        return ret;
+    }
+    return String();
+}
+
 void serverSetup() {
-    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-        request->send(200, "text/html", generateForm());
-    });
 
     // Send a POST request to <IP>/post with a form field message set to <message>
     server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request){
@@ -97,9 +109,14 @@ void serverSetup() {
  
     });
 
+    SPIFFS.begin();
+    server.serveStatic("/css", SPIFFS, "/css/");
+    server.serveStatic("/", SPIFFS, "/html/").setTemplateProcessor(staticProcessor);
+
     server.onNotFound([](AsyncWebServerRequest *request){
         request->send(404, "text/plain", "Not found");
     });
+
 
     server.begin();
     Serial.println("Server started at " + WiFi.localIP().toString());
