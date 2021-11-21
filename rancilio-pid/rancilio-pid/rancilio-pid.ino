@@ -415,10 +415,11 @@ void createSoftAp()
       //apActivationTime = millis();
       //softApEnabled = 1;
       softApEnabledcheck = true;
-      Serial.println("Set softApEnabled: 1, AP MODE");
+      Serial.println("Set softApEnabled: 1, AP MODE\n");
       // Reset to normal mode softApEnabled = 0
       EEPROM.begin(1024);
-      EEPROM.put(140, 0) ;
+      int eepromvalue = 0; 
+      EEPROM.put(150, eepromvalue) ;
       EEPROM.commit();
      Serial.printf("AccessPoint created with SSID %s and KEY %s and settings page http://%i.%i.%i.%i/settings\r\n", AP_WIFI_SSID, AP_WIFI_KEY, WiFi.softAPIP()[0],WiFi.softAPIP()[1],WiFi.softAPIP()[2],WiFi.softAPIP()[3]);
   //} else 
@@ -439,16 +440,16 @@ void stopSoftAp()
 void checklastpoweroff()
 {
   EEPROM.begin(1024); 
-  EEPROM.get(140, softApEnabled);  
+  EEPROM.get(150, softApEnabled);  
   //debugStream.writeD("softApEnabled: %i",softApEnabled);
-  Serial.printf("softApEnabled: %i",softApEnabled);
+  Serial.printf("softApEnabled: %i\n",softApEnabled);
   //softApEnabled = 1;
   //Serial.printf("softApEnabled: %i",softApEnabled);
  if (softApEnabled != 1) // set 1 if 0 
  {
-  Serial.printf("Set softApEnabled: 1, was 0");
+  Serial.printf("Set softApEnabled: 1, was 0\n");
   int eepromvalue = 1; 
-  EEPROM.put(140, eepromvalue) ;
+  EEPROM.put(150, eepromvalue) ;
  }
 
  EEPROM.commit();
@@ -459,12 +460,14 @@ void setchecklastpoweroff()
 {
   if (millis() > checkpowerofftime && checklastpoweroffEnabled == false)
   {
-    Serial.printf("Set softApEnabled 0 after checkpowerofftime");
+    stopISR();
+    Serial.printf("Set softApEnabled 0 after checkpowerofftime\n");
     EEPROM.begin(1024);
     int eepromvalue = 0; 
-    EEPROM.put(140, eepromvalue) ;
+    EEPROM.put(150, eepromvalue) ;
     EEPROM.commit();
     checklastpoweroffEnabled = true; 
+    startISR();
   }
 }
 
@@ -1742,6 +1745,28 @@ void debugVerboseOutput()
   }
 }
 
+void stopISR()
+{
+   #if defined(ESP8266)
+      timer1_disable();
+      #endif
+   #if defined(ESP32)
+      timerAlarmDisable(timer);
+      #endif
+}
+
+void startISR()
+{
+  #if defined(ESP8266)
+      timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+  #endif
+  #if defined(ESP32)
+      timerAlarmEnable(timer);
+  #endif
+}
+
+
+
 void setup() 
 {
   DEBUGSTART(115200);
@@ -1749,15 +1774,10 @@ void setup()
   // Check AP Mode 
   checklastpoweroff();
   
-  Serial.printf("softApEnabled setup %i",softApEnabled);
+  //Serial.printf("softApEnabled setup %i",softApEnabled);
  if (softApEnabled == 1)
  {
-     #if defined(ESP8266)
-      timer1_disable();
-    #endif
-    #if defined(ESP32)
-      timerAlarmDisable(timer);
-    #endif
+    stopISR();
     createSoftAp();
   } else if(softApEnabled == 0)
   {
@@ -2132,6 +2152,8 @@ void setup()
     #endif
   } // else softenable == 1
 } // setup
+
+
 void loop() {
   if (calibration_mode == 1 && TOF == 1) 
   {
