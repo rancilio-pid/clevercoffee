@@ -123,6 +123,17 @@ const char* pass = PASS;
 unsigned long lastWifiConnectionAttempt = millis();
 unsigned int wifiReconnects = 0; //actual number of reconnects
 
+int softApEnabled = 0 ;
+IPAddress localIp(192, 168, 1, 1);
+IPAddress gateway(192, 168, 1, 1);
+IPAddress subnet(255, 255, 255, 0);
+const char* AP_WIFI_SSID = APWIFISSID ;
+const char* AP_WIFI_KEY = APWIFIKEY ;
+const unsigned long checkpowerofftime = 30*1000 ;
+boolean checklastpoweroffEnabled = false; 
+boolean softApEnabledcheck = false ;
+
+
 // OTA
 const char* OTAhost = OTAHOST;
 const char* OTApass = OTAPASS;
@@ -390,7 +401,72 @@ const unsigned long intervalDisplay = 500;
   #endif
 #endif
 
+/********************************************************
+  AP
+******************************************************/
 
+void createSoftAp()
+{
+ if (softApEnabledcheck == false)
+ {
+      WiFi.enableAP(true);
+      WiFi.softAP(AP_WIFI_SSID, AP_WIFI_KEY);
+      WiFi.softAPConfig(localIp, gateway, subnet);
+      //apActivationTime = millis();
+      //softApEnabled = 1;
+      softApEnabledcheck = true;
+      Serial.println("Set softApEnabled: 1, AP MODE");
+      // Reset to normal mode softApEnabled = 0
+      EEPROM.begin(1024);
+      EEPROM.put(140, 0) ;
+      EEPROM.commit();
+     Serial.printf("AccessPoint created with SSID %s and KEY %s and settings page http://%i.%i.%i.%i/settings\r\n", AP_WIFI_SSID, AP_WIFI_KEY, WiFi.softAPIP()[0],WiFi.softAPIP()[1],WiFi.softAPIP()[2],WiFi.softAPIP()[3]);
+  //} else 
+  //{    
+  //  Serial.printf("Could not create AccessPoint! %i\r\n", WiFi.status());
+ }
+ yield();
+}
+void stopSoftAp()
+{
+    Serial.println("Closing AccesPoint");
+    //wifiConnectionAttemps = 0;
+    //softApEnabled = 0;
+    //apActivationTime = 0;
+    WiFi.enableAP(false);
+}
+
+void checklastpoweroff()
+{
+  EEPROM.begin(1024); 
+  EEPROM.get(140, softApEnabled);  
+  //debugStream.writeD("softApEnabled: %i",softApEnabled);
+  Serial.printf("softApEnabled: %i",softApEnabled);
+  //softApEnabled = 1;
+  //Serial.printf("softApEnabled: %i",softApEnabled);
+ if (softApEnabled != 1) // set 1 if 0 
+ {
+  Serial.printf("Set softApEnabled: 1, was 0");
+  int eepromvalue = 1; 
+  EEPROM.put(140, eepromvalue) ;
+ }
+
+ EEPROM.commit();
+
+}
+
+void setchecklastpoweroff()
+{
+  if (millis() > checkpowerofftime && checklastpoweroffEnabled == false)
+  {
+    Serial.printf("Set softApEnabled 0 after checkpowerofftime");
+    EEPROM.begin(1024);
+    int eepromvalue = 0; 
+    EEPROM.put(140, eepromvalue) ;
+    EEPROM.commit();
+    checklastpoweroffEnabled = true; 
+  }
+}
 
 /********************************************************
    BLYNK define pins and read values
@@ -659,7 +735,7 @@ void refreshTemp() {
         Temperatur_C = Sensor2.getTemp();
         //DEBUG_println(Temperatur_C);
        #endif
-      //Temperatur_C = 70;
+      Temperatur_C = 70;
       if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
       Input = Temperatur_C;
       if (Brewdetection != 0) {
@@ -730,7 +806,7 @@ void checkWifi() {
       if (statusTemp != WL_CONNECTED) {   // check WiFi connection status
         lastWifiConnectionAttempt = millis();
         wifiReconnects++;
-        debugStream.writeI("Attempting WIFI reconnection: %i",wifiReconnects);
+        debugStream.writeD("Attempting WIFI reconnection: %i",wifiReconnects);
         if (!setupDone) {
            #if DISPLAY != 0
             displayMessage("", "", "", "", langstring_wifirecon, String(wifiReconnects));
@@ -766,7 +842,7 @@ void checkBlynk() {
     if (statusTemp != 1) {   // check Blynk connection status
       lastBlynkConnectionAttempt = millis();        // Reconnection Timer Function
       blynkReCnctCount++;  // Increment reconnection Counter
-      debugStream.writeI("Attempting blynk reconnection: %i",blynkReCnctCount);
+      debugStream.writeD("Attempting blynk reconnection: %i",blynkReCnctCount);
       Blynk.connect(3000);  // Try to reconnect to the server; connect() is a blocking function, watch the timeout!
     }
   }
@@ -1666,389 +1742,410 @@ void debugVerboseOutput()
   }
 }
 
-void setup() {
+void setup() 
+{
   DEBUGSTART(115200);
   debugStream.setup();
-
-  if (MQTT == 1) {
-    //MQTT
-    snprintf(topic_will, sizeof(topic_will), "%s%s/%s", mqtt_topic_prefix, hostname, "will");
-    snprintf(topic_set, sizeof(topic_set), "%s%s/+/%s", mqtt_topic_prefix, hostname, "set");
-    mqtt.setServer(mqtt_server_ip, mqtt_server_port);
-    mqtt.setCallback(mqtt_callback);
-    checkMQTT();
-  }
-
-  /********************************************************
-    Define trigger type
-  ******************************************************/
-  if (triggerType)
-  {
-    relayON = HIGH;
-    relayOFF = LOW;
-  } else {
-    relayON = LOW;
-    relayOFF = HIGH;
-  }
-
-  if (TRIGGERRELAYTYPE)
-  {
-    relayETriggerON = HIGH;
-    relayETriggerOFF  = LOW;
-  } else {
-    relayETriggerON  = LOW;
-    relayETriggerOFF  = HIGH;
-  }
-  if (VOLTAGESENSORTYPE)
-  {
-    VoltageSensorON = HIGH;
-    VoltageSensorOFF  = LOW;
-  } else {
-    VoltageSensorON = LOW;
-    VoltageSensorOFF  = HIGH;
-  }
-
-  /********************************************************
-    Init Pins
-  ******************************************************/
-  pinMode(pinRelayVentil, OUTPUT);
-  pinMode(pinRelayPumpe, OUTPUT);
-  pinMode(pinRelayHeater, OUTPUT);
-  pinMode(STEAMONPIN, INPUT);
-  digitalWrite(pinRelayVentil, relayOFF);
-  digitalWrite(pinRelayPumpe, relayOFF);
-  digitalWrite(pinRelayHeater, LOW);
-  if (ETRIGGER == 1) // IF Etrigger selected
-  {
-    pinMode(PINETRIGGER, OUTPUT);
-    digitalWrite(PINETRIGGER, relayETriggerOFF);   //Set the E-Trigger OFF its, important for LOW Trigger Relais
-  }
-  if (BREWDETECTION == 3) // IF Voltage sensor selected
-  {
-    pinMode(PINVOLTAGESENSOR, PINMODEVOLTAGESENSOR);
-  }
-  if (PINBREWSWITCH > 0) // IF PINBREWSWITCH & Steam selected
-  {
-    #if (defined(ESP8266) && PINBREWSWITCH == 16)
-      pinMode(PINBREWSWITCH, INPUT_PULLDOWN_16);
-    #endif
-    #if (defined(ESP8266) && PINBREWSWITCH == 15)
-      pinMode(PINBREWSWITCH, INPUT);
+  // Check AP Mode 
+  checklastpoweroff();
+  
+  Serial.printf("softApEnabled setup %i",softApEnabled);
+ if (softApEnabled == 1)
+ {
+     #if defined(ESP8266)
+      timer1_disable();
     #endif
     #if defined(ESP32)
-      pinMode(PINBREWSWITCH, INPUT);//
+      timerAlarmDisable(timer);
     #endif
-  }
-    #if (defined(ESP8266) && STEAMONPIN == 16)
-      pinMode(STEAMONPIN, INPUT_PULLDOWN_16);
-    #endif
-      #if (defined(ESP8266) && STEAMONPIN == 15)
-    pinMode(STEAMONPIN, INPUT);
-    #endif
-    #if defined(ESP32)
-      pinMode(STEAMONPIN, INPUT_PULLDOWN);
-    #endif
-  /********************************************************
-    DISPLAY 128x64
-  ******************************************************/
-  #if DISPLAY != 0
-    u8g2.setI2CAddress(oled_i2c * 2);
-    u8g2.begin();
-    u8g2_prepare();
-    displayLogo(sysVersion, "");
-    delay(2000);
-  #endif
-   /********************************************************
-    Init Scale by BREWMODE 2 or SHOTTIMER 2
-  ******************************************************/
-  #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
-    initScale() ;
-  #endif
-
-
-  /********************************************************
-    VL530L0x TOF sensor
-  ******************************************************/
-  if (TOF != 0) {
-  lox.begin(tof_i2c); // initialize TOF sensor at I2C address
-  lox.setMeasurementTimingBudgetMicroSeconds(2000000);
-  }
-
-  /********************************************************
-     BLYNK & Fallback offline
-  ******************************************************/
-  if (Offlinemodus == 0)
+    createSoftAp();
+  } else if(softApEnabled == 0)
   {
-    #if defined(ESP8266)
-      WiFi.hostname(hostname);
-    #endif
-    unsigned long started = millis();
-    #if DISPLAY != 0
-      displayLogo(langstring_connectwifi1, ssid);
-    #endif
-    /* Explicitly set the ESP8266 to be a WiFi-client, otherwise, it by default,
-      would try to act as both a client and an access-point and could cause
-      network-issues with your other WiFi-devices on your WiFi-network. */
-    WiFi.mode(WIFI_STA);
-    WiFi.persistent(false);   //needed, otherwise exceptions are triggered \o.O/
-    WiFi.begin(ssid, pass);
-    #if defined(ESP32) // ESP32
-     WiFi.setHostname(hostname); // for ESP32port
-    #endif
-    debugStream.writeI("Connecting to %s ...",ssid);
-
-    // wait up to 20 seconds for connection:
-    while ((WiFi.status() != WL_CONNECTED) && (millis() - started < 20000))
-    {
-      yield();    //Prevent Watchdog trigger
+    if (MQTT == 1) {
+      //MQTT
+      snprintf(topic_will, sizeof(topic_will), "%s%s/%s", mqtt_topic_prefix, hostname, "will");
+      snprintf(topic_set, sizeof(topic_set), "%s%s/+/%s", mqtt_topic_prefix, hostname, "set");
+      mqtt.setServer(mqtt_server_ip, mqtt_server_port);
+      mqtt.setCallback(mqtt_callback);
+      checkMQTT();
     }
 
-    checkWifi();    //try to reconnect
-
-    if (WiFi.status() == WL_CONNECTED)
+    /********************************************************
+      Define trigger type
+    ******************************************************/
+    if (triggerType)
     {
-      debugStream.writeI("WiFi connected - IP = %i.%i.%i.%i",WiFi.localIP()[0],WiFi.localIP()[1],WiFi.localIP()[2],WiFi.localIP()[3]);
-      
-      if ( BLYNK == 1)
+      relayON = HIGH;
+      relayOFF = LOW;
+    } else {
+      relayON = LOW;
+      relayOFF = HIGH;
+    }
+
+    if (TRIGGERRELAYTYPE)
+    {
+      relayETriggerON = HIGH;
+      relayETriggerOFF  = LOW;
+    } else {
+      relayETriggerON  = LOW;
+      relayETriggerOFF  = HIGH;
+    }
+    if (VOLTAGESENSORTYPE)
+    {
+      VoltageSensorON = HIGH;
+      VoltageSensorOFF  = LOW;
+    } else {
+      VoltageSensorON = LOW;
+      VoltageSensorOFF  = HIGH;
+    }
+
+    /********************************************************
+      Init Pins
+    ******************************************************/
+    pinMode(pinRelayVentil, OUTPUT);
+    pinMode(pinRelayPumpe, OUTPUT);
+    pinMode(pinRelayHeater, OUTPUT);
+    pinMode(STEAMONPIN, INPUT);
+    digitalWrite(pinRelayVentil, relayOFF);
+    digitalWrite(pinRelayPumpe, relayOFF);
+    digitalWrite(pinRelayHeater, LOW);
+    if (ETRIGGER == 1) // IF Etrigger selected
+    {
+      pinMode(PINETRIGGER, OUTPUT);
+      digitalWrite(PINETRIGGER, relayETriggerOFF);   //Set the E-Trigger OFF its, important for LOW Trigger Relais
+    }
+    if (BREWDETECTION == 3) // IF Voltage sensor selected
+    {
+      pinMode(PINVOLTAGESENSOR, PINMODEVOLTAGESENSOR);
+    }
+    if (PINBREWSWITCH > 0) // IF PINBREWSWITCH & Steam selected
+    {
+      #if (defined(ESP8266) && PINBREWSWITCH == 16)
+        pinMode(PINBREWSWITCH, INPUT_PULLDOWN_16);
+      #endif
+      #if (defined(ESP8266) && PINBREWSWITCH == 15)
+        pinMode(PINBREWSWITCH, INPUT);
+      #endif
+      #if defined(ESP32)
+        pinMode(PINBREWSWITCH, INPUT);//
+      #endif
+    }
+      #if (defined(ESP8266) && STEAMONPIN == 16)
+        pinMode(STEAMONPIN, INPUT_PULLDOWN_16);
+      #endif
+        #if (defined(ESP8266) && STEAMONPIN == 15)
+      pinMode(STEAMONPIN, INPUT);
+      #endif
+      #if defined(ESP32)
+        pinMode(STEAMONPIN, INPUT_PULLDOWN);
+      #endif
+    /********************************************************
+      DISPLAY 128x64
+    ******************************************************/
+    #if DISPLAY != 0
+      u8g2.setI2CAddress(oled_i2c * 2);
+      u8g2.begin();
+      u8g2_prepare();
+      displayLogo(sysVersion, "");
+      delay(2000);
+    #endif
+    /********************************************************
+      Init Scale by BREWMODE 2 or SHOTTIMER 2
+    ******************************************************/
+    #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
+      initScale() ;
+    #endif
+
+
+    /********************************************************
+      VL530L0x TOF sensor
+    ******************************************************/
+    if (TOF != 0) {
+    lox.begin(tof_i2c); // initialize TOF sensor at I2C address
+    lox.setMeasurementTimingBudgetMicroSeconds(2000000);
+    }
+
+    /********************************************************
+       BLYNK & Fallback offline
+    ******************************************************/
+    if (Offlinemodus == 0)
+    {
+      #if defined(ESP8266)
+        WiFi.hostname(hostname);
+      #endif
+      unsigned long started = millis();
+      #if DISPLAY != 0
+        displayLogo(langstring_connectwifi1, ssid);
+      #endif
+      /* Explicitly set the ESP8266 to be a WiFi-client, otherwise, it by default,
+        would try to act as both a client and an access-point and could cause
+        network-issues with your other WiFi-devices on your WiFi-network. */
+      WiFi.mode(WIFI_STA);
+      WiFi.persistent(false);   //needed, otherwise exceptions are triggered \o.O/
+      WiFi.begin(ssid, pass);
+      #if defined(ESP32) // ESP32
+      WiFi.setHostname(hostname); // for ESP32port
+      #endif
+      debugStream.writeD("Connecting to %s ...",ssid);
+
+      // wait up to 20 seconds for connection:
+      while ((WiFi.status() != WL_CONNECTED) && (millis() - started < 20000))
       {
-        debugStream.writeI("Wifi works, now try Blynk (timeout 30s)");
+        yield();    //Prevent Watchdog trigger
       }
-      
-      if (fallback == 0) {
-        #if DISPLAY != 0
-          displayLogo(langstring_connectblynk1[0], langstring_connectblynk1[1]);
-        #endif
-      } else if (fallback == 1) {
-        #if DISPLAY != 0
-          displayLogo(langstring_connectwifi2[0], langstring_connectwifi2[1]);
-        #endif
-      }
-      
 
- /********************************************************
-    OWN Webside
- ******************************************************/
-  if (LOCALHOST == 1)
-  {
-  serverSetup();
-  }  
+      checkWifi();    //try to reconnect
 
- /******************************************************/
-      delay(1000);
-
-      //try blynk connection
-      if ( BLYNK == 1)
+      if (WiFi.status() == WL_CONNECTED)
       {
-        Blynk.config(auth, blynkaddress, blynkport) ;
-        Blynk.connect(30000);
-
-        if (Blynk.connected() == true)
+        debugStream.writeD("WiFi connected - IP = %i.%i.%i.%i",WiFi.localIP()[0],WiFi.localIP()[1],WiFi.localIP()[2],WiFi.localIP()[3]);
+        
+        if ( BLYNK == 1)
         {
+          debugStream.writeD("Wifi works, now try Blynk (timeout 30s)");
+        }
+        
+        if (fallback == 0) {
           #if DISPLAY != 0
-            displayLogo(langstring_connectblynk2[0], langstring_connectblynk2[1]);
+            displayLogo(langstring_connectblynk1[0], langstring_connectblynk1[1]);
           #endif
-          debugStream.writeI("Blynk is online");
-          if (fallback == 1)
-          {
-            debugStream.writeI("sync all variables and write new values to eeprom");
-            // Blynk.run() ;
-            Blynk.syncVirtual(V4);
-            Blynk.syncVirtual(V5);
-            Blynk.syncVirtual(V6);
-            Blynk.syncVirtual(V7);
-            Blynk.syncVirtual(V8);
-            Blynk.syncVirtual(V9);
-            Blynk.syncVirtual(V10);
-            Blynk.syncVirtual(V11);
-            Blynk.syncVirtual(V12);
-            Blynk.syncVirtual(V13);
-            Blynk.syncVirtual(V14);
-            Blynk.syncVirtual(V15);
-            Blynk.syncVirtual(V30);
-            Blynk.syncVirtual(V31);
-            Blynk.syncVirtual(V32);
-            Blynk.syncVirtual(V33);
-            Blynk.syncVirtual(V34);
-            // Blynk.syncAll();  //sync all values from Blynk server
-            // Werte in den eeprom schreiben
-            // ini eeprom mit begin
-            EEPROM.begin(1024);
-            EEPROM.put(0, aggKp);
-            EEPROM.put(10, aggTn);
-            EEPROM.put(20, aggTv);
-            EEPROM.put(30, BrewSetPoint);
-            EEPROM.put(40, brewtime);
-            EEPROM.put(50, preinfusion);
-            EEPROM.put(60, preinfusionpause);
-            EEPROM.put(90, aggbKp);
-            EEPROM.put(100, aggbTn);
-            EEPROM.put(110, aggbTv);
-            EEPROM.put(120, brewtimersoftware);
-            EEPROM.put(130, brewboarder);
-            // eeprom schließen
-            EEPROM.commit();
-          }
-        } else
+        } else if (fallback == 1) {
+          #if DISPLAY != 0
+            displayLogo(langstring_connectwifi2[0], langstring_connectwifi2[1]);
+          #endif
+        }
+        
+
+    /********************************************************
+      OWN Webside
+    ******************************************************/
+    if (LOCALHOST == 1)
+    {
+    serverSetup();
+    }  
+
+    /******************************************************/
+        delay(1000);
+
+        //try blynk connection
+        if ( BLYNK == 1)
         {
-          debugStream.writeI("No connection to Blynk");
-          EEPROM.begin(1024);  // open eeprom
-          double dummy; // check if eeprom values are numeric (only check first value in eeprom)
-          EEPROM.get(0, dummy);
-          debugStream.writeI("check eeprom 0x00 in dummy: %f",dummy);
-          if (!isnan(dummy))
+          Blynk.config(auth, blynkaddress, blynkport) ;
+          Blynk.connect(30000);
+
+          if (Blynk.connected() == true)
           {
             #if DISPLAY != 0
-            displayLogo("3: Blynk not connected", "use eeprom values..");
+              displayLogo(langstring_connectblynk2[0], langstring_connectblynk2[1]);
             #endif
-            EEPROM.get(0, aggKp);
-            EEPROM.get(10, aggTn);
-            EEPROM.get(20, aggTv);
-            EEPROM.get(30, BrewSetPoint);
-            EEPROM.get(40, brewtime);
-            EEPROM.get(50, preinfusion);
-            EEPROM.get(60, preinfusionpause);
-            EEPROM.get(90, aggbKp);
-            EEPROM.get(100, aggbTn);
-            EEPROM.get(110, aggbTv);
-            EEPROM.get(120, brewtimersoftware);
-            EEPROM.get(130, brewboarder);
+            debugStream.writeD("Blynk is online");
+            if (fallback == 1)
+            {
+              debugStream.writeD("sync all variables and write new values to eeprom");
+              // Blynk.run() ;
+              Blynk.syncVirtual(V4);
+              Blynk.syncVirtual(V5);
+              Blynk.syncVirtual(V6);
+              Blynk.syncVirtual(V7);
+              Blynk.syncVirtual(V8);
+              Blynk.syncVirtual(V9);
+              Blynk.syncVirtual(V10);
+              Blynk.syncVirtual(V11);
+              Blynk.syncVirtual(V12);
+              Blynk.syncVirtual(V13);
+              Blynk.syncVirtual(V14);
+              Blynk.syncVirtual(V15);
+              Blynk.syncVirtual(V30);
+              Blynk.syncVirtual(V31);
+              Blynk.syncVirtual(V32);
+              Blynk.syncVirtual(V33);
+              Blynk.syncVirtual(V34);
+              // Blynk.syncAll();  //sync all values from Blynk server
+              // Werte in den eeprom schreiben
+              // ini eeprom mit begin
+              EEPROM.begin(1024);
+              EEPROM.put(0, aggKp);
+              EEPROM.put(10, aggTn);
+              EEPROM.put(20, aggTv);
+              EEPROM.put(30, BrewSetPoint);
+              EEPROM.put(40, brewtime);
+              EEPROM.put(50, preinfusion);
+              EEPROM.put(60, preinfusionpause);
+              EEPROM.put(90, aggbKp);
+              EEPROM.put(100, aggbTn);
+              EEPROM.put(110, aggbTv);
+              EEPROM.put(120, brewtimersoftware);
+              EEPROM.put(130, brewboarder);
+              // eeprom schließen
+              EEPROM.commit();
+            }
+          } else
+          {
+            debugStream.writeI("No connection to Blynk");
+            EEPROM.begin(1024);  // open eeprom
+            double dummy; // check if eeprom values are numeric (only check first value in eeprom)
+            EEPROM.get(0, dummy);
+            debugStream.writeI("check eeprom 0x00 in dummy: %f",dummy);
+            if (!isnan(dummy))
+            {
+              #if DISPLAY != 0
+              displayLogo("3: Blynk not connected", "use eeprom values..");
+              #endif
+              EEPROM.get(0, aggKp);
+              EEPROM.get(10, aggTn);
+              EEPROM.get(20, aggTv);
+              EEPROM.get(30, BrewSetPoint);
+              EEPROM.get(40, brewtime);
+              EEPROM.get(50, preinfusion);
+              EEPROM.get(60, preinfusionpause);
+              EEPROM.get(90, aggbKp);
+              EEPROM.get(100, aggbTn);
+              EEPROM.get(110, aggbTv);
+              EEPROM.get(120, brewtimersoftware);
+              EEPROM.get(130, brewboarder);
+            }
           }
-        }
-     }
+      }
+      }
+      else
+      {
+        #if DISPLAY != 0
+          displayLogo(langstring_nowifi[0], langstring_nowifi[1]);
+        #endif
+        debugStream.writeI("No WIFI");
+        WiFi.disconnect(true);
+        delay(1000);
+      }
     }
-    else
-    {
-      #if DISPLAY != 0
-        displayLogo(langstring_nowifi[0], langstring_nowifi[1]);
-      #endif
-      debugStream.writeI("No WIFI");
-      WiFi.disconnect(true);
-      delay(1000);
-    }
-  }
-    
+      
 
-  /********************************************************
-     OTA
-  ******************************************************/
-  if (ota && Offlinemodus == 0 && WiFi.status() == WL_CONNECTED) {
-    ArduinoOTA.setHostname(OTAhost);  //  Device name for OTA
-    ArduinoOTA.setPassword(OTApass);  //  Password for OTA
-    ArduinoOTA.begin();
-  }
-
-
-  /********************************************************
-     Ini PID
-  ******************************************************/
-
-  //setPointTemp = BrewSetPoint;
-  bPID.SetSampleTime(windowSize);
-  bPID.SetOutputLimits(0, windowSize);
-  bPID.SetMode(AUTOMATIC);
-
-
-  /********************************************************
-     TEMP SENSOR
-  ******************************************************/
-  if (TempSensor == 1)
-  {
-    sensors.begin();
-    sensors.getAddress(sensorDeviceAddress, 0);
-    sensors.setResolution(sensorDeviceAddress, 10) ;
-    sensors.requestTemperatures();
-    Input = sensors.getTempCByIndex(0);
-  }
-  if (TempSensor == 2)
-  {
-    temperature = 0;
-    #if (ONE_WIRE_BUS == 16 && defined(ESP8266))
-        Sensor1.getTemperature(&temperature);
-        Input = Sensor1.calc_Celsius(&temperature);
-    #endif
-    #if ((ONE_WIRE_BUS != 16 && defined(ESP8266)) || defined(ESP32))
-        Input = Sensor2.getTemp();
-    #endif
-  }
-
-
-
-
-  /********************************************************
-    movingaverage ini array
-  ******************************************************/
-  if (Brewdetection == 1) {
-    for (int thisReading = 0; thisReading < numReadings; thisReading++) {
-      readingstemp[thisReading] = 0;
-      readingstime[thisReading] = 0;
-      readingchangerate[thisReading] = 0;
-    }
-  }
-  /*
-  if (TempSensor == 2) {
-    temperature = 0;
-    #if (ONE_WIRE_BUS == 16)
-         Sensor1.getTemperature(&temperature);
-         Input = Sensor1.calc_Celsius(&temperature);
-    #endif
-    #if (ONE_WIRE_BUS != 16)
-        Input = Sensor2.getTemp();
-     #endif
-  } */
-
-  //Initialisation MUST be at the very end of the init(), otherwise the time comparision in loop() will have a big offset
-  unsigned long currentTime = millis();
-  previousMillistemp = currentTime;
-  windowStartTime = currentTime;
-  previousMillisDisplay = currentTime;
-  previousMillisBlynk = currentTime;
-  previousMillisMQTT = currentTime;
-  previousMillisETrigger = currentTime;
-  previousMillisVoltagesensorreading = currentTime;
-  #if (BREWMODE ==  2)
-  previousMillisScale = currentTime;
-  #endif
-  #if (PRESSURESENSOR == 1)
-  previousMillisPressure = currentTime;
-  #endif
-  setupDone = true;
-
-  #if defined(ESP8266)
     /********************************************************
+       OTA
+    ******************************************************/
+    if (ota && Offlinemodus == 0 && WiFi.status() == WL_CONNECTED) {
+      ArduinoOTA.setHostname(OTAhost);  //  Device name for OTA
+      ArduinoOTA.setPassword(OTApass);  //  Password for OTA
+      ArduinoOTA.begin();
+    }
+
+
+    /********************************************************
+       Ini PID
+    ******************************************************/
+
+    //setPointTemp = BrewSetPoint;
+    bPID.SetSampleTime(windowSize);
+    bPID.SetOutputLimits(0, windowSize);
+    bPID.SetMode(AUTOMATIC);
+
+
+    /********************************************************
+       TEMP SENSOR
+    ******************************************************/
+    if (TempSensor == 1)
+    {
+      sensors.begin();
+      sensors.getAddress(sensorDeviceAddress, 0);
+      sensors.setResolution(sensorDeviceAddress, 10) ;
+      sensors.requestTemperatures();
+      Input = sensors.getTempCByIndex(0);
+    }
+    if (TempSensor == 2)
+    {
+      temperature = 0;
+      #if (ONE_WIRE_BUS == 16 && defined(ESP8266))
+          Sensor1.getTemperature(&temperature);
+          Input = Sensor1.calc_Celsius(&temperature);
+      #endif
+      #if ((ONE_WIRE_BUS != 16 && defined(ESP8266)) || defined(ESP32))
+          Input = Sensor2.getTemp();
+      #endif
+    }
+
+
+
+
+    /********************************************************
+      movingaverage ini array
+    ******************************************************/
+    if (Brewdetection == 1) {
+      for (int thisReading = 0; thisReading < numReadings; thisReading++) {
+        readingstemp[thisReading] = 0;
+        readingstime[thisReading] = 0;
+        readingchangerate[thisReading] = 0;
+      }
+    }
+    /*
+    if (TempSensor == 2) {
+      temperature = 0;
+      #if (ONE_WIRE_BUS == 16)
+          Sensor1.getTemperature(&temperature);
+          Input = Sensor1.calc_Celsius(&temperature);
+      #endif
+      #if (ONE_WIRE_BUS != 16)
+          Input = Sensor2.getTemp();
+      #endif
+    } */
+
+    //Initialisation MUST be at the very end of the init(), otherwise the time comparision in loop() will have a big offset
+    unsigned long currentTime = millis();
+    previousMillistemp = currentTime;
+    windowStartTime = currentTime;
+    previousMillisDisplay = currentTime;
+    previousMillisBlynk = currentTime;
+    previousMillisMQTT = currentTime;
+    previousMillisETrigger = currentTime;
+    previousMillisVoltagesensorreading = currentTime;
+    #if (BREWMODE ==  2)
+    previousMillisScale = currentTime;
+    #endif
+    #if (PRESSURESENSOR == 1)
+    previousMillisPressure = currentTime;
+    #endif
+    setupDone = true;
+
+    #if defined(ESP8266)
+      /********************************************************
+        Timer1 ISR - Initialisierung
+        TIM_DIV1 = 0,   //80MHz (80 ticks/us - 104857.588 us max)
+        TIM_DIV16 = 1,  //5MHz (5 ticks/us - 1677721.4 us max)
+        TIM_DIV256 = 3  //312.5Khz (1 tick = 3.2us - 26843542.4 us max)
+      ******************************************************/
+        timer1_isr_init();
+        timer1_attachInterrupt(onTimer1ISR);
+        //timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+        //timer1_write(50000); // set interrupt time to 10ms
+        timer1_enable(TIM_DIV256, TIM_EDGE, TIM_SINGLE);
+        timer1_write(6250); // set interrupt time to 20ms
+    #endif
+    #if defined(ESP32) // ESP32
+          /********************************************************
       Timer1 ISR - Initialisierung
       TIM_DIV1 = 0,   //80MHz (80 ticks/us - 104857.588 us max)
       TIM_DIV16 = 1,  //5MHz (5 ticks/us - 1677721.4 us max)
       TIM_DIV256 = 3  //312.5Khz (1 tick = 3.2us - 26843542.4 us max)
     ******************************************************/
-      timer1_isr_init();
-      timer1_attachInterrupt(onTimer1ISR);
-      //timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
-      //timer1_write(50000); // set interrupt time to 10ms
-      timer1_enable(TIM_DIV256, TIM_EDGE, TIM_SINGLE);
-      timer1_write(6250); // set interrupt time to 20ms
-  #endif
-  #if defined(ESP32) // ESP32
-        /********************************************************
-    Timer1 ISR - Initialisierung
-    TIM_DIV1 = 0,   //80MHz (80 ticks/us - 104857.588 us max)
-    TIM_DIV16 = 1,  //5MHz (5 ticks/us - 1677721.4 us max)
-    TIM_DIV256 = 3  //312.5Khz (1 tick = 3.2us - 26843542.4 us max)
-  ******************************************************/
-    timer = timerBegin(0, 80, true); //m
-    timerAttachInterrupt(timer, &onTimer, true);//m
-    timerAlarmWrite(timer, 10000, true);//m
-    timerAlarmEnable(timer);//m
-  #endif
-}
-
+      timer = timerBegin(0, 80, true); //m
+      timerAttachInterrupt(timer, &onTimer, true);//m
+      timerAlarmWrite(timer, 10000, true);//m
+      timerAlarmEnable(timer);//m
+    #endif
+  } // else softenable == 1
+} // setup
 void loop() {
-  if (calibration_mode == 1 && TOF == 1) {
+  if (calibration_mode == 1 && TOF == 1) 
+  {
       loopcalibrate();
-  } else {
+  } else if (softApEnabled == 0)
+  {
       looppid();
       debugStream.handle();
       debugVerboseOutput();
-    }
+  } else if (softApEnabled == 1)
+  {
+    delay(1000);
+  }
+  
 }
 
 // TOF Calibration_mode
@@ -2177,6 +2274,7 @@ void looppid()
   setEmergencyStopTemp();
   sendToBlynkMQTT();
   machinestatevoid() ; // calc machinestate
+  setchecklastpoweroff(); // FOR AP MODE
   if (ETRIGGER == 1) // E-Trigger active then void Etrigger()
   {
     ETriggervoid();
