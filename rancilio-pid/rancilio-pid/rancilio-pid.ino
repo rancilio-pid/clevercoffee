@@ -425,6 +425,8 @@ void createSoftAp()
       EEPROM.end();
       softApstate = 0;
      Serial.printf("AccessPoint created with SSID %s and KEY %s and settings page http://%i.%i.%i.%i/settings\r\n", AP_WIFI_SSID, AP_WIFI_KEY, WiFi.softAPIP()[0],WiFi.softAPIP()[1],WiFi.softAPIP()[2],WiFi.softAPIP()[3]);
+     displayMessage("AP-MODE","SSID:", String(AP_WIFI_SSID), "KEY:", String(AP_WIFI_KEY), "");
+    
   //} else 
   //{    
   //  Serial.printf("Could not create AccessPoint! %i\r\n", WiFi.status());
@@ -743,7 +745,7 @@ void refreshTemp() {
         Temperatur_C = Sensor2.getTemp();
         //DEBUG_println(Temperatur_C);
        #endif
-      Temperatur_C = 70;
+      //Temperatur_C = 70;
       if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
       Input = Temperatur_C;
       if (Brewdetection != 0) {
@@ -1783,8 +1785,24 @@ void setup()
   //Serial.printf("softApEnabled setup %i",softApEnabled);
  if (softApEnabled == 1)
  {
+    /********************************************************
+      DISPLAY 128x64
+    ******************************************************/
+    #if DISPLAY != 0
+      u8g2.setI2CAddress(oled_i2c * 2);
+      u8g2.begin();
+      u8g2_prepare();
+      displayLogo(sysVersion, "");
+      delay(2000);
+    #endif
+    
+    
     stopISR();
     createSoftAp();
+
+
+
+
 
   } else if(softApEnabled == 0)
   {
