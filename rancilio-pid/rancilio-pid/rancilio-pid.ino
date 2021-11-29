@@ -132,6 +132,7 @@ const char* AP_WIFI_KEY = APWIFIKEY ;
 const unsigned long checkpowerofftime = 30*1000 ;
 boolean checklastpoweroffEnabled = false; 
 boolean softApEnabledcheck = false ;
+int softApstate = 0;
 
 
 // OTA
@@ -421,6 +422,8 @@ void createSoftAp()
       int eepromvalue = 0; 
       EEPROM.put(150, eepromvalue) ;
       EEPROM.commit();
+      EEPROM.end();
+      softApstate = 0;
      Serial.printf("AccessPoint created with SSID %s and KEY %s and settings page http://%i.%i.%i.%i/settings\r\n", AP_WIFI_SSID, AP_WIFI_KEY, WiFi.softAPIP()[0],WiFi.softAPIP()[1],WiFi.softAPIP()[2],WiFi.softAPIP()[3]);
   //} else 
   //{    
@@ -453,6 +456,7 @@ void checklastpoweroff()
  }
 
  EEPROM.commit();
+ EEPROM.end();
 
 }
 
@@ -466,6 +470,7 @@ void setchecklastpoweroff()
     int eepromvalue = 0; 
     EEPROM.put(150, eepromvalue) ;
     EEPROM.commit();
+    EEPROM.end();
     checklastpoweroffEnabled = true; 
     startISR();
   }
@@ -795,6 +800,7 @@ void initOfflineMode()
   }
   // eeeprom schließen
   EEPROM.commit();
+  EEPROM.end();
 }
 
 /*******************************************************
@@ -1779,6 +1785,7 @@ void setup()
  {
     stopISR();
     createSoftAp();
+
   } else if(softApEnabled == 0)
   {
     if (MQTT == 1) {
@@ -1998,6 +2005,7 @@ void setup()
               EEPROM.put(130, brewboarder);
               // eeprom schließen
               EEPROM.commit();
+              EEPROM.end();
             }
           } else
           {
@@ -2165,7 +2173,52 @@ void loop() {
       debugVerboseOutput();
   } else if (softApEnabled == 1)
   {
-    delay(1000);
+    switch (softApstate)
+    {
+      case 0:
+        if(WiFi.softAPgetStationNum() > 0)
+        {
+          ArduinoOTA.setHostname(OTAhost);  //  Device name for OTA
+          ArduinoOTA.setPassword(OTApass);  //  Password for OTA
+          ArduinoOTA.begin();
+          softApstate = 10;
+        }
+      break; 
+      case 10:  
+      ArduinoOTA.handle();  // For OTA
+      // Disable interrupt it OTA is starting, otherwise it will not work
+      ArduinoOTA.onStart([]()
+      {
+
+        #if defined(ESP8266)
+        timer1_disable();
+        #endif
+        #if defined(ESP32)
+        timerAlarmDisable(timer);
+        #endif
+        digitalWrite(pinRelayHeater, LOW); //Stop heating
+      });
+      ArduinoOTA.onError([](ota_error_t error)
+      {
+        #if defined(ESP8266)
+        timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+        #endif
+        #if defined(ESP32)
+        timerAlarmEnable(timer);
+        #endif
+      });
+      // Enable interrupts if OTA is finished
+      ArduinoOTA.onEnd([]()
+      {
+        #if defined(ESP8266)
+        timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+        #endif
+        #if defined(ESP32)
+          timerAlarmEnable(timer);
+        #endif
+      });
+      break;
+    }
   }
   
 }
