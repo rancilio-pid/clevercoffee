@@ -4,7 +4,15 @@ AsyncWebServer server(80);
 
 String generateForm() {
     // TODO: That's a lot of allocation. We should find a better way. Maybe there's a simple template engine?
-    String result = "<html><body><h2>ranciliopid</h2><form action=\"/post\" method=\"post\">";
+     // #if defined(ESP8266)
+     // timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+     //  #endif
+     // #if defined(ESP32)
+     // timerAlarmEnable(timer);
+     //  #endif
+    
+    
+    String result = "<html><body><h2>ranciliopid</h2><p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p><form action=\"/post\" method=\"post\">";
     int i = 0;
     for (editable_t e : editableVars) {
         result += "<label for=\"var";
@@ -78,6 +86,12 @@ void serverSetup() {
         }
 
         request->send(200, "text/html", m);
+    //  #if defined(ESP8266)
+     // timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+     // #endif
+     //#if defined(ESP32)
+     // timerAlarmEnable(timer);
+     // #endif
     });
 
     server.onNotFound([](AsyncWebServerRequest *request){

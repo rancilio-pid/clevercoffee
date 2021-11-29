@@ -132,6 +132,7 @@ const char* AP_WIFI_KEY = APWIFIKEY ;
 const unsigned long checkpowerofftime = 30*1000 ;
 boolean checklastpoweroffEnabled = false; 
 boolean softApEnabledcheck = false ;
+int softApstate = 0;
 
 
 // OTA
@@ -421,7 +422,11 @@ void createSoftAp()
       int eepromvalue = 0; 
       EEPROM.put(150, eepromvalue) ;
       EEPROM.commit();
+      EEPROM.end();
+      softApstate = 0;
      Serial.printf("AccessPoint created with SSID %s and KEY %s and settings page http://%i.%i.%i.%i/settings\r\n", AP_WIFI_SSID, AP_WIFI_KEY, WiFi.softAPIP()[0],WiFi.softAPIP()[1],WiFi.softAPIP()[2],WiFi.softAPIP()[3]);
+     displayMessage("AP-MODE","SSID:", String(AP_WIFI_SSID), "KEY:", String(AP_WIFI_KEY), "");
+    
   //} else 
   //{    
   //  Serial.printf("Could not create AccessPoint! %i\r\n", WiFi.status());
@@ -453,6 +458,7 @@ void checklastpoweroff()
  }
 
  EEPROM.commit();
+ EEPROM.end();
 
 }
 
@@ -466,6 +472,7 @@ void setchecklastpoweroff()
     int eepromvalue = 0; 
     EEPROM.put(150, eepromvalue) ;
     EEPROM.commit();
+    EEPROM.end();
     checklastpoweroffEnabled = true; 
     startISR();
   }
@@ -745,7 +752,7 @@ void refreshTemp() {
         Temperatur_C = Sensor2.getTemp();
         //DEBUG_println(Temperatur_C);
        #endif
-      Temperatur_C = 70;
+      //Temperatur_C = 70;
       if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
       Input = Temperatur_C;
       if (Brewdetection != 0) {
@@ -802,6 +809,7 @@ void initOfflineMode()
   }
   // eeeprom schließen
   EEPROM.commit();
+  EEPROM.end();
 }
 
 /*******************************************************
@@ -1784,8 +1792,25 @@ void setup()
   //Serial.printf("softApEnabled setup %i",softApEnabled);
  if (softApEnabled == 1)
  {
+    /********************************************************
+      DISPLAY 128x64
+    ******************************************************/
+    #if DISPLAY != 0
+      u8g2.setI2CAddress(oled_i2c * 2);
+      u8g2.begin();
+      u8g2_prepare();
+      displayLogo(sysVersion, "");
+      delay(2000);
+    #endif
+    
+    
     stopISR();
     createSoftAp();
+
+
+
+
+
   } else if(softApEnabled == 0)
   {
     if (MQTT == 1) {
@@ -2005,6 +2030,7 @@ void setup()
               EEPROM.put(130, brewboarder);
               // eeprom schließen
               EEPROM.commit();
+              EEPROM.end();
             }
           } else
           {
@@ -2172,7 +2198,52 @@ void loop() {
       debugVerboseOutput();
   } else if (softApEnabled == 1)
   {
-    delay(1000);
+    switch (softApstate)
+    {
+      case 0:
+        if(WiFi.softAPgetStationNum() > 0)
+        {
+          ArduinoOTA.setHostname(OTAhost);  //  Device name for OTA
+          ArduinoOTA.setPassword(OTApass);  //  Password for OTA
+          ArduinoOTA.begin();
+          softApstate = 10;
+        }
+      break; 
+      case 10:  
+      ArduinoOTA.handle();  // For OTA
+      // Disable interrupt it OTA is starting, otherwise it will not work
+      ArduinoOTA.onStart([]()
+      {
+
+        #if defined(ESP8266)
+        timer1_disable();
+        #endif
+        #if defined(ESP32)
+        timerAlarmDisable(timer);
+        #endif
+        digitalWrite(pinRelayHeater, LOW); //Stop heating
+      });
+      ArduinoOTA.onError([](ota_error_t error)
+      {
+        #if defined(ESP8266)
+        timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+        #endif
+        #if defined(ESP32)
+        timerAlarmEnable(timer);
+        #endif
+      });
+      // Enable interrupts if OTA is finished
+      ArduinoOTA.onEnd([]()
+      {
+        #if defined(ESP8266)
+        timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+        #endif
+        #if defined(ESP32)
+          timerAlarmEnable(timer);
+        #endif
+      });
+      break;
+    }
   }
   
 }
