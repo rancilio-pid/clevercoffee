@@ -353,11 +353,11 @@ void getSignalStrength() {
 
   if (rssi >= -50) {
     bars = 4;
-  } else if (rssi < -50 & rssi >= -65) {
+  } else if (rssi < -50 && rssi >= -65) {
     bars = 3;
-  } else if (rssi < -65 & rssi >= -75) {
+  } else if (rssi < -65 && rssi >= -75) {
     bars = 2;
-  } else if (rssi < -75 & rssi >= -80) {
+  } else if (rssi < -75 && rssi >= -80) {
     bars = 1;
   } else {
     bars = 0;
