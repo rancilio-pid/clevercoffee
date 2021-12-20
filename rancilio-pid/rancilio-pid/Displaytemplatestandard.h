@@ -6,8 +6,6 @@
 
 void printScreen() 
 {
-
-  unsigned long currentMillisDisplay = millis();
   if 
   (
    (machinestate == kSetPointNegative || machinestate == kPidNormal || machinestate == kBrewDetectionTrailing) ||
