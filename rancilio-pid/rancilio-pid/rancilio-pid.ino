@@ -807,7 +807,7 @@ char* number2string(unsigned int in) {
 /*******************************************************
    Publish Data to MQTT
 *****************************************************/
-bool mqtt_publish(char *reading, char *payload)
+bool mqtt_publish(const char *reading, char *payload)
 {
 #if MQTT
     char topic[120];
