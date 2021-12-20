@@ -939,12 +939,16 @@ void sendToBlynkMQTT()
   if (Offlinemodus == 1) return;
 
   unsigned long currentMillisBlynk = millis();
-  unsigned long currentMillisMQTT = millis();
-  unsigned long currentMillistemp = 0;
-  if ((currentMillisBlynk - previousMillisBlynk >= intervalBlynk) && (BLYNK == 1))
-  {
-    if (Blynk.connected())
-    {
+
+  if (currentMillisBlynk - previousMillisBlynk >= intervalBlynk) {
+
+    //MQTT
+    if (MQTT == 1) {
+      checkMQTT();
+    }
+
+    previousMillisBlynk = currentMillisBlynk;
+    if (Blynk.connected()) {
       if (blynksendcounter == 1) {
         Blynk.virtualWrite(V2, Input);
         mqtt_publish("temperature", number2string(Input));
@@ -1168,9 +1172,6 @@ void mqtt_callback(char* topic, byte* data, unsigned int length) {
   char configVar[120];
   char cmd[64];
   double data_double;
-  int data_int;
-
-
 
  // DEBUG_print("mqtt_parse(%s, %s)\n", topic_str, data_str);
   snprintf(topic_pattern, sizeof(topic_pattern), "%s%s/%%[^\\/]/%%[^\\/]", mqtt_topic_prefix, hostname);
