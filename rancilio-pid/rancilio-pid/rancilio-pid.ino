@@ -1047,7 +1047,7 @@ int filter(int input) {
 
 
 void mqtt_callback(char* topic, byte* data, unsigned int length) {
-  char topic_str[255];
+  char topic_str[256];
   os_memcpy(topic_str, topic, sizeof(topic_str));
   topic_str[255] = '\0';
   char data_str[length+1];
