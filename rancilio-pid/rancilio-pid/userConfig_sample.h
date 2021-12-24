@@ -109,6 +109,7 @@ enum MACHINE {
 // PID - offline values
 #define SETPOINT 95                // Temperatur setpoint
 #define STEAMSETPOINT 120          // Temperatur setpoint
+#define BREWDETECTIONLIMIT 150     // brew detection limit, be carefull: if too low, then there is the risk of wrong brew detection and rising temperature
 #define AGGKP 69                   // Kp normal
 #define AGGTN 399                  // Tn
 #define AGGTV 0                    // Tv

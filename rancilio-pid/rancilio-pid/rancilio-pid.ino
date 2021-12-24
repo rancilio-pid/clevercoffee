@@ -225,7 +225,7 @@ double aggbKi = aggbKp / aggbTn;
 #endif
 double aggbKd = aggbTv * aggbKp ;
 double brewtimersoftware = 45;    // 20-5 for detection
-double brewboarder = 150 ;        // border for the detection, be carefull: to low: risk of wrong brew detection and rising temperature
+double brewboarder = BREWDETECTIONLIMIT;  // brew detection limit
 const int PonE = PONE;
 
 /********************************************************
@@ -2023,7 +2023,7 @@ void loopcalibrate()
   {
     pidMode = 0;
     bPID.SetMode(pidMode);
-    Output = 0 ;false;
+    Output = 0;
   }
   if (Blynk.connected()) 
   {  // If connected run as normal
