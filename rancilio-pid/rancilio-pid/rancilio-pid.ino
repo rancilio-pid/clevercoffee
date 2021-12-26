@@ -323,11 +323,11 @@ void getSignalStrength() {
 
   if (rssi >= -50) {
     bars = 4;
-  } else if (rssi < -50 & rssi >= -65) {
+  } else if (rssi < -50 && rssi >= -65) {
     bars = 3;
-  } else if (rssi < -65 & rssi >= -75) {
+  } else if (rssi < -65 && rssi >= -75) {
     bars = 2;
-  } else if (rssi < -75 & rssi >= -80) {
+  } else if (rssi < -75 && rssi >= -80) {
     bars = 1;
   } else {
     bars = 0;
@@ -807,7 +807,7 @@ char* number2string(unsigned int in) {
 /*******************************************************
    Publish Data to MQTT
 *****************************************************/
-bool mqtt_publish(char *reading, char *payload)
+bool mqtt_publish(const char *reading, char *payload)
 {
 #if MQTT
     char topic[120];
@@ -826,7 +826,6 @@ void sendToBlynk() {
   if (Offlinemodus == 1) return;
 
   unsigned long currentMillisBlynk = millis();
-  unsigned long currentMillistemp = 0;
 
   if (currentMillisBlynk - previousMillisBlynk >= intervalBlynk) {
 
@@ -1047,7 +1046,7 @@ int filter(int input) {
 
 
 void mqtt_callback(char* topic, byte* data, unsigned int length) {
-  char topic_str[255];
+  char topic_str[256];
   os_memcpy(topic_str, topic, sizeof(topic_str));
   topic_str[255] = '\0';
   char data_str[length+1];
@@ -1057,9 +1056,6 @@ void mqtt_callback(char* topic, byte* data, unsigned int length) {
   char configVar[120];
   char cmd[64];
   double data_double;
-  int data_int;
-
-
 
  // DEBUG_print("mqtt_parse(%s, %s)\n", topic_str, data_str);
   snprintf(topic_pattern, sizeof(topic_pattern), "%s%s/%%[^\\/]/%%[^\\/]", mqtt_topic_prefix, hostname);

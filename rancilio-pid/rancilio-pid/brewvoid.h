@@ -143,7 +143,6 @@ void backflush()
   digitalWrite(pinRelayHeater, LOW); //Stop heating
   
   checkbrewswitch() ;
-  unsigned long currentMillistemp = millis();
 
   if (brewswitch == LOW && backflushState > 10) {   //abort function for state machine from every state
     backflushState = 43;
@@ -190,7 +189,6 @@ void backflush()
         debugStream.writeI("backflush finished");
         digitalWrite(pinRelayVentil, relayOFF);
         digitalWrite(pinRelayPumpe, relayOFF);
-        currentMillistemp = 0;
         flushCycles = 0;
         backflushState = 10;
       }

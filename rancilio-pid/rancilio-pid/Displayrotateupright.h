@@ -71,6 +71,7 @@ void displayLogo(String displaymessagetext, String displaymessagetext2)
     u8g2.sendBuffer();
 }
 
+#if 0 //not used a.t.m.
 /********************************************************
  DISPLAY - EmergencyStop
 *****************************************************/
@@ -97,6 +98,7 @@ void displayEmergencyStop(void)
     }
     u8g2.sendBuffer();
 }
+#endif
 
 
 /********************************************************
@@ -134,15 +136,4 @@ void displayShottimer(void)
        u8g2.setFont(u8g2_font_profont11_tf);
        u8g2.sendBuffer();
     }
-}    void OFFlogo(void) 
-    {
-     if (OFFLINEGLOGO == 1 && pidON == 0) 
-     {
-       u8g2.clearBuffer();
-       u8g2.drawXBMP(0,0, OFFLogo_width, OFFLogo_height, OFFLogo); 
-       u8g2.setCursor(0, 70);
-       u8g2.setFont(u8g2_font_profont10_tf);
-       u8g2.print("PID OFFLINE");   
-       u8g2.sendBuffer();
-     }
-    }
+}

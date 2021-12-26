@@ -3,7 +3,6 @@
 ******************************************************/
 void printScreen()
 {
-    unsigned long currentMillisDisplay = millis();
     if (
         (machinestate == kSetPointNegative || machinestate == kPidNormal || machinestate == kBrewDetectionTrailing) ||
         ((machinestate == kBrew || machinestate == kShotTimerAfterBrew) && SHOTTIMER == 0) || // shottimer == 0, auch Bezug anzeigen
