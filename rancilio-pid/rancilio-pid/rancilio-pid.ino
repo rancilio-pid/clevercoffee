@@ -1980,32 +1980,8 @@ void setup() {
   #endif
   setupDone = true;
 
-  #if defined(ESP8266) 
-    /********************************************************
-      Timer1 ISR - Initialisierung
-      TIM_DIV1 = 0,   //80MHz (80 ticks/us - 104857.588 us max)
-      TIM_DIV16 = 1,  //5MHz (5 ticks/us - 1677721.4 us max)
-      TIM_DIV256 = 3  //312.5Khz (1 tick = 3.2us - 26843542.4 us max)
-    ******************************************************/
-      timer1_isr_init();
-      timer1_attachInterrupt(onTimer1ISR);
-      //timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
-      //timer1_write(50000); // set interrupt time to 10ms
-      timer1_enable(TIM_DIV256, TIM_EDGE, TIM_SINGLE);
-      timer1_write(6250); // set interrupt time to 20ms
-  #endif
-  #if defined(ESP32) // ESP32
-        /********************************************************
-    Timer1 ISR - Initialisierung
-    TIM_DIV1 = 0,   //80MHz (80 ticks/us - 104857.588 us max)
-    TIM_DIV16 = 1,  //5MHz (5 ticks/us - 1677721.4 us max)
-    TIM_DIV256 = 3  //312.5Khz (1 tick = 3.2us - 26843542.4 us max)
-  ******************************************************/
-    timer = timerBegin(0, 80, true); //m
-    timerAttachInterrupt(timer, &onTimer, true);//m
-    timerAlarmWrite(timer, 10000, true);//m
-    timerAlarmEnable(timer);//m
-  #endif
+  initTimer1();
+  enableTimer1();
 }
 
 void loop() {
@@ -2072,33 +2048,17 @@ void looppid()
     // Disable interrupt it OTA is starting, otherwise it will not work
     ArduinoOTA.onStart([]() 
     {
-      
-      #if defined(ESP8266) 
-      timer1_disable();
-      #endif
-      #if defined(ESP32) 
-      timerAlarmDisable(timer);
-      #endif
+      disableTimer1();
       digitalWrite(pinRelayHeater, LOW); //Stop heating
     });
     ArduinoOTA.onError([](ota_error_t error) 
     {
-      #if defined(ESP8266) 
-      timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
-      #endif
-      #if defined(ESP32) 
-      timerAlarmEnable(timer);
-      #endif
+      enableTimer1();
     });
     // Enable interrupts if OTA is finished
     ArduinoOTA.onEnd([]() 
     {
-      #if defined(ESP8266) 
-       timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
-      #endif
-      #if defined(ESP32)
-        timerAlarmEnable(timer);
-      #endif
+      enableTimer1();
     });
 
     if (Blynk.connected()) 
