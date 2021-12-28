@@ -785,7 +785,6 @@ void initOfflineMode()
   debugStream.writeI("Start offline mode with eeprom values, no wifi:(");
   Offlinemodus = 1 ;
 
-  EEPROM.begin(1024);  // open eeprom
   double dummy; // check if eeprom values are numeric (only check first value in eeprom)
   EEPROM.get(0, dummy);
   debugStream.writeI("check eeprom 0x00 in dummy: %f",dummy);
