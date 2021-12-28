@@ -194,6 +194,13 @@ boolean setupDone = false;
 int backflushON = 0;            // 1 = activate backflush
 int flushCycles = 0;            // number of active flush cycles
 int backflushState = 10;        // counter for state machine
+static const char *machineName[] PROGMEM =
+{
+  "Rancilio Silvia",
+  "Rancilio Silvia E",
+  "Gaggia",
+  "QuickMill",
+};
 
 /********************************************************
    moving average - brewdetection
@@ -2281,3 +2288,30 @@ void looppid()
   }  
   //sensor error OR Emergency Stop
 }
+
+
+/**************************************************************************//**
+ * \brief Returns the firmware version.
+ * 
+ * \return firmware version string
+ ******************************************************************************/
+const char *getFwVersion(void)
+{
+  return sysVersion;
+}
+
+
+
+/**************************************************************************//**
+ * \brief Returns the firmware version.
+ * 
+ * \return firmware version string
+ ******************************************************************************/
+const char *getMachineName(enum MACHINE id)
+{
+  if (id >= sizeof(machineName)/sizeof(machineName[0]))                         // invalid machine ID?
+    return (const char*)F("?");                                                 // yes ->
+  return machineName[id];
+}
+
+
