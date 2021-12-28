@@ -681,7 +681,6 @@ void initOfflineMode()
   debugStream.writeI("Start offline mode with eeprom values, no wifi:(");
   Offlinemodus = 1 ;
 
-  EEPROM.begin(1024);  // open eeprom
   double dummy; // check if eeprom values are numeric (only check first value in eeprom)
   EEPROM.get(0, dummy);
   debugStream.writeI("check eeprom 0x00 in dummy: %f",dummy);
@@ -1658,6 +1657,8 @@ void setup() {
   DEBUGSTART(115200);
   debugStream.setup();
 
+  EEPROM.begin(1024);
+
   if (MQTT == 1) {
     //MQTT
     snprintf(topic_will, sizeof(topic_will), "%s%s/%s", mqtt_topic_prefix, hostname, "will");
@@ -1841,8 +1842,6 @@ void setup() {
           Blynk.syncVirtual(V34);
           // Blynk.syncAll();  //sync all values from Blynk server
           // Werte in den eeprom schreiben
-          // ini eeprom mit begin
-          EEPROM.begin(1024);
           EEPROM.put(0, aggKp);
           EEPROM.put(10, aggTn);
           EEPROM.put(20, aggTv);  
@@ -1861,7 +1860,6 @@ void setup() {
       } else 
       {
         debugStream.writeI("No connection to Blynk");
-        EEPROM.begin(1024);  // open eeprom
         double dummy; // check if eeprom values are numeric (only check first value in eeprom)
         EEPROM.get(0, dummy);
         debugStream.writeI("check eeprom 0x00 in dummy: %f",dummy);
