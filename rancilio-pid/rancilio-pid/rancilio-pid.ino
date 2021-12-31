@@ -1755,21 +1755,23 @@ void debugVerboseOutput()
 
 void stopISR()
 {
-   #if defined(ESP8266)
-      timer1_disable();
-      #endif
-   #if defined(ESP32)
-      timerAlarmDisable(timer);
-      #endif
+  #if defined(ESP8266)
+   timer1_disable();
+   #elif defined(ESP32) // ESP32
+   timerAlarmDisable(timer);
+   #else
+   #error("not supported MCU");
+   #endif
 }
-
 void startISR()
 {
   #if defined(ESP8266)
-      timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
-  #endif
-  #if defined(ESP32)
-      timerAlarmEnable(timer);
+   //timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+   timer1_enable(TIM_DIV256, TIM_EDGE, TIM_SINGLE);
+   #elif defined(ESP32) // ESP32
+   timerAlarmEnable(timer);
+   #else
+   #error("not supported MCU");
   #endif
 }
 
