@@ -785,32 +785,14 @@ void initOfflineMode()
   debugStream.writeI("Start offline mode with eeprom values, no wifi:(");
   Offlinemodus = 1 ;
 
-  double dummy; // check if eeprom values are numeric (only check first value in eeprom)
-  EEPROM.get(0, dummy);
-  debugStream.writeI("check eeprom 0x00 in dummy: %f",dummy);
-  if (!isnan(dummy)) {
-    EEPROM.get(0, aggKp);
-    EEPROM.get(10, aggTn);
-    EEPROM.get(20, aggTv);
-    EEPROM.get(30, BrewSetPoint);
-    EEPROM.get(40, brewtime);
-    EEPROM.get(50, preinfusion);
-    EEPROM.get(60, preinfusionpause);
-    EEPROM.get(90, aggbKp);
-    EEPROM.get(100, aggbTn);
-    EEPROM.get(110, aggbTv);
-    EEPROM.get(120, brewtimersoftware);
-    EEPROM.get(130, brewboarder);
-  } else {
+  if (readSysParamsFromStorage() != 0)
+  {
     #if DISPLAY != 0
-      displayMessage("", "", "", "", "No eeprom,", "Values");
-     #endif
+    displayMessage("", "", "", "", "No eeprom,", "Values");
+    #endif
     debugStream.writeI("No working eeprom value, I am sorry, but use default offline value  :)");
     delay(1000);
   }
-  // eeeprom schließen
-  EEPROM.commit();
-  EEPROM.end();
 }
 
 /*******************************************************
@@ -1989,79 +1971,46 @@ void setup()
           Blynk.config(auth, blynkaddress, blynkport) ;
           Blynk.connect(30000);
 
-          if (Blynk.connected() == true)
-          {
-            #if DISPLAY != 0
-              displayLogo(langstring_connectblynk2[0], langstring_connectblynk2[1]);
-            #endif
-            debugStream.writeD("Blynk is online");
-            if (fallback == 1)
-            {
-              debugStream.writeD("sync all variables and write new values to eeprom");
-              // Blynk.run() ;
-              Blynk.syncVirtual(V4);
-              Blynk.syncVirtual(V5);
-              Blynk.syncVirtual(V6);
-              Blynk.syncVirtual(V7);
-              Blynk.syncVirtual(V8);
-              Blynk.syncVirtual(V9);
-              Blynk.syncVirtual(V10);
-              Blynk.syncVirtual(V11);
-              Blynk.syncVirtual(V12);
-              Blynk.syncVirtual(V13);
-              Blynk.syncVirtual(V14);
-              Blynk.syncVirtual(V15);
-              Blynk.syncVirtual(V30);
-              Blynk.syncVirtual(V31);
-              Blynk.syncVirtual(V32);
-              Blynk.syncVirtual(V33);
-              Blynk.syncVirtual(V34);
-              // Blynk.syncAll();  //sync all values from Blynk server
-              // Werte in den eeprom schreiben
-              // ini eeprom mit begin
-              EEPROM.begin(1024);
-              EEPROM.put(0, aggKp);
-              EEPROM.put(10, aggTn);
-              EEPROM.put(20, aggTv);
-              EEPROM.put(30, BrewSetPoint);
-              EEPROM.put(40, brewtime);
-              EEPROM.put(50, preinfusion);
-              EEPROM.put(60, preinfusionpause);
-              EEPROM.put(90, aggbKp);
-              EEPROM.put(100, aggbTn);
-              EEPROM.put(110, aggbTv);
-              EEPROM.put(120, brewtimersoftware);
-              EEPROM.put(130, brewboarder);
-              // eeprom schließen
-              EEPROM.commit();
-              EEPROM.end();
-            }
-          } else
-          {
-            debugStream.writeI("No connection to Blynk");
-            EEPROM.begin(1024);  // open eeprom
-            double dummy; // check if eeprom values are numeric (only check first value in eeprom)
-            EEPROM.get(0, dummy);
-            debugStream.writeI("check eeprom 0x00 in dummy: %f",dummy);
-            if (!isnan(dummy))
-            {
-              #if DISPLAY != 0
-              displayLogo("3: Blynk not connected", "use eeprom values..");
-              #endif
-              EEPROM.get(0, aggKp);
-              EEPROM.get(10, aggTn);
-              EEPROM.get(20, aggTv);
-              EEPROM.get(30, BrewSetPoint);
-              EEPROM.get(40, brewtime);
-              EEPROM.get(50, preinfusion);
-              EEPROM.get(60, preinfusionpause);
-              EEPROM.get(90, aggbKp);
-              EEPROM.get(100, aggbTn);
-              EEPROM.get(110, aggbTv);
-              EEPROM.get(120, brewtimersoftware);
-              EEPROM.get(130, brewboarder);
-            }
-          }
+      if (Blynk.connected() == true)
+      {
+        #if DISPLAY != 0
+          displayLogo(langstring_connectblynk2[0], langstring_connectblynk2[1]);
+        #endif
+        debugStream.writeI("Blynk is online");
+        if (fallback == 1)
+        {
+          debugStream.writeI("sync all variables and write new values to eeprom");
+          // Blynk.run() ;
+          Blynk.syncVirtual(V4);
+          Blynk.syncVirtual(V5);
+          Blynk.syncVirtual(V6);
+          Blynk.syncVirtual(V7);
+          Blynk.syncVirtual(V8);
+          Blynk.syncVirtual(V9);
+          Blynk.syncVirtual(V10);
+          Blynk.syncVirtual(V11);
+          Blynk.syncVirtual(V12);
+          Blynk.syncVirtual(V13);
+          Blynk.syncVirtual(V14);
+          Blynk.syncVirtual(V15);
+          Blynk.syncVirtual(V30);
+          Blynk.syncVirtual(V31);
+          Blynk.syncVirtual(V32);
+          Blynk.syncVirtual(V33);
+          Blynk.syncVirtual(V34);
+          // Blynk.syncAll();  //sync all values from Blynk server
+          // Werte in den eeprom schreiben
+          writeSysParamsToStorage();
+        }
+      } else
+      {
+        debugStream.writeI("No connection to Blynk");
+        if (readSysParamsFromStorage() == 0)
+        {
+          #if DISPLAY != 0
+          displayLogo("3: Blynk not connected", "use eeprom values..");
+          #endif
+        }
       }
       }
       else
@@ -2481,4 +2430,83 @@ void looppid()
     bPID.SetTunings(aggbKp, aggbKi, aggbKd, PonE) ;
   }
   //sensor error OR Emergency Stop
+}
+
+
+/**************************************************************************//**
+ * \brief Reads all system parameter values from non-volatile storage.
+ *
+ * \return  0 - succeed
+ *         <0 - failed
+ ******************************************************************************/
+int readSysParamsFromStorage(void)
+{
+  double dummy;
+
+  // check first value, if there is a valid number...
+  EEPROM.get(0, dummy);
+  if (isnan(dummy))                                                             // invalid floating point number?
+  {                                                                             // yes...
+    debugStream.writeI("%s(): no NV data found (addr 0=%f)", __FUNCTION__, dummy);
+    return -1;
+  }
+
+  // read stored system parameter values...
+  EEPROM.get(0, aggKp);
+  EEPROM.get(10, aggTn);
+  EEPROM.get(20, aggTv);
+  EEPROM.get(30, BrewSetPoint);
+  EEPROM.get(40, brewtime);
+  EEPROM.get(50, preinfusion);
+  EEPROM.get(60, preinfusionpause);
+  EEPROM.get(90, aggbKp);
+  EEPROM.get(100, aggbTn);
+  EEPROM.get(110, aggbTv);
+  EEPROM.get(120, brewtimersoftware);
+  EEPROM.get(130, brewboarder);
+
+  // EEPROM.commit() not necessary after read
+  return 0;
+}
+
+
+
+/**************************************************************************//**
+ * \brief Writes all current system parameter values to non-volatile storage.
+ *
+ * \return  0 - succeed
+ *         <0 - failed
+ ******************************************************************************/
+int writeSysParamsToStorage(void)
+{
+  int returnCode;
+  bool isTimerEnabled;
+
+  // write current system parameter values...
+  EEPROM.put(0, aggKp);
+  EEPROM.put(10, aggTn);
+  EEPROM.put(20, aggTv);
+  EEPROM.put(30, BrewSetPoint);
+  EEPROM.put(40, brewtime);
+  EEPROM.put(50, preinfusion);
+  EEPROM.put(60, preinfusionpause);
+  EEPROM.put(90, aggbKp);
+  EEPROM.put(100, aggbTn);
+  EEPROM.put(110, aggbTv);
+  EEPROM.put(120, brewtimersoftware);
+  EEPROM.put(130, brewboarder);
+
+  // While Flash memory erase/write operations no other code must be executed from Flash!
+  // disable any ISRs...
+  isTimerEnabled = isTimer1Enabled();
+  disableTimer1();
+
+  // really write data to storage...
+  returnCode = EEPROM.commit()? 0: -1;
+
+  // recover any ISRs...
+  if (isTimerEnabled)                                                           // was timer enabled before?
+    enableTimer1();                                                             // yes -> re-enable timer
+
+  return returnCode;
 }
