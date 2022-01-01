@@ -81,8 +81,8 @@ AsyncStaticWebHandler& AsyncStaticWebHandler::setLastModified(){
 }
 #endif
 bool AsyncStaticWebHandler::canHandle(AsyncWebServerRequest *request){
-  if(request->method() != HTTP_GET 
-    || !request->url().startsWith(_uri) 
+  if(request->method() != HTTP_GET
+    || !request->url().startsWith(_uri)
     || !request->isExpectedRequestedConnType(RCT_DEFAULT, RCT_HTTP)
   ){
     return false;
@@ -184,8 +184,30 @@ uint8_t AsyncStaticWebHandler::_countBits(const uint8_t value) const
   return n;
 }
 
+void isrOff() {
+    #if defined(ESP8266)
+    timer1_disable();
+    #elif defined(ESP32) // ESP32
+    timerAlarmDisable(timer);
+    #else
+    #error("not supported MCU");
+    #endif
+}
+
+void isrOn() {
+    #if defined(ESP8266)
+    //timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+    timer1_enable(TIM_DIV256, TIM_EDGE, TIM_SINGLE);
+    #elif defined(ESP32) // ESP32
+    timerAlarmEnable(timer);
+    #else
+    #error("not supported MCU");
+    #endif
+}
+
 void AsyncStaticWebHandler::handleRequest(AsyncWebServerRequest *request)
 {
+  isrOff();
   // Get the filename from request->_tempObject and free it
   String filename = String((char*)request->_tempObject);
   free(request->_tempObject);
@@ -217,4 +239,5 @@ void AsyncStaticWebHandler::handleRequest(AsyncWebServerRequest *request)
   } else {
     request->send(404);
   }
+  isrOn();
 }
