@@ -2,16 +2,29 @@
 
 AsyncWebServer server(80);
 
+void isrOff() {
+    #if defined(ESP8266)
+    timer1_disable();
+    #elif defined(ESP32) // ESP32
+    timerAlarmDisable(timer);
+    #else
+    #error("not supported MCU");
+    #endif
+}
+
+void isrOn() {
+    #if defined(ESP8266)
+    //timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
+    timer1_enable(TIM_DIV256, TIM_EDGE, TIM_SINGLE);
+    #elif defined(ESP32) // ESP32
+    timerAlarmEnable(timer);
+    #else
+    #error("not supported MCU");
+    #endif
+}
+
 String generateForm() {
     // TODO: That's a lot of allocation. We should find a better way. Maybe there's a simple template engine?
-  #if defined(ESP8266)
-   timer1_disable();
-   #elif defined(ESP32) // ESP32
-   timerAlarmDisable(timer);
-   #else
-   #error("not supported MCU");
-   #endif
-
     String result = "<form action=\"/post\" method=\"post\">";
     int i = 0;
     for (editable_t e : editableVars) {
@@ -68,7 +81,8 @@ String staticProcessor(const String& var) {
 void serverSetup() {
 
     // Send a POST request to <IP>/post with a form field message set to <message>
-    server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request){
+    server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) {
+        isrOff();
         int params = request->params();
         String m = "Got ";
         m += params;
@@ -98,15 +112,7 @@ void serverSetup() {
         }
 
         request->send(200, "text/html", m);
-      #if defined(ESP8266)
-   //timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
-   timer1_enable(TIM_DIV256, TIM_EDGE, TIM_SINGLE);
-   #elif defined(ESP32) // ESP32
-   timerAlarmEnable(timer);
-   #else
-   #error("not supported MCU");
-   #endif
- 
+        isrOn();
     });
 
     SPIFFS.begin();
@@ -116,7 +122,6 @@ void serverSetup() {
     server.onNotFound([](AsyncWebServerRequest *request){
         request->send(404, "text/plain", "Not found");
     });
-
 
     server.begin();
     Serial.println("Server started at " + WiFi.localIP().toString());
