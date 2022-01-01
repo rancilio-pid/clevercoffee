@@ -1,15 +1,15 @@
 /********************************************************
-  Version 2.5 (20.05.2021) 
+  Version 2.5 (20.05.2021)
   Last Change: PINPRESSURESENSOR
   Values must be configured by the user
 ******************************************************/
 
 /********************************************************
-   Define area, do not change anything here 
+   Define area, do not change anything here
 ******************************************************/
 
 #ifndef _userConfig_H
-#define _userConfig_H  
+#define _userConfig_H
 
 // List of supported machines
 enum MACHINE {
@@ -23,7 +23,7 @@ enum MACHINE {
    Preconfiguration
 ******************************************************/
 
-// Machine 
+// Machine
 #define MACHINEID 0                //	see above list of supported machines
 
 // Display
@@ -32,12 +32,12 @@ enum MACHINE {
 #define DISPLAYTEMPLATE 3          // 1 = Standard Display Template, 2 = Minimal Template, 3 = only Temperatur, 4 = Scale Template, 20 = vertical Display see git Handbook for further information
 #define DISPLAYROTATE U8G2_R0      // rotate display clockwise: U8G2_R0 = no rotation; U8G2_R1 = 90°; U8G2_R2 = 180°; U8G2_R3 = 270°
 #define SHOTTIMER 1                // 0 = deactivated, 1 = activated 2 = with scale
-#define HEATINGLOGO 0              // 0 = deactivated, 1 = Rancilio, 2 = Gaggia 
+#define HEATINGLOGO 0              // 0 = deactivated, 1 = Rancilio, 2 = Gaggia
 #define OFFLINEGLOGO 1             // 0 = deactivated, 1 = activated
 #define BREWSWITCHDELAY 3000       // time in ms
 #define LANGUAGE 1                 // LANGUAGE = 0 (DE), LANGUAGE = 1 (EN), LANGUAGE = 2 (ES)
 
-// Connectivity 
+// Connectivity
 #define OFFLINEMODUS 0             // 0 = Blynk and Wifi are used, 1 = offline mode (only preconfigured values in code are used!)
 #define BLYNK 1                    // 0 = no Blynk , 1 = Blynk
 #define LOCALHOST 1                // 0 = no 1 = OWN Website
@@ -49,9 +49,9 @@ enum MACHINE {
 #define ONLYPID 1                  // 1 = Only PID, 0 = PID and preinfusion
 #define ONLYPIDSCALE 0             // 0 = off , 1= OnlyPID with Scale
 #define BREWMODE 1                 // 1 = NORMAL preinfusion ; 2 = Scale with weight
-#define BREWDETECTION 1            // 0 = off, 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = Sensor/Hardware for Only PID 
+#define BREWDETECTION 1            // 0 = off, 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = Sensor/Hardware for Only PID
 #define BREWSWITCHTYPE 1           //  1 = normal Switch, 2 = Trigger Switch
-#define COLDSTART_PID 1            // 1 = default coldstart values, 2 = custom values via blynk (expert mode activated) 
+#define COLDSTART_PID 1            // 1 = default coldstart values, 2 = custom values via blynk (expert mode activated)
 #define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay
 #define VOLTAGESENSORTYPE HIGH     // BREWDETECTION 3 configuration
 #define PINMODEVOLTAGESENSOR INPUT // Mode INPUT_PULLUP, INPUT or INPUT_PULLDOWN_16 (Only Pin 16)
@@ -70,7 +70,7 @@ enum MACHINE {
 #define TRIGGERRELAYTYPE HIGH      // LOW = low trigger, HIGH = high trigger relay for E-Trigger
 
 //Weight SCALE
-#define WEIGHTSETPOINT 30          // Gramm 
+#define WEIGHTSETPOINT 30          // Gramm
 
 //Pressure sensor
 /*
@@ -81,7 +81,11 @@ enum MACHINE {
 #define FULLSCALE   922            // 90% of ADC input @3.3V supply = 922
 #define MAXPRESSURE 200
 
-/// Wifi 
+// Accesspoint
+#define APWIFISSID "Rancilio"
+#define APWIFIKEY "Rancilio"
+
+/// Wifi
 #define HOSTNAME "wifi-hostname"
 #define D_SSID "myssid"
 #define PASS "mypass"
@@ -101,12 +105,12 @@ enum MACHINE {
 #define MQTT_PASSWORD "mymqttpass"
 #define MQTT_TOPIC_PREFIX "custom/Küche."  // topic will be "<MQTT_TOPIC_PREFIX><HOSTNAME>/<READING>"
 #define MQTT_SERVER_IP "XXX.XXX.XXX.XXX"  // IP-Address of locally installed mqtt server
-#define MQTT_SERVER_PORT 1883    
+#define MQTT_SERVER_PORT 1883
 
 // BLynk
 #define AUTH "blynk_auth"
 #define BLYNKADDRESS "blynk.clevercoffee.de"  // blynk-server IP-Address
-#define BLYNKPORT 8080             // blynk-server portver 
+#define BLYNKPORT 8080             // blynk-server portver
 
 // PID - offline values
 #define SETPOINT 95                // Temperatur setpoint
@@ -121,7 +125,7 @@ enum MACHINE {
 
 // PID - offline brewdetection values
 #define AGGBKP 50                  // Kp
-#define AGGBTN 0                   // Tn 
+#define AGGBTN 0                   // Tn
 #define AGGBTV 20                  // Tv
 
 // Backflush values
@@ -131,8 +135,8 @@ enum MACHINE {
 
 // Pin Layout
 #define ONE_WIRE_BUS 2             // Temp sensor pin
-#define PINBREWSWITCH 0            // 0: A0 (ESP8266) ; >0 : DIGITAL PIN, ESP32 OR ESP8266: ONLY USE PIN15 AND PIN16! 
-#define PINPRESSURESENSOR 99       // Pressuresensor 0: A0 (ESP8266), >0 ONLY ESP32 
+#define PINBREWSWITCH 0            // 0: A0 (ESP8266) ; >0 : DIGITAL PIN, ESP32 OR ESP8266: ONLY USE PIN15 AND PIN16!
+#define PINPRESSURESENSOR 99       // Pressuresensor 0: A0 (ESP8266), >0 ONLY ESP32
 #define pinRelayVentil 12          // Output pin for 3-way-valve
 #define pinRelayPumpe 13           // Output pin for pump
 #define pinRelayHeater 14          // Output pin for heater
@@ -142,10 +146,10 @@ enum MACHINE {
 #define STEAMONPIN 17              // STEAM active
 #define OLED_SCL 5                 // Output pin for dispaly clock pin
 #define OLED_SDA 4                 // Output pin for dispaly data pin
-#define HXDATPIN 99                // weight scale PIN 
-#define HXCLKPIN 99                // weight scale PIN  
+#define HXDATPIN 99                // weight scale PIN
+#define HXCLKPIN 99                // weight scale PIN
 #define SCREEN_WIDTH 128           // OLED display width, in pixels
-#define SCREEN_HEIGHT 64           // OLED display height, in pixels  
+#define SCREEN_HEIGHT 64           // OLED display height, in pixels
 
 // Historic (no settings)
 #define PONE 1                     // 1 = P_ON_E (default), 0 = P_ON_M (special PID mode, other PID-parameter are needed)
@@ -153,7 +157,7 @@ enum MACHINE {
 
 // Check BrewSwitch
 #if (defined(ESP8266) && ((PINBREWSWITCH != 15 && PINBREWSWITCH != 0 && PINBREWSWITCH != 16 )))
-  #error("WRONG Brewswitch PIN for ESP8266, Only PIN 15 and PIN 16");  
+  #error("WRONG Brewswitch PIN for ESP8266, Only PIN 15 and PIN 16");
 #endif
 
 
