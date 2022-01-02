@@ -291,7 +291,7 @@ double aggKi = aggKp / aggTn;
 #endif
 double aggKd = aggTv * aggKp ;
 
-PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, PonE, DIRECT);    //PID initialisation
+PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, PonE, DIRECT) ;    //PID initialisation
 
 /********************************************************
    DALLAS TEMP
@@ -2358,6 +2358,7 @@ void looppid()
   // voids
   refreshTemp();   //read new temperature values
   testEmergencyStop();  // test if Temp is to high
+  bPID.Compute();
   #if (BREWMODE == 2 || ONLYPIDSCALE == 1 )
     checkWeight() ; // Check Weight Scale in the loop
   #endif

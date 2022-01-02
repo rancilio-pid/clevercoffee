@@ -26,7 +26,7 @@
     }
 
     //run PID calculation
-    bPID.Compute();
+    //bPID.Compute();
     }
 #endif
 

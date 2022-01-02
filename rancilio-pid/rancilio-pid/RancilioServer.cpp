@@ -16,7 +16,7 @@ String generateForm() {
         String currVal;
         switch (e.type) {
             case kDouble:
-                result += "<input type=\"number\" step=\"0.01\"";
+                result += "<input type=\"number\" step=\"1\"";
                 currVal = String(*(double *)e.ptr);
                 break;
             case kInteger:
