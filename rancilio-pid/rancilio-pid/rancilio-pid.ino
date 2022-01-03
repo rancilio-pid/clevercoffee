@@ -130,7 +130,7 @@ IPAddress subnet(255, 255, 255, 0);
 const char* AP_WIFI_SSID = APWIFISSID ;
 const char* AP_WIFI_KEY = APWIFIKEY ;
 const unsigned long checkpowerofftime = 30*1000 ;
-boolean checklastpoweroffEnabled = false; 
+boolean checklastpoweroffEnabled = false;
 boolean softApEnabledcheck = false ;
 int softApstate = 0;
 
@@ -326,14 +326,16 @@ int blynksendcounter = 1;
 ******************************************************/
 #include "RancilioServer.h"
 std::vector<editable_t> editableVars = {
-    {"PID on?", kInteger, (void *)&pidON}, // ummm, why isn't pidON a boolean?
-    {"Start Kp", kDouble, (void *)&startKp},
-    {"Start Tn", kDouble, (void *)&startTn},
-    {"PID Kp", kDouble, (void *)&aggKp},
-    {"PID Tn", kDouble, (void *)&aggTn},
-    {"PID Tv", kDouble, (void *)&aggTv},
-    {"Set point", kDouble, (void *)&BrewSetPoint},
-    {"Brew Time", kDouble, (void *)&brewtime},
+    {"PID_ON", "PID on?", kInteger, (void *)&pidON}, // ummm, why isn't pidON a boolean?
+    {"START_KP", "Start Kp", kDouble, (void *)&startKp},
+    {"START_TN", "Start Tn", kDouble, (void *)&startTn},
+    {"PID_KP", "PID Kp", kDouble, (void *)&aggKp},
+    {"PID_TN", "PID Tn", kDouble, (void *)&aggTn},
+    {"PID_TV", "PID Tv", kDouble, (void *)&aggTv},
+    {"BREW_SET_POINT", "Set point", kDouble, (void *)&BrewSetPoint},
+    {"BREW_TIME", "Brew Time", kDouble, (void *)&brewtime},
+    {"AP_WIFI_SSID", "AP WiFi Name", kCString, (void *)AP_WIFI_SSID},
+    {"AP_WIFI_KEY", "AP WiFi Password", kCString, (void *)AP_WIFI_KEY},
 };
 
 /********************************************************
@@ -419,16 +421,16 @@ void createSoftAp()
       Serial.println("Set softApEnabled: 1, AP MODE\n");
       // Reset to normal mode softApEnabled = 0
       EEPROM.begin(1024);
-      int eepromvalue = 0; 
+      int eepromvalue = 0;
       EEPROM.put(150, eepromvalue) ;
       EEPROM.commit();
       EEPROM.end();
       softApstate = 0;
      Serial.printf("AccessPoint created with SSID %s and KEY %s and settings page http://%i.%i.%i.%i/settings\r\n", AP_WIFI_SSID, AP_WIFI_KEY, WiFi.softAPIP()[0],WiFi.softAPIP()[1],WiFi.softAPIP()[2],WiFi.softAPIP()[3]);
      displayMessage("AP-MODE","SSID:", String(AP_WIFI_SSID), "KEY:", String(AP_WIFI_KEY), "");
-    
-  //} else 
-  //{    
+
+  //} else
+  //{
   //  Serial.printf("Could not create AccessPoint! %i\r\n", WiFi.status());
  }
  yield();
@@ -444,16 +446,16 @@ void stopSoftAp()
 
 void checklastpoweroff()
 {
-  EEPROM.begin(1024); 
-  EEPROM.get(150, softApEnabled);  
+  EEPROM.begin(1024);
+  EEPROM.get(150, softApEnabled);
   //debugStream.writeD("softApEnabled: %i",softApEnabled);
   Serial.printf("softApEnabled: %i\n",softApEnabled);
   //softApEnabled = 1;
   //Serial.printf("softApEnabled: %i",softApEnabled);
- if (softApEnabled != 1) // set 1 if 0 
+ if (softApEnabled != 1) // set 1 if 0
  {
   Serial.printf("Set softApEnabled: 1, was 0\n");
-  int eepromvalue = 1; 
+  int eepromvalue = 1;
   EEPROM.put(150, eepromvalue) ;
  }
 
@@ -469,11 +471,11 @@ void setchecklastpoweroff()
     stopISR();
     Serial.printf("Set softApEnabled 0 after checkpowerofftime\n");
     EEPROM.begin(1024);
-    int eepromvalue = 0; 
+    int eepromvalue = 0;
     EEPROM.put(150, eepromvalue) ;
     EEPROM.commit();
     EEPROM.end();
-    checklastpoweroffEnabled = true; 
+    checklastpoweroffEnabled = true;
     startISR();
   }
 }
@@ -932,7 +934,7 @@ bool mqtt_publish(char *reading, char *payload)
   send data to Blynk server
 *****************************************************/
 
-void sendToBlynkMQTT() 
+void sendToBlynkMQTT()
 {
   if (Offlinemodus == 1) return;
 
@@ -941,7 +943,7 @@ void sendToBlynkMQTT()
   unsigned long currentMillistemp = 0;
   if ((currentMillisBlynk - previousMillisBlynk >= intervalBlynk) && (BLYNK == 1))
   {
-    if (Blynk.connected()) 
+    if (Blynk.connected())
     {
       if (blynksendcounter == 1) {
         Blynk.virtualWrite(V2, Input);
@@ -971,7 +973,7 @@ void sendToBlynkMQTT()
       blynksendcounter++;
     }
   }
-  if ((currentMillisMQTT - previousMillisMQTT >= intervalMQTT) && (MQTT == 1)) 
+  if ((currentMillisMQTT - previousMillisMQTT >= intervalMQTT) && (MQTT == 1))
   {
      previousMillisMQTT = currentMillisMQTT;
               checkMQTT();
@@ -1784,13 +1786,13 @@ void startISR()
 
 
 
-void setup() 
+void setup()
 {
   DEBUGSTART(115200);
   debugStream.setup();
-  // Check AP Mode 
+  // Check AP Mode
   checklastpoweroff();
-  
+
   //Serial.printf("softApEnabled setup %i",softApEnabled);
  if (softApEnabled == 1)
  {
@@ -1804,8 +1806,8 @@ void setup()
       displayLogo(sysVersion, "");
       delay(2000);
     #endif
-    
-    
+
+
     stopISR();
     createSoftAp();
 
@@ -1953,12 +1955,12 @@ void setup()
       if (WiFi.status() == WL_CONNECTED)
       {
         debugStream.writeD("WiFi connected - IP = %i.%i.%i.%i",WiFi.localIP()[0],WiFi.localIP()[1],WiFi.localIP()[2],WiFi.localIP()[3]);
-        
+
         if ( BLYNK == 1)
         {
           debugStream.writeD("Wifi works, now try Blynk (timeout 30s)");
         }
-        
+
         if (fallback == 0) {
           #if DISPLAY != 0
             displayLogo(langstring_connectblynk1[0], langstring_connectblynk1[1]);
@@ -1968,7 +1970,7 @@ void setup()
             displayLogo(langstring_connectwifi2[0], langstring_connectwifi2[1]);
           #endif
         }
-        
+
 
     /********************************************************
       OWN Webside
@@ -1976,7 +1978,7 @@ void setup()
     if (LOCALHOST == 1)
     {
     serverSetup();
-    }  
+    }
 
     /******************************************************/
         delay(1000);
@@ -2072,7 +2074,7 @@ void setup()
         delay(1000);
       }
     }
-      
+
 
     /********************************************************
        OTA
@@ -2190,7 +2192,7 @@ void setup()
 
 
 void loop() {
-  if (calibration_mode == 1 && TOF == 1) 
+  if (calibration_mode == 1 && TOF == 1)
   {
       loopcalibrate();
   } else if (softApEnabled == 0)
@@ -2210,8 +2212,8 @@ void loop() {
           ArduinoOTA.begin();
           softApstate = 10;
         }
-      break; 
-      case 10:  
+      break;
+      case 10:
       ArduinoOTA.handle();  // For OTA
       // Disable interrupt it OTA is starting, otherwise it will not work
       ArduinoOTA.onStart([]()
@@ -2247,7 +2249,7 @@ void loop() {
       break;
     }
   }
-  
+
 }
 
 // TOF Calibration_mode
