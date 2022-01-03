@@ -364,6 +364,13 @@ void getSignalStrength() {
   }
 }
 
+/********************************************************
+    Timer 1 - ISR for PID calculation and heat realay output
+******************************************************/
+
+ #include "ISR.h"
+
+
 
 /********************************************************
    DISPLAY Define & template
@@ -468,7 +475,7 @@ void setchecklastpoweroff()
 {
   if (millis() > checkpowerofftime && checklastpoweroffEnabled == false)
   {
-    stopISR();
+    timer1_disable();
     Serial.printf("Set softApEnabled 0 after checkpowerofftime\n");
     EEPROM.begin(1024);
     int eepromvalue = 0;
@@ -476,7 +483,7 @@ void setchecklastpoweroff()
     EEPROM.commit();
     EEPROM.end();
     checklastpoweroffEnabled = true;
-    startISR();
+    enableTimer1(); 
   }
 }
 
@@ -1119,13 +1126,6 @@ int filter(int input) {
   return inSum;
 }
 
-
-/********************************************************
-    Timer 1 - ISR for PID calculation and heat realay output
-******************************************************/
-
- #include "ISR.h"
-
 /********************************************************
     MQTT Callback Function: set Parameters through MQTT
 ******************************************************/
@@ -1733,27 +1733,7 @@ void debugVerboseOutput()
   }
 }
 
-void stopISR()
-{
-  #if defined(ESP8266)
-   timer1_disable();
-   #elif defined(ESP32) // ESP32
-   timerAlarmDisable(timer);
-   #else
-   #error("not supported MCU");
-   #endif
-}
-void startISR()
-{
-  #if defined(ESP8266)
-   //timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
-   timer1_enable(TIM_DIV256, TIM_EDGE, TIM_SINGLE);
-   #elif defined(ESP32) // ESP32
-   timerAlarmEnable(timer);
-   #else
-   #error("not supported MCU");
-  #endif
-}
+
 
 
 
@@ -1764,6 +1744,7 @@ void setup()
   // Check AP Mode
   checklastpoweroff();
    EEPROM.begin(1024);
+    initTimer1();
   //Serial.printf("softApEnabled setup %i",softApEnabled);
  if (softApEnabled == 1)
  {
@@ -1777,14 +1758,8 @@ void setup()
       displayLogo(sysVersion, "");
       delay(2000);
     #endif
-
-
-    stopISR();
+    disableTimer1();
     createSoftAp();
-
-
-
-
 
   } else if(softApEnabled == 0)
   {
@@ -2101,7 +2076,6 @@ void setup()
     #endif
     setupDone = true;
 
-  initTimer1();
   enableTimer1();
   } // else softenable == 1
 } // setup
