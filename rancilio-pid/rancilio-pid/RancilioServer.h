@@ -15,9 +15,11 @@
 enum EditableKind {
     kInteger,
     kDouble,
+    kCString,
 };
 
 struct editable_t {
+    String templateString;
     String displayName;
     EditableKind type;
     void *ptr;  // TODO: there must be a tidier way to do this? could we use c++ templates?
