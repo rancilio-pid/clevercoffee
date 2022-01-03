@@ -2441,15 +2441,30 @@ void looppid()
  ******************************************************************************/
 int readSysParamsFromStorage(void)
 {
+  int addr;
   double dummy;
 
+  // check if any data are programmed...
+  // An erased (or never programmed) Flash memory is filled with 0xFF.
+  for (addr=0; addr<10; addr++)                                                 // check 1st 10 bytes...
+  {
+    if (EEPROM.read(addr) != 0xFF)                                              // programmed byte?
+      break;                                                                    // yes -> abort loop
+  }
+  if (addr >= 10)                                                               // all bytes "empty"?
+  {                                                                             // yes...
+    debugStream.writeI("%s(): no data found", __FUNCTION__);
+    return -1;
+  }
+  
   // check first value, if there is a valid number...
   EEPROM.get(0, dummy);
   if (isnan(dummy))                                                             // invalid floating point number?
   {                                                                             // yes...
     debugStream.writeI("%s(): no NV data found (addr 0=%f)", __FUNCTION__, dummy);
-    return -1;
+    return -2;
   }
+  debugStream.writeI("%s(): data found", __FUNCTION__);
 
   // read stored system parameter values...
   EEPROM.get(0, aggKp);
