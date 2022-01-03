@@ -7,8 +7,6 @@ float blinkingtempoffset = 0.3; // offset for blinking
 
 void printScreen() 
 {
-
-  unsigned long currentMillisDisplay = millis();
   if
   (
    (machinestate == kSetPointNegative || machinestate == kPidNormal || machinestate == kBrewDetectionTrailing) ||

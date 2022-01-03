@@ -113,7 +113,10 @@ class ZACwire {
 				ByteNr = 1;
 				rawTemp[1][backUP] = 0;
 			}
-			else if (BitCounter == 6) ByteNr = rawTemp[0][backUP] = 0;
+			else if (BitCounter == 6) {
+        ByteNr = 0;
+        rawTemp[0][backUP] = 0;
+      }
 			 
 			rawTemp[ByteNr][backUP] <<= 1;      
 			if (deltaTime > bitWindow);				//Logic 0

@@ -237,7 +237,7 @@ double aggbKi = aggbKp / aggbTn;
 #endif
 double aggbKd = aggbTv * aggbKp ;
 double brewtimersoftware = 45;    // 20-5 for detection
-double brewboarder = 150 ;        // border for the detection, be carefull: to low: risk of wrong brew detection and rising temperature
+double brewboarder = BREWDETECTIONLIMIT;  // brew detection limit
 const int PonE = PONE;
 
 /********************************************************
@@ -353,11 +353,11 @@ void getSignalStrength() {
 
   if (rssi >= -50) {
     bars = 4;
-  } else if (rssi < -50 & rssi >= -65) {
+  } else if (rssi < -50 && rssi >= -65) {
     bars = 3;
-  } else if (rssi < -65 & rssi >= -75) {
+  } else if (rssi < -65 && rssi >= -75) {
     bars = 2;
-  } else if (rssi < -75 & rssi >= -80) {
+  } else if (rssi < -75 && rssi >= -80) {
     bars = 1;
   } else {
     bars = 0;
@@ -778,33 +778,14 @@ void initOfflineMode()
   debugStream.writeI("Start offline mode with eeprom values, no wifi:(");
   Offlinemodus = 1 ;
 
-  EEPROM.begin(1024);  // open eeprom
-  double dummy; // check if eeprom values are numeric (only check first value in eeprom)
-  EEPROM.get(0, dummy);
-  debugStream.writeI("check eeprom 0x00 in dummy: %f",dummy);
-  if (!isnan(dummy)) {
-    EEPROM.get(0, aggKp);
-    EEPROM.get(10, aggTn);
-    EEPROM.get(20, aggTv);
-    EEPROM.get(30, BrewSetPoint);
-    EEPROM.get(40, brewtime);
-    EEPROM.get(50, preinfusion);
-    EEPROM.get(60, preinfusionpause);
-    EEPROM.get(90, aggbKp);
-    EEPROM.get(100, aggbTn);
-    EEPROM.get(110, aggbTv);
-    EEPROM.get(120, brewtimersoftware);
-    EEPROM.get(130, brewboarder);
-  } else {
+  if (readSysParamsFromStorage() != 0)
+  {
     #if DISPLAY != 0
-      displayMessage("", "", "", "", "No eeprom,", "Values");
-     #endif
+    displayMessage("", "", "", "", "No eeprom,", "Values");
+    #endif
     debugStream.writeI("No working eeprom value, I am sorry, but use default offline value  :)");
     delay(1000);
   }
-  // eeeprom schließen
-  EEPROM.commit();
-  EEPROM.end();
 }
 
 /*******************************************************
@@ -912,7 +893,7 @@ char* number2string(unsigned int in) {
 /*******************************************************
    Publish Data to MQTT
 *****************************************************/
-bool mqtt_publish(char *reading, char *payload)
+bool mqtt_publish(const char *reading, char *payload)
 {
 #if MQTT
     char topic[120];
@@ -1151,7 +1132,7 @@ int filter(int input) {
 
 
 void mqtt_callback(char* topic, byte* data, unsigned int length) {
-  char topic_str[255];
+  char topic_str[256];
   os_memcpy(topic_str, topic, sizeof(topic_str));
   topic_str[255] = '\0';
   char data_str[length+1];
@@ -1161,9 +1142,6 @@ void mqtt_callback(char* topic, byte* data, unsigned int length) {
   char configVar[120];
   char cmd[64];
   double data_double;
-  int data_int;
-
-
 
  // DEBUG_print("mqtt_parse(%s, %s)\n", topic_str, data_str);
   snprintf(topic_pattern, sizeof(topic_pattern), "%s%s/%%[^\\/]/%%[^\\/]", mqtt_topic_prefix, hostname);
@@ -1785,7 +1763,7 @@ void setup()
   debugStream.setup();
   // Check AP Mode
   checklastpoweroff();
-
+   EEPROM.begin(1024);
   //Serial.printf("softApEnabled setup %i",softApEnabled);
  if (softApEnabled == 1)
  {
@@ -2012,48 +1990,17 @@ void setup()
               // Blynk.syncAll();  //sync all values from Blynk server
               // Werte in den eeprom schreiben
               // ini eeprom mit begin
-              EEPROM.begin(1024);
-              EEPROM.put(0, aggKp);
-              EEPROM.put(10, aggTn);
-              EEPROM.put(20, aggTv);
-              EEPROM.put(30, BrewSetPoint);
-              EEPROM.put(40, brewtime);
-              EEPROM.put(50, preinfusion);
-              EEPROM.put(60, preinfusionpause);
-              EEPROM.put(90, aggbKp);
-              EEPROM.put(100, aggbTn);
-              EEPROM.put(110, aggbTv);
-              EEPROM.put(120, brewtimersoftware);
-              EEPROM.put(130, brewboarder);
-              // eeprom schließen
-              EEPROM.commit();
-              EEPROM.end();
+              writeSysParamsToStorage();
             }
           } else
           {
             debugStream.writeI("No connection to Blynk");
-            EEPROM.begin(1024);  // open eeprom
-            double dummy; // check if eeprom values are numeric (only check first value in eeprom)
-            EEPROM.get(0, dummy);
-            debugStream.writeI("check eeprom 0x00 in dummy: %f",dummy);
-            if (!isnan(dummy))
+            if (readSysParamsFromStorage() == 0)
             {
               #if DISPLAY != 0
               displayLogo("3: Blynk not connected", "use eeprom values..");
-              #endif
-              EEPROM.get(0, aggKp);
-              EEPROM.get(10, aggTn);
-              EEPROM.get(20, aggTv);
-              EEPROM.get(30, BrewSetPoint);
-              EEPROM.get(40, brewtime);
-              EEPROM.get(50, preinfusion);
-              EEPROM.get(60, preinfusionpause);
-              EEPROM.get(90, aggbKp);
-              EEPROM.get(100, aggbTn);
-              EEPROM.get(110, aggbTv);
-              EEPROM.get(120, brewtimersoftware);
-              EEPROM.get(130, brewboarder);
-            }
+              #endif 
+            } 
           }
       }
       }
@@ -2154,35 +2101,10 @@ void setup()
     #endif
     setupDone = true;
 
-    #if defined(ESP8266)
-      /********************************************************
-        Timer1 ISR - Initialisierung
-        TIM_DIV1 = 0,   //80MHz (80 ticks/us - 104857.588 us max)
-        TIM_DIV16 = 1,  //5MHz (5 ticks/us - 1677721.4 us max)
-        TIM_DIV256 = 3  //312.5Khz (1 tick = 3.2us - 26843542.4 us max)
-      ******************************************************/
-        timer1_isr_init();
-        timer1_attachInterrupt(onTimer1ISR);
-        //timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
-        //timer1_write(50000); // set interrupt time to 10ms
-        timer1_enable(TIM_DIV256, TIM_EDGE, TIM_SINGLE);
-        timer1_write(6250); // set interrupt time to 20ms
-    #endif
-    #if defined(ESP32) // ESP32
-          /********************************************************
-      Timer1 ISR - Initialisierung
-      TIM_DIV1 = 0,   //80MHz (80 ticks/us - 104857.588 us max)
-      TIM_DIV16 = 1,  //5MHz (5 ticks/us - 1677721.4 us max)
-      TIM_DIV256 = 3  //312.5Khz (1 tick = 3.2us - 26843542.4 us max)
-    ******************************************************/
-      timer = timerBegin(0, 80, true); //m
-      timerAttachInterrupt(timer, &onTimer, true);//m
-      timerAlarmWrite(timer, 10000, true);//m
-      timerAlarmEnable(timer);//m
-    #endif
+  initTimer1();
+  enableTimer1();
   } // else softenable == 1
 } // setup
-
 
 void loop() {
   if (calibration_mode == 1 && TOF == 1)
@@ -2253,7 +2175,7 @@ void loopcalibrate()
   {
     pidMode = 0;
     bPID.SetMode(pidMode);
-    Output = 0 ;false;
+    Output = 0;
   }
   if (Blynk.connected() && BLYNK == 1)
   {  // If connected run as normal
@@ -2299,33 +2221,17 @@ void looppid()
     // Disable interrupt it OTA is starting, otherwise it will not work
     ArduinoOTA.onStart([]()
     {
-
-      #if defined(ESP8266)
-      timer1_disable();
-      #endif
-      #if defined(ESP32)
-      timerAlarmDisable(timer);
-      #endif
+      disableTimer1();
       digitalWrite(pinRelayHeater, LOW); //Stop heating
     });
     ArduinoOTA.onError([](ota_error_t error)
     {
-      #if defined(ESP8266)
-      timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
-      #endif
-      #if defined(ESP32)
-      timerAlarmEnable(timer);
-      #endif
+      enableTimer1();
     });
     // Enable interrupts if OTA is finished
     ArduinoOTA.onEnd([]()
     {
-      #if defined(ESP8266)
-       timer1_enable(TIM_DIV16, TIM_EDGE, TIM_SINGLE);
-      #endif
-      #if defined(ESP32)
-        timerAlarmEnable(timer);
-      #endif
+      enableTimer1();
     });
 
     if (Blynk.connected() && BLYNK == 1)
@@ -2516,4 +2422,98 @@ void looppid()
     bPID.SetTunings(aggbKp, aggbKi, aggbKd, PonE) ;
   }
   //sensor error OR Emergency Stop
+}
+
+
+/**************************************************************************//**
+ * \brief Reads all system parameter values from non-volatile storage.
+ * 
+ * \return  0 - succeed
+ *         <0 - failed
+ ******************************************************************************/
+int readSysParamsFromStorage(void) 
+{
+  int addr;
+  double dummy;
+
+  // check if any data are programmed...
+  // An erased (or never programmed) Flash memory is filled with 0xFF.
+  for (addr=0; addr<10; addr++)                                                 // check 1st 10 bytes...
+  {
+    if (EEPROM.read(addr) != 0xFF)                                              // programmed byte?
+      break;                                                                    // yes -> abort loop
+  }
+  if (addr >= 10)                                                               // all bytes "empty"?
+  {                                                                             // yes...
+    debugStream.writeI("%s(): no data found", __FUNCTION__);
+    return -1;
+  }
+  
+  // check first value, if there is a valid number...
+  EEPROM.get(0, dummy);
+  if (isnan(dummy))                                                             // invalid floating point number?
+  {                                                                             // yes...
+    debugStream.writeI("%s(): no NV data found (addr 0=%f)", __FUNCTION__, dummy);
+    return -2;
+  }
+  debugStream.writeI("%s(): data found", __FUNCTION__);
+
+  // read stored system parameter values...
+  EEPROM.get(0, aggKp);
+  EEPROM.get(10, aggTn);
+  EEPROM.get(20, aggTv);
+  EEPROM.get(30, BrewSetPoint);
+  EEPROM.get(40, brewtime);
+  EEPROM.get(50, preinfusion);
+  EEPROM.get(60, preinfusionpause);
+  EEPROM.get(90, aggbKp);
+  EEPROM.get(100, aggbTn);
+  EEPROM.get(110, aggbTv);
+  EEPROM.get(120, brewtimersoftware);
+  EEPROM.get(130, brewboarder);
+
+  // EEPROM.commit() not necessary after read
+  return 0;
+}
+
+
+
+/**************************************************************************//**
+ * \brief Writes all current system parameter values to non-volatile storage.
+ * 
+ * \return  0 - succeed
+ *         <0 - failed
+ ******************************************************************************/
+int writeSysParamsToStorage(void) 
+{
+  int returnCode;
+  bool isTimerEnabled;
+  
+  // write current system parameter values...
+  EEPROM.put(0, aggKp);
+  EEPROM.put(10, aggTn);
+  EEPROM.put(20, aggTv);  
+  EEPROM.put(30, BrewSetPoint);
+  EEPROM.put(40, brewtime);
+  EEPROM.put(50, preinfusion);
+  EEPROM.put(60, preinfusionpause);
+  EEPROM.put(90, aggbKp);
+  EEPROM.put(100, aggbTn);
+  EEPROM.put(110, aggbTv);
+  EEPROM.put(120, brewtimersoftware);
+  EEPROM.put(130, brewboarder);
+
+  // While Flash memory erase/write operations no other code must be executed from Flash!
+  // disable any ISRs...
+  isTimerEnabled = isTimer1Enabled();
+  disableTimer1();
+
+  // really write data to storage...
+  returnCode = EEPROM.commit()? 0: -1;
+
+  // recover any ISRs...
+  if (isTimerEnabled)                                                           // was timer enabled before?
+    enableTimer1();                                                             // yes -> re-enable timer
+    
+  return returnCode;
 }

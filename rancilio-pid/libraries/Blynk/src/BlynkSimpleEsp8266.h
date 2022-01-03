@@ -50,7 +50,6 @@ public:
             BlynkDelay(500);
         }
         BLYNK_LOG1(BLYNK_F("Connected to WiFi"));
-
         IPAddress myip = WiFi.localIP();
         BLYNK_LOG_IP("IP: ", myip);
     }
