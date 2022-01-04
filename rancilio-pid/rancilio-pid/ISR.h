@@ -111,5 +111,15 @@ void disableTimer1(void)
 
 bool isTimer1Enabled(void)
 {
-  return ((T1C & (1 << TCTE)) != 0);
+  bool timerEnabled = false;
+
+  #if defined(ESP8266)
+    timerEnabled = ((T1C & (1 << TCTE)) != 0);
+  #elif defined(ESP32)
+    timerEnabled = timerAlarmEnabled(timer);
+  #else
+    #error("MCU not supported");
+  #endif
+  
+  return timerEnabled;
 }
