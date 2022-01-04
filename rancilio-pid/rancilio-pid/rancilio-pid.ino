@@ -475,7 +475,7 @@ void setchecklastpoweroff()
 {
   if (millis() > checkpowerofftime && checklastpoweroffEnabled == false)
   {
-    timer1_disable();
+    disableTimer1();
     Serial.printf("Set softApEnabled 0 after checkpowerofftime\n");
     EEPROM.begin(1024);
     int eepromvalue = 0;
