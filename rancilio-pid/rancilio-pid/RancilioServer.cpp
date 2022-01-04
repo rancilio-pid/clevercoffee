@@ -86,12 +86,20 @@ String staticProcessor(const String& var) {
 
     String varLower(var);
     varLower.toLowerCase();
+
+    #ifdef ESP32
+    timerAlarmDisable(timer);
+    #endif
     File file = SPIFFS.open("/html_fragments/" + varLower + ".htm", "r");
     if(file) {
         String ret = file.readString();
         file.close();
         return ret;
     }
+    #ifdef ESP32
+    timerAlarmEnable(timer);
+    #endif
+
     return String();
 }
 
@@ -144,9 +152,16 @@ void serverSetup() {
         }
     });
 
+
+    #ifdef ESP32
+    timerAlarmDisable(timer);
+    #endif
     SPIFFS.begin();
     server.serveStatic("/css", SPIFFS, "/css/");
     server.serveStatic("/", SPIFFS, "/html/").setTemplateProcessor(staticProcessor);
+    #ifdef ESP32
+    timerAlarmEnable(timer);
+    #endif
 
     server.onNotFound([](AsyncWebServerRequest *request){
         request->send(404, "text/plain", "Not found");
