@@ -12,6 +12,8 @@
 #endif
 #include <ESPAsyncWebServer.h>
 
+
+
 enum EditableKind {
     kInteger,
     kDouble,
@@ -27,6 +29,7 @@ struct editable_t {
 
 void serverSetup();
 void setEepromWriteFcn(int (*fcnPtr)(void));
+void setBlynkWriteFcn(int (*fcnPtr)(void));
 
 // We define these in the ino file
 extern std::vector<editable_t> editableVars;
