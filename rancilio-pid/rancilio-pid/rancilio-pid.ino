@@ -483,7 +483,7 @@ void setchecklastpoweroff()
     EEPROM.commit();
     EEPROM.end();
     checklastpoweroffEnabled = true;
-    enableTimer1(); 
+    enableTimer1();
   }
 }
 
@@ -1923,7 +1923,8 @@ void setup()
     ******************************************************/
     if (LOCALHOST == 1)
     {
-    serverSetup();
+        setEepromWriteFcn(writeSysParamsToStorage);
+        serverSetup();
     }
 
     /******************************************************/
@@ -1974,8 +1975,8 @@ void setup()
             {
               #if DISPLAY != 0
               displayLogo("3: Blynk not connected", "use eeprom values..");
-              #endif 
-            } 
+              #endif
+            }
           }
       }
       }
@@ -2401,11 +2402,11 @@ void looppid()
 
 /**************************************************************************//**
  * \brief Reads all system parameter values from non-volatile storage.
- * 
+ *
  * \return  0 - succeed
  *         <0 - failed
  ******************************************************************************/
-int readSysParamsFromStorage(void) 
+int readSysParamsFromStorage(void)
 {
   int addr;
   double dummy;
@@ -2422,7 +2423,7 @@ int readSysParamsFromStorage(void)
     debugStream.writeI("%s(): no data found", __FUNCTION__);
     return -1;
   }
-  
+
   // check first value, if there is a valid number...
   EEPROM.get(0, dummy);
   if (isnan(dummy))                                                             // invalid floating point number?
@@ -2454,19 +2455,20 @@ int readSysParamsFromStorage(void)
 
 /**************************************************************************//**
  * \brief Writes all current system parameter values to non-volatile storage.
- * 
+ *
  * \return  0 - succeed
  *         <0 - failed
  ******************************************************************************/
-int writeSysParamsToStorage(void) 
+int writeSysParamsToStorage(void)
 {
   int returnCode;
   bool isTimerEnabled;
-  
+
   // write current system parameter values...
+  EEPROM.begin(4096);
   EEPROM.put(0, aggKp);
   EEPROM.put(10, aggTn);
-  EEPROM.put(20, aggTv);  
+  EEPROM.put(20, aggTv);
   EEPROM.put(30, BrewSetPoint);
   EEPROM.put(40, brewtime);
   EEPROM.put(50, preinfusion);
@@ -2484,10 +2486,11 @@ int writeSysParamsToStorage(void)
 
   // really write data to storage...
   returnCode = EEPROM.commit()? 0: -1;
+  EEPROM.end();
 
   // recover any ISRs...
   if (isTimerEnabled)                                                           // was timer enabled before?
     enableTimer1();                                                             // yes -> re-enable timer
-    
+
   return returnCode;
 }
