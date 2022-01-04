@@ -31,4 +31,8 @@ void setEepromWriteFcn(int (*fcnPtr)(void));
 // We define these in the ino file
 extern std::vector<editable_t> editableVars;
 
+#ifdef ESP32
+extern hw_timer_t * timer;
+#endif
+
 #endif
