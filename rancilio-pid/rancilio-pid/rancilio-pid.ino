@@ -2465,6 +2465,7 @@ int writeSysParamsToStorage(void)
   bool isTimerEnabled;
 
   // write current system parameter values...
+  EEPROM.begin(4096);
   EEPROM.put(0, aggKp);
   EEPROM.put(10, aggTn);
   EEPROM.put(20, aggTv);
@@ -2485,6 +2486,7 @@ int writeSysParamsToStorage(void)
 
   // really write data to storage...
   returnCode = EEPROM.commit()? 0: -1;
+  EEPROM.end();
 
   // recover any ISRs...
   if (isTimerEnabled)                                                           // was timer enabled before?
