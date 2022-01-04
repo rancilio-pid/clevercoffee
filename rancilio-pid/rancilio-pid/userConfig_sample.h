@@ -13,10 +13,11 @@
 
 // List of supported machines
 enum MACHINE {
-  RancilioSilvia,   // MACHINEID 0
-  RancilioSilviaE,  // MACHINEID 1
-  Gaggia,           // MACHINEID 2
-  QuickMill         // MACHINEID 3
+  // USED AS INDEX (see machineName[])!
+  RancilioSilvia = 0,   // MACHINEID 0
+  RancilioSilviaE,      // MACHINEID 1
+  Gaggia,               // MACHINEID 2
+  QuickMill             // MACHINEID 3
 };
 
 /********************************************************
