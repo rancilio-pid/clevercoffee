@@ -1918,16 +1918,17 @@ void setup()
         }
 
 
-    /********************************************************
-      OWN Webside
-    ******************************************************/
-    if (LOCALHOST == 1)
-    {
-        setEepromWriteFcn(writeSysParamsToStorage);
-        serverSetup();
-    }
+        /********************************************************
+        OWN Webside
+        ******************************************************/
+        if (LOCALHOST == 1)
+        {
+            setEepromWriteFcn(writeSysParamsToStorage);
+            setBlynkWriteFcn(writeSysParamsToBlynk);
+            serverSetup();
+        }
 
-    /******************************************************/
+        /******************************************************/
         delay(1000);
 
         //try blynk connection
@@ -1978,9 +1979,9 @@ void setup()
               #endif
             }
           }
+        } 
       }
-      }
-      else
+      else // NO Wifi  
       {
         #if DISPLAY != 0
           displayLogo(langstring_nowifi[0], langstring_nowifi[1]);
@@ -2479,6 +2480,8 @@ int writeSysParamsToStorage(void)
   EEPROM.put(120, brewtimersoftware);
   EEPROM.put(130, brewboarder);
 
+
+
   // While Flash memory erase/write operations no other code must be executed from Flash!
   // disable any ISRs...
   isTimerEnabled = isTimer1Enabled();
@@ -2493,4 +2496,27 @@ int writeSysParamsToStorage(void)
     enableTimer1();                                                             // yes -> re-enable timer
 
   return returnCode;
+}
+
+
+int writeSysParamsToBlynk(void)
+{
+ if ( BLYNK == 1 && Blynk.connected()) 
+  Blynk.virtualWrite(V2, Input);
+  Blynk.virtualWrite(V4, aggKp);
+  Blynk.virtualWrite(V5, aggTn);
+  Blynk.virtualWrite(V6,  aggTv);
+  Blynk.virtualWrite(V7,  BrewSetPoint);
+  Blynk.virtualWrite(V8,  brewtime);
+  Blynk.virtualWrite(V9,  preinfusion);
+  Blynk.virtualWrite(V10,  preinfusionpause);
+  Blynk.virtualWrite(V13,  pidON);
+  Blynk.virtualWrite(V15,  SteamON);
+  Blynk.virtualWrite(V16,  SteamSetPoint);
+  Blynk.virtualWrite(V17, setPoint);
+  #if (BREWMODE == 2)
+  {
+    Blynk.virtualWrite(V18, weightSetpoint;
+  }
+  #endif
 }

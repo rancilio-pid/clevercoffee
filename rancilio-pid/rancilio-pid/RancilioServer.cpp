@@ -6,12 +6,18 @@
 #include "SPIFFS.h"
 #endif
 
+
 AsyncWebServer server(80);
 
 int (*writeToEeprom)(void) = NULL;
 void setEepromWriteFcn(int (*fcnPtr)(void)) {
     writeToEeprom = fcnPtr;
 }
+int (*writeToBlynk)(void) = NULL;
+void setBlynkWriteFcn(int (*fcnPtr)(void)) {
+    writeToBlynk = fcnPtr;
+}
+
 
 String generateForm(String varName) {
     // Yikes, we don't have std::map available
@@ -143,13 +149,18 @@ void serverSetup() {
         }
 
         request->send(200, "text/html", m);
-        if(writeToEeprom) {
-            if (writeToEeprom() == 0) {
+        // Write to EEPROM  
+        if(writeToEeprom) 
+        {
+            if (writeToEeprom() == 0) 
+            {
                 Serial.println("successfully wrote EEPROM");
             } else {
                 Serial.println("EEPROM write failed");
             }
         }
+        // Write to Blynk 
+        writeToBlynk();
     });
 
 
