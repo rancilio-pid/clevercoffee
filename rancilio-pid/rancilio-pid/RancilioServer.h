@@ -26,6 +26,7 @@ struct editable_t {
 };
 
 void serverSetup();
+void setEepromWriteFcn(int (*fcnPtr)(void));
 
 // We define these in the ino file
 extern std::vector<editable_t> editableVars;

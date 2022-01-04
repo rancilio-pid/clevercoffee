@@ -8,6 +8,11 @@
 
 AsyncWebServer server(80);
 
+int (*writeToEeprom)(void) = NULL;
+void setEepromWriteFcn(int (*fcnPtr)(void)) {
+    writeToEeprom = fcnPtr;
+}
+
 String generateForm(String varName) {
     // Yikes, we don't have std::map available
     for (editable_t e : editableVars) {
@@ -130,7 +135,7 @@ void serverSetup() {
         }
 
         request->send(200, "text/html", m);
-        // TODO: Should we write EEPROM values again here?
+        if(writeToEeprom) writeToEeprom();
     });
 
     SPIFFS.begin();

@@ -1934,7 +1934,8 @@ void setup()
     ******************************************************/
     if (LOCALHOST == 1)
     {
-    serverSetup();
+        setEepromWriteFcn(writeSysParamsToStorage);
+        serverSetup();
     }
 
     /******************************************************/
@@ -1946,46 +1947,48 @@ void setup()
           Blynk.config(auth, blynkaddress, blynkport) ;
           Blynk.connect(30000);
 
-      if (Blynk.connected() == true)
-      {
-        #if DISPLAY != 0
-          displayLogo(langstring_connectblynk2[0], langstring_connectblynk2[1]);
-        #endif
-        debugStream.writeI("Blynk is online");
-        if (fallback == 1)
-        {
-          debugStream.writeI("sync all variables and write new values to eeprom");
-          // Blynk.run() ;
-          Blynk.syncVirtual(V4);
-          Blynk.syncVirtual(V5);
-          Blynk.syncVirtual(V6);
-          Blynk.syncVirtual(V7);
-          Blynk.syncVirtual(V8);
-          Blynk.syncVirtual(V9);
-          Blynk.syncVirtual(V10);
-          Blynk.syncVirtual(V11);
-          Blynk.syncVirtual(V12);
-          Blynk.syncVirtual(V13);
-          Blynk.syncVirtual(V14);
-          Blynk.syncVirtual(V15);
-          Blynk.syncVirtual(V30);
-          Blynk.syncVirtual(V31);
-          Blynk.syncVirtual(V32);
-          Blynk.syncVirtual(V33);
-          Blynk.syncVirtual(V34);
-          // Blynk.syncAll();  //sync all values from Blynk server
-          // Werte in den eeprom schreiben
-          writeSysParamsToStorage();
-        }
-      } else
-      {
-        debugStream.writeI("No connection to Blynk");
-        if (readSysParamsFromStorage() == 0)
-        {
-          #if DISPLAY != 0
-          displayLogo("3: Blynk not connected", "use eeprom values..");
-          #endif
-        }
+          if (Blynk.connected() == true)
+          {
+            #if DISPLAY != 0
+              displayLogo(langstring_connectblynk2[0], langstring_connectblynk2[1]);
+            #endif
+            debugStream.writeD("Blynk is online");
+            if (fallback == 1)
+            {
+              debugStream.writeD("sync all variables and write new values to eeprom");
+              // Blynk.run() ;
+              Blynk.syncVirtual(V4);
+              Blynk.syncVirtual(V5);
+              Blynk.syncVirtual(V6);
+              Blynk.syncVirtual(V7);
+              Blynk.syncVirtual(V8);
+              Blynk.syncVirtual(V9);
+              Blynk.syncVirtual(V10);
+              Blynk.syncVirtual(V11);
+              Blynk.syncVirtual(V12);
+              Blynk.syncVirtual(V13);
+              Blynk.syncVirtual(V14);
+              Blynk.syncVirtual(V15);
+              Blynk.syncVirtual(V30);
+              Blynk.syncVirtual(V31);
+              Blynk.syncVirtual(V32);
+              Blynk.syncVirtual(V33);
+              Blynk.syncVirtual(V34);
+              // Blynk.syncAll();  //sync all values from Blynk server
+              // Werte in den eeprom schreiben
+              // ini eeprom mit begin
+              writeSysParamsToStorage();
+            }
+          } else
+          {
+            debugStream.writeI("No connection to Blynk");
+            if (readSysParamsFromStorage() == 0)
+            {
+              #if DISPLAY != 0
+              displayLogo("3: Blynk not connected", "use eeprom values..");
+              #endif
+            }
+          }
       }
       }
       else
