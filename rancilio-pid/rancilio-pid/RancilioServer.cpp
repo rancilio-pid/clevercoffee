@@ -135,7 +135,13 @@ void serverSetup() {
         }
 
         request->send(200, "text/html", m);
-        if(writeToEeprom) writeToEeprom();
+        if(writeToEeprom) {
+            if (writeToEeprom() == 0) {
+                Serial.println("successfully wrote EEPROM");
+            } else {
+                Serial.println("EEPROM write failed");
+            }
+        }
     });
 
     SPIFFS.begin();
