@@ -2297,6 +2297,7 @@ int writeSysParamsToStorage(void)
 }
 
 
+
 /**************************************************************************//**
  * \brief Returns the firmware version.
  * 
