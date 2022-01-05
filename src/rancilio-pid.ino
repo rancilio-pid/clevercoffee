@@ -304,7 +304,7 @@ DeviceAddress sensorDeviceAddress;     // arrays to hold device address
    Temp Sensors TSIC 306
 ******************************************************/
 uint16_t temperature = 0;     // internal variable used to read temeprature
-float Temperatur_C = 0;       // internal variable that holds the converted temperature in °C
+float Temperature_C = 0;       // internal variable that holds the converted temperature in °C
 
 #if (ONE_WIRE_BUS == 16 && TEMPSENSOR  == 2 && defined(ESP8266))
 TSIC Sensor1(ONE_WIRE_BUS);   // only Signalpin, VCCpin unused by default
@@ -340,6 +340,9 @@ std::vector<editable_t> editableVars = {
     {"AP_WIFI_SSID", "AP WiFi Name", kCString, (void *)AP_WIFI_SSID},
     {"AP_WIFI_KEY", "AP WiFi Password", kCString, (void *)AP_WIFI_KEY}
 };
+
+unsigned long lastTempEvent = 0;
+unsigned long tempEventInterval = 1000;
 
 /********************************************************
   Get Wifi signal strength and set bars for display
@@ -756,15 +759,15 @@ void refreshTemp() {
       temperature = 0;
        #if (ONE_WIRE_BUS == 16 && defined(ESP8266))
          Sensor1.getTemperature(&temperature);
-         Temperatur_C = Sensor1.calc_Celsius(&temperature);
+         Temperature_C = Sensor1.calc_Celsius(&temperature);
          #endif
        #if ((ONE_WIRE_BUS != 16 && defined(ESP8266)) || defined(ESP32))
-        Temperatur_C = Sensor2.getTemp();
-        //DEBUG_println(Temperatur_C);
+        Temperature_C = Sensor2.getTemp();
+        //DEBUG_println(Temperature_C);
        #endif
-      //Temperatur_C = 70;
-      if (!checkSensor(Temperatur_C) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
-      Input = Temperatur_C;
+      //Temperature_C = 70;
+      if (!checkSensor(Temperature_C) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
+      Input = Temperature_C;
       if (Brewdetection != 0) {
         movAvg();
       } else if (firstreading != 0) {
@@ -2254,6 +2257,12 @@ void looppid()
   refreshTemp();   //read new temperature values
   testEmergencyStop();  // test if Temp is to high
   bPID.Compute();
+
+  if ((millis() - lastTempEvent) > tempEventInterval) {
+    sendTempEvent(Input, BrewSetPoint);
+    lastTempEvent = millis();
+  }
+
   #if (BREWMODE == 2 || ONLYPIDSCALE == 1 )
     checkWeight() ; // Check Weight Scale in the loop
   #endif
