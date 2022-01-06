@@ -325,6 +325,8 @@ int blynksendcounter = 1;
    HTTP Server
 ******************************************************/
 #include "RancilioServer.h"
+
+
 std::vector<editable_t> editableVars = {
     {"PID_ON", "PID on?", kInteger, (void *)&pidON}, // ummm, why isn't pidON a boolean?
     {"START_KP", "Start Kp", kDouble, (void *)&startKp},
@@ -336,7 +338,7 @@ std::vector<editable_t> editableVars = {
     {"BREW_TIME", "Brew Time", kDouble, (void *)&brewtime},
     {"TEMP", "Temperature", kDouble, (void *)&Input},
     {"AP_WIFI_SSID", "AP WiFi Name", kCString, (void *)AP_WIFI_SSID},
-    {"AP_WIFI_KEY", "AP WiFi Password", kCString, (void *)AP_WIFI_KEY},
+    {"AP_WIFI_KEY", "AP WiFi Password", kCString, (void *)AP_WIFI_KEY}
 };
 
 /********************************************************
@@ -434,8 +436,11 @@ void createSoftAp()
       EEPROM.commit();
       EEPROM.end();
       softApstate = 0;
-     Serial.printf("AccessPoint created with SSID %s and KEY %s and settings page http://%i.%i.%i.%i/settings\r\n", AP_WIFI_SSID, AP_WIFI_KEY, WiFi.softAPIP()[0],WiFi.softAPIP()[1],WiFi.softAPIP()[2],WiFi.softAPIP()[3]);
-     displayMessage("AP-MODE","SSID:", String(AP_WIFI_SSID), "KEY:", String(AP_WIFI_KEY), "");
+      Serial.printf("AccessPoint created with SSID %s and KEY %s and settings page http://%i.%i.%i.%i/settings\r\n", AP_WIFI_SSID, AP_WIFI_KEY, WiFi.softAPIP()[0],WiFi.softAPIP()[1],WiFi.softAPIP()[2],WiFi.softAPIP()[3]);
+      String IPaddressAP =  WiFi.localIP().toString();
+      displayMessage("AP-MODE: SSID:", String(AP_WIFI_SSID), "KEY:", String(AP_WIFI_KEY), "IP",IPaddressAP);
+    
+ 
 
   //} else
   //{
@@ -2518,9 +2523,9 @@ int writeSysParamsToBlynk(void)
   Blynk.virtualWrite(V5, aggTn);
   Blynk.virtualWrite(V6,  aggTv);
   Blynk.virtualWrite(V7,  BrewSetPoint);
-  Blynk.virtualWrite(V8,  brewtime);
-  Blynk.virtualWrite(V9,  preinfusion);
-  Blynk.virtualWrite(V10,  preinfusionpause);
+  Blynk.virtualWrite(V8,  brewtime/1000);
+  Blynk.virtualWrite(V9,  preinfusion/1000);
+  Blynk.virtualWrite(V10,  preinfusionpause/1000);
   Blynk.virtualWrite(V13,  pidON);
   Blynk.virtualWrite(V15,  SteamON);
   Blynk.virtualWrite(V16,  SteamSetPoint);
