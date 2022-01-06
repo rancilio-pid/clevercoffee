@@ -9,8 +9,8 @@
 
 
 #if defined(ESP8266) // ESP8266
-    
-    void ICACHE_RAM_ATTR onTimer1ISR() {
+
+  void ICACHE_RAM_ATTR onTimer1ISR() {
     timer1_write(6250); // set interrupt time to 20ms
 
     if (Output <= isrCounter) {
@@ -24,15 +24,12 @@
     if (isrCounter >= windowSize) {
         isrCounter = 0;
     }
-
-    //run PID calculation
-    //bPID.Compute();
-    }
+  }
 #endif
 
 #if defined(ESP32) // ESP32
   void IRAM_ATTR onTimer(){
-    
+
     //timer1_write(50000); // set interrupt time to 10ms
       timerAlarmWrite(timer, 10000, true);
     if (Output <= isrCounter) {
@@ -40,18 +37,15 @@
     } else {
       digitalWrite(pinRelayHeater, HIGH);
     }
-  
+
     isrCounter += 10; // += 10 because one tick = 10ms
     //set PID output as relais commands
     if (isrCounter >= windowSize) {
       isrCounter = 0;
     }
-  
-    //run PID calculation
-    bPID.Compute();
   }
 
- #endif   
+ #endif
 
 
 void initTimer1(void)
@@ -120,6 +114,6 @@ bool isTimer1Enabled(void)
   #else
     #error("MCU not supported");
   #endif
-  
+
   return timerEnabled;
 }
