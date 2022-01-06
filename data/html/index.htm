@@ -10,24 +10,39 @@
                 There could be a graph here, with e.g. 1 second resolution PID data for the past 5 minutes or so...
             </p>
 
-            <h2 class="content-subhead">Try Resizing your Browser</h2>
-            <p>
-                Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-            </p>
-
-            <h2 class="content-subhead">Variables</h2>
-            <p>
-                <form action="/post" method="post">
-                    %VAR_EDIT_PID_ON%
-                    %VAR_EDIT_START_KP%
-                    %VAR_EDIT_START_TN%
-                    %VAR_EDIT_PID_KP%
-                    %VAR_EDIT_PID_TN%
-                    %VAR_EDIT_PID_TV%
-                    %VAR_EDIT_BREW_SET_POINT%
-                    %VAR_EDIT_BREW_TIME%
-                <input type="submit"></form>
-                </form>
-            </p>
+            <h2 class="content-subhead">Status</h2>
+            <table>
+                <tbody>
+                    <tr>
+                        <td>Temp</td><td>%VAR_SHOW_TEMP% C</td><td></td>
+                    </tr>
+                    <tr>
+                        <td>PID</td>
+                        <td><span id="pid_state"></span></td>
+                        <td>
+                            <form action="/post" method="post">
+                                <input type="hidden" id="varPID_ON" name="varPID_ON"/>
+                                <input type="submit" id="pid_toggle"/></form>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>P</td><td>%VAR_SHOW_PID_KP%</td><td></td>
+                    </tr>
+                    <tr>
+                        <td>I</td><td>%VAR_SHOW_PID_TN%</td><td></td>
+                    </tr>
+                    <tr>
+                        <td>D</td><td>%VAR_SHOW_PID_TV%</td><td></td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
+<script>
+    // PID Toggle
+    var pid_status = %VAR_SHOW_PID_ON%;
+    document.getElementById("pid_state").innerText = pid_status ? "ON" : "OFF";
+    document.getElementById("varPID_ON").value = pid_status ? 0 : 1;
+    document.getElementById("pid_toggle").value = pid_status ? "OFF" : "ON";
+</script>
 %FOOTER%

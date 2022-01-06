@@ -334,6 +334,7 @@ std::vector<editable_t> editableVars = {
     {"PID_TV", "PID Tv", kDouble, (void *)&aggTv},
     {"BREW_SET_POINT", "Set point", kDouble, (void *)&BrewSetPoint},
     {"BREW_TIME", "Brew Time", kDouble, (void *)&brewtime},
+    {"TEMP", "Temperature", kDouble, (void *)&Input},
     {"AP_WIFI_SSID", "AP WiFi Name", kCString, (void *)AP_WIFI_SSID},
     {"AP_WIFI_KEY", "AP WiFi Password", kCString, (void *)AP_WIFI_KEY},
 };
@@ -1990,9 +1991,9 @@ void setup()
               #endif
             }
           }
-        } 
+        }
       }
-      else // NO Wifi  
+      else // NO Wifi
       {
         #if DISPLAY != 0
           displayLogo(langstring_nowifi[0], langstring_nowifi[1]);
@@ -2511,7 +2512,7 @@ int writeSysParamsToStorage(void)
 
 int writeSysParamsToBlynk(void)
 {
- if ( BLYNK == 1 && Blynk.connected()) 
+ if ( BLYNK == 1 && Blynk.connected())
   Blynk.virtualWrite(V2, Input);
   Blynk.virtualWrite(V4, aggKp);
   Blynk.virtualWrite(V5, aggTn);
