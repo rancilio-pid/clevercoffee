@@ -93,18 +93,12 @@ String staticProcessor(const String& var) {
     String varLower(var);
     varLower.toLowerCase();
 
-    #ifdef ESP32
-    timerAlarmDisable(timer);
-    #endif
     File file = SPIFFS.open("/html_fragments/" + varLower + ".htm", "r");
     if(file) {
         String ret = file.readString();
         file.close();
         return ret;
     }
-    #ifdef ESP32
-    timerAlarmEnable(timer);
-    #endif
 
     return String();
 }
@@ -149,30 +143,23 @@ void serverSetup() {
         }
 
         request->send(200, "text/html", m);
-        // Write to EEPROM  
-        if(writeToEeprom) 
+        // Write to EEPROM
+        if(writeToEeprom)
         {
-            if (writeToEeprom() == 0) 
+            if (writeToEeprom() == 0)
             {
                 Serial.println("successfully wrote EEPROM");
             } else {
                 Serial.println("EEPROM write failed");
             }
         }
-        // Write to Blynk 
+        // Write to Blynk
         writeToBlynk();
     });
 
-
-    #ifdef ESP32
-    timerAlarmDisable(timer);
-    #endif
     SPIFFS.begin();
     server.serveStatic("/css", SPIFFS, "/css/");
     server.serveStatic("/", SPIFFS, "/html/").setTemplateProcessor(staticProcessor);
-    #ifdef ESP32
-    timerAlarmEnable(timer);
-    #endif
 
     server.onNotFound([](AsyncWebServerRequest *request){
         request->send(404, "text/plain", "Not found");
