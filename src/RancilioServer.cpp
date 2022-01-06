@@ -141,6 +141,7 @@ void serverSetup() {
                 m += "<br />";
             }
         }
+        m += "<script>setTimeout(function() { window.location.href = '/'; }, 2000);</script>";
 
         request->send(200, "text/html", m);
         // Write to EEPROM
