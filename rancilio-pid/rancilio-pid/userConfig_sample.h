@@ -1,6 +1,5 @@
 /********************************************************
-  Version 2.5 (20.05.2021) 
-  Last Change: PINPRESSURESENSOR
+  Version 2.9.4 (07.01.2022) 
   Values must be configured by the user
 ******************************************************/
 
@@ -10,6 +9,8 @@
 
 #ifndef _userConfig_H
 #define _userConfig_H  
+
+#define SYSVERSION "Version 2.9.4 MASTER"
 
 // List of supported machines
 enum MACHINE {
