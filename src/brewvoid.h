@@ -82,27 +82,32 @@ void checkbrewswitch()
         // only one push, brew
         if (brewswitchTrigger == LOW)
         { 
-          // Brew 
+          // Brew trigger
           brewswitch = HIGH  ;
           brewswitchTriggerCase = 30 ;
-          debugStream.writeI("brewswitchTriggerCase 20: Brew Trigger");
+          debugStream.writeI("brewswitchTriggerCase 20: Brew Trigger HIGH");
         }
         // Button one 1sec pushed
         if (brewswitchTrigger == HIGH && (brewswitchTriggermillis+1000 <= millis() ))
         {
           // DO something
-           debugStream.writeI("brewswitchTriggerCase 20: XXX Trigger");
+           debugStream.writeI("brewswitchTriggerCase 20: Manual Trigger - brewing");
           brewswitchTriggerCase = 30 ;
+          digitalWrite(pinRelayVentil, relayON);
+          digitalWrite(pinRelayPumpe, relayON);
         }
       break ;
       case 30:
-        // Stop brewing
-        if (brewswitchTrigger == HIGH && brewswitch == LOW)
+        // Stop Manual brewing, button goes low: 
+        if (brewswitchTrigger == LOW && brewswitch == LOW)
         {
           brewswitchTriggerCase = 40 ; 
           brewswitchTriggermillis = millis() ;     
-          debugStream.writeI("brewswitchTriggerCase 30: XXX Trigger LOW");
+          debugStream.writeI("brewswitchTriggerCase 30: Manual Trigger - brewing stop");
+          digitalWrite(pinRelayVentil, relayOFF);
+          digitalWrite(pinRelayPumpe, relayOFF);
         }
+        // Stop Brew trigger  brewswitch == HIGH
         if (brewswitchTrigger == HIGH && brewswitch == HIGH)
         {
           brewswitch = LOW  ;
@@ -119,6 +124,10 @@ void checkbrewswitch()
            debugStream.writeI("brewswitchTriggerCase 40: Brew Trigger Next Loop");
         }
       break ;
+      case 50:
+
+
+      break;
     }
   #endif
 }
