@@ -10,7 +10,7 @@
 #ifndef _userConfig_H
 #define _userConfig_H  
 
-#define SYSVERSION "Version 2.9.4 MASTER"
+#define SYSVERSION '2.9.4 MASTER'
 
 // List of supported machines
 enum MACHINE {
