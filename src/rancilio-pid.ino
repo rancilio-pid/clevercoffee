@@ -438,7 +438,10 @@ void createSoftAp()
       softApstate = 0;
       Serial.printf("AccessPoint created with SSID %s and KEY %s and settings page http://%i.%i.%i.%i/settings\r\n", AP_WIFI_SSID, AP_WIFI_KEY, WiFi.softAPIP()[0],WiFi.softAPIP()[1],WiFi.softAPIP()[2],WiFi.softAPIP()[3]);
       String IPaddressAP =  WiFi.localIP().toString();
-      displayMessage("AP-MODE: SSID:", String(AP_WIFI_SSID), "KEY:", String(AP_WIFI_KEY), "IP",IPaddressAP);
+      #if (DISPLAY != 0)
+        displayMessage("AP-MODE: SSID:", String(AP_WIFI_SSID), "KEY:", String(AP_WIFI_KEY), "IP",IPaddressAP);
+      #endif
+    
     
  
 
