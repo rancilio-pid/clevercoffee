@@ -882,14 +882,11 @@ void brewdetection()
      bezugsZeit = millis() - timeBrewdetection ;
      }
     // Bezugstimmer für SW deaktivieren nach ende BD PID
-    if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1 )
+    if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1 && machinestate != 30)
     {
       timerBrewdetection = 0 ;    //rearm brewdetection
-      if (machinestate != 30)  // Bei Onlypid = 1, bezugsZeit > 0, no reset of bezugsZeit in case of brewing. 
-      {
-        bezugsZeit = 0 ;
+      bezugsZeit = 0 ;
       }
-     }
   } else if (Brewdetection == 2) 
   {
     if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1 ) 
