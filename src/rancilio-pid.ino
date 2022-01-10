@@ -842,6 +842,7 @@ void checkWifi() {
         }
         WiFi.disconnect();
         WiFi.begin(ssid, pass);   // attempt to connect to Wifi network
+
         int count = 1;
         while (WiFi.status() != WL_CONNECTED && count <= 20) {
           delay(100);   //give WIFI some time to connect
@@ -2148,6 +2149,18 @@ void setup()
     previousMillisPressure = currentTime;
     #endif
     setupDone = true;
+
+    byte mac[6];
+    WiFi.macAddress(mac);
+    String macaddr0 = number2string(mac[0]);
+    String macaddr1 = number2string(mac[1]);
+    String macaddr2 = number2string(mac[2]);
+    String macaddr3 = number2string(mac[3]);
+    String macaddr4 = number2string(mac[4]);
+    String macaddr5 = number2string(mac[5]);
+    String completemac = macaddr0 + macaddr1 + macaddr2 + macaddr3 + macaddr4 + macaddr5;
+    Serial.print("MAC-ADRESSE: ");
+    Serial.println(completemac);
 
   enableTimer1();
 }
