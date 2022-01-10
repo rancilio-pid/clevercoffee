@@ -44,6 +44,7 @@ enum MACHINE {
 #define FALLBACK 1                 // 1 = fallback to values stored in eeprom, 0 = deactivated
 #define GRAFANA 1                  // 1 = grafana visualisation (access required), 0 = off (default)
 #define MQTT 1                     // 1 = MQTT enabled, 0 = MQTT disabled
+#define INFLUXDB 1                 // 1 = INFLUX enabled, 0 = INFLUX disabled
 
 // PID & Hardware
 #define ONLYPID 1                  // 1 = Only PID, 0 = PID and preinfusion
@@ -107,10 +108,15 @@ enum MACHINE {
 #define MQTT_SERVER_IP "XXX.XXX.XXX.XXX"  // IP-Address of locally installed mqtt server
 #define MQTT_SERVER_PORT 1883
 
-// BLynk
+// BLYNK
 #define AUTH "blynk_auth"
-#define BLYNKADDRESS "blynk.clevercoffee.de"  // blynk-server IP-Address
-#define BLYNKPORT 8080             // blynk-server portver
+#define BLYNKADDRESS "blynk.clevercoffee.de"    // blynk-server IP-Address
+#define BLYNKPORT 8080                          // blynk-server portver
+
+// INFLUX
+#define INFLUXDB_URL "http://influxdb.clevercoffee.de:8086"
+#define INFLUXDB_DB_NAME "clevercoffee"
+#define INTERVALINFLUX 5000
 
 // PID - offline values
 #define SETPOINT 95                // Temperatur setpoint
