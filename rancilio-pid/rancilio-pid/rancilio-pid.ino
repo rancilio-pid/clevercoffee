@@ -1,7 +1,10 @@
 /********************************************************
-   Version 2.9.4 (07.01.2022)     
+   Version 2.9.4 (10.01.2022)     
 ******************************************************/
+
+// SYSVERSION and SYSVERSION_INO need to match, checked by preprocessor
 #define  SYSVERSION_INO '2.9.4 MASTER'
+#define  SYSVERSION_DISPLAY "Version 2.9.4 MASTER"  // Displayed during startup
 
 /********************************************************
   INCLUDES
@@ -108,7 +111,7 @@ const unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
 //int machineLogo = MACHINELOGO;
 const unsigned long brewswitchDelay = BREWSWITCHDELAY;
 int BrewMode = BREWMODE;
-const char* sysVersion PROGMEM  = "Version " + SYSVERSION; //System version
+const char* sysVersion PROGMEM  = SYSVERSION_DISPLAY; //System version
 
 //Display
 uint8_t oled_i2c = OLED_I2C;
