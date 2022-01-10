@@ -112,12 +112,11 @@ function plotTemperature(jsonValue) {
   )
 
   if (dates.length > 600) {
-    Plotly.relayout(chartDiv,
-      {
-        xaxis: {
-          range: [dates[dates.length - 600], dates[dates.length - 1]]
-        }
-      });
+    var update = {
+      'xaxis.range': [dates[dates.length - 600], dates[dates.length - 1]]
+    };
+
+    Plotly.relayout(chartDiv, update);
   }
 }
 
