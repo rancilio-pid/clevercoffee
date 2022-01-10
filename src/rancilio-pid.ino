@@ -165,6 +165,13 @@ unsigned long lastMQTTConnectionAttempt = millis();
 unsigned int MQTTReCnctFlag;  // Blynk Reconnection Flag
 unsigned int MQTTReCnctCount = 0;  // Blynk Reconnection counter
 
+/*Influx Client*/
+#include <InfluxDbClient.h> // Influx DB Client
+InfluxDBClient client(INFLUXDB_URL, INFLUXDB_DB_NAME);
+Point sensor("machinestate");
+unsigned long previousMillisInflux;  // initialisation at the end of init()
+const unsigned long intervalInflux = INTERVALINFLUX;
+
 //Voltage Sensor
 unsigned long previousMillisVoltagesensorreading = millis();
 const unsigned long intervalVoltagesensor= 200 ;
@@ -440,9 +447,11 @@ void createSoftAp()
       EEPROM.end();
       softApstate = 0;
       Serial.printf("AccessPoint created with SSID %s and KEY %s and settings page http://%i.%i.%i.%i/settings\r\n", AP_WIFI_SSID, AP_WIFI_KEY, WiFi.softAPIP()[0],WiFi.softAPIP()[1],WiFi.softAPIP()[2],WiFi.softAPIP()[3]);
+      /*
       #if (DISPLAY != 0)
         displayMessage("AP-MODE: SSID:", String(AP_WIFI_SSID), "KEY:", String(AP_WIFI_KEY), "IP:",String(localIp));
       #endif
+      */
     
     
  
@@ -848,6 +857,42 @@ void checkWifi() {
   }
 
 }
+
+
+void sendInflux(){
+  unsigned long currentMillisInflux = millis();
+  
+  if (currentMillisInflux - previousMillisInflux >= intervalInflux){
+    previousMillisInflux = currentMillisInflux;
+    sensor.clearFields();
+    sensor.addField("value", Input);
+    sensor.addField("setPoint", setPoint);
+    sensor.addField("HeaterPower", Output);
+    sensor.addField("Kp", bPID.GetKp());
+    sensor.addField("Ki", bPID.GetKi());
+    sensor.addField("pidON", pidON);
+    sensor.addField("brewtime", brewtime/1000);
+    sensor.addField("preinfusionpause", preinfusionpause/1000);
+    sensor.addField("preinfusion", preinfusion/1000);
+    sensor.addField("SteamON", SteamON);
+    byte mac[6];
+    WiFi.macAddress(mac);
+    String macaddr0 = number2string(mac[0]);
+    String macaddr1 = number2string(mac[1]);
+    String macaddr2 = number2string(mac[2]);
+    String macaddr3 = number2string(mac[3]);
+    String macaddr4 = number2string(mac[4]);
+    String macaddr5 = number2string(mac[5]);
+    String completemac = macaddr0 + macaddr1 + macaddr2 + macaddr3 + macaddr4 + macaddr5;
+    sensor.addField("mac", completemac);
+    // Write point
+    if (!client.writePoint(sensor)) {
+      Serial.print("InfluxDB write failed: ");
+      Serial.println(client.getLastErrorMessage());
+    }
+  }
+}
+
 
 /*******************************************************
    Check if Blynk is connected, if not reconnect
@@ -2093,6 +2138,7 @@ void setup()
     previousMillisDisplay = currentTime;
     previousMillisBlynk = currentTime;
     previousMillisMQTT = currentTime;
+    previousMillisInflux = currentTime;
     previousMillisETrigger = currentTime;
     previousMillisVoltagesensorreading = currentTime;
     #if (BREWMODE ==  2)
@@ -2285,6 +2331,11 @@ void looppid()
   sendToBlynkMQTT();
   machinestatevoid() ; // calc machinestate
   setchecklastpoweroff(); // FOR AP MODE
+
+  if (INFLUXDB == 1){
+    sendInflux();
+  }
+
   if (ETRIGGER == 1) // E-Trigger active then void Etrigger()
   {
     ETriggervoid();

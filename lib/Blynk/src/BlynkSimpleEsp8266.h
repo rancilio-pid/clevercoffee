@@ -17,9 +17,11 @@
 
 #include <version.h>
 
+/*
 #if ESP_SDK_VERSION_NUMBER < 0x020200
 #error Please update your ESP8266 Arduino Core
 #endif
+*/
 
 #include <BlynkApiArduino.h>
 #include <Blynk/BlynkProtocol.h>
