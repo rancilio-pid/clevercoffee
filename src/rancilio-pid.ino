@@ -1,5 +1,5 @@
 /********************************************************
-   Version 2.9.3 (03.07.2021)
+   Version 3.0.0 (10.01.2022)
 ******************************************************/
 
 /********************************************************
@@ -205,7 +205,7 @@ int relayON, relayOFF;          // used for relay trigger type. Do not change!
 boolean kaltstart = true;       // true = Rancilio started for first time
 boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
 double EmergencyStopTemp = 120; // Temp EmergencyStopTemp
-const char* sysVersion PROGMEM  = "Version 2.9.3 MASTER";   //System version
+const char* sysVersion PROGMEM  = "Version 3.0.0 ALPHA";   //System version
 int inX = 0, inY = 0, inOld = 0, inSum = 0; //used for filter()
 int bars = 0; //used for getSignalStrength()
 boolean brewDetected = 0;
