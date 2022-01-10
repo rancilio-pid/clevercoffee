@@ -10,7 +10,6 @@
   INCLUDES
 ******************************************************/
 #include <ArduinoOTA.h>
-#include <EEPROM.h>
 #include "userConfig.h" // needs to be configured by the user
 #include <U8g2lib.h>
 #include "PID_v1.h" //for PID calculation
@@ -29,6 +28,7 @@
 #include <PubSubClient.h>
 #include "TSIC.h"       //Library for TSIC temp sensor
 #include <Adafruit_VL53L0X.h> //for TOF
+#include "Storage.h"
 
 #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
 #include <HX711_ADC.h>
@@ -441,11 +441,8 @@ void createSoftAp()
       softApEnabledcheck = true;
       Serial.println("Set softApEnabled: 1, AP MODE\n");
       // Reset to normal mode softApEnabled = 0
-      EEPROM.begin(1024);
       int eepromvalue = 0;
-      EEPROM.put(150, eepromvalue) ;
-      EEPROM.commit();
-      EEPROM.end();
+      storageSet(STO_ITEM_SOFT_AP_ENABLED_CHECK, eepromvalue, true) ;
       softApstate = 0;
       Serial.printf("AccessPoint created with SSID %s and KEY %s and settings page http://%i.%i.%i.%i/settings\r\n", AP_WIFI_SSID, AP_WIFI_KEY, WiFi.softAPIP()[0],WiFi.softAPIP()[1],WiFi.softAPIP()[2],WiFi.softAPIP()[3]);
       
@@ -468,8 +465,7 @@ void stopSoftAp()
 
 void checklastpoweroff()
 {
-  EEPROM.begin(1024);
-  EEPROM.get(150, softApEnabled);
+  storageGet(STO_ITEM_SOFT_AP_ENABLED_CHECK, softApEnabled);
 
   Serial.printf("softApEnabled: %i\n",softApEnabled);
   //softApEnabled = 1;
@@ -478,11 +474,10 @@ void checklastpoweroff()
  {
   Serial.printf("Set softApEnabled: 1, was 0\n");
   int eepromvalue = 1;
-  EEPROM.put(150, eepromvalue) ;
+  storageSet(STO_ITEM_SOFT_AP_ENABLED_CHECK, eepromvalue) ;
  }
 
- EEPROM.commit();
- EEPROM.end();
+ storageCommit();
 }
 
 void setchecklastpoweroff()
@@ -491,11 +486,8 @@ void setchecklastpoweroff()
   {
     disableTimer1();
     Serial.printf("Set softApEnabled 0 after checkpowerofftime\n");
-    EEPROM.begin(1024);
     int eepromvalue = 0;
-    EEPROM.put(150, eepromvalue) ;
-    EEPROM.commit();
-    EEPROM.end();
+    storageSet(STO_ITEM_SOFT_AP_ENABLED_CHECK, eepromvalue, true) ;
     checklastpoweroffEnabled = true;
     enableTimer1();
   }
@@ -773,7 +765,6 @@ void refreshTemp() {
          #endif
        #if ((ONE_WIRE_BUS != 16 && defined(ESP8266)) || defined(ESP32))
         Temperature_C = Sensor2.getTemp();
-        //Serial.println(Temperature_C);
        #endif
       //Temperature_C = 70;
       if (!checkSensor(Temperature_C) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
@@ -856,7 +847,7 @@ void checkWifi() {
 
 void sendInflux(){
   unsigned long currentMillisInflux = millis();
-  
+
   if (currentMillisInflux - previousMillisInflux >= intervalInflux){
     previousMillisInflux = currentMillisInflux;
     sensor.clearFields();
@@ -1375,7 +1366,6 @@ boolean checkSteamOffQM()
 
 void machinestatevoid()
 {
-  //Serial.println(machinestate);
   switch (machinestate)
   {
     // init
@@ -1819,14 +1809,14 @@ void ledtemp()
 void setup()
 {
   Serial.begin(115200);
-  
+
   // Check AP Mode
   checklastpoweroff();
-   EEPROM.begin(1024);
-    initTimer1();
-  //Serial.printf("softApEnabled setup %i",softApEnabled);
- if (softApEnabled == 1)
- {
+  storageSetup();
+  initTimer1();
+
+  if (softApEnabled == 1)
+  {
     /********************************************************
       DISPLAY 128x64
     ******************************************************/
@@ -2520,52 +2510,23 @@ void looppid()
  ******************************************************************************/
 int readSysParamsFromStorage(void)
 {
-  int addr;
-  double dummy;
+  storageGet(STO_ITEM_PID_KP_REGULAR, aggKp);
+  storageGet(STO_ITEM_PID_TN_REGULAR, aggTn);
+  storageGet(STO_ITEM_PID_TV_REGULAR, aggTv);
+  storageGet(STO_ITEM_BREW_SETPOINT, BrewSetPoint);
+  storageGet(STO_ITEM_BREW_TIME, brewtime);
+  storageGet(STO_ITEM_PRE_INFUSION_TIME, preinfusion);
+  storageGet(STO_ITEM_PRE_INFUSION_PAUSE, preinfusionpause);
+  storageGet(STO_ITEM_PID_KP_BD, aggbKp);
+  storageGet(STO_ITEM_PID_TN_BD, aggbTn);
+  storageGet(STO_ITEM_PID_TV_BD, aggbTv);
+  storageGet(STO_ITEM_BREW_SW_TIMER, brewtimersoftware);
+  storageGet(STO_ITEM_BD_THRESHOLD, brewboarder);
+  storageGet(STO_ITEM_PID_KP_START, startKp);
+  storageGet(STO_ITEM_PID_TN_START, startTn);
 
-  // check if any data are programmed...
-  // An erased (or never programmed) Flash memory is filled with 0xFF.
-  for (addr=0; addr<10; addr++)                                                 // check 1st 10 bytes...
-  {
-    if (EEPROM.read(addr) != 0xFF)                                              // programmed byte?
-      break;                                                                    // yes -> abort loop
-  }
-  if (addr >= 10)                                                               // all bytes "empty"?
-  {                                                                             // yes...
-    Serial.printf("%s(): no data found\n", __FUNCTION__);
-    return -1;
-  }
-
-  // check first value, if there is a valid number...
-  EEPROM.get(0, dummy);
-  if (isnan(dummy))                                                             // invalid floating point number?
-  {                                                                             // yes...
-    Serial.printf("%s(): no NV data found (addr 0=%f)\n", __FUNCTION__, dummy);
-    return -2;
-  }
-  Serial.printf("%s(): data found\n", __FUNCTION__);
-
-  // read stored system parameter values...
-  EEPROM.get(0, aggKp);
-  EEPROM.get(10, aggTn);
-  EEPROM.get(20, aggTv);
-  EEPROM.get(30, BrewSetPoint);
-  EEPROM.get(40, brewtime);
-  EEPROM.get(50, preinfusion);
-  EEPROM.get(60, preinfusionpause);
-  EEPROM.get(90, aggbKp);
-  EEPROM.get(100, aggbTn);
-  EEPROM.get(110, aggbTv);
-  EEPROM.get(120, brewtimersoftware);
-  EEPROM.get(130, brewboarder);
-  EEPROM.get(140, startKp);
-  // 150 for APmodereset
-  EEPROM.get(160, startTn);
-
-  // EEPROM.commit() not necessary after read
   return 0;
 }
-
 
 
 /**************************************************************************//**
@@ -2576,42 +2537,22 @@ int readSysParamsFromStorage(void)
  ******************************************************************************/
 int writeSysParamsToStorage(void)
 {
-  int returnCode;
-  bool isTimerEnabled;
+  storageSet(STO_ITEM_PID_KP_REGULAR, aggKp);
+  storageSet(STO_ITEM_PID_TN_REGULAR, aggTn);
+  storageSet(STO_ITEM_PID_TV_REGULAR, aggTv);
+  storageSet(STO_ITEM_BREW_SETPOINT, BrewSetPoint);
+  storageSet(STO_ITEM_BREW_TIME, brewtime);
+  storageSet(STO_ITEM_PRE_INFUSION_TIME, preinfusion);
+  storageSet(STO_ITEM_PRE_INFUSION_PAUSE, preinfusionpause);
+  storageSet(STO_ITEM_PID_KP_BD, aggbKp);
+  storageSet(STO_ITEM_PID_TN_BD, aggbTn);
+  storageSet(STO_ITEM_PID_TV_BD, aggbTv);
+  storageSet(STO_ITEM_BREW_SW_TIMER, brewtimersoftware);
+  storageSet(STO_ITEM_BD_THRESHOLD, brewboarder);
+  storageSet(STO_ITEM_PID_KP_START, startKp);
+  storageSet(STO_ITEM_PID_TN_START, startTn);
 
-  // write current system parameter values...
-  EEPROM.begin(4096);
-  EEPROM.put(0, aggKp);
-  EEPROM.put(10, aggTn);
-  EEPROM.put(20, aggTv);
-  EEPROM.put(30, BrewSetPoint);
-  EEPROM.put(40, brewtime);
-  EEPROM.put(50, preinfusion);
-  EEPROM.put(60, preinfusionpause);
-  EEPROM.put(90, aggbKp);
-  EEPROM.put(100, aggbTn);
-  EEPROM.put(110, aggbTv);
-  EEPROM.put(120, brewtimersoftware);
-  EEPROM.put(130, brewboarder);
-  EEPROM.put(140, startKp);
-  // 150 for APmodereset
-  EEPROM.put(160, startTn);
-
-
-  // While Flash memory erase/write operations no other code must be executed from Flash!
-  // disable any ISRs...
-  isTimerEnabled = isTimer1Enabled();
-  disableTimer1();
-
-  // really write data to storage...
-  returnCode = EEPROM.commit()? 0: -1;
-  EEPROM.end();
-
-  // recover any ISRs...
-  if (isTimerEnabled)                                                           // was timer enabled before?
-    enableTimer1();                                                             // yes -> re-enable timer
-
-  return returnCode;
+  return storageCommit();
 }
 
 
