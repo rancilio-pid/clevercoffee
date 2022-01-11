@@ -10,7 +10,7 @@ jobs:
             fetch-depth: 0
         
         - name: Add config file
-          working-directory: ./src
+          working-directory: ./rancilio-pid/rancilio-pid/
           run: cp userConfig_sample.h userConfig.h
         
         - name: Run PlatformIO
