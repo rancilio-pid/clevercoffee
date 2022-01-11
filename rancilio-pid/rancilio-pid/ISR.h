@@ -4,11 +4,6 @@
 
 #include <Arduino.h>
 
-
-int T1C;
-int TCTE;
-
-
 #if defined(ESP8266) // ESP8266
     
     void ICACHE_RAM_ATTR onTimer1ISR() {
@@ -32,6 +27,10 @@ int TCTE;
 #endif
 
 #if defined(ESP32) // ESP32
+
+int T1C;
+int TCTE;
+
   void IRAM_ATTR onTimer(){
     
     //timer1_write(50000); // set interrupt time to 10ms
