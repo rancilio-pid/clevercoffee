@@ -3,7 +3,6 @@
  ******************************************************************************/
 
 #include <Arduino.h>
-#include "DebugStreamManager.h"
 #include <EEPROM.h>
 #include "userConfig.h"
 #include "Storage.h"
@@ -35,12 +34,13 @@ typedef struct __attribute__((packed))
   double reserved1;              uint8_t fill8[2];
   double reserved2;              uint8_t fill9[2];
   double pidKpBd;                uint8_t fill10[2];
-  double pidTnBd;                uint8_t fill12[2];
-  double pidTvBd;                uint8_t fill13[2];
-  double brewSwTimerSec;         uint8_t fill14[2];
-  double brewDetectionThreshold; uint8_t fill15[2];
-  double pidKpStart;             uint8_t fill16[2];
-  int softApEnabledCheck;
+  double pidTnBd;                uint8_t fill11[2];
+  double pidTvBd;                uint8_t fill12[2];
+  double brewSwTimerSec;         uint8_t fill13[2];
+  double brewDetectionThreshold; uint8_t fill14[2];
+  double pidKpStart;             uint8_t fill15[2];
+  uint8_t softApEnabledCheck;    uint8_t fill16[9];
+  double pidTnStart;             uint8_t fill17[2];
   char wifiSSID[25+1];
   char wifiPassword[25+1];
 }sto_data_t;
@@ -58,9 +58,9 @@ static const sto_data_t itemDefaults PROGMEM =
   AGGTN,              {0xFF, 0xFF},                                             // STO_ITEM_PID_TN_REGULAR
   AGGTV,              {0xFF, 0xFF},                                             // STO_ITEM_PID_TV_REGULAR
   SETPOINT,           {0xFF, 0xFF},                                             // STO_ITEM_BREW_SETPOINT
-  25000,              {0xFF, 0xFF},                                             // STO_ITEM_BREW_TIME
-  2000,               {0xFF, 0xFF},                                             // STO_ITEM_PRE_INFUSION_TIME
-  5000,               {0xFF, 0xFF},                                             // STO_ITEM_PRE_INFUSION_PAUSE
+  25,                 {0xFF, 0xFF},                                             // STO_ITEM_BREW_TIME
+  2,                  {0xFF, 0xFF},                                             // STO_ITEM_PRE_INFUSION_TIME
+  5,                  {0xFF, 0xFF},                                             // STO_ITEM_PRE_INFUSION_PAUSE
   0,                  {0xFF, 0xFF},                                             // reserved
   0,                  {0xFF, 0xFF},                                             // reserved
   AGGBKP,             {0xFF, 0xFF},                                             // STO_ITEM_PID_KP_BD
@@ -69,19 +69,11 @@ static const sto_data_t itemDefaults PROGMEM =
   45,                 {0xFF, 0xFF},                                             // STO_ITEM_BREW_SW_TIMER
   BREWDETECTIONLIMIT, {0xFF, 0xFF},                                             // STO_ITEM_BD_THRESHOLD
   STARTKP,            {0xFF, 0xFF},                                             // STO_ITEM_PID_KP_START
-  0,                                                                            // STO_ITEM_SOFT_AP_ENABLED_CHECK
+  0,                  {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},   // STO_ITEM_SOFT_AP_ENABLED_CHECK
+  STARTTN,            {0xFF, 0xFF},                                             // STO_ITEM_PID_TN_START
   "",                                                                           // STO_ITEM_WIFI_SSID
   "",                                                                           // STO_ITEM_WIFI_PASSWORD
 };
-
-
-
-/******************************************************************************
- * VARIABLES
- ******************************************************************************/
-
-extern DebugStreamManager debugStream;
-
 
 
 /**************************************************************************//**
@@ -92,9 +84,9 @@ extern DebugStreamManager debugStream;
  * \return >=0 - item storage address
  *          <0 - error
  ******************************************************************************/
-static inline int getItemAddr(sto_item_id_t itemId)
+static inline int32_t getItemAddr(sto_item_id_t itemId)
 {
-  int addr;
+  int32_t addr;
 
   switch (itemId)
   {
@@ -137,6 +129,9 @@ static inline int getItemAddr(sto_item_id_t itemId)
     case STO_ITEM_PID_KP_START:
       addr = offsetof(sto_data_t, pidKpStart);
       break;
+    case STO_ITEM_PID_TN_START:
+      addr = offsetof(sto_data_t, pidTnStart);
+      break;
     case STO_ITEM_SOFT_AP_ENABLED_CHECK:
       addr = offsetof(sto_data_t, softApEnabledCheck);
       break;
@@ -147,7 +142,7 @@ static inline int getItemAddr(sto_item_id_t itemId)
       addr = offsetof(sto_data_t, wifiPassword);
       break;
     default:
-      debugStream.writeW("%s(): invalid item ID %i!", __FUNCTION__, itemId);
+      Serial.printf("%s(): invalid item ID %i!\n", __FUNCTION__, itemId);
       addr = -1;
       break;
   }
@@ -162,7 +157,9 @@ static inline int getItemAddr(sto_item_id_t itemId)
  ******************************************************************************/
 static void setDefaults(void)
 {
-  EEPROM.writeBytes(0, &itemDefaults, sizeof(itemDefaults));
+  Serial.printf("%s(): %p <- %p (%u)\n", __FUNCTION__, EEPROM.getDataPtr(),
+                     &itemDefaults, sizeof(itemDefaults));
+  memcpy(EEPROM.getDataPtr(), &itemDefaults, sizeof(itemDefaults));
 }
 
 
@@ -177,11 +174,17 @@ int storageSetup(void)
 {
   int addr;
 
+  #if defined(ESP8266)
+  EEPROM.begin(sizeof(sto_data_t));
+  #elif defined(ESP32)
   if (!EEPROM.begin(sizeof(sto_data_t)))
   {
-    debugStream.writeE("%s(): EEPROM initialization failed!", __FUNCTION__);
+    Serial.printf("%s(): EEPROM initialization failed!\n", __FUNCTION__);
     return -1;
   }
+  #else
+  #error("not supported MCU");
+  #endif
 
   // check if any data are programmed...
   // An erased (or never programmed) Flash memory is filled with 0xFF.
@@ -192,7 +195,7 @@ int storageSetup(void)
   }
   if (addr >= 10)                                                               // all bytes "empty"?
   {                                                                             // yes, write defaults...
-    debugStream.writeD("%s(): no data found -> write defaults\n", __FUNCTION__);
+    Serial.printf("%s(): no data found -> write defaults\n", __FUNCTION__);
     setDefaults();
     if (storageCommit() != 0)
       return -2;
@@ -204,7 +207,7 @@ int storageSetup(void)
   EEPROM.get(0, dummy);
   if (isnan(dummy))                                                             // invalid floating point number?
   {                                                                             // yes...
-    debugStream.writeD("%s(): no NV data found (addr 0=%f)", __FUNCTION__, dummy);
+    Serial.printf("%s(): no NV data found (addr 0=%f)\n", __FUNCTION__, dummy);
     return -2;
   }
   #endif
@@ -231,7 +234,7 @@ static inline int getNumber(sto_item_id_t itemId, T &itemValue)
   // sanity check...
   if (itemId >= STO_ITEM__LAST_ENUM)
   {
-    debugStream.writeE("%s(): invalid item ID %i!", __FUNCTION__, itemId);
+    Serial.printf("%s(): invalid item ID %i!\n", __FUNCTION__, itemId);
     return -1;
   }
 
@@ -239,7 +242,7 @@ static inline int getNumber(sto_item_id_t itemId, T &itemValue)
   if (itemAddr < 0)
     return -2;
 
-  debugStream.writeD("%s(): addr=%i size=%u", __FUNCTION__, itemAddr, sizeof(itemValue));
+  Serial.printf("%s(): addr=%i size=%u\n", __FUNCTION__, itemAddr, sizeof(itemValue));
   EEPROM.get(itemAddr, itemValue);
 
   return 0;
@@ -267,7 +270,7 @@ static inline int setNumber(sto_item_id_t itemId, const T &itemValue, bool commi
   // sanity check...
   if (itemId >= STO_ITEM__LAST_ENUM)
   {
-    debugStream.writeE("%s(): invalid item ID %i!", __FUNCTION__, itemId);
+    Serial.printf("%s(): invalid item ID %i!\n", __FUNCTION__, itemId);
     return -1;
   }
 
@@ -275,7 +278,7 @@ static inline int setNumber(sto_item_id_t itemId, const T &itemValue, bool commi
   if (itemAddr < 0)
     return -2;
 
-  debugStream.writeD("%s(): addr=%i size=%u commit=%u", __FUNCTION__, itemAddr,
+  Serial.printf("%s(): addr=%i size=%u commit=%u\n", __FUNCTION__, itemAddr,
                      sizeof(itemValue), commit);
   EEPROM.put(itemAddr, itemValue);
 
@@ -296,22 +299,78 @@ static inline int setNumber(sto_item_id_t itemId, const T &itemValue, bool commi
  * \return  0 - succeed
  *         <0 - failed
  ******************************************************************************/
+int storageGet(sto_item_id_t itemId, float& itemValue)
+{
+  int retCode = getNumber(itemId, itemValue);
+  if (retCode != 0)
+    return retCode;
+  Serial.printf("%s(): item=%i value=%.1f\n", __FUNCTION__, itemId, itemValue);
+  return 0;
+}
+
 int storageGet(sto_item_id_t itemId, double& itemValue)
 {
   int retCode = getNumber(itemId, itemValue);
   if (retCode != 0)
     return retCode;
-  debugStream.writeD("%s(): item=%i value=%.1f", __FUNCTION__, itemId, itemValue);
+  Serial.printf("%s(): item=%i value=%.1f\n", __FUNCTION__, itemId, itemValue);
   return 0;
 }
-int storageGet(sto_item_id_t itemId, int& itemValue)
+
+int storageGet(sto_item_id_t itemId, int8_t& itemValue)
 {
   int retCode = getNumber(itemId, itemValue);
   if (retCode != 0)
     return retCode;
-  debugStream.writeD("%s(): item=%i value=%i", __FUNCTION__, itemId, itemValue);
+  Serial.printf("%s(): item=%i value=%i\n", __FUNCTION__, itemId, itemValue);
   return 0;
 }
+
+int storageGet(sto_item_id_t itemId, int16_t& itemValue)
+{
+  int retCode = getNumber(itemId, itemValue);
+  if (retCode != 0)
+    return retCode;
+  Serial.printf("%s(): item=%i value=%i\n", __FUNCTION__, itemId, itemValue);
+  return 0;
+}
+
+int storageGet(sto_item_id_t itemId, int32_t& itemValue)
+{
+  int retCode = getNumber(itemId, itemValue);
+  if (retCode != 0)
+    return retCode;
+  Serial.printf("%s(): item=%i value=%i\n", __FUNCTION__, itemId, itemValue);
+  return 0;
+}
+
+int storageGet(sto_item_id_t itemId, uint8_t& itemValue)
+{
+  int retCode = getNumber(itemId, itemValue);
+  if (retCode != 0)
+    return retCode;
+  Serial.printf("%s(): item=%i value=%u\n", __FUNCTION__, itemId, itemValue);
+  return 0;
+}
+
+int storageGet(sto_item_id_t itemId, uint16_t& itemValue)
+{
+  int retCode = getNumber(itemId, itemValue);
+  if (retCode != 0)
+    return retCode;
+  Serial.printf("%s(): item=%i value=%u\n", __FUNCTION__, itemId, itemValue);
+  return 0;
+}
+
+int storageGet(sto_item_id_t itemId, uint32_t& itemValue)
+{
+  int retCode = getNumber(itemId, itemValue);
+  if (retCode != 0)
+    return retCode;
+  Serial.printf("%s(): item=%i value=%u\n", __FUNCTION__, itemId, itemValue);
+  return 0;
+}
+
 int storageGet(sto_item_id_t itemId, const char** itemValue)
 {
   int itemAddr = getItemAddr(itemId);
@@ -319,17 +378,18 @@ int storageGet(sto_item_id_t itemId, const char** itemValue)
     return -1;
   // instead of copying the string, give back pointer to string in the data structure
   *itemValue = (const char*)(EEPROM.getDataPtr() + itemAddr);
-  debugStream.writeD("%s(): addr=%i size=%u item=%i value=\"%s\"", __FUNCTION__,
+  Serial.printf("%s(): addr=%i size=%u item=%i value=\"%s\"\n", __FUNCTION__,
                      itemAddr, strlen(*itemValue)+1, itemId, *itemValue);
   return 0;
 }
+
 int storageGet(sto_item_id_t itemId, String& itemValue)
 {
   int itemAddr = getItemAddr(itemId);
   if (itemAddr < 0)
     return -1;
-  itemValue = EEPROM.readString(itemAddr);
-  debugStream.writeD("%s(): addr=%i size=%u item=%i value=\"%s\"", __FUNCTION__,
+  itemValue = String((const char *)(EEPROM.getDataPtr() + itemAddr));
+  Serial.printf("%s(): addr=%i size=%u item=%i value=\"%s\"\n", __FUNCTION__,
                      itemAddr, itemValue.length()+1, itemId, itemValue.c_str());
   return 0;
 }
@@ -343,34 +403,85 @@ int storageGet(sto_item_id_t itemId, String& itemValue)
  *
  * \param itemId    - storage item ID
  * \param itemValue - item value to set
- * \param commit    - true=write current data to medium (optional, default=false)
+ * \param commit    - true=write current RAM content to NV memory (optional, default=false)
  *
  * \return  0 - succeed
  *         <0 - failed
  ******************************************************************************/
-int storageSet(sto_item_id_t itemId, double& itemValue, bool commit)
+int storageSet(sto_item_id_t itemId, float itemValue, bool commit)
 {
-  debugStream.writeD("%s(): item=%i value=%.1f", __FUNCTION__, itemId, itemValue);
+  Serial.printf("%s(): item=%i value=%.1f\n", __FUNCTION__, itemId, itemValue);
   return setNumber(itemId, itemValue, commit);
 }
-int storageSet(sto_item_id_t itemId, int& itemValue, bool commit)
+
+int storageSet(sto_item_id_t itemId, double itemValue, bool commit)
 {
-  debugStream.writeD("%s(): item=%i value=%i", __FUNCTION__, itemId, itemValue);
+  Serial.printf("%s(): item=%i value=%.1f\n", __FUNCTION__, itemId, itemValue);
   return setNumber(itemId, itemValue, commit);
 }
+
+int storageSet(sto_item_id_t itemId, int8_t itemValue, bool commit)
+{
+  Serial.printf("%s(): item=%i value=%i\n", __FUNCTION__, itemId, itemValue);
+  return setNumber(itemId, itemValue, commit);
+}
+
+int storageSet(sto_item_id_t itemId, int16_t itemValue, bool commit)
+{
+  Serial.printf("%s(): item=%i value=%i\n", __FUNCTION__, itemId, itemValue);
+  return setNumber(itemId, itemValue, commit);
+}
+
+int storageSet(sto_item_id_t itemId, int32_t itemValue, bool commit)
+{
+  Serial.printf("%s(): item=%i value=%i\n", __FUNCTION__, itemId, itemValue);
+  return setNumber(itemId, itemValue, commit);
+}
+
+int storageSet(sto_item_id_t itemId, uint8_t itemValue, bool commit)
+{
+  Serial.printf("%s(): item=%i value=%u\n", __FUNCTION__, itemId, itemValue);
+  return setNumber(itemId, itemValue, commit);
+}
+
+int storageSet(sto_item_id_t itemId, uint16_t itemValue, bool commit)
+{
+  Serial.printf("%s(): item=%i value=%u\n", __FUNCTION__, itemId, itemValue);
+  return setNumber(itemId, itemValue, commit);
+}
+
+int storageSet(sto_item_id_t itemId, uint32_t itemValue, bool commit)
+{
+  Serial.printf("%s(): item=%i value=%u\n", __FUNCTION__, itemId, itemValue);
+  return setNumber(itemId, itemValue, commit);
+}
+
 int storageSet(sto_item_id_t itemId, const char* itemValue, bool commit)
 {
-  int itemAddr = getItemAddr(itemId);
+  size_t valueSize, maxItemSize;
+  int32_t nextItemAddr;
+  int32_t itemAddr = getItemAddr(itemId);
   if (itemAddr < 0)
     return -1;
-  debugStream.writeD("%s(): item=%i value=\"%s\" addr=%i size=%u", __FUNCTION__,
-                     itemId, itemValue, itemAddr, strlen(itemValue)+1);
-  if (EEPROM.writeString(itemAddr, itemValue) != strlen(itemValue))
-    return -1;
+  valueSize = strlen(itemValue) + 1;
+  // determine max. item size...
+  nextItemAddr = getItemAddr((sto_item_id_t)(itemId+1));
+  if (nextItemAddr <= 0)                                                        // last item?
+    nextItemAddr = sizeof(sto_data_t);                                          // yes ->
+  maxItemSize = nextItemAddr - itemAddr;
+  Serial.printf("%s(): item=%i value=\"%s\" addr=%i size=%u/%u\n", __FUNCTION__,
+                     itemId, itemValue, itemAddr, valueSize, maxItemSize);
+  if (valueSize > maxItemSize)                                                  // invalid value size?
+  {                                                                             // yes...
+    Serial.printf("%s(): string too large!\n", __FUNCTION__);
+    return -2;
+  }
+  memcpy(EEPROM.getDataPtr() + itemAddr, itemValue, valueSize);                 // copy value to data structure in RAM
   if (commit)
     return storageCommit();
   return 0;
 }
+
 int storageSet(sto_item_id_t itemId, String& itemValue, bool commit)
 {
   return storageSet(itemId, itemValue.c_str(), commit);
@@ -389,7 +500,7 @@ int storageCommit(void)
   int returnCode;
   // bool isTimerEnabled;
 
-  debugStream.writeD("%s(): save all data to NV memory", __FUNCTION__);
+  Serial.printf("%s(): save all data to NV memory\n", __FUNCTION__);
 
   // While Flash memory erase/write operations no other code must be executed from Flash!
   // Since all code of the Timer1-ISR is placed in RAM, the interrupt does not need to be disabled.
