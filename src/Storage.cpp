@@ -92,9 +92,9 @@ extern DebugStreamManager debugStream;
  * \return >=0 - item storage address
  *          <0 - error
  ******************************************************************************/
-static inline int getItemAddr(sto_item_id_t itemId)
+static inline int32_t getItemAddr(sto_item_id_t itemId)
 {
-  int addr;
+  int32_t addr;
 
   switch (itemId)
   {
@@ -162,7 +162,7 @@ static inline int getItemAddr(sto_item_id_t itemId)
  ******************************************************************************/
 static void setDefaults(void)
 {
-  EEPROM.writeBytes(0, &itemDefaults, sizeof(itemDefaults));
+  memcpy(EEPROM.getDataPtr(), &itemDefaults, sizeof(itemDefaults));
 }
 
 
@@ -177,11 +177,17 @@ int storageSetup(void)
 {
   int addr;
 
+  #if defined(ESP8266)
+  EEPROM.begin(sizeof(sto_data_t));
+  #elif defined(ESP32)
   if (!EEPROM.begin(sizeof(sto_data_t)))
   {
     debugStream.writeE("%s(): EEPROM initialization failed!", __FUNCTION__);
     return -1;
   }
+  #else
+  #error("not supported MCU");
+  #endif
 
   // check if any data are programmed...
   // An erased (or never programmed) Flash memory is filled with 0xFF.
@@ -328,7 +334,7 @@ int storageGet(sto_item_id_t itemId, String& itemValue)
   int itemAddr = getItemAddr(itemId);
   if (itemAddr < 0)
     return -1;
-  itemValue = EEPROM.readString(itemAddr);
+  itemValue = String((const char *)(EEPROM.getDataPtr() + itemAddr));
   debugStream.writeD("%s(): addr=%i size=%u item=%i value=\"%s\"", __FUNCTION__,
                      itemAddr, itemValue.length()+1, itemId, itemValue.c_str());
   return 0;
@@ -343,30 +349,42 @@ int storageGet(sto_item_id_t itemId, String& itemValue)
  *
  * \param itemId    - storage item ID
  * \param itemValue - item value to set
- * \param commit    - true=write current data to medium (optional, default=false)
+ * \param commit    - true=write current RAM content to NV memory (optional, default=false)
  *
  * \return  0 - succeed
  *         <0 - failed
  ******************************************************************************/
-int storageSet(sto_item_id_t itemId, double& itemValue, bool commit)
+int storageSet(sto_item_id_t itemId, double itemValue, bool commit)
 {
   debugStream.writeD("%s(): item=%i value=%.1f", __FUNCTION__, itemId, itemValue);
   return setNumber(itemId, itemValue, commit);
 }
-int storageSet(sto_item_id_t itemId, int& itemValue, bool commit)
+int storageSet(sto_item_id_t itemId, int itemValue, bool commit)
 {
   debugStream.writeD("%s(): item=%i value=%i", __FUNCTION__, itemId, itemValue);
   return setNumber(itemId, itemValue, commit);
 }
 int storageSet(sto_item_id_t itemId, const char* itemValue, bool commit)
 {
-  int itemAddr = getItemAddr(itemId);
+  size_t valueSize, maxItemSize;
+  int32_t nextItemAddr;
+  int32_t itemAddr = getItemAddr(itemId);
   if (itemAddr < 0)
     return -1;
-  debugStream.writeD("%s(): item=%i value=\"%s\" addr=%i size=%u", __FUNCTION__,
-                     itemId, itemValue, itemAddr, strlen(itemValue)+1);
-  if (EEPROM.writeString(itemAddr, itemValue) != strlen(itemValue))
-    return -1;
+  valueSize = strlen(itemValue) + 1;
+  // determine max. item size...
+  nextItemAddr = getItemAddr((sto_item_id_t)(itemId+1));
+  if (nextItemAddr <= 0)                                                        // last item?
+    nextItemAddr = sizeof(sto_data_t);                                          // yes ->
+  maxItemSize = nextItemAddr - itemAddr;
+  debugStream.writeD("%s(): item=%i value=\"%s\" addr=%i size=%u/%u", __FUNCTION__,
+                     itemId, itemValue, itemAddr, valueSize, maxItemSize);
+  if (valueSize > maxItemSize)                                                  // invalid value size?
+  {                                                                             // yes...
+    debugStream.writeW("%s(): string too large!", __FUNCTION__);
+    return -2;
+  }
+  memcpy(EEPROM.getDataPtr() + itemAddr, itemValue, valueSize);                 // copy value to data structure in RAM
   if (commit)
     return storageCommit();
   return 0;
