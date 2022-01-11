@@ -1,21 +1,24 @@
-/********************************************************
-  Version 3.0.0 Alpha
-******************************************************/
+# 1 "/var/folders/bg/8jz4sn3d02sgkg07bq945x500000gn/T/tmppwxscppm"
+#include <Arduino.h>
+# 1 "/Users/mbrunner/Documents/GitHub/ranciliopid/src/rancilio-pid.ino"
 
-// SYSVERSION and SYSVERSION_INO need to match, checked by preprocessor
-#define  SYSVERSION_INO '3.0.0 ALPHA'
-#define  SYSVERSION_DISPLAY "Version 3.0.0 ALPHA"  // Displayed during startup
 
-/********************************************************
-  INCLUDES
-******************************************************/
+
+
+
+#define SYSVERSION_INO '3.0.0 ALPHA'
+#define SYSVERSION_DISPLAY "Version 3.0.0 ALPHA"
+
+
+
+
 #include <ArduinoOTA.h>
 #include <EEPROM.h>
-#include "userConfig.h" // needs to be configured by the user
+#include "userConfig.h"
 #include <U8g2lib.h>
-#include "PID_v1.h" //for PID calculation
-#include "languages.h" // for language translation
-#include <DallasTemperature.h>    //Library for dallas temp sensor
+#include "PID_v1.h"
+#include "languages.h"
+#include <DallasTemperature.h>
 #if defined(ESP8266)
   #include <BlynkSimpleEsp8266.h>
 #endif
@@ -24,54 +27,54 @@
   #include <os.h>
   hw_timer_t * timer = NULL;
 #endif
-#include "icon.h"   //user icons for display
-#include <ZACwire.h> //NEW TSIC LIB
+#include "icon.h"
+#include <ZACwire.h>
 #include <PubSubClient.h>
-#include "TSIC.h"       //Library for TSIC temp sensor
-#include <Adafruit_VL53L0X.h> //for TOF
+#include "TSIC.h"
+#include <Adafruit_VL53L0X.h>
 
 #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
 #include <HX711_ADC.h>
 #endif
 
-/********************************************************
-  Version of userConfig and rancilio-pid.ino need to match
-******************************************************/
-#if !defined(SYSVERSION) || !defined(SYSVERSION_INO)  || (SYSVERSION != SYSVERSION_INO)
+
+
+
+#if !defined(SYSVERSION) || !defined(SYSVERSION_INO) || (SYSVERSION != SYSVERSION_INO)
   #error Version of userConfig file and rancilio-pid.ino need to match!
 #endif
 
-/********************************************************
-  DEFINES
-******************************************************/
+
+
+
 MACHINE machine = (enum MACHINE) MACHINEID;
 
-#define DEBUGMODE   // Debug mode is active if #define DEBUGMODE is set
+#define DEBUGMODE 
 
-//#define BLYNK_PRINT Serial    // In detail debugging for blynk
-//#define BLYNK_DEBUG
+
+
 
 #ifndef DEBUGMODE
-#define DEBUG_println(a)
-#define DEBUG_print(a)
-#define DEBUGSTART(a)
+#define DEBUG_println(a) 
+#define DEBUG_print(a) 
+#define DEBUGSTART(a) 
 #else
 #define DEBUG_println(a) Serial.println(a);
 #define DEBUG_print(a) Serial.print(a);
 #define DEBUGSTART(a) Serial.begin(a);
 #endif
-#define HIGH_ACCURACY
+#define HIGH_ACCURACY 
 
 #include "DebugStreamManager.h"
 DebugStreamManager debugStream;
 
-#include "PeriodicTrigger.h" // Trigger, der alle x Millisekunden auf true schaltet
-PeriodicTrigger writeDebugTrigger(5000); // trigger alle 5000 ms
+#include "PeriodicTrigger.h"
+PeriodicTrigger writeDebugTrigger(5000);
 PeriodicTrigger logbrew(500);
 
-/********************************************************
-  Machine State
-******************************************************/
+
+
+
 
 enum MachineState {
     kInit = 0,
@@ -90,13 +93,13 @@ enum MachineState {
 };
 MachineState machinestate = kInit;
 int machinestatecold = 0;
-unsigned long  machinestatecoldmillis = 0;
+unsigned long machinestatecoldmillis = 0;
 MachineState lastmachinestate = kInit;
 int lastmachinestatepid = -1;
 
-/********************************************************
-  definitions below must be changed in the userConfig.h file
-******************************************************/
+
+
+
 int Offlinemodus = OFFLINEMODUS;
 const int OnlyPID = ONLYPID;
 const int TempSensor = TEMPSENSOR;
@@ -108,31 +111,31 @@ const boolean ota = OTA;
 const int grafana = GRAFANA;
 const unsigned long wifiConnectionDelay = WIFICINNECTIONDELAY;
 const unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
-//int machineLogo = MACHINELOGO;
+
 const unsigned long brewswitchDelay = BREWSWITCHDELAY;
 int BrewMode = BREWMODE;
 
-//Display
+
 uint8_t oled_i2c = OLED_I2C;
 
-//TOF
+
 Adafruit_VL53L0X lox = Adafruit_VL53L0X();
 int calibration_mode = CALIBRATION_MODE;
 uint8_t tof_i2c = TOF_I2C;
 int water_full = WATER_FULL;
 int water_empty = WATER_EMPTY;
-unsigned long previousMillisTOF;  // initialisation at the end of init()
-const unsigned long intervalTOF = 5000 ; //ms
+unsigned long previousMillisTOF;
+const unsigned long intervalTOF = 5000 ;
 double distance;
 double percentage;
 
-// Wifi
+
 const char* hostname = HOSTNAME;
 const char* auth = AUTH;
 const char* ssid = D_SSID;
 const char* pass = PASS;
 unsigned long lastWifiConnectionAttempt = millis();
-unsigned int wifiReconnects = 0; //actual number of reconnects
+unsigned int wifiReconnects = 0;
 
 int softApEnabled = 0 ;
 IPAddress localIp(192, 168, 1, 1);
@@ -146,23 +149,23 @@ boolean softApEnabledcheck = false ;
 int softApstate = 0;
 
 
-// OTA
+
 const char* OTAhost = OTAHOST;
 const char* OTApass = OTAPASS;
 
-//Blynk
-const char* blynkaddress  = BLYNKADDRESS;
+
+const char* blynkaddress = BLYNKADDRESS;
 const int blynkport = BLYNKPORT;
-unsigned int blynkReCnctFlag;  // Blynk Reconnection Flag
-unsigned int blynkReCnctCount = 0;  // Blynk Reconnection counter
+unsigned int blynkReCnctFlag;
+unsigned int blynkReCnctCount = 0;
 unsigned long lastBlynkConnectionAttempt = millis();
 
-//backflush values
+
 const unsigned long fillTime = FILLTIME;
 const unsigned long flushTime = FLUSHTIME;
 int maxflushCycles = MAXFLUSHCYCLES;
 
-//MQTT
+
 WiFiClient net;
 PubSubClient mqtt(net);
 const char* mqtt_server_ip = MQTT_SERVER_IP;
@@ -173,78 +176,78 @@ const char* mqtt_topic_prefix = MQTT_TOPIC_PREFIX;
 char topic_will[256];
 char topic_set[256];
 unsigned long lastMQTTConnectionAttempt = millis();
-unsigned int MQTTReCnctFlag;  // Blynk Reconnection Flag
-unsigned int MQTTReCnctCount = 0;  // Blynk Reconnection counter
+unsigned int MQTTReCnctFlag;
+unsigned int MQTTReCnctCount = 0;
 
-/*Influx Client*/
-#include <InfluxDbClient.h> // Influx DB Client
+
+#include <InfluxDbClient.h>
 InfluxDBClient client(INFLUXDB_URL, INFLUXDB_DB_NAME);
 Point sensor("machinestate");
-unsigned long previousMillisInflux;  // initialisation at the end of init()
+unsigned long previousMillisInflux;
 const unsigned long intervalInflux = INTERVALINFLUX;
 
-//Voltage Sensor
+
 unsigned long previousMillisVoltagesensorreading = millis();
 const unsigned long intervalVoltagesensor= 200 ;
 int VoltageSensorON, VoltageSensorOFF;
 
-// QuickMill thermoblock steam-mode (only for BREWDETECTION = 3)
-const int maxBrewDurationForSteamModeQM_ON =  200; // if brewtime is shorter steam-mode starts
-const int minPVSOffTimedForSteamModeQM_OFF = 1500; // if PVS-off-time is longer steam-mode ends
-unsigned long timePVStoON = 0;                     // time pinvoltagesensor switched to ON
-unsigned long lastTimePVSwasON = 0;                // last time pinvoltagesensor was ON
-bool steamQM_active = false;                       // steam-mode is active
-bool brewSteamDetectedQM = false;                  // brew/steam detected, not sure yet what it is
+
+const int maxBrewDurationForSteamModeQM_ON = 200;
+const int minPVSOffTimedForSteamModeQM_OFF = 1500;
+unsigned long timePVStoON = 0;
+unsigned long lastTimePVSwasON = 0;
+bool steamQM_active = false;
+bool brewSteamDetectedQM = false;
 bool coolingFlushDetectedQM = false;
 
-//Pressure sensor
-#if (PRESSURESENSOR == 1) // Pressure sensor connected
+
+#if (PRESSURESENSOR == 1)
 int offset = OFFSET;
 int fullScale = FULLSCALE;
 int maxPressure = MAXPRESSURE;
 float inputPressure = 0;
 const unsigned long intervalPressure = 200;
-unsigned long previousMillisPressure;  // initialisation at the end of init()
+unsigned long previousMillisPressure;
 #endif
 
 
-/********************************************************
-   declarations
-******************************************************/
-int pidON = 1 ;                 // 1 = control loop in closed loop
-int relayON, relayOFF;          // used for relay trigger type. Do not change!
-boolean kaltstart = true;       // true = Rancilio started for first time
-boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
-double EmergencyStopTemp = 120; // Temp EmergencyStopTemp
-const char* sysVersion PROGMEM  = "Version 3.0.0 ALPHA";   //System version
-int inX = 0, inY = 0, inOld = 0, inSum = 0; //used for filter()
-int bars = 0; //used for getSignalStrength()
+
+
+
+int pidON = 1 ;
+int relayON, relayOFF;
+boolean kaltstart = true;
+boolean emergencyStop = false;
+double EmergencyStopTemp = 120;
+const char* sysVersion PROGMEM = "Version 3.0.0 ALPHA";
+int inX = 0, inY = 0, inOld = 0, inSum = 0;
+int bars = 0;
 boolean brewDetected = 0;
 boolean setupDone = false;
-int backflushON = 0;            // 1 = activate backflush
-int flushCycles = 0;            // number of active flush cycles
-int backflushState = 10;        // counter for state machine
+int backflushON = 0;
+int flushCycles = 0;
+int backflushState = 10;
 
-/********************************************************
-   moving average - brewdetection
-*****************************************************/
-const int numReadings = 15;             // number of values per Array
-double readingstemp[numReadings];        // the readings from Temp
-unsigned long readingstime[numReadings];        // the readings from time
+
+
+
+const int numReadings = 15;
+double readingstemp[numReadings];
+unsigned long readingstime[numReadings];
 double readingchangerate[numReadings];
 
-int readIndex = 1;              // the index of the current reading
-double total = 0;               // total sum of readingchangerate[]
-double heatrateaverage = 0;     // the average over the numReadings
-double changerate = 0;          // local change rate of temprature
+int readIndex = 1;
+double total = 0;
+double heatrateaverage = 0;
+double changerate = 0;
 double heatrateaveragemin = 0 ;
-unsigned long  timeBrewdetection = 0 ;
-int timerBrewdetection = 0 ;    // flag is set if brew was detected
-int firstreading = 1 ;          // Ini of the field, also used for sensor check
+unsigned long timeBrewdetection = 0 ;
+int timerBrewdetection = 0 ;
+int firstreading = 1 ;
 
-/********************************************************
-   PID - values for offline brewdetection
-*****************************************************/
+
+
+
 double aggbKp = AGGBKP;
 double aggbTn = AGGBTN;
 double aggbTv = AGGBTV;
@@ -254,33 +257,33 @@ double aggbKi = 0;
 double aggbKi = aggbKp / aggbTn;
 #endif
 double aggbKd = aggbTv * aggbKp ;
-double brewtimersoftware = 45;    // 20-5 for detection
-double brewboarder = BREWDETECTIONLIMIT;  // brew detection limit
+double brewtimersoftware = 45;
+double brewboarder = BREWDETECTIONLIMIT;
 const int PonE = PONE;
 
-/********************************************************
-   BREW INI 1 = Normale Prefinfusion , 2 = Scale & Shottimer = 2
-******************************************************/
+
+
+
 
   #include "brewscaleini.h"
 
-/********************************************************
-   Sensor check
-******************************************************/
+
+
+
 boolean sensorError = false;
 int error = 0;
-int maxErrorCounter = 10 ;  //depends on intervaltempmes* , define max seconds for invalid data
+int maxErrorCounter = 10 ;
 
-/********************************************************
-   PID
-******************************************************/
-unsigned long previousMillistemp;  // initialisation at the end of init()
+
+
+
+unsigned long previousMillistemp;
 const unsigned long intervaltempmestsic = 400 ;
-const unsigned long intervaltempmesds18b20 = 400  ;
-int pidMode = 1; //1 = Automatic, 0 = Manual
+const unsigned long intervaltempmesds18b20 = 400 ;
+int pidMode = 1;
 
 const unsigned int windowSize = 1000;
-unsigned int isrCounter = 0;  // counter for ISR
+unsigned int isrCounter = 0;
 unsigned long windowStartTime;
 double Input, Output;
 double setPointTemp;
@@ -289,8 +292,8 @@ double previousInput = 0;
 double BrewSetPoint = SETPOINT;
 double setPoint = BrewSetPoint;
 double SteamSetPoint = STEAMSETPOINT;
-int    SteamON = 0;
-int    SteamFirstON = 0;
+int SteamON = 0;
+int SteamFirstON = 0;
 double aggKp = AGGKP;
 double aggTn = AGGTN;
 double aggTv = AGGTV;
@@ -309,44 +312,44 @@ double aggKi = aggKp / aggTn;
 #endif
 double aggKd = aggTv * aggKp ;
 
-PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, PonE, DIRECT) ;    //PID initialisation
+PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, PonE, DIRECT) ;
 
-/********************************************************
-   DALLAS TEMP
-******************************************************/
-OneWire oneWire(ONE_WIRE_BUS);         // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
-DallasTemperature sensors(&oneWire);   // Pass our oneWire reference to Dallas Temperature.
-DeviceAddress sensorDeviceAddress;     // arrays to hold device address
 
-/********************************************************
-   Temp Sensors TSIC 306
-******************************************************/
-uint16_t temperature = 0;     // internal variable used to read temeprature
-float Temperature_C = 0;       // internal variable that holds the converted temperature in °C
 
-#if (ONE_WIRE_BUS == 16 && TEMPSENSOR  == 2 && defined(ESP8266))
-TSIC Sensor1(ONE_WIRE_BUS);   // only Signalpin, VCCpin unused by default
+
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
+DeviceAddress sensorDeviceAddress;
+
+
+
+
+uint16_t temperature = 0;
+float Temperature_C = 0;
+
+#if (ONE_WIRE_BUS == 16 && TEMPSENSOR == 2 && defined(ESP8266))
+TSIC Sensor1(ONE_WIRE_BUS);
 #else
-ZACwire<ONE_WIRE_BUS> Sensor2(306);    // set pin "2" to receive signal from the TSic "306"
+ZACwire<ONE_WIRE_BUS> Sensor2(306);
 #endif
-/********************************************************
-   BLYNK
-******************************************************/
-//Update Intervall zur App
-unsigned long previousMillisBlynk;  // initialisation at the end of init()
-unsigned long previousMillisMQTT;  // initialisation at the end of init()
+
+
+
+
+unsigned long previousMillisBlynk;
+unsigned long previousMillisMQTT;
 const unsigned long intervalBlynk = 1000;
 const unsigned long intervalMQTT = 5000;
 int blynksendcounter = 1;
 
-/********************************************************
-   HTTP Server
-******************************************************/
+
+
+
 #include "RancilioServer.h"
 
 
 std::vector<editable_t> editableVars = {
-    {"PID_ON", "PID on?", kInteger, (void *)&pidON}, // ummm, why isn't pidON a boolean?
+    {"PID_ON", "PID on?", kInteger, (void *)&pidON},
     {"START_KP", "Start Kp", kDouble, (void *)&startKp},
     {"START_TN", "Start Tn", kDouble, (void *)&startTn},
     {"PID_KP", "PID Kp", kDouble, (void *)&aggKp},
@@ -361,10 +364,45 @@ std::vector<editable_t> editableVars = {
 
 unsigned long lastTempEvent = 0;
 unsigned long tempEventInterval = 1000;
-
-/********************************************************
-  Get Wifi signal strength and set bars for display
-*****************************************************/
+void getSignalStrength();
+void createSoftAp();
+void stopSoftAp();
+void checklastpoweroff();
+void setchecklastpoweroff();
+void checkPressure();
+void testEmergencyStop();
+void movAvg();
+boolean checkSensor(float tempInput);
+void refreshTemp();
+void initOfflineMode();
+void checkWifi();
+void sendInflux();
+void checkBlynk();
+void checkMQTT();
+char* number2string(double in);
+char* number2string(float in);
+char* number2string(int in);
+char* number2string(unsigned int in);
+bool mqtt_publish(const char *reading, char *payload);
+void sendToBlynkMQTT();
+void brewdetection();
+int filter(int input);
+void mqtt_callback(char* topic, byte* data, unsigned int length);
+void ETriggervoid();
+void checkSteamON();
+void setEmergencyStopTemp();
+void initSteamQM();
+boolean checkSteamOffQM();
+void machinestatevoid();
+void debugVerboseOutput();
+void setup();
+void loop();
+void loopcalibrate();
+void looppid();
+int readSysParamsFromStorage(void);
+int writeSysParamsToStorage(void);
+int writeSysParamsToBlynk(void);
+#line 368 "/Users/mbrunner/Documents/GitHub/ranciliopid/src/rancilio-pid.ino"
 void getSignalStrength() {
   if (Offlinemodus == 1) return;
 
@@ -388,34 +426,34 @@ void getSignalStrength() {
   }
 }
 
-/********************************************************
-    Timer 1 - ISR for PID calculation and heat realay output
-******************************************************/
+
+
+
 
  #include "ISR.h"
 
 
 
-/********************************************************
-   DISPLAY Define & template
-******************************************************/
-//DISPLAY constructor, change if needed
-#if  DISPLAY == 1
-    U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);   //e.g. 1.3"
+
+
+
+
+#if DISPLAY == 1
+    U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);
 #endif
 #if DISPLAY == 2
-    U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);    //e.g. 0.96"
+    U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0);
 #endif
-//Update für Display
-unsigned long previousMillisDisplay;  // initialisation at the end of init()
+
+unsigned long previousMillisDisplay;
 const unsigned long intervalDisplay = 500;
 
-//Standard Display or vertikal?
-#if (DISPLAY == 1 || DISPLAY == 2) // Display is used
-  #if (DISPLAYTEMPLATE < 20) // normal templates
+
+#if (DISPLAY == 1 || DISPLAY == 2)
+  #if (DISPLAYTEMPLATE < 20)
     #include "display.h"
   #endif
-  #if (DISPLAYTEMPLATE >= 20) // vertical templates
+  #if (DISPLAYTEMPLATE >= 20)
     #include "Displayrotateupright.h"
   #endif
   #if (DISPLAYTEMPLATE == 1)
@@ -435,9 +473,9 @@ const unsigned long intervalDisplay = 500;
   #endif
 #endif
 
-/********************************************************
-  AP
-******************************************************/
+
+
+
 
 void createSoftAp()
 {
@@ -446,11 +484,11 @@ void createSoftAp()
       WiFi.enableAP(true);
       WiFi.softAP(AP_WIFI_SSID, AP_WIFI_KEY);
       WiFi.softAPConfig(localIp, gateway, subnet);
-      //apActivationTime = millis();
-      //softApEnabled = 1;
+
+
       softApEnabledcheck = true;
       Serial.println("Set softApEnabled: 1, AP MODE\n");
-      // Reset to normal mode softApEnabled = 0
+
       EEPROM.begin(1024);
       int eepromvalue = 0;
       EEPROM.put(150, eepromvalue) ;
@@ -458,23 +496,23 @@ void createSoftAp()
       EEPROM.end();
       softApstate = 0;
       Serial.printf("AccessPoint created with SSID %s and KEY %s and settings page http://%i.%i.%i.%i/settings\r\n", AP_WIFI_SSID, AP_WIFI_KEY, WiFi.softAPIP()[0],WiFi.softAPIP()[1],WiFi.softAPIP()[2],WiFi.softAPIP()[3]);
-      
+
       #if (DISPLAY != 0)
         displayMessage("AP-MODE: SSID:", String(AP_WIFI_SSID), "KEY:", String(AP_WIFI_KEY), "IP:","192.168.1.1");
       #endif
 
-  //} else
-  //{
-  //  Serial.printf("Could not create AccessPoint! %i\r\n", WiFi.status());
+
+
+
  }
  yield();
 }
 void stopSoftAp()
 {
     Serial.println("Closing AccesPoint");
-    //wifiConnectionAttemps = 0;
-    //softApEnabled = 0;
-    //apActivationTime = 0;
+
+
+
     WiFi.enableAP(false);
 }
 
@@ -482,11 +520,11 @@ void checklastpoweroff()
 {
   EEPROM.begin(1024);
   EEPROM.get(150, softApEnabled);
-  //debugStream.writeD("softApEnabled: %i",softApEnabled);
+
   Serial.printf("softApEnabled: %i\n",softApEnabled);
-  //softApEnabled = 1;
-  //Serial.printf("softApEnabled: %i",softApEnabled);
- if (softApEnabled != 1) // set 1 if 0
+
+
+ if (softApEnabled != 1)
  {
   Serial.printf("Set softApEnabled: 1, was 0\n");
   int eepromvalue = 1;
@@ -514,13 +552,13 @@ void setchecklastpoweroff()
   }
 }
 
-/********************************************************
-   BLYNK define pins and read values
-******************************************************/
+
+
+
 BLYNK_CONNECTED() {
   if (Offlinemodus == 0 && BLYNK == 1) {
     Blynk.syncAll();
-    //rtc.begin();
+
   }
 }
 
@@ -532,7 +570,7 @@ BLYNK_WRITE(V5) {
   aggTn = param.asDouble();
 }
 BLYNK_WRITE(V6) {
-  aggTv =  param.asDouble();
+  aggTv = param.asDouble();
 }
 
 BLYNK_WRITE(V7) {
@@ -584,39 +622,39 @@ BLYNK_WRITE(V18)
 #endif
 BLYNK_WRITE(V25)
 {
-  calibration_mode = param.asInt();//
+  calibration_mode = param.asInt();
 }
 BLYNK_WRITE(V26)
 {
-  water_empty = param.asInt();//
+  water_empty = param.asInt();
 }
 BLYNK_WRITE(V27)
 {
-  water_full = param.asInt();//
+  water_full = param.asInt();
 }
 
 BLYNK_WRITE(V30)
 {
-  aggbKp = param.asDouble();//
+  aggbKp = param.asDouble();
 }
 
 BLYNK_WRITE(V31) {
   aggbTn = param.asDouble();
 }
 BLYNK_WRITE(V32) {
-  aggbTv =  param.asDouble();
+  aggbTv = param.asDouble();
 }
 BLYNK_WRITE(V33) {
-  brewtimersoftware =  param.asDouble();
+  brewtimersoftware = param.asDouble();
 }
 BLYNK_WRITE(V34) {
-  brewboarder =  param.asDouble();
+  brewboarder = param.asDouble();
 }
 BLYNK_WRITE(V40) {
-  backflushON =  param.asInt();
+  backflushON = param.asInt();
 }
 
-#if (COLDSTART_PID == 2)  // 2=?Blynk values, else default starttemp from config
+#if (COLDSTART_PID == 2)
   BLYNK_WRITE(V11)
     {
     startKp = param.asDouble();
@@ -628,12 +666,12 @@ BLYNK_WRITE(V40) {
  #endif
 
 
-#if (PRESSURESENSOR == 1) // Pressure sensor connected
+#if (PRESSURESENSOR == 1)
 
-/********************************************************
-  Pressure sensor
-  Verify before installation: meassured analog input value (should be 3,300 V for 3,3 V supply) and respective ADC value (3,30 V = 1023)
-*****************************************************/
+
+
+
+
 void checkPressure() {
   float inputPressureFilter = 0;
   unsigned long currentMillisPressure = millis();
@@ -641,7 +679,7 @@ void checkPressure() {
   {
     previousMillisPressure = currentMillisPressure;
 
-    inputPressure = ((analogRead(PINPRESSURESENSOR) - offset) * maxPressure * 0.0689476) / (fullScale - offset);    // pressure conversion and unit conversion [psi] -> [bar]
+    inputPressure = ((analogRead(PINPRESSURESENSOR) - offset) * maxPressure * 0.0689476) / (fullScale - offset);
     inputPressureFilter = filter(inputPressure);
     DEBUG_print("pressure raw: ");
     DEBUG_println(inputPressure);
@@ -653,15 +691,15 @@ void checkPressure() {
 #endif
 
 
-/********************************************************
-  Trigger for Rancilio E Machine
-******************************************************/
-unsigned long previousMillisETrigger ;  // initialisation at the end of init()
-const unsigned long intervalETrigger = ETRIGGERTIME ; // in Seconds
+
+
+
+unsigned long previousMillisETrigger ;
+const unsigned long intervalETrigger = ETRIGGERTIME ;
 int relayETriggerON, relayETriggerOFF;
-/********************************************************
-  Emergency stop inf temp is to high
-*****************************************************/
+
+
+
 void testEmergencyStop() {
   if (Input > EmergencyStopTemp && emergencyStop == false) {
     emergencyStop = true;
@@ -670,9 +708,9 @@ void testEmergencyStop() {
   }
 }
 
-/********************************************************
-  Moving average - brewdetection (SW)
-*****************************************************/
+
+
+
 void movAvg() {
   if (firstreading == 1) {
     for (int thisReading = 0; thisReading < numReadings; thisReading++) {
@@ -705,7 +743,7 @@ void movAvg() {
   }
 
   if (readIndex >= numReadings - 1) {
-    // ...wrap around to the beginning:
+
     readIndex = 0;
   } else {
     readIndex++;
@@ -713,18 +751,18 @@ void movAvg() {
 }
 
 
-/********************************************************
-  check sensor value.
-  If < 0 or difference between old and new >25, then increase error.
-  If error is equal to maxErrorCounter, then set sensorError
-*****************************************************/
+
+
+
+
+
 boolean checkSensor(float tempInput) {
   boolean sensorOK = false;
   boolean badCondition = ( tempInput < 0 || tempInput > 150 || fabs(tempInput - previousInput) > 5);
   if ( badCondition && !sensorError) {
     error++;
     sensorOK = false;
-    if (error >= 5) // warning after 5 times error
+    if (error >= 5)
     {
      debugStream.writeW("*** WARNING: temperature sensor reading: consec_errors = %i, temp_current = %.1f",error,tempInput);
     }
@@ -741,11 +779,11 @@ boolean checkSensor(float tempInput) {
   return sensorOK;
 }
 
-/********************************************************
-  Refresh temperature.
-  Each time checkSensor() is called to verify the value.
-  If the value is not valid, new data is not stored.
-*****************************************************/
+
+
+
+
+
 void refreshTemp() {
   unsigned long currentMillistemp = millis();
   previousInput = Input ;
@@ -755,7 +793,7 @@ void refreshTemp() {
     {
       previousMillistemp = currentMillistemp;
       sensors.requestTemperatures();
-      if (!checkSensor(sensors.getTempCByIndex(0)) && firstreading == 0 ) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
+      if (!checkSensor(sensors.getTempCByIndex(0)) && firstreading == 0 ) return;
       Input = sensors.getTempCByIndex(0);
       if (Brewdetection != 0) {
         movAvg();
@@ -769,9 +807,9 @@ void refreshTemp() {
     if (currentMillistemp - previousMillistemp >= intervaltempmestsic)
     {
       previousMillistemp = currentMillistemp;
-      /*  variable "temperature" must be set to zero, before reading new data
-            getTemperature only updates if data is valid, otherwise "temperature" will still hold old values
-      */
+
+
+
       temperature = 0;
        #if (ONE_WIRE_BUS == 16 && defined(ESP8266))
          Sensor1.getTemperature(&temperature);
@@ -779,10 +817,10 @@ void refreshTemp() {
          #endif
        #if ((ONE_WIRE_BUS != 16 && defined(ESP8266)) || defined(ESP32))
         Temperature_C = Sensor2.getTemp();
-        //DEBUG_println(Temperature_C);
+
        #endif
-      //Temperature_C = 70;
-      if (!checkSensor(Temperature_C) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
+
+      if (!checkSensor(Temperature_C) && firstreading == 0) return;
       Input = Temperature_C;
       if (Brewdetection != 0) {
         movAvg();
@@ -793,17 +831,17 @@ void refreshTemp() {
   }
 }
 
-/*******************************************************
-      BREWVOID.H & SCALEVOID
-*****************************************************/
+
+
+
 
 #include "brewvoid.h"
 #include "scalevoid.h"
 
-/*******************************************************
-  Switch to offline modeif maxWifiReconnects were exceeded
-  during boot
-*****************************************************/
+
+
+
+
 void initOfflineMode()
 {
   #if DISPLAY != 0
@@ -822,16 +860,16 @@ void initOfflineMode()
   }
 }
 
-/*******************************************************
-   Check if Wifi is connected, if not reconnect
-   abort function if offline, or brew is running
-*****************************************************/
+
+
+
+
 void checkWifi() {
   if (Offlinemodus == 1 || brewcounter > 11) return;
   do {
     if ((millis() - lastWifiConnectionAttempt >= wifiConnectionDelay) && (wifiReconnects <= maxWifiReconnects)) {
       int statusTemp = WiFi.status();
-      if (statusTemp != WL_CONNECTED) {   // check WiFi connection status
+      if (statusTemp != WL_CONNECTED) {
         lastWifiConnectionAttempt = millis();
         wifiReconnects++;
         debugStream.writeD("Attempting WIFI reconnection: %i",wifiReconnects);
@@ -841,19 +879,19 @@ void checkWifi() {
           #endif
         }
         WiFi.disconnect();
-        WiFi.begin(ssid, pass);   // attempt to connect to Wifi network
+        WiFi.begin(ssid, pass);
 
         int count = 1;
         while (WiFi.status() != WL_CONNECTED && count <= 20) {
-          delay(100);   //give WIFI some time to connect
-          count++;      //reconnect counter, maximum waiting time for reconnect = 20*100ms
+          delay(100);
+          count++;
         }
       }
     }
-    yield();  //Prevent WDT trigger
-  } while ( !setupDone && wifiReconnects < maxWifiReconnects && WiFi.status() != WL_CONNECTED);   //if kaltstart ist still true when checkWifi() is called, then there was no WIFI connection at boot -> connect or offlinemode
+    yield();
+  } while ( !setupDone && wifiReconnects < maxWifiReconnects && WiFi.status() != WL_CONNECTED);
 
-  if (wifiReconnects >= maxWifiReconnects && !setupDone) {   // no wifi connection after boot, initiate offline mode (only directly after boot)
+  if (wifiReconnects >= maxWifiReconnects && !setupDone) {
     initOfflineMode();
   }
 
@@ -862,7 +900,7 @@ void checkWifi() {
 
 void sendInflux(){
   unsigned long currentMillisInflux = millis();
-  
+
   if (currentMillisInflux - previousMillisInflux >= intervalInflux){
     previousMillisInflux = currentMillisInflux;
     sensor.clearFields();
@@ -887,7 +925,7 @@ void sendInflux(){
     String macaddr5 = number2string(mac[5]);
     String completemac = macaddr0 + macaddr1 + macaddr2 + macaddr3 + macaddr4 + macaddr5;
     sensor.addField("mac", completemac);
-    // Write point
+
     if (!client.writePoint(sensor)) {
       Serial.print("InfluxDB write failed: ");
       Serial.println(client.getLastErrorMessage());
@@ -896,51 +934,44 @@ void sendInflux(){
 }
 
 
-/*******************************************************
-   Check if Blynk is connected, if not reconnect
-   abort function if offline, or brew is running
-   blynk is also using maxWifiReconnects!
-*****************************************************/
+
+
+
+
+
 void checkBlynk() {
   if (Offlinemodus == 1 ||BLYNK == 0 || brewcounter > 11) return;
   if ((millis() - lastBlynkConnectionAttempt >= wifiConnectionDelay) && (blynkReCnctCount <= maxWifiReconnects)) {
     int statusTemp = Blynk.connected();
-    if (statusTemp != 1) {   // check Blynk connection status
-      lastBlynkConnectionAttempt = millis();        // Reconnection Timer Function
-      blynkReCnctCount++;  // Increment reconnection Counter
+    if (statusTemp != 1) {
+      lastBlynkConnectionAttempt = millis();
+      blynkReCnctCount++;
       debugStream.writeD("Attempting blynk reconnection: %i",blynkReCnctCount);
-      Blynk.connect(3000);  // Try to reconnect to the server; connect() is a blocking function, watch the timeout!
+      Blynk.connect(3000);
     }
   }
 }
-
-
-
-/*******************************************************
-   Check if MQTT is connected, if not reconnect
-   abort function if offline, or brew is running
-   MQTT is also using maxWifiReconnects!
-*****************************************************/
+# 924 "/Users/mbrunner/Documents/GitHub/ranciliopid/src/rancilio-pid.ino"
 void checkMQTT(){
   if (Offlinemodus == 1 || brewcounter > 11) return;
   if ((millis() - lastMQTTConnectionAttempt >= wifiConnectionDelay) && (MQTTReCnctCount <= maxWifiReconnects)) {
     int statusTemp = mqtt.connected();
-    if (statusTemp != 1) {   // check Blynk connection status
-      lastMQTTConnectionAttempt = millis();        // Reconnection Timer Function
-      MQTTReCnctCount++;  // Increment reconnection Counter
+    if (statusTemp != 1) {
+      lastMQTTConnectionAttempt = millis();
+      MQTTReCnctCount++;
       debugStream.writeI("Attempting MQTT reconnection: %i",MQTTReCnctCount);
       if (mqtt.connect(hostname, mqtt_username, mqtt_password,topic_will,0,0,"exit") == true);{
         mqtt.subscribe(topic_set);
         debugStream.writeI("Subscribe to MQTT Topics");
-      }  // Try to reconnect to the server; connect() is a blocking function, watch the timeout!
+      }
     }
   }
 }
 
-/*******************************************************
-   Convert double, float int and uint to char
-   for MQTT Publish
-*****************************************************/
+
+
+
+
 char number2string_double[22];
 char* number2string(double in) {
   snprintf(number2string_double, sizeof(number2string_double), "%0.2f", in);
@@ -962,9 +993,9 @@ char* number2string(unsigned int in) {
   return number2string_uint;
 }
 
-/*******************************************************
-   Publish Data to MQTT
-*****************************************************/
+
+
+
 bool mqtt_publish(const char *reading, char *payload)
 {
 #if MQTT
@@ -976,9 +1007,9 @@ bool mqtt_publish(const char *reading, char *payload)
 #endif
 }
 
-/********************************************************
-  send data to Blynk server
-*****************************************************/
+
+
+
 
 void sendToBlynkMQTT()
 {
@@ -1007,7 +1038,7 @@ void sendToBlynkMQTT()
         Blynk.virtualWrite(V36, heatrateaveragemin);
       }
       if (grafana == 1 && blynksendcounter >= 6) {
-        // Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint );
+
         Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint, heatrateaverage);
         blynksendcounter = 0;
       } else if (grafana == 0 && blynksendcounter >= 5) {
@@ -1039,26 +1070,26 @@ void sendToBlynkMQTT()
 
 }
 
-/********************************************************
-    Brewdetection
-******************************************************/
+
+
+
 void brewdetection()
 {
-  if (brewboarder == 0) return; //abort brewdetection if deactivated
+  if (brewboarder == 0) return;
 
-  // Brew detecion == 1 software solution , == 2 hardware == 3 Voltagesensor
+
 
   if (Brewdetection == 1)
-  {  // Bezugstimmer für SW aktivieren
+  {
      if (timerBrewdetection == 1)
     {
      bezugsZeit = millis() - timeBrewdetection ;
      }
-    // Bezugstimmer für SW deaktivieren nach ende BD PID
+
     if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1 )
     {
-      timerBrewdetection = 0 ;    //rearm brewdetection
-      if (machinestate != 30)  // Bei Onlypid = 1, bezugsZeit > 0, no reset of bezugsZeit in case of brewing.
+      timerBrewdetection = 0 ;
+      if (machinestate != 30)
       {
         bezugsZeit = 0 ;
       }
@@ -1067,45 +1098,45 @@ void brewdetection()
   {
     if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1 )
     {
-      timerBrewdetection = 0 ;  //rearm brewdetection
+      timerBrewdetection = 0 ;
     }
   } else if (Brewdetection == 3)
   {
-    // Bezugszeit hochzaehlen
+
     if (( digitalRead(PINVOLTAGESENSOR) == VoltageSensorON) && brewDetected == 1)
        {
        bezugsZeit = millis() - startZeit ;
        lastbezugszeit = bezugsZeit ;
        }
-    //  OFF: Bezug zurücksetzen
+
     if
      ((digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF) && (brewDetected == 1 || coolingFlushDetectedQM == true) )
       {
         brewDetected = 0;
-        timePVStoON = bezugsZeit; // for QuickMill
+        timePVStoON = bezugsZeit;
         bezugsZeit = 0 ;
         startZeit = 0;
         coolingFlushDetectedQM = false;
         debugStream.writeI("HW Brew - Voltage Sensor - End");
-     //   lastbezugszeitMillis = millis(); // Bezugszeit für Delay
+
       }
-    if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1) // reset PID Brew
+    if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1)
     {
-      timerBrewdetection = 0 ;    //rearm brewdetection
+      timerBrewdetection = 0 ;
     }
   }
 
-  // Activate the BD
 
-  if ( Brewdetection == 1) // SW BD
+
+  if ( Brewdetection == 1)
   {
-    if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 && (fabs(Input - BrewSetPoint) < 5)) // BD PID only +/- 4 Grad Celsius, no detection if HW was active
+    if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 && (fabs(Input - BrewSetPoint) < 5))
     {
       debugStream.writeI("SW Brew detected") ;
       timeBrewdetection = millis() ;
       timerBrewdetection = 1 ;
     }
-  } else if (Brewdetection == 2) // HW BD
+  } else if (Brewdetection == 2)
   {
     if (brewcounter > 10 && brewDetected == 0 && brewboarder != 0)
     {
@@ -1114,7 +1145,7 @@ void brewdetection()
       timerBrewdetection = 1 ;
       brewDetected = 1;
     }
-  } else if (Brewdetection == 3) // voltage sensor
+  } else if (Brewdetection == 3)
   {
     switch (machine) {
 
@@ -1165,7 +1196,7 @@ void brewdetection()
         }
       }
       break;
-      // no Quickmill:
+
       default:
       previousMillisVoltagesensorreading = millis();
       if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorON && brewDetected == 0 )
@@ -1181,11 +1212,11 @@ void brewdetection()
   }
 }
 
-/********************************************************
-  after ~28 cycles the input is set to 99,66% if the real input value
-  sum of inX and inY multiplier must be 1
-  increase inX multiplier to make the filter faster
-*****************************************************/
+
+
+
+
+
 int filter(int input) {
   inX = input * 0.3;
   inY = inOld * 0.7;
@@ -1195,9 +1226,9 @@ int filter(int input) {
   return inSum;
 }
 
-/********************************************************
-    MQTT Callback Function: set Parameters through MQTT
-******************************************************/
+
+
+
 
 
 void mqtt_callback(char* topic, byte* data, unsigned int length) {
@@ -1212,7 +1243,7 @@ void mqtt_callback(char* topic, byte* data, unsigned int length) {
   char cmd[64];
   double data_double;
 
- // DEBUG_print("mqtt_parse(%s, %s)\n", topic_str, data_str);
+
   snprintf(topic_pattern, sizeof(topic_pattern), "%s%s/%%[^\\/]/%%[^\\/]", mqtt_topic_prefix, hostname);
   DEBUG_println(topic_pattern);
   if ( (sscanf( topic_str, topic_pattern , &configVar, &cmd) != 2) || (strcmp(cmd, "set") != 0) ) {
@@ -1251,34 +1282,34 @@ void mqtt_callback(char* topic, byte* data, unsigned int length) {
   }
     if (strcmp(configVar, "pidON") == 0) {
     sscanf(data_str, "%lf", &data_double);
-    if (Blynk.connected())  { Blynk.virtualWrite(V13,String(data_double));}
+    if (Blynk.connected()) { Blynk.virtualWrite(V13,String(data_double));}
     mqtt_publish("pidON", number2string(pidON));
     pidON = data_double ;
     return;
   }
 
 }
-/*******************************************************
-  Trigger for E-Silvia
-*****************************************************/
-//unsigned long previousMillisETrigger ;  // initialisation at the end of init()
-//const unsigned long intervalETrigger = ETriggerTime ; // in Seconds
+
+
+
+
+
 void ETriggervoid()
 {
-  //Static variable only one time is 0
+
   static int ETriggeractive = 0;
   unsigned long currentMillisETrigger = millis();
-  if (ETRIGGER == 1) // E Trigger is active from userconfig
+  if (ETRIGGER == 1)
   {
-    //
-    if (currentMillisETrigger - previousMillisETrigger >= (1000*intervalETrigger))  //s to ms * 1000
-    {  // check
+
+    if (currentMillisETrigger - previousMillisETrigger >= (1000*intervalETrigger))
+    {
       ETriggeractive = 1 ;
       previousMillisETrigger = currentMillisETrigger;
 
       digitalWrite(PINETRIGGER, relayETriggerON);
     }
-    // 10 Seconds later
+
     else if (ETriggeractive == 1 && previousMillisETrigger+(10*1000) < (currentMillisETrigger))
     {
     digitalWrite(PINETRIGGER, relayETriggerOFF);
@@ -1286,27 +1317,27 @@ void ETriggervoid()
     }
   }
 }
-  /********************************************************
-   SteamON & Quickmill
-  ******************************************************/
+
+
+
 void checkSteamON()
 {
-// check digital GIPO
+
   if (digitalRead(STEAMONPIN) == HIGH)
   {
     SteamON = 1;
   }
-  if (digitalRead(STEAMONPIN) == LOW && SteamFirstON == 0) // if via blynk on, then SteamFirstON == 1, prevent override
+  if (digitalRead(STEAMONPIN) == LOW && SteamFirstON == 0)
   {
     SteamON = 0;
   }
-  /*  monitor QuickMill thermoblock steam-mode*/
+
   if (machine == QuickMill )
   {
     if (steamQM_active == true)
     {
       if( checkSteamOffQM() == true )
-      { // if true: steam-mode can be turned off
+      {
         SteamON = 0;
         steamQM_active = false;
         lastTimePVSwasON = 0;
@@ -1344,10 +1375,10 @@ void setEmergencyStopTemp()
 
 void initSteamQM()
 {
-  /*
-    Initialize monitoring for steam switch off for QuickMill thermoblock
-  */
-  lastTimePVSwasON = millis(); // time when pinvoltagesensor changes from ON to OFF
+
+
+
+  lastTimePVSwasON = millis();
   steamQM_active = true;
   timePVStoON = 0;
   SteamON = 1;
@@ -1355,11 +1386,11 @@ void initSteamQM()
 
 boolean checkSteamOffQM()
 {
-  /*
-    Monitor pinvoltagesensor during active steam mode of QuickMill thermoblock.
-    Once the pinvolagesenor remains OFF for longer than a pump-pulse time peride
-    the switch is turned off and steam mode finished.
-  */
+
+
+
+
+
   if( digitalRead(PINVOLTAGESENSOR) == VoltageSensorON ) {
     lastTimePVSwasON = millis();
   }
@@ -1372,18 +1403,18 @@ boolean checkSteamOffQM()
   return false;
 }
 
-/********************************************************
-   machinestatevoid
-******************************************************/
+
+
+
 
 void machinestatevoid()
 {
-  //DEBUG_println(machinestate);
+
   switch (machinestate)
   {
-    // init
+
     case kInit:
-      if (Input < (BrewSetPoint-1) || Input < 150 ) // Prevent coldstart leave by Input 222
+      if (Input < (BrewSetPoint-1) || Input < 150 )
       {
         machinestate = kColdStart;
         DEBUG_println(Input);
@@ -1402,16 +1433,16 @@ void machinestatevoid()
 
     case kColdStart:
       switch (machinestatecold)
-      // one high Input let the state jump to 19.
-      // switch (machinestatecold) prevent it, we wait 10 sec with new state.
-      // during the 10 sec the Input has to be Input >= (BrewSetPoint-1),
-      // If not, reset machinestatecold
+
+
+
+
       {
         case 0:
           if (Input >= (BrewSetPoint-1) && Input < 150 )
           {
-            machinestatecoldmillis = millis(); // get millis for interval calc
-            machinestatecold = 10 ; // new state
+            machinestatecoldmillis = millis();
+            machinestatecold = 10 ;
             debugStream.writeV("Input >= (BrewSetPoint-1), wait 10 sec before machinestate 19");
 
           }
@@ -1419,10 +1450,10 @@ void machinestatevoid()
         case 10:
           if (Input < (BrewSetPoint-1))
           {
-            machinestatecold = 0 ;//  Input was only one time above BrewSetPoint, reset machinestatecold
+            machinestatecold = 0 ;
             debugStream.writeV("Reset timer for machinestate 19: Input < (BrewSetPoint-1)");
           }
-          if (machinestatecoldmillis+10*1000 < millis() ) // 10 sec Input above BrewSetPoint, no set new state
+          if (machinestatecoldmillis+10*1000 < millis() )
           {
             machinestate = kSetPointNegative ;
             debugStream.writeV("10 sec Input >= (BrewSetPoint-1) finished, switch to state 19");
@@ -1436,7 +1467,7 @@ void machinestatevoid()
 
       if
       (
-       (bezugsZeit > 0 && ONLYPID == 1) || // Bezugszeit bei Only PID
+       (bezugsZeit > 0 && ONLYPID == 1) ||
        (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42)
       )
 
@@ -1463,7 +1494,7 @@ void machinestatevoid()
         machinestate = kSensorError;
       }
       break;
-      // Setpoint -1 Celsius
+
       case kSetPointNegative:
       if (Input >= (BrewSetPoint))
       {
@@ -1471,7 +1502,7 @@ void machinestatevoid()
       }
       if
       (
-       (bezugsZeit > 0 && ONLYPID == 1) || // Bezugszeit bei Only PID
+       (bezugsZeit > 0 && ONLYPID == 1) ||
        (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42)
       )
       {
@@ -1503,10 +1534,10 @@ void machinestatevoid()
     break;
 
     case kPidNormal:
-      brewdetection();  //if brew detected, set PID values
+      brewdetection();
       if
       (
-       (bezugsZeit > 0 && ONLYPID == 1) || // Bezugszeit bei Only PID
+       (bezugsZeit > 0 && ONLYPID == 1) ||
        (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42)
       )
       {
@@ -1537,23 +1568,23 @@ void machinestatevoid()
 
     case kBrew:
       brewdetection();
-      // Ausgabe waehrend des Bezugs von Bruehzeit, Temp und heatrateaverage
+
       if (logbrew.check())
           debugStream.writeV("(tB,T,hra) --> %5.2f %6.2f %8.2f",(double)(millis() - startZeit)/1000,Input,heatrateaverage);
       if
       (
-       (bezugsZeit > 35*1000 && Brewdetection == 1 && ONLYPID == 1  ) ||  // 35 sec later and BD PID active SW Solution
-       (bezugsZeit == 0      && Brewdetection == 3 && ONLYPID == 1  ) ||  // Voltagesensor reset bezugsZeit == 0
-       ((brewcounter == 10 || brewcounter == 43)   && ONLYPID == 0  ) // After brew
+       (bezugsZeit > 35*1000 && Brewdetection == 1 && ONLYPID == 1 ) ||
+       (bezugsZeit == 0 && Brewdetection == 3 && ONLYPID == 1 ) ||
+       ((brewcounter == 10 || brewcounter == 43) && ONLYPID == 0 )
       )
       {
-       if ((ONLYPID == 1 && Brewdetection == 3) || ONLYPID == 0 ) // only delay of shotimer for voltagesensor or brewcounter
+       if ((ONLYPID == 1 && Brewdetection == 3) || ONLYPID == 0 )
        {
          machinestate = kShotTimerAfterBrew ;
-         lastbezugszeitMillis = millis() ; // for delay
+         lastbezugszeitMillis = millis() ;
 
        }
-       if (ONLYPID == 1 && Brewdetection == 1 && timerBrewdetection == 1) //direct to PID BD
+       if (ONLYPID == 1 && Brewdetection == 1 && timerBrewdetection == 1)
        {
          machinestate = kBrewDetectionTrailing ;
        }
@@ -1577,7 +1608,7 @@ void machinestatevoid()
       }
     break;
 
-    case kShotTimerAfterBrew: //lastbezugszeitMillis
+    case kShotTimerAfterBrew:
     brewdetection();
       if ( millis()-lastbezugszeitMillis > BREWSWITCHDELAY )
       {
@@ -1620,7 +1651,7 @@ void machinestatevoid()
       }
       if
       (
-       (bezugsZeit > 0 && ONLYPID == 1  && Brewdetection == 3) || // New Brew inner BD only by Only PID AND Voltage Sensor
+       (bezugsZeit > 0 && ONLYPID == 1 && Brewdetection == 3) ||
        (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42)
       )
       {
@@ -1680,15 +1711,15 @@ void machinestatevoid()
     case kCoolDown:
     if (Brewdetection == 2 || Brewdetection == 3)
       {
-        /*
-          Bei QuickMill Dampferkennung nur ueber Bezugsschalter moeglich, durch Aufruf von
-          brewdetection() kann neuer Dampfbezug erkannt werden
-          */
+
+
+
+
         brewdetection();
       }
       if (Brewdetection == 1 && ONLYPID == 1)
       {
-        // Ab lokalen Minumum wieder freigeben für state 20, dann wird bist Solltemp geheizt.
+
          if (heatrateaverage > 0 && Input < BrewSetPoint + 2)
          {
             machinestate = kPidNormal;
@@ -1765,13 +1796,13 @@ void machinestatevoid()
         {
           machinestate = kColdStart;
         }
-        else if(!kaltstart && (Input > (BrewSetPoint-10) )) // Input higher BrewSetPoint-10, normal PID
+        else if(!kaltstart && (Input > (BrewSetPoint-10) ))
         {
           machinestate = kPidNormal;
         }
         else if (Input <= (BrewSetPoint-10) )
         {
-          machinestate = kColdStart; // Input 10C below set point, enter cold start
+          machinestate = kColdStart;
           kaltstart = true;
         }
       }
@@ -1785,13 +1816,13 @@ void machinestatevoid()
     case kSensorError:
       machinestate = kSensorError ;
     break;
-  } // switch case
+  }
 
   if (machinestate != lastmachinestate) {
     debugStream.writeI("new machinestate: %i -> %i", lastmachinestate, machinestate);
     lastmachinestate = machinestate;
   }
-} // end void
+}
 
 void debugVerboseOutput()
 {
@@ -1810,16 +1841,16 @@ void setup()
 {
   DEBUGSTART(115200);
   debugStream.setup();
-  // Check AP Mode
+
   checklastpoweroff();
    EEPROM.begin(1024);
     initTimer1();
-  //Serial.printf("softApEnabled setup %i",softApEnabled);
+
  if (softApEnabled == 1)
  {
-    /********************************************************
-      DISPLAY 128x64
-    ******************************************************/
+
+
+
     #if DISPLAY != 0
       u8g2.setI2CAddress(oled_i2c * 2);
       u8g2.begin();
@@ -1833,7 +1864,7 @@ void setup()
   } else if(softApEnabled == 0)
   {
     if (MQTT == 1) {
-      //MQTT
+
       snprintf(topic_will, sizeof(topic_will), "%s%s/%s", mqtt_topic_prefix, hostname, "will");
       snprintf(topic_set, sizeof(topic_set), "%s%s/+/%s", mqtt_topic_prefix, hostname, "set");
       mqtt.setServer(mqtt_server_ip, mqtt_server_port);
@@ -1841,9 +1872,9 @@ void setup()
       checkMQTT();
     }
 
-    /********************************************************
-      Define trigger type
-    ******************************************************/
+
+
+
     if (triggerType)
     {
       relayON = HIGH;
@@ -1856,23 +1887,23 @@ void setup()
     if (TRIGGERRELAYTYPE)
     {
       relayETriggerON = HIGH;
-      relayETriggerOFF  = LOW;
+      relayETriggerOFF = LOW;
     } else {
-      relayETriggerON  = LOW;
-      relayETriggerOFF  = HIGH;
+      relayETriggerON = LOW;
+      relayETriggerOFF = HIGH;
     }
     if (VOLTAGESENSORTYPE)
     {
       VoltageSensorON = HIGH;
-      VoltageSensorOFF  = LOW;
+      VoltageSensorOFF = LOW;
     } else {
       VoltageSensorON = LOW;
-      VoltageSensorOFF  = HIGH;
+      VoltageSensorOFF = HIGH;
     }
 
-    /********************************************************
-      Init Pins
-    ******************************************************/
+
+
+
     pinMode(pinRelayVentil, OUTPUT);
     pinMode(pinRelayPumpe, OUTPUT);
     pinMode(pinRelayHeater, OUTPUT);
@@ -1880,16 +1911,16 @@ void setup()
     digitalWrite(pinRelayVentil, relayOFF);
     digitalWrite(pinRelayPumpe, relayOFF);
     digitalWrite(pinRelayHeater, LOW);
-    if (ETRIGGER == 1) // IF Etrigger selected
+    if (ETRIGGER == 1)
     {
       pinMode(PINETRIGGER, OUTPUT);
-      digitalWrite(PINETRIGGER, relayETriggerOFF);   //Set the E-Trigger OFF its, important for LOW Trigger Relais
+      digitalWrite(PINETRIGGER, relayETriggerOFF);
     }
-    if (BREWDETECTION == 3) // IF Voltage sensor selected
+    if (BREWDETECTION == 3)
     {
       pinMode(PINVOLTAGESENSOR, PINMODEVOLTAGESENSOR);
     }
-    if (PINBREWSWITCH > 0) // IF PINBREWSWITCH & Steam selected
+    if (PINBREWSWITCH > 0)
     {
       #if (defined(ESP8266) && PINBREWSWITCH == 16)
         pinMode(PINBREWSWITCH, INPUT_PULLDOWN_16);
@@ -1898,7 +1929,7 @@ void setup()
         pinMode(PINBREWSWITCH, INPUT);
       #endif
       #if defined(ESP32)
-        pinMode(PINBREWSWITCH, INPUT);//
+        pinMode(PINBREWSWITCH, INPUT);
       #endif
     }
       #if (defined(ESP8266) && STEAMONPIN == 16)
@@ -1910,9 +1941,9 @@ void setup()
       #if defined(ESP32)
         pinMode(STEAMONPIN, INPUT_PULLDOWN);
       #endif
-    /********************************************************
-      DISPLAY 128x64
-    ******************************************************/
+
+
+
     #if DISPLAY != 0
       u8g2.setI2CAddress(oled_i2c * 2);
       u8g2.begin();
@@ -1920,25 +1951,25 @@ void setup()
       displayLogo(sysVersion, "");
       delay(2000);
     #endif
-    /********************************************************
-      Init Scale by BREWMODE 2 or SHOTTIMER 2
-    ******************************************************/
+
+
+
     #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
       initScale() ;
     #endif
 
 
-    /********************************************************
-      VL530L0x TOF sensor
-    ******************************************************/
+
+
+
     if (TOF != 0) {
-    lox.begin(tof_i2c); // initialize TOF sensor at I2C address
+    lox.begin(tof_i2c);
     lox.setMeasurementTimingBudgetMicroSeconds(2000000);
     }
 
-    /********************************************************
-       BLYNK & Fallback offline
-    ******************************************************/
+
+
+
     if (Offlinemodus == 0)
     {
       #if defined(ESP8266)
@@ -1948,24 +1979,24 @@ void setup()
       #if DISPLAY != 0
         displayLogo(langstring_connectwifi1, ssid);
       #endif
-      /* Explicitly set the ESP8266 to be a WiFi-client, otherwise, it by default,
-        would try to act as both a client and an access-point and could cause
-        network-issues with your other WiFi-devices on your WiFi-network. */
+
+
+
       WiFi.mode(WIFI_STA);
-      WiFi.persistent(false);   //needed, otherwise exceptions are triggered \o.O/
+      WiFi.persistent(false);
       WiFi.begin(ssid, pass);
-      #if defined(ESP32) // ESP32
-      WiFi.setHostname(hostname); // for ESP32port
+      #if defined(ESP32)
+      WiFi.setHostname(hostname);
       #endif
       debugStream.writeD("Connecting to %s ...",ssid);
 
-      // wait up to 20 seconds for connection:
+
       while ((WiFi.status() != WL_CONNECTED) && (millis() - started < 20000))
       {
-        yield();    //Prevent Watchdog trigger
+        yield();
       }
 
-      checkWifi();    //try to reconnect
+      checkWifi();
 
       if (WiFi.status() == WL_CONNECTED)
       {
@@ -1987,9 +2018,9 @@ void setup()
         }
 
 
-        /********************************************************
-        OWN Webside
-        ******************************************************/
+
+
+
         if (LOCALHOST == 1)
         {
             setEepromWriteFcn(writeSysParamsToStorage);
@@ -1997,10 +2028,10 @@ void setup()
             serverSetup();
         }
 
-        /******************************************************/
+
         delay(1000);
 
-        //try blynk connection
+
         if ( BLYNK == 1)
         {
           Blynk.config(auth, blynkaddress, blynkport) ;
@@ -2015,7 +2046,7 @@ void setup()
             if (fallback == 1)
             {
               debugStream.writeD("sync all variables and write new values to eeprom");
-              // Blynk.run() ;
+
               Blynk.syncVirtual(V4);
               Blynk.syncVirtual(V5);
               Blynk.syncVirtual(V6);
@@ -2033,9 +2064,9 @@ void setup()
               Blynk.syncVirtual(V32);
               Blynk.syncVirtual(V33);
               Blynk.syncVirtual(V34);
-              // Blynk.syncAll();  //sync all values from Blynk server
-              // Werte in den eeprom schreiben
-              // ini eeprom mit begin
+
+
+
               writeSysParamsToStorage();
             }
           } else
@@ -2050,7 +2081,7 @@ void setup()
           }
         }
       }
-      else // NO Wifi
+      else
       {
         #if DISPLAY != 0
           displayLogo(langstring_nowifi[0], langstring_nowifi[1]);
@@ -2062,29 +2093,29 @@ void setup()
     }
 
 
-    /********************************************************
-       OTA
-    ******************************************************/
+
+
+
     if (ota && Offlinemodus == 0 && WiFi.status() == WL_CONNECTED) {
-      ArduinoOTA.setHostname(OTAhost);  //  Device name for OTA
-      ArduinoOTA.setPassword(OTApass);  //  Password for OTA
+      ArduinoOTA.setHostname(OTAhost);
+      ArduinoOTA.setPassword(OTApass);
       ArduinoOTA.begin();
     }
 
 
-    /********************************************************
-       Ini PID
-    ******************************************************/
 
-    //setPointTemp = BrewSetPoint;
+
+
+
+
     bPID.SetSampleTime(windowSize);
     bPID.SetOutputLimits(0, windowSize);
     bPID.SetMode(AUTOMATIC);
 
 
-    /********************************************************
-       TEMP SENSOR
-    ******************************************************/
+
+
+
     if (TempSensor == 1)
     {
       sensors.begin();
@@ -2108,9 +2139,9 @@ void setup()
 
 
 
-    /********************************************************
-      movingaverage ini array
-    ******************************************************/
+
+
+
     if (Brewdetection == 1) {
       for (int thisReading = 0; thisReading < numReadings; thisReading++) {
         readingstemp[thisReading] = 0;
@@ -2118,19 +2149,7 @@ void setup()
         readingchangerate[thisReading] = 0;
       }
     }
-    /*
-    if (TempSensor == 2) {
-      temperature = 0;
-      #if (ONE_WIRE_BUS == 16)
-          Sensor1.getTemperature(&temperature);
-          Input = Sensor1.calc_Celsius(&temperature);
-      #endif
-      #if (ONE_WIRE_BUS != 16)
-          Input = Sensor2.getTemp();
-      #endif
-    } */
-
-    //Initialisation MUST be at the very end of the init(), otherwise the time comparision in loop() will have a big offset
+# 2134 "/Users/mbrunner/Documents/GitHub/ranciliopid/src/rancilio-pid.ino"
     unsigned long currentTime = millis();
     previousMillistemp = currentTime;
     windowStartTime = currentTime;
@@ -2140,7 +2159,7 @@ void setup()
     previousMillisInflux = currentTime;
     previousMillisETrigger = currentTime;
     previousMillisVoltagesensorreading = currentTime;
-    #if (BREWMODE ==  2)
+    #if (BREWMODE == 2)
     previousMillisScale = currentTime;
     #endif
     #if (PRESSURESENSOR == 1)
@@ -2161,8 +2180,8 @@ void setup()
     Serial.println(completemac);
 
   enableTimer1();
-  } // else softenable == 1
-} // setup
+  }
+}
 
 void loop() {
   if (calibration_mode == 1 && TOF == 1)
@@ -2180,15 +2199,15 @@ void loop() {
       case 0:
         if(WiFi.softAPgetStationNum() > 0)
         {
-          ArduinoOTA.setHostname(OTAhost);  //  Device name for OTA
-          ArduinoOTA.setPassword(OTApass);  //  Password for OTA
+          ArduinoOTA.setHostname(OTAhost);
+          ArduinoOTA.setPassword(OTApass);
           ArduinoOTA.begin();
           softApstate = 10;
         }
       break;
       case 10:
-      ArduinoOTA.handle();  // For OTA
-      // Disable interrupt it OTA is starting, otherwise it will not work
+      ArduinoOTA.handle();
+
       ArduinoOTA.onStart([]()
       {
 
@@ -2198,7 +2217,7 @@ void loop() {
         #if defined(ESP32)
         timerAlarmDisable(timer);
         #endif
-        digitalWrite(pinRelayHeater, LOW); //Stop heating
+        digitalWrite(pinRelayHeater, LOW);
       });
       ArduinoOTA.onError([](ota_error_t error)
       {
@@ -2209,7 +2228,7 @@ void loop() {
         timerAlarmEnable(timer);
         #endif
       });
-      // Enable interrupts if OTA is finished
+
       ArduinoOTA.onEnd([]()
       {
         #if defined(ESP8266)
@@ -2225,10 +2244,10 @@ void loop() {
 
 }
 
-// TOF Calibration_mode
+
 void loopcalibrate()
 {
-    //Deactivate PID
+
   if (pidMode == 1)
   {
     pidMode = 0;
@@ -2236,22 +2255,22 @@ void loopcalibrate()
     Output = 0;
   }
   if (Blynk.connected() && BLYNK == 1)
-  {  // If connected run as normal
+  {
       Blynk.run();
-      blynkReCnctCount = 0; //reset blynk reconnects if connected
+      blynkReCnctCount = 0;
   } else
   {
     checkBlynk();
   }
-    digitalWrite(pinRelayHeater, LOW); //Stop heating to be on the safe side ...
+    digitalWrite(pinRelayHeater, LOW);
 
   unsigned long currentMillisTOF = millis();
   if (currentMillisTOF - previousMillisTOF >= intervalTOF)
   {
     previousMillisTOF = millis() ;
-    VL53L0X_RangingMeasurementData_t measure;  //TOF Sensor measurement
-    lox.rangingTest(&measure, false); // pass in 'true' to get debug data printout!
-    distance = measure.RangeMilliMeter;  //write new distence value to 'distance'
+    VL53L0X_RangingMeasurementData_t measure;
+    lox.rangingTest(&measure, false);
+    distance = measure.RangeMilliMeter;
     DEBUG_print(distance);
     DEBUG_println("mm");
     #if DISPLAY !=0
@@ -2263,10 +2282,10 @@ void loopcalibrate()
 
 void looppid()
 {
-  //Only do Wifi stuff, if Wifi is connected
+
   if (WiFi.status() == WL_CONNECTED && Offlinemodus == 0)
   {
-    //MQTT
+
     if (MQTT == 1)
     {
       checkMQTT();
@@ -2275,32 +2294,32 @@ void looppid()
         mqtt.loop();
       }
     }
-    ArduinoOTA.handle();  // For OTA
-    // Disable interrupt it OTA is starting, otherwise it will not work
+    ArduinoOTA.handle();
+
     ArduinoOTA.onStart([]()
     {
       disableTimer1();
-      digitalWrite(pinRelayHeater, LOW); //Stop heating
+      digitalWrite(pinRelayHeater, LOW);
     });
     ArduinoOTA.onError([](ota_error_t error)
     {
       enableTimer1();
     });
-    // Enable interrupts if OTA is finished
+
     ArduinoOTA.onEnd([]()
     {
       enableTimer1();
     });
 
     if (Blynk.connected() && BLYNK == 1)
-    {  // If connected run as normal
+    {
       Blynk.run();
-      blynkReCnctCount = 0; //reset blynk reconnects if connected
+      blynkReCnctCount = 0;
     } else
     {
       checkBlynk();
     }
-    wifiReconnects = 0;   //reset wifi reconnects if connected
+    wifiReconnects = 0;
   } else
   {
     checkWifi();
@@ -2311,19 +2330,19 @@ void looppid()
       if (currentMillisTOF - previousMillisTOF >= intervalTOF)
       {
         previousMillisTOF = millis() ;
-        VL53L0X_RangingMeasurementData_t measure;  //TOF Sensor measurement
-        lox.rangingTest(&measure, false); // pass in 'true' to get debug data printout!
-        distance = measure.RangeMilliMeter;  //write new distence value to 'distance'
+        VL53L0X_RangingMeasurementData_t measure;
+        lox.rangingTest(&measure, false);
+        distance = measure.RangeMilliMeter;
         if (distance <= 1000)
         {
-          percentage = (100.00 / (water_empty - water_full)) * (water_empty - distance); //calculate percentage of waterlevel
+          percentage = (100.00 / (water_empty - water_full)) * (water_empty - distance);
           DEBUG_println(percentage);
         }
       }
   }
-  // voids
-  refreshTemp();   //read new temperature values
-  testEmergencyStop();  // test if Temp is to high
+
+  refreshTemp();
+  testEmergencyStop();
   bPID.Compute();
 
   if ((millis() - lastTempEvent) > tempEventInterval) {
@@ -2332,34 +2351,34 @@ void looppid()
   }
 
   #if (BREWMODE == 2 || ONLYPIDSCALE == 1 )
-    checkWeight() ; // Check Weight Scale in the loop
+    checkWeight() ;
   #endif
     #if (PRESSURESENSOR == 1)
     checkPressure();
     #endif
-  brew();   //start brewing if button pressed
-  checkSteamON(); // check for steam
+  brew();
+  checkSteamON();
   setEmergencyStopTemp();
   sendToBlynkMQTT();
-  machinestatevoid() ; // calc machinestate
-  setchecklastpoweroff(); // FOR AP MODE
+  machinestatevoid() ;
+  setchecklastpoweroff();
 
   if (INFLUXDB == 1){
     sendInflux();
   }
 
-  if (ETRIGGER == 1) // E-Trigger active then void Etrigger()
+  if (ETRIGGER == 1)
   {
     ETriggervoid();
   }
-  #if (ONLYPIDSCALE == 1) // only by shottimer 2, scale
+  #if (ONLYPIDSCALE == 1)
       shottimerscale() ;
   #endif
 
 
-  //check if PID should run or not. If not, set to manuel and force output to zero
-  // OFFLINE
-  //voids Display & BD
+
+
+
   #if DISPLAY != 0
       unsigned long currentMillisDisplay = millis();
       if (currentMillisDisplay - previousMillisDisplay >= 100)
@@ -2369,24 +2388,24 @@ void looppid()
       if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay)
       {
         previousMillisDisplay = currentMillisDisplay;
-        #if DISPLAYTEMPLATE < 20 // not in vertikal template
+        #if DISPLAYTEMPLATE < 20
           Displaymachinestate() ;
         #endif
-        printScreen();  // refresh display
+        printScreen();
       }
   #endif
-  if (machinestate == kPidOffline || machinestate == kSensorError || machinestate == kEmergencyStop) // Offline see machinestate.h
+  if (machinestate == kPidOffline || machinestate == kSensorError || machinestate == kEmergencyStop)
   {
     if (pidMode == 1)
     {
-      // Force PID shutdown
+
       pidMode = 0;
       bPID.SetMode(pidMode);
       Output = 0 ;
-      digitalWrite(pinRelayHeater, LOW); //Stop heating
+      digitalWrite(pinRelayHeater, LOW);
     }
   }
-  else // no sensorerror, no pid off or no Emergency Stop
+  else
   {
     if (pidMode == 0)
     {
@@ -2395,8 +2414,8 @@ void looppid()
     }
   }
 
-  //Set PID if first start of machine detected, and no SteamON
-  if (machinestate == kInit || machinestate == kColdStart || machinestate == kSetPointNegative) // Cold Start states
+
+  if (machinestate == kInit || machinestate == kColdStart || machinestate == kSetPointNegative)
   {
     if (startTn != 0) {
       startKi = startKp / startTn;
@@ -2409,11 +2428,11 @@ void looppid()
       lastmachinestatepid = machinestate;
     }
     bPID.SetTunings(startKp, startKi, 0, P_ON_M);
-  // normal PID
+
   }
   if (machinestate == kPidNormal )
-  {    //Prevent overwriting of brewdetection values
-    // calc ki, kd
+  {
+
     if (aggTn != 0) {
       aggKi = aggKp / aggTn ;
     } else {
@@ -2428,10 +2447,10 @@ void looppid()
     bPID.SetTunings(aggKp, aggKi, aggKd, PonE);
     kaltstart = false;
   }
-  // BD PID
+
   if (machinestate >= 30 && machinestate <= 35)
   {
-    // calc ki, kd
+
     if (aggbTn != 0) {
       aggbKi = aggbKp / aggbTn ;
     } else {
@@ -2445,16 +2464,16 @@ void looppid()
     }
     bPID.SetTunings(aggbKp, aggbKi, aggbKd, PonE) ;
   }
-  // Steam on
-  if (machinestate == kSteam) // STEAM
+
+  if (machinestate == kSteam)
   {
-    // if (aggTn != 0) {
-    //   aggKi = aggKp / aggTn ;
-    // } else {
-    //   aggKi = 0 ;
-    // }
-    // aggKi = 0 ;
-    // aggKd = aggTv * aggKp ;
+
+
+
+
+
+
+
     if (lastmachinestatepid != machinestate)
     {
       debugStream.writeI("new PID-Values: P=%.1f  I=%.1f  D=%.1f",150,0,0);
@@ -2463,7 +2482,7 @@ void looppid()
     bPID.SetTunings(150, 0, 0, PonE);
   }
 
-  if (machinestate == kCoolDown) // chill-mode after steam
+  if (machinestate == kCoolDown)
   {
     switch (machine) {
 
@@ -2474,7 +2493,7 @@ void looppid()
       break;
 
       default:
-        // calc ki, kd
+
         if (aggbTn != 0) {
           aggbKi = aggbKp / aggbTn;
         } else {
@@ -2490,44 +2509,37 @@ void looppid()
     }
     bPID.SetTunings(aggbKp, aggbKi, aggbKd, PonE) ;
   }
-  //sensor error OR Emergency Stop
+
 }
-
-
-/**************************************************************************//**
- * \brief Reads all system parameter values from non-volatile storage.
- *
- * \return  0 - succeed
- *         <0 - failed
- ******************************************************************************/
+# 2503 "/Users/mbrunner/Documents/GitHub/ranciliopid/src/rancilio-pid.ino"
 int readSysParamsFromStorage(void)
 {
   int addr;
   double dummy;
 
-  // check if any data are programmed...
-  // An erased (or never programmed) Flash memory is filled with 0xFF.
-  for (addr=0; addr<10; addr++)                                                 // check 1st 10 bytes...
+
+
+  for (addr=0; addr<10; addr++)
   {
-    if (EEPROM.read(addr) != 0xFF)                                              // programmed byte?
-      break;                                                                    // yes -> abort loop
+    if (EEPROM.read(addr) != 0xFF)
+      break;
   }
-  if (addr >= 10)                                                               // all bytes "empty"?
-  {                                                                             // yes...
+  if (addr >= 10)
+  {
     debugStream.writeI("%s(): no data found", __FUNCTION__);
     return -1;
   }
 
-  // check first value, if there is a valid number...
+
   EEPROM.get(0, dummy);
-  if (isnan(dummy))                                                             // invalid floating point number?
-  {                                                                             // yes...
+  if (isnan(dummy))
+  {
     debugStream.writeI("%s(): no NV data found (addr 0=%f)", __FUNCTION__, dummy);
     return -2;
   }
   debugStream.writeI("%s(): data found", __FUNCTION__);
 
-  // read stored system parameter values...
+
   EEPROM.get(0, aggKp);
   EEPROM.get(10, aggTn);
   EEPROM.get(20, aggTv);
@@ -2541,24 +2553,16 @@ int readSysParamsFromStorage(void)
   EEPROM.get(120, brewtimersoftware);
   EEPROM.get(130, brewboarder);
 
-  // EEPROM.commit() not necessary after read
+
   return 0;
 }
-
-
-
-/**************************************************************************//**
- * \brief Writes all current system parameter values to non-volatile storage.
- *
- * \return  0 - succeed
- *         <0 - failed
- ******************************************************************************/
+# 2556 "/Users/mbrunner/Documents/GitHub/ranciliopid/src/rancilio-pid.ino"
 int writeSysParamsToStorage(void)
 {
   int returnCode;
   bool isTimerEnabled;
 
-  // write current system parameter values...
+
   EEPROM.begin(4096);
   EEPROM.put(0, aggKp);
   EEPROM.put(10, aggTn);
@@ -2575,18 +2579,18 @@ int writeSysParamsToStorage(void)
 
 
 
-  // While Flash memory erase/write operations no other code must be executed from Flash!
-  // disable any ISRs...
+
+
   isTimerEnabled = isTimer1Enabled();
   disableTimer1();
 
-  // really write data to storage...
+
   returnCode = EEPROM.commit()? 0: -1;
   EEPROM.end();
 
-  // recover any ISRs...
-  if (isTimerEnabled)                                                           // was timer enabled before?
-    enableTimer1();                                                             // yes -> re-enable timer
+
+  if (isTimerEnabled)
+    enableTimer1();
 
   return returnCode;
 }
@@ -2598,14 +2602,14 @@ int writeSysParamsToBlynk(void)
   Blynk.virtualWrite(V2, Input);
   Blynk.virtualWrite(V4, aggKp);
   Blynk.virtualWrite(V5, aggTn);
-  Blynk.virtualWrite(V6,  aggTv);
-  Blynk.virtualWrite(V7,  BrewSetPoint);
-  Blynk.virtualWrite(V8,  brewtime/1000);
-  Blynk.virtualWrite(V9,  preinfusion/1000);
-  Blynk.virtualWrite(V10,  preinfusionpause/1000);
-  Blynk.virtualWrite(V13,  pidON);
-  Blynk.virtualWrite(V15,  SteamON);
-  Blynk.virtualWrite(V16,  SteamSetPoint);
+  Blynk.virtualWrite(V6, aggTv);
+  Blynk.virtualWrite(V7, BrewSetPoint);
+  Blynk.virtualWrite(V8, brewtime/1000);
+  Blynk.virtualWrite(V9, preinfusion/1000);
+  Blynk.virtualWrite(V10, preinfusionpause/1000);
+  Blynk.virtualWrite(V13, pidON);
+  Blynk.virtualWrite(V15, SteamON);
+  Blynk.virtualWrite(V16, SteamSetPoint);
   Blynk.virtualWrite(V17, setPoint);
   #if (BREWMODE == 2)
   {

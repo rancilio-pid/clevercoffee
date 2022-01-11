@@ -1,8 +1,9 @@
 /********************************************************
-  Version 2.5 (20.05.2021)
-  Last Change: PINPRESSURESENSOR
+  Version 3.0.0 Alpha
+  
   Values must be configured by the user
 ******************************************************/
+#define SYSVERSION '3.0.0 ALPHA'
 
 /********************************************************
    Define area, do not change anything here
@@ -43,7 +44,7 @@ enum MACHINE {
 #define LOCALHOST 1                // 0 = no 1 = OWN Website
 #define FALLBACK 1                 // 1 = fallback to values stored in eeprom, 0 = deactivated
 #define GRAFANA 1                  // 1 = grafana visualisation (access required), 0 = off (default)
-#define MQTT 1                     // 1 = MQTT enabled, 0 = MQTT disabled
+#define MQTT 0                     // 1 = MQTT enabled, 0 = MQTT disabled
 #define INFLUXDB 1                 // 1 = INFLUX enabled, 0 = INFLUX disabled
 
 // PID & Hardware
