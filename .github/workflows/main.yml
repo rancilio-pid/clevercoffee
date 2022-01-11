@@ -1,5 +1,8 @@
 name: Build
-on: [push]
+on:
+  push:
+    branches:
+    - Alpha-3.0.0
 jobs:
     build:
       runs-on: self-hosted
