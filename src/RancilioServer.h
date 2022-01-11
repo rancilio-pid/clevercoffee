@@ -21,6 +21,7 @@
 enum EditableKind {
     kInteger,
     kDouble,
+    kDoubletime,
     kCString,
 };
 
@@ -73,6 +74,9 @@ String getTempString() {
 
 String generateForm(String varName) {
     // Yikes, we don't have std::map available
+
+    // ms to s
+
     for (editable_t e : editableVars) {
         if (e.templateString != varName) {
             continue;
@@ -89,6 +93,10 @@ String generateForm(String varName) {
                 result += "<input type=\"number\" step=\"1\"";
                 currVal = String(*(double *)e.ptr);
                 break;
+            case kDoubletime:
+                result += "<input type=\"number\" step=\"1\"";
+                currVal = String(*(double *)e.ptr/1000);
+                break;    
             case kInteger:
                 result += "<input type=\"number\" step=\"1\"";
                 currVal = String(*(int *)e.ptr);
@@ -121,6 +129,9 @@ String getValue(String varName) {
         switch (e.type) {
             case kDouble:
                 return String(*(double *)e.ptr);
+                break;
+            case kDoubletime:
+                return String(*(double *)e.ptr);    
                 break;
             case kInteger:
                 return String(*(int *)e.ptr);
@@ -180,7 +191,7 @@ void serverSetup() {
                     *(int *)e.ptr = newVal;
                     m += ", it is now: ";
                     m += *(int *)e.ptr;
-                } else if (e.type == kDouble) {
+                } else if (e.type == kDouble ||e.type == kDoubletime) {
                     float newVal = atof(p->value().c_str());
                     *(double *)e.ptr = newVal;
                     m += ", it is now: ";
@@ -190,13 +201,21 @@ void serverSetup() {
                     m += ", unsupported for now.";
                 }
                 m += "<br />";
-            }
+         
+                 }
         }
+         // ms to s
 
         request->send(200, "text/html", m);
+
         // Write to EEPROM
         if(writeToEeprom)
         {
+             // ms to s
+                brewtime = brewtime*1000; 
+                preinfusion = preinfusion *1000;
+                preinfusionpause = preinfusionpause *1000;
+                //brewtimersoftware = brewtimersoftware * 1000;
             if (writeToEeprom() == 0)
             {
                 Serial.println("successfully wrote EEPROM");

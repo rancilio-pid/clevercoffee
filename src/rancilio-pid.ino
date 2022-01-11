@@ -347,16 +347,23 @@ int blynksendcounter = 1;
 
 std::vector<editable_t> editableVars = {
     {"PID_ON", "PID on?", kInteger, (void *)&pidON}, // ummm, why isn't pidON a boolean?
-    {"START_KP", "Start Kp", kDouble, (void *)&startKp},
-    {"START_TN", "Start Tn", kDouble, (void *)&startTn},
-    {"PID_KP", "PID Kp", kDouble, (void *)&aggKp},
-    {"PID_TN", "PID Tn", kDouble, (void *)&aggTn},
-    {"PID_TV", "PID Tv", kDouble, (void *)&aggTv},
-    {"BREW_SET_POINT", "Set point", kDouble, (void *)&BrewSetPoint},
-    {"BREW_TIME", "Brew Time", kDouble, (void *)&brewtime},
+    {"PID_KP", "PID P", kDouble, (void *)&aggKp},
+    {"PID_TN", "PID I", kDouble, (void *)&aggTn},
+    {"PID_TV", "PID D", kDouble, (void *)&aggTv},
     {"TEMP", "Temperature", kDouble, (void *)&Input},
+    {"BREW_SET_POINT", "Set point", kDouble, (void *)&BrewSetPoint},
+    {"BREW_TIME", "Brew Time s", kDoubletime, (void *)&brewtime},
+    {"BREW_PREINFUSION", "Preinfusion Time s", kDoubletime, (void *)&preinfusion},
+    {"BREW_PREINFUSUINPAUSE", "Pause s", kDoubletime, (void *)&preinfusionpause},
+    {"PID_BD_KP", "BD P", kDouble, (void *)&aggbKp},
+    {"PID_BD_TN", "BD I", kDouble, (void *)&aggbTn},
+    {"PID_BD_TV", "BD D", kDouble, (void *)&aggbTv},
+    {"PID_BD_TIMER", "PID BD Time s", kDouble, (void *)&brewtimersoftware},
+    {"PID_BD_BREWBOARDER", "PID BD Sensitivity", kDouble, (void *)&brewboarder},
     {"AP_WIFI_SSID", "AP WiFi Name", kCString, (void *)AP_WIFI_SSID},
-    {"AP_WIFI_KEY", "AP WiFi Password", kCString, (void *)AP_WIFI_KEY}
+    {"AP_WIFI_KEY", "AP WiFi Password", kCString, (void *)AP_WIFI_KEY},
+    {"START_KP", "Start P", kDouble, (void *)&startKp},
+    {"START_TN", "Start I", kDouble, (void *)&startTn}
 };
 
 unsigned long lastTempEvent = 0;
