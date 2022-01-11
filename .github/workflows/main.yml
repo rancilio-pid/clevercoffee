@@ -3,6 +3,9 @@ on:
   push:
     branches:
     - Alpha-3.0.0
+  pull_request:
+    branches:
+    - Alpha-3.0.0
 jobs:
     build:
       runs-on: self-hosted
