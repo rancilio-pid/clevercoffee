@@ -5,7 +5,8 @@
 #include <Arduino.h>
 
 
-
+int T1C;
+int TCTE;
 
 
 #if defined(ESP8266) // ESP8266
