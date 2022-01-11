@@ -1,8 +1,9 @@
 /********************************************************
-  Version 2.5 (20.05.2021)
-  Last Change: PINPRESSURESENSOR
+  Version 3.0.0 Alpha
+  
   Values must be configured by the user
 ******************************************************/
+#define SYSVERSION '3.0.0 ALPHA'
 
 /********************************************************
    Define area, do not change anything here

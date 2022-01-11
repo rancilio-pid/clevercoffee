@@ -1,6 +1,10 @@
 /********************************************************
-   Version 2.9.3 (03.07.2021)
+  Version 3.0.0 Alpha
 ******************************************************/
+
+// SYSVERSION and SYSVERSION_INO need to match, checked by preprocessor
+#define  SYSVERSION_INO '3.0.0 ALPHA'
+#define  SYSVERSION_DISPLAY "Version 3.0.0 ALPHA"  // Displayed during startup
 
 /********************************************************
   INCLUDES
@@ -28,6 +32,13 @@
 
 #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
 #include <HX711_ADC.h>
+#endif
+
+/********************************************************
+  Version of userConfig and rancilio-pid.ino need to match
+******************************************************/
+#if !defined(SYSVERSION) || !defined(SYSVERSION_INO)  || (SYSVERSION != SYSVERSION_INO)
+  #error Version of userConfig file and rancilio-pid.ino need to match!
 #endif
 
 /********************************************************
