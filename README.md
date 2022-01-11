@@ -4,6 +4,8 @@
 MASTER VERSION
 Version 2.9.4  (08.11.2021)
 
+For ESP8266 & ESP32
+
 ## Hinweise
 Unsere Projektwebseite findet ihr hier: [Clever Coffee Website](https://clevercoffee.de).
 
@@ -37,7 +39,8 @@ Ihr seid herzlich Willkommen uns gemeinsam bei der Mission zu besseren Espresso 
  * Geringer Platzbedarf, passt problemlos in die meisten kleineren Espressomaschinen
  * Die serienmäßige Verkabelung der Maschine bleibt erhalten und wird nur erweitert. Die Maschine kann nach dem Umbau problemlos wieder zurückgerüstet werden.
  * Aktive User-Community im Projektchat mit schnellem Support
- * Support seit 3 Jahren mit kontinuerlichen Anpassungen
+ * Support seit 4 Jahren mit kontinuerlichen Anpassungen
+ * ESP32 und ESP8266 wird untersützt
 
 Anregungen zur Weiterentwicklung der Software werden von uns gerne aufgenommen. User-Input ist immer willkommen und bringt den PID weiter!
 Ihr seid herzlich Willkommen uns gemeinsam bei der Mission zu besseren Espresso zu helfen. 
