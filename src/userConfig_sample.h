@@ -44,7 +44,7 @@ enum MACHINE {
 #define LOCALHOST 1                // 0 = no 1 = OWN Website
 #define FALLBACK 1                 // 1 = fallback to values stored in eeprom, 0 = deactivated
 #define GRAFANA 1                  // 1 = grafana visualisation (access required), 0 = off (default)
-#define MQTT 0                     // 1 = MQTT enabled, 0 = MQTT disabled
+#define MQTT 1                     // 1 = MQTT enabled, 0 = MQTT disabled
 #define INFLUXDB 1                 // 1 = INFLUX enabled, 0 = INFLUX disabled
 
 // PID & Hardware
