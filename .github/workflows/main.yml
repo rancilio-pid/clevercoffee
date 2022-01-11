@@ -16,7 +16,7 @@ jobs:
             fetch-depth: 0
         
         - name: Add platformio_sample.ini
-          working-directory: ./src
+          working-directory: ./
           run: cp platformio_sample.ini platformio.ini
         
         - name: Add config file
