@@ -1,6 +1,10 @@
 /********************************************************
-   Version 2.9.3 (03.07.2021)  
+   Version 2.9.4 (10.01.2022)     
 ******************************************************/
+
+// SYSVERSION and SYSVERSION_INO need to match, checked by preprocessor
+#define  SYSVERSION_INO '2.9.4 MASTER'
+#define  SYSVERSION_DISPLAY "Version 2.9.4 MASTER"  // Displayed during startup
 
 /********************************************************
   INCLUDES
@@ -28,6 +32,13 @@
 
 #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
 #include <HX711_ADC.h>
+#endif
+
+/********************************************************
+  Version of userConfig and rancilio-pid.ino need to match
+******************************************************/
+#if !defined(SYSVERSION) || !defined(SYSVERSION_INO)  || (SYSVERSION != SYSVERSION_INO)
+  #error Version of userConfig file and rancilio-pid.ino need to match!
 #endif
 
 /********************************************************
@@ -100,6 +111,7 @@ const unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
 //int machineLogo = MACHINELOGO;
 const unsigned long brewswitchDelay = BREWSWITCHDELAY;
 int BrewMode = BREWMODE;
+const char* sysVersion PROGMEM  = SYSVERSION_DISPLAY; //System version
 
 //Display
 uint8_t oled_i2c = OLED_I2C;
@@ -186,7 +198,6 @@ int relayON, relayOFF;          // used for relay trigger type. Do not change!
 boolean kaltstart = true;       // true = Rancilio started for first time
 boolean emergencyStop = false;  // Notstop bei zu hoher Temperatur
 double EmergencyStopTemp = 120; // Temp EmergencyStopTemp
-const char* sysVersion PROGMEM  = "Version 2.9.3 MASTER";   //System version
 int inX = 0, inY = 0, inOld = 0, inSum = 0; //used for filter()
 int bars = 0; //used for getSignalStrength()
 boolean brewDetected = 0;
