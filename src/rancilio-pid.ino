@@ -1465,6 +1465,7 @@ void machinestatevoid()
       break;
       // Setpoint -1 Celsius
       case kSetPointNegative:
+      brewdetection();  //if brew detected, set PID values
       if (Input >= (BrewSetPoint))
       {
         machinestate = kPidNormal;
@@ -1802,7 +1803,19 @@ void debugVerboseOutput()
   }
 }
 
-
+void ledtemp()
+{      
+  if (USELED == 1)
+  {
+    pinMode(LEDPIN, OUTPUT);
+    digitalWrite(LEDPIN, LOW);
+    if ((machinestate == kPidNormal && (fabs(Input  - setPoint) < 0.5)) ||
+        (Input > 115 && fabs(Input  - BrewSetPoint) < 5)) // inner Tempregion
+    {
+    digitalWrite(LEDPIN, HIGH);
+    }
+  }
+} // endled loop
 
 
 
@@ -2343,6 +2356,7 @@ void looppid()
   sendToBlynkMQTT();
   machinestatevoid() ; // calc machinestate
   setchecklastpoweroff(); // FOR AP MODE
+  ledtemp();
 
   if (INFLUXDB == 1){
     sendInflux();
