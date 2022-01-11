@@ -1,8 +1,8 @@
 # Rancilio PID meets Clevercoffee
 
 ## Version
-MASTER VERSION
-Version 2.9.4  (08.11.2021)
+ALPHA VERSION
+Version 3.0.0  (11.01.2021)
 
 ## Hinweise
 Unsere Projektwebseite findet ihr hier: [Clever Coffee Website](https://clevercoffee.de).

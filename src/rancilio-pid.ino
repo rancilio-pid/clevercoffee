@@ -864,6 +864,7 @@ void sendInflux(){
     sensor.addField("HeaterPower", Output);
     sensor.addField("Kp", bPID.GetKp());
     sensor.addField("Ki", bPID.GetKi());
+    sensor.addField("Kd", bPID.GetKd());
     sensor.addField("pidON", pidON);
     sensor.addField("brewtime", brewtime/1000);
     sensor.addField("preinfusionpause", preinfusionpause/1000);
@@ -1019,6 +1020,7 @@ void sendToBlynkMQTT()
                 mqtt_publish("HeaterPower", number2string(Output));
                 mqtt_publish("Kp", number2string(bPID.GetKp()));
                 mqtt_publish("Ki", number2string(bPID.GetKi()));
+                mqtt_publish("Kd", number2string(bPID.GetKd()));
                 mqtt_publish("pidON", number2string(pidON));
                 mqtt_publish("brewtime", number2string(brewtime/1000));
                 mqtt_publish("preinfusionpause", number2string(preinfusionpause/1000));

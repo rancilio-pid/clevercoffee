@@ -1,0 +1,17 @@
+name: Build
+on: [push]
+jobs:
+    build:
+      runs-on: self-hosted
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v2
+          with: 
+            fetch-depth: 0
+        
+        - name: Add config file
+          working-directory: ./src
+          run: cp userConfig_sample.h userConfig.h
+        
+        - name: Run PlatformIO
+          run: ~/.platformio/penv/bin/platformio run
