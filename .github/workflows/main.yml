@@ -15,6 +15,10 @@ jobs:
           with: 
             fetch-depth: 0
         
+        - name: Add platformio_sample.ini
+          working-directory: ./src
+          run: cp platformio_sample.ini platformio.ini
+        
         - name: Add config file
           working-directory: ./rancilio-pid/rancilio-pid/
           run: cp userConfig_sample.h userConfig.h
