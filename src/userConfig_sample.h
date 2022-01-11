@@ -58,6 +58,7 @@ enum MACHINE {
 #define VOLTAGESENSORTYPE HIGH     // BREWDETECTION 3 configuration
 #define PINMODEVOLTAGESENSOR INPUT // Mode INPUT_PULLUP, INPUT or INPUT_PULLDOWN_16 (Only Pin 16)
 #define PRESSURESENSOR 0           // 1 = pressure sensor connected to A0; PINBREWSWITCH must be set to the connected input!
+#define USELED         1         
 
 // TOF sensor for water level
 #define TOF 0                      // 0 = no TOF sensor connected; 1 = water level by TOF sensor
@@ -123,6 +124,7 @@ enum MACHINE {
 #define SETPOINT 95                // Temperatur setpoint
 #define STEAMSETPOINT 120          // Temperatur setpoint
 #define BREWDETECTIONLIMIT 150     // brew detection limit, be carefull: if too low, then there is the risk of wrong brew detection and rising temperature
+
 #define AGGKP 69                   // Kp normal
 #define AGGTN 399                  // Tn
 #define AGGTV 0                    // Tv
@@ -152,6 +154,7 @@ enum MACHINE {
 //#define OLED_RESET 16            // Output pin for dispaly reset pin
 #define PINETRIGGER 16             // PIN for E-Trigger relay
 #define STEAMONPIN 17              // STEAM active
+#define LEDPIN    18               // LED PIN ON near setpoint 
 #define OLED_SCL 5                 // Output pin for dispaly clock pin
 #define OLED_SDA 4                 // Output pin for dispaly data pin
 #define HXDATPIN 99                // weight scale PIN
