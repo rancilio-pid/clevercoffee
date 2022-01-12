@@ -329,7 +329,9 @@
        Sensor error
       *****************************************************/
       if (machinestate == kSensorError)
-      {    
+      { 
+        u8g2.clearBuffer();
+        u8g2.setFont(u8g2_font_profont11_tf); // set font  
         displayMessage(langstring_error_tsensor[0], String(Input), langstring_error_tsensor[1], "", "", ""); //DISPLAY AUSGABE
       }
     }
