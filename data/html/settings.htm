@@ -4,7 +4,7 @@
                 <h1>Settings</h1>
             </div>
 
-            <h2 class="content-subhead">Variables</h2>
+            <h2 class="content-subhead">Start & normaler PID </h2>
             <p>
                 <form action="/post" method="post">
                     %VAR_EDIT_PID_ON%
@@ -13,10 +13,27 @@
                     %VAR_EDIT_PID_KP%
                     %VAR_EDIT_PID_TN%
                     %VAR_EDIT_PID_TV%
+                <input type="submit"></form>
+                </form>
+            </p>
+            <h2 class="content-subhead">Brewing</h2>
+            <p>
+                <form action="/post" method="post">
                     %VAR_EDIT_BREW_SET_POINT%
                     %VAR_EDIT_BREW_TIME%
                     %VAR_EDIT_BREW_PREINFUSUINPAUSE%
                     %VAR_EDIT_BREW_PREINFUSION%
+                    %VAR_EDIT_PID_BD_KP%
+                    %VAR_EDIT_PID_BD_TN%
+                    %VAR_EDIT_PID_BD_TV%
+                    %VAR_EDIT_PID_BD_TIMER%
+                    %VAR_EDIT_PID_BD_BREWBOARDER%
+                <input type="submit"></form>
+                </form>
+            </p>
+            <h2 class="content-subhead">Brew detection</h2>
+            <p>
+                <form action="/post" method="post">
                     %VAR_EDIT_PID_BD_KP%
                     %VAR_EDIT_PID_BD_TN%
                     %VAR_EDIT_PID_BD_TV%
