@@ -553,8 +553,8 @@ BLYNK_WRITE(V8) {
 }
 
 BLYNK_WRITE(V9) {
-  preinfusion = param.asDouble() * 1000;
-  mqtt_publish("preinfusion", number2string(preinfusion/1000));
+  preinfusion = param.asDouble();
+  mqtt_publish("preinfusion", number2string(preinfusion));
 }
 
 BLYNK_WRITE(V10) {
@@ -882,7 +882,7 @@ void sendInflux(){
     sensor.addField("pidON", pidON);
     sensor.addField("brewtime", brewtime);
     sensor.addField("preinfusionpause", preinfusionpause/1000);
-    sensor.addField("preinfusion", preinfusion/1000);
+    sensor.addField("preinfusion", preinfusion);
     sensor.addField("SteamON", SteamON);
     byte mac[6];
     WiFi.macAddress(mac);
@@ -1038,7 +1038,7 @@ void sendToBlynkMQTT()
                 mqtt_publish("pidON", number2string(pidON));
                 mqtt_publish("brewtime", number2string(brewtime));
                 mqtt_publish("preinfusionpause", number2string(preinfusionpause/1000));
-                mqtt_publish("preinfusion", number2string(preinfusion/1000));
+                mqtt_publish("preinfusion", number2string(preinfusion));
                 mqtt_publish("SteamON", number2string(SteamON));
 
               }
@@ -1245,8 +1245,8 @@ void mqtt_callback(char* topic, byte* data, unsigned int length) {
   if (strcmp(configVar, "preinfusion") == 0) {
     sscanf(data_str, "%lf", &data_double);
     if (Blynk.connected()) { Blynk.virtualWrite(V9, String(data_double));}
-    mqtt_publish("preinfusion", number2string(preinfusion/1000));
-    preinfusion = data_double * 1000;
+    mqtt_publish("preinfusion", number2string(preinfusion));
+    preinfusion = data_double;
     return;
   }
   if (strcmp(configVar, "preinfusionpause") == 0) {
@@ -2622,7 +2622,7 @@ int writeSysParamsToBlynk(void)
   Blynk.virtualWrite(V6,  aggTv);
   Blynk.virtualWrite(V7,  BrewSetPoint);
   Blynk.virtualWrite(V8,  brewtime);
-  Blynk.virtualWrite(V9,  preinfusion/1000);
+  Blynk.virtualWrite(V9,  preinfusion);
   Blynk.virtualWrite(V10,  preinfusionpause/1000);
   Blynk.virtualWrite(V13,  pidON);
   Blynk.virtualWrite(V15,  SteamON);
