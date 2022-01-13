@@ -558,8 +558,8 @@ BLYNK_WRITE(V9) {
 }
 
 BLYNK_WRITE(V10) {
-  preinfusionpause = param.asDouble() * 1000;
-  mqtt_publish("preinfusionpause", number2string(preinfusionpause/1000));
+  preinfusionpause = param.asDouble();
+  mqtt_publish("preinfusionpause", number2string(preinfusionpause));
 }
 BLYNK_WRITE(V13)
 {
@@ -881,7 +881,7 @@ void sendInflux(){
     sensor.addField("Kd", bPID.GetKd());
     sensor.addField("pidON", pidON);
     sensor.addField("brewtime", brewtime);
-    sensor.addField("preinfusionpause", preinfusionpause/1000);
+    sensor.addField("preinfusionpause", preinfusionpause);
     sensor.addField("preinfusion", preinfusion);
     sensor.addField("SteamON", SteamON);
     byte mac[6];
@@ -1037,7 +1037,7 @@ void sendToBlynkMQTT()
                 mqtt_publish("Kd", number2string(bPID.GetKd()));
                 mqtt_publish("pidON", number2string(pidON));
                 mqtt_publish("brewtime", number2string(brewtime));
-                mqtt_publish("preinfusionpause", number2string(preinfusionpause/1000));
+                mqtt_publish("preinfusionpause", number2string(preinfusionpause));
                 mqtt_publish("preinfusion", number2string(preinfusion));
                 mqtt_publish("SteamON", number2string(SteamON));
 
@@ -1252,8 +1252,8 @@ void mqtt_callback(char* topic, byte* data, unsigned int length) {
   if (strcmp(configVar, "preinfusionpause") == 0) {
     sscanf(data_str, "%lf", &data_double);
     if (Blynk.connected()) { Blynk.virtualWrite(V10, String(data_double));}
-    mqtt_publish("preinfusionpause", number2string(preinfusionpause/1000));
-    preinfusionpause = data_double * 1000;
+    mqtt_publish("preinfusionpause", number2string(preinfusionpause));
+    preinfusionpause = data_double ;
     return;
   }
     if (strcmp(configVar, "pidON") == 0) {
@@ -2623,7 +2623,7 @@ int writeSysParamsToBlynk(void)
   Blynk.virtualWrite(V7,  BrewSetPoint);
   Blynk.virtualWrite(V8,  brewtime);
   Blynk.virtualWrite(V9,  preinfusion);
-  Blynk.virtualWrite(V10,  preinfusionpause/1000);
+  Blynk.virtualWrite(V10,  preinfusionpause);
   Blynk.virtualWrite(V13,  pidON);
   Blynk.virtualWrite(V15,  SteamON);
   Blynk.virtualWrite(V16,  SteamSetPoint);
