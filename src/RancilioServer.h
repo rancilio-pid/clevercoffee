@@ -211,11 +211,6 @@ void serverSetup() {
         // Write to EEPROM
         if(writeToEeprom)
         {
-             // ms to s
-                brewtime = brewtime*1000; 
-                preinfusion = preinfusion *1000;
-                preinfusionpause = preinfusionpause *1000;
-                //brewtimersoftware = brewtimersoftware * 1000;
             if (writeToEeprom() == 0)
             {
                 Serial.println("successfully wrote EEPROM");
