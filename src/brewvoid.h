@@ -235,7 +235,7 @@ void brew()
       //DEBUG_println(brewswitch)
     }
 
-    totalbrewtime = (preinfusion*1000) + preinfusionpause + (brewtime * 1000);    // running every cycle, in case changes are done during brew
+    totalbrewtime = (preinfusion*1000) + (preinfusionpause * 1000) + (brewtime * 1000);    // running every cycle, in case changes are done during brew
 
     // state machine for brew
     switch (brewcounter) {
@@ -271,7 +271,7 @@ void brew()
         brewcounter = 31;
         break;
       case 31:    //waiting time preinfusion pause
-        if (bezugsZeit > (preinfusion*1000) + preinfusionpause) {
+        if (bezugsZeit > ((preinfusion*1000) + (preinfusionpause * 1000))) {
           brewcounter = 40;
         }
         break;
@@ -336,7 +336,7 @@ void brew()
       //DEBUG_println(brewswitch)
     }
 
-    totalbrewtime = (preinfusion*1000)  + preinfusionpause + (brewtime * 1000);    // running every cycle, in case changes are done during brew
+    totalbrewtime = ((preinfusion*1000)  + (preinfusionpause * 1000) + (brewtime * 1000));    // running every cycle, in case changes are done during brew
 
     // state machine for brew
     switch (brewcounter) {
@@ -372,7 +372,7 @@ void brew()
         brewcounter = 31;
         break;
       case 31:    //waiting time preinfusion pause
-        if (bezugsZeit > (preinfusion*1000)  + preinfusionpause) {
+        if (bezugsZeit > ((preinfusion*1000)  + (preinfusionpause * 1000))) {
           brewcounter = 40;
         }
         break;
