@@ -352,9 +352,9 @@ std::vector<editable_t> editableVars = {
     {"PID_TV", "PID D", kDouble, (void *)&aggTv},
     {"TEMP", "Temperature", kDouble, (void *)&Input},
     {"BREW_SET_POINT", "Set point", kDouble, (void *)&BrewSetPoint},
-    {"BREW_TIME", "Brew Time s", kDoubletime, (void *)&brewtime},
-    {"BREW_PREINFUSION", "Preinfusion Time s", kDoubletime, (void *)&preinfusion},
-    {"BREW_PREINFUSUINPAUSE", "Pause s", kDoubletime, (void *)&preinfusionpause},
+    {"BREW_TIME", "Brew Time s", kDouble, (void *)&brewtime},
+    {"BREW_PREINFUSION", "Preinfusion Time s", kDouble, (void *)&preinfusion},
+    {"BREW_PREINFUSUINPAUSE", "Pause s", kDouble, (void *)&preinfusionpause},
     {"PID_BD_KP", "BD P", kDouble, (void *)&aggbKp},
     {"PID_BD_TN", "BD I", kDouble, (void *)&aggbTn},
     {"PID_BD_TV", "BD D", kDouble, (void *)&aggbTv},
@@ -2561,6 +2561,9 @@ int readSysParamsFromStorage(void)
   EEPROM.get(110, aggbTv);
   EEPROM.get(120, brewtimersoftware);
   EEPROM.get(130, brewboarder);
+  EEPROM.get(140, startKp);
+  // 150 for APmodereset
+  EEPROM.get(160, startKi);
 
   // EEPROM.commit() not necessary after read
   return 0;
@@ -2593,7 +2596,9 @@ int writeSysParamsToStorage(void)
   EEPROM.put(110, aggbTv);
   EEPROM.put(120, brewtimersoftware);
   EEPROM.put(130, brewboarder);
-
+  EEPROM.put(140, startKp);
+  // 150 for APmodereset
+  EEPROM.put(160, startKi);
 
 
   // While Flash memory erase/write operations no other code must be executed from Flash!
@@ -2623,15 +2628,19 @@ int writeSysParamsToBlynk(void)
   Blynk.virtualWrite(V7,  BrewSetPoint);
   Blynk.virtualWrite(V8,  brewtime);
   Blynk.virtualWrite(V9,  preinfusion);
-  Blynk.virtualWrite(V10,  preinfusionpause);
-  Blynk.virtualWrite(V13,  pidON);
-  Blynk.virtualWrite(V15,  SteamON);
-  Blynk.virtualWrite(V16,  SteamSetPoint);
+  Blynk.virtualWrite(V10, preinfusionpause);
+  Blynk.virtualWrite(V13, pidON);
+  Blynk.virtualWrite(V15, SteamON);
+  Blynk.virtualWrite(V16, SteamSetPoint);
   Blynk.virtualWrite(V17, setPoint);
+
   #if (BREWMODE == 2)
-  {
     Blynk.virtualWrite(V18, weightSetpoint;
-  }
+  #endif
+
+  #if (COLDSTART_PID == 2)  // 2=?Blynk values, else default starttemp from config
+    Blynk.virtualWrite(V11, startKp);
+    Blynk.virtualWrite(V14, startTn);
   #endif
 
   return 1;
