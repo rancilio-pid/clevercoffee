@@ -235,7 +235,7 @@ void brew()
       //DEBUG_println(brewswitch)
     }
 
-    totalbrewtime = preinfusion + preinfusionpause + brewtime;    // running every cycle, in case changes are done during brew
+    totalbrewtime = preinfusion + preinfusionpause + (brewtime * 1000);    // running every cycle, in case changes are done during brew
 
     // state machine for brew
     switch (brewcounter) {
@@ -336,7 +336,7 @@ void brew()
       //DEBUG_println(brewswitch)
     }
 
-    totalbrewtime = preinfusion + preinfusionpause + brewtime;    // running every cycle, in case changes are done during brew
+    totalbrewtime = preinfusion + preinfusionpause + (brewtime * 1000);    // running every cycle, in case changes are done during brew
 
     // state machine for brew
     switch (brewcounter) {
