@@ -2563,7 +2563,7 @@ int readSysParamsFromStorage(void)
   EEPROM.get(130, brewboarder);
   EEPROM.get(140, startKp);
   // 150 for APmodereset
-  EEPROM.get(160, startKi);
+  EEPROM.get(160, startTn);
 
   // EEPROM.commit() not necessary after read
   return 0;
@@ -2598,7 +2598,7 @@ int writeSysParamsToStorage(void)
   EEPROM.put(130, brewboarder);
   EEPROM.put(140, startKp);
   // 150 for APmodereset
-  EEPROM.put(160, startKi);
+  EEPROM.put(160, startTn);
 
 
   // While Flash memory erase/write operations no other code must be executed from Flash!
