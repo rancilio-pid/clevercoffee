@@ -1,5 +1,11 @@
 # Rancilio PID meets Clevercoffee
 
+<div align="center">
+<img src="https://img.shields.io/github/workflow/status/rancilio-pid/ranciliopid/Build/master">
+<img src="https://img.shields.io/github/last-commit/rancilio-pid/ranciliopid/master"><br>
+<a href='https://ko-fi.com/clevercoffee' target='_blank'><img height='35' style='border:0px;height:46px;' src='https://az743702.vo.msecnd.net/cdn/kofi3.png?v=0' border='0' alt='Buy Me a Coffee at ko-fi.com' />
+</div>
+
 ## Version
 MASTER VERSION
 Version 2.9.4  (08.11.2021)
