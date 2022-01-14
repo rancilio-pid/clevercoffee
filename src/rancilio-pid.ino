@@ -134,7 +134,7 @@ const char* pass = PASS;
 unsigned long lastWifiConnectionAttempt = millis();
 unsigned int wifiReconnects = 0; //actual number of reconnects
 
-int softApEnabled = 0 ;
+uint8_t softApEnabled = 0 ;
 IPAddress localIp(192, 168, 1, 1);
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 255, 0);
@@ -458,7 +458,7 @@ void createSoftAp()
       softApEnabledcheck = true;
       Serial.println("Set softApEnabled: 1, AP MODE\n");
       // Reset to normal mode softApEnabled = 0
-      int eepromvalue = 0;
+      uint8_t eepromvalue = 0;
       storageSet(STO_ITEM_SOFT_AP_ENABLED_CHECK, eepromvalue, true) ;
       softApstate = 0;
       Serial.printf("AccessPoint created with SSID %s and KEY %s and settings page http://%i.%i.%i.%i/settings\r\n", AP_WIFI_SSID, AP_WIFI_KEY, WiFi.softAPIP()[0],WiFi.softAPIP()[1],WiFi.softAPIP()[2],WiFi.softAPIP()[3]);
@@ -492,7 +492,7 @@ void checklastpoweroff()
  if (softApEnabled != 1) // set 1 if 0
  {
   Serial.printf("Set softApEnabled: 1, was 0\n");
-  int eepromvalue = 1;
+  uint8_t eepromvalue = 1;
   storageSet(STO_ITEM_SOFT_AP_ENABLED_CHECK, eepromvalue) ;
  }
 
@@ -506,7 +506,7 @@ void setchecklastpoweroff()
   {
     disableTimer1();
     Serial.printf("Set softApEnabled 0 after checkpowerofftime\n");
-    int eepromvalue = 0;
+    uint8_t eepromvalue = 0;
     storageSet(STO_ITEM_SOFT_AP_ENABLED_CHECK, eepromvalue, true) ;
     checklastpoweroffEnabled = true;
     enableTimer1();

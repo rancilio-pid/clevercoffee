@@ -34,9 +34,15 @@ typedef enum
   STO_ITEM_BREW_SW_TIMER,                                                       // brew software timer
   STO_ITEM_BD_THRESHOLD,                                                        // brew detection limit
   STO_ITEM_PID_KP_START,                                                        // PID P part at cold start phase
+  STO_ITEM_PID_TN_START,                                                        // PID I part at cold start phase
   STO_ITEM_SOFT_AP_ENABLED_CHECK,                                               // soft AP enable state
   STO_ITEM_WIFI_SSID,                                                           // Wifi SSID
   STO_ITEM_WIFI_PASSWORD,                                                       // Wifi password
+
+  // WHEN ADDING NEW DEFINES FOLLOWING HAS TO BE UPDATED:
+  // - storage structure:   sto_data_t
+  // - item default values: itemDefaults
+  // - item addresses:      getItemAddr()'
 
   STO_ITEM__LAST_ENUM                                                           // must be the last one!
 }sto_item_id_t;
@@ -48,16 +54,30 @@ typedef enum
  * FUNCTIONS
  ******************************************************************************/
 
-int storageGet(sto_item_id_t itemId, double& itemValue);
-int storageGet(sto_item_id_t itemId, int& itemValue);
-int storageGet(sto_item_id_t itemId, const char** itemValue);
-int storageGet(sto_item_id_t itemId, String& itemValue);
-int storageSet(sto_item_id_t itemId, double itemValue, bool commit=false);
-int storageSet(sto_item_id_t itemId, int itemValue, bool commit=false);
-int storageSet(sto_item_id_t itemId, const char* itemValue, bool commit=false);
-int storageSet(sto_item_id_t itemId, String& itemValue, bool commit=false);
 int storageSetup(void);
 int storageCommit(void);
+
+int storageGet(sto_item_id_t itemId, float& itemValue);
+int storageGet(sto_item_id_t itemId, double& itemValue);
+int storageGet(sto_item_id_t itemId, int8_t& itemValue);
+int storageGet(sto_item_id_t itemId, int16_t& itemValue);
+int storageGet(sto_item_id_t itemId, int32_t& itemValue);
+int storageGet(sto_item_id_t itemId, uint8_t& itemValue);
+int storageGet(sto_item_id_t itemId, uint16_t& itemValue);
+int storageGet(sto_item_id_t itemId, uint32_t& itemValue);
+int storageGet(sto_item_id_t itemId, const char** itemValue);
+int storageGet(sto_item_id_t itemId, String& itemValue);
+
+int storageSet(sto_item_id_t itemId, float itemValue, bool commit=false);
+int storageSet(sto_item_id_t itemId, double itemValue, bool commit=false);
+int storageSet(sto_item_id_t itemId, int8_t itemValue, bool commit=false);
+int storageSet(sto_item_id_t itemId, int16_t itemValue, bool commit=false);
+int storageSet(sto_item_id_t itemId, int32_t itemValue, bool commit=false);
+int storageSet(sto_item_id_t itemId, uint8_t itemValue, bool commit=false);
+int storageSet(sto_item_id_t itemId, uint16_t itemValue, bool commit=false);
+int storageSet(sto_item_id_t itemId, uint32_t itemValue, bool commit=false);
+int storageSet(sto_item_id_t itemId, const char* itemValue, bool commit=false);
+int storageSet(sto_item_id_t itemId, String& itemValue, bool commit=false);
 
 
 #endif // _STORAGE_H_

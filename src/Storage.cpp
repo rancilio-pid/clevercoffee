@@ -35,12 +35,13 @@ typedef struct __attribute__((packed))
   double reserved1;              uint8_t fill8[2];
   double reserved2;              uint8_t fill9[2];
   double pidKpBd;                uint8_t fill10[2];
-  double pidTnBd;                uint8_t fill12[2];
-  double pidTvBd;                uint8_t fill13[2];
-  double brewSwTimerSec;         uint8_t fill14[2];
-  double brewDetectionThreshold; uint8_t fill15[2];
-  double pidKpStart;             uint8_t fill16[2];
-  int softApEnabledCheck;
+  double pidTnBd;                uint8_t fill11[2];
+  double pidTvBd;                uint8_t fill12[2];
+  double brewSwTimerSec;         uint8_t fill13[2];
+  double brewDetectionThreshold; uint8_t fill14[2];
+  double pidKpStart;             uint8_t fill15[2];
+  uint8_t softApEnabledCheck;    uint8_t fill16[9];
+  double pidTnStart;             uint8_t fill17[2];
   char wifiSSID[25+1];
   char wifiPassword[25+1];
 }sto_data_t;
@@ -58,9 +59,9 @@ static const sto_data_t itemDefaults PROGMEM =
   AGGTN,              {0xFF, 0xFF},                                             // STO_ITEM_PID_TN_REGULAR
   AGGTV,              {0xFF, 0xFF},                                             // STO_ITEM_PID_TV_REGULAR
   SETPOINT,           {0xFF, 0xFF},                                             // STO_ITEM_BREW_SETPOINT
-  25000,              {0xFF, 0xFF},                                             // STO_ITEM_BREW_TIME
-  2000,               {0xFF, 0xFF},                                             // STO_ITEM_PRE_INFUSION_TIME
-  5000,               {0xFF, 0xFF},                                             // STO_ITEM_PRE_INFUSION_PAUSE
+  25,                 {0xFF, 0xFF},                                             // STO_ITEM_BREW_TIME
+  2,                  {0xFF, 0xFF},                                             // STO_ITEM_PRE_INFUSION_TIME
+  5,                  {0xFF, 0xFF},                                             // STO_ITEM_PRE_INFUSION_PAUSE
   0,                  {0xFF, 0xFF},                                             // reserved
   0,                  {0xFF, 0xFF},                                             // reserved
   AGGBKP,             {0xFF, 0xFF},                                             // STO_ITEM_PID_KP_BD
@@ -69,7 +70,8 @@ static const sto_data_t itemDefaults PROGMEM =
   45,                 {0xFF, 0xFF},                                             // STO_ITEM_BREW_SW_TIMER
   BREWDETECTIONLIMIT, {0xFF, 0xFF},                                             // STO_ITEM_BD_THRESHOLD
   STARTKP,            {0xFF, 0xFF},                                             // STO_ITEM_PID_KP_START
-  0,                                                                            // STO_ITEM_SOFT_AP_ENABLED_CHECK
+  0,                  {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},   // STO_ITEM_SOFT_AP_ENABLED_CHECK
+  STARTTN,            {0xFF, 0xFF},                                             // STO_ITEM_PID_TN_START
   "",                                                                           // STO_ITEM_WIFI_SSID
   "",                                                                           // STO_ITEM_WIFI_PASSWORD
 };
@@ -137,6 +139,9 @@ static inline int32_t getItemAddr(sto_item_id_t itemId)
     case STO_ITEM_PID_KP_START:
       addr = offsetof(sto_data_t, pidKpStart);
       break;
+    case STO_ITEM_PID_TN_START:
+      addr = offsetof(sto_data_t, pidTnStart);
+      break;
     case STO_ITEM_SOFT_AP_ENABLED_CHECK:
       addr = offsetof(sto_data_t, softApEnabledCheck);
       break;
@@ -162,6 +167,8 @@ static inline int32_t getItemAddr(sto_item_id_t itemId)
  ******************************************************************************/
 static void setDefaults(void)
 {
+  debugStream.writeD("%s(): %p <- %p (%u)\n", __FUNCTION__, EEPROM.getDataPtr(),
+                     &itemDefaults, sizeof(itemDefaults));
   memcpy(EEPROM.getDataPtr(), &itemDefaults, sizeof(itemDefaults));
 }
 
@@ -302,6 +309,15 @@ static inline int setNumber(sto_item_id_t itemId, const T &itemValue, bool commi
  * \return  0 - succeed
  *         <0 - failed
  ******************************************************************************/
+int storageGet(sto_item_id_t itemId, float& itemValue)
+{
+  int retCode = getNumber(itemId, itemValue);
+  if (retCode != 0)
+    return retCode;
+  debugStream.writeD("%s(): item=%i value=%.1f", __FUNCTION__, itemId, itemValue);
+  return 0;
+}
+
 int storageGet(sto_item_id_t itemId, double& itemValue)
 {
   int retCode = getNumber(itemId, itemValue);
@@ -310,7 +326,8 @@ int storageGet(sto_item_id_t itemId, double& itemValue)
   debugStream.writeD("%s(): item=%i value=%.1f", __FUNCTION__, itemId, itemValue);
   return 0;
 }
-int storageGet(sto_item_id_t itemId, int& itemValue)
+
+int storageGet(sto_item_id_t itemId, int8_t& itemValue)
 {
   int retCode = getNumber(itemId, itemValue);
   if (retCode != 0)
@@ -318,6 +335,52 @@ int storageGet(sto_item_id_t itemId, int& itemValue)
   debugStream.writeD("%s(): item=%i value=%i", __FUNCTION__, itemId, itemValue);
   return 0;
 }
+
+int storageGet(sto_item_id_t itemId, int16_t& itemValue)
+{
+  int retCode = getNumber(itemId, itemValue);
+  if (retCode != 0)
+    return retCode;
+  debugStream.writeD("%s(): item=%i value=%i", __FUNCTION__, itemId, itemValue);
+  return 0;
+}
+
+int storageGet(sto_item_id_t itemId, int32_t& itemValue)
+{
+  int retCode = getNumber(itemId, itemValue);
+  if (retCode != 0)
+    return retCode;
+  debugStream.writeD("%s(): item=%i value=%i", __FUNCTION__, itemId, itemValue);
+  return 0;
+}
+
+int storageGet(sto_item_id_t itemId, uint8_t& itemValue)
+{
+  int retCode = getNumber(itemId, itemValue);
+  if (retCode != 0)
+    return retCode;
+  debugStream.writeD("%s(): item=%i value=%u", __FUNCTION__, itemId, itemValue);
+  return 0;
+}
+
+int storageGet(sto_item_id_t itemId, uint16_t& itemValue)
+{
+  int retCode = getNumber(itemId, itemValue);
+  if (retCode != 0)
+    return retCode;
+  debugStream.writeD("%s(): item=%i value=%u", __FUNCTION__, itemId, itemValue);
+  return 0;
+}
+
+int storageGet(sto_item_id_t itemId, uint32_t& itemValue)
+{
+  int retCode = getNumber(itemId, itemValue);
+  if (retCode != 0)
+    return retCode;
+  debugStream.writeD("%s(): item=%i value=%u", __FUNCTION__, itemId, itemValue);
+  return 0;
+}
+
 int storageGet(sto_item_id_t itemId, const char** itemValue)
 {
   int itemAddr = getItemAddr(itemId);
@@ -329,6 +392,7 @@ int storageGet(sto_item_id_t itemId, const char** itemValue)
                      itemAddr, strlen(*itemValue)+1, itemId, *itemValue);
   return 0;
 }
+
 int storageGet(sto_item_id_t itemId, String& itemValue)
 {
   int itemAddr = getItemAddr(itemId);
@@ -354,16 +418,54 @@ int storageGet(sto_item_id_t itemId, String& itemValue)
  * \return  0 - succeed
  *         <0 - failed
  ******************************************************************************/
+int storageSet(sto_item_id_t itemId, float itemValue, bool commit)
+{
+  debugStream.writeD("%s(): item=%i value=%.1f", __FUNCTION__, itemId, itemValue);
+  return setNumber(itemId, itemValue, commit);
+}
+
 int storageSet(sto_item_id_t itemId, double itemValue, bool commit)
 {
   debugStream.writeD("%s(): item=%i value=%.1f", __FUNCTION__, itemId, itemValue);
   return setNumber(itemId, itemValue, commit);
 }
-int storageSet(sto_item_id_t itemId, int itemValue, bool commit)
+
+int storageSet(sto_item_id_t itemId, int8_t itemValue, bool commit)
 {
   debugStream.writeD("%s(): item=%i value=%i", __FUNCTION__, itemId, itemValue);
   return setNumber(itemId, itemValue, commit);
 }
+
+int storageSet(sto_item_id_t itemId, int16_t itemValue, bool commit)
+{
+  debugStream.writeD("%s(): item=%i value=%i", __FUNCTION__, itemId, itemValue);
+  return setNumber(itemId, itemValue, commit);
+}
+
+int storageSet(sto_item_id_t itemId, int32_t itemValue, bool commit)
+{
+  debugStream.writeD("%s(): item=%i value=%i", __FUNCTION__, itemId, itemValue);
+  return setNumber(itemId, itemValue, commit);
+}
+
+int storageSet(sto_item_id_t itemId, uint8_t itemValue, bool commit)
+{
+  debugStream.writeD("%s(): item=%i value=%u", __FUNCTION__, itemId, itemValue);
+  return setNumber(itemId, itemValue, commit);
+}
+
+int storageSet(sto_item_id_t itemId, uint16_t itemValue, bool commit)
+{
+  debugStream.writeD("%s(): item=%i value=%u", __FUNCTION__, itemId, itemValue);
+  return setNumber(itemId, itemValue, commit);
+}
+
+int storageSet(sto_item_id_t itemId, uint32_t itemValue, bool commit)
+{
+  debugStream.writeD("%s(): item=%i value=%u", __FUNCTION__, itemId, itemValue);
+  return setNumber(itemId, itemValue, commit);
+}
+
 int storageSet(sto_item_id_t itemId, const char* itemValue, bool commit)
 {
   size_t valueSize, maxItemSize;
@@ -389,6 +491,7 @@ int storageSet(sto_item_id_t itemId, const char* itemValue, bool commit)
     return storageCommit();
   return 0;
 }
+
 int storageSet(sto_item_id_t itemId, String& itemValue, bool commit)
 {
   return storageSet(itemId, itemValue.c_str(), commit);
