@@ -7,7 +7,7 @@
 <br>
   <br>
   How to Video:<br>
-  https://www.youtube.com/watch?v=iXFaw4C-hKY
+  https://youtu.be/KZPjisOEcQ4
 
 </div>
 
