@@ -1,5 +1,3 @@
-
-
 /********************************************************
     Digtalswitch OR Read analog input pin for BREW SWITCH
 ******************************************************/
@@ -55,7 +53,6 @@ void checkbrewswitch()
         unsigned long currentMillistemp = millis();
         if (currentMillistemp - previousMillistempanalogreading >= analogreadingtimeinterval)
         {
-          //DEBUG_println(analogRead(analogPin));
           previousMillistempanalogreading = currentMillistemp;
           if (filter(analogRead(analogPin)) > 1000 )
           {
@@ -75,7 +72,7 @@ void checkbrewswitch()
         {
           brewswitchTriggermillis = millis() ; 
           brewswitchTriggerCase = 20 ; 
-          debugStream.writeI("brewswitchTriggerCase 10:  HIGH");
+          Serial.println("brewswitchTriggerCase 10:  HIGH");
         }
       break;
       case 20: 
@@ -85,13 +82,13 @@ void checkbrewswitch()
           // Brew trigger
           brewswitch = HIGH  ;
           brewswitchTriggerCase = 30 ;
-          debugStream.writeI("brewswitchTriggerCase 20: Brew Trigger HIGH");
+          Serial.println("brewswitchTriggerCase 20: Brew Trigger HIGH");
         }
         // Button one 1sec pushed
         if (brewswitchTrigger == HIGH && (brewswitchTriggermillis+1000 <= millis() ))
         {
           // DO something
-           debugStream.writeI("brewswitchTriggerCase 20: Manual Trigger - brewing");
+           Serial.println("brewswitchTriggerCase 20: Manual Trigger - brewing");
           brewswitchTriggerCase = 30 ;
           digitalWrite(pinRelayVentil, relayON);
           digitalWrite(pinRelayPumpe, relayON);
@@ -103,7 +100,7 @@ void checkbrewswitch()
         {
           brewswitchTriggerCase = 40 ; 
           brewswitchTriggermillis = millis() ;     
-          debugStream.writeI("brewswitchTriggerCase 30: Manual Trigger - brewing stop");
+          Serial.println("brewswitchTriggerCase 30: Manual Trigger - brewing stop");
           digitalWrite(pinRelayVentil, relayOFF);
           digitalWrite(pinRelayPumpe, relayOFF);
         }
@@ -113,7 +110,7 @@ void checkbrewswitch()
           brewswitch = LOW  ;
           brewswitchTriggerCase = 40 ; 
           brewswitchTriggermillis = millis() ; 
-          debugStream.writeI("brewswitchTriggerCase 30: Brew Trigger LOW");
+          Serial.println("brewswitchTriggerCase 30: Brew Trigger LOW");
         }
       break ;
       case 40:
@@ -121,7 +118,7 @@ void checkbrewswitch()
         if (brewswitchTriggermillis+5000 <= millis() )
         {
           brewswitchTriggerCase = 10 ; 
-           debugStream.writeI("brewswitchTriggerCase 40: Brew Trigger Next Loop");
+           Serial.println("brewswitchTriggerCase 40: Brew Trigger Next Loop");
         }
       break ;
       case 50:
@@ -167,7 +164,7 @@ void backflush()
       }
       break;
     case 20:    //portafilter filling
-      debugStream.writeI("portafilter filling");
+      Serial.println("portafilter filling");
       digitalWrite(pinRelayVentil, relayON);
       digitalWrite(pinRelayPumpe, relayON);
       backflushState = 21;
@@ -179,7 +176,7 @@ void backflush()
       }
       break;
     case 30:    //flushing
-      debugStream.writeI("flushing");
+      Serial.println("flushing");
       digitalWrite(pinRelayVentil, relayOFF);
       digitalWrite(pinRelayPumpe, relayOFF);
       flushCycles++;
@@ -195,7 +192,7 @@ void backflush()
       break;
     case 43:    // waiting for brewswitch off position
       if (brewswitch == LOW) {
-        debugStream.writeI("backflush finished");
+        Serial.println("backflush finished");
         digitalWrite(pinRelayVentil, relayOFF);
         digitalWrite(pinRelayPumpe, relayOFF);
         flushCycles = 0;
@@ -220,8 +217,8 @@ void brew()
 
     if (brewswitch == LOW && brewcounter > 10)
     {
-      //abort function for state machine from every state
-      debugStream.writeI("Brew stopped manually");
+      // abort function for state machine from every state
+      Serial.println("Brew stopped manually");
       brewcounter = 43;
     }
 
@@ -229,17 +226,17 @@ void brew()
       bezugsZeit = currentMillistemp - startZeit;
     }
     if (brewswitch == LOW && firstreading == 0 ) 
-    {   //check if brewswitch was turned off at least once, last time,
+    {   
+      // check if brewswitch was turned off at least once, last time,
       brewswitchWasOFF = true;
-      //DEBUG_println("brewswitch value")
-      //DEBUG_println(brewswitch)
     }
 
     totalbrewtime = (preinfusion*1000) + (preinfusionpause * 1000) + (brewtime * 1000);    // running every cycle, in case changes are done during brew
 
     // state machine for brew
     switch (brewcounter) {
-    case 10:    // waiting step for brew switch turning on
+    case 10:    
+        // waiting step for brew switch turning on
         if (brewswitch == HIGH && backflushState == 10 && backflushON == 0 && brewswitchWasOFF) {
           startZeit = millis();
           if (preinfusionpause == 0 || preinfusion == 0){
@@ -254,7 +251,7 @@ void brew()
         }
         break;
       case 20:    //preinfusioon
-        debugStream.writeI("Preinfusion");
+        Serial.println("Preinfusion");
         digitalWrite(pinRelayVentil, relayON);
         digitalWrite(pinRelayPumpe, relayON);
         brewcounter = 21;
@@ -265,7 +262,7 @@ void brew()
         }
         break;
       case 30:    //preinfusion pause
-        debugStream.writeI("preinfusion pause");
+        Serial.println("preinfusion pause");
         digitalWrite(pinRelayVentil, relayON);
         digitalWrite(pinRelayPumpe, relayOFF);
         brewcounter = 31;
@@ -276,7 +273,7 @@ void brew()
         }
         break;
       case 40:    //brew running
-        debugStream.writeI("Brew started");
+        Serial.println("Brew started");
         digitalWrite(pinRelayVentil, relayON);
         digitalWrite(pinRelayPumpe, relayON);
         brewcounter = 41;
@@ -288,7 +285,7 @@ void brew()
         }
         break;
       case 42:    //brew finished
-        debugStream.writeI("Brew stopped");
+        Serial.println("Brew stopped");
         digitalWrite(pinRelayVentil, relayOFF);
         digitalWrite(pinRelayPumpe, relayOFF);
         brewcounter = 43;
@@ -320,7 +317,7 @@ void brew()
 
     if (brewswitch == LOW && brewcounter > 10)
     {
-      //abort function for state machine from every state
+      // abort function for state machine from every state
       brewcounter = 43;
     }
 
@@ -330,10 +327,9 @@ void brew()
 
     }
     if (brewswitch ==  LOW && firstreading == 0 )
-    { //check if brewswitch was turned off at least once, last time,
+    { 
+      // check if brewswitch was turned off at least once, last time,
       brewswitchWasOFF = true;
-      //DEBUG_println("brewswitch value")
-      //DEBUG_println(brewswitch)
     }
 
     totalbrewtime = ((preinfusion*1000)  + (preinfusionpause * 1000) + (brewtime * 1000));    // running every cycle, in case changes are done during brew
@@ -355,7 +351,7 @@ void brew()
         }
         break;
       case 20:    //preinfusioon
-        debugStream.writeI("Preinfusion");
+        Serial.println("Preinfusion");
         digitalWrite(pinRelayVentil, relayON);
         digitalWrite(pinRelayPumpe, relayON);
         brewcounter = 21;
@@ -366,7 +362,7 @@ void brew()
         }
         break;
       case 30:    //preinfusion pause
-        debugStream.writeI("preinfusion pause");
+        Serial.println("preinfusion pause");
         digitalWrite(pinRelayVentil, relayON);
         digitalWrite(pinRelayPumpe, relayOFF);
         brewcounter = 31;
@@ -377,7 +373,7 @@ void brew()
         }
         break;
       case 40:    //brew running
-        debugStream.writeI("Brew started");
+        Serial.println("Brew started");
         digitalWrite(pinRelayVentil, relayON);
         digitalWrite(pinRelayPumpe, relayON);
         brewcounter = 41;
@@ -391,7 +387,7 @@ void brew()
         }
         break;
         case 42:    //brew finished
-        debugStream.writeI("Brew stopped");
+        Serial.println("Brew stopped");
         digitalWrite(pinRelayVentil, relayOFF);
         digitalWrite(pinRelayPumpe, relayOFF);
         brewcounter = 43;

@@ -10,7 +10,7 @@
 
 #if defined(ESP8266) // ESP8266
 
-  void ICACHE_RAM_ATTR onTimer1ISR() {
+  void IRAM_ATTR onTimer1ISR() {
     timer1_write(6250); // set interrupt time to 20ms
 
     if (Output <= isrCounter) {

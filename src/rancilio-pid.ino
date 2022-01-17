@@ -46,24 +46,7 @@
 ******************************************************/
 MACHINE machine = (enum MACHINE) MACHINEID;
 
-#define DEBUGMODE   // Debug mode is active if #define DEBUGMODE is set
-
-//#define BLYNK_PRINT Serial    // In detail debugging for blynk
-//#define BLYNK_DEBUG
-
-#ifndef DEBUGMODE
-#define DEBUG_println(a)
-#define DEBUG_print(a)
-#define DEBUGSTART(a)
-#else
-#define DEBUG_println(a) Serial.println(a);
-#define DEBUG_print(a) Serial.print(a);
-#define DEBUGSTART(a) Serial.begin(a);
-#endif
 #define HIGH_ACCURACY
-
-#include "DebugStreamManager.h"
-DebugStreamManager debugStream;
 
 #include "PeriodicTrigger.h" // Trigger, der alle x Millisekunden auf true schaltet
 PeriodicTrigger writeDebugTrigger(5000); // trigger alle 5000 ms
@@ -469,13 +452,11 @@ void createSoftAp()
       #if (DISPLAY != 0)
         displayMessage("AP-MODE: SSID:", String(AP_WIFI_SSID), "KEY:", String(AP_WIFI_KEY), "IP:","192.168.1.1");
       #endif
-
-  //} else
-  //{
-  //  Serial.printf("Could not create AccessPoint! %i\r\n", WiFi.status());
  }
+
  yield();
 }
+
 void stopSoftAp()
 {
     Serial.println("Closing AccesPoint");
@@ -489,7 +470,7 @@ void checklastpoweroff()
 {
   EEPROM.begin(1024);
   EEPROM.get(150, softApEnabled);
-  //debugStream.writeD("softApEnabled: %i",softApEnabled);
+
   Serial.printf("softApEnabled: %i\n",softApEnabled);
   //softApEnabled = 1;
   //Serial.printf("softApEnabled: %i",softApEnabled);
@@ -502,7 +483,6 @@ void checklastpoweroff()
 
  EEPROM.commit();
  EEPROM.end();
-
 }
 
 void setchecklastpoweroff()
@@ -644,16 +624,16 @@ BLYNK_WRITE(V40) {
 void checkPressure() {
   float inputPressureFilter = 0;
   unsigned long currentMillisPressure = millis();
+
   if (currentMillisPressure - previousMillisPressure >= intervalPressure)
   {
     previousMillisPressure = currentMillisPressure;
 
     inputPressure = ((analogRead(PINPRESSURESENSOR) - offset) * maxPressure * 0.0689476) / (fullScale - offset);    // pressure conversion and unit conversion [psi] -> [bar]
     inputPressureFilter = filter(inputPressure);
-    DEBUG_print("pressure raw: ");
-    DEBUG_println(inputPressure);
-    DEBUG_print("pressure filtered: ");
-    DEBUG_print(inputPressureFilter);
+
+    Serial.printf("pressure raw: %f\n", inputPressure);
+    Serial.printf("pressure filtered: %f\n", inputPressureFilter);
   }
 }
 
@@ -733,7 +713,7 @@ boolean checkSensor(float tempInput) {
     sensorOK = false;
     if (error >= 5) // warning after 5 times error
     {
-     debugStream.writeW("*** WARNING: temperature sensor reading: consec_errors = %i, temp_current = %.1f",error,tempInput);
+     Serial.printf("*** WARNING: temperature sensor reading: consec_errors = %i, temp_current = %.1f", error, tempInput);
     }
   } else if (badCondition == false && sensorOK == false) {
     error = 0;
@@ -741,7 +721,7 @@ boolean checkSensor(float tempInput) {
   }
   if (error >= maxErrorCounter && !sensorError) {
     sensorError = true ;
-    debugStream.writeE("*** ERROR: temperature sensor malfunction: temp_current = %.1f",tempInput);
+    Serial.printf("*** ERROR: temperature sensor malfunction: temp_current = %.1f",tempInput);
   } else if (error == 0 && sensorError) {
     sensorError = false ;
   }
@@ -786,7 +766,7 @@ void refreshTemp() {
          #endif
        #if ((ONE_WIRE_BUS != 16 && defined(ESP8266)) || defined(ESP32))
         Temperature_C = Sensor2.getTemp();
-        //DEBUG_println(Temperature_C);
+        //Serial.println(Temperature_C);
        #endif
       //Temperature_C = 70;
       if (!checkSensor(Temperature_C) && firstreading == 0) return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
@@ -816,7 +796,7 @@ void initOfflineMode()
   #if DISPLAY != 0
     displayMessage("", "", "", "", "Begin Fallback,", "No Wifi");
   #endif
-  debugStream.writeI("Start offline mode with eeprom values, no wifi:(");
+  Serial.println("Start offline mode with eeprom values, no wifi :(");
   Offlinemodus = 1 ;
 
   if (readSysParamsFromStorage() != 0)
@@ -824,7 +804,7 @@ void initOfflineMode()
     #if DISPLAY != 0
     displayMessage("", "", "", "", "No eeprom,", "Values");
     #endif
-    debugStream.writeI("No working eeprom value, I am sorry, but use default offline value  :)");
+    Serial.println("No working eeprom value, I am sorry, but use default offline value :)");
     delay(1000);
   }
 }
@@ -841,7 +821,7 @@ void checkWifi() {
       if (statusTemp != WL_CONNECTED) {   // check WiFi connection status
         lastWifiConnectionAttempt = millis();
         wifiReconnects++;
-        debugStream.writeD("Attempting WIFI reconnection: %i",wifiReconnects);
+        Serial.printf("Attempting WIFI reconnection: %i\n",wifiReconnects);
         if (!setupDone) {
            #if DISPLAY != 0
             displayMessage("", "", "", "", langstring_wifirecon, String(wifiReconnects));
@@ -894,10 +874,10 @@ void sendInflux(){
     String macaddr5 = number2string(mac[5]);
     String completemac = macaddr0 + macaddr1 + macaddr2 + macaddr3 + macaddr4 + macaddr5;
     sensor.addField("mac", completemac);
+
     // Write point
     if (!client.writePoint(sensor)) {
-      Serial.print("InfluxDB write failed: ");
-      Serial.println(client.getLastErrorMessage());
+      Serial.printf("InfluxDB write failed: %s\n", client.getLastErrorMessage().c_str());
     }
   }
 }
@@ -915,7 +895,7 @@ void checkBlynk() {
     if (statusTemp != 1) {   // check Blynk connection status
       lastBlynkConnectionAttempt = millis();        // Reconnection Timer Function
       blynkReCnctCount++;  // Increment reconnection Counter
-      debugStream.writeD("Attempting blynk reconnection: %i",blynkReCnctCount);
+      Serial.printf("Attempting blynk reconnection: %i\n",blynkReCnctCount);
       Blynk.connect(3000);  // Try to reconnect to the server; connect() is a blocking function, watch the timeout!
     }
   }
@@ -935,10 +915,10 @@ void checkMQTT(){
     if (statusTemp != 1) {   // check Blynk connection status
       lastMQTTConnectionAttempt = millis();        // Reconnection Timer Function
       MQTTReCnctCount++;  // Increment reconnection Counter
-      debugStream.writeI("Attempting MQTT reconnection: %i",MQTTReCnctCount);
+      Serial.printf("Attempting MQTT reconnection: %i\n",MQTTReCnctCount);
       if (mqtt.connect(hostname, mqtt_username, mqtt_password,topic_will,0,0,"exit") == true);{
         mqtt.subscribe(topic_set);
-        debugStream.writeI("Subscribe to MQTT Topics");
+        Serial.println("Subscribe to MQTT Topics");
       }  // Try to reconnect to the server; connect() is a blocking function, watch the timeout!
     }
   }
@@ -1093,7 +1073,7 @@ void brewdetection()
         bezugsZeit = 0 ;
         startZeit = 0;
         coolingFlushDetectedQM = false;
-        debugStream.writeI("HW Brew - Voltage Sensor - End");
+        Serial.println("HW Brew - Voltage Sensor - End");
      //   lastbezugszeitMillis = millis(); // Bezugszeit für Delay
       }
     if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1) // reset PID Brew
@@ -1108,7 +1088,7 @@ void brewdetection()
   {
     if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 && (fabs(Input - BrewSetPoint) < 5)) // BD PID only +/- 4 Grad Celsius, no detection if HW was active
     {
-      debugStream.writeI("SW Brew detected") ;
+      Serial.println("SW Brew detected") ;
       timeBrewdetection = millis() ;
       timerBrewdetection = 1 ;
     }
@@ -1116,7 +1096,7 @@ void brewdetection()
   {
     if (brewcounter > 10 && brewDetected == 0 && brewboarder != 0)
     {
-      debugStream.writeI("HW Brew detected") ;
+      Serial.println("HW Brew detected") ;
       timeBrewdetection = millis() ;
       timerBrewdetection = 1 ;
       brewDetected = 1;
@@ -1138,7 +1118,7 @@ void brewdetection()
           brewDetected = 0;
           lastbezugszeit = 0;
           brewSteamDetectedQM = 1;
-          debugStream.writeI("Quick Mill: setting brewSteamDetectedQM = 1");
+          Serial.println("Quick Mill: setting brewSteamDetectedQM = 1");
           logbrew.reset();
         }
 
@@ -1150,21 +1130,21 @@ void brewdetection()
 
             if (millis() - timePVStoON < maxBrewDurationForSteamModeQM_ON)
             {
-              debugStream.writeI("Quick Mill: steam-mode detected");
+              Serial.println("Quick Mill: steam-mode detected");
               initSteamQM();
             } else {
-              debugStream.writeE("*** ERROR: QuickMill: neither brew nor steam");
+              Serial.printf("*** ERROR: QuickMill: neither brew nor steam\n");
             }
           }
           else if (millis() - timePVStoON > maxBrewDurationForSteamModeQM_ON)
           {
             if( Input < BrewSetPoint + 2) {
-              debugStream.writeI("Quick Mill: brew-mode detected");
+              Serial.println("Quick Mill: brew-mode detected");
               startZeit = timePVStoON;
               brewDetected = 1;
               brewSteamDetectedQM = 0;
             } else {
-              debugStream.writeI("Quick Mill: cooling-flush detected");
+              Serial.println("Quick Mill: cooling-flush detected");
               coolingFlushDetectedQM = true;
               brewSteamDetectedQM = 0;
             }
@@ -1177,7 +1157,7 @@ void brewdetection()
       previousMillisVoltagesensorreading = millis();
       if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorON && brewDetected == 0 )
       {
-        debugStream.writeI("HW Brew - Voltage Sensor -  Start") ;
+        Serial.println("HW Brew - Voltage Sensor -  Start") ;
         timeBrewdetection = millis() ;
         startZeit = millis() ;
         timerBrewdetection = 1 ;
@@ -1219,15 +1199,14 @@ void mqtt_callback(char* topic, byte* data, unsigned int length) {
   char cmd[64];
   double data_double;
 
- // DEBUG_print("mqtt_parse(%s, %s)\n", topic_str, data_str);
   snprintf(topic_pattern, sizeof(topic_pattern), "%s%s/%%[^\\/]/%%[^\\/]", mqtt_topic_prefix, hostname);
-  DEBUG_println(topic_pattern);
+  Serial.println(topic_pattern);
   if ( (sscanf( topic_str, topic_pattern , &configVar, &cmd) != 2) || (strcmp(cmd, "set") != 0) ) {
-  DEBUG_print(topic_str);
+    Serial.println(topic_str);
     return;
   }
-  DEBUG_println(topic_str);
-  DEBUG_println(data_str);
+  Serial.println(topic_str);
+  Serial.println(data_str);
   if (strcmp(configVar, "BrewSetPoint") == 0) {
     sscanf(data_str, "%lf", &data_double);
     mqtt_publish("BrewSetPoint", number2string(BrewSetPoint));
@@ -1385,7 +1364,7 @@ boolean checkSteamOffQM()
 
 void machinestatevoid()
 {
-  //DEBUG_println(machinestate);
+  //Serial.println(machinestate);
   switch (machinestate)
   {
     // init
@@ -1393,8 +1372,8 @@ void machinestatevoid()
       if (Input < (BrewSetPoint-1) || Input < 150 ) // Prevent coldstart leave by Input 222
       {
         machinestate = kColdStart;
-        DEBUG_println(Input);
-        DEBUG_println(machinestate);
+        Serial.println(Input);
+        Serial.println(machinestate);
       }
 
       if (pidON == 0)
@@ -1419,7 +1398,7 @@ void machinestatevoid()
           {
             machinestatecoldmillis = millis(); // get millis for interval calc
             machinestatecold = 10 ; // new state
-            debugStream.writeV("Input >= (BrewSetPoint-1), wait 10 sec before machinestate 19");
+            Serial.println("Input >= (BrewSetPoint-1), wait 10 sec before machinestate 19");
 
           }
           break;
@@ -1427,12 +1406,12 @@ void machinestatevoid()
           if (Input < (BrewSetPoint-1))
           {
             machinestatecold = 0 ;//  Input was only one time above BrewSetPoint, reset machinestatecold
-            debugStream.writeV("Reset timer for machinestate 19: Input < (BrewSetPoint-1)");
+            Serial.println("Reset timer for machinestate 19: Input < (BrewSetPoint-1)");
           }
           if (machinestatecoldmillis+10*1000 < millis() ) // 10 sec Input above BrewSetPoint, no set new state
           {
             machinestate = kSetPointNegative ;
-            debugStream.writeV("10 sec Input >= (BrewSetPoint-1) finished, switch to state 19");
+            Serial.println("10 sec Input >= (BrewSetPoint-1) finished, switch to state 19");
           }
           break;
       }
@@ -1547,7 +1526,7 @@ void machinestatevoid()
       brewdetection();
       // Ausgabe waehrend des Bezugs von Bruehzeit, Temp und heatrateaverage
       if (logbrew.check())
-          debugStream.writeV("(tB,T,hra) --> %5.2f %6.2f %8.2f",(double)(millis() - startZeit)/1000,Input,heatrateaverage);
+          Serial.printf("(tB,T,hra) --> %5.2f %6.2f %8.2f\n",(double)(millis() - startZeit)/1000,Input,heatrateaverage);
       if
       (
        (bezugsZeit > 35*1000 && Brewdetection == 1 && ONLYPID == 1  ) ||  // 35 sec later and BD PID active SW Solution
@@ -1589,7 +1568,7 @@ void machinestatevoid()
     brewdetection();
       if ( millis()-lastbezugszeitMillis > BREWSWITCHDELAY )
       {
-       debugStream.writeI("Bezugsdauer: %4.1f s",lastbezugszeit/1000);
+       Serial.printf("Bezugsdauer: %4.1f s\n",lastbezugszeit/1000);
        machinestate = kBrewDetectionTrailing ;
        lastbezugszeit = 0 ;
       }
@@ -1796,7 +1775,7 @@ void machinestatevoid()
   } // switch case
 
   if (machinestate != lastmachinestate) {
-    debugStream.writeI("new machinestate: %i -> %i", lastmachinestate, machinestate);
+    Serial.printf("new machinestate: %i -> %i\n", lastmachinestate, machinestate);
     lastmachinestate = machinestate;
   }
 } // end void
@@ -1806,7 +1785,7 @@ void debugVerboseOutput()
   static PeriodicTrigger trigger(10000);
   if(trigger.check())
   {
-    debugStream.writeV("Tsoll=%5.1f  Tist=%5.1f Machinestate=%2i KP=%4.2f KI=%4.2f KD=%4.2f",BrewSetPoint,Input,machinestate,bPID.GetKp(),bPID.GetKi(),bPID.GetKd());
+    Serial.printf("Tsoll=%5.1f  Tist=%5.1f Machinestate=%2i KP=%4.2f KI=%4.2f KD=%4.2f\n",BrewSetPoint,Input,machinestate,bPID.GetKp(),bPID.GetKi(),bPID.GetKd());
   }
 }
 
@@ -1828,8 +1807,8 @@ void ledtemp()
 
 void setup()
 {
-  DEBUGSTART(115200);
-  debugStream.setup();
+  Serial.begin(115200);
+  
   // Check AP Mode
   checklastpoweroff();
    EEPROM.begin(1024);
@@ -1977,7 +1956,7 @@ void setup()
       #if defined(ESP32) // ESP32
       WiFi.setHostname(hostname); // for ESP32port
       #endif
-      debugStream.writeD("Connecting to %s ...",ssid);
+      Serial.printf("Connecting to %s ...\n",ssid);
 
       // wait up to 20 seconds for connection:
       while ((WiFi.status() != WL_CONNECTED) && (millis() - started < 20000))
@@ -1989,11 +1968,11 @@ void setup()
 
       if (WiFi.status() == WL_CONNECTED)
       {
-        debugStream.writeD("WiFi connected - IP = %i.%i.%i.%i",WiFi.localIP()[0],WiFi.localIP()[1],WiFi.localIP()[2],WiFi.localIP()[3]);
+        Serial.printf("WiFi connected - IP = %i.%i.%i.%i\n",WiFi.localIP()[0],WiFi.localIP()[1],WiFi.localIP()[2],WiFi.localIP()[3]);
 
         if ( BLYNK == 1)
         {
-          debugStream.writeD("Wifi works, now try Blynk (timeout 30s)");
+          Serial.println("Wifi works, now try Blynk (timeout 30s)");
         }
 
         if (fallback == 0) {
@@ -2031,10 +2010,10 @@ void setup()
             #if DISPLAY != 0
               displayLogo(langstring_connectblynk2[0], langstring_connectblynk2[1]);
             #endif
-            debugStream.writeD("Blynk is online");
+            Serial.println("Blynk is online");
             if (fallback == 1)
             {
-              debugStream.writeD("sync all variables and write new values to eeprom");
+              Serial.println("sync all variables and write new values to eeprom");
               // Blynk.run() ;
               Blynk.syncVirtual(V4);
               Blynk.syncVirtual(V5);
@@ -2060,7 +2039,7 @@ void setup()
             }
           } else
           {
-            debugStream.writeI("No connection to Blynk");
+            Serial.println("No connection to Blynk");
             if (readSysParamsFromStorage() == 0)
             {
               #if DISPLAY != 0
@@ -2075,7 +2054,7 @@ void setup()
         #if DISPLAY != 0
           displayLogo(langstring_nowifi[0], langstring_nowifi[1]);
         #endif
-        debugStream.writeI("No WIFI");
+        Serial.println("No WIFI");
         WiFi.disconnect(true);
         delay(1000);
       }
@@ -2177,8 +2156,7 @@ void setup()
     String macaddr4 = number2string(mac[4]);
     String macaddr5 = number2string(mac[5]);
     String completemac = macaddr0 + macaddr1 + macaddr2 + macaddr3 + macaddr4 + macaddr5;
-    Serial.print("MAC-ADRESSE: ");
-    Serial.println(completemac);
+    Serial.printf("MAC-ADRESSE: %s\n", completemac.c_str());
 
   enableTimer1();
   } // else softenable == 1
@@ -2191,8 +2169,6 @@ void loop() {
   } else if (softApEnabled == 0)
   {
       looppid();
-      debugStream.handle();
-      debugVerboseOutput();
   } else if (softApEnabled == 1)
   {
     switch (softApstate)
@@ -2272,8 +2248,8 @@ void loopcalibrate()
     VL53L0X_RangingMeasurementData_t measure;  //TOF Sensor measurement
     lox.rangingTest(&measure, false); // pass in 'true' to get debug data printout!
     distance = measure.RangeMilliMeter;  //write new distence value to 'distance'
-    DEBUG_print(distance);
-    DEBUG_println("mm");
+    Serial.println(distance);
+    Serial.println("mm");
     #if DISPLAY !=0
         displayDistance(distance);
     #endif
@@ -2337,7 +2313,7 @@ void looppid()
         if (distance <= 1000)
         {
           percentage = (100.00 / (water_empty - water_full)) * (water_empty - distance); //calculate percentage of waterlevel
-          DEBUG_println(percentage);
+          Serial.println(percentage);
         }
       }
   }
@@ -2426,7 +2402,7 @@ void looppid()
     }
     if (lastmachinestatepid != machinestate)
     {
-      debugStream.writeI("new PID-Values: P=%.1f  I=%.1f  D=%.1f",startKp,startKi,0);
+      Serial.printf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n",startKp,startKi,0);
       lastmachinestatepid = machinestate;
     }
     bPID.SetTunings(startKp, startKi, 0, P_ON_M);
@@ -2443,7 +2419,7 @@ void looppid()
     aggKd = aggTv * aggKp ;
     if (lastmachinestatepid != machinestate)
     {
-      debugStream.writeI("new PID-Values: P=%.1f  I=%.1f  D=%.1f",aggKp,aggKi,aggKd);
+      Serial.printf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n",aggKp,aggKi,aggKd);
       lastmachinestatepid = machinestate;
     }
     bPID.SetTunings(aggKp, aggKi, aggKd, PonE);
@@ -2461,7 +2437,7 @@ void looppid()
     aggbKd = aggbTv * aggbKp ;
     if (lastmachinestatepid != machinestate)
     {
-      debugStream.writeI("new PID-Values: P=%.1f  I=%.1f  D=%.1f",aggbKp,aggbKi,aggbKd);
+      Serial.printf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n",aggbKp,aggbKi,aggbKd);
       lastmachinestatepid = machinestate;
     }
     bPID.SetTunings(aggbKp, aggbKi, aggbKd, PonE) ;
@@ -2478,7 +2454,7 @@ void looppid()
     // aggKd = aggTv * aggKp ;
     if (lastmachinestatepid != machinestate)
     {
-      debugStream.writeI("new PID-Values: P=%.1f  I=%.1f  D=%.1f",150,0,0);
+      Serial.printf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n",150,0,0);
       lastmachinestatepid = machinestate;
     }
     bPID.SetTunings(150, 0, 0, PonE);
@@ -2506,7 +2482,7 @@ void looppid()
 
     if (lastmachinestatepid != machinestate)
     {
-      debugStream.writeI("new PID-Values: P=%.1f  I=%.1f  D=%.1f",aggbKp,aggbKi,aggbKd);
+      Serial.printf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n",aggbKp,aggbKi,aggbKd);
       lastmachinestatepid = machinestate;
     }
     bPID.SetTunings(aggbKp, aggbKi, aggbKd, PonE) ;
@@ -2535,7 +2511,7 @@ int readSysParamsFromStorage(void)
   }
   if (addr >= 10)                                                               // all bytes "empty"?
   {                                                                             // yes...
-    debugStream.writeI("%s(): no data found", __FUNCTION__);
+    Serial.printf("%s(): no data found\n", __FUNCTION__);
     return -1;
   }
 
@@ -2543,10 +2519,10 @@ int readSysParamsFromStorage(void)
   EEPROM.get(0, dummy);
   if (isnan(dummy))                                                             // invalid floating point number?
   {                                                                             // yes...
-    debugStream.writeI("%s(): no NV data found (addr 0=%f)", __FUNCTION__, dummy);
+    Serial.printf("%s(): no NV data found (addr 0=%f)\n", __FUNCTION__, dummy);
     return -2;
   }
-  debugStream.writeI("%s(): data found", __FUNCTION__);
+  Serial.printf("%s(): data found\n", __FUNCTION__);
 
   // read stored system parameter values...
   EEPROM.get(0, aggKp);

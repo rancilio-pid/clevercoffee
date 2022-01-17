@@ -94,9 +94,6 @@ enum MACHINE {
 #define PASS "mypass"
 #define MAXWIFIRECONNECTS 5        // maximum number of reconnection attempts, use -1 to deactivate
 #define WIFICINNECTIONDELAY 10000  // delay between reconnects in ms
-#define DEBUGMETHOD 1              // 0 = none, 1 = SerialDebug, 2 = RemoteDebug
-#define MAXLOGLINES 100            // Number of log lines (>=0) stored in logbook, (-> command "loghist" in terminal window)
-                                   // if set too large the ESP will run out of memory and reboot unexpectedly
 
 // OTA
 #define OTA true                   // true = OTA activated, false = OTA deactivated
