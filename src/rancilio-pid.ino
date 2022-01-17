@@ -444,7 +444,7 @@ void createSoftAp()
       uint8_t eepromvalue = 0;
       storageSet(STO_ITEM_SOFT_AP_ENABLED_CHECK, eepromvalue, true) ;
       softApstate = 0;
-      Serial.printf("AccessPoint created with SSID %s and KEY %s and settings page http://%i.%i.%i.%i/settings\r\n", AP_WIFI_SSID, AP_WIFI_KEY, WiFi.softAPIP()[0],WiFi.softAPIP()[1],WiFi.softAPIP()[2],WiFi.softAPIP()[3]);
+      Serial.printf("AccessPoint created with SSID %s and KEY %s and OTA Flash via http://%i.%i.%i.%i/\r\n", AP_WIFI_SSID, AP_WIFI_KEY, WiFi.softAPIP()[0],WiFi.softAPIP()[1],WiFi.softAPIP()[2],WiFi.softAPIP()[3]);
       
       #if (DISPLAY != 0)
         displayMessage("AP-MODE: SSID:", String(AP_WIFI_SSID), "KEY:", String(AP_WIFI_KEY), "IP:","192.168.1.1");
@@ -705,7 +705,7 @@ boolean checkSensor(float tempInput) {
     sensorOK = false;
     if (error >= 5) // warning after 5 times error
     {
-     Serial.printf("*** WARNING: temperature sensor reading: consec_errors = %i, temp_current = %.1f", error, tempInput);
+     Serial.printf("*** WARNING: temperature sensor reading: consec_errors = %i, temp_current = %.1f\n", error, tempInput);
     }
   } else if (badCondition == false && sensorOK == false) {
     error = 0;
@@ -713,7 +713,7 @@ boolean checkSensor(float tempInput) {
   }
   if (error >= maxErrorCounter && !sensorError) {
     sensorError = true ;
-    Serial.printf("*** ERROR: temperature sensor malfunction: temp_current = %.1f",tempInput);
+    Serial.printf("*** ERROR: temperature sensor malfunction: temp_current = %.1f\n",tempInput);
   } else if (error == 0 && sensorError) {
     sensorError = false ;
   }
