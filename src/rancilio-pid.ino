@@ -2004,6 +2004,17 @@ void setup()
         {
             setEepromWriteFcn(writeSysParamsToStorage);
             setBlynkWriteFcn(writeSysParamsToBlynk);
+            if (readSysParamsFromStorage() != 0)
+              {
+                #if DISPLAY != 0
+                displayLogo("3:", "use eeprom values..");
+                #endif
+              }
+            else{
+                #if DISPLAY != 0
+                displayLogo("3:", "config defaults..");
+                #endif             
+            }
             serverSetup();
         }
 
