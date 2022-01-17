@@ -1897,7 +1897,7 @@ void setup()
         pinMode(PINBREWSWITCH, INPUT);
       #endif
       #if defined(ESP32)
-        pinMode(PINBREWSWITCH, INPUT);//
+        pinMode(PINBREWSWITCH, INPUT_PULLDOWN);;//
       #endif
     }
       #if (defined(ESP8266) && STEAMONPIN == 16)
