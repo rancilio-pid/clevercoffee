@@ -70,6 +70,7 @@ enum MachineState {
     kEmergencyStop = 80,
     kPidOffline = 90,
     kSensorError = 100,
+    keepromError = 110,
 };
 MachineState machinestate = kInit;
 int machinestatecold = 0;
@@ -1762,6 +1763,12 @@ void machinestatevoid()
     case kSensorError:
       machinestate = kSensorError ;
     break;
+
+    case keepromError:
+      machinestate = keepromError ;
+
+    break;
+
   } // switch case
 
   if (machinestate != lastmachinestate) {
@@ -2375,7 +2382,7 @@ void looppid()
         printScreen();  // refresh display
       }
   #endif
-  if (machinestate == kPidOffline || machinestate == kSensorError || machinestate == kEmergencyStop) // Offline see machinestate.h
+  if (machinestate == kPidOffline || machinestate == kSensorError || machinestate == kEmergencyStop || machinestate == keepromError) // Offline see machinestate.h
   {
     if (pidMode == 1)
     {
