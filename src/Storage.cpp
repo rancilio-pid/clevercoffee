@@ -159,7 +159,7 @@ static void setDefaults(void)
 {
   Serial.printf("%s(): %p <- %p (%u)\n", __FUNCTION__, EEPROM.getDataPtr(),
                      &itemDefaults, sizeof(itemDefaults));
-  memcpy(EEPROM.getDataPtr(), &itemDefaults, sizeof(itemDefaults));
+  //memcpy(EEPROM.getDataPtr(), &itemDefaults, sizeof(itemDefaults));
 }
 
 

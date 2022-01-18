@@ -334,5 +334,18 @@
         u8g2.setFont(u8g2_font_profont11_tf); // set font
         displayMessage(langstring_error_tsensor[0], String(Input), langstring_error_tsensor[1], "", "", ""); //DISPLAY AUSGABE
       }
+
+      /********************************************************
+       Sensor error
+      *****************************************************/
+      if (machinestate == keepromError)
+      {
+        u8g2.clearBuffer();
+        u8g2.setFont(u8g2_font_profont11_tf); // set font
+        displayMessage("EEPROM Error, please set Values","", "", "", "", ""); //DISPLAY AUSGABE
+      }
+
+
+
     }
 #endif
