@@ -27,6 +27,17 @@
                         </td>
                     </tr>
                     <tr>
+                        <td>STEAM</td>
+                        <td><span id="steam_state"></span></td>
+                        <td>
+                            <form action="/post" method="post">
+                                <input type="hidden" id="varSTEAM_MODE" name="varSTEAM_MODE"/>
+                                <input type="submit" id="steam_toggle"/></form>
+                            </form>
+                        </td>
+                    </tr>
+
+                    <tr>
                         <td>P</td><td>%VAR_SHOW_PID_KP%</td><td></td>
                     </tr>
                     <tr>
@@ -44,5 +55,11 @@
     document.getElementById("pid_state").innerText = pid_status ? "ON" : "OFF";
     document.getElementById("varPID_ON").value = pid_status ? 0 : 1;
     document.getElementById("pid_toggle").value = pid_status ? "OFF" : "ON";
+    // Steam Toggle
+    var steam_status = %VAR_SHOW_STEAM_MODE%;
+    document.getElementById("steam_state").innerText = steam_status ? "ON" : "OFF";
+    document.getElementById("varSTEAM_MODE").value = steam_status ? 0 : 1;
+    document.getElementById("steam_toggle").value = steam_status ? "OFF" : "ON";
+
 </script>
 %FOOTER%
