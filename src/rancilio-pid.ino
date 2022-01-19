@@ -347,7 +347,8 @@ std::vector<editable_t> editableVars = {
     {"AP_WIFI_SSID", "AP WiFi Name", kCString, (void *)AP_WIFI_SSID},
     {"AP_WIFI_KEY", "AP WiFi Password", kCString, (void *)AP_WIFI_KEY},
     {"START_KP", "Start P", kDouble, (void *)&startKp},
-    {"START_TN", "Start I", kDouble, (void *)&startTn}
+    {"START_TN", "Start I", kDouble, (void *)&startTn},
+    {"STEAM_MODE", "Steam mode", kInteger, (void *)&SteamON}
 };
 
 unsigned long lastTempEvent = 0;
