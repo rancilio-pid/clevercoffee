@@ -23,6 +23,7 @@ enum EditableKind {
     kDouble,
     kDoubletime,
     kCString,
+    rInteger,
 };
 
 struct editable_t {
@@ -41,10 +42,17 @@ double tTemp = 0.0;
 void serverSetup();
 void setEepromWriteFcn(int (*fcnPtr)(void));
 void setBlynkWriteFcn(int (*fcnPtr)(void));
+void setSteammodeFcn(int (*fcnPtr)(void));
 
 
 // We define these in the ino file
 extern std::vector<editable_t> editableVars;
+
+int (*setSteam)(void) = NULL;
+
+void setSteammodeFcn(int (*fcnPtr)(void)) {
+    setSteam = fcnPtr;
+}
 
 
 int (*writeToEeprom)(void) = NULL;
@@ -138,6 +146,9 @@ String getValue(String varName) {
                 break;
             case kCString:
                 return String((const char *)e.ptr);
+            case rInteger :
+                return String(*(int *)e.ptr);
+                break;  
             default:
                 return "Unknown type";
                 break;
@@ -168,7 +179,18 @@ String staticProcessor(const String& var) {
 
 void serverSetup() {
     // Send a POST request to <IP>/post with a form field message set to <message>
-    server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) {
+    server.on("/steam", HTTP_POST, [](AsyncWebServerRequest *request) 
+    {
+         setSteam();
+         Serial.println("change steammode");
+         request->redirect("/")
+     ;
+
+    });    
+
+
+    server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) 
+    {
         int params = request->params();
         String m = "Got ";
         m += params;
