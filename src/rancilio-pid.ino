@@ -2564,6 +2564,10 @@ int setSteammode(void)
    {
       Blynk.virtualWrite(V15, SteamON);
    }
+   if (MQTT == 1)
+   {       
+     mqtt_publish("SteamSetPoint", number2string(SteamSetPoint));
+   }
 
 }
 
@@ -2614,5 +2618,15 @@ int writeSysParamsToBlynk(void)
     Blynk.virtualWrite(V14, startTn);
   #endif
   }
+  if (MQTT == 1)
+  {
+    mqtt_publish("BrewSetPoint", number2string(BrewSetPoint));
+    mqtt_publish("brewtime", number2string(brewtime));
+    mqtt_publish("preinfusion", number2string(preinfusion));
+    mqtt_publish("preinfusionpause", number2string(preinfusionpause));
+    mqtt_publish("pidON", number2string(pidON));
+    mqtt_publish("SteamSetPoint", number2string(SteamSetPoint));
+  }
   return 1;
 }
+
