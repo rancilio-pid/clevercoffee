@@ -2548,18 +2548,18 @@ int readSysParamsFromStorage(void)
  ******************************************************************************/
 int setSteammode(void)
 {
-  if(SteamON == 0) 
+  switch(SteamON) 
   {
-    SteamON = 1;
-    Serial.printf("Steammode was 0, is 1 now\n");
-    return 1;
+    case 0:
+      SteamON = 1;
+      Serial.printf("Steammode was 0, is 1 now\n");
+    break;
+    case 1:
+      SteamON = 0;
+      Serial.printf("Steammode was 1, is 0 now\n");
+    break; 
   }
-  if(SteamON == 1) 
-  {
-    SteamON = 0;
-    Serial.printf("Steammode was 1, is 0 now\n");
-    return 1;
-  }
+
    if ( BLYNK == 1 && Blynk.connected())
    {
       Blynk.virtualWrite(V15, SteamON);
@@ -2568,7 +2568,7 @@ int setSteammode(void)
    {       
      mqtt_publish("SteamSetPoint", number2string(SteamSetPoint));
    }
-
+   return 1;
 }
 
 int writeSysParamsToStorage(void)
