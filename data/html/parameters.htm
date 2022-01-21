@@ -1,0 +1,75 @@
+%HEADER%
+        <div class="content-wrapper">
+            <div class="container my-5">
+
+                <div class="card card-accent-dark mb-5 shadow-sm rounded">
+                    <div class="card-body bg-light pb-1 rounded">
+                        <h5 class="card-title">
+                            PID Values
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form action="/post" method="post">
+                            %VAR_EDIT_PID_ON%
+                            %VAR_EDIT_START_KP%
+                            %VAR_EDIT_START_TN%
+                            %VAR_EDIT_PID_KP%
+                            %VAR_EDIT_PID_TN%
+                            %VAR_EDIT_PID_TV%
+                            <br>
+                            <input type="submit">
+                        </form>
+                    </div>
+                </div>
+        
+                <div class="card card-accent-dark mb-5 shadow-sm rounded">
+                    <div class="card-body bg-light pb-1 rounded">
+                        <h5 class="card-title">
+                            Brewing
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form action="/post" method="post">
+                            %VAR_EDIT_BREW_SET_POINT%
+                            %VAR_EDIT_BREW_TIME%
+                            %VAR_EDIT_BREW_PREINFUSUINPAUSE%
+                            %VAR_EDIT_BREW_PREINFUSION%
+                            <br>
+                            <input type="submit">
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card card-accent-dark mb-5 shadow-sm rounded">
+                    <div class="card-body bg-light pb-1 rounded">
+                        <h5 class="card-title">
+                            Brew Detection
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form action="/post" method="post">
+                            %VAR_EDIT_PID_BD_KP%
+                            %VAR_EDIT_PID_BD_TN%
+                            %VAR_EDIT_PID_BD_TV%
+                            %VAR_EDIT_PID_BD_TIMER%
+                            %VAR_EDIT_PID_BD_BREWBOARDER%
+                            <br>
+                            <input type="submit">
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card card-accent-dark mb-5 shadow-sm rounded">
+                    <div class="card-body bg-light pb-1 rounded">
+                        <h5 class="card-title">
+                            Load Factory Defaults
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <h5>TODO...</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+%FOOTER%
+   
