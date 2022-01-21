@@ -1,54 +1,78 @@
 %HEADER%
-        <div class="header">
-            <h1>Clever Coffee</h1>
-            <h2>Configuration and monitoring</h2>
+
+<div class="content-wrapper">
+    <div class="container my-5">
+        <div class="card card-accent-dark mb-5 shadow-sm rounded">
+            <div class="card-body bg-light pb-1 rounded">
+                <h5 class="card-title">
+                    Temperature
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="chart-temperature" class="pure-u-1-1"></div>
+                <script src="/js/temp.js"></script>
+            </div>
         </div>
 
-        <div class="content">
-            <h2 class="content-subhead">Temperature</h2>
-
-            <div id="chart-temperature" class="pure-u-1-1"></div>
-            <script src="/js/temp.js"></script>
-
-            <h2 class="content-subhead">Status</h2>
-            <table>
-                <tbody>
-                    <tr>
-                        <td>Temp</td><td>%VAR_SHOW_TEMP% C</td><td></td>
-                    </tr>
-                    <tr>
-                        <td>PID</td>
-                        <td><span id="pid_state"></span></td>
-                        <td>
-                            <form action="/post" method="post">
-                                <input type="hidden" id="varPID_ON" name="varPID_ON"/>
-                                <input type="submit" id="pid_toggle"/></form>
-                            </form>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>STEAM</td>
-                        <td><span id="steam_state"></span></td>
-                        <td>
-                            <form action="/steam" method="post">
-                                <input type="hidden" id="varSTEAM_MODE" name="varSTEAM_MODE"/>
-                                <input type="submit" id="steam_toggle"/></form>
-                            </form>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td>P</td><td>%VAR_SHOW_PID_KP%</td><td></td>
-                    </tr>
-                    <tr>
-                        <td>I</td><td>%VAR_SHOW_PID_TN%</td><td></td>
-                    </tr>
-                    <tr>
-                        <td>D</td><td>%VAR_SHOW_PID_TV%</td><td></td>
-                    </tr>
-                </tbody>
-            </table>
+        <div class="card card-accent-dark mb-5 pb-0 shadow-sm rounded">
+            <div class="card-body bg-light pb-1 rounded">
+                <h5 class="card-title">
+                    Status
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive pb-0">
+                    <table class="table table-borderless pb-0 mb-0">
+                        <tbody>
+                            <tr>
+                                <td><b>Temperature</b></td>
+                                <td>%VAR_SHOW_TEMP%° C</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td><b>PID Mode</b></td>
+                                <td><span id="pid_state"></span></td>
+                                <td>
+                                    <form action="/post" method="post">
+                                        <input type="hidden" id="varPID_ON" name="varPID_ON" />
+                                        <input type="submit" id="pid_toggle" />
+                                    </form>
+                                    </form>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>Steam Mode</b></td>
+                                <td><span id="steam_state"></span></td>
+                                <td>
+                                    <form action="/steam" method="post">
+                                        <input type="hidden" id="varSTEAM_MODE" name="varSTEAM_MODE" />
+                                        <input type="submit" id="steam_toggle" />
+                                    </form>
+                                    </form>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>P-Term</b></td>
+                                <td>%VAR_SHOW_PID_KP%</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td><b>I-Term</b></td>
+                                <td>%VAR_SHOW_PID_TN%</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td><b>D-Term</b></td>
+                                <td>%VAR_SHOW_PID_TV%</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
+    </div>
+</div>
 <script>
     // PID Toggle
     var pid_status = %VAR_SHOW_PID_ON%;
@@ -60,6 +84,5 @@
     document.getElementById("steam_state").innerText = steam_status ? "ON" : "OFF";
     document.getElementById("varSTEAM_MODE").value = steam_status ? 0 : 1;
     document.getElementById("steam_toggle").value = steam_status ? "OFF" : "ON";
-
 </script>
 %FOOTER%
