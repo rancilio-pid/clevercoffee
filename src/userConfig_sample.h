@@ -45,7 +45,7 @@ enum MACHINE {
 #define FALLBACK 1                 // 1 = fallback to values stored in eeprom, 0 = deactivated
 #define GRAFANA 1                  // 1 = grafana visualisation (access required), 0 = off (default)
 #define MQTT 1                     // 1 = MQTT enabled, 0 = MQTT disabled
-#define INFLUXDB 1                 // 1 = INFLUX enabled, 0 = INFLUX disabled
+#define INFLUXDB 0                 // 1 = INFLUX enabled, 0 = INFLUX disabled
 
 // PID & Hardware
 #define ONLYPID 1                  // 1 = Only PID, 0 = PID and preinfusion
