@@ -1,33 +1,49 @@
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <title>Rancilio PID</title>
-    <!-- <link rel="stylesheet" href="/css/pure-min.css"> -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pure/2.0.3/pure-min.css">
-    <link rel="stylesheet" href="/css/side-menu.css">
-    
+
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+
     <script src='https://cdn.plot.ly/plotly-2.8.3.min.js'></script>
 </head>
+
 <body>
 
-<div id="layout">
-    <!-- Menu toggle -->
-    <a href="#menu" id="menuLink" class="menu-link">
-        <!-- Hamburger icon -->
-        <span></span>
-    </a>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+    crossorigin="anonymous"></script>
 
-    <div id="menu">
-        <div class="pure-menu">
-            <a class="pure-menu-heading" href="#company">Rancilio PID</a>
-
-            <ul class="pure-menu-list">
-                <li class="pure-menu-item"><a href="/" class="pure-menu-link">Home</a></li>
-                <li class="pure-menu-item"><a href="/settings.htm" class="pure-menu-link">Settings</a></li>
-                <li class="pure-menu-item"><a href="/wifi.htm" class="pure-menu-link">WiFi config</a></li>
-            </ul>
-        </div>
+<div id="page-container">
+    <div id="navigation">
+        <nav class="navbar navbar-expand-xl navbar-dark bg-secondary">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="/">
+                    <img alt="Clever Coffee"
+                        src="https://clevercoffee.de/wp-content/uploads/2020/12/CleverCoffee_Logo_Menu.png"
+                        style="width:64px;">
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#navbarToggleExternalContent" aria-controls="navbarToggleExternalContent"
+                    aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarToggleExternalContent">
+                    <div class="navbar-nav">
+                        <a class="nav-item nav-link" href="/"><i class="fa fa-home" aria-hidden="true"></i> Home</a>
+                        <a class="nav-item nav-link" href="/parameters.htm"><i class="fa fa-sliders" aria-hidden="true"></i> Parameters</a>
+                        <a class="nav-item nav-link" href="/settings.htm"><i class="fa fa-wrench" aria-hidden="true"></i> Settings</a>
+                        <a class="nav-item nav-link" href="/about.htm"><i class="fa-desktop"></i> About</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
     </div>
-    <div id="main">

@@ -89,7 +89,7 @@ String generateForm(String varName) {
         if (e.templateString != varName) {
             continue;
         }
-        String result = "<label for=\"var";
+        String result = "<label class=\"form-label\" for=\"var";
         result += e.templateString;
         result += "\">";
         result += e.displayName;
@@ -98,19 +98,19 @@ String generateForm(String varName) {
         String currVal;
         switch (e.type) {
             case kDouble:
-                result += "<input type=\"number\" step=\"1\"";
+                result += "<input class=\"form-control\" type=\"number\" step=\"1\"";
                 currVal = String(*(double *)e.ptr);
                 break;
             case kDoubletime:
-                result += "<input type=\"number\" step=\"1\"";
+                result += "<input class=\"form-control\" type=\"number\" step=\"1\"";
                 currVal = String(*(double *)e.ptr/1000);
                 break;    
             case kInteger:
-                result += "<input type=\"number\" step=\"1\"";
+                result += "<input class=\"form-control\" type=\"number\" step=\"1\"";
                 currVal = String(*(int *)e.ptr);
                 break;
             default:
-                result += "<input type=\"text\"";
+                result += "<input class=\"form-control\" type=\"text\"";
                 currVal = (const char *)e.ptr;
         }
 
