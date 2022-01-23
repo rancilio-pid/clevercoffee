@@ -11,3 +11,4 @@ src/userConfig.h
 **/.DS_Store
 
 platformio.ini
+**/rancilio-pid.ino.cpp
