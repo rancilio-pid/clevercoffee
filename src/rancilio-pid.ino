@@ -161,12 +161,14 @@ unsigned int MQTTReCnctFlag;  // Blynk Reconnection Flag
 unsigned int MQTTReCnctCount = 0;  // Blynk Reconnection counter
 
 /*Influx Client*/
-#include <InfluxDbClient.h> // Influx DB Client
-InfluxDBClient client(INFLUXDB_URL, INFLUXDB_DB_NAME);
-Point sensor("machinestate");
-unsigned long previousMillisInflux;  // initialisation at the end of init()
-const unsigned long intervalInflux = INTERVALINFLUX;
+#if (INFLUXDB == 1)
+  #include <InfluxDbClient.h> // Influx DB Client
+  InfluxDBClient client(INFLUXDB_URL, INFLUXDB_DB_NAME);
+  Point sensor("machinestate");
+  const unsigned long intervalInflux = INTERVALINFLUX;
+#endif
 
+unsigned long previousMillisInflux;  // initialisation at the end of init()
 //Voltage Sensor
 unsigned long previousMillisVoltagesensorreading = millis();
 const unsigned long intervalVoltagesensor= 200 ;
@@ -841,6 +843,7 @@ void checkWifi() {
 
 
 void sendInflux(){
+  #if (INFLUXDB == 1)
   unsigned long currentMillisInflux = millis();
 
   if (currentMillisInflux - previousMillisInflux >= intervalInflux){
@@ -873,6 +876,7 @@ void sendInflux(){
       Serial.printf("InfluxDB write failed: %s\n", client.getLastErrorMessage().c_str());
     }
   }
+  #endif
 }
 
 
