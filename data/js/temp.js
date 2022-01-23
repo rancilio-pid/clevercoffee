@@ -1,5 +1,7 @@
 window.addEventListener('load', getTemperatures);
 
+const maxRange = 3600;
+
 var curTempVals = [];
 var targetTempVals = [];
 var dates = [];
@@ -111,12 +113,17 @@ function plotTemperature(jsonValue) {
     [0, 1]
   )
 
-  if (dates.length > 600) {
-    var update = {
-      'xaxis.range': [dates[dates.length - 600], dates[dates.length - 1]]
-    };
+  if (dates.length > maxRange) {
+    dates.splice(0, dates.length - maxRange);
+    curTempVals.splice(0, curTempVals.length - maxRange);
+    targetTempVals.splice(0, targetTempVals.length - maxRange);
 
-    Plotly.relayout(chartDiv, update);
+    // TODO Messes with range buttons
+    // var update = {
+    //   'xaxis.range': [dates[dates.length - 600], dates[dates.length - 1]]
+    // };
+
+    // Plotly.react(chartDiv, data, layout, config);
   }
 }
 
