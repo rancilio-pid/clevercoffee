@@ -3,8 +3,8 @@
 ******************************************************/
 
 // SYSVERSION and SYSVERSION_INO need to match, checked by preprocessor
-#define  SYSVERSION_INO '3.0.0 ALPHA'
-#define  SYSVERSION_DISPLAY "Version 3.0.0 ALPHA"  // Displayed during startup
+#define  SYSVERSION_INO '3.0.1 ALPHA'
+#define  SYSVERSION_DISPLAY "Version 3.0.1 ALPHA"  // Displayed during startup
 
 /********************************************************
   INCLUDES
@@ -85,11 +85,10 @@ int lastmachinestatepid = -1;
 int connectmode = CONNECTMODE;
 
 
-int Offlinemodus = OFFLINEMODUS;
+int Offlinemodus = 0;
 const int OnlyPID = ONLYPID;
 const int TempSensor = TEMPSENSOR;
 const int Brewdetection = BREWDETECTION;
-const int fallback = FALLBACK;
 const int triggerType = TRIGGERTYPE;
 const int VoltageSensorType = VOLTAGESENSORTYPE;
 const boolean ota = OTA;
@@ -1896,9 +1895,7 @@ void BlynkSetup()
         displayLogo(langstring_connectblynk2[0], langstring_connectblynk2[1]);
       #endif
       Serial.println("Blynk is online");
-      if (fallback == 1)
-      {
-        Serial.println("sync all variables and write new values to eeprom");
+      Serial.println("sync all variables and write new values to eeprom");
         // Blynk.run() ;
         Blynk.syncVirtual(V4);
         Blynk.syncVirtual(V5);
@@ -1921,7 +1918,6 @@ void BlynkSetup()
         // Werte in den eeprom schreiben
         // ini eeprom mit begin
         writeSysParamsToStorage();
-      }
     } else
     {
       Serial.println("No connection to Blynk");
