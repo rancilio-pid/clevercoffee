@@ -448,7 +448,7 @@ void createSoftAp()
       storageSet(STO_ITEM_SOFT_AP_ENABLED_CHECK, eepromvalue, true) ;
       softApstate = 0;
       Serial.printf("AccessPoint created with SSID %s and KEY %s and OTA Flash via http://%i.%i.%i.%i/\r\n", AP_WIFI_SSID, AP_WIFI_KEY, WiFi.softAPIP()[0],WiFi.softAPIP()[1],WiFi.softAPIP()[2],WiFi.softAPIP()[3]);
-      
+
       #if (DISPLAY != 0)
         displayMessage("AP-MODE: SSID:", String(AP_WIFI_SSID), "KEY:", String(AP_WIFI_KEY), "IP:","192.168.1.1");
       #endif
@@ -882,7 +882,7 @@ void sendInflux(){
       Serial.printf("InfluxDB write failed: %s\n", client.getLastErrorMessage().c_str());
     }
   }
- 
+
 }
 
 
@@ -975,16 +975,13 @@ void sendToBlynkMQTT()
   if (Offlinemodus == 1) return;
 
   unsigned long currentMillisBlynk = millis();
-
-  if (currentMillisBlynk - previousMillisBlynk >= intervalBlynk) {
-
-    //MQTT
-    if (MQTT == 1) {
-      checkMQTT();
-    }
-
+  unsigned long currentMillisMQTT = millis();
+  unsigned long currentMillistemp = 0;
+  if ((currentMillisBlynk - previousMillisBlynk >= intervalBlynk) && (BLYNK == 1))
+  {
     previousMillisBlynk = currentMillisBlynk;
-    if (Blynk.connected()) {
+    if (Blynk.connected())
+    {
       if (blynksendcounter == 1) {
         Blynk.virtualWrite(V2, Input);
       }
@@ -1802,7 +1799,7 @@ void debugVerboseOutput()
 }
 
 void ledtemp()
-{      
+{
   if (USELED == 1)
   {
     pinMode(LEDPIN, OUTPUT);
@@ -2017,7 +2014,7 @@ void setup()
             else{
                 #if DISPLAY != 0
                 displayLogo("3:", "config defaults..");
-                #endif             
+                #endif
             }
             serverSetup();
         }
@@ -2551,7 +2548,7 @@ int readSysParamsFromStorage(void)
  ******************************************************************************/
 int setSteammode(void)
 {
-  switch(SteamON) 
+  switch(SteamON)
   {
     case 0:
       SteamON = 1;
@@ -2560,7 +2557,7 @@ int setSteammode(void)
     case 1:
       SteamON = 0;
       Serial.printf("Steammode was 1, is 0 now\n");
-    break; 
+    break;
   }
 
    if ( BLYNK == 1 && Blynk.connected())
@@ -2568,7 +2565,7 @@ int setSteammode(void)
       Blynk.virtualWrite(V15, SteamON);
    }
    if (MQTT == 1)
-   {       
+   {
      mqtt_publish("SteamSetPoint", number2string(SteamSetPoint));
    }
    return 1;
