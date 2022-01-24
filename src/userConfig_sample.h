@@ -1,9 +1,9 @@
 /********************************************************
-  Version 3.0.0 Alpha
+  Version 3.0.1 Alpha
 
   Values must be configured by the user
 ******************************************************/
-#define SYSVERSION '3.0.0 ALPHA'
+#define SYSVERSION '3.0.1 ALPHA'
 
 /********************************************************
    Define area, do not change anything here
@@ -39,13 +39,12 @@ enum MACHINE {
 #define LANGUAGE 1                 // LANGUAGE = 0 (DE), LANGUAGE = 1 (EN), LANGUAGE = 2 (ES)
 
 // Connectivity
-#define OFFLINEMODUS 0             // 0 = Blynk and Wifi are used, 1 = offline mode (only preconfigured values in code are used!)
-#define BLYNK 1                    // 0 = no Blynk , 1 = Blynk
-#define LOCALHOST 1                // 0 = no 1 = OWN Website
-#define FALLBACK 1                 // 1 = fallback to values stored in eeprom, 0 = deactivated
-#define GRAFANA 1                  // 1 = grafana visualisation (access required), 0 = off (default)
+// Connectivity 
+#define CONNECTMODE 1              // 0 = offline 1 = WIFI-MODE 2 = AP-MODE (not working in the moment)
+#define BLYNK 1                   // 0 = no Blynk , 1 = Blynk
 #define MQTT 1                     // 1 = MQTT enabled, 0 = MQTT disabled
-#define INFLUXDB 0                 // 1 = INFLUX enabled, 0 = INFLUX disabled
+#define GRAFANA 2                  // 2= custom Grafana 1 = grafana visualisation (access required), 0 = off (default)
+#define INFLUXDB 1                 // 1 = INFLUX enabled, 0 = INFLUX disabled
 
 // PID & Hardware
 #define ONLYPID 1                  // 1 = Only PID, 0 = PID and preinfusion
