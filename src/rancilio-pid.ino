@@ -972,6 +972,7 @@ void sendToBlynkMQTT()
   unsigned long currentMillistemp = 0;
   if ((currentMillisBlynk - previousMillisBlynk >= intervalBlynk) && (BLYNK == 1))
   {
+    previousMillisBlynk = currentMillisBlynk;
     if (Blynk.connected())
     {
       if (blynksendcounter == 1) {
