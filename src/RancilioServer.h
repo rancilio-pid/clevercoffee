@@ -24,6 +24,7 @@ enum EditableKind {
     kDoubletime,
     kCString,
     rInteger,
+    rCString,
 };
 
 struct editable_t {
@@ -149,6 +150,8 @@ String getValue(String varName) {
             case rInteger :
                 return String(*(int *)e.ptr);
                 break;  
+             case rCString:
+                return String((const char *)e.ptr);    
             default:
                 return "Unknown type";
                 break;

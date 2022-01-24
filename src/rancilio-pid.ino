@@ -81,6 +81,10 @@ int lastmachinestatepid = -1;
 /********************************************************
   definitions below must be changed in the userConfig.h file
 ******************************************************/
+
+int connectmode = CONNECTMODE;
+
+
 int Offlinemodus = OFFLINEMODUS;
 const int OnlyPID = ONLYPID;
 const int TempSensor = TEMPSENSOR;
@@ -1790,7 +1794,9 @@ void debugVerboseOutput()
     Serial.printf("Tsoll=%5.1f  Tist=%5.1f Machinestate=%2i KP=%4.2f KI=%4.2f KD=%4.2f\n",BrewSetPoint,Input,machinestate,bPID.GetKp(),bPID.GetKi(),bPID.GetKd());
   }
 }
-
+/********************************************************
+  ledtemp()
+******************************************************/
 void ledtemp()
 {      
   if (USELED == 1)
@@ -1805,7 +1811,145 @@ void ledtemp()
   }
 } // endled loop
 
+/********************************************************
+   WIFISETUP
+******************************************************/
 
+void WiFiSetup()
+{
+  #if defined(ESP8266)
+    WiFi.hostname(hostname);
+  #endif
+  unsigned long started = millis();
+  #if DISPLAY != 0
+    displayLogo(langstring_connectwifi1, ssid);
+  #endif
+  /* Explicitly set the ESP8266 to be a WiFi-client, otherwise, it by default,
+    would try to act as both a client and an access-point and could cause
+    network-issues with your other WiFi-devices on your WiFi-network. */
+  WiFi.mode(WIFI_STA);
+  WiFi.persistent(false);   //needed, otherwise exceptions are triggered \o.O/
+  WiFi.begin(ssid, pass);
+  #if defined(ESP32) // ESP32
+  WiFi.setHostname(hostname); // for ESP32port
+  #endif
+  Serial.printf("Connecting to %s ...\n",ssid);
+
+  // wait up to 20 seconds for connection:
+  while ((WiFi.status() != WL_CONNECTED) && (millis() - started < 20000))
+  {
+    yield();    //Prevent Watchdog trigger
+  }
+
+  checkWifi();    //try to reconnect
+
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    Serial.printf("WiFi connected - IP = %i.%i.%i.%i\n",WiFi.localIP()[0],WiFi.localIP()[1],WiFi.localIP()[2],WiFi.localIP()[3]);
+
+    byte mac[6];
+    WiFi.macAddress(mac);
+    String macaddr0 = number2string(mac[0]);
+    String macaddr1 = number2string(mac[1]);
+    String macaddr2 = number2string(mac[2]);
+    String macaddr3 = number2string(mac[3]);
+    String macaddr4 = number2string(mac[4]);
+    String macaddr5 = number2string(mac[5]);
+    String completemac = macaddr0 + macaddr1 + macaddr2 + macaddr3 + macaddr4 + macaddr5;
+    Serial.printf("MAC-ADRESSE: %s\n", completemac.c_str());
+
+  } else // NO Wifi
+      {
+        #if DISPLAY != 0
+          displayLogo(langstring_nowifi[0], langstring_nowifi[1]);
+        #endif
+        Serial.println("No WIFI");
+        WiFi.disconnect(true);
+        delay(1000);
+
+      }
+}
+
+/********************************************************
+ * BLYNK SETUP
+******************************************************/
+
+void BlynkSetup()
+{
+  if ( BLYNK == 1)
+  {
+
+    Serial.println("Wifi works, now try Blynk (timeout 30s)");
+    Blynk.config(auth, blynkaddress, blynkport) ;
+    Blynk.connect(30000);
+
+    if (Blynk.connected() == true)
+    {
+      #if DISPLAY != 0
+        displayLogo(langstring_connectblynk2[0], langstring_connectblynk2[1]);
+      #endif
+      Serial.println("Blynk is online");
+      if (fallback == 1)
+      {
+        Serial.println("sync all variables and write new values to eeprom");
+        // Blynk.run() ;
+        Blynk.syncVirtual(V4);
+        Blynk.syncVirtual(V5);
+        Blynk.syncVirtual(V6);
+        Blynk.syncVirtual(V7);
+        Blynk.syncVirtual(V8);
+        Blynk.syncVirtual(V9);
+        Blynk.syncVirtual(V10);
+        Blynk.syncVirtual(V11);
+        Blynk.syncVirtual(V12);
+        Blynk.syncVirtual(V13);
+        Blynk.syncVirtual(V14);
+        Blynk.syncVirtual(V15);
+        Blynk.syncVirtual(V30);
+        Blynk.syncVirtual(V31);
+        Blynk.syncVirtual(V32);
+        Blynk.syncVirtual(V33);
+        Blynk.syncVirtual(V34);
+        // Blynk.syncAll();  //sync all values from Blynk server
+        // Werte in den eeprom schreiben
+        // ini eeprom mit begin
+        writeSysParamsToStorage();
+      }
+    } else
+    {
+      Serial.println("No connection to Blynk");
+      if (readSysParamsFromStorage() == 0)
+      {
+        #if DISPLAY != 0
+        displayLogo("3: Blynk not connected", "use eeprom values..");
+        #endif
+      }
+    }
+  }
+
+}
+/********************************************************
+  OWN Webside
+******************************************************/
+void WebsiteSetup()
+{
+    setEepromWriteFcn(writeSysParamsToStorage);
+    setBlynkWriteFcn(writeSysParamsToBlynk);
+    setSteammodeFcn(setSteammode);
+    if (readSysParamsFromStorage() != 0)
+    {
+      #if DISPLAY != 0
+      displayLogo("3:", "use eeprom values..");
+      #endif
+    }
+    else
+    {
+      #if DISPLAY != 0
+      displayLogo("3:", "config defaults..");
+      #endif             
+    }
+    serverSetup();
+}
 
 void setup()
 {
@@ -1817,6 +1961,9 @@ void setup()
 
   // Check AP Mode
   checklastpoweroff();
+
+
+
 
   if (softApEnabled == 1)
   {
@@ -1835,15 +1982,7 @@ void setup()
 
   } else if(softApEnabled == 0)
   {
-    if (MQTT == 1) {
-      //MQTT
-      snprintf(topic_will, sizeof(topic_will), "%s%s/%s", mqtt_topic_prefix, hostname, "will");
-      snprintf(topic_set, sizeof(topic_set), "%s%s/+/%s", mqtt_topic_prefix, hostname, "set");
-      mqtt.setServer(mqtt_server_ip, mqtt_server_port);
-      mqtt.setCallback(mqtt_callback);
-      checkMQTT();
-    }
-
+   
     /********************************************************
       Define trigger type
     ******************************************************/
@@ -1942,150 +2081,33 @@ void setup()
     /********************************************************
        BLYNK & Fallback offline
     ******************************************************/
-    if (Offlinemodus == 0)
+    if (connectmode == 1) // WIFI MODE
     {
-      #if defined(ESP8266)
-        WiFi.hostname(hostname);
-      #endif
-      unsigned long started = millis();
-      #if DISPLAY != 0
-        displayLogo(langstring_connectwifi1, ssid);
-      #endif
-      /* Explicitly set the ESP8266 to be a WiFi-client, otherwise, it by default,
-        would try to act as both a client and an access-point and could cause
-        network-issues with your other WiFi-devices on your WiFi-network. */
-      WiFi.mode(WIFI_STA);
-      WiFi.persistent(false);   //needed, otherwise exceptions are triggered \o.O/
-      WiFi.begin(ssid, pass);
-      #if defined(ESP32) // ESP32
-      WiFi.setHostname(hostname); // for ESP32port
-      #endif
-      Serial.printf("Connecting to %s ...\n",ssid);
-
-      // wait up to 20 seconds for connection:
-      while ((WiFi.status() != WL_CONNECTED) && (millis() - started < 20000))
+       WiFiSetup();
+       BlynkSetup(); 
+       WebsiteSetup();
+       
+      /********************************************************
+         OTA
+      ******************************************************/
+      if (ota && WiFi.status() == WL_CONNECTED) 
       {
-        yield();    //Prevent Watchdog trigger
+        ArduinoOTA.setHostname(OTAhost);  //  Device name for OTA
+        ArduinoOTA.setPassword(OTApass);  //  Password for OTA
+        ArduinoOTA.begin();
       }
 
-      checkWifi();    //try to reconnect
-
-      if (WiFi.status() == WL_CONNECTED)
-      {
-        Serial.printf("WiFi connected - IP = %i.%i.%i.%i\n",WiFi.localIP()[0],WiFi.localIP()[1],WiFi.localIP()[2],WiFi.localIP()[3]);
-
-        if ( BLYNK == 1)
-        {
-          Serial.println("Wifi works, now try Blynk (timeout 30s)");
-        }
-
-        if (fallback == 0) {
-          #if DISPLAY != 0
-            displayLogo(langstring_connectblynk1[0], langstring_connectblynk1[1]);
-          #endif
-        } else if (fallback == 1) {
-          #if DISPLAY != 0
-            displayLogo(langstring_connectwifi2[0], langstring_connectwifi2[1]);
-          #endif
-        }
-
-
-        /********************************************************
-        OWN Webside
-        ******************************************************/
-        if (LOCALHOST == 1)
-        {
-            setEepromWriteFcn(writeSysParamsToStorage);
-            setBlynkWriteFcn(writeSysParamsToBlynk);
-            setSteammodeFcn(setSteammode);
-            if (readSysParamsFromStorage() != 0)
-              {
-                #if DISPLAY != 0
-                displayLogo("3:", "use eeprom values..");
-                #endif
-              }
-            else{
-                #if DISPLAY != 0
-                displayLogo("3:", "config defaults..");
-                #endif             
-            }
-            serverSetup();
-        }
-
-        /******************************************************/
-        delay(1000);
-
-        //try blynk connection
-        if ( BLYNK == 1)
-        {
-          Blynk.config(auth, blynkaddress, blynkport) ;
-          Blynk.connect(30000);
-
-          if (Blynk.connected() == true)
-          {
-            #if DISPLAY != 0
-              displayLogo(langstring_connectblynk2[0], langstring_connectblynk2[1]);
-            #endif
-            Serial.println("Blynk is online");
-            if (fallback == 1)
-            {
-              Serial.println("sync all variables and write new values to eeprom");
-              // Blynk.run() ;
-              Blynk.syncVirtual(V4);
-              Blynk.syncVirtual(V5);
-              Blynk.syncVirtual(V6);
-              Blynk.syncVirtual(V7);
-              Blynk.syncVirtual(V8);
-              Blynk.syncVirtual(V9);
-              Blynk.syncVirtual(V10);
-              Blynk.syncVirtual(V11);
-              Blynk.syncVirtual(V12);
-              Blynk.syncVirtual(V13);
-              Blynk.syncVirtual(V14);
-              Blynk.syncVirtual(V15);
-              Blynk.syncVirtual(V30);
-              Blynk.syncVirtual(V31);
-              Blynk.syncVirtual(V32);
-              Blynk.syncVirtual(V33);
-              Blynk.syncVirtual(V34);
-              // Blynk.syncAll();  //sync all values from Blynk server
-              // Werte in den eeprom schreiben
-              // ini eeprom mit begin
-              writeSysParamsToStorage();
-            }
-          } else
-          {
-            Serial.println("No connection to Blynk");
-            if (readSysParamsFromStorage() == 0)
-            {
-              #if DISPLAY != 0
-              displayLogo("3: Blynk not connected", "use eeprom values..");
-              #endif
-            }
-          }
-        }
-      }
-      else // NO Wifi
-      {
-        #if DISPLAY != 0
-          displayLogo(langstring_nowifi[0], langstring_nowifi[1]);
-        #endif
-        Serial.println("No WIFI");
-        WiFi.disconnect(true);
-        delay(1000);
-      }
+       if (MQTT == 1) {
+      //MQTT
+      snprintf(topic_will, sizeof(topic_will), "%s%s/%s", mqtt_topic_prefix, hostname, "will");
+      snprintf(topic_set, sizeof(topic_set), "%s%s/+/%s", mqtt_topic_prefix, hostname, "set");
+      mqtt.setServer(mqtt_server_ip, mqtt_server_port);
+      mqtt.setCallback(mqtt_callback);
+      checkMQTT();
     }
 
 
-    /********************************************************
-       OTA
-    ******************************************************/
-    if (ota && Offlinemodus == 0 && WiFi.status() == WL_CONNECTED) {
-      ArduinoOTA.setHostname(OTAhost);  //  Device name for OTA
-      ArduinoOTA.setPassword(OTApass);  //  Password for OTA
-      ArduinoOTA.begin();
-    }
-
+    } 
 
     /********************************************************
        Ini PID
@@ -2163,16 +2185,7 @@ void setup()
     #endif
     setupDone = true;
 
-    byte mac[6];
-    WiFi.macAddress(mac);
-    String macaddr0 = number2string(mac[0]);
-    String macaddr1 = number2string(mac[1]);
-    String macaddr2 = number2string(mac[2]);
-    String macaddr3 = number2string(mac[3]);
-    String macaddr4 = number2string(mac[4]);
-    String macaddr5 = number2string(mac[5]);
-    String completemac = macaddr0 + macaddr1 + macaddr2 + macaddr3 + macaddr4 + macaddr5;
-    Serial.printf("MAC-ADRESSE: %s\n", completemac.c_str());
+  
 
   enableTimer1();
   } // else softenable == 1
