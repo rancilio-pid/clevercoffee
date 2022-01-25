@@ -37,6 +37,8 @@ enum MACHINE {
 #define OFFLINEGLOGO 1             // 0 = deactivated, 1 = activated
 #define BREWSWITCHDELAY 3000       // time in ms
 #define LANGUAGE 1                 // LANGUAGE = 0 (DE), LANGUAGE = 1 (EN), LANGUAGE = 2 (ES)
+#define SCREEN_WIDTH 128           // OLED display width, in pixels
+#define SCREEN_HEIGHT 64           // OLED display height, in pixels
 
 // Connectivity
 // Connectivity 
@@ -138,25 +140,6 @@ enum MACHINE {
 #define FILLTIME 3000              // time in ms the pump is running
 #define FLUSHTIME 6000             // time in ms the 3-way valve is open -> backflush
 #define MAXFLUSHCYCLES 5           // number of cycles the backflush should run, 0 = disabled
-
-// Pin Layout
-#define ONE_WIRE_BUS 2             // Temp sensor pin
-#define PINBREWSWITCH 0            // 0: A0 (ESP8266) ; >0 : DIGITAL PIN, ESP32 OR ESP8266: ONLY USE PIN15 AND PIN16!
-#define PINPRESSURESENSOR 99       // Pressuresensor 0: A0 (ESP8266), >0 ONLY ESP32
-#define pinRelayVentil 12          // Output pin for 3-way-valve
-#define pinRelayPumpe 13           // Output pin for pump
-#define pinRelayHeater 14          // Output pin for heater
-#define PINVOLTAGESENSOR  15       //Input pin for volatage sensor
-//#define OLED_RESET 16            // Output pin for dispaly reset pin
-#define PINETRIGGER 16             // PIN for E-Trigger relay
-#define STEAMONPIN 17              // STEAM active
-#define LEDPIN    18               // LED PIN ON near setpoint 
-#define OLED_SCL 5                 // Output pin for dispaly clock pin
-#define OLED_SDA 4                 // Output pin for dispaly data pin
-#define HXDATPIN 99                // weight scale PIN
-#define HXCLKPIN 99                // weight scale PIN
-#define SCREEN_WIDTH 128           // OLED display width, in pixels
-#define SCREEN_HEIGHT 64           // OLED display height, in pixels
 
 // Historic (no settings)
 #define PONE 1                     // 1 = P_ON_E (default), 0 = P_ON_M (special PID mode, other PID-parameter are needed)
