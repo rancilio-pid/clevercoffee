@@ -2079,9 +2079,9 @@ void setup()
     ******************************************************/
     if (connectmode == 1) // WIFI MODE
     {
+       WebsiteSetup();
        WiFiSetup();
        BlynkSetup(); 
-       WebsiteSetup();
        
       /********************************************************
          OTA
