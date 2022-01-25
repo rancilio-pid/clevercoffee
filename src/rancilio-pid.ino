@@ -11,6 +11,7 @@
 ******************************************************/
 #include <ArduinoOTA.h>
 #include "hardware.h"
+#include "defaults.h"
 #include "userConfig.h" // needs to be configured by the user
 #include <U8g2lib.h>
 #include "PID_v1.h" //for PID calculation
