@@ -490,12 +490,11 @@ void setchecklastpoweroff()
 {
   if (millis() > checkpowerofftime && checklastpoweroffEnabled == false)
   {
-    disableTimer1();
     Serial.printf("Set softApEnabled 0 after checkpowerofftime\n");
     uint8_t eepromvalue = 0;
     storageSet(STO_ITEM_SOFT_AP_ENABLED_CHECK, eepromvalue, true) ;
     checklastpoweroffEnabled = true;
-    enableTimer1();
+    storageCommit();
   }
 }
 
@@ -1374,6 +1373,14 @@ void machinestatevoid()
         machinestate = kColdStart;
         Serial.println(Input);
         Serial.println(machinestate);
+        // some user have 100 % Output in kInit / Koldstart, reset PID 
+        pidMode = 0;
+        bPID.SetMode(pidMode);
+        Output = 0 ;
+        digitalWrite(pinRelayHeater, LOW); //Stop heating
+        // start PID
+        pidMode = 1;
+        bPID.SetMode(pidMode);
       }
 
       if (pidON == 0)
