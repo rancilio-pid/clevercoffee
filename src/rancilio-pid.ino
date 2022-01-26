@@ -2087,8 +2087,10 @@ void setup()
     ******************************************************/
     if (connectmode == 1) // WIFI MODE
     {
-       WebsiteSetup();
+       
        WiFiSetup();
+       WebsiteSetup();
+
        BlynkSetup(); 
        
       /********************************************************
