@@ -1003,8 +1003,7 @@ void sendToBlynkMQTT()
       if (grafana == 1 && blynksendcounter >= 6) {
         // Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint );
         Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint, heatrateaverage);
-        blynksendcounter = 0;
-      } else if (grafana == 0 && blynksendcounter >= 5) {
+      } else if (blynksendcounter >= 6) {
         blynksendcounter = 0;
       }
       blynksendcounter++;
@@ -1018,6 +1017,8 @@ void sendToBlynkMQTT()
               {
                 mqtt_publish("temperature", number2string(Input));
                 mqtt_publish("setPoint", number2string(setPoint));
+                mqtt_publish("BrewSetPoint", number2string(BrewSetPoint));
+                mqtt_publish("SteamSetPoint", number2string(SteamSetPoint));
                 mqtt_publish("HeaterPower", number2string(Output));
                 mqtt_publish("Kp", number2string(bPID.GetKp()));
                 mqtt_publish("Ki", number2string(bPID.GetKi()));
@@ -2180,6 +2181,7 @@ void setup()
     previousMillisInflux = currentTime;
     previousMillisETrigger = currentTime;
     previousMillisVoltagesensorreading = currentTime;
+    lastMQTTConnectionAttempt = currentTime;
     #if (BREWMODE ==  2)
     previousMillisScale = currentTime;
     #endif
