@@ -51,6 +51,7 @@ enum MACHINE {
 #define INFLUXDB 1                 // 1 = INFLUX enabled, 0 = INFLUX disabled
 
 // PID & Hardware
+#define TEMPSENSOR 2               // 1=DS18B20, 2=TSIC306, 9=analogREAD
 #define ONLYPID 1                  // 1 = Only PID, 0 = PID and preinfusion
 #define ONLYPIDSCALE 0             // 0 = off , 1= OnlyPID with Scale
 #define BREWMODE 1                 // 1 = NORMAL preinfusion ; 2 = Scale with weight
@@ -153,7 +154,8 @@ enum MACHINE {
 #define PINETRIGGER 16             // PIN for E-Trigger relay
 #define PINBREWSWITCH 0            // 0: A0 (ESP8266) ; >0 : DIGITAL PIN, ESP32 OR ESP8266: ONLY USE PIN15 AND PIN16!
 #define PINSTEAMSWITCH 17          // STEAM active
-#define LEDPIN    18               // LED PIN ON near setpoint 
+#define LEDPIN    18               // LED PIN ON near setpoint
+#define PINTEMPPOTI A0             // Potentiometer to mock real temperature readings
 #define OLED_SCL 5                 // Output pin for dispaly clock pin
 #define OLED_SDA 4                 // Output pin for dispaly data pin
 #define HXDATPIN 99                // weight scale PIN
@@ -161,9 +163,9 @@ enum MACHINE {
 #define SCREEN_WIDTH 128           // OLED display width, in pixels
 #define SCREEN_HEIGHT 64           // OLED display height, in pixels
 
+
 // Historic (no settings)
 #define PONE 1                     // 1 = P_ON_E (default), 0 = P_ON_M (special PID mode, other PID-parameter are needed)
-#define TEMPSENSOR 2               // 2 = TSIC306 1=DS18B20
 
 // Check BrewSwitch
 #if (defined(ESP8266) && ((PINBREWSWITCH != 15 && PINBREWSWITCH != 0 && PINBREWSWITCH != 16 )))

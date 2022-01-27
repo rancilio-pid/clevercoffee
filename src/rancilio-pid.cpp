@@ -92,7 +92,6 @@ int connectmode = CONNECTMODE;
 
 int Offlinemodus = 0;
 const int OnlyPID = ONLYPID;
-const int TempSensor = TEMPSENSOR;
 const int Brewdetection = BREWDETECTION;
 const int triggerType = TRIGGERTYPE;
 const int VoltageSensorType = VOLTAGESENSORTYPE;
@@ -254,9 +253,14 @@ int maxErrorCounter = 10;  // depends on intervaltempmes* , define max seconds f
 
 // PID controller
 unsigned long previousMillistemp;  // initialisation at the end of init()
-const unsigned long intervaltempmestsic = 400;
-const unsigned long intervaltempmesds18b20 = 400;
-int pidMode = 1;  // 1 = Automatic, 0 = Manual
+const unsigned long intervaltempmes {
+#if (TEMPSENSOR == 1) || (TEMPSENSOR ==2) //tsic or 18b20
+  400
+#elif TEMPSENSOR == 9   //mock, discrimination mostly for demonstration purpose
+  400
+#endif
+};
+int pidMode = 1; //1 = Automatic, 0 = Manual
 
 const unsigned int windowSize = 1000;
 unsigned int isrCounter = 0;  // counter for ISR
@@ -302,9 +306,6 @@ DallasTemperature sensors(&oneWire);    // Pass our oneWire reference to Dallas 
 DeviceAddress sensorDeviceAddress;      // arrays to hold device address
 
 // TSIC 306 temp sensor
-uint16_t temperature = 0;   // internal variable used to read temeprature
-float Temperature_C = 0;    // internal variable that holds the converted temperature in °C
-
 #if (ONE_WIRE_BUS == 16 && TEMPSENSOR == 2 && defined(ESP8266))
     TSIC Sensor1(ONE_WIRE_BUS);  // only Signalpin, VCCpin unused by default
 #else
@@ -654,9 +655,7 @@ void movAvg() {
             readingchangerate[thisReading] = 0;
         }
 
-        firstreading = 0;
     }
-
     readingstime[readIndex] = millis();
     readingstemp[readIndex] = Input;
 
@@ -732,59 +731,58 @@ boolean checkSensor(float tempInput) {
  *      If the value is not valid, new data is not stored.
  */
 void refreshTemp() {
-  unsigned long currentMillistemp = millis();
-  previousInput = Input;
+    unsigned long currentMillistemp = millis();
+    previousInput = Input ;
 
-    if (TempSensor == 1) {
-        if (currentMillistemp - previousMillistemp >= intervaltempmesds18b20) {
-            previousMillistemp = currentMillistemp;
-            sensors.requestTemperatures();
-
-            if (!checkSensor(sensors.getTempCByIndex(0)) && firstreading == 0)
-                return; // if sensor data is not valid, abort function; Sensor must
-                        // be read at least one time at system startup
-
-            Input = sensors.getTempCByIndex(0);
-
-            if (Brewdetection != 0) {
-                movAvg();
-            } else if (firstreading != 0) {
-                firstreading = 0;
-            }
-        }
+    if (!firstreading && currentMillistemp - previousMillistemp < intervaltempmes) {
+        return;
+    } else {
+        previousMillistemp = currentMillistemp;
     }
 
-    if (TempSensor == 2) {
-        if (currentMillistemp - previousMillistemp >= intervaltempmestsic) {
-            previousMillistemp = currentMillistemp;
+    /*
+     * variable "temperature" must be set to zero, before reading new data
+     * getTemperature only updates if data is valid, otherwise "temperature" will still hold old values
+     */
+    uint16_t temperature = 0;
+    float Temperature_C = 0.;
 
-            /* variable "temperature" must be set to zero, before reading new
-            * data getTemperature only updates if data is valid, otherwise
-            * "temperature" will still hold old values
-            */
-            temperature = 0;
+    #if TEMPSENSOR == 1
+        sensors.requestTemperatures();
+        Temperature_C = sensors.getTempCByIndex(0));
 
+    #elif TEMPSENSOR == 2
         #if (ONE_WIRE_BUS == 16 && defined(ESP8266))
             Sensor1.getTemperature(&temperature);
             Temperature_C = Sensor1.calc_Celsius(&temperature);
         #endif
-
         #if ((ONE_WIRE_BUS != 16 && defined(ESP8266)) || defined(ESP32))
             Temperature_C = Sensor2.getTemp();
+    #endif
+
+    #elif TEMPSENSOR == 9
+        /*
+         * Mock a meaningful temperature by digitizing an analog voltage (read from PINTEMPPOTI)
+         * With 10 bit resolution, we mimick temperatures within degree range [50, 152.3]
+         */
+        temperature = analogRead(PINTEMPPOTI);
+        #ifdef ESP32
+            temperature << 2; //12bit -> 10 bit
         #endif
+        Temperature_C = 50. + temperature/10.;
+    #endif
 
-        if (!checkSensor(Temperature_C) && firstreading == 0)
-            return; // if sensor data is not valid, abort function; Sensor must
-                    // be read at least one time at system startup
+    if (!checkSensor(Temperature_C) && firstreading == 0) {
+        return;  //if sensor data is not valid, abort function; Sensor must be read at least one time at system startup
+    } else {
+        Input = Temperature_C;
+    }
 
-            Input = Temperature_C;
-
-            if (Brewdetection != 0) {
-                movAvg();
-            } else if (firstreading != 0) {
-                firstreading = 0;
-            }
-        }
+    if (Brewdetection != 0) {
+        movAvg();
+    }
+    if (firstreading != 0) {
+        firstreading = 0;
     }
 }
 
@@ -2024,41 +2022,20 @@ void setup() {
         bPID.SetOutputLimits(0, windowSize);
         bPID.SetMode(AUTOMATIC);
 
+
         // Temp sensor
-        if (TempSensor == 1) {
+        #if TEMPSENSOR == 1
             sensors.begin();
             sensors.getAddress(sensorDeviceAddress, 0);
-            sensors.setResolution(sensorDeviceAddress, 10);
-            sensors.requestTemperatures();
-            Input = sensors.getTempCByIndex(0);
-        }
+            sensors.setResolution(sensorDeviceAddress, 10) ;
+        #endif
+        refreshTemp();
 
-        if (TempSensor == 2) {
-            temperature = 0;
-
-            #if (ONE_WIRE_BUS == 16 && defined(ESP8266))
-                Sensor1.getTemperature(&temperature);
-                Input = Sensor1.calc_Celsius(&temperature);
-            #endif
-
-            #if ((ONE_WIRE_BUS != 16 && defined(ESP8266)) || defined(ESP32))
-                Input = Sensor2.getTemp();
-            #endif
-        }
-
-        // moving average ini array
-        if (Brewdetection == 1) {
-            for (int thisReading = 0; thisReading < numReadings; thisReading++) {
-                readingstemp[thisReading] = 0;
-                readingstime[thisReading] = 0;
-                readingchangerate[thisReading] = 0;
-            }
-        }
 
         // Initialisation MUST be at the very end of the init(), otherwise the
         // time comparision in loop() will have a big offset
         unsigned long currentTime = millis();
-        previousMillistemp = currentTime;
+        previousMillistemp = currentTime; //not needed (cf refreshTemp), but done for consistency
         windowStartTime = currentTime;
         previousMillisDisplay = currentTime;
         previousMillisBlynk = currentTime;
