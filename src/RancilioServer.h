@@ -44,7 +44,7 @@ void serverSetup();
 void setEepromWriteFcn(int (*fcnPtr)(void));
 void setBlynkWriteFcn(int (*fcnPtr)(void));
 void setSteammodeFcn(int (*fcnPtr)(void));
-
+void setMQTTWriteFcn(int (*fcnPtr)(void));
 
 // We define these in the ino file
 extern std::vector<editable_t> editableVars;
@@ -54,12 +54,16 @@ int (*setSteam)(void) = NULL;
 void setSteammodeFcn(int (*fcnPtr)(void)) {
     setSteam = fcnPtr;
 }
-
-
 int (*writeToEeprom)(void) = NULL;
 
 void setEepromWriteFcn(int (*fcnPtr)(void)) {
     writeToEeprom = fcnPtr;
+}
+
+int (*writeToMQTT)(void) = NULL;
+
+void setMQTTWriteFcn(int (*fcnPtr)(void)) {
+    writeToMQTT = fcnPtr;
 }
 
 int (*writeToBlynk)(void) = NULL;
@@ -243,8 +247,9 @@ void serverSetup() {
                 Serial.println("EEPROM write failed");
             }
         }
-        // Write to Blynk
+        // Write to Blynk & MQTT
         writeToBlynk();
+        writeToMQTT();
     });
 
     SPIFFS.begin();
