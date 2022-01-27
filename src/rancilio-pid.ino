@@ -1230,6 +1230,7 @@ void mqtt_callback(char* topic, byte* data, unsigned int length)
     mqtt_publish("BrewSetPoint", number2string(BrewSetPoint));
     //if (Blynk.connected()) { Blynk.virtualWrite(V7, String(data_double));}
     BrewSetPoint = data_double;
+    writeSysParamsToBlynk();
     return;
   }
   if (strcmp(configVar, "brewtime") == 0) 
@@ -1238,6 +1239,7 @@ void mqtt_callback(char* topic, byte* data, unsigned int length)
     //if (Blynk.connected()) { Blynk.virtualWrite(V8, String(data_double));}
     mqtt_publish("brewtime", number2string(brewtime));
     brewtime = data_double ;
+    writeSysParamsToBlynk();
     return;
   }
   if (strcmp(configVar, "preinfusion") == 0) 
@@ -1246,6 +1248,7 @@ void mqtt_callback(char* topic, byte* data, unsigned int length)
     //if (Blynk.connected()) { Blynk.virtualWrite(V9, String(data_double));}
     mqtt_publish("preinfusion", number2string(preinfusion));
     preinfusion = data_double;
+    writeSysParamsToBlynk();
     return;
   }
   if (strcmp(configVar, "preinfusionpause") == 0) 
@@ -1254,6 +1257,7 @@ void mqtt_callback(char* topic, byte* data, unsigned int length)
     //if (Blynk.connected()) { Blynk.virtualWrite(V10, String(data_double));}
     mqtt_publish("preinfusionpause", number2string(preinfusionpause));
     preinfusionpause = data_double ;
+    writeSysParamsToBlynk();
     return;
   }
     if (strcmp(configVar, "pidON") == 0) 
@@ -1262,6 +1266,7 @@ void mqtt_callback(char* topic, byte* data, unsigned int length)
     //if (Blynk.connected())  { Blynk.virtualWrite(V13,String(data_double));}
     mqtt_publish("pidON", number2string(pidON));
     pidON = data_double ;
+    writeSysParamsToBlynk();
     return;
   }
   if (strcmp(configVar, "aggKp") == 0) {
@@ -1269,10 +1274,9 @@ void mqtt_callback(char* topic, byte* data, unsigned int length)
     //if (Blynk.connected())  { Blynk.virtualWrite(V13,String(data_double));}
     mqtt_publish("aggKp", number2string(aggKp));
     aggKp = data_double ;
+    writeSysParamsToBlynk();
     return;
   }
-// Sync to Blynk:
-writeSysParamsToBlynk();
 }
 /*******************************************************
   Trigger for E-Silvia
