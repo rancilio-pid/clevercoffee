@@ -39,10 +39,10 @@ typedef enum
   STO_ITEM_WIFI_SSID,                                                           // Wifi SSID
   STO_ITEM_WIFI_PASSWORD,                                                       // Wifi password
 
-  // WHEN ADDING NEW DEFINES FOLLOWING HAS TO BE UPDATED:
-  // - storage structure:   sto_data_t
-  // - item default values: itemDefaults
-  // - item addresses:      getItemAddr()'
+  // WHEN ADDING NEW ITEMS FOLLOWING HAS TO BE UPDATED:
+  // - storage structure:  sto_data_t
+  // - item default value: itemDefaults
+  // - item address/size:  getItemAddr()
 
   STO_ITEM__LAST_ENUM                                                           // must be the last one!
 }sto_item_id_t;
@@ -56,6 +56,7 @@ typedef enum
 
 int storageSetup(void);
 int storageCommit(void);
+int storageFactoryReset(void);
 
 int storageGet(sto_item_id_t itemId, float& itemValue);
 int storageGet(sto_item_id_t itemId, double& itemValue);
