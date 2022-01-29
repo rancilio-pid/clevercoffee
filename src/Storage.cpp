@@ -13,6 +13,8 @@
  * DEFINES
  ******************************************************************************/
 
+#define STRUCT_MEMBER_SIZE(Type, Member) sizeof(((Type *)0)->Member)
+
 
 
 /******************************************************************************
@@ -22,27 +24,40 @@
 // storage data structure
 typedef struct __attribute__((packed))
 {
-// any fill bytes ensure the compatibility to current EEPROM usage!
-// All fill bytes will be removed as soon as a structure version is implemented.
-  double pidKpRegular;           uint8_t fill1[2];
-  double pidTnRegular;           uint8_t fill2[2];
-  double pidTvRegular;           uint8_t fill3[2];
-  double brewSetpoint;           uint8_t fill4[2];
-  double brewTimeMs;             uint8_t fill5[2];
-  double preInfusionTimeMs;      uint8_t fill6[2];
-  double preInfusionPauseMs;     uint8_t fill7[2];
-  double reserved1;              uint8_t fill8[2];
-  double reserved2;              uint8_t fill9[2];
-  double pidKpBd;                uint8_t fill10[2];
-  double pidTnBd;                uint8_t fill11[2];
-  double pidTvBd;                uint8_t fill12[2];
-  double brewSwTimerSec;         uint8_t fill13[2];
-  double brewDetectionThreshold; uint8_t fill14[2];
-  double pidKpStart;             uint8_t fill15[2];
-  uint8_t softApEnabledCheck;    uint8_t fill16[9];
-  double pidTnStart;             uint8_t fill17[2];
-  char wifiSSID[25+1];
-  char wifiPassword[25+1];
+// Any 'freeToUse' areas ensure the compatibility to origin EEPROM layout and
+// can be used by new value.
+  double  pidKpRegular;
+  uint8_t reserved1[2];
+  double  pidTnRegular;
+  uint8_t freeToUse1[2];
+  double  pidTvRegular;
+  uint8_t freeToUse2[2];
+  double  brewSetpoint;
+  uint8_t freeToUse3[2];
+  double  brewTimeMs;
+  uint8_t freeToUse4[2];
+  double  preInfusionTimeMs;
+  uint8_t freeToUse5[2];
+  double  preInfusionPauseMs;
+  uint8_t freeToUse6[22];
+  double  pidKpBd;
+  uint8_t freeToUse7[2];
+  double  pidTnBd;
+  uint8_t freeToUse8[2];
+  double  pidTvBd;
+  uint8_t freeToUse9[2];
+  double  brewSwTimerSec;
+  uint8_t freeToUse10[2];
+  double  brewDetectionThreshold;
+  uint8_t freeToUse11[2];
+  double  pidKpStart;
+  uint8_t freeToUse12[2];
+  uint8_t softApEnabledCheck;
+  uint8_t freeToUse13[9];
+  double  pidTnStart;
+  uint8_t freeToUse14[2];
+  char    wifiSSID[25+1];
+  char    wifiPassword[25+1];
 }sto_data_t;
 
 
@@ -54,104 +69,192 @@ typedef struct __attribute__((packed))
 // item defaults
 static const sto_data_t itemDefaults PROGMEM =
 {
-  AGGKP,              {0xFF, 0xFF},                                             // STO_ITEM_PID_KP_REGULAR
-  AGGTN,              {0xFF, 0xFF},                                             // STO_ITEM_PID_TN_REGULAR
-  AGGTV,              {0xFF, 0xFF},                                             // STO_ITEM_PID_TV_REGULAR
-  SETPOINT,           {0xFF, 0xFF},                                             // STO_ITEM_BREW_SETPOINT
-  25,                 {0xFF, 0xFF},                                             // STO_ITEM_BREW_TIME
-  2,                  {0xFF, 0xFF},                                             // STO_ITEM_PRE_INFUSION_TIME
-  5,                  {0xFF, 0xFF},                                             // STO_ITEM_PRE_INFUSION_PAUSE
-  0,                  {0xFF, 0xFF},                                             // reserved
-  0,                  {0xFF, 0xFF},                                             // reserved
-  AGGBKP,             {0xFF, 0xFF},                                             // STO_ITEM_PID_KP_BD
-  AGGBTN,             {0xFF, 0xFF},                                             // STO_ITEM_PID_TN_BD
-  AGGBTV,             {0xFF, 0xFF},                                             // STO_ITEM_PID_TV_BD
-  45,                 {0xFF, 0xFF},                                             // STO_ITEM_BREW_SW_TIMER
-  BREWDETECTIONLIMIT, {0xFF, 0xFF},                                             // STO_ITEM_BD_THRESHOLD
-  STARTKP,            {0xFF, 0xFF},                                             // STO_ITEM_PID_KP_START
-  0,                  {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},   // STO_ITEM_SOFT_AP_ENABLED_CHECK
-  STARTTN,            {0xFF, 0xFF},                                             // STO_ITEM_PID_TN_START
+  AGGKP,                                                                        // STO_ITEM_PID_KP_REGULAR
+  {0xFF, 0xFF},          // reserved (maybe for structure version)
+  AGGTN,                                                                        // STO_ITEM_PID_TN_REGULAR
+  {0xFF, 0xFF},          // free to use
+  AGGTV,                                                                        // STO_ITEM_PID_TV_REGULAR
+  {0xFF, 0xFF},          // free to use
+  SETPOINT,                                                                     // STO_ITEM_BREW_SETPOINT
+  {0xFF, 0xFF},          // free to use
+  25,                                                                           // STO_ITEM_BREW_TIME
+  {0xFF, 0xFF},          // free to use
+  2,                                                                            // STO_ITEM_PRE_INFUSION_TIME
+  {0xFF, 0xFF},          // free to use
+  5,                                                                            // STO_ITEM_PRE_INFUSION_PAUSE
+  {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, // free to use
+  AGGBKP,                                                                       // STO_ITEM_PID_KP_BD
+  {0xFF, 0xFF},          // free to use
+  AGGBTN,                                                                       // STO_ITEM_PID_TN_BD
+  {0xFF, 0xFF},          // free to use
+  AGGBTV,                                                                       // STO_ITEM_PID_TV_BD
+  {0xFF, 0xFF},          // free to use
+  45,                                                                           // STO_ITEM_BREW_SW_TIMER
+  {0xFF, 0xFF},          // free to use
+  BREWDETECTIONLIMIT,                                                           // STO_ITEM_BD_THRESHOLD
+  {0xFF, 0xFF},          // free to use
+  STARTKP,                                                                      // STO_ITEM_PID_KP_START
+  {0xFF, 0xFF},          // free to use
+  0,                                                                            // STO_ITEM_SOFT_AP_ENABLED_CHECK
+  {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, // free to use
+  STARTTN,                                                                      // STO_ITEM_PID_TN_START
+  {0xFF, 0xFF},          // free to use
   "",                                                                           // STO_ITEM_WIFI_SSID
   "",                                                                           // STO_ITEM_WIFI_PASSWORD
 };
 
 
 /**************************************************************************//**
- * \brief Returns the storage address of given item ID.
+ * \brief Returns the storage address of given item.
+ *        Optionally the max. item storage size can be delivered.
  *
- * \param itemId - storage item ID
+ * \param itemId      - storage item ID
+ * \param maxItemSize - buffer for max. item storage size (optional, default=no buffer)
  *
  * \return >=0 - item storage address
  *          <0 - error
  ******************************************************************************/
-static inline int32_t getItemAddr(sto_item_id_t itemId)
+static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t *maxItemSize=NULL)
 {
   int32_t addr;
+  uint16_t size;
 
   switch (itemId)
   {
     case STO_ITEM_PID_KP_REGULAR:
       addr = offsetof(sto_data_t, pidKpRegular);
+      size = STRUCT_MEMBER_SIZE(sto_data_t, pidKpRegular);
       break;
     case STO_ITEM_PID_TN_REGULAR:
       addr = offsetof(sto_data_t, pidTnRegular);
+      size = STRUCT_MEMBER_SIZE(sto_data_t, pidTnRegular);
       break;
     case STO_ITEM_PID_TV_REGULAR:
       addr = offsetof(sto_data_t, pidTvRegular);
+      size = STRUCT_MEMBER_SIZE(sto_data_t, pidTvRegular);
       break;
     case STO_ITEM_BREW_SETPOINT:
       addr = offsetof(sto_data_t, brewSetpoint);
+      size = STRUCT_MEMBER_SIZE(sto_data_t, brewSetpoint);
       break;
     case STO_ITEM_BREW_TIME:
       addr = offsetof(sto_data_t, brewTimeMs);
+      size = STRUCT_MEMBER_SIZE(sto_data_t, brewTimeMs);
       break;
     case STO_ITEM_PRE_INFUSION_TIME:
       addr = offsetof(sto_data_t, preInfusionTimeMs);
+      size = STRUCT_MEMBER_SIZE(sto_data_t, preInfusionTimeMs);
       break;
     case STO_ITEM_PRE_INFUSION_PAUSE:
       addr = offsetof(sto_data_t, preInfusionPauseMs);
+      size = STRUCT_MEMBER_SIZE(sto_data_t, preInfusionPauseMs);
       break;
     case STO_ITEM_PID_KP_BD:
       addr = offsetof(sto_data_t, pidKpBd);
+      size = STRUCT_MEMBER_SIZE(sto_data_t, pidKpBd);
       break;
     case STO_ITEM_PID_TN_BD:
       addr = offsetof(sto_data_t, pidTnBd);
+      size = STRUCT_MEMBER_SIZE(sto_data_t, pidTnBd);
       break;
     case STO_ITEM_PID_TV_BD:
       addr = offsetof(sto_data_t, pidTvBd);
+      size = STRUCT_MEMBER_SIZE(sto_data_t, pidTvBd);
       break;
     case STO_ITEM_BREW_SW_TIMER:
       addr = offsetof(sto_data_t, brewSwTimerSec);
+      size = STRUCT_MEMBER_SIZE(sto_data_t, brewSwTimerSec);
       break;
     case STO_ITEM_BD_THRESHOLD:
       addr = offsetof(sto_data_t, brewDetectionThreshold);
+      size = STRUCT_MEMBER_SIZE(sto_data_t, brewDetectionThreshold);
       break;
     case STO_ITEM_PID_KP_START:
       addr = offsetof(sto_data_t, pidKpStart);
+      size = STRUCT_MEMBER_SIZE(sto_data_t, pidKpStart);
       break;
     case STO_ITEM_PID_TN_START:
       addr = offsetof(sto_data_t, pidTnStart);
+      size = STRUCT_MEMBER_SIZE(sto_data_t, pidTnStart);
       break;
     case STO_ITEM_SOFT_AP_ENABLED_CHECK:
       addr = offsetof(sto_data_t, softApEnabledCheck);
+      size = STRUCT_MEMBER_SIZE(sto_data_t, softApEnabledCheck);
       break;
     case STO_ITEM_WIFI_SSID:
       addr = offsetof(sto_data_t, wifiSSID);
+      size = STRUCT_MEMBER_SIZE(sto_data_t, wifiSSID);
       break;
     case STO_ITEM_WIFI_PASSWORD:
       addr = offsetof(sto_data_t, wifiPassword);
+      size = STRUCT_MEMBER_SIZE(sto_data_t, wifiPassword);
       break;
     default:
       Serial.printf("%s(): invalid item ID %i!\n", __FUNCTION__, itemId);
       addr = -1;
+      size = 0;
       break;
   }
+
+  if (maxItemSize)
+    *maxItemSize = size;
 
   return addr;
 }
 
 
 
+/**************************************************************************//**
+ * \brief Checks if an item storage area is considered as "empty", which means
+ *        no value was stored up to now.
+ *
+ * \param storageBuf     - item storage
+ * \param storageBufSize - item storage size
+ * \param emptyPattern   - empty pattern (optional, default=Flash erase value)
+ *
+ * \return true  - item storage is "empty" (no value was stored)
+ *         false - item storage is not "empty" (value was stored)
+ ******************************************************************************/
+static inline bool isEmpty(const void *storageBuf, uint16_t storageBufSize, uint8_t emptyPattern=0xFF)
+{
+  uint16_t idx;
+
+  for (idx=0; idx<storageBufSize; idx++)                                        // check all item value bytes...
+  {
+    if (((const uint8_t*)storageBuf)[idx] != emptyPattern)                      // other than "empty" value?
+      break;                                                                    // yes -> abort loop (item storage not empty)
+  }
+
+  return (idx == storageBufSize);
+}
+
+
+
+/**************************************************************************//**
+ * \brief Checks if a buffer contains a C string null terminator.
+ *
+ * \param buf     - buffer to check
+ * \param bufSize - buffer size
+ *
+ * \return true  - buffer contains a C string (string may be empty)
+ *         false - buffer does not contain a C string
+ ******************************************************************************/
+static inline bool isString(const void *buf, uint16_t bufSize)
+{
+  uint16_t idx;
+
+  for (idx=0; idx<bufSize; idx++)                                               // check all buffer bytes...
+  {
+    if (((const uint8_t*)buf)[idx] == 0)                                        // null terminator?
+      return true;                                                              // yes -> string exist
+  }
+
+  return false;
+}
+
+
+#if 0 //not needed a.t.m.
 /**************************************************************************//**
  * \brief Sets the default values.
  ******************************************************************************/
@@ -161,6 +264,7 @@ static void setDefaults(void)
                      &itemDefaults, sizeof(itemDefaults));
   memcpy_P(EEPROM.getDataPtr(), &itemDefaults, sizeof(itemDefaults));
 }
+#endif
 
 
 
@@ -172,8 +276,6 @@ static void setDefaults(void)
  ******************************************************************************/
 int storageSetup(void)
 {
-  int addr;
-
   #if defined(ESP8266)
   EEPROM.begin(sizeof(sto_data_t));
   #elif defined(ESP32)
@@ -186,31 +288,9 @@ int storageSetup(void)
   #error("not supported MCU");
   #endif
 
-  // check if any data are programmed...
-  // An erased (or never programmed) Flash memory is filled with 0xFF.
-  for (addr=0; addr<10; addr++)                                                 // check 1st 10 bytes...
-  {
-    if (EEPROM.read(addr) != 0xFF)                                              // programmed byte?
-      break;                                                                    // yes -> abort loop
-  }
-  if (addr >= 10)                                                               // all bytes "empty"?
-  {                                                                             // yes, write defaults...
-    Serial.printf("%s(): no data found -> write defaults\n", __FUNCTION__);
-    setDefaults();
-    if (storageCommit() != 0)
-      return -2;
-  }
-
-  #if 0
-  // check first value, if there is a valid number...
-  double dummy;
-  EEPROM.get(0, dummy);
-  if (isnan(dummy))                                                             // invalid floating point number?
-  {                                                                             // yes...
-    Serial.printf("%s(): no NV data found (addr 0=%f)\n", __FUNCTION__, dummy);
-    return -2;
-  }
-  #endif
+  /* It's not necessary here to check if any valid data are stored,
+   * because storageGet() returns a default value in this case.
+   */
 
   return 0;
 }
@@ -229,21 +309,27 @@ int storageSetup(void)
 template<typename T>
 static inline int getNumber(sto_item_id_t itemId, T &itemValue)
 {
-  int itemAddr;
+  uint16_t maxItemSize;
+  int32_t itemAddr = getItemAddr(itemId, &maxItemSize);
 
-  // sanity check...
-  if (itemId >= STO_ITEM__LAST_ENUM)
+  if (itemAddr < 0)
   {
-    Serial.printf("%s(): invalid item ID %i!\n", __FUNCTION__, itemId);
+    Serial.printf("%s(): invalid item address!\n", __FUNCTION__);
     return -1;
   }
-
-  itemAddr = getItemAddr(itemId);
-  if (itemAddr < 0)
+  Serial.printf("%s(): addr=%i size=%u/%u\n", __FUNCTION__, itemAddr, sizeof(itemValue), maxItemSize);
+  if (sizeof(itemValue) != maxItemSize)
+  {
+    Serial.printf("%s(): invalid item size (wrong data type)!\n", __FUNCTION__);
     return -2;
+  }
 
-  Serial.printf("%s(): addr=%i size=%u\n", __FUNCTION__, itemAddr, sizeof(itemValue));
   EEPROM.get(itemAddr, itemValue);
+  if (isEmpty(&itemValue, sizeof(itemValue)))                                   // item storage empty?
+  {                                                                             // yes...
+    Serial.printf("%s(): storage empty -> returning default\n", __FUNCTION__);
+    memcpy_P(&itemValue, (PGM_P)&itemDefaults+itemAddr, sizeof(itemValue));     // set default value
+  }
 
   return 0;
 }
@@ -265,21 +351,27 @@ static inline int getNumber(sto_item_id_t itemId, T &itemValue)
 template<typename T>
 static inline int setNumber(sto_item_id_t itemId, const T &itemValue, bool commit=false)
 {
-  int itemAddr;
+  uint16_t maxItemSize;
+  int32_t itemAddr = getItemAddr(itemId, &maxItemSize);
 
-  // sanity check...
-  if (itemId >= STO_ITEM__LAST_ENUM)
+  if (itemAddr < 0)
   {
-    Serial.printf("%s(): invalid item ID %i!\n", __FUNCTION__, itemId);
+    Serial.printf("%s(): invalid item address!\n", __FUNCTION__);
     return -1;
   }
-
-  itemAddr = getItemAddr(itemId);
-  if (itemAddr < 0)
+  Serial.printf("%s(): addr=%i size=%u/%u commit=%u\n", __FUNCTION__, itemAddr,
+                sizeof(itemValue), maxItemSize, commit);
+  if (sizeof(itemValue) != maxItemSize)
+  {
+    Serial.printf("%s(): invalid item size (wrong data type)!\n", __FUNCTION__);
     return -2;
+  }
+  if (isEmpty(&itemValue, sizeof(T)))
+  {
+    Serial.printf("%s(): invalid item value!\n", __FUNCTION__);
+    return -3;
+  }
 
-  Serial.printf("%s(): addr=%i size=%u commit=%u\n", __FUNCTION__, itemAddr,
-                     sizeof(itemValue), commit);
   EEPROM.put(itemAddr, itemValue);
 
   if (commit)
@@ -291,7 +383,7 @@ static inline int setNumber(sto_item_id_t itemId, const T &itemValue, bool commi
 
 
 /**************************************************************************//**
- * \brief Reads the value of given storage item ID.
+ * \brief Reads the value of a storage item.
  *
  * \param itemId    - storage item ID
  * \param itemValue - buffer for item value
@@ -371,33 +463,79 @@ int storageGet(sto_item_id_t itemId, uint32_t& itemValue)
   return 0;
 }
 
+#if 0
+/* The ESP32 EEPROM class does not support getConstDataPtr(). The available
+ * getDataPtr() always leads to a "dirty" status (= erase/program cycle), even
+ * if only read operations will be done!
+ * If this functions is needed, a temporary read buffer has to be used.
+ */
 int storageGet(sto_item_id_t itemId, const char** itemValue)
 {
-  int itemAddr = getItemAddr(itemId);
-  if (itemAddr < 0)
+  size_t itemSize;
+  int32_t itemAddr = getItemAddr(itemId);
+  if ((itemAddr < 0) || (itemValue == NULL))
     return -1;
   // instead of copying the string, give back pointer to string in the data structure
-  *itemValue = (const char*)(EEPROM.getDataPtr() + itemAddr);
+  *itemValue = (const char*)(EEPROM.getConstDataPtr() + itemAddr);
+  itemSize = strlen(*itemValue) + 1;
+  if (isEmpty(*itemValue, itemSize))                                            // item storage empty?
+  {                                                                             // yes...
+    Serial.printf("%s(): storage empty -> returning default\n", __FUNCTION__);
+    memcpy_P(&itemValue, (const void*)(&itemDefaults+itemAddr), itemSize);      // set default value
+  }
   Serial.printf("%s(): addr=%i size=%u item=%i value=\"%s\"\n", __FUNCTION__,
-                     itemAddr, strlen(*itemValue)+1, itemId, *itemValue);
+                     itemAddr, itemSize, itemId, *itemValue);
   return 0;
 }
+#endif
 
 int storageGet(sto_item_id_t itemId, String& itemValue)
 {
-  int itemAddr = getItemAddr(itemId);
+  uint16_t maxItemSize;
+  int32_t itemAddr = getItemAddr(itemId, &maxItemSize);
+
   if (itemAddr < 0)
+  {
+    Serial.printf("%s(): invalid item address!\n", __FUNCTION__);
     return -1;
-  itemValue = String((const char *)(EEPROM.getDataPtr() + itemAddr));
+  }
+  #if defined(ESP8266)
+  const uint8_t *storageDataPtr;
+  storageDataPtr = EEPROM.getConstDataPtr() + itemAddr;
+  if (isString(storageDataPtr, maxItemSize))                                    // exist a null terminator?
+  {                                                                             // yes...
+    itemValue = String((const char*)storageDataPtr);                            // convert to C++ string
+  }
+  else
+  {                                                                             // no, none string...
+    Serial.printf("%s(): storage empty -> returning default\n", __FUNCTION__);
+    itemValue = String((PGM_P)&itemDefaults + itemAddr);                        // set default string
+  }
+  #elif defined(ESP32)
+  // The ESP32 EEPROM class does not support getConstDataPtr()!
+  uint8_t buf[maxItemSize];
+  EEPROM.readBytes(itemAddr, buf, maxItemSize);
+  if (isString(buf, maxItemSize))                                               // exist a null terminator?
+  {                                                                             // yes...
+    itemValue = String((const char*)buf);
+  }
+  else
+  {                                                                             // no, none string...
+    Serial.printf("%s(): storage empty -> returning default\n", __FUNCTION__);
+    itemValue = String((PGM_P)&itemDefaults + itemAddr);                        // set default string
+  }
+  #else
+  #error("not supported MCU");
+  #endif
   Serial.printf("%s(): addr=%i size=%u item=%i value=\"%s\"\n", __FUNCTION__,
-                     itemAddr, itemValue.length()+1, itemId, itemValue.c_str());
+                itemAddr, itemValue.length()+1, itemId, itemValue.c_str());
   return 0;
 }
 
 
 
 /**************************************************************************//**
- * \brief Sets a value of given storage item ID.
+ * \brief Sets a value of a storage item.
  *        The value is set in the RAM only! Use 'commit=true' or call
  *        storageCommit() to write the RAM content to the non-volatile memory!
  *
@@ -458,17 +596,16 @@ int storageSet(sto_item_id_t itemId, uint32_t itemValue, bool commit)
 
 int storageSet(sto_item_id_t itemId, const char* itemValue, bool commit)
 {
-  size_t valueSize, maxItemSize;
-  int32_t nextItemAddr;
-  int32_t itemAddr = getItemAddr(itemId);
+  uint16_t maxItemSize;
+  size_t valueSize;
+  int32_t itemAddr = getItemAddr(itemId, &maxItemSize);
+
   if (itemAddr < 0)
+  {
+    Serial.printf("%s(): invalid item address!\n", __FUNCTION__);
     return -1;
+  }
   valueSize = strlen(itemValue) + 1;
-  // determine max. item size...
-  nextItemAddr = getItemAddr((sto_item_id_t)(itemId+1));
-  if (nextItemAddr <= 0)                                                        // last item?
-    nextItemAddr = sizeof(sto_data_t);                                          // yes ->
-  maxItemSize = nextItemAddr - itemAddr;
   Serial.printf("%s(): item=%i value=\"%s\" addr=%i size=%u/%u\n", __FUNCTION__,
                      itemId, itemValue, itemAddr, valueSize, maxItemSize);
   if (valueSize > maxItemSize)                                                  // invalid value size?
@@ -490,7 +627,7 @@ int storageSet(sto_item_id_t itemId, String& itemValue, bool commit)
 
 
 /**************************************************************************//**
- * \brief Writes all items to storage medium.
+ * \brief Writes all items to the storage medium.
  *
  * \return  0 - succeed
  *         <0 - failed
@@ -522,3 +659,17 @@ int storageCommit(void)
   return returnCode;
 }
 
+
+
+/**************************************************************************//**
+ * \brief Resets all storage data.
+ *
+ * \return  0 - succeed
+ *         <0 - failed
+ ******************************************************************************/
+int storageFactoryReset(void)
+{
+  Serial.printf("%s(): reset all values\n", __FUNCTION__);
+  memset(EEPROM.getDataPtr(), 0xFF, sizeof(sto_data_t));
+  return storageCommit();
+}
