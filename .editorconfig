@@ -9,7 +9,7 @@ trim_trailing_whitespace = true
 
 # Matches multiple files with brace expansion notation
 # Set default charset
-[*.{c,cpp,ino,h}]
+[*.{c,cpp,h}]
 charset = utf-8
 indent_style = space
 indent_size = 4

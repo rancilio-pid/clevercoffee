@@ -1,17 +1,24 @@
+/**
+ * @file RancilioServer.h
+ *
+ * @brief Embedded webserver
+ */
+
 #ifndef rancilioserver_h
 #define rancilioserver_h
 
 #include <Arduino.h>
 
 #ifdef ESP32
-#include <WiFi.h>
-#include <AsyncTCP.h>
-#include "FS.h"
-#include "SPIFFS.h"
+    #include <WiFi.h>
+    #include <AsyncTCP.h>
+    #include "FS.h"
+    #include "SPIFFS.h"
 #elif defined(ESP8266)
-#include <ESP8266WiFi.h>
-#include <ESPAsyncTCP.h>
+    #include <ESP8266WiFi.h>
+    #include <ESPAsyncTCP.h>
 #endif
+
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
 
@@ -55,7 +62,6 @@ void setSteammodeFcn(int (*fcnPtr)(void)) {
     setSteam = fcnPtr;
 }
 
-
 int (*writeToEeprom)(void) = NULL;
 
 void setEepromWriteFcn(int (*fcnPtr)(void)) {
@@ -82,10 +88,6 @@ String getTempString() {
 }
 
 String generateForm(String varName) {
-    // Yikes, we don't have std::map available
-
-    // ms to s
-
     for (editable_t e : editableVars) {
         if (e.templateString != varName) {
             continue;
@@ -105,7 +107,7 @@ String generateForm(String varName) {
             case kDoubletime:
                 result += "<input class=\"form-control\" type=\"number\" step=\"1\"";
                 currVal = String(*(double *)e.ptr/1000);
-                break;    
+                break;
             case kInteger:
                 result += "<input class=\"form-control\" type=\"number\" step=\"1\"";
                 currVal = String(*(int *)e.ptr);
@@ -140,7 +142,7 @@ String getValue(String varName) {
                 return String(*(double *)e.ptr);
                 break;
             case kDoubletime:
-                return String(*(double *)e.ptr);    
+                return String(*(double *)e.ptr);
                 break;
             case kInteger:
                 return String(*(int *)e.ptr);
@@ -149,9 +151,9 @@ String getValue(String varName) {
                 return String((const char *)e.ptr);
             case rInteger :
                 return String(*(int *)e.ptr);
-                break;  
+                break;
              case rCString:
-                return String((const char *)e.ptr);    
+                return String((const char *)e.ptr);
             default:
                 return "Unknown type";
                 break;
@@ -182,18 +184,16 @@ String staticProcessor(const String& var) {
 
 void serverSetup() {
     // Send a POST request to <IP>/post with a form field message set to <message>
-    server.on("/steam", HTTP_POST, [](AsyncWebServerRequest *request) 
+    server.on("/steam", HTTP_POST, [](AsyncWebServerRequest *request)
     {
          setSteam();
          Serial.println("change steammode");
          request->redirect("/")
      ;
 
-    });    
+    });
 
-
-    server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) 
-    {
+    server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) {
         int params = request->params();
         String m = "Got ";
         m += params;
@@ -226,7 +226,7 @@ void serverSetup() {
                     m += ", unsupported for now.";
                 }
                 m += "<br />";
-         
+
                  }
         }
          // ms to s
@@ -266,10 +266,10 @@ void serverSetup() {
         if(client->lastId()) {
             Serial.printf("Reconnected, last message ID was: %u\n", client->lastId());
         }
-        
+
         client->send("hello", NULL, millis(), 10000);
     });
-    
+
     server.addHandler(&events);
 
     server.begin();
@@ -278,7 +278,7 @@ void serverSetup() {
 
 
 void sendTempEvent(float currentTemp, float targetTemp) {
-    curTemp = currentTemp; 
+    curTemp = currentTemp;
     tTemp = targetTemp;
 
     events.send("ping", NULL, millis());
