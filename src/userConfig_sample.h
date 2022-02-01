@@ -142,15 +142,15 @@ enum MACHINE {
 
 // Pin Layout
 #define ONE_WIRE_BUS 2             // Temp sensor pin
-#define PINBREWSWITCH 0            // 0: A0 (ESP8266) ; >0 : DIGITAL PIN, ESP32 OR ESP8266: ONLY USE PIN15 AND PIN16!
 #define PINPRESSURESENSOR 99       // Pressuresensor 0: A0 (ESP8266), >0 ONLY ESP32
-#define pinRelayVentil 12          // Output pin for 3-way-valve
-#define pinRelayPumpe 13           // Output pin for pump
-#define pinRelayHeater 14          // Output pin for heater
-#define PINVOLTAGESENSOR 15        // Input pin for volatage sensor
+#define PINVALVE 12                // Output pin for 3-way-valve
+#define PINPUMP 13                 // Output pin for pump
+#define PINHEATER 14               // Output pin for heater
+#define PINVOLTAGESENSOR  15       //Input pin for volatage sensor
 #define PINETRIGGER 16             // PIN for E-Trigger relay
-#define STEAMONPIN 17              // STEAM active
-#define LEDPIN 18                  // LED PIN ON near setpoint
+#define PINBREWSWITCH 0            // 0: A0 (ESP8266) ; >0 : DIGITAL PIN, ESP32 OR ESP8266: ONLY USE PIN15 AND PIN16!
+#define PINSTEAMSWITCH 17          // STEAM active
+#define LEDPIN    18               // LED PIN ON near setpoint 
 #define OLED_SCL 5                 // Output pin for dispaly clock pin
 #define OLED_SDA 4                 // Output pin for dispaly data pin
 #define HXDATPIN 99                // weight scale PIN

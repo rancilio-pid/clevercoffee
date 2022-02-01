@@ -69,7 +69,7 @@ void initScale() {
 void shottimerscale() {
     switch (shottimercounter)  {
         case 10:    // waiting step for brew switch turning on
-            if (bezugsZeit > 0) {
+            if (brewTime > 0) {
                 weightPreBrew = weight;
                 shottimercounter = 20;
             }
@@ -79,7 +79,7 @@ void shottimerscale() {
         case 20:
             weightBrew = weight - weightPreBrew;
 
-            if (bezugsZeit == 0) {
+            if (brewTime == 0) {
                 shottimercounter = 10;
             }
 
