@@ -96,8 +96,8 @@ void checkbrewswitch() {
                     // DO something
                     Serial.println("brewswitchTriggerCase 20: Manual Trigger - brewing");
                     brewswitchTriggerCase = 30;
-                    digitalWrite(pinRelayVentil, relayON);
-                    digitalWrite(pinRelayPumpe, relayON);
+                    digitalWrite(PINVALVE, relayON);
+                    digitalWrite(PINPUMP, relayON);
                 }
                 break;
 
@@ -107,8 +107,8 @@ void checkbrewswitch() {
                     brewswitchTriggerCase = 40;
                     brewswitchTriggermillis = millis();
                     Serial.println("brewswitchTriggerCase 30: Manual Trigger - brewing stop");
-                    digitalWrite(pinRelayVentil, relayOFF);
-                    digitalWrite(pinRelayPumpe, relayOFF);
+                    digitalWrite(PINVALVE, relayOFF);
+                    digitalWrite(PINPUMP, relayOFF);
                 }
 
                 // Stop Brew trigger  brewswitch == HIGH
@@ -150,7 +150,7 @@ void backflush() {
         Output = 0;
     }
 
-    digitalWrite(pinRelayHeater, LOW);  // Stop heating
+    digitalWrite(PINHEATER, LOW);  // Stop heating
 
     checkbrewswitch();
 
@@ -162,7 +162,7 @@ void backflush() {
     switch (backflushState) {
         case 10:  // waiting step for brew switch turning on
             if (brewswitch == HIGH && backflushON) {
-                startZeit = millis();
+                startingTime = millis();
                 backflushState = 20;
             }
 
@@ -170,15 +170,15 @@ void backflush() {
 
         case 20:  // portafilter filling
             Serial.println("portafilter filling");
-            digitalWrite(pinRelayVentil, relayON);
-            digitalWrite(pinRelayPumpe, relayON);
+            digitalWrite(PINVALVE, relayON);
+            digitalWrite(PINPUMP, relayON);
             backflushState = 21;
 
             break;
 
         case 21:  // waiting time for portafilter filling
-            if (millis() - startZeit > FILLTIME) {
-                startZeit = millis();
+            if (millis() - startingTime > FILLTIME) {
+                startingTime = millis();
                 backflushState = 30;
             }
 
@@ -186,16 +186,16 @@ void backflush() {
 
         case 30:  // flushing
             Serial.println("flushing");
-            digitalWrite(pinRelayVentil, relayOFF);
-            digitalWrite(pinRelayPumpe, relayOFF);
+            digitalWrite(PINVALVE, relayOFF);
+            digitalWrite(PINPUMP, relayOFF);
             flushCycles++;
             backflushState = 31;
 
             break;
 
         case 31:  // waiting time for flushing
-            if (millis() - startZeit > flushTime && flushCycles < maxflushCycles) {
-                startZeit = millis();
+            if (millis() - startingTime > flushTime && flushCycles < maxflushCycles) {
+                startingTime = millis();
                 backflushState = 20;
             } else if (flushCycles >= maxflushCycles) {
                 backflushState = 43;
@@ -206,8 +206,8 @@ void backflush() {
         case 43:  // waiting for brewswitch off position
             if (brewswitch == LOW) {
                 Serial.println("backflush finished");
-                digitalWrite(pinRelayVentil, relayOFF);
-                digitalWrite(pinRelayPumpe, relayOFF);
+                digitalWrite(PINVALVE, relayOFF);
+                digitalWrite(PINPUMP, relayOFF);
                 flushCycles = 0;
                 backflushState = 10;
             }
@@ -232,7 +232,7 @@ void brew() {
         }
 
         if (brewcounter > 10 && brewcounter < 43) {
-            bezugsZeit = currentMillistemp - startZeit;
+            brewTime = currentMillistemp - startingTime;
         }
 
         if (brewswitch == LOW && firstreading == 0) {
@@ -248,7 +248,7 @@ void brew() {
             case 10:
                 // waiting step for brew switch turning on
                 if (brewswitch == HIGH && backflushState == 10 && backflushON == 0 && brewswitchWasOFF) {
-                    startZeit = millis();
+                    startingTime = millis();
 
                     if (preinfusionpause == 0 || preinfusion == 0) {
                         brewcounter = 40;
@@ -265,14 +265,14 @@ void brew() {
 
             case 20:  // preinfusioon
                 Serial.println("Preinfusion");
-                digitalWrite(pinRelayVentil, relayON);
-                digitalWrite(pinRelayPumpe, relayON);
+                digitalWrite(PINVALVE, relayON);
+                digitalWrite(PINPUMP, relayON);
                 brewcounter = 21;
 
                 break;
 
             case 21:  // waiting time preinfusion
-                if (bezugsZeit > (preinfusion * 1000)) {
+                if (brewTime > (preinfusion * 1000)) {
                     brewcounter = 30;
                 }
 
@@ -280,14 +280,14 @@ void brew() {
 
             case 30:  // preinfusion pause
                 Serial.println("preinfusion pause");
-                digitalWrite(pinRelayVentil, relayON);
-                digitalWrite(pinRelayPumpe, relayOFF);
+                digitalWrite(PINVALVE, relayON);
+                digitalWrite(PINPUMP, relayOFF);
                 brewcounter = 31;
 
                 break;
 
             case 31:  // waiting time preinfusion pause
-                if (bezugsZeit > ((preinfusion * 1000) + (preinfusionpause * 1000))) {
+                if (brewTime > ((preinfusion * 1000) + (preinfusionpause * 1000))) {
                     brewcounter = 40;
                 }
 
@@ -295,16 +295,16 @@ void brew() {
 
             case 40:  // brew running
                 Serial.println("Brew started");
-                digitalWrite(pinRelayVentil, relayON);
-                digitalWrite(pinRelayPumpe, relayON);
+                digitalWrite(PINVALVE, relayON);
+                digitalWrite(PINPUMP, relayON);
                 brewcounter = 41;
 
                 break;
 
             case 41:  // waiting time brew
-                lastbezugszeit = bezugsZeit;
+                lastbrewTime = brewTime;
 
-                if (bezugsZeit > totalbrewtime) {
+                if (brewTime > totalbrewtime) {
                     brewcounter = 42;
                 }
 
@@ -312,23 +312,23 @@ void brew() {
 
             case 42:  // brew finished
                 Serial.println("Brew stopped");
-                digitalWrite(pinRelayVentil, relayOFF);
-                digitalWrite(pinRelayPumpe, relayOFF);
+                digitalWrite(PINVALVE, relayOFF);
+                digitalWrite(PINPUMP, relayOFF);
                 brewcounter = 43;
-                bezugsZeit = 0;
+                brewTime = 0;
 
                 break;
 
             case 43:  // waiting for brewswitch off position
                 if (brewswitch == LOW) {
-                    digitalWrite(pinRelayVentil, relayOFF);
-                    digitalWrite(pinRelayPumpe, relayOFF);
+                    digitalWrite(PINVALVE, relayOFF);
+                    digitalWrite(PINPUMP, relayOFF);
 
                     // disarmed button
                     currentMillistemp = 0;
                     brewDetected = 0;  // rearm brewdetection
                     brewcounter = 10;
-                    bezugsZeit = 0;
+                    brewTime = 0;
                 }
 
                 break;
@@ -352,7 +352,7 @@ void brew() {
         }
 
         if (brewcounter > 10 && brewcounter < 43) {
-            bezugsZeit = currentMillistemp - startZeit;
+            brewTime = currentMillistemp - startingTime;
             weightBrew = weight - weightPreBrew;
         }
 
@@ -368,7 +368,7 @@ void brew() {
         switch (brewcounter) {
             case 10:  // waiting step for brew switch turning on
                 if (brewswitch == HIGH && backflushState == 10 && backflushON == 0 && brewswitchWasOFF) {
-                    startZeit = millis();
+                    startingTime = millis();
                     brewcounter = 20;
 
                     if (preinfusionpause == 0 || preinfusion == 0) {
@@ -385,14 +385,14 @@ void brew() {
 
             case 20:  // preinfusioon
                 Serial.println("Preinfusion");
-                digitalWrite(pinRelayVentil, relayON);
-                digitalWrite(pinRelayPumpe, relayON);
+                digitalWrite(PINVALVE, relayON);
+                digitalWrite(PINPUMP, relayON);
                 brewcounter = 21;
 
                 break;
 
             case 21:  // waiting time preinfusion
-                if (bezugsZeit > (preinfusion * 1000)) {
+                if (brewTime > (preinfusion * 1000)) {
                     brewcounter = 30;
                 }
 
@@ -400,14 +400,14 @@ void brew() {
 
             case 30:  // preinfusion pause
                 Serial.println("preinfusion pause");
-                digitalWrite(pinRelayVentil, relayON);
-                digitalWrite(pinRelayPumpe, relayOFF);
+                digitalWrite(PINVALVE, relayON);
+                digitalWrite(PINPUMP, relayOFF);
                 brewcounter = 31;
 
                 break;
 
             case 31:  // waiting time preinfusion pause
-                if (bezugsZeit > ((preinfusion * 1000) + (preinfusionpause * 1000))) {
+                if (brewTime > ((preinfusion * 1000) + (preinfusionpause * 1000))) {
                     brewcounter = 40;
                 }
 
@@ -415,18 +415,18 @@ void brew() {
 
             case 40:  // brew running
                 Serial.println("Brew started");
-                digitalWrite(pinRelayVentil, relayON);
-                digitalWrite(pinRelayPumpe, relayON);
+                digitalWrite(PINVALVE, relayON);
+                digitalWrite(PINPUMP, relayON);
                 brewcounter = 41;
 
                 break;
 
             case 41:  // waiting time brew
-                if (bezugsZeit > totalbrewtime || (weightBrew > (weightSetpoint - scaleDelayValue))) {
+                if (brewTime > totalbrewtime || (weightBrew > (weightSetpoint - scaleDelayValue))) {
                     brewcounter = 42;
                 }
 
-                if (bezugsZeit > totalbrewtime) {
+                if (brewTime > totalbrewtime) {
                     brewcounter = 42;
                 }
 
@@ -434,20 +434,20 @@ void brew() {
 
             case 42:  // brew finished
                 Serial.println("Brew stopped");
-                digitalWrite(pinRelayVentil, relayOFF);
-                digitalWrite(pinRelayPumpe, relayOFF);
+                digitalWrite(PINVALVE, relayOFF);
+                digitalWrite(PINPUMP, relayOFF);
                 brewcounter = 43;
 
                 break;
 
             case 43:  // waiting for brewswitch off position
                 if (brewswitch == LOW) {
-                    digitalWrite(pinRelayVentil, relayOFF);
-                    digitalWrite(pinRelayPumpe, relayOFF);
+                    digitalWrite(PINVALVE, relayOFF);
+                    digitalWrite(PINPUMP, relayOFF);
 
                     // disarmed button bezugsZeitAlt = bezugsZeit;
                     currentMillistemp = 0;
-                    bezugsZeit = 0;
+                    brewTime = 0;
                     brewDetected = 0;  // rearm brewdetection
                     brewcounter = 10;
                 }
