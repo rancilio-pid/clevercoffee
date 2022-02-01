@@ -1,35 +1,36 @@
-/********************************************************
-  Version 3.0.1 Alpha
+/**
+ * @file    userConfig_sample.h
+ * @brief   Values must be configured by the user
+ * @version 3.0.1 Alpha
+ *
+ */
 
-  Values must be configured by the user
-******************************************************/
-#define SYSVERSION '3.0.1 ALPHA'
+#define SYSVERSION_USR '3.0.1 ALPHA'
 
-/********************************************************
-   Define area, do not change anything here
-******************************************************/
-
+/**
+ * Define area, do not change anything here
+ */
 #ifndef _userConfig_H
 #define _userConfig_H
 
 // List of supported machines
 enum MACHINE {
-  RancilioSilvia,   // MACHINEID 0
-  RancilioSilviaE,  // MACHINEID 1
-  Gaggia,           // MACHINEID 2
-  QuickMill         // MACHINEID 3
+    RancilioSilvia,   // MACHINEID 0
+    RancilioSilviaE,  // MACHINEID 1
+    Gaggia,           // MACHINEID 2
+    QuickMill         // MACHINEID 3
 };
 
-/********************************************************
-   Preconfiguration
-******************************************************/
+/**
+ * Preconfiguration
+ */
 
 // Machine
 #define MACHINEID 0                //	see above list of supported machines
 
 // Display
-#define DISPLAY 2                  // 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64)
-#define OLED_I2C 0x3C		           // I2C address for OLED, 0x3C by default
+#define OLED_DISPLAY 2             // 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64)
+#define OLED_I2C 0x3C              // I2C address for OLED, 0x3C by default
 #define DISPLAYTEMPLATE 3          // 1 = Standard Display Template, 2 = Minimal Template, 3 = only Temperatur, 4 = Scale Template, 20 = vertical Display see git Handbook for further information
 #define DISPLAYROTATE U8G2_R0      // rotate display clockwise: U8G2_R0 = no rotation; U8G2_R1 = 90°; U8G2_R2 = 180°; U8G2_R3 = 270°
 #define SHOTTIMER 1                // 0 = deactivated, 1 = activated 2 = with scale
@@ -39,9 +40,8 @@ enum MACHINE {
 #define LANGUAGE 1                 // LANGUAGE = 0 (DE), LANGUAGE = 1 (EN), LANGUAGE = 2 (ES)
 
 // Connectivity
-// Connectivity 
 #define CONNECTMODE 1              // 0 = offline 1 = WIFI-MODE 2 = AP-MODE (not working in the moment)
-#define BLYNK 1                   // 0 = no Blynk , 1 = Blynk
+#define BLYNK 1                    // 0 = no Blynk , 1 = Blynk
 #define MQTT 1                     // 1 = MQTT enabled, 0 = MQTT disabled
 #define GRAFANA 2                  // 2= custom Grafana 1 = grafana visualisation (access required), 0 = off (default)
 #define INFLUXDB 1                 // 1 = INFLUX enabled, 0 = INFLUX disabled
@@ -57,7 +57,7 @@ enum MACHINE {
 #define VOLTAGESENSORTYPE HIGH     // BREWDETECTION 3 configuration
 #define PINMODEVOLTAGESENSOR INPUT // Mode INPUT_PULLUP, INPUT or INPUT_PULLDOWN_16 (Only Pin 16)
 #define PRESSURESENSOR 0           // 1 = pressure sensor connected to A0; PINBREWSWITCH must be set to the connected input!
-#define USELED         1         
+#define TEMPLED 1                  // set led pin high when brew or steam set point is within range
 
 // TOF sensor for water level
 #define TOF 0                      // 0 = no TOF sensor connected; 1 = water level by TOF sensor
@@ -68,15 +68,15 @@ enum MACHINE {
 
 // E-Trigger
 #define ETRIGGER 0                 // 0 = no trigger (for Rancilio except Rancilio E), 1 = trigger for CPU of Rancilio E
-#define ETRIGGERTIME 600            // seconds, time between trigger signal
+#define ETRIGGERTIME 600           // seconds, time between trigger signal
 #define TRIGGERRELAYTYPE HIGH      // LOW = low trigger, HIGH = high trigger relay for E-Trigger
 
 //Weight SCALE
-#define WEIGHTSETPOINT 30          // Gramm
+#define WEIGHTSETPOINT 30          // In grams
 
 //Pressure sensor
 /*
- * messure and verify "offset" value, should be 10% of ADC bit reading @supply volate (3.3V)
+ * measure and verify "offset" value, should be 10% of ADC bit reading @supply volate (3.3V)
  * same goes for "fullScale", should be 90%
  */
 #define OFFSET      102            // 10% of ADC input @3.3V supply = 102
@@ -96,14 +96,14 @@ enum MACHINE {
 
 // OTA
 #define OTA true                   // true = OTA activated, false = OTA deactivated
-#define OTAHOST "ota_hostname"         // Name to be shown in ARUDINO IDE Port
+#define OTAHOST "ota_hostname"     // Name to be shown in ARUDINO IDE Port
 #define OTAPASS "otapass"          // Password for OTA updtates
 
 // MQTT
 #define MQTT_USERNAME "mymqttuser"
 #define MQTT_PASSWORD "mymqttpass"
 #define MQTT_TOPIC_PREFIX "custom/Küche."  // topic will be "<MQTT_TOPIC_PREFIX><HOSTNAME>/<READING>"
-#define MQTT_SERVER_IP "XXX.XXX.XXX.XXX"  // IP-Address of locally installed mqtt server
+#define MQTT_SERVER_IP "XXX.XXX.XXX.XXX"   // IP-Address of locally installed mqtt server
 #define MQTT_SERVER_PORT 1883
 
 // BLYNK
@@ -150,7 +150,7 @@ enum MACHINE {
 //#define OLED_RESET 16            // Output pin for dispaly reset pin
 #define PINETRIGGER 16             // PIN for E-Trigger relay
 #define STEAMONPIN 17              // STEAM active
-#define LEDPIN    18               // LED PIN ON near setpoint 
+#define LEDPIN    18               // LED PIN ON near setpoint
 #define OLED_SCL 5                 // Output pin for dispaly clock pin
 #define OLED_SDA 4                 // Output pin for dispaly data pin
 #define HXDATPIN 99                // weight scale PIN
@@ -170,7 +170,7 @@ enum MACHINE {
 
 // defined compiler errors
 #if (PRESSURESENSOR == 1) && (PINPRESSURESENSOR == 0) && (PINBREWSWITCH == 0)
-#error Change PINBREWSWITCH or PRESSURESENSOR!
+    #error Change PINBREWSWITCH or PRESSURESENSOR!
 #endif
 
-#endif // _userConfig_H
+#endif
