@@ -50,17 +50,11 @@ double tTemp = 0.0;
 void serverSetup();
 void setEepromWriteFcn(int (*fcnPtr)(void));
 void setBlynkWriteFcn(int (*fcnPtr)(void));
-void setSteammodeFcn(int (*fcnPtr)(void));
 
 
 // We define these in the ino file
 extern std::vector<editable_t> editableVars;
 
-int (*setSteam)(void) = NULL;
-
-void setSteammodeFcn(int (*fcnPtr)(void)) {
-    setSteam = fcnPtr;
-}
 
 int (*writeToEeprom)(void) = NULL;
 
@@ -92,6 +86,7 @@ String generateForm(String varName) {
         if (e.templateString != varName) {
             continue;
         }
+
         String result = "<label class=\"form-label\" for=\"var";
         result += e.templateString;
         result += "\">";
@@ -99,6 +94,7 @@ String generateForm(String varName) {
         result += "</label><br />";
 
         String currVal;
+
         switch (e.type) {
             case kDouble:
                 result += "<input class=\"form-control\" type=\"number\" step=\"1\"";
@@ -127,6 +123,7 @@ String generateForm(String varName) {
 
         return result;
     }
+
     return "(unknown variable " + varName + ")";
 }
 
@@ -173,6 +170,7 @@ String staticProcessor(const String& var) {
     varLower.toLowerCase();
 
     File file = SPIFFS.open("/html_fragments/" + varLower + ".htm", "r");
+
     if(file) {
         String ret = file.readString();
         file.close();
@@ -183,14 +181,22 @@ String staticProcessor(const String& var) {
 }
 
 void serverSetup() {
-    // Send a POST request to <IP>/post with a form field message set to <message>
-    server.on("/steam", HTTP_POST, [](AsyncWebServerRequest *request)
-    {
-         setSteam();
-         Serial.println("change steammode");
-         request->redirect("/")
-     ;
+    server.on("/steam", HTTP_POST, [](AsyncWebServerRequest *request) {
+        int steam = (SteamON + 3) % 2;
 
+        setSteamMode(steam);
+        Serial.printf("Toggle steam mode: %i", steam);
+
+        request->redirect("/");
+    });
+
+    server.on("/pidstatus", HTTP_POST, [](AsyncWebServerRequest *request) {
+        int status = (pidON + 3) % 2;
+
+        setPidStatus(status);
+        Serial.printf("Toggle PID controller status: %i", status);
+
+        request->redirect("/");
     });
 
     server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) {
@@ -198,9 +204,11 @@ void serverSetup() {
         String m = "Got ";
         m += params;
         m += " request parameters: <br />";
+
         for(int i = 0 ; i < params; i++) {
             AsyncWebParameter* p = request->getParam(i);
             String varName = p->name().substring(3);
+
             for (editable_t e : editableVars) {
                 if (e.templateString != varName) {
                     continue;
@@ -225,17 +233,16 @@ void serverSetup() {
                     // Hum, how do we do this?
                     m += ", unsupported for now.";
                 }
-                m += "<br />";
 
-                 }
+                m += "<br />";
+            }
         }
          // ms to s
 
         request->send(200, "text/html", m);
 
         // Write to EEPROM
-        if(writeToEeprom)
-        {
+        if (writeToEeprom) {
             if (writeToEeprom() == 0)
             {
                 Serial.println("successfully wrote EEPROM");
@@ -243,6 +250,7 @@ void serverSetup() {
                 Serial.println("EEPROM write failed");
             }
         }
+
         // Write to Blynk
         writeToBlynk();
     });
@@ -252,7 +260,7 @@ void serverSetup() {
     server.serveStatic("/js", SPIFFS, "/js/");
     server.serveStatic("/", SPIFFS, "/html/").setTemplateProcessor(staticProcessor);
 
-    server.onNotFound([](AsyncWebServerRequest *request){
+    server.onNotFound([](AsyncWebServerRequest *request) {
         request->send(404, "text/plain", "Not found");
     });
 
@@ -262,7 +270,7 @@ void serverSetup() {
         json = String();
     });
 
-    events.onConnect([](AsyncEventSourceClient *client){
+    events.onConnect([](AsyncEventSourceClient *client) {
         if(client->lastId()) {
             Serial.printf("Reconnected, last message ID was: %u\n", client->lastId());
         }

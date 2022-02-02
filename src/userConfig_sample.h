@@ -26,7 +26,7 @@ enum MACHINE {
  */
 
 // Machine
-#define MACHINEID 0                //	see above list of supported machines
+#define MACHINEID 0                // see above list of supported machines
 
 // Display
 #define OLED_DISPLAY 2             // 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64)
@@ -51,7 +51,7 @@ enum MACHINE {
 #define ONLYPIDSCALE 0             // 0 = off , 1= OnlyPID with Scale
 #define BREWMODE 1                 // 1 = NORMAL preinfusion ; 2 = Scale with weight
 #define BREWDETECTION 1            // 0 = off, 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = Sensor/Hardware for Only PID
-#define BREWSWITCHTYPE 1           //  1 = normal Switch, 2 = Trigger Switch
+#define BREWSWITCHTYPE 1           // 1 = normal Switch, 2 = Trigger Switch
 #define COLDSTART_PID 1            // 1 = default coldstart values, 2 = custom values via blynk (expert mode activated)
 #define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay
 #define VOLTAGESENSORTYPE HIGH     // BREWDETECTION 3 configuration
@@ -74,8 +74,9 @@ enum MACHINE {
 //Weight SCALE
 #define WEIGHTSETPOINT 30          // In grams
 
-//Pressure sensor
-/*
+
+/* Pressure sensor
+ *
  * measure and verify "offset" value, should be 10% of ADC bit reading @supply volate (3.3V)
  * same goes for "fullScale", should be 90%
  */
@@ -146,11 +147,10 @@ enum MACHINE {
 #define pinRelayVentil 12          // Output pin for 3-way-valve
 #define pinRelayPumpe 13           // Output pin for pump
 #define pinRelayHeater 14          // Output pin for heater
-#define PINVOLTAGESENSOR  15       //Input pin for volatage sensor
-//#define OLED_RESET 16            // Output pin for dispaly reset pin
+#define PINVOLTAGESENSOR 15        // Input pin for volatage sensor
 #define PINETRIGGER 16             // PIN for E-Trigger relay
 #define STEAMONPIN 17              // STEAM active
-#define LEDPIN    18               // LED PIN ON near setpoint
+#define LEDPIN 18                  // LED PIN ON near setpoint
 #define OLED_SCL 5                 // Output pin for dispaly clock pin
 #define OLED_SDA 4                 // Output pin for dispaly data pin
 #define HXDATPIN 99                // weight scale PIN
