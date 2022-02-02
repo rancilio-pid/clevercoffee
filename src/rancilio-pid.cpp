@@ -195,7 +195,8 @@ bool coolingFlushDetectedQM = false;
 // Method forward declarations
 bool mqtt_publish(const char *reading, char *payload);
 int writeSysParamsToStorage(void);
-int setSteammode(void);
+void setSteamMode(int steamMode);
+void setPidStatus(int pidStatus);
 int readSysParamsFromStorage(void);
 void loopcalibrate();
 void looppid();
@@ -599,7 +600,7 @@ unsigned long previousMillisETrigger;  // initialisation at the end of init()
 const unsigned long intervalETrigger = ETRIGGERTIME;  // in Seconds
 int relayETriggerON, relayETriggerOFF;
 
-// Emergency stop inf temp is to high
+// Emergency stop if temp is too high
 void testEmergencyStop() {
     if (Input > EmergencyStopTemp && emergencyStop == false) {
         emergencyStop = true;
@@ -1864,7 +1865,6 @@ void BlynkSetup() {
 void websiteSetup() {
     setEepromWriteFcn(writeSysParamsToStorage);
     setBlynkWriteFcn(writeSysParamsToBlynk);
-    setSteammodeFcn(setSteammode);
 
     if (readSysParamsFromStorage() != 0) {
         #if OLED_DISPLAY != 0
@@ -2224,7 +2224,7 @@ void looppid() {
     }
 
     refreshTemp();        // update temperature values
-    testEmergencyStop();  // test if Temp is to high
+    testEmergencyStop();  // test if temp is too high
     bPID.Compute();
 
     if ((millis() - lastTempEvent) > tempEventInterval) {
@@ -2386,16 +2386,15 @@ void looppid() {
     // sensor error OR Emergency Stop
 }
 
-int setSteammode(void) {
-    switch (SteamON) {
-        case 0:
-            SteamON = 1;
-            Serial.printf("Steammode was 0, is 1 now\n");
-            break;
-        case 1:
-            SteamON = 0;
-            Serial.printf("Steammode was 1, is 0 now\n");
-            break;
+void setSteamMode(int steamMode) {
+    SteamON = steamMode;
+
+    if (SteamON == 1) {
+        SteamFirstON = 1;
+    }
+
+    if (SteamON == 0) {
+        SteamFirstON = 0;
     }
 
     if (BLYNK == 1 && Blynk.connected()) {
@@ -2405,8 +2404,18 @@ int setSteammode(void) {
     if (MQTT == 1) {
         mqtt_publish("SteamSetPoint", number2string(SteamSetPoint));
     }
+}
 
-    return 1;
+void setPidStatus(int pidStatus) {
+    pidON = pidStatus;
+
+    if (BLYNK == 1 && Blynk.connected()) {
+        Blynk.virtualWrite(V13, pidON);
+    }
+
+    if (MQTT == 1) {
+        mqtt_publish("pidON", number2string(pidON));
+    }
 }
 
 /**
