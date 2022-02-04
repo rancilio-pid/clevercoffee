@@ -23,16 +23,16 @@ unsigned long debounceDelayBrewTrigger = 50;
 unsigned long brewswitchTriggermillis = 0;
 int brewswitchTriggerCase = 10;
 boolean brewswitchWasOFF = false;
-double brewtime = 25;           // brewtime in s
-double totalbrewtime = 0;       // total brewtime set in softare or blynk
-double preinfusion = 2;         // preinfusion time in s
-double preinfusionpause = 5;    // preinfusion pause time in s
-double brewTime = 0;            // total brewed time
-double lastbrewTimeMillis = 0;  // for shottimer delay after disarmed button
+double brewtime = BREW_TIME;                        // brewtime in s
+double totalbrewtime = 0;                           // total brewtime set in softare or blynk
+double preinfusion = PRE_INFUSION_TIME;             // preinfusion time in s
+double preinfusionpause = PRE_INFUSION_PAUSE_TIME;  // preinfusion pause time in s
+double brewTime = 0;                                // total brewed time
+double lastbrewTimeMillis = 0;                      // for shottimer delay after disarmed button
 double lastbrewTime = 0 ;
-unsigned long startingTime = 0; // start time of brew
-const unsigned long analogreadingtimeinterval = 10;  // ms
-unsigned long previousMillistempanalogreading;       // ms for analogreading
+unsigned long startingTime = 0;                     // start time of brew
+const unsigned long analogreadingtimeinterval = 10; // ms
+unsigned long previousMillistempanalogreading;      // ms for analogreading
 
 /**
  * Shot timer with or without scale
