@@ -251,7 +251,7 @@ double aggbTv = AGGBTV;
 #endif
 
 double aggbKd = aggbTv * aggbKp;
-double brewtimersoftware = 45;            // 20-5 for detection
+double brewtimersoftware = BREW_SW_TIMER; // 20-5 for detection
 double brewboarder = BREWDETECTIONLIMIT;  // brew detection limit
 const int PonE = PONE;
 

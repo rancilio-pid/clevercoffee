@@ -6,9 +6,7 @@
 
 #include <Arduino.h>
 #include <EEPROM.h>
-
 #include "userConfig.h"
-
 #include "Storage.h"
 
 
@@ -54,43 +52,42 @@ typedef struct __attribute__((packed)) {
 
 
 // item defaults
-static const sto_data_t itemDefaults
-    PROGMEM = {
-        AGGKP,         // STO_ITEM_PID_KP_REGULAR
-        {0xFF, 0xFF},  // reserved (maybe for structure version)
-        AGGTN,         // STO_ITEM_PID_TN_REGULAR
-        {0xFF, 0xFF},  // free to use
-        AGGTV,         // STO_ITEM_PID_TV_REGULAR
-        {0xFF, 0xFF},  // free to use
-        SETPOINT,      // STO_ITEM_BREW_SETPOINT
-        {0xFF, 0xFF},  // free to use
-        25,            // STO_ITEM_BREW_TIME
-        {0xFF, 0xFF},  // free to use
-        2,             // STO_ITEM_PRE_INFUSION_TIME
-        {0xFF, 0xFF},  // free to use
-        5,             // STO_ITEM_PRE_INFUSION_PAUSE
-        {
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},  // free to use
-        AGGBKP,                                   // STO_ITEM_PID_KP_BD
-        {0xFF, 0xFF},                             // free to use
-        AGGBTN,                                   // STO_ITEM_PID_TN_BD
-        {0xFF, 0xFF},                             // free to use
-        AGGBTV,                                   // STO_ITEM_PID_TV_BD
-        {0xFF, 0xFF},                             // free to use
-        45,                                       // STO_ITEM_BREW_SW_TIMER
-        {0xFF, 0xFF},                             // free to use
-        BREWDETECTIONLIMIT,                       // STO_ITEM_BD_THRESHOLD
-        {0xFF, 0xFF},                             // free to use
-        STARTKP,                                  // STO_ITEM_PID_KP_START
-        {0xFF, 0xFF},                             // free to use
-        0,                                        // STO_ITEM_SOFT_AP_ENABLED_CHECK
-        {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},  // free to use
-        STARTTN,       // STO_ITEM_PID_TN_START
-        {0xFF, 0xFF},  // free to use
-        "",            // STO_ITEM_WIFI_SSID
-        "",            // STO_ITEM_WIFI_PASSWORD
+static const sto_data_t itemDefaults PROGMEM = {
+    AGGKP,                    // STO_ITEM_PID_KP_REGULAR
+    {0xFF, 0xFF},             // reserved (maybe for structure version)
+    AGGTN,                    // STO_ITEM_PID_TN_REGULAR
+    {0xFF, 0xFF},             // free to use
+    AGGTV,                    // STO_ITEM_PID_TV_REGULAR
+    {0xFF, 0xFF},             // free to use
+    SETPOINT,                 // STO_ITEM_BREW_SETPOINT
+    {0xFF, 0xFF},             // free to use
+    BREW_TIME,                // STO_ITEM_BREW_TIME
+    {0xFF, 0xFF},             // free to use
+    PRE_INFUSION_TIME,        // STO_ITEM_PRE_INFUSION_TIME
+    {0xFF, 0xFF},             // free to use
+    PRE_INFUSION_PAUSE_TIME,  // STO_ITEM_PRE_INFUSION_PAUSE
+    {
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},  // free to use
+    AGGBKP,                                   // STO_ITEM_PID_KP_BD
+    {0xFF, 0xFF},                             // free to use
+    AGGBTN,                                   // STO_ITEM_PID_TN_BD
+    {0xFF, 0xFF},                             // free to use
+    AGGBTV,                                   // STO_ITEM_PID_TV_BD
+    {0xFF, 0xFF},                             // free to use
+    BREW_SW_TIMER,                            // STO_ITEM_BREW_SW_TIMER
+    {0xFF, 0xFF},                             // free to use
+    BREWDETECTIONLIMIT,                       // STO_ITEM_BD_THRESHOLD
+    {0xFF, 0xFF},                             // free to use
+    STARTKP,                                  // STO_ITEM_PID_KP_START
+    {0xFF, 0xFF},                             // free to use
+    0,                                        // STO_ITEM_SOFT_AP_ENABLED_CHECK
+    {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},  // free to use
+    STARTTN,       // STO_ITEM_PID_TN_START
+    {0xFF, 0xFF},  // free to use
+    "",            // STO_ITEM_WIFI_SSID
+    "",            // STO_ITEM_WIFI_PASSWORD
 };
 
 /**
