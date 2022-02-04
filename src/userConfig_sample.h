@@ -5,13 +5,17 @@
  *
  */
 
-#define SYSVERSION_USR '3.0.1 ALPHA'
-
 /**
  * Define area, do not change anything here
  */
 #ifndef _userConfig_H
 #define _userConfig_H
+
+// firmware version (must match with definitions in the main source file)
+#define USR_FW_VERSION    3
+#define USR_FW_SUBVERSION 0
+#define USR_FW_HOTFIX     1
+#define USR_FW_BRANCH     "ALPHA"
 
 // List of supported machines
 enum MACHINE {
