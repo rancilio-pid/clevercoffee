@@ -7,13 +7,15 @@
  */
 
 
-// SYSVERSION and SYSVERSION_INO need to match, checked by preprocessor
-#define SYSVERSION '3.0.1 ALPHA'
-#define SYSVERSION_DISPLAY "Version 3.0.1 ALPHA"  // Displayed during startup
+// Firmware version
+#define FW_VERSION    3
+#define FW_SUBVERSION 0
+#define FW_HOTFIX     1
+#define FW_BRANCH     "ALPHA"
 
 // Includes
 #include <ArduinoOTA.h>
-
+#include "rancilio-pid.h"
 #include "Storage.h"
 #include "icon.h"        // user icons for display
 #include "languages.h"   // for language translation
@@ -44,9 +46,11 @@
     #include <HX711_ADC.h>
 #endif
 
-// Version of userConfig and rancilio-pid.ino need to match
-#if !defined(SYSVERSION) || !defined(SYSVERSION_USR) || (SYSVERSION != SYSVERSION_USR)
-    #error Version of userConfig file and rancilio-pid.ino need to match!
+// Version of userConfig need to match, checked by preprocessor
+#if (FW_VERSION != USR_FW_VERSION) || \
+    (FW_SUBVERSION != USR_FW_SUBVERSION) || \
+    (FW_HOTFIX != USR_FW_HOTFIX)
+    #error Version of userConfig file and rancilio-pid.cpp need to match!
 #endif
 
 
@@ -194,10 +198,8 @@ bool coolingFlushDetectedQM = false;
 
 // Method forward declarations
 bool mqtt_publish(const char *reading, char *payload);
-int writeSysParamsToStorage(void);
 void setSteamMode(int steamMode);
 void setPidStatus(int pidStatus);
-int readSysParamsFromStorage(void);
 void loopcalibrate();
 void looppid();
 void initSteamQM();
@@ -215,7 +217,6 @@ int relayON, relayOFF;           // used for relay trigger type. Do not change!
 boolean kaltstart = true;        // true = Rancilio started for first time
 boolean emergencyStop = false;   // Notstop bei zu hoher Temperatur
 double EmergencyStopTemp = 120;  // Temp EmergencyStopTemp
-const char *sysVersion PROGMEM = "Version 3.0.1 ALPHA"; //System version
 int inX = 0, inY = 0, inOld = 0, inSum = 0; // used for filter()
 int bars = 0;  // used for getSignalStrength()
 boolean brewDetected = 0;
@@ -1876,6 +1877,8 @@ void websiteSetup() {
 }
 
 void setup() {
+    const String sysVersion = "Version " + String(getFwVersion()) + " " + FW_BRANCH;
+
     Serial.begin(115200);
 
     initTimer1();
@@ -2502,3 +2505,19 @@ int writeSysParamsToBlynk(void) {
 
     return 1;
 }
+
+
+
+/**
+ * @brief Returns the firmware version as string (x.y.z).
+ *
+ * @return firmware version string
+ */
+const char* getFwVersion(void)
+{
+    static const String sysVersion = String(FW_VERSION) + "." +
+                                     String(FW_SUBVERSION) + "." +
+                                     String(FW_HOTFIX);
+    return sysVersion.c_str();
+}
+
