@@ -101,7 +101,7 @@ void displayEmergencyStop(void)
  */
 void displayShottimer(void)
  {
-    if (((bezugsZeit > 0 && ONLYPID == 1) || // Bezugszeit bei Only PID
+    if (((brewTime > 0 && ONLYPID == 1) || // brewTime bei Only PID
         (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42)) // oder Bezug bei nicht only PID über brewcounter
         && SHOTTIMER == 1) // Shotimer muss 1 = True sein und Bezug vorliegen
     {
@@ -112,21 +112,20 @@ void displayShottimer(void)
         u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
         u8g2.setFont(u8g2_font_profont22_tf);
         u8g2.setCursor(5, 70);
-        u8g2.print(bezugsZeit / 1000, 1);
+        u8g2.print(brewTime / 1000, 1);
         u8g2.setFont(u8g2_font_profont11_tf);
         u8g2.sendBuffer();
 
     }
-
-    if (SHOTTIMER == 1 && millis() >= bezugszeit_last_Millis && // direkt nach Erstellen von bezugszeit_last_mills (passiert beim ausschalten des Brühschalters, case 43 im Code) soll gestartet werden
-        bezugszeit_last_Millis+brewswitchDelay >= millis() && // soll solange laufen, bis millis() den brewswitchDelay aufgeholt hat, damit kann die Anzeigedauer gesteuert werden
-        bezugszeit_last_Millis < totalbrewtime) // wenn die totalbrewtime automatisch erreicht wird, soll nichts gemacht werden, da sonst falsche Zeit angezeigt wird, da Schalter später betätigt wird als totalbrewtime
+    if (SHOTTIMER == 1 && millis() >= brewTime_last_Millis && // direkt nach Erstellen von brewTime_last_mills (passiert beim ausschalten des Brühschalters, case 43 im Code) soll gestartet werden
+        brewTime_last_Millis+brewswitchDelay >= millis() && // soll solange laufen, bis millis() den brewswitchDelay aufgeholt hat, damit kann die Anzeigedauer gesteuert werden
+        brewTime_last_Millis < totalbrewtime) // wenn die totalbrewtime automatisch erreicht wird, soll nichts gemacht werden, da sonst falsche Zeit angezeigt wird, da Schalter später betätigt wird als totalbrewtime
     {
     u8g2.clearBuffer();
         u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
         u8g2.setFont(u8g2_font_profont22_tf);
         u8g2.setCursor(5, 70);
-        u8g2.print((bezugszeit_last_Millis - startZeit) / 1000, 1);
+        u8g2.print((brewTime_last_Millis - startingTime) / 1000, 1);
         u8g2.setFont(u8g2_font_profont11_tf);
         u8g2.sendBuffer();
     }
