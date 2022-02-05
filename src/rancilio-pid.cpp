@@ -205,6 +205,7 @@ void looppid();
 void initSteamQM();
 boolean checkSteamOffQM();
 int writeSysParamsToBlynk(void);
+int writeSysParamsToMQTT(void);
 char *number2string(double in);
 char *number2string(float in);
 char *number2string(int in);
@@ -1004,9 +1005,9 @@ void sendToBlynkMQTT() {
             mqtt_publish("BrewSetPoint", number2string(BrewSetPoint));
             mqtt_publish("SteamSetPoint", number2string(SteamSetPoint));
             mqtt_publish("HeaterPower", number2string(Output));
-            mqtt_publish("Kp", number2string(bPID.GetKp()));
-            mqtt_publish("Ki", number2string(bPID.GetKi()));
-            mqtt_publish("Kd", number2string(bPID.GetKd()));
+            mqtt_publish("currentKp", number2string(bPID.GetKp()));
+            mqtt_publish("currentKi", number2string(bPID.GetKi()));
+            mqtt_publish("currentKd", number2string(bPID.GetKd()));
             mqtt_publish("pidON", number2string(pidON));
             mqtt_publish("brewtime", number2string(brewtime));
             mqtt_publish("preinfusionpause", number2string(preinfusionpause));
@@ -1862,6 +1863,7 @@ void BlynkSetup() {
 void websiteSetup() {
     setEepromWriteFcn(writeSysParamsToStorage);
     setBlynkWriteFcn(writeSysParamsToBlynk);
+    setMQTTWriteFcn(writeSysParamsToMQTT);
 
     if (readSysParamsFromStorage() != 0) {
         #if OLED_DISPLAY != 0
@@ -2493,18 +2495,60 @@ int writeSysParamsToBlynk(void) {
             Blynk.virtualWrite(V14, startTn);
         #endif
     }
-
-    if (MQTT == 1) {
-        mqtt_publish("BrewSetPoint", number2string(BrewSetPoint));
-        mqtt_publish("brewtime", number2string(brewtime));
-        mqtt_publish("preinfusion", number2string(preinfusion));
-        mqtt_publish("preinfusionpause", number2string(preinfusionpause));
-        mqtt_publish("pidON", number2string(pidON));
-        mqtt_publish("SteamSetPoint", number2string(SteamSetPoint));
-    }
-
     return 1;
 }
+/**
+ * @brief Send all current system parameter values to MQTT
+ *
+ * @return TODO 0 = success, < 0 = failure
+ */
+
+int writeSysParamsToMQTT(void) {
+ if (MQTT == 1) {
+    // Normal PID
+    mqtt_publish("aggKp", number2string(aggKp));
+    mqtt_publish("aggTn", number2string(aggTn));
+    mqtt_publish("aggTv", number2string(aggTv));
+
+    // BD PID
+    mqtt_publish("aggbKp", number2string(aggbKp));
+    mqtt_publish("aggbTn", number2string(aggbTn));
+    mqtt_publish("aggbTv", number2string(aggbTv));
+
+    // Start PI
+    mqtt_publish("startKp", number2string(startKp));
+    mqtt_publish("startTn", number2string(startTn));
+
+    //BD Parameter
+    mqtt_publish("BrewTimer", number2string(brewtimersoftware));
+    mqtt_publish("BrewLimit", number2string(brewboarder));
+
+    // Values in the send cyle
+    /*
+    mqtt_publish("temperature", number2string(Input));
+    mqtt_publish("setPoint", number2string(setPoint));
+    mqtt_publish("BrewSetPoint", number2string(BrewSetPoint));
+    mqtt_publish("SteamSetPoint", number2string(SteamSetPoint));
+    mqtt_publish("HeaterPower", number2string(Output));
+    mqtt_publish("currentKp", number2string(bPID.GetKp()));
+    mqtt_publish("currentKi", number2string(bPID.GetKi()));
+    mqtt_publish("currentKd", number2string(bPID.GetKd()));
+    mqtt_publish("pidON", number2string(pidON));
+    mqtt_publish("brewtime", number2string(brewtime));
+    mqtt_publish("preinfusionpause", number2string(preinfusionpause));
+    mqtt_publish("preinfusion", number2string(preinfusion));
+    mqtt_publish("SteamON", number2string(SteamON)); */
+    return 1;
+  }
+}
+
+
+
+
+
+
+
+
 
 
 
