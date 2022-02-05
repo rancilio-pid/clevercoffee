@@ -49,8 +49,6 @@ double tTemp = 0.0;
 
 void serverSetup();
 void setEepromWriteFcn(int (*fcnPtr)(void));
-void setBlynkWriteFcn(int (*fcnPtr)(void));
-void setMQTTWriteFcn(int (*fcnPtr)(void));
 
 // We define these in the ino file
 extern std::vector<editable_t> editableVars;
@@ -61,19 +59,6 @@ int (*writeToEeprom)(void) = NULL;
 void setEepromWriteFcn(int (*fcnPtr)(void)) {
     writeToEeprom = fcnPtr;
 }
-// BLYNK  
-int (*writeToBlynk)(void) = NULL;
-
-void setBlynkWriteFcn(int (*fcnPtr)(void)) {
-    writeToBlynk = fcnPtr;
-}
-// MQTT   
-int (*writeToMQTT)(void) = NULL;
-
-void setMQTTWriteFcn(int (*fcnPtr)(void)) {
-    writeToMQTT = fcnPtr;
-}
-
 
 String getTempString() {
     StaticJsonDocument<96> doc;
@@ -258,9 +243,9 @@ void serverSetup() {
             }
         }
 
-        // Write to Blynk
-        writeToBlynk();
-        writeToMQTT();
+        // Write to Blynk and MQTT the new values
+        writeSysParamsToBlynk();
+        writeSysParamsToMQTT();
     });
 
     SPIFFS.begin();
