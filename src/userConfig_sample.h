@@ -117,23 +117,22 @@ enum MACHINE {
 #define INFLUXDB_DB_NAME "clevercoffee"
 #define INTERVALINFLUX 5000
 
-// PID - offline values
-#define SETPOINT 95                // Temperatur setpoint
-#define STEAMSETPOINT 120          // Temperatur setpoint
+// System Parameters (default values)
+#define SETPOINT 95                // brew temperatur setpoint
+#define STEAMSETPOINT 120          // steam temperatur setpoint
 #define BREWDETECTIONLIMIT 150     // brew detection limit, be carefull: if too low, then there is the risk of wrong brew detection and rising temperature
-
-#define AGGKP 69                   // Kp normal
-#define AGGTN 399                  // Tn
-#define AGGTV 0                    // Tv
-
-// PID coldstart
-#define STARTKP 50                 // Start Kp during coldstart
-#define STARTTN 150                // Start Tn during cold start
-
-// PID - offline brewdetection values
-#define AGGBKP 50                  // Kp
-#define AGGBTN 0                   // Tn
-#define AGGBTV 20                  // Tv
+#define AGGKP 69                   // PID Kp (regular phase)
+#define AGGTN 399                  // PID Tn (regular phase)
+#define AGGTV 0                    // PID Tv (regular phase)
+#define STARTKP 50                 // PID Kp (coldstart phase)
+#define STARTTN 150                // PID Tn (coldstart phase)
+#define AGGBKP 50                  // PID Kp (brew detection phase)
+#define AGGBTN 0                   // PID Tn (brew detection phase)
+#define AGGBTV 20                  // PID Tv (brew detection phase)
+#define BREW_TIME 25               // brew time in seconds
+#define BREW_SW_TIMER 45           // brew software timer after detection in seconds
+#define PRE_INFUSION_TIME 2        // pre-infusion time in seconds
+#define PRE_INFUSION_PAUSE_TIME 5  // pre-infusion pause time in seconds
 
 // Backflush values
 #define FILLTIME 3000              // time in ms the pump is running
