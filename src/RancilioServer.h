@@ -49,23 +49,15 @@ double tTemp = 0.0;
 
 void serverSetup();
 void setEepromWriteFcn(int (*fcnPtr)(void));
-void setBlynkWriteFcn(int (*fcnPtr)(void));
-
 
 // We define these in the ino file
 extern std::vector<editable_t> editableVars;
 
-
+// EEPROM 
 int (*writeToEeprom)(void) = NULL;
 
 void setEepromWriteFcn(int (*fcnPtr)(void)) {
     writeToEeprom = fcnPtr;
-}
-
-int (*writeToBlynk)(void) = NULL;
-
-void setBlynkWriteFcn(int (*fcnPtr)(void)) {
-    writeToBlynk = fcnPtr;
 }
 
 String getTempString() {
@@ -185,7 +177,7 @@ void serverSetup() {
         int steam = (SteamON + 3) % 2;
 
         setSteamMode(steam);
-        Serial.printf("Toggle steam mode: %i", steam);
+        Serial.printf("Toggle steam mode: %i \n", steam);
 
         request->redirect("/");
     });
@@ -194,7 +186,7 @@ void serverSetup() {
         int status = (pidON + 3) % 2;
 
         setPidStatus(status);
-        Serial.printf("Toggle PID controller status: %i", status);
+        Serial.printf("Toggle PID controller status: %i \n", status);
 
         request->redirect("/");
     });
@@ -251,8 +243,9 @@ void serverSetup() {
             }
         }
 
-        // Write to Blynk
-        writeToBlynk();
+        // Write to Blynk and MQTT the new values
+        writeSysParamsToBlynk();
+        writeSysParamsToMQTT();
     });
 
     SPIFFS.begin();
