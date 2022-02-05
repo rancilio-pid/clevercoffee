@@ -204,8 +204,8 @@ void loopcalibrate();
 void looppid();
 void initSteamQM();
 boolean checkSteamOffQM();
-int writeSysParamsToBlynk(void);
-int writeSysParamsToMQTT(void);
+void writeSysParamsToBlynk(void);
+void writeSysParamsToMQTT(void);
 char *number2string(double in);
 char *number2string(float in);
 char *number2string(int in);
@@ -1862,8 +1862,8 @@ void BlynkSetup() {
  */
 void websiteSetup() {
     setEepromWriteFcn(writeSysParamsToStorage);
-    setBlynkWriteFcn(writeSysParamsToBlynk);
-    setMQTTWriteFcn(writeSysParamsToMQTT);
+    //setBlynkWriteFcn(writeSysParamsToBlynk);
+    //setMQTTWriteFcn(writeSysParamsToMQTT);
 
     if (readSysParamsFromStorage() != 0) {
         #if OLED_DISPLAY != 0
@@ -2471,7 +2471,7 @@ int writeSysParamsToStorage(void) {
  *
  * @return TODO 0 = success, < 0 = failure
  */
-int writeSysParamsToBlynk(void) {
+void writeSysParamsToBlynk(void) {
     if (BLYNK == 1 && Blynk.connected()) {
         Blynk.virtualWrite(V2, Input);
         Blynk.virtualWrite(V4, aggKp);
@@ -2495,7 +2495,6 @@ int writeSysParamsToBlynk(void) {
             Blynk.virtualWrite(V14, startTn);
         #endif
     }
-    return 1;
 }
 /**
  * @brief Send all current system parameter values to MQTT
@@ -2503,7 +2502,7 @@ int writeSysParamsToBlynk(void) {
  * @return TODO 0 = success, < 0 = failure
  */
 
-int writeSysParamsToMQTT(void) {
+void writeSysParamsToMQTT(void) {
  if (MQTT == 1) {
     // Normal PID
     mqtt_publish("aggKp", number2string(aggKp));
@@ -2538,7 +2537,6 @@ int writeSysParamsToMQTT(void) {
     mqtt_publish("preinfusionpause", number2string(preinfusionpause));
     mqtt_publish("preinfusion", number2string(preinfusion));
     mqtt_publish("SteamON", number2string(SteamON)); */
-    return 1;
   }
 }
 
