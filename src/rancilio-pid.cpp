@@ -2424,6 +2424,8 @@ void setPidStatus(int pidStatus) {
  * @return  TODO 0 = success, < 0 = failure
  */
 int readSysParamsFromStorage(void) {
+    uint8_t stoPidOn;
+
     storageGet(STO_ITEM_PID_KP_REGULAR, aggKp);
     storageGet(STO_ITEM_PID_TN_REGULAR, aggTn);
     storageGet(STO_ITEM_PID_TV_REGULAR, aggTv);
@@ -2438,6 +2440,8 @@ int readSysParamsFromStorage(void) {
     storageGet(STO_ITEM_BD_THRESHOLD, brewboarder);
     storageGet(STO_ITEM_PID_KP_START, startKp);
     storageGet(STO_ITEM_PID_TN_START, startTn);
+    storageGet(STO_ITEM_PID_ON, stoPidOn);
+    pidON = stoPidOn;   //TODO: changing type of 'pidON' to uint8_t leads to weird value in WebGUI!
 
     return 0;
 }
@@ -2448,6 +2452,8 @@ int readSysParamsFromStorage(void) {
  * @return 0 = success, < 0 = failure
  */
 int writeSysParamsToStorage(void) {
+    uint8_t stoPidOn;
+
     storageSet(STO_ITEM_PID_KP_REGULAR, aggKp);
     storageSet(STO_ITEM_PID_TN_REGULAR, aggTn);
     storageSet(STO_ITEM_PID_TV_REGULAR, aggTv);
@@ -2462,6 +2468,8 @@ int writeSysParamsToStorage(void) {
     storageSet(STO_ITEM_BD_THRESHOLD, brewboarder);
     storageSet(STO_ITEM_PID_KP_START, startKp);
     storageSet(STO_ITEM_PID_TN_START, startTn);
+    stoPidOn = (uint8_t)pidON;   //TODO: changing type of 'pidON' to uint8_t leads to weird value in WebGUI!
+    storageSet(STO_ITEM_PID_ON, stoPidOn);
 
     return storageCommit();
 }
