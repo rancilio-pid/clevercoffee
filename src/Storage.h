@@ -32,6 +32,7 @@ typedef enum
   STO_ITEM_SOFT_AP_ENABLED_CHECK,   // soft AP enable state
   STO_ITEM_WIFI_SSID,               // Wifi SSID
   STO_ITEM_WIFI_PASSWORD,           // Wifi password
+  STO_ITEM_PID_ON,                  // PID on/off state
 
   /* WHEN ADDING NEW ITEMS FOLLOWING HAS TO BE UPDATED:
    * - storage structure:  sto_data_t
