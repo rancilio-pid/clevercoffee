@@ -191,6 +191,14 @@ void serverSetup() {
         request->redirect("/");
     });
 
+    server.on("/backflush", HTTP_POST, [](AsyncWebServerRequest *request) {
+    int backflush = (backflushON + 3) % 2; // 0 to 1, 1 to 0
+    setBackflush(backflush);
+    Serial.printf("Toggle Backflush %i \n", backflush);
+
+    request->redirect("/");
+    });
+
     server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) {
         int params = request->params();
         String m = "Got ";

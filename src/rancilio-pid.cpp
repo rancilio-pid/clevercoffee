@@ -200,6 +200,7 @@ bool coolingFlushDetectedQM = false;
 bool mqtt_publish(const char *reading, char *payload);
 void setSteamMode(int steamMode);
 void setPidStatus(int pidStatus);
+void setBackflush(int backflush);
 void loopcalibrate();
 void looppid();
 void initSteamQM();
@@ -353,8 +354,13 @@ std::vector<editable_t> editableVars = {
     {"AP_WIFI_KEY", "AP WiFi Password", kCString, (void *)AP_WIFI_KEY},
     {"START_KP", "Start P", kDouble, (void *)&startKp},
     {"START_TN", "Start I", kDouble, (void *)&startTn},
-    {"STEAM_MODE", "STEAM MODE", rInteger, (void *)&SteamON}
+    {"STEAM_MODE", "Steam Mode", rInteger, (void *)&SteamON},
+    {"BACKFLUSH_ON", "Backflush", rInteger, (void *)&backflushON}
 };
+
+
+
+
 
 unsigned long lastTempEvent = 0;
 unsigned long tempEventInterval = 1000;
@@ -439,7 +445,7 @@ void createSoftAp() {
         WiFi.softAPConfig(localIp, gateway, subnet);
 
         softApEnabledcheck = true;
-        Serial.println("Set softApEnabled: 1, AP MODE\n");
+        Serial.println("Set softApEnabled: 1, Setup AP MODE\n");
 
         uint8_t eepromvalue = 0;
         storageSet(STO_ITEM_SOFT_AP_ENABLED_CHECK, eepromvalue, true);
@@ -451,7 +457,7 @@ void createSoftAp() {
             WiFi.softAPIP()[2], WiFi.softAPIP()[3]);
 
         #if (OLED_DISPLAY != 0)
-            displayMessage("AP-MODE: SSID:", String(AP_WIFI_SSID), "KEY:", String(AP_WIFI_KEY), "IP:", "192.168.1.1");
+            displayMessage("Setup-MODE: SSID:", String(AP_WIFI_SSID), "KEY:", String(AP_WIFI_KEY), "IP:", "192.168.1.1");
         #endif
     }
 
@@ -2051,9 +2057,6 @@ void setup() {
 
         enableTimer1();
 
-        //first send of MQTT values after setup:
-        writeSysParamsToMQTT();
-
     }  // else softenable == 1
 }
 
@@ -2364,6 +2367,12 @@ void looppid() {
     // sensor error OR Emergency Stop
 }
 
+void setBackflush(int backflush) {
+    backflushON = backflush;
+    writeSysParamsToBlynk();
+}
+
+
 void setSteamMode(int steamMode) {
     SteamON = steamMode;
 
@@ -2374,22 +2383,11 @@ void setSteamMode(int steamMode) {
     if (SteamON == 0) {
         SteamFirstON = 0;
     }
-
-    if (BLYNK == 1 && Blynk.connected()) {
-        Blynk.virtualWrite(V15, SteamON);
-    }
-
-    if (MQTT == 1) {
-        mqtt_publish("SteamSetPoint", number2string(SteamSetPoint));
-    }
+    writeSysParamsToBlynk();
 }
 
 void setPidStatus(int pidStatus) {
     pidON = pidStatus;
-
-    if (MQTT == 1) {
-        mqtt_publish("pidON", number2string(pidON));
-    }
      writeSysParamsToBlynk();
 }
 
@@ -2460,6 +2458,8 @@ void writeSysParamsToBlynk(void) {
         Blynk.virtualWrite(V15, SteamON);
         Blynk.virtualWrite(V16, SteamSetPoint);
         Blynk.virtualWrite(V17, setPoint);
+        Blynk.virtualWrite(V40, backflushON);
+        Blynk.virtualWrite(V15, SteamON);
 
         #if (BREWMODE == 2)
             Blynk.virtualWrite(V18, weightSetpoint;
