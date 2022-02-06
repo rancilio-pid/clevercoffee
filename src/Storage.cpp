@@ -57,7 +57,7 @@ static const sto_data_t itemDefaults PROGMEM = {
     AGGKP,                    // STO_ITEM_PID_KP_REGULAR
     {0xFF, 0xFF},             // reserved (maybe for structure version)
     AGGTN,                    // STO_ITEM_PID_TN_REGULAR
-    1,                        // STO_ITEM_PID_ON
+    0,                        // STO_ITEM_PID_ON
     0xFF,                     // free to use
     AGGTV,                    // STO_ITEM_PID_TV_REGULAR
     {0xFF, 0xFF},             // free to use
