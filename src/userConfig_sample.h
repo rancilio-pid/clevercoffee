@@ -118,6 +118,8 @@ enum MACHINE {
 
 // INFLUX
 #define INFLUXDB_URL "http://influxdb.clevercoffee.de:8086"
+#define INFLUXDB_USER ""
+#define INFLUXDB_PASSWORD ""
 #define INFLUXDB_DB_NAME "clevercoffee"
 #define INTERVALINFLUX 5000
 
