@@ -28,7 +28,6 @@
 #include <PubSubClient.h>
 #include <U8g2lib.h>    // i2c display
 #include <ZACwire.h>    // new TSIC bus library
-
 #include "PID_v1.h"     // for PID calculation
 #include "TSIC.h"       // library for TSIC temp sensor
 
@@ -151,20 +150,6 @@ unsigned long lastBlynkConnectionAttempt = millis();
 const unsigned long fillTime = FILLTIME;
 const unsigned long flushTime = FLUSHTIME;
 int maxflushCycles = MAXFLUSHCYCLES;
-
-// MQTT
-WiFiClient net;
-PubSubClient mqtt(net);
-const char *mqtt_server_ip = MQTT_SERVER_IP;
-const int mqtt_server_port = MQTT_SERVER_PORT;
-const char *mqtt_username = MQTT_USERNAME;
-const char *mqtt_password = MQTT_PASSWORD;
-const char *mqtt_topic_prefix = MQTT_TOPIC_PREFIX;
-char topic_will[256];
-char topic_set[256];
-unsigned long lastMQTTConnectionAttempt = millis();
-unsigned int MQTTReCnctFlag;       // Blynk Reconnection Flag
-unsigned int MQTTReCnctCount = 0;  // Blynk Reconnection counter
 
 // InfluxDB Client
 InfluxDBClient client(INFLUXDB_URL, INFLUXDB_DB_NAME);
@@ -331,6 +316,33 @@ const unsigned long intervalBlynk = 1000;
 const unsigned long intervalMQTT = 5000;
 int blynksendcounter = 1;
 
+// MQTT
+WiFiClient net;
+PubSubClient mqtt(net);
+const char *mqtt_server_ip = MQTT_SERVER_IP;
+const int mqtt_server_port = MQTT_SERVER_PORT;
+const char *mqtt_username = MQTT_USERNAME;
+const char *mqtt_password = MQTT_PASSWORD;
+const char *mqtt_topic_prefix = MQTT_TOPIC_PREFIX;
+char topic_will[256];
+char topic_set[256];
+unsigned long lastMQTTConnectionAttempt = millis();
+unsigned int MQTTReCnctFlag;       // Blynk Reconnection Flag
+unsigned int MQTTReCnctCount = 0;  // Blynk Reconnection counter
+
+struct mqttVars_t {
+    String mqttParamName;
+    double *mqttVarPtr;
+};
+
+std::vector<mqttVars_t> mqttVars = {
+    {"BrewSetPoint", &BrewSetPoint},
+    {"brewtime", &brewtime},
+    {"preinfusion", &preinfusion},
+    {"preinfusionpause", &preinfusionpause},
+    {"pidON", (double *)&pidON} // TODO somewhat ugly hack
+};
+
 // Embedded HTTP Server
 #include "RancilioServer.h"
 
@@ -494,37 +506,21 @@ BLYNK_CONNECTED() {
     }
 }
 
-BLYNK_WRITE(V4) { 
-    aggKp = param.asDouble();
-}
+BLYNK_WRITE(V4) { aggKp = param.asDouble(); }
 
-BLYNK_WRITE(V5) { 
-    aggTn = param.asDouble();
-}
+BLYNK_WRITE(V5) { aggTn = param.asDouble(); }
 
-BLYNK_WRITE(V6) { 
-    aggTv = param.asDouble();
-}
+BLYNK_WRITE(V6) { aggTv = param.asDouble(); }
 
-BLYNK_WRITE(V7) {
-    BrewSetPoint = param.asDouble();
-}
+BLYNK_WRITE(V7) { BrewSetPoint = param.asDouble(); }
 
-BLYNK_WRITE(V8) {
-    brewtime = param.asDouble();
-}
+BLYNK_WRITE(V8) { brewtime = param.asDouble(); }
 
-BLYNK_WRITE(V9) {
-    preinfusion = param.asDouble();
-}
+BLYNK_WRITE(V9) { preinfusion = param.asDouble(); }
 
-BLYNK_WRITE(V10) {
-    preinfusionpause = param.asDouble();
-}
+BLYNK_WRITE(V10) { preinfusionpause = param.asDouble(); }
 
-BLYNK_WRITE(V13) {
-    pidON = param.asInt();
-}
+BLYNK_WRITE(V13) { pidON = param.asInt(); }
 
 BLYNK_WRITE(V15) {
     SteamON = param.asInt();
@@ -538,13 +534,10 @@ BLYNK_WRITE(V15) {
     }
 }
 
-BLYNK_WRITE(V16) {
-    SteamSetPoint = param.asDouble();
-}
+BLYNK_WRITE(V16) { SteamSetPoint = param.asDouble(); }
 
 #if (BREWMODE == 2)
-    BLYNK_WRITE(V18) { weightSetpoint = param.asFloat(); 
-    }
+    BLYNK_WRITE(V18) { weightSetpoint = param.asFloat(); }
 #endif
 
 BLYNK_WRITE(V25) { calibration_mode = param.asInt(); }
@@ -553,38 +546,22 @@ BLYNK_WRITE(V26) { water_empty = param.asInt(); }
 
 BLYNK_WRITE(V27) { water_full = param.asInt(); }
 
-BLYNK_WRITE(V30) { 
-    aggbKp = param.asDouble();
-}
+BLYNK_WRITE(V30) { aggbKp = param.asDouble(); }
 
-BLYNK_WRITE(V31) { 
-    aggbTn = param.asDouble();
- }
+BLYNK_WRITE(V31) { aggbTn = param.asDouble(); }
 
-BLYNK_WRITE(V32) { 
-    aggbTv = param.asDouble();
-}
+BLYNK_WRITE(V32) { aggbTv = param.asDouble(); }
 
-BLYNK_WRITE(V33) { 
-    brewtimersoftware = param.asDouble();
-}
+BLYNK_WRITE(V33) { brewtimersoftware = param.asDouble(); }
 
-BLYNK_WRITE(V34) { 
-    brewboarder = param.asDouble();
-}
+BLYNK_WRITE(V34) { brewboarder = param.asDouble(); }
 
-BLYNK_WRITE(V40) { 
-    backflushON = param.asInt();
-}
+BLYNK_WRITE(V40) { backflushON = param.asInt(); }
 
 #if (COLDSTART_PID == 2)  // Blynk values, else default starttemp from config
-    BLYNK_WRITE(V11) { 
-    startKp = param.asDouble(); 
-    }
+    BLYNK_WRITE(V11) { startKp = param.asDouble(); }
 
-    BLYNK_WRITE(V14) { 
-    startTn = param.asDouble(); 
-    }
+    BLYNK_WRITE(V14) { startTn = param.asDouble(); }
 #endif
 
 #if (PRESSURESENSOR == 1)  // Pressure sensor connected
@@ -1146,6 +1123,33 @@ int filter(int input) {
 }
 
 /**
+ * @brief Assign the value of the mqtt parameter to the associated variable
+ *
+ * @param param MQTT parameter name
+ * @param value MQTT value
+ */
+void assignMQTTParam(char *param, double value) {
+    String key = String(param);
+    boolean paramExists = false;
+
+    for (mqttVars_t m : mqttVars) {
+        if (m.mqttParamName.equals(key)) {
+            paramExists = true;
+            *m.mqttVarPtr = value;
+            break;
+        }
+    }
+
+    if (paramExists) {
+        mqtt_publish(param, number2string(value));
+        writeSysParamsToBlynk();
+    }
+    else {
+        Serial.printf("%s is not a valid MQTT parameter.", param);
+    }
+}
+
+/**
  * @brief MQTT Callback Function: set Parameters through MQTT
  */
 void mqtt_callback(char *topic, byte *data, unsigned int length) {
@@ -1171,46 +1175,9 @@ void mqtt_callback(char *topic, byte *data, unsigned int length) {
     Serial.println(topic_str);
     Serial.println(data_str);
 
-    if (strcmp(configVar, "BrewSetPoint") == 0) {
-        sscanf(data_str, "%lf", &data_double);
-        mqtt_publish("BrewSetPoint", number2string(BrewSetPoint));
-        BrewSetPoint = data_double;
-        writeSysParamsToBlynk();
-        return;
-    }
+    sscanf(data_str, "%lf", &data_double);
 
-    if (strcmp(configVar, "brewtime") == 0) {
-        sscanf(data_str, "%lf", &data_double);
-        writeSysParamsToBlynk();
-        mqtt_publish("brewtime", number2string(brewtime));
-        brewtime = data_double;
-        writeSysParamsToBlynk();
-        return;
-    }
-
-    if (strcmp(configVar, "preinfusion") == 0) {
-        sscanf(data_str, "%lf", &data_double);
-        mqtt_publish("preinfusion", number2string(preinfusion));
-        preinfusion = data_double;
-        writeSysParamsToBlynk();
-        return;
-    }
-
-    if (strcmp(configVar, "preinfusionpause") == 0) {
-        sscanf(data_str, "%lf", &data_double);
-        mqtt_publish("preinfusionpause", number2string(preinfusionpause));
-        preinfusionpause = data_double;
-        writeSysParamsToBlynk();
-        return;
-    }
-
-    if (strcmp(configVar, "pidON") == 0) {
-        sscanf(data_str, "%lf", &data_double);
-        mqtt_publish("pidON", number2string(pidON));
-        pidON = data_double;
-        writeSysParamsToBlynk();
-        return;
-    }
+    assignMQTTParam(configVar, data_double);
 }
 
 /**
@@ -2051,7 +2018,7 @@ void setup() {
 
         enableTimer1();
 
-        //first send of MQTT values after setup:
+        // first send of MQTT values after setup:
         writeSysParamsToMQTT();
 
     }  // else softenable == 1
@@ -2155,6 +2122,7 @@ void looppid() {
         if (MQTT == 1) {
             checkMQTT();
             writeSysParamsToMQTT();
+
             if (mqtt.connected() == 1) {
                 mqtt.loop();
             }
@@ -2471,16 +2439,17 @@ void writeSysParamsToBlynk(void) {
         #endif
     }
 }
+
 /**
  * @brief Send all current system parameter values to MQTT
  *
  * @return TODO 0 = success, < 0 = failure
  */
-
 void writeSysParamsToMQTT(void) {
     unsigned long currentMillisMQTT = millis();
     if ((currentMillisMQTT - previousMillisMQTT >= intervalMQTT) && (MQTT == 1)) {
         previousMillisMQTT = currentMillisMQTT;
+
         if (mqtt.connected() == 1) {
             mqtt_publish("temperature", number2string(Input));
             mqtt_publish("setPoint", number2string(setPoint));
@@ -2495,6 +2464,7 @@ void writeSysParamsToMQTT(void) {
             mqtt_publish("preinfusionpause", number2string(preinfusionpause));
             mqtt_publish("preinfusion", number2string(preinfusion));
             mqtt_publish("SteamON", number2string(SteamON));
+
             // Normal PID
             mqtt_publish("aggKp", number2string(aggKp));
             mqtt_publish("aggTn", number2string(aggTn));
