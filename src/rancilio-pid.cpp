@@ -167,7 +167,11 @@ unsigned int MQTTReCnctFlag;       // Blynk Reconnection Flag
 unsigned int MQTTReCnctCount = 0;  // Blynk Reconnection counter
 
 // InfluxDB Client
-InfluxDBClient client(INFLUXDB_URL, INFLUXDB_DB_NAME);
+#if (INFLUXDB_AUTH == 1)
+    InfluxDBClient client;
+#else
+    InfluxDBClient client(INFLUXDB_URL, INFLUXDB_DB_NAME);
+#endif
 Point sensor("machinestate");
 const unsigned long intervalInflux = INTERVALINFLUX;
 unsigned long previousMillisInflux;  // initialisation at the end of init()
@@ -1989,6 +1993,11 @@ void setup() {
                 mqtt.setCallback(mqtt_callback);
                 checkMQTT();
             }
+
+            if(INFLUXDB_AUTH == 1) {
+                client.setConnectionParamsV1(INFLUXDB_URL, INFLUXDB_DB_NAME, INFLUXDB_USER, INFLUXDB_PASSWORD);
+            }
+
         }
 
         // Initialize PID controller
