@@ -2020,6 +2020,11 @@ void setup() {
                 mqtt.setCallback(mqtt_callback);
                 checkMQTT();
             }
+
+            if ((strlen(INFLUXDB_USER) > 0) && (strlen(INFLUXDB_PASSWORD) > 0)) {
+                client.setConnectionParamsV1(INFLUXDB_URL, INFLUXDB_DB_NAME, INFLUXDB_USER, INFLUXDB_PASSWORD);
+            }
+
         }
 
         // Initialize PID controller
