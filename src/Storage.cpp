@@ -48,6 +48,7 @@ typedef struct __attribute__((packed)) {
     uint8_t freeToUse14[2];
     char wifiSSID[25 + 1];
     char wifiPassword[25 + 1];
+    double weightsetpoint;
 } sto_data_t;
 
 
@@ -88,6 +89,7 @@ static const sto_data_t itemDefaults PROGMEM = {
     {0xFF, 0xFF},  // free to use
     "",            // STO_ITEM_WIFI_SSID
     "",            // STO_ITEM_WIFI_PASSWORD
+    WEIGHTSETPOINT,
 };
 
 /**
@@ -189,6 +191,11 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
             addr = offsetof(sto_data_t, wifiPassword);
             size = STRUCT_MEMBER_SIZE(sto_data_t, wifiPassword);
             break;
+
+         case STO_ITEM_WEIGHTSETPOINT:
+            addr = offsetof(sto_data_t, brewTimeMs);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, brewTimeMs);
+            break;    
 
         default:
             Serial.printf("%s(): invalid item ID %i!\n", __FUNCTION__, itemId);

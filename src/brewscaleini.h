@@ -33,12 +33,11 @@ double lastbrewTime = 0 ;
 unsigned long startingTime = 0;                     // start time of brew
 const unsigned long analogreadingtimeinterval = 10; // ms
 unsigned long previousMillistempanalogreading;      // ms for analogreading
-
+double weightSetpoint = WEIGHTSETPOINT;
 /**
  * Shot timer with or without scale
  */
 #if (ONLYPIDSCALE == 1 || BREWMODE == 2)
-    float weightSetpoint = WEIGHTSETPOINT;
     int shottimercounter = 10 ;
     float calibrationValue = 3195.83;           // use calibration example to get value
     float weight = 0;                           // value from HX711
