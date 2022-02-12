@@ -28,7 +28,6 @@
 #include <PubSubClient.h>
 #include <U8g2lib.h>    // i2c display
 #include <ZACwire.h>    // new TSIC bus library
-
 #include "PID_v1.h"     // for PID calculation
 #include "TSIC.h"       // library for TSIC temp sensor
 
@@ -152,20 +151,6 @@ const unsigned long fillTime = FILLTIME;
 const unsigned long flushTime = FLUSHTIME;
 int maxflushCycles = MAXFLUSHCYCLES;
 
-// MQTT
-WiFiClient net;
-PubSubClient mqtt(net);
-const char *mqtt_server_ip = MQTT_SERVER_IP;
-const int mqtt_server_port = MQTT_SERVER_PORT;
-const char *mqtt_username = MQTT_USERNAME;
-const char *mqtt_password = MQTT_PASSWORD;
-const char *mqtt_topic_prefix = MQTT_TOPIC_PREFIX;
-char topic_will[256];
-char topic_set[256];
-unsigned long lastMQTTConnectionAttempt = millis();
-unsigned int MQTTReCnctFlag;       // Blynk Reconnection Flag
-unsigned int MQTTReCnctCount = 0;  // Blynk Reconnection counter
-
 // InfluxDB Client
 InfluxDBClient client(INFLUXDB_URL, INFLUXDB_DB_NAME);
 Point sensor("machinestate");
@@ -200,6 +185,7 @@ bool coolingFlushDetectedQM = false;
 bool mqtt_publish(const char *reading, char *payload);
 void setSteamMode(int steamMode);
 void setPidStatus(int pidStatus);
+void setBackflush(int backflush);
 void loopcalibrate();
 void looppid();
 void initSteamQM();
@@ -331,6 +317,33 @@ const unsigned long intervalBlynk = 1000;
 const unsigned long intervalMQTT = 5000;
 int blynksendcounter = 1;
 
+// MQTT
+WiFiClient net;
+PubSubClient mqtt(net);
+const char *mqtt_server_ip = MQTT_SERVER_IP;
+const int mqtt_server_port = MQTT_SERVER_PORT;
+const char *mqtt_username = MQTT_USERNAME;
+const char *mqtt_password = MQTT_PASSWORD;
+const char *mqtt_topic_prefix = MQTT_TOPIC_PREFIX;
+char topic_will[256];
+char topic_set[256];
+unsigned long lastMQTTConnectionAttempt = millis();
+unsigned int MQTTReCnctFlag;       // Blynk Reconnection Flag
+unsigned int MQTTReCnctCount = 0;  // Blynk Reconnection counter
+
+struct mqttVars_t {
+    String mqttParamName;
+    double *mqttVarPtr;
+};
+
+std::vector<mqttVars_t> mqttVars = {
+    {"BrewSetPoint", &BrewSetPoint},
+    {"brewtime", &brewtime},
+    {"preinfusion", &preinfusion},
+    {"preinfusionpause", &preinfusionpause},
+    {"pidON", (double *)&pidON} // TODO somewhat ugly hack
+};
+
 // Embedded HTTP Server
 #include "RancilioServer.h"
 
@@ -353,8 +366,14 @@ std::vector<editable_t> editableVars = {
     {"AP_WIFI_KEY", "AP WiFi Password", kCString, (void *)AP_WIFI_KEY},
     {"START_KP", "Start P", kDouble, (void *)&startKp},
     {"START_TN", "Start I", kDouble, (void *)&startTn},
-    {"STEAM_MODE", "STEAM MODE", rInteger, (void *)&SteamON}
+    {"STEAM_MODE", "Steam Mode", rInteger, (void *)&SteamON},
+    {"BACKFLUSH_ON", "Backflush", rInteger, (void *)&backflushON},
+    {"WEIGHTSETPOINT", "Brew weight setpoint (g)",kDouble, (void *)&weightSetpoint},
 };
+
+
+
+
 
 unsigned long lastTempEvent = 0;
 unsigned long tempEventInterval = 1000;
@@ -439,7 +458,7 @@ void createSoftAp() {
         WiFi.softAPConfig(localIp, gateway, subnet);
 
         softApEnabledcheck = true;
-        Serial.println("Set softApEnabled: 1, AP MODE\n");
+        Serial.println("Set softApEnabled: 1, Setup AP MODE\n");
 
         uint8_t eepromvalue = 0;
         storageSet(STO_ITEM_SOFT_AP_ENABLED_CHECK, eepromvalue, true);
@@ -451,7 +470,7 @@ void createSoftAp() {
             WiFi.softAPIP()[2], WiFi.softAPIP()[3]);
 
         #if (OLED_DISPLAY != 0)
-            displayMessage("AP-MODE: SSID:", String(AP_WIFI_SSID), "KEY:", String(AP_WIFI_KEY), "IP:", "192.168.1.1");
+            displayMessage("Setup-MODE: SSID:", String(AP_WIFI_SSID), "KEY:", String(AP_WIFI_KEY), "IP:", "192.168.1.1");
         #endif
     }
 
@@ -500,30 +519,15 @@ BLYNK_WRITE(V5) { aggTn = param.asDouble(); }
 
 BLYNK_WRITE(V6) { aggTv = param.asDouble(); }
 
-BLYNK_WRITE(V7) {
-    BrewSetPoint = param.asDouble();
-    mqtt_publish("BrewSetPoint", number2string(BrewSetPoint));
-}
+BLYNK_WRITE(V7) { BrewSetPoint = param.asDouble(); }
 
-BLYNK_WRITE(V8) {
-    brewtime = param.asDouble();
-    mqtt_publish("brewtime", number2string(brewtime));
-}
+BLYNK_WRITE(V8) { brewtime = param.asDouble(); }
 
-BLYNK_WRITE(V9) {
-    preinfusion = param.asDouble();
-    mqtt_publish("preinfusion", number2string(preinfusion));
-}
+BLYNK_WRITE(V9) { preinfusion = param.asDouble(); }
 
-BLYNK_WRITE(V10) {
-    preinfusionpause = param.asDouble();
-    mqtt_publish("preinfusionpause", number2string(preinfusionpause));
-}
+BLYNK_WRITE(V10) { preinfusionpause = param.asDouble(); }
 
-BLYNK_WRITE(V13) {
-    pidON = param.asInt();
-    mqtt_publish("pidON", number2string(pidON));
-}
+BLYNK_WRITE(V13) { pidON = param.asInt(); }
 
 BLYNK_WRITE(V15) {
     SteamON = param.asInt();
@@ -535,14 +539,9 @@ BLYNK_WRITE(V15) {
     if (SteamON == 0) {
         SteamFirstON = 0;
     }
-
-    mqtt_publish("SteamON", number2string(SteamON));
 }
 
-BLYNK_WRITE(V16) {
-    SteamSetPoint = param.asDouble();
-    mqtt_publish("SteamSetPoint", number2string(SteamSetPoint));
-}
+BLYNK_WRITE(V16) { SteamSetPoint = param.asDouble(); }
 
 #if (BREWMODE == 2)
     BLYNK_WRITE(V18) { weightSetpoint = param.asFloat(); }
@@ -959,7 +958,6 @@ void sendToBlynkMQTT() {
     if (Offlinemodus == 1) return;
 
     unsigned long currentMillisBlynk = millis();
-    unsigned long currentMillisMQTT = millis();
 
     if ((currentMillisBlynk - previousMillisBlynk >= intervalBlynk) && (BLYNK == 1)) {
         previousMillisBlynk = currentMillisBlynk;
@@ -992,27 +990,6 @@ void sendToBlynkMQTT() {
         }
 
         blynksendcounter++;
-        }
-    }
-
-    if ((currentMillisMQTT - previousMillisMQTT >= intervalMQTT) && (MQTT == 1)) {
-        previousMillisMQTT = currentMillisMQTT;
-        checkMQTT();
-
-        if (mqtt.connected() == 1) {
-            mqtt_publish("temperature", number2string(Input));
-            mqtt_publish("setPoint", number2string(setPoint));
-            mqtt_publish("BrewSetPoint", number2string(BrewSetPoint));
-            mqtt_publish("SteamSetPoint", number2string(SteamSetPoint));
-            mqtt_publish("HeaterPower", number2string(Output));
-            mqtt_publish("currentKp", number2string(bPID.GetKp()));
-            mqtt_publish("currentKi", number2string(bPID.GetKi()));
-            mqtt_publish("currentKd", number2string(bPID.GetKd()));
-            mqtt_publish("pidON", number2string(pidON));
-            mqtt_publish("brewtime", number2string(brewtime));
-            mqtt_publish("preinfusionpause", number2string(preinfusionpause));
-            mqtt_publish("preinfusion", number2string(preinfusion));
-            mqtt_publish("SteamON", number2string(SteamON));
         }
     }
 }
@@ -1153,6 +1130,33 @@ int filter(int input) {
 }
 
 /**
+ * @brief Assign the value of the mqtt parameter to the associated variable
+ *
+ * @param param MQTT parameter name
+ * @param value MQTT value
+ */
+void assignMQTTParam(char *param, double value) {
+    String key = String(param);
+    boolean paramExists = false;
+
+    for (mqttVars_t m : mqttVars) {
+        if (m.mqttParamName.equals(key)) {
+            paramExists = true;
+            *m.mqttVarPtr = value;
+            break;
+        }
+    }
+
+    if (paramExists) {
+        mqtt_publish(param, number2string(value));
+        writeSysParamsToBlynk();
+    }
+    else {
+        Serial.printf("%s is not a valid MQTT parameter.", param);
+    }
+}
+
+/**
  * @brief MQTT Callback Function: set Parameters through MQTT
  */
 void mqtt_callback(char *topic, byte *data, unsigned int length) {
@@ -1178,65 +1182,9 @@ void mqtt_callback(char *topic, byte *data, unsigned int length) {
     Serial.println(topic_str);
     Serial.println(data_str);
 
-    if (strcmp(configVar, "BrewSetPoint") == 0) {
-        sscanf(data_str, "%lf", &data_double);
-        mqtt_publish("BrewSetPoint", number2string(BrewSetPoint));
+    sscanf(data_str, "%lf", &data_double);
 
-        if (Blynk.connected()) {
-            Blynk.virtualWrite(V7, String(data_double));
-        }
-
-        BrewSetPoint = data_double;
-        return;
-    }
-
-    if (strcmp(configVar, "brewtime") == 0) {
-        sscanf(data_str, "%lf", &data_double);
-
-        if (Blynk.connected()) {
-            Blynk.virtualWrite(V8, String(data_double));
-        }
-
-        mqtt_publish("brewtime", number2string(brewtime));
-        brewtime = data_double;
-        return;
-    }
-
-    if (strcmp(configVar, "preinfusion") == 0) {
-        sscanf(data_str, "%lf", &data_double);
-
-        if (Blynk.connected()) {
-            Blynk.virtualWrite(V9, String(data_double));
-        }
-
-        mqtt_publish("preinfusion", number2string(preinfusion));
-        preinfusion = data_double;
-        return;
-    }
-
-    if (strcmp(configVar, "preinfusionpause") == 0) {
-        sscanf(data_str, "%lf", &data_double);
-
-        if (Blynk.connected()) {
-            Blynk.virtualWrite(V10, String(data_double));
-        }
-
-        mqtt_publish("preinfusionpause", number2string(preinfusionpause));
-        preinfusionpause = data_double;
-        return;
-    }
-
-    if (strcmp(configVar, "pidON") == 0) {
-        sscanf(data_str, "%lf", &data_double);
-
-        if (Blynk.connected()) {
-            Blynk.virtualWrite(V13, String(data_double));
-        }
-
-        mqtt_publish("pidON", number2string(pidON));
-        pidON = data_double;
-        return;
-    }
+    assignMQTTParam(configVar, data_double);
 }
 
 /**
@@ -2076,6 +2024,7 @@ void setup() {
         setupDone = true;
 
         enableTimer1();
+
     }  // else softenable == 1
 }
 
@@ -2176,6 +2125,7 @@ void looppid() {
     if (WiFi.status() == WL_CONNECTED && Offlinemodus == 0) {
         if (MQTT == 1) {
             checkMQTT();
+            writeSysParamsToMQTT();
 
             if (mqtt.connected() == 1) {
                 mqtt.loop();
@@ -2386,6 +2336,12 @@ void looppid() {
     // sensor error OR Emergency Stop
 }
 
+void setBackflush(int backflush) {
+    backflushON = backflush;
+    writeSysParamsToBlynk();
+}
+
+
 void setSteamMode(int steamMode) {
     SteamON = steamMode;
 
@@ -2396,26 +2352,12 @@ void setSteamMode(int steamMode) {
     if (SteamON == 0) {
         SteamFirstON = 0;
     }
-
-    if (BLYNK == 1 && Blynk.connected()) {
-        Blynk.virtualWrite(V15, SteamON);
-    }
-
-    if (MQTT == 1) {
-        mqtt_publish("SteamSetPoint", number2string(SteamSetPoint));
-    }
+    writeSysParamsToBlynk();
 }
 
 void setPidStatus(int pidStatus) {
     pidON = pidStatus;
-
-    if (BLYNK == 1 && Blynk.connected()) {
-        Blynk.virtualWrite(V13, pidON);
-    }
-
-    if (MQTT == 1) {
-        mqtt_publish("pidON", number2string(pidON));
-    }
+     writeSysParamsToBlynk();
 }
 
 /**
@@ -2493,9 +2435,11 @@ void writeSysParamsToBlynk(void) {
         Blynk.virtualWrite(V15, SteamON);
         Blynk.virtualWrite(V16, SteamSetPoint);
         Blynk.virtualWrite(V17, setPoint);
+        Blynk.virtualWrite(V40, backflushON);
+        Blynk.virtualWrite(V15, SteamON);
 
         #if (BREWMODE == 2)
-            Blynk.virtualWrite(V18, weightSetpoint;
+            Blynk.virtualWrite(V18, weightSetpoint);
         #endif
 
         #if (COLDSTART_PID == 2)  // 2=?Blynk values, else default starttemp from config
@@ -2504,48 +2448,55 @@ void writeSysParamsToBlynk(void) {
         #endif
     }
 }
+
 /**
  * @brief Send all current system parameter values to MQTT
  *
  * @return TODO 0 = success, < 0 = failure
  */
-
 void writeSysParamsToMQTT(void) {
- if (MQTT == 1) {
-    // Normal PID
-    mqtt_publish("aggKp", number2string(aggKp));
-    mqtt_publish("aggTn", number2string(aggTn));
-    mqtt_publish("aggTv", number2string(aggTv));
+    unsigned long currentMillisMQTT = millis();
+    if ((currentMillisMQTT - previousMillisMQTT >= intervalMQTT) && (MQTT == 1)) {
+        previousMillisMQTT = currentMillisMQTT;
 
-    // BD PID
-    mqtt_publish("aggbKp", number2string(aggbKp));
-    mqtt_publish("aggbTn", number2string(aggbTn));
-    mqtt_publish("aggbTv", number2string(aggbTv));
+        if (mqtt.connected() == 1) {
+            mqtt_publish("temperature", number2string(Input));
+            mqtt_publish("setPoint", number2string(setPoint));
+            mqtt_publish("BrewSetPoint", number2string(BrewSetPoint));
+            mqtt_publish("SteamSetPoint", number2string(SteamSetPoint));
+            mqtt_publish("HeaterPower", number2string(Output));
+            mqtt_publish("currentKp", number2string(bPID.GetKp()));
+            mqtt_publish("currentKi", number2string(bPID.GetKi()));
+            mqtt_publish("currentKd", number2string(bPID.GetKd()));
+            mqtt_publish("pidON", number2string(pidON));
+            mqtt_publish("brewtime", number2string(brewtime));
+            mqtt_publish("preinfusionpause", number2string(preinfusionpause));
+            mqtt_publish("preinfusion", number2string(preinfusion));
+            mqtt_publish("SteamON", number2string(SteamON));
 
-    // Start PI
-    mqtt_publish("startKp", number2string(startKp));
-    mqtt_publish("startTn", number2string(startTn));
+            // Normal PID
+            mqtt_publish("aggKp", number2string(aggKp));
+            mqtt_publish("aggTn", number2string(aggTn));
+            mqtt_publish("aggTv", number2string(aggTv));
 
-    //BD Parameter
-    mqtt_publish("BrewTimer", number2string(brewtimersoftware));
-    mqtt_publish("BrewLimit", number2string(brewboarder));
+            // BD PID
+            mqtt_publish("aggbKp", number2string(aggbKp));
+            mqtt_publish("aggbTn", number2string(aggbTn));
+            mqtt_publish("aggbTv", number2string(aggbTv));
 
-    // Values in the send cyle
-    /*
-    mqtt_publish("temperature", number2string(Input));
-    mqtt_publish("setPoint", number2string(setPoint));
-    mqtt_publish("BrewSetPoint", number2string(BrewSetPoint));
-    mqtt_publish("SteamSetPoint", number2string(SteamSetPoint));
-    mqtt_publish("HeaterPower", number2string(Output));
-    mqtt_publish("currentKp", number2string(bPID.GetKp()));
-    mqtt_publish("currentKi", number2string(bPID.GetKi()));
-    mqtt_publish("currentKd", number2string(bPID.GetKd()));
-    mqtt_publish("pidON", number2string(pidON));
-    mqtt_publish("brewtime", number2string(brewtime));
-    mqtt_publish("preinfusionpause", number2string(preinfusionpause));
-    mqtt_publish("preinfusion", number2string(preinfusion));
-    mqtt_publish("SteamON", number2string(SteamON)); */
-  }
+            // Start PI
+            mqtt_publish("startKp", number2string(startKp));
+            mqtt_publish("startTn", number2string(startTn));
+
+            //BD Parameter
+            mqtt_publish("BrewTimer", number2string(brewtimersoftware));
+            mqtt_publish("BrewLimit", number2string(brewboarder));
+
+            #if (BREWMODE == 2)
+                mqtt_publish("weightSetpoint(g)", number2string(weightSetpoint));
+            #endif
+        }
+    }
 }
 
 

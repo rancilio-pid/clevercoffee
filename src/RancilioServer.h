@@ -174,7 +174,7 @@ String staticProcessor(const String& var) {
 
 void serverSetup() {
     server.on("/steam", HTTP_POST, [](AsyncWebServerRequest *request) {
-        int steam = (SteamON + 3) % 2;
+        int steam = (SteamON + 3) % 2; // 0 to 1, 1 to 0
 
         setSteamMode(steam);
         Serial.printf("Toggle steam mode: %i \n", steam);
@@ -183,12 +183,20 @@ void serverSetup() {
     });
 
     server.on("/pidstatus", HTTP_POST, [](AsyncWebServerRequest *request) {
-        int status = (pidON + 3) % 2;
+        int status = (pidON + 3) % 2; // 0 to 1, 1 to 0
 
         setPidStatus(status);
         Serial.printf("Toggle PID controller status: %i \n", status);
 
         request->redirect("/");
+    });
+
+    server.on("/backflush", HTTP_POST, [](AsyncWebServerRequest *request) {
+    int backflush = (backflushON + 3) % 2; // 0 to 1, 1 to 0
+    setBackflush(backflush);
+    Serial.printf("Toggle Backflush %i \n", backflush);
+
+    request->redirect("/");
     });
 
     server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) {
