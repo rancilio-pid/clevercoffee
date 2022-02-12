@@ -367,7 +367,8 @@ std::vector<editable_t> editableVars = {
     {"START_KP", "Start P", kDouble, (void *)&startKp},
     {"START_TN", "Start I", kDouble, (void *)&startTn},
     {"STEAM_MODE", "Steam Mode", rInteger, (void *)&SteamON},
-    {"BACKFLUSH_ON", "Backflush", rInteger, (void *)&backflushON}
+    {"BACKFLUSH_ON", "Backflush", rInteger, (void *)&backflushON},
+    {"WEIGHTSETPOINT", "Brew weight setpoint (g)",kDouble, (void *)&weightSetpoint},
 };
 
 
@@ -2430,7 +2431,7 @@ void writeSysParamsToBlynk(void) {
         Blynk.virtualWrite(V15, SteamON);
 
         #if (BREWMODE == 2)
-            Blynk.virtualWrite(V18, weightSetpoint;
+            Blynk.virtualWrite(V18, weightSetpoint);
         #endif
 
         #if (COLDSTART_PID == 2)  // 2=?Blynk values, else default starttemp from config
