@@ -135,7 +135,7 @@ void printScreen()
             }
 
             if (MQTT == 1) {
-                if (mqtt.connect(hostname, mqtt_username, mqtt_password)) {
+                if (mqtt.connected() == 1) {
                     u8g2.setCursor(77, 2);
                     u8g2.print("MQTT");
                 } else {
