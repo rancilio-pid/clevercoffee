@@ -341,7 +341,19 @@ std::vector<mqttVars_t> mqttVars = {
     {"brewtime", &brewtime},
     {"preinfusion", &preinfusion},
     {"preinfusionpause", &preinfusionpause},
-    {"pidON", (double *)&pidON} // TODO somewhat ugly hack
+    {"pidON", (double *)&pidON}, // TODO somewhat ugly hack
+   // {"backflush",(double *)&backflushON},
+    {"aggKp",&aggKp},
+    {"aggTn",&aggTn},
+    {"aggTv",&aggTv},
+    {"aggKp",&aggbKp},
+    {"aggTn",&aggbTn},
+    {"aggTv",&aggbTv},
+    {"startKp",&startKp},
+    {"startTn",&startTn},
+    {"BrewTimer",&brewtimersoftware},
+    {"BrewLimit",&brewboarder},
+    {"weightSetpoint",&weightSetpoint}
 };
 
 // Embedded HTTP Server
@@ -2485,7 +2497,7 @@ void writeSysParamsToMQTT(void) {
             mqtt_publish("BrewLimit", number2string(brewboarder));
 
             #if (BREWMODE == 2)
-                mqtt_publish("weightSetpoint(g)", number2string(weightSetpoint));
+                mqtt_publish("weightSetpoint", number2string(weightSetpoint));
             #endif
         }
     }
