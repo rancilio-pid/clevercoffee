@@ -27,6 +27,7 @@
 
 enum EditableKind {
     kInteger,
+    kUInt8,
     kDouble,
     kDoubletime,
     kCString,
@@ -100,6 +101,10 @@ String generateForm(String varName) {
                 result += "<input class=\"form-control\" type=\"number\" step=\"1\"";
                 currVal = String(*(int *)e.ptr);
                 break;
+            case kUInt8:
+                result += "<input class=\"form-control\" type=\"number\" step=\"1\"";
+                currVal = String(*(uint8_t *)e.ptr);
+                break;
             default:
                 result += "<input class=\"form-control\" type=\"text\"";
                 currVal = (const char *)e.ptr;
@@ -135,6 +140,9 @@ String getValue(String varName) {
                 break;
             case kInteger:
                 return String(*(int *)e.ptr);
+                break;
+            case kUInt8:
+                return String(*(uint8_t *)e.ptr);
                 break;
             case kCString:
                 return String((const char *)e.ptr);
@@ -224,6 +232,10 @@ void serverSetup() {
                     *(int *)e.ptr = newVal;
                     m += ", it is now: ";
                     m += *(int *)e.ptr;
+                } else if (e.type == kUInt8) {
+                    *(uint8_t *)e.ptr = (uint8_t)atoi(p->value().c_str());
+                    m += ", it is now: ";
+                    m += *(uint8_t *)e.ptr;
                 } else if (e.type == kDouble ||e.type == kDoubletime) {
                     float newVal = atof(p->value().c_str());
                     *(double *)e.ptr = newVal;
