@@ -647,8 +647,8 @@ int storageCommit(void) {
  *         <0 - failed
  */
 int storageFactoryReset(void) {
-        Serial.printf("%s(): reset all values\n", __FUNCTION__);
-        memset(EEPROM.getDataPtr(), 0xFF, sizeof(sto_data_t));
+    Serial.printf("%s(): reset all values\n", __FUNCTION__);
+    memset(EEPROM.getDataPtr(), 0xFF, sizeof(sto_data_t));
 
-        return storageCommit();
+    return storageCommit();
 }

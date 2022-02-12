@@ -17,6 +17,7 @@
 #include <ArduinoOTA.h>
 #include "rancilio-pid.h"
 #include "Storage.h"
+#include "SysPara.h"
 #include "icon.h"        // user icons for display
 #include "languages.h"   // for language translation
 #include "userConfig.h"  // needs to be configured by the user
@@ -199,7 +200,7 @@ char *number2string(unsigned int in);
 int filter(int input);
 
 // Variable declarations
-int pidON = 1;                   // 1 = control loop in closed loop
+uint8_t pidON = 1;               // 1 = control loop in closed loop
 int relayON, relayOFF;           // used for relay trigger type. Do not change!
 boolean kaltstart = true;        // true = Rancilio started for first time
 boolean emergencyStop = false;   // Notstop bei zu hoher Temperatur
@@ -331,6 +332,24 @@ unsigned long lastMQTTConnectionAttempt = millis();
 unsigned int MQTTReCnctFlag;       // Blynk Reconnection Flag
 unsigned int MQTTReCnctCount = 0;  // Blynk Reconnection counter
 
+// system parameters (current value as pointer to variable, minimum, maximum, optional storage ID)
+SysParaClass<double> sysParaPidKpStart(&startKp, 0, 100, STO_ITEM_PID_KP_START);
+SysParaClass<double> sysParaPidTnStart(&startTn, 0, 999, STO_ITEM_PID_TN_START);
+SysParaClass<double> sysParaPidKpReg(&aggKp, 0, 100, STO_ITEM_PID_KP_REGULAR);
+SysParaClass<double> sysParaPidTnReg(&aggTn, 0, 999, STO_ITEM_PID_TN_REGULAR);
+SysParaClass<double> sysParaPidTvReg(&aggTv, 0, 999, STO_ITEM_PID_TV_REGULAR);
+SysParaClass<double> sysParaPidKpBd(&aggbKp, 0, 100, STO_ITEM_PID_KP_BD);
+SysParaClass<double> sysParaPidTnBd(&aggbTn, 0, 999, STO_ITEM_PID_TN_BD);
+SysParaClass<double> sysParaPidTvBd(&aggbTv, 0, 999, STO_ITEM_PID_TV_BD);
+SysParaClass<double> sysParaBrewSetPoint(&BrewSetPoint, 89, 105, STO_ITEM_BREW_SETPOINT);
+SysParaClass<double> sysParaBrewTime(&brewtime, 0, 60, STO_ITEM_BREW_TIME);
+SysParaClass<double> sysParaBrewSwTimer(&brewtimersoftware, 0, 999, STO_ITEM_BREW_SW_TIMER);
+SysParaClass<double> sysParaBrewThresh(&brewboarder, 0, 999, STO_ITEM_BD_THRESHOLD);
+SysParaClass<double> sysParaPreInfTime(&preinfusion, 0, 10, STO_ITEM_PRE_INFUSION_TIME);
+SysParaClass<double> sysParaPreInfPause(&preinfusionpause, 0, 20, STO_ITEM_PRE_INFUSION_PAUSE);
+SysParaClass<double> sysParaWeightSetPoint(&weightSetpoint, 0, 500, STO_ITEM_WEIGHTSETPOINT);
+SysParaClass<uint8_t> sysParaPidOn(&pidON, 0, 1, STO_ITEM_PID_ON);
+
 struct mqttVars_t {
     String mqttParamName;
     double *mqttVarPtr;
@@ -348,7 +367,7 @@ std::vector<mqttVars_t> mqttVars = {
 #include "RancilioServer.h"
 
 std::vector<editable_t> editableVars = {
-    {"PID_ON", "PID on?", kInteger, (void *)&pidON},  // ummm, why isn't pidON a boolean?
+    {"PID_ON", "PID on?", kUInt8, (void *)&pidON},  // ummm, why isn't pidON a boolean?
     {"PID_KP", "PID P", kDouble, (void *)&aggKp},
     {"PID_TN", "PID I", kDouble, (void *)&aggTn},
     {"PID_TV", "PID D", kDouble, (void *)&aggTv},
@@ -2363,27 +2382,25 @@ void setPidStatus(int pidStatus) {
 /**
  * @brief Reads all system parameter values from non-volatile storage
  *
- * @return  TODO 0 = success, < 0 = failure
+ * @return 0 = success, < 0 = failure
  */
 int readSysParamsFromStorage(void) {
-    uint8_t stoPidOn;
-
-    storageGet(STO_ITEM_PID_KP_REGULAR, aggKp);
-    storageGet(STO_ITEM_PID_TN_REGULAR, aggTn);
-    storageGet(STO_ITEM_PID_TV_REGULAR, aggTv);
-    storageGet(STO_ITEM_BREW_SETPOINT, BrewSetPoint);
-    storageGet(STO_ITEM_BREW_TIME, brewtime);
-    storageGet(STO_ITEM_PRE_INFUSION_TIME, preinfusion);
-    storageGet(STO_ITEM_PRE_INFUSION_PAUSE, preinfusionpause);
-    storageGet(STO_ITEM_PID_KP_BD, aggbKp);
-    storageGet(STO_ITEM_PID_TN_BD, aggbTn);
-    storageGet(STO_ITEM_PID_TV_BD, aggbTv);
-    storageGet(STO_ITEM_BREW_SW_TIMER, brewtimersoftware);
-    storageGet(STO_ITEM_BD_THRESHOLD, brewboarder);
-    storageGet(STO_ITEM_PID_KP_START, startKp);
-    storageGet(STO_ITEM_PID_TN_START, startTn);
-    storageGet(STO_ITEM_PID_ON, stoPidOn);
-    pidON = stoPidOn;   //TODO: changing type of 'pidON' to uint8_t leads to weird value in WebGUI!
+    if (sysParaPidKpStart.getStorage() != 0) return -1;
+    if (sysParaPidTnStart.getStorage() != 0) return -1;
+    if (sysParaPidKpReg.getStorage() != 0) return -1;
+    if (sysParaPidTnReg.getStorage() != 0) return -1;
+    if (sysParaPidTvReg.getStorage() != 0) return -1;
+    if (sysParaPidKpBd.getStorage() != 0) return -1;
+    if (sysParaPidTnBd.getStorage() != 0) return -1;
+    if (sysParaPidTvBd.getStorage() != 0) return -1;
+    if (sysParaBrewSetPoint.getStorage() != 0) return -1;
+    if (sysParaBrewTime.getStorage() != 0) return -1;
+    if (sysParaBrewSwTimer.getStorage() != 0) return -1;
+    if (sysParaBrewThresh.getStorage() != 0) return -1;
+    if (sysParaPreInfTime.getStorage() != 0) return -1;
+    if (sysParaPreInfPause.getStorage() != 0) return -1;
+    if (sysParaWeightSetPoint.getStorage() != 0) return -1;
+    if (sysParaPidOn.getStorage() != 0) return -1;
 
     return 0;
 }
@@ -2394,24 +2411,22 @@ int readSysParamsFromStorage(void) {
  * @return 0 = success, < 0 = failure
  */
 int writeSysParamsToStorage(void) {
-    uint8_t stoPidOn;
-
-    storageSet(STO_ITEM_PID_KP_REGULAR, aggKp);
-    storageSet(STO_ITEM_PID_TN_REGULAR, aggTn);
-    storageSet(STO_ITEM_PID_TV_REGULAR, aggTv);
-    storageSet(STO_ITEM_BREW_SETPOINT, BrewSetPoint);
-    storageSet(STO_ITEM_BREW_TIME, brewtime);
-    storageSet(STO_ITEM_PRE_INFUSION_TIME, preinfusion);
-    storageSet(STO_ITEM_PRE_INFUSION_PAUSE, preinfusionpause);
-    storageSet(STO_ITEM_PID_KP_BD, aggbKp);
-    storageSet(STO_ITEM_PID_TN_BD, aggbTn);
-    storageSet(STO_ITEM_PID_TV_BD, aggbTv);
-    storageSet(STO_ITEM_BREW_SW_TIMER, brewtimersoftware);
-    storageSet(STO_ITEM_BD_THRESHOLD, brewboarder);
-    storageSet(STO_ITEM_PID_KP_START, startKp);
-    storageSet(STO_ITEM_PID_TN_START, startTn);
-    stoPidOn = (uint8_t)pidON;   //TODO: changing type of 'pidON' to uint8_t leads to weird value in WebGUI!
-    storageSet(STO_ITEM_PID_ON, stoPidOn);
+    if (sysParaPidKpStart.setStorage() != 0) return -1;
+    if (sysParaPidTnStart.setStorage() != 0) return -1;
+    if (sysParaPidKpReg.setStorage() != 0) return -1;
+    if (sysParaPidTnReg.setStorage() != 0) return -1;
+    if (sysParaPidTvReg.setStorage() != 0) return -1;
+    if (sysParaPidKpBd.setStorage() != 0) return -1;
+    if (sysParaPidTnBd.setStorage() != 0) return -1;
+    if (sysParaPidTvBd.setStorage() != 0) return -1;
+    if (sysParaBrewSetPoint.setStorage() != 0) return -1;
+    if (sysParaBrewTime.setStorage() != 0) return -1;
+    if (sysParaBrewSwTimer.setStorage() != 0) return -1;
+    if (sysParaBrewThresh.setStorage() != 0) return -1;
+    if (sysParaPreInfTime.setStorage() != 0) return -1;
+    if (sysParaPreInfPause.setStorage() != 0) return -1;
+    if (sysParaWeightSetPoint.setStorage() != 0) return -1;
+    if (sysParaPidOn.setStorage() != 0) return -1;
 
     return storageCommit();
 }
@@ -2500,15 +2515,6 @@ void writeSysParamsToMQTT(void) {
 }
 
 
-
-
-
-
-
-
-
-
-
 /**
  * @brief Returns the firmware version as string (x.y.z).
  *
@@ -2520,5 +2526,21 @@ const char* getFwVersion(void)
                                      String(FW_SUBVERSION) + "." +
                                      String(FW_HOTFIX);
     return sysVersion.c_str();
+}
+
+
+
+/**
+ * @brief Performs a factory reset.
+ *
+ * @return 0 = success, < 0 = failure
+ */
+int factoryReset(void) {
+    int stoStatus;
+
+    if ((stoStatus = storageFactoryReset()) != 0)
+        return stoStatus;
+
+    return readSysParamsFromStorage();
 }
 
