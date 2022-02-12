@@ -2431,7 +2431,7 @@ void writeSysParamsToBlynk(void) {
         Blynk.virtualWrite(V15, SteamON);
 
         #if (BREWMODE == 2)
-            Blynk.virtualWrite(V18, weightSetpoint;
+            Blynk.virtualWrite(V18, weightSetpoint);
         #endif
 
         #if (COLDSTART_PID == 2)  // 2=?Blynk values, else default starttemp from config
