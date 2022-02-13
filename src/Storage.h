@@ -33,6 +33,7 @@ typedef enum
   STO_ITEM_WIFI_SSID,               // Wifi SSID
   STO_ITEM_WIFI_PASSWORD,           // Wifi password
   STO_ITEM_WEIGHTSETPOINT,          // Brewweight setpoint
+  STO_ITEM_PID_ON,                  // PID on/off state
 
   /* WHEN ADDING NEW ITEMS FOLLOWING HAS TO BE UPDATED:
    * - storage structure:  sto_data_t
