@@ -1166,6 +1166,7 @@ void assignMQTTParam(char *param, double value) {
     else {
         Serial.printf("%s is not a valid MQTT parameter.", param);
     }
+    writeSysParamsToStorage();
 }
 
 /**
