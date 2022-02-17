@@ -332,35 +332,24 @@ unsigned long lastMQTTConnectionAttempt = millis();
 unsigned int MQTTReCnctFlag;       // Blynk Reconnection Flag
 unsigned int MQTTReCnctCount = 0;  // Blynk Reconnection counter
 
-// system parameters (current value as pointer to variable, minimum, maximum, optional storage ID)
-SysParaClass<double> sysParaPidKpStart(&startKp, 0, 100, STO_ITEM_PID_KP_START);
-SysParaClass<double> sysParaPidTnStart(&startTn, 0, 999, STO_ITEM_PID_TN_START);
-SysParaClass<double> sysParaPidKpReg(&aggKp, 0, 100, STO_ITEM_PID_KP_REGULAR);
-SysParaClass<double> sysParaPidTnReg(&aggTn, 0, 999, STO_ITEM_PID_TN_REGULAR);
-SysParaClass<double> sysParaPidTvReg(&aggTv, 0, 999, STO_ITEM_PID_TV_REGULAR);
-SysParaClass<double> sysParaPidKpBd(&aggbKp, 0, 100, STO_ITEM_PID_KP_BD);
-SysParaClass<double> sysParaPidTnBd(&aggbTn, 0, 999, STO_ITEM_PID_TN_BD);
-SysParaClass<double> sysParaPidTvBd(&aggbTv, 0, 999, STO_ITEM_PID_TV_BD);
-SysParaClass<double> sysParaBrewSetPoint(&BrewSetPoint, 89, 105, STO_ITEM_BREW_SETPOINT);
-SysParaClass<double> sysParaBrewTime(&brewtime, 0, 60, STO_ITEM_BREW_TIME);
-SysParaClass<double> sysParaBrewSwTimer(&brewtimersoftware, 0, 999, STO_ITEM_BREW_SW_TIMER);
-SysParaClass<double> sysParaBrewThresh(&brewboarder, 0, 999, STO_ITEM_BD_THRESHOLD);
-SysParaClass<double> sysParaPreInfTime(&preinfusion, 0, 10, STO_ITEM_PRE_INFUSION_TIME);
-SysParaClass<double> sysParaPreInfPause(&preinfusionpause, 0, 20, STO_ITEM_PRE_INFUSION_PAUSE);
-SysParaClass<double> sysParaWeightSetPoint(&weightSetpoint, 0, 500, STO_ITEM_WEIGHTSETPOINT);
-SysParaClass<uint8_t> sysParaPidOn(&pidON, 0, 1, STO_ITEM_PID_ON);
+enum MQTTSettableType {
+    tUInt8,
+    tDouble,
+};
 
 struct mqttVars_t {
     String mqttParamName;
-    double *mqttVarPtr;
+    MQTTSettableType type;
+    void *mqttVarPtr;
 };
 
 std::vector<mqttVars_t> mqttVars = {
-    {"BrewSetPoint", &BrewSetPoint},
-    {"brewtime", &brewtime},
-    {"preinfusion", &preinfusion},
-    {"preinfusionpause", &preinfusionpause},
-    {"pidON", (double *)&pidON} // TODO somewhat ugly hack
+    {"BrewSetPoint", tDouble, (void *)&BrewSetPoint},
+    {"brewtime", tDouble, (void *)&brewtime},
+    {"preinfusion", tDouble, (void *)&preinfusion},
+    {"preinfusionpause", tDouble, (void *)&preinfusionpause},
+    {"pidON", tUInt8, (void *)&pidON},
+    {"backflushON", tUInt8, (void *)&backflushON},
 };
 
 // Embedded HTTP Server
@@ -389,10 +378,6 @@ std::vector<editable_t> editableVars = {
     {"BACKFLUSH_ON", "Backflush", rInteger, (void *)&backflushON},
     {"WEIGHTSETPOINT", "Brew weight setpoint (g)",kDouble, (void *)&weightSetpoint},
 };
-
-
-
-
 
 unsigned long lastTempEvent = 0;
 unsigned long tempEventInterval = 1000;
@@ -1160,8 +1145,16 @@ void assignMQTTParam(char *param, double value) {
 
     for (mqttVars_t m : mqttVars) {
         if (m.mqttParamName.equals(key)) {
+            switch (m.type) {
+                case tDouble:
+                    *(double *)m.mqttVarPtr = value;
+                    break;
+                case tUInt8:
+                    *(uint8_t *)m.mqttVarPtr = value;
+                    break;
+            }
+
             paramExists = true;
-            *m.mqttVarPtr = value;
             break;
         }
     }
@@ -2488,6 +2481,7 @@ void writeSysParamsToMQTT(void) {
             mqtt_publish("preinfusionpause", number2string(preinfusionpause));
             mqtt_publish("preinfusion", number2string(preinfusion));
             mqtt_publish("SteamON", number2string(SteamON));
+            mqtt_publish("backflushON", number2string(backflushON));
 
             // Normal PID
             mqtt_publish("aggKp", number2string(aggKp));
@@ -2513,7 +2507,6 @@ void writeSysParamsToMQTT(void) {
         }
     }
 }
-
 
 /**
  * @brief Returns the firmware version as string (x.y.z).
