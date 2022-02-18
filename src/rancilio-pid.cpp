@@ -334,15 +334,15 @@ unsigned int MQTTReCnctCount = 0;  // Blynk Reconnection counter
 
 
 // system parameters (current value as pointer to variable, minimum, maximum, optional storage ID)
-SysPara<double> sysParaPidKpStart(&startKp, 0, 100, STO_ITEM_PID_KP_START);
+SysPara<double> sysParaPidKpStart(&startKp, 0, 200, STO_ITEM_PID_KP_START);
 SysPara<double> sysParaPidTnStart(&startTn, 0, 999, STO_ITEM_PID_TN_START);
-SysPara<double> sysParaPidKpReg(&aggKp, 0, 100, STO_ITEM_PID_KP_REGULAR);
+SysPara<double> sysParaPidKpReg(&aggKp, 0, 200, STO_ITEM_PID_KP_REGULAR);
 SysPara<double> sysParaPidTnReg(&aggTn, 0, 999, STO_ITEM_PID_TN_REGULAR);
 SysPara<double> sysParaPidTvReg(&aggTv, 0, 999, STO_ITEM_PID_TV_REGULAR);
-SysPara<double> sysParaPidKpBd(&aggbKp, 0, 100, STO_ITEM_PID_KP_BD);
+SysPara<double> sysParaPidKpBd(&aggbKp, 0, 200, STO_ITEM_PID_KP_BD);
 SysPara<double> sysParaPidTnBd(&aggbTn, 0, 999, STO_ITEM_PID_TN_BD);
 SysPara<double> sysParaPidTvBd(&aggbTv, 0, 999, STO_ITEM_PID_TV_BD);
-SysPara<double> sysParaBrewSetPoint(&BrewSetPoint, 89, 105, STO_ITEM_BREW_SETPOINT);
+SysPara<double> sysParaBrewSetPoint(&BrewSetPoint, 85, 105, STO_ITEM_BREW_SETPOINT);
 SysPara<double> sysParaBrewTime(&brewtime, 0, 60, STO_ITEM_BREW_TIME);
 SysPara<double> sysParaBrewSwTimer(&brewtimersoftware, 0, 999, STO_ITEM_BREW_SW_TIMER);
 SysPara<double> sysParaBrewThresh(&brewboarder, 0, 999, STO_ITEM_BD_THRESHOLD);
