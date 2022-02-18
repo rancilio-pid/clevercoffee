@@ -361,16 +361,24 @@ enum MQTTSettableType {
 struct mqttVars_t {
     String mqttParamName;
     MQTTSettableType type;
+    int minValue;
+    int maxValue;
     void *mqttVarPtr;
 };
 
 std::vector<mqttVars_t> mqttVars = {
-    {"BrewSetPoint", tDouble, (void *)&BrewSetPoint},
-    {"brewtime", tDouble, (void *)&brewtime},
-    {"preinfusion", tDouble, (void *)&preinfusion},
-    {"preinfusionpause", tDouble, (void *)&preinfusionpause},
-    {"pidON", tUInt8, (void *)&pidON},
-    {"backflushON", tUInt8, (void *)&backflushON},
+    {"BrewSetPoint", tDouble, 89, 105, (void *)&BrewSetPoint},
+    {"brewtime", tDouble, 0, 60, (void *)&brewtime},
+    {"preinfusion", tDouble, 0, 10, (void *)&preinfusion},
+    {"preinfusionpause", tDouble, 0, 20, (void *)&preinfusionpause},
+    {"pidON", tUInt8, 0, 1, (void *)&pidON},
+    {"backflushON", tUInt8, 0, 1, (void *)&backflushON},
+    {"aggKp", tDouble, 0, 100, (void *)&aggKp},
+    {"aggTn", tDouble, 0, 999, (void *)&aggTn},
+    {"aggTv", tDouble, 0, 999, (void *)&aggTv},
+    {"aggbKp", tDouble, 0, 100, (void *)&aggbKp},
+    {"aggbTn", tDouble, 0, 999, (void *)&aggbTn},
+    {"aggbTv", tDouble, 0, 999, (void *)&aggbTv}
 };
 
 // Embedded HTTP Server
@@ -1162,30 +1170,43 @@ int filter(int input) {
  */
 void assignMQTTParam(char *param, double value) {
     String key = String(param);
-    boolean paramExists = false;
+    boolean paramValid = false;
+    boolean paramInRange = false;
 
     for (mqttVars_t m : mqttVars) {
         if (m.mqttParamName.equals(key)) {
-            switch (m.type) {
-                case tDouble:
-                    *(double *)m.mqttVarPtr = value;
-                    break;
-                case tUInt8:
-                    *(uint8_t *)m.mqttVarPtr = value;
-                    break;
+            if (value >= m.minValue && value <= m.maxValue) {
+                switch (m.type) {
+                    case tDouble:
+                        *(double *)m.mqttVarPtr = value;
+                        paramValid = true;
+                        break;
+                    case tUInt8:
+                        *(uint8_t *)m.mqttVarPtr = value;
+                        paramValid = true;
+                        break;
+                    default:
+                        Serial.println(String(m.type) + " is not a recognized type for this MQTT parameter.");
+                }
+
+                paramInRange = true;
+            }
+            else {
+                Serial.println("Value out of range for MQTT parameter "+ key + ".");
+                paramInRange = false;
             }
 
-            paramExists = true;
             break;
         }
     }
 
-    if (paramExists) {
+    if (paramValid && paramInRange) {
         mqtt_publish(param, number2string(value));
         writeSysParamsToBlynk();
+        writeSysParamsToStorage();
     }
     else {
-        Serial.printf("%s is not a valid MQTT parameter.", param);
+        Serial.println(key + " is not a valid MQTT parameter.");
     }
 }
 
