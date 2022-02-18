@@ -1,11 +1,11 @@
 /**
- * @file SysParaClass.h
+ * @file SysPara.h
  *
  * @brief Class of system parameter
  */
 
-#ifndef _SYS_PARA_CLASS_H_
-#define _SYS_PARA_CLASS_H_
+#ifndef _SYS_PARA_H_
+#define _SYS_PARA_H_
 
 #include <Arduino.h>
 #include <stdint.h>
@@ -22,7 +22,7 @@ template <typename T> struct sys_para_data
 
 //! system parameter class
 template <class T>
-class SysParaClass {
+class SysPara {
     public:
        /**
         * @brief Constructor
@@ -35,7 +35,7 @@ class SysParaClass {
         *                    - load initial value from storage at instantiation
         *                    - provide functions to get/set from/to storage
         */
-        SysParaClass(T* curPtr, T min, T max, sto_item_id_t stoItemId = STO_ITEM__LAST_ENUM) {
+        SysPara(T* curPtr, T min, T max, sto_item_id_t stoItemId = STO_ITEM__LAST_ENUM) {
             if (curPtr) {
                 _data.curPtr = curPtr;
             } else {

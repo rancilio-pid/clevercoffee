@@ -334,22 +334,22 @@ unsigned int MQTTReCnctCount = 0;  // Blynk Reconnection counter
 
 
 // system parameters (current value as pointer to variable, minimum, maximum, optional storage ID)
-SysParaClass<double> sysParaPidKpStart(&startKp, 0, 100, STO_ITEM_PID_KP_START);
-SysParaClass<double> sysParaPidTnStart(&startTn, 0, 999, STO_ITEM_PID_TN_START);
-SysParaClass<double> sysParaPidKpReg(&aggKp, 0, 100, STO_ITEM_PID_KP_REGULAR);
-SysParaClass<double> sysParaPidTnReg(&aggTn, 0, 999, STO_ITEM_PID_TN_REGULAR);
-SysParaClass<double> sysParaPidTvReg(&aggTv, 0, 999, STO_ITEM_PID_TV_REGULAR);
-SysParaClass<double> sysParaPidKpBd(&aggbKp, 0, 100, STO_ITEM_PID_KP_BD);
-SysParaClass<double> sysParaPidTnBd(&aggbTn, 0, 999, STO_ITEM_PID_TN_BD);
-SysParaClass<double> sysParaPidTvBd(&aggbTv, 0, 999, STO_ITEM_PID_TV_BD);
-SysParaClass<double> sysParaBrewSetPoint(&BrewSetPoint, 89, 105, STO_ITEM_BREW_SETPOINT);
-SysParaClass<double> sysParaBrewTime(&brewtime, 0, 60, STO_ITEM_BREW_TIME);
-SysParaClass<double> sysParaBrewSwTimer(&brewtimersoftware, 0, 999, STO_ITEM_BREW_SW_TIMER);
-SysParaClass<double> sysParaBrewThresh(&brewboarder, 0, 999, STO_ITEM_BD_THRESHOLD);
-SysParaClass<double> sysParaPreInfTime(&preinfusion, 0, 10, STO_ITEM_PRE_INFUSION_TIME);
-SysParaClass<double> sysParaPreInfPause(&preinfusionpause, 0, 20, STO_ITEM_PRE_INFUSION_PAUSE);
-SysParaClass<double> sysParaWeightSetPoint(&weightSetpoint, 0, 500, STO_ITEM_WEIGHTSETPOINT);
-SysParaClass<uint8_t> sysParaPidOn(&pidON, 0, 1, STO_ITEM_PID_ON);
+SysPara<double> sysParaPidKpStart(&startKp, 0, 100, STO_ITEM_PID_KP_START);
+SysPara<double> sysParaPidTnStart(&startTn, 0, 999, STO_ITEM_PID_TN_START);
+SysPara<double> sysParaPidKpReg(&aggKp, 0, 100, STO_ITEM_PID_KP_REGULAR);
+SysPara<double> sysParaPidTnReg(&aggTn, 0, 999, STO_ITEM_PID_TN_REGULAR);
+SysPara<double> sysParaPidTvReg(&aggTv, 0, 999, STO_ITEM_PID_TV_REGULAR);
+SysPara<double> sysParaPidKpBd(&aggbKp, 0, 100, STO_ITEM_PID_KP_BD);
+SysPara<double> sysParaPidTnBd(&aggbTn, 0, 999, STO_ITEM_PID_TN_BD);
+SysPara<double> sysParaPidTvBd(&aggbTv, 0, 999, STO_ITEM_PID_TV_BD);
+SysPara<double> sysParaBrewSetPoint(&BrewSetPoint, 89, 105, STO_ITEM_BREW_SETPOINT);
+SysPara<double> sysParaBrewTime(&brewtime, 0, 60, STO_ITEM_BREW_TIME);
+SysPara<double> sysParaBrewSwTimer(&brewtimersoftware, 0, 999, STO_ITEM_BREW_SW_TIMER);
+SysPara<double> sysParaBrewThresh(&brewboarder, 0, 999, STO_ITEM_BD_THRESHOLD);
+SysPara<double> sysParaPreInfTime(&preinfusion, 0, 10, STO_ITEM_PRE_INFUSION_TIME);
+SysPara<double> sysParaPreInfPause(&preinfusionpause, 0, 20, STO_ITEM_PRE_INFUSION_PAUSE);
+SysPara<double> sysParaWeightSetPoint(&weightSetpoint, 0, 500, STO_ITEM_WEIGHTSETPOINT);
+SysPara<uint8_t> sysParaPidOn(&pidON, 0, 1, STO_ITEM_PID_ON);
 
 
 enum MQTTSettableType {
