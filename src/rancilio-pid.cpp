@@ -331,17 +331,24 @@ unsigned long lastMQTTConnectionAttempt = millis();
 unsigned int MQTTReCnctFlag;       // Blynk Reconnection Flag
 unsigned int MQTTReCnctCount = 0;  // Blynk Reconnection counter
 
+enum MQTTSettableType {
+    tUInt8,
+    tDouble,
+};
+
 struct mqttVars_t {
     String mqttParamName;
-    double *mqttVarPtr;
+    MQTTSettableType type;
+    void *mqttVarPtr;
 };
 
 std::vector<mqttVars_t> mqttVars = {
-    {"BrewSetPoint", &BrewSetPoint},
-    {"brewtime", &brewtime},
-    {"preinfusion", &preinfusion},
-    {"preinfusionpause", &preinfusionpause},
-    {"pidON", (double *)&pidON} // TODO somewhat ugly hack
+    {"BrewSetPoint", tDouble, (void *)&BrewSetPoint},
+    {"brewtime", tDouble, (void *)&brewtime},
+    {"preinfusion", tDouble, (void *)&preinfusion},
+    {"preinfusionpause", tDouble, (void *)&preinfusionpause},
+    {"pidON", tUInt8, (void *)&pidON},
+    {"backflushON", tUInt8, (void *)&backflushON},
 };
 
 // Embedded HTTP Server
@@ -370,10 +377,6 @@ std::vector<editable_t> editableVars = {
     {"BACKFLUSH_ON", "Backflush", rInteger, (void *)&backflushON},
     {"WEIGHTSETPOINT", "Brew weight setpoint (g)",kDouble, (void *)&weightSetpoint},
 };
-
-
-
-
 
 unsigned long lastTempEvent = 0;
 unsigned long tempEventInterval = 1000;
@@ -1141,8 +1144,16 @@ void assignMQTTParam(char *param, double value) {
 
     for (mqttVars_t m : mqttVars) {
         if (m.mqttParamName.equals(key)) {
+            switch (m.type) {
+                case tDouble:
+                    *(double *)m.mqttVarPtr = value;
+                    break;
+                case tUInt8:
+                    *(uint8_t *)m.mqttVarPtr = value;
+                    break;
+            }
+
             paramExists = true;
-            *m.mqttVarPtr = value;
             break;
         }
     }
@@ -2473,6 +2484,7 @@ void writeSysParamsToMQTT(void) {
             mqtt_publish("preinfusionpause", number2string(preinfusionpause));
             mqtt_publish("preinfusion", number2string(preinfusion));
             mqtt_publish("SteamON", number2string(SteamON));
+            mqtt_publish("backflushON", number2string(backflushON));
 
             // Normal PID
             mqtt_publish("aggKp", number2string(aggKp));
@@ -2498,16 +2510,6 @@ void writeSysParamsToMQTT(void) {
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
 
 /**
  * @brief Returns the firmware version as string (x.y.z).
