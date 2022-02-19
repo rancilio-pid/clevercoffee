@@ -1990,7 +1990,7 @@ void setup() {
                 checkMQTT();
             }
 
-            if(INFLUXDB_USER != "" && INFLUXDB_PASSWORD != "") {
+            if ((strlen(INFLUXDB_USER) > 0) && (strlen(INFLUXDB_PASSWORD) > 0)) {
                 client.setConnectionParamsV1(INFLUXDB_URL, INFLUXDB_DB_NAME, INFLUXDB_USER, INFLUXDB_PASSWORD);
             }
 
