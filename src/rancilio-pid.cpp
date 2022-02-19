@@ -405,7 +405,7 @@ std::vector<editable_t> editableVars = {
     {"START_TN", "Start I", kDouble, (void *)&startTn},
     {"STEAM_MODE", "Steam Mode", rInteger, (void *)&SteamON},
     {"BACKFLUSH_ON", "Backflush", rInteger, (void *)&backflushON},
-    {"WEIGHTSETPOINT", "Brew weight setpoint (g)",kDouble, (void *)&weightSetpoint},
+    {"SCALE_WEIGHTSETPOINT", "Brew weight setpoint (g)",kDouble, (void *)&weightSetpoint},
 };
 
 unsigned long lastTempEvent = 0;
