@@ -91,7 +91,7 @@ static const sto_data_t itemDefaults PROGMEM = {
     {0xFF, 0xFF},  // free to use
     "",            // STO_ITEM_WIFI_SSID
     "",            // STO_ITEM_WIFI_PASSWORD
-    WEIGHTSETPOINT,
+    SCALE_WEIGHTSETPOINT,
 };
 
 /**
