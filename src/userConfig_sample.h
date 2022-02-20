@@ -76,7 +76,9 @@ enum MACHINE {
 #define TRIGGERRELAYTYPE HIGH      // LOW = low trigger, HIGH = high trigger relay for E-Trigger
 
 //Weight SCALE
-#define WEIGHTSETPOINT 30          // In grams
+#define SCALE_WEIGHTSETPOINT 30             // In grams
+#define SCALE_SAMPLES 2                     // Load cell sample rate
+#define SCALE_CALIBRATION_FACTOR 3195.83    // Raw data is divided by this value to convert to readable data
 
 
 /* Pressure sensor
@@ -153,7 +155,7 @@ enum MACHINE {
 #define PINETRIGGER 16             // PIN for E-Trigger relay
 #define PINBREWSWITCH 0            // 0: A0 (ESP8266) ; >0 : DIGITAL PIN, ESP32 OR ESP8266: ONLY USE PIN15 AND PIN16!
 #define PINSTEAMSWITCH 17          // STEAM active
-#define LEDPIN    18               // LED PIN ON near setpoint 
+#define LEDPIN    18               // LED PIN ON near setpoint
 #define OLED_SCL 5                 // Output pin for dispaly clock pin
 #define OLED_SDA 4                 // Output pin for dispaly data pin
 #define HXDATPIN 99                // weight scale PIN

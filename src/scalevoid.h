@@ -61,6 +61,7 @@ void initScale() {
     }
 
     LoadCell.setCalFactor(calibrationValue); // set calibration factor (float)
+    LoadCell.setSamplesInUse(SCALE_SAMPLES);
 }
 
 /**
