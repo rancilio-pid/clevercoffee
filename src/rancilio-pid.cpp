@@ -275,6 +275,7 @@ double aggTn = AGGTN;
 double aggTv = AGGTV;
 double startKp = STARTKP;
 double startTn = STARTTN;
+double steamKp = STEAMKP;
 
 #if startTn == 0
     double startKi = 0;
@@ -349,6 +350,7 @@ SysPara<double> sysParaBrewThresh(&brewboarder, 0, 999, STO_ITEM_BD_THRESHOLD);
 SysPara<double> sysParaPreInfTime(&preinfusion, 0, 10, STO_ITEM_PRE_INFUSION_TIME);
 SysPara<double> sysParaPreInfPause(&preinfusionpause, 0, 20, STO_ITEM_PRE_INFUSION_PAUSE);
 SysPara<double> sysParaWeightSetPoint(&weightSetpoint, 0, 500, STO_ITEM_WEIGHTSETPOINT);
+SysPara<double> sysParaPidKpSteam(&steamKp, 0, 500, STO_ITEM_PID_KP_STEAM);
 SysPara<uint8_t> sysParaPidOn(&pidON, 0, 1, STO_ITEM_PID_ON);
 
 
@@ -377,7 +379,8 @@ std::vector<mqttVars_t> mqttVars = {
     {"aggTv", tDouble, 0, 999, (void *)&aggTv},
     {"aggbKp", tDouble, 0, 100, (void *)&aggbKp},
     {"aggbTn", tDouble, 0, 999, (void *)&aggbTn},
-    {"aggbTv", tDouble, 0, 999, (void *)&aggbTv}
+    {"aggbTv", tDouble, 0, 999, (void *)&aggbTv},
+    {"steamKp", tDouble, 0, 500, (void *)&steamKp},
 };
 
 // Embedded HTTP Server
@@ -405,6 +408,7 @@ std::vector<editable_t> editableVars = {
     {"STEAM_MODE", "Steam Mode", rInteger, (void *)&SteamON},
     {"BACKFLUSH_ON", "Backflush", rInteger, (void *)&backflushON},
     {"SCALE_WEIGHTSETPOINT", "Brew weight setpoint (g)",kDouble, (void *)&weightSetpoint},
+    {"STEAM_KP", "STEAM P",kDouble, (void *)&steamKp},
 };
 
 unsigned long lastTempEvent = 0;
@@ -2356,7 +2360,7 @@ void looppid() {
             lastmachinestatepid = machinestate;
         }
 
-        bPID.SetTunings(150, 0, 0, PonE);
+        bPID.SetTunings(steamKp, 0, 0, PonE);
     }
 
     // chill-mode after steam
@@ -2435,6 +2439,7 @@ int readSysParamsFromStorage(void) {
     if (sysParaPreInfPause.getStorage() != 0) return -1;
     if (sysParaWeightSetPoint.getStorage() != 0) return -1;
     if (sysParaPidOn.getStorage() != 0) return -1;
+    if (sysParaPidKpSteam.getStorage() != 0) return -1;
 
     return 0;
 }
@@ -2461,7 +2466,7 @@ int writeSysParamsToStorage(void) {
     if (sysParaPreInfPause.setStorage() != 0) return -1;
     if (sysParaWeightSetPoint.setStorage() != 0) return -1;
     if (sysParaPidOn.setStorage() != 0) return -1;
-
+    if (sysParaPidKpSteam.setStorage() != 0) return -1;
     return storageCommit();
 }
 
@@ -2537,6 +2542,9 @@ void writeSysParamsToMQTT(void) {
             // Start PI
             mqtt_publish("startKp", number2string(startKp));
             mqtt_publish("startTn", number2string(startTn));
+
+             // Steam P
+            mqtt_publish("steamKp", number2string(steamKp));
 
             //BD Parameter
             mqtt_publish("BrewTimer", number2string(brewtimersoftware));
