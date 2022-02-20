@@ -45,10 +45,10 @@ enum MACHINE {
 
 // Connectivity
 #define CONNECTMODE 1              // 0 = offline 1 = WIFI-MODE 2 = AP-MODE (not working in the moment)
-#define BLYNK 1                    // 0 = no Blynk , 1 = Blynk
-#define MQTT 1                     // 1 = MQTT enabled, 0 = MQTT disabled
-#define GRAFANA 2                  // 2= custom Grafana 1 = grafana visualisation (access required), 0 = off (default)
-#define INFLUXDB 1                 // 1 = INFLUX enabled, 0 = INFLUX disabled
+#define BLYNK 0                    // 0 = no Blynk , 1 = Blynk
+#define MQTT 0                     // 1 = MQTT enabled, 0 = MQTT disabled
+#define GRAFANA 0                 // 2= custom Grafana 1 = grafana visualisation (access required), 0 = off (default)
+#define INFLUXDB 0                // 1 = INFLUX enabled, 0 = INFLUX disabled
 
 // PID & Hardware
 #define ONLYPID 1                  // 1 = Only PID, 0 = PID and preinfusion
