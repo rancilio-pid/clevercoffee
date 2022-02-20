@@ -153,9 +153,9 @@ const unsigned long flushTime = FLUSHTIME;
 int maxflushCycles = MAXFLUSHCYCLES;
 
 // InfluxDB Client
-InfluxDBClient client(INFLUXDB_URL, INFLUXDB_DB_NAME);
-Point sensor("machinestate");
-const unsigned long intervalInflux = INTERVALINFLUX;
+InfluxDBClient influxClient(INFLUXDB_URL, INFLUXDB_DB_NAME);
+Point influxSensor("machinestate");
+const unsigned long intervalInflux = INFLUXDB_INTERVAL;
 unsigned long previousMillisInflux;  // initialisation at the end of init()
 
 // Voltage Sensor
@@ -868,18 +868,18 @@ void sendInflux() {
 
     if (currentMillisInflux - previousMillisInflux >= intervalInflux) {
         previousMillisInflux = currentMillisInflux;
-        sensor.clearFields();
-        sensor.addField("value", Input);
-        sensor.addField("setPoint", setPoint);
-        sensor.addField("HeaterPower", Output);
-        sensor.addField("Kp", bPID.GetKp());
-        sensor.addField("Ki", bPID.GetKi());
-        sensor.addField("Kd", bPID.GetKd());
-        sensor.addField("pidON", pidON);
-        sensor.addField("brewtime", brewtime);
-        sensor.addField("preinfusionpause", preinfusionpause);
-        sensor.addField("preinfusion", preinfusion);
-        sensor.addField("SteamON", SteamON);
+        influxSensor.clearFields();
+        influxSensor.addField("value", Input);
+        influxSensor.addField("setPoint", setPoint);
+        influxSensor.addField("HeaterPower", Output);
+        influxSensor.addField("Kp", bPID.GetKp());
+        influxSensor.addField("Ki", bPID.GetKi());
+        influxSensor.addField("Kd", bPID.GetKd());
+        influxSensor.addField("pidON", pidON);
+        influxSensor.addField("brewtime", brewtime);
+        influxSensor.addField("preinfusionpause", preinfusionpause);
+        influxSensor.addField("preinfusion", preinfusion);
+        influxSensor.addField("SteamON", SteamON);
 
         byte mac[6];
         WiFi.macAddress(mac);
@@ -890,11 +890,11 @@ void sendInflux() {
         String macaddr4 = number2string(mac[4]);
         String macaddr5 = number2string(mac[5]);
         String completemac = macaddr0 + macaddr1 + macaddr2 + macaddr3 + macaddr4 + macaddr5;
-        sensor.addField("mac", completemac);
+        influxSensor.addField("mac", completemac);
 
         // Write point
-        if (!client.writePoint(sensor)) {
-            Serial.printf("InfluxDB write failed: %s\n", client.getLastErrorMessage().c_str());
+        if (!influxClient.writePoint(influxSensor)) {
+            Serial.printf("InfluxDB write failed: %s\n", influxClient.getLastErrorMessage().c_str());
         }
     }
 }
@@ -2018,10 +2018,14 @@ void setup() {
                 checkMQTT();
             }
 
-            if ((strlen(INFLUXDB_USER) > 0) && (strlen(INFLUXDB_PASSWORD) > 0)) {
-                client.setConnectionParamsV1(INFLUXDB_URL, INFLUXDB_DB_NAME, INFLUXDB_USER, INFLUXDB_PASSWORD);
+            if (INFLUXDB == 1) {
+                if (INFLUXDB_AUTH_TYPE == 1) {
+                    influxClient.setConnectionParams(INFLUXDB_URL, INFLUXDB_ORG_NAME, INFLUXDB_DB_NAME, INFLUXDB_API_TOKEN);
+                }
+                else if (INFLUXDB_AUTH_TYPE == 2 && (strlen(INFLUXDB_USER) > 0) && (strlen(INFLUXDB_PASSWORD) > 0)) {
+                    influxClient.setConnectionParamsV1(INFLUXDB_URL, INFLUXDB_DB_NAME, INFLUXDB_USER, INFLUXDB_PASSWORD);
+                }
             }
-
         }
 
         // Initialize PID controller
