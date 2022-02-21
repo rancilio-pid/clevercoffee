@@ -118,10 +118,15 @@ enum MACHINE {
 #define BLYNKADDRESS "blynk.clevercoffee.de"    // blynk-server IP-Address
 #define BLYNKPORT 8080                          // blynk-server portver
 
-// INFLUX
-#define INFLUXDB_URL "http://influxdb.clevercoffee.de:8086"
-#define INFLUXDB_DB_NAME "clevercoffee"
-#define INTERVALINFLUX 5000
+// INFLUXDB
+#define INFLUXDB_URL ""            // InfluxDB server address
+#define INFLUXDB_AUTH_TYPE 1       // 1 = API Token , 2 = User/Pass
+#define INFLUXDB_API_TOKEN ""
+#define INFLUXDB_ORG_NAME ""
+#define INFLUXDB_USER ""
+#define INFLUXDB_PASSWORD ""
+#define INFLUXDB_DB_NAME "coffee"  // InfluxDB bucket name
+#define INFLUXDB_INTERVAL 5000     // Send interval in milliseconds
 
 // System Parameters (default values)
 #define SETPOINT 95                // brew temperatur setpoint
