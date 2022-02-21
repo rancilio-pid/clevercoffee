@@ -180,7 +180,7 @@ if (!!window.EventSource) {
       console.log(myObj);
       plotTemperature(myObj);
 
-      document.getElementById("var_TEMP").innerText = myObj["currentTemp"].toFixed(1);
+      document.getElementById("varTEMP").innerText = myObj["currentTemp"].toFixed(1);
     },
     false
   );

@@ -54,7 +54,7 @@ void setEepromWriteFcn(int (*fcnPtr)(void));
 // We define these in the ino file
 extern std::vector<editable_t> editableVars;
 
-// EEPROM 
+// EEPROM
 int (*writeToEeprom)(void) = NULL;
 
 void setEepromWriteFcn(int (*fcnPtr)(void)) {
@@ -90,33 +90,50 @@ String generateForm(String varName) {
 
         switch (e.type) {
             case kDouble:
-                result += "<input class=\"form-control\" type=\"number\" step=\"1\"";
+                result += "<input class=\"form-control form-control-lg\" type=\"number\" step=\"0.1\"";
                 currVal = String(*(double *)e.ptr);
                 break;
+
             case kDoubletime:
-                result += "<input class=\"form-control\" type=\"number\" step=\"1\"";
+                result += "<input class=\"form-control form-control-lg\" type=\"number\" step=\"0.1\"";
                 currVal = String(*(double *)e.ptr/1000);
                 break;
+
             case kInteger:
-                result += "<input class=\"form-control\" type=\"number\" step=\"1\"";
+                result += "<input class=\"form-control form-control-lg\" type=\"number\" step=\"1\"";
                 currVal = String(*(int *)e.ptr);
                 break;
+
             case kUInt8:
-                result += "<input class=\"form-control\" type=\"number\" step=\"1\"";
-                currVal = String(*(uint8_t *)e.ptr);
+            {
+                uint8_t val = *(uint8_t *)e.ptr;
+
+                result += "<input type=\"hidden\" id=\"var" + e.templateString + "\" name=\"var" + e.templateString + "\" value=\"0\" />";
+                result += "<input type=\"checkbox\" class=\"form-check-input form-control-lg\" id=\"var" + e.templateString + "\" name=\"var" + e.templateString + "\" value=\"1\"";
+
+                if(val) {
+                    result += " checked=\"checked\"";
+                }
+
+                result += "><br />";
+
                 break;
+            }
+
             default:
-                result += "<input class=\"form-control\" type=\"text\"";
+                result += "<input class=\"form-control form-control-lg\" type=\"text\"";
                 currVal = (const char *)e.ptr;
         }
 
-        result += " id=\"var";
-        result += e.templateString;
-        result += "\" name=\"var";
-        result += e.templateString;
-        result += "\" value=\"";
-        result += currVal;
-        result += "\"><br />";
+        if (e.type != kUInt8) {
+            result += " id=\"var";
+            result += e.templateString;
+            result += "\" name=\"var";
+            result += e.templateString;
+            result += "\" value=\"";
+            result += currVal;
+            result += "\"><br />";
+        }
 
         return result;
     }
