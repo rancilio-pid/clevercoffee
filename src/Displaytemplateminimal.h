@@ -110,9 +110,11 @@ void printScreen() {
                     u8g2.drawFrame(116, 28, 12, 12);
                     u8g2.drawXBMP(118, 30, 8, 8, antenna_NOK_u8g2);
                 } else {
-                    if (!Blynk.connected()) {
-                        u8g2.drawFrame(116, 28, 12, 12);
-                        u8g2.drawXBMP(118, 30, 8, 8, blynk_NOK_u8g2);
+                    if (BLYNK == 1) {
+                        if (!Blynk.connected()) {
+                            u8g2.drawFrame(116, 28, 12, 12);
+                            u8g2.drawXBMP(118, 30, 8, 8, blynk_NOK_u8g2);
+                        }
                     }
                 }
             } else {
