@@ -343,7 +343,7 @@ SysPara<double> sysParaPidTvReg(&aggTv, 0, 999, STO_ITEM_PID_TV_REGULAR);
 SysPara<double> sysParaPidKpBd(&aggbKp, 0, 200, STO_ITEM_PID_KP_BD);
 SysPara<double> sysParaPidTnBd(&aggbTn, 0, 999, STO_ITEM_PID_TN_BD);
 SysPara<double> sysParaPidTvBd(&aggbTv, 0, 999, STO_ITEM_PID_TV_BD);
-SysPara<double> sysParaBrewSetPoint(&BrewSetPoint, 85, 105, STO_ITEM_BREW_SETPOINT);
+SysPara<double> sysParaBrewSetPoint(&BrewSetPoint, 20, 105, STO_ITEM_BREW_SETPOINT);
 SysPara<double> sysParaBrewTime(&brewtime, 0, 60, STO_ITEM_BREW_TIME);
 SysPara<double> sysParaBrewSwTimer(&brewtimersoftware, 0, 999, STO_ITEM_BREW_SW_TIMER);
 SysPara<double> sysParaBrewThresh(&brewboarder, 0, 999, STO_ITEM_BD_THRESHOLD);
@@ -368,7 +368,7 @@ struct mqttVars_t {
 };
 
 std::vector<mqttVars_t> mqttVars = {
-    {"BrewSetPoint", tDouble, 89, 105, (void *)&BrewSetPoint},
+    {"BrewSetPoint", tDouble, 20, 105, (void *)&BrewSetPoint},
     {"brewtime", tDouble, 0, 60, (void *)&brewtime},
     {"preinfusion", tDouble, 0, 10, (void *)&preinfusion},
     {"preinfusionpause", tDouble, 0, 20, (void *)&preinfusionpause},
@@ -387,7 +387,7 @@ std::vector<mqttVars_t> mqttVars = {
 #include "RancilioServer.h"
 
 std::vector<editable_t> editableVars = {
-    {"PID_ON", "PID on?", kUInt8, (void *)&pidON},  // ummm, why isn't pidON a boolean?
+    {"PID_ON", "Enable PID Controller", kUInt8, (void *)&pidON},
     {"PID_KP", "PID P", kDouble, (void *)&aggKp},
     {"PID_TN", "PID I", kDouble, (void *)&aggTn},
     {"PID_TV", "PID D", kDouble, (void *)&aggTv},
@@ -408,7 +408,7 @@ std::vector<editable_t> editableVars = {
     {"STEAM_MODE", "Steam Mode", rInteger, (void *)&SteamON},
     {"BACKFLUSH_ON", "Backflush", rInteger, (void *)&backflushON},
     {"SCALE_WEIGHTSETPOINT", "Brew weight setpoint (g)",kDouble, (void *)&weightSetpoint},
-    {"STEAM_KP", "STEAM P",kDouble, (void *)&steamKp},
+    {"STEAM_KP", "Steam P",kDouble, (void *)&steamKp},
 };
 
 unsigned long lastTempEvent = 0;
