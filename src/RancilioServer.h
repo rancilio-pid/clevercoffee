@@ -47,6 +47,7 @@ AsyncEventSource events("/events");
 
 double curTemp = 0.0;
 double tTemp = 0.0;
+double hPower = 0.0;
 
 void serverSetup();
 void setEepromWriteFcn(int (*fcnPtr)(void));
@@ -66,6 +67,7 @@ String getTempString() {
 
     doc["currentTemp"] = curTemp;
     doc["targetTemp"] = tTemp;
+    doc["heaterPower"] = hPower;
 
     String jsonTemps;
 
@@ -315,9 +317,10 @@ void serverSetup() {
 }
 
 
-void sendTempEvent(float currentTemp, float targetTemp) {
+void sendTempEvent(float currentTemp, float targetTemp, float heaterPower) {
     curTemp = currentTemp;
     tTemp = targetTemp;
+    hPower = heaterPower;
 
     events.send("ping", NULL, millis());
     events.send(getTempString().c_str(), "new_temps", millis());
