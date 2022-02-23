@@ -120,7 +120,8 @@ var heaterLayout = {
 
 var config = {
   responsive: true,
-  displaylogo: false
+  displaylogo: false,
+  modeBarButtonsToRemove: ['toImage']
 }
 
 Plotly.newPlot(chartDiv, data, tempLayout, config);
