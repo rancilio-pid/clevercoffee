@@ -277,9 +277,19 @@ double startKp = STARTKP;
 double startTn = STARTTN;
 double steamKp = STEAMKP;
 
-//fake temp data 
-int AMPLITUDE = 10;
-int PERIOD = 1000;
+//fake temp signal parameters
+int PeriodSin = 10000;
+double AmplitudeSin = 0.05;
+double SinTimePeriodic = 0.0;
+double SinSignal = 0.0;
+
+double GrowthRate = 0.5;
+int GrowthOffset = 15;
+int AmplitudeGrowth = 30;
+int PeriodGrowth = 100000;
+double GrowthTimePeriodic = 0.0;
+double GrowthSignal = 0.0;
+
 int integerMillis = 0;
 
 #if startTn == 0
@@ -530,8 +540,9 @@ void checklastpoweroff() {
     Serial.printf("softApEnabled: %i\n", softApEnabled);
 
     if (softApEnabled != 1) {
-        Serial.printf("Set softApEnabled: 1, was 0\n");
-        uint8_t eepromvalue = 1;
+        //Serial.printf("Set softApEnabled: 1, was 0\n");
+        Serial.printf("NOT Setting softApEnabled, I dont want it!\n");
+        uint8_t eepromvalue = 0;
         storageSet(STO_ITEM_SOFT_AP_ENABLED_CHECK, eepromvalue);
     }
 
@@ -798,9 +809,19 @@ void refreshTemp() {
 
     if (TempSensor == 3) {
         // fake temperature signal to allow offline development
-        integerMillis = round(currentMillistemp); // convert to integer as Modulo only works with integers
 
-        Input = AMPLITUDE * sin(2 * PI * (integerMillis % PERIOD)/(PERIOD/10));
+        if (currentMillistemp - previousMillistemp >= intervaltempmesds18b20) {
+            previousMillistemp = currentMillistemp;
+
+            integerMillis = round(currentMillistemp); // convert to integer as Modulo only works with integers
+            GrowthTimePeriodic = AmplitudeGrowth * (1.0/PeriodGrowth) *  (integerMillis % PeriodGrowth);
+            SinTimePeriodic =  (1.0/PeriodSin) * (integerMillis % PeriodSin);
+
+            GrowthSignal = setPoint * (1.0/(1 + exp(-GrowthRate * (GrowthTimePeriodic - GrowthOffset))));
+            SinSignal = 1 + AmplitudeSin * sin(2 * PI * SinTimePeriodic);
+
+            Input = GrowthSignal * SinSignal;
+        }
     }
 }
 
