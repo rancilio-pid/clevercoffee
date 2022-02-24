@@ -47,6 +47,7 @@ AsyncEventSource events("/events");
 
 double curTemp = 0.0;
 double tTemp = 0.0;
+double hPower = 0.0;
 
 void serverSetup();
 void setEepromWriteFcn(int (*fcnPtr)(void));
@@ -61,11 +62,16 @@ void setEepromWriteFcn(int (*fcnPtr)(void)) {
     writeToEeprom = fcnPtr;
 }
 
+uint8_t flipUintValue(uint8_t value) {
+    return (value + 3) % 2;
+}
+
 String getTempString() {
     StaticJsonDocument<96> doc;
 
     doc["currentTemp"] = curTemp;
     doc["targetTemp"] = tTemp;
+    doc["heaterPower"] = hPower;
 
     String jsonTemps;
 
@@ -199,7 +205,7 @@ String staticProcessor(const String& var) {
 
 void serverSetup() {
     server.on("/steam", HTTP_POST, [](AsyncWebServerRequest *request) {
-        int steam = (SteamON + 3) % 2; // 0 to 1, 1 to 0
+        int steam = flipUintValue(SteamON);
 
         setSteamMode(steam);
         Serial.printf("Toggle steam mode: %i \n", steam);
@@ -208,7 +214,7 @@ void serverSetup() {
     });
 
     server.on("/pidstatus", HTTP_POST, [](AsyncWebServerRequest *request) {
-        int status = (pidON + 3) % 2; // 0 to 1, 1 to 0
+        int status = flipUintValue(pidON);
 
         setPidStatus(status);
         Serial.printf("Toggle PID controller status: %i \n", status);
@@ -217,11 +223,12 @@ void serverSetup() {
     });
 
     server.on("/backflush", HTTP_POST, [](AsyncWebServerRequest *request) {
-    int backflush = (backflushON + 3) % 2; // 0 to 1, 1 to 0
-    setBackflush(backflush);
-    Serial.printf("Toggle Backflush %i \n", backflush);
+        int backflush = flipUintValue(backflushON);
 
-    request->redirect("/");
+        setBackflush(backflush);
+        Serial.printf("Toggle Backflush %i \n", backflush);
+
+        request->redirect("/");
     });
 
     server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) {
@@ -315,9 +322,10 @@ void serverSetup() {
 }
 
 
-void sendTempEvent(float currentTemp, float targetTemp) {
+void sendTempEvent(float currentTemp, float targetTemp, float heaterPower) {
     curTemp = currentTemp;
     tTemp = targetTemp;
+    hPower = heaterPower;
 
     events.send("ping", NULL, millis());
     events.send(getTempString().c_str(), "new_temps", millis());

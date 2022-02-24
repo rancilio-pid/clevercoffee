@@ -9,8 +9,66 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div id="chart-temperature" class="pure-u-1-1"></div>
-                    <script src="/js/temp.js"></script>
+                    <div id="chart-temperature"></div>
+                </div>
+            </div>
+            <div class="card card-accent-dark mb-5 shadow-sm rounded">
+                <div class="card-body bg-light pb-1 rounded">
+                    <h5 class="card-title">
+                        Heater Output
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="chart-heater"></div>
+                </div>
+            </div>
+            <script src="/js/temp.js"></script>
+            <div class="card card-accent-dark mb-5 pb-0 shadow-sm rounded">
+                <div class="card-body bg-light pb-1 rounded">
+                    <h5 class="card-title">
+                        Functions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive pb-0">
+                        <table class="table table-borderless pb-0 mb-0">
+                            <tbody>
+                                <tr>
+                                    <td><b>Enable PID Controller</b></td>
+                                    <td><span id="pid_state"></span></td>
+                                    <td>
+                                        <form action="/pidstatus" method="post">
+                                            <input type="hidden" id="varPID_ON" name="varPID_ON" />
+                                            <input type="submit" id="pid_toggle" />
+                                        </form>
+                                        </form>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><b>Toggle Steam Mode</b></td>
+                                    <td><span id="steam_state"></span></td>
+                                    <td>
+                                        <form action="/steam" method="post">
+                                            <input type="hidden" id="varSTEAM_MODE" name="varSTEAM_MODE" />
+                                            <input type="submit" id="steam_toggle" />
+                                        </form>
+                                        </form>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><b>Toggle Backflush Mode</b></td>
+                                    <td><span id="backflush_state"></span></td>
+                                    <td>
+                                        <form action="/backflush" method="post">
+                                            <input type="hidden" id="varBACKFLUSH_ON" name="varBACKFLUSH_ON" />
+                                            <input type="submit" id="backflush_toggle" />
+                                        </form>
+                                        </form>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
             <div class="card card-accent-dark mb-5 pb-0 shadow-sm rounded">
@@ -27,28 +85,6 @@
                                     <td><b>Temperature</b></td>
                                     <td><span id="varTEMP">%VAR_SHOW_TEMP%</span>° C</td>
                                     <td></td>
-                                </tr>
-                                <tr>
-                                    <td><b>PID Mode</b></td>
-                                    <td><span id="pid_state"></span></td>
-                                    <td>
-                                        <form action="/pidstatus" method="post">
-                                            <input type="hidden" id="varPID_ON" name="varPID_ON" />
-                                            <input type="submit" id="pid_toggle" />
-                                        </form>
-                                        </form>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td><b>Steam Mode</b></td>
-                                    <td><span id="steam_state"></span></td>
-                                    <td>
-                                        <form action="/steam" method="post">
-                                            <input type="hidden" id="varSTEAM_MODE" name="varSTEAM_MODE" />
-                                            <input type="submit" id="steam_toggle" />
-                                        </form>
-                                        </form>
-                                    </td>
                                 </tr>
                                 <tr>
                                     <td><b>P-Term</b></td>
@@ -78,11 +114,18 @@
         document.getElementById("pid_state").innerText = pid_status ? "ON" : "OFF";
         document.getElementById("varPID_ON").value = pid_status ? 0 : 1;
         document.getElementById("pid_toggle").value = pid_status ? "OFF" : "ON";
+
         // Steam Toggle
         var steam_status = %VAR_SHOW_STEAM_MODE%;
         document.getElementById("steam_state").innerText = steam_status ? "ON" : "OFF";
         document.getElementById("varSTEAM_MODE").value = steam_status ? 0 : 1;
         document.getElementById("steam_toggle").value = steam_status ? "OFF" : "ON";
+
+        // Steam Toggle
+        var backflush_status = %VAR_SHOW_BACKFLUSH_ON%;
+        document.getElementById("backflush_state").innerText = backflush_status ? "ON" : "OFF";
+        document.getElementById("varBACKFLUSH_ON").value = backflush_status ? 0 : 1;
+        document.getElementById("backflush_toggle").value = backflush_status ? "OFF" : "ON";
     </script>
 
 %FOOTER%

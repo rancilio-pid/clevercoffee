@@ -4,9 +4,11 @@ const maxRange = 3600;
 
 var curTempVals = [];
 var targetTempVals = [];
+var heaterPowerVals = [];
 var dates = [];
 
 var chartDiv = 'chart-temperature';
+var heaterDiv = 'chart-heater';
 
 var curTempTrace = {
   type: "scatter",
@@ -34,6 +36,19 @@ var targetTempTrace = {
   }
 }
 
+var heaterPowerTrace = {
+  type: "scatter",
+  mode: "lines",
+  fill: 'tonexty',
+  name: 'Output Power',
+  x: dates,
+  y: heaterPowerVals,
+  line: {
+    color: '#778899',
+    shape: 'spline'
+  }
+}
+
 var selectorOptions = {
   buttons: [{
     step: 'minute',
@@ -53,8 +68,9 @@ var selectorOptions = {
 };
 
 var data = [curTempTrace, targetTempTrace];
+var heaterData = [heaterPowerTrace];
 
-var layout = {
+var tempLayout = {
   margin: {
     l: 25,
     r: 5,
@@ -78,15 +94,41 @@ var layout = {
   }
 };
 
+var heaterLayout = {
+  margin: {
+    l: 35,
+    r: 5,
+    b: 20,
+    t: 20,
+    pad: 4
+  },
+  showlegend: true,
+  legend: {
+    xanchor: "center",
+    yanchor: "top",
+    y: -0.5,
+    x: 0.5
+  },
+  xaxis: {
+    rangeselector: selectorOptions,
+    rangeslider: {}
+  },
+  yaxis: {
+    tickformat: '%H:%M:%S'
+  }
+};
+
 var config = {
   responsive: true,
-  displaylogo: false
+  displaylogo: false,
+  modeBarButtonsToRemove: ['toImage']
 }
 
-Plotly.newPlot(chartDiv, data, layout, config);
+Plotly.newPlot(chartDiv, data, tempLayout, config);
+Plotly.newPlot(heaterDiv, heaterData, heaterLayout, config);
 
 
-function plotTemperature(jsonValue) {
+function plotData(jsonValue) {
   var keys = Object.keys(jsonValue);
 
   var date = new Date();
@@ -95,6 +137,7 @@ function plotTemperature(jsonValue) {
 
   const curTempKey = keys[0];
   const targetTempKey = keys[1];
+  const heaterPowerKey = keys[2];
 
   var curTemp = Number(jsonValue[curTempKey]);
   console.log(curTemp);
@@ -103,6 +146,10 @@ function plotTemperature(jsonValue) {
   var targetTemp = Number(jsonValue[targetTempKey]);
   console.log(targetTemp);
   targetTempVals.push(targetTemp);
+
+  var heaterPower = Number(jsonValue[heaterPowerKey]);
+  console.log(heaterPower);
+  heaterPowerVals.push(heaterPower);
 
   Plotly.extendTraces(
     chartDiv,
@@ -113,10 +160,20 @@ function plotTemperature(jsonValue) {
     [0, 1]
   )
 
+  Plotly.extendTraces(
+    heaterDiv,
+    {
+      x: [[dates[dates.length - 1]]],
+      y: [[heaterPowerVals[heaterPowerVals.length - 1]]]
+    },
+    [0]
+  )
+
   if (dates.length > maxRange) {
     dates.splice(0, dates.length - maxRange);
     curTempVals.splice(0, curTempVals.length - maxRange);
     targetTempVals.splice(0, targetTempVals.length - maxRange);
+    heaterPowerVals.splice(0, heaterPowerVals.length - maxRange);
 
     // TODO Messes with range buttons
     // var update = {
@@ -135,7 +192,7 @@ function getTemperatures() {
     if (this.readyState == 4 && this.status == 200) {
       var myObj = JSON.parse(this.responseText);
       console.log(myObj);
-      plotTemperature(myObj);
+      plotData(myObj);
     }
   };
 
@@ -178,7 +235,7 @@ if (!!window.EventSource) {
       console.log("new_temps", e.data);
       var myObj = JSON.parse(e.data);
       console.log(myObj);
-      plotTemperature(myObj);
+      plotData(myObj);
 
       document.getElementById("varTEMP").innerText = myObj["currentTemp"].toFixed(1);
     },
