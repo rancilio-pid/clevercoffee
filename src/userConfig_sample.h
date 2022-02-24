@@ -171,7 +171,7 @@ enum MACHINE {
 
 // Historic (no settings)
 #define PONE 1                     // 1 = P_ON_E (default), 0 = P_ON_M (special PID mode, other PID-parameter are needed)
-#define TEMPSENSOR 2               // 2 = TSIC306 1=DS18B20
+#define TEMPSENSOR 2               // 1=DS18B20, 2 = TSIC306, 3 = debugg fake data
 
 // Check BrewSwitch
 #if (defined(ESP8266) && ((PINBREWSWITCH != 15 && PINBREWSWITCH != 0 && PINBREWSWITCH != 16 )))

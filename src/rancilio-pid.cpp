@@ -277,6 +277,11 @@ double startKp = STARTKP;
 double startTn = STARTTN;
 double steamKp = STEAMKP;
 
+//fake temp data 
+int AMPLITUDE = 10;
+int PERIOD = 1000;
+int integerMillis = 0;
+
 #if startTn == 0
     double startKi = 0;
 #else
@@ -789,6 +794,13 @@ void refreshTemp() {
                 firstreading = 0;
             }
         }
+    }
+
+    if (TempSensor == 3) {
+        // fake temperature signal to allow offline development
+        integerMillis = round(currentMillistemp); // convert to integer as Modulo only works with integers
+
+        Input = AMPLITUDE * sin(2 * PI * (integerMillis % PERIOD)/(PERIOD/10));
     }
 }
 
