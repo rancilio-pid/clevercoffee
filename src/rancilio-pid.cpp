@@ -540,9 +540,8 @@ void checklastpoweroff() {
     Serial.printf("softApEnabled: %i\n", softApEnabled);
 
     if (softApEnabled != 1) {
-        //Serial.printf("Set softApEnabled: 1, was 0\n");
-        Serial.printf("NOT Setting softApEnabled, I dont want it!\n");
-        uint8_t eepromvalue = 0;
+        Serial.printf("Set softApEnabled: 1, was 0\n");
+        uint8_t eepromvalue = 1;
         storageSet(STO_ITEM_SOFT_AP_ENABLED_CHECK, eepromvalue);
     }
 
@@ -817,8 +816,8 @@ void refreshTemp() {
             GrowthTimePeriodic = AmplitudeGrowth * (1.0/PeriodGrowth) *  (integerMillis % PeriodGrowth);
             SinTimePeriodic =  (1.0/PeriodSin) * (integerMillis % PeriodSin);
 
-            GrowthSignal = setPoint * (1.0/(1 + exp(-GrowthRate * (GrowthTimePeriodic - GrowthOffset))));
-            SinSignal = 1 + AmplitudeSin * sin(2 * PI * SinTimePeriodic);
+            GrowthSignal = setPoint * (1.0/(1.0 + exp(-GrowthRate * (GrowthTimePeriodic - GrowthOffset))));
+            SinSignal = 1.0 + AmplitudeSin * sin(2 * PI * SinTimePeriodic);
 
             Input = GrowthSignal * SinSignal;
         }
