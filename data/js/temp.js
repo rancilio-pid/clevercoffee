@@ -91,7 +91,7 @@ var tempLayout = {
     tickformat: '%H:%M:%S'
   },
   yaxis: {  
-    tickformat: '%H:%M:%S'
+    fixedrange: false
   }
 };
 
