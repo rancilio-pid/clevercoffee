@@ -87,9 +87,10 @@ var tempLayout = {
   },
   xaxis: {
     rangeselector: selectorOptions,
-    rangeslider: {}
+    rangeslider: {},
+    tickformat: '%H:%M:%S'
   },
-  yaxis: {
+  yaxis: {  
     tickformat: '%H:%M:%S'
   }
 };
@@ -111,10 +112,11 @@ var heaterLayout = {
   },
   xaxis: {
     rangeselector: selectorOptions,
-    rangeslider: {}
+    rangeslider: {},
+    tickformat: '%H:%M:%S'
   },
   yaxis: {
-    tickformat: '%H:%M:%S'
+
   }
 };
 
