@@ -202,6 +202,7 @@ int filter(int input);
 // Variable declarations
 uint8_t pidON = 1;               // 1 = control loop in closed loop
 int relayON, relayOFF;           // used for relay trigger type. Do not change!
+int brewReadyLedON, brewReadyLedOFF; // used for brewReady LED
 boolean kaltstart = true;        // true = Rancilio started for first time
 boolean emergencyStop = false;   // Notstop bei zu hoher Temperatur
 double EmergencyStopTemp = 120;  // Temp EmergencyStopTemp
@@ -1740,13 +1741,18 @@ void debugVerboseOutput() {
  * @brief TODO
  */
 void tempLed() {
-    if (TEMPLED == 1) {
+    if (TEMPLED >= 1) {
         pinMode(LEDPIN, OUTPUT);
-        digitalWrite(LEDPIN, LOW);
-
+        //Todo: use public values
         // inner Tempregion
         if ((machinestate == kPidNormal && (fabs(Input - setPoint) < 0.5)) || (Input > 115 && fabs(Input - BrewSetPoint) < 5))  {
+            digitalWrite(LEDPIN, LOW);
+            //digitalWrite(LEDPIN, brewReadyLedON);
+        }
+        else
+        {
             digitalWrite(LEDPIN, HIGH);
+            //digitalWrite(LEDPIN, brewReadyLedOFF);
         }
     }
 }
@@ -1928,6 +1934,14 @@ void setup() {
             VoltageSensorOFF = HIGH;
         }
 
+        //int brewReadyLedON, brewReadyLedOFF
+        if (TEMPLED == 1) {
+            brewReadyLedON = HIGH;
+            brewReadyLedOFF = LOW;
+        } else {
+            brewReadyLedON = LOW;
+            brewReadyLedOFF = HIGH;
+        }
         // Initialize Pins
         pinMode(PINVALVE, OUTPUT);
         pinMode(PINPUMP, OUTPUT);
