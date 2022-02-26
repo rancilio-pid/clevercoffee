@@ -91,6 +91,7 @@ var tempLayout = {
     tickformat: '%H:%M:%S'
   },
   yaxis: {
+    fixedrange: false
   }
 };
 
@@ -115,6 +116,7 @@ var heaterLayout = {
     tickformat: '%H:%M:%S'
   },
   yaxis: {
+    fixedrange: false
   }
 };
 
