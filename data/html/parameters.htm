@@ -10,7 +10,9 @@
                     </div>
                     <div class="card-body">
                         <form action="/post" method="post">
-                
+                            <div class="mb-4">
+                                %VAR_EDIT_PID_ON%
+                            </div>
                             <div class="mb-1">
                                 %VAR_EDIT_START_KP%
                             </div>
@@ -26,12 +28,15 @@
                             <div class="mb-1">
                                 %VAR_EDIT_PID_TV%
                             </div>
+                            <div class="mb-1">
+                                %VAR_EDIT_STEAM_KP%
+                            </div>
                             <br>
                             <button type="submit" class="btn btn-primary">Save</button>
                         </form>
                     </div>
                 </div>
-        
+
                 <div class="card card-accent-dark mb-5 shadow-sm rounded">
                     <div class="card-body bg-light pb-1 rounded">
                         <h5 class="card-title">
@@ -53,7 +58,7 @@
                                 %VAR_EDIT_BREW_PREINFUSION%
                             </div>
                             <div class="mb-1">
-                                %VAR_EDIT_WEIGHTSETPOINT%
+                                %VAR_EDIT_SCALE_WEIGHTSETPOINT%
                             </div>
                             <br>
                             <button type="submit" class="btn btn-primary">Save</button>
@@ -103,4 +108,3 @@
             </div>
         </div>
 %FOOTER%
-   

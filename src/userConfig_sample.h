@@ -45,10 +45,10 @@ enum MACHINE {
 
 // Connectivity
 #define CONNECTMODE 1              // 0 = offline 1 = WIFI-MODE 2 = AP-MODE (not working in the moment)
-#define BLYNK 1                    // 0 = no Blynk , 1 = Blynk
-#define MQTT 1                     // 1 = MQTT enabled, 0 = MQTT disabled
-#define GRAFANA 2                  // 2= custom Grafana 1 = grafana visualisation (access required), 0 = off (default)
-#define INFLUXDB 1                 // 1 = INFLUX enabled, 0 = INFLUX disabled
+#define BLYNK 0                    // 0 = no Blynk , 1 = Blynk
+#define MQTT 0                     // 1 = MQTT enabled, 0 = MQTT disabled
+#define GRAFANA 0                 // 2= custom Grafana 1 = grafana visualisation (access required), 0 = off (default)
+#define INFLUXDB 0                // 1 = INFLUX enabled, 0 = INFLUX disabled
 
 // PID & Hardware
 #define ONLYPID 1                  // 1 = Only PID, 0 = PID and preinfusion
@@ -76,7 +76,9 @@ enum MACHINE {
 #define TRIGGERRELAYTYPE HIGH      // LOW = low trigger, HIGH = high trigger relay for E-Trigger
 
 //Weight SCALE
-#define WEIGHTSETPOINT 30          // In grams
+#define SCALE_WEIGHTSETPOINT 30             // In grams
+#define SCALE_SAMPLES 2                     // Load cell sample rate
+#define SCALE_CALIBRATION_FACTOR 3195.83    // Raw data is divided by this value to convert to readable data
 
 
 /* Pressure sensor
@@ -116,10 +118,15 @@ enum MACHINE {
 #define BLYNKADDRESS "blynk.clevercoffee.de"    // blynk-server IP-Address
 #define BLYNKPORT 8080                          // blynk-server portver
 
-// INFLUX
-#define INFLUXDB_URL "http://influxdb.clevercoffee.de:8086"
-#define INFLUXDB_DB_NAME "clevercoffee"
-#define INTERVALINFLUX 5000
+// INFLUXDB
+#define INFLUXDB_URL ""            // InfluxDB server address
+#define INFLUXDB_AUTH_TYPE 1       // 1 = API Token , 2 = User/Pass
+#define INFLUXDB_API_TOKEN ""
+#define INFLUXDB_ORG_NAME ""
+#define INFLUXDB_USER ""
+#define INFLUXDB_PASSWORD ""
+#define INFLUXDB_DB_NAME "coffee"  // InfluxDB bucket name
+#define INFLUXDB_INTERVAL 5000     // Send interval in milliseconds
 
 // System Parameters (default values)
 #define SETPOINT 95                // brew temperatur setpoint
@@ -130,6 +137,7 @@ enum MACHINE {
 #define AGGTV 0                    // PID Tv (regular phase)
 #define STARTKP 50                 // PID Kp (coldstart phase)
 #define STARTTN 150                // PID Tn (coldstart phase)
+#define STEAMKP 150                // PID kp (steam phase)
 #define AGGBKP 50                  // PID Kp (brew detection phase)
 #define AGGBTN 0                   // PID Tn (brew detection phase)
 #define AGGBTV 20                  // PID Tv (brew detection phase)
@@ -153,7 +161,7 @@ enum MACHINE {
 #define PINETRIGGER 16             // PIN for E-Trigger relay
 #define PINBREWSWITCH 0            // 0: A0 (ESP8266) ; >0 : DIGITAL PIN, ESP32 OR ESP8266: ONLY USE PIN15 AND PIN16!
 #define PINSTEAMSWITCH 17          // STEAM active
-#define LEDPIN    18               // LED PIN ON near setpoint 
+#define LEDPIN    18               // LED PIN ON near setpoint
 #define OLED_SCL 5                 // Output pin for dispaly clock pin
 #define OLED_SDA 4                 // Output pin for dispaly data pin
 #define HXDATPIN 99                // weight scale PIN

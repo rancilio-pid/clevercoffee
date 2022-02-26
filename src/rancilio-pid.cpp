@@ -153,9 +153,9 @@ const unsigned long flushTime = FLUSHTIME;
 int maxflushCycles = MAXFLUSHCYCLES;
 
 // InfluxDB Client
-InfluxDBClient client(INFLUXDB_URL, INFLUXDB_DB_NAME);
-Point sensor("machinestate");
-const unsigned long intervalInflux = INTERVALINFLUX;
+InfluxDBClient influxClient(INFLUXDB_URL, INFLUXDB_DB_NAME);
+Point influxSensor("machinestate");
+const unsigned long intervalInflux = INFLUXDB_INTERVAL;
 unsigned long previousMillisInflux;  // initialisation at the end of init()
 
 // Voltage Sensor
@@ -276,6 +276,7 @@ double aggTn = AGGTN;
 double aggTv = AGGTV;
 double startKp = STARTKP;
 double startTn = STARTTN;
+double steamKp = STEAMKP;
 
 #if startTn == 0
     double startKi = 0;
@@ -343,13 +344,14 @@ SysPara<double> sysParaPidTvReg(&aggTv, 0, 999, STO_ITEM_PID_TV_REGULAR);
 SysPara<double> sysParaPidKpBd(&aggbKp, 0, 200, STO_ITEM_PID_KP_BD);
 SysPara<double> sysParaPidTnBd(&aggbTn, 0, 999, STO_ITEM_PID_TN_BD);
 SysPara<double> sysParaPidTvBd(&aggbTv, 0, 999, STO_ITEM_PID_TV_BD);
-SysPara<double> sysParaBrewSetPoint(&BrewSetPoint, 85, 105, STO_ITEM_BREW_SETPOINT);
+SysPara<double> sysParaBrewSetPoint(&BrewSetPoint, 20, 105, STO_ITEM_BREW_SETPOINT);
 SysPara<double> sysParaBrewTime(&brewtime, 0, 60, STO_ITEM_BREW_TIME);
 SysPara<double> sysParaBrewSwTimer(&brewtimersoftware, 0, 999, STO_ITEM_BREW_SW_TIMER);
 SysPara<double> sysParaBrewThresh(&brewboarder, 0, 999, STO_ITEM_BD_THRESHOLD);
 SysPara<double> sysParaPreInfTime(&preinfusion, 0, 10, STO_ITEM_PRE_INFUSION_TIME);
 SysPara<double> sysParaPreInfPause(&preinfusionpause, 0, 20, STO_ITEM_PRE_INFUSION_PAUSE);
 SysPara<double> sysParaWeightSetPoint(&weightSetpoint, 0, 500, STO_ITEM_WEIGHTSETPOINT);
+SysPara<double> sysParaPidKpSteam(&steamKp, 0, 500, STO_ITEM_PID_KP_STEAM);
 SysPara<uint8_t> sysParaPidOn(&pidON, 0, 1, STO_ITEM_PID_ON);
 
 
@@ -368,7 +370,7 @@ struct mqttVars_t {
 };
 
 std::vector<mqttVars_t> mqttVars = {
-    {"BrewSetPoint", tDouble, 89, 105, (void *)&BrewSetPoint},
+    {"BrewSetPoint", tDouble, 20, 105, (void *)&BrewSetPoint},
     {"brewtime", tDouble, 0, 60, (void *)&brewtime},
     {"preinfusion", tDouble, 0, 10, (void *)&preinfusion},
     {"preinfusionpause", tDouble, 0, 20, (void *)&preinfusionpause},
@@ -379,14 +381,15 @@ std::vector<mqttVars_t> mqttVars = {
     {"aggTv", tDouble, 0, 999, (void *)&aggTv},
     {"aggbKp", tDouble, 0, 100, (void *)&aggbKp},
     {"aggbTn", tDouble, 0, 999, (void *)&aggbTn},
-    {"aggbTv", tDouble, 0, 999, (void *)&aggbTv}
+    {"aggbTv", tDouble, 0, 999, (void *)&aggbTv},
+    {"steamKp", tDouble, 0, 500, (void *)&steamKp},
 };
 
 // Embedded HTTP Server
 #include "RancilioServer.h"
 
 std::vector<editable_t> editableVars = {
-    {"PID_ON", "PID on?", kUInt8, (void *)&pidON},  // ummm, why isn't pidON a boolean?
+    {"PID_ON", "Enable PID Controller", kUInt8, (void *)&pidON},
     {"PID_KP", "PID P", kDouble, (void *)&aggKp},
     {"PID_TN", "PID I", kDouble, (void *)&aggTn},
     {"PID_TV", "PID D", kDouble, (void *)&aggTv},
@@ -406,7 +409,8 @@ std::vector<editable_t> editableVars = {
     {"START_TN", "Start I", kDouble, (void *)&startTn},
     {"STEAM_MODE", "Steam Mode", rInteger, (void *)&SteamON},
     {"BACKFLUSH_ON", "Backflush", rInteger, (void *)&backflushON},
-    {"WEIGHTSETPOINT", "Brew weight setpoint (g)",kDouble, (void *)&weightSetpoint},
+    {"SCALE_WEIGHTSETPOINT", "Brew weight setpoint (g)",kDouble, (void *)&weightSetpoint},
+    {"STEAM_KP", "Steam P",kDouble, (void *)&steamKp},
 };
 
 unsigned long lastTempEvent = 0;
@@ -869,18 +873,18 @@ void sendInflux() {
 
     if (currentMillisInflux - previousMillisInflux >= intervalInflux) {
         previousMillisInflux = currentMillisInflux;
-        sensor.clearFields();
-        sensor.addField("value", Input);
-        sensor.addField("setPoint", setPoint);
-        sensor.addField("HeaterPower", Output);
-        sensor.addField("Kp", bPID.GetKp());
-        sensor.addField("Ki", bPID.GetKi());
-        sensor.addField("Kd", bPID.GetKd());
-        sensor.addField("pidON", pidON);
-        sensor.addField("brewtime", brewtime);
-        sensor.addField("preinfusionpause", preinfusionpause);
-        sensor.addField("preinfusion", preinfusion);
-        sensor.addField("SteamON", SteamON);
+        influxSensor.clearFields();
+        influxSensor.addField("value", Input);
+        influxSensor.addField("setPoint", setPoint);
+        influxSensor.addField("HeaterPower", Output);
+        influxSensor.addField("Kp", bPID.GetKp());
+        influxSensor.addField("Ki", bPID.GetKi());
+        influxSensor.addField("Kd", bPID.GetKd());
+        influxSensor.addField("pidON", pidON);
+        influxSensor.addField("brewtime", brewtime);
+        influxSensor.addField("preinfusionpause", preinfusionpause);
+        influxSensor.addField("preinfusion", preinfusion);
+        influxSensor.addField("SteamON", SteamON);
 
         byte mac[6];
         WiFi.macAddress(mac);
@@ -891,11 +895,11 @@ void sendInflux() {
         String macaddr4 = number2string(mac[4]);
         String macaddr5 = number2string(mac[5]);
         String completemac = macaddr0 + macaddr1 + macaddr2 + macaddr3 + macaddr4 + macaddr5;
-        sensor.addField("mac", completemac);
+        influxSensor.addField("mac", completemac);
 
         // Write point
-        if (!client.writePoint(sensor)) {
-            Serial.printf("InfluxDB write failed: %s\n", client.getLastErrorMessage().c_str());
+        if (!influxClient.writePoint(influxSensor)) {
+            Serial.printf("InfluxDB write failed: %s\n", influxClient.getLastErrorMessage().c_str());
         }
     }
 }
@@ -2031,6 +2035,15 @@ void setup() {
                 mqtt.setCallback(mqtt_callback);
                 checkMQTT();
             }
+
+            if (INFLUXDB == 1) {
+                if (INFLUXDB_AUTH_TYPE == 1) {
+                    influxClient.setConnectionParams(INFLUXDB_URL, INFLUXDB_ORG_NAME, INFLUXDB_DB_NAME, INFLUXDB_API_TOKEN);
+                }
+                else if (INFLUXDB_AUTH_TYPE == 2 && (strlen(INFLUXDB_USER) > 0) && (strlen(INFLUXDB_PASSWORD) > 0)) {
+                    influxClient.setConnectionParamsV1(INFLUXDB_URL, INFLUXDB_DB_NAME, INFLUXDB_USER, INFLUXDB_PASSWORD);
+                }
+            }
         }
 
         // Initialize PID controller
@@ -2246,7 +2259,7 @@ void looppid() {
     bPID.Compute();
 
     if ((millis() - lastTempEvent) > tempEventInterval) {
-        sendTempEvent(Input, BrewSetPoint);
+        sendTempEvent(Input, BrewSetPoint, Output);
         lastTempEvent = millis();
     }
 
@@ -2371,7 +2384,7 @@ void looppid() {
             lastmachinestatepid = machinestate;
         }
 
-        bPID.SetTunings(150, 0, 0, PonE);
+        bPID.SetTunings(steamKp, 0, 0, PonE);
     }
 
     // chill-mode after steam
@@ -2450,6 +2463,7 @@ int readSysParamsFromStorage(void) {
     if (sysParaPreInfPause.getStorage() != 0) return -1;
     if (sysParaWeightSetPoint.getStorage() != 0) return -1;
     if (sysParaPidOn.getStorage() != 0) return -1;
+    if (sysParaPidKpSteam.getStorage() != 0) return -1;
 
     return 0;
 }
@@ -2476,7 +2490,7 @@ int writeSysParamsToStorage(void) {
     if (sysParaPreInfPause.setStorage() != 0) return -1;
     if (sysParaWeightSetPoint.setStorage() != 0) return -1;
     if (sysParaPidOn.setStorage() != 0) return -1;
-
+    if (sysParaPidKpSteam.setStorage() != 0) return -1;
     return storageCommit();
 }
 
@@ -2552,6 +2566,9 @@ void writeSysParamsToMQTT(void) {
             // Start PI
             mqtt_publish("startKp", number2string(startKp));
             mqtt_publish("startTn", number2string(startTn));
+
+             // Steam P
+            mqtt_publish("steamKp", number2string(steamKp));
 
             //BD Parameter
             mqtt_publish("BrewTimer", number2string(brewtimersoftware));

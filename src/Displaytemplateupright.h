@@ -122,15 +122,18 @@ void printScreen() {
                     u8g2.print(wifiReconnects);
                 }
 
-                if (Blynk.connected()) {
-                    u8g2.drawXBMP(24, 2, 11, 8, blynk_OK_u8g2);
-                } else {
-                    u8g2.drawXBMP(24, 2, 8, 8, blynk_NOK_u8g2);
+                if (BLYNK == 1) {
+                    if (Blynk.connected()) {
+                        u8g2.drawXBMP(24, 2, 11, 8, blynk_OK_u8g2);
+                    } else {
+                        u8g2.drawXBMP(24, 2, 8, 8, blynk_NOK_u8g2);
+                    }
                 }
 
                 if (MQTT == 1) {
                     if (mqtt.connected() == 1) {
                         u8g2.setCursor(41, 2);
+                        u8g2.setFont(u8g2_font_profont11_tf);
                         u8g2.print("MQTT");
                     } else {
                         u8g2.setCursor(41, 2);
