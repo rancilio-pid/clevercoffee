@@ -416,6 +416,9 @@ std::vector<editable_t> editableVars = {
 unsigned long lastTempEvent = 0;
 unsigned long tempEventInterval = 1000;
 
+unsigned long lastMachineStateEvent = 0;
+unsigned long MachineStateEventInterval = 1000;
+
 /**
  * @brief Get Wifi signal strength and set bars for display
  */
@@ -2248,6 +2251,11 @@ void looppid() {
     if ((millis() - lastTempEvent) > tempEventInterval) {
         sendTempEvent(Input, BrewSetPoint, Output);
         lastTempEvent = millis();
+    }
+
+    if ((millis() - lastMachineStateEvent) > MachineStateEventInterval) {        
+        sendMachineStateEvent(machinestate, bPID.GetKp(), bPID.GetKi(), bPID.GetKd());
+        lastMachineStateEvent = millis();
     }
 
     #if (BREWMODE == 2 || ONLYPIDSCALE == 1)

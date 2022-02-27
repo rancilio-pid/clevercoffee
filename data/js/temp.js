@@ -243,4 +243,19 @@ if (!!window.EventSource) {
     },
     false
   );
+
+  source.addEventListener(
+    'new_machine_state',
+    function (e) {
+      console.log("new_machine_state", e.data);
+      var myObj = JSON.parse(e.data);
+      console.log(myObj);
+
+      document.getElementById("varMACHINE_STATE").innerText = myObj["MachineState"];
+      document.getElementById("varKp").innerText = myObj["currentKp"].toFixed(1);
+      document.getElementById("varKi").innerText = myObj["currentKi"].toFixed(1);
+      document.getElementById("varKd").innerText = myObj["currentKd"].toFixed(1);
+    },
+    false
+  );
 }

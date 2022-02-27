@@ -49,6 +49,11 @@ double curTemp = 0.0;
 double tTemp = 0.0;
 double hPower = 0.0;
 
+MachineState curmachinestate = kInit;
+double curKp = 0.0;
+double curKi = 0.0;
+double curkd = 0.0;
+
 void serverSetup();
 void setEepromWriteFcn(int (*fcnPtr)(void));
 
@@ -78,6 +83,21 @@ String getTempString() {
     serializeJson(doc, jsonTemps);
 
     return jsonTemps;
+}
+
+String getMachineStateString() {
+    StaticJsonDocument<96> doc;
+
+    doc["MachineState"] = curmachinestate;
+    doc["currentKp"] = curKp;
+    doc["currentKi"] = curKi;
+    doc["currentKd"] = curkd;
+
+    String jsonMachineState;
+
+    serializeJson(doc, jsonMachineState);
+
+    return jsonMachineState;
 }
 
 String generateForm(String varName) {
@@ -331,4 +351,13 @@ void sendTempEvent(float currentTemp, float targetTemp, float heaterPower) {
     events.send(getTempString().c_str(), "new_temps", millis());
 }
 
+void sendMachineStateEvent(enum MachineState, double Kp, double Ki, double Kd) {
+    curmachinestate = machinestate;
+    curKp = Kp;
+    curKi = Ki;
+    curkd = Kd;
+
+    events.send("ping", NULL, millis());
+    events.send(getMachineStateString().c_str(), "new_machine_state", millis());
+}
 #endif

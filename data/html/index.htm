@@ -74,9 +74,8 @@
             <div class="card card-accent-dark mb-5 pb-0 shadow-sm rounded">
                 <div class="card-body bg-light pb-1 rounded">
                     <h5 class="card-title">
-                        Status <td><span id="varMACHINE_STATE">%VAR_SHOW_MACHINE_STATE%</span></td>                         
+                        Status <td><span id="varMACHINE_STATE">int</span></td>                         
                         <!-- TODO: convert number here to string of machine state -->
-                        <!-- TODO: ensure regular update (currently only updates after a page refresh) -->
                     </h5>
                 </div>
                 <div class="card-body">
@@ -85,22 +84,22 @@
                             <tbody>
                                 <tr>
                                     <td><b>Temperature</b></td>
-                                    <td><span id="varTEMP">%VAR_SHOW_TEMP%</span>° C</td>
+                                    <td><span id="varTEMP">int</span>° C</td>
                                     <td></td>
                                 </tr>
                                 <tr>
                                     <td><b>P-Term</b></td>
-                                    <td>%VAR_SHOW_PID_KP%</td>
+                                    <td><span id="varKp">int</span></td>
                                     <td></td>
                                 </tr>
                                 <tr>
                                     <td><b>I-Term</b></td>
-                                    <td>%VAR_SHOW_PID_TN%</td>
+                                    <td><span id="varKi">int</span></td>
                                     <td></td>
                                 </tr>
                                 <tr>
                                     <td><b>D-Term</b></td>
-                                    <td>%VAR_SHOW_PID_TV%</td>
+                                    <td><span id="varKd">int</span></td>
                                     <td></td>
                                 </tr>
                             </tbody>
