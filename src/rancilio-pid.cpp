@@ -736,19 +736,22 @@ boolean checkSensor(float tempInput) {
  *      If the value is not valid, new data is not stored.
  */
 void refreshTemp() {
-  unsigned long currentMillistemp = millis();
-  previousInput = Input;
+    unsigned long currentMillistemp = millis();
+    previousInput = Input;
 
     if (TempSensor == 1) {
         if (currentMillistemp - previousMillistemp >= intervaltempmesds18b20) {
             previousMillistemp = currentMillistemp;
             sensors.requestTemperatures();
 
-            if (!checkSensor(sensors.getTempCByIndex(0)) && firstreading == 0)
-                return; // if sensor data is not valid, abort function; Sensor must
-                        // be read at least one time at system startup
+            if (sensors.isConversionComplete()){
+                if (!checkSensor(sensors.getTempCByIndex(0)) && firstreading == 0)
+                    return; // if sensor data is not valid, abort function; Sensor must
+                            // be read at least one time at system startup
 
-            Input = sensors.getTempCByIndex(0);
+                Input = sensors.getTempCByIndex(0);
+                sensors.requestTemperatures(); // Send the command to get next temperature reading
+            }
 
             if (Brewdetection != 0) {
                 movAvg();
@@ -2044,6 +2047,7 @@ void setup() {
             sensors.setResolution(sensorDeviceAddress, 10);
             sensors.requestTemperatures();
             Input = sensors.getTempCByIndex(0);
+            sensors.setWaitForConversion(false); //set false *after* first reading of temp to aviod intialisation issues
         }
 
         if (TempSensor == 2) {
