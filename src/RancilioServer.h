@@ -72,7 +72,7 @@ uint8_t flipUintValue(uint8_t value) {
 }
 
 String getStatusString() {
-    StaticJsonDocument<96> doc;
+    StaticJsonDocument<200> doc;
 
     doc["currentTemp"] = curTemp;
     doc["targetTemp"] = tTemp;
