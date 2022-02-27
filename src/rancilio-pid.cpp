@@ -742,7 +742,6 @@ void refreshTemp() {
     if (TempSensor == 1) {
         if (currentMillistemp - previousMillistemp >= intervaltempmesds18b20) {
             previousMillistemp = currentMillistemp;
-            sensors.requestTemperatures();
 
             if (sensors.isConversionComplete()){
                 if (!checkSensor(sensors.getTempCByIndex(0)) && firstreading == 0)
