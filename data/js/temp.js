@@ -232,25 +232,14 @@ if (!!window.EventSource) {
     false);
 
   source.addEventListener(
-    'new_temps',
+    'new_status',
     function (e) {
-      console.log("new_temps", e.data);
+      console.log("new_status", e.data);
       var myObj = JSON.parse(e.data);
       console.log(myObj);
       plotData(myObj);
 
       document.getElementById("varTEMP").innerText = myObj["currentTemp"].toFixed(1);
-    },
-    false
-  );
-
-  source.addEventListener(
-    'new_machine_state',
-    function (e) {
-      console.log("new_machine_state", e.data);
-      var myObj = JSON.parse(e.data);
-      console.log(myObj);
-
       document.getElementById("varMACHINE_STATE").innerText = myObj["MachineState"];
       document.getElementById("varKp").innerText = myObj["currentKp"].toFixed(1);
       document.getElementById("varKi").innerText = myObj["currentKi"].toFixed(1);

@@ -71,33 +71,22 @@ uint8_t flipUintValue(uint8_t value) {
     return (value + 3) % 2;
 }
 
-String getTempString() {
+String getStatusString() {
     StaticJsonDocument<96> doc;
 
     doc["currentTemp"] = curTemp;
     doc["targetTemp"] = tTemp;
     doc["heaterPower"] = hPower;
-
-    String jsonTemps;
-
-    serializeJson(doc, jsonTemps);
-
-    return jsonTemps;
-}
-
-String getMachineStateString() {
-    StaticJsonDocument<96> doc;
-
     doc["MachineState"] = curmachinestate;
     doc["currentKp"] = curKp;
     doc["currentKi"] = curKi;
     doc["currentKd"] = curkd;
 
-    String jsonMachineState;
+    String jsonStatus;
 
-    serializeJson(doc, jsonMachineState);
+    serializeJson(doc, jsonStatus);
 
-    return jsonMachineState;
+    return jsonStatus;
 }
 
 String generateForm(String varName) {
@@ -322,7 +311,7 @@ void serverSetup() {
     });
 
     server.on("/temperatures", HTTP_GET, [](AsyncWebServerRequest *request) {
-        String json = getTempString();
+        String json = getStatusString();
         request->send(200, "application/json", json);
         json = String();
     });
@@ -342,22 +331,24 @@ void serverSetup() {
 }
 
 
-void sendTempEvent(float currentTemp, float targetTemp, float heaterPower) {
+void sendStatusEvent(float currentTemp,
+                     float targetTemp,
+                     float heaterPower,
+                     MachineState currentMachineState,
+                     double currentKp,
+                     double currentKi,
+                     double currentKd) {
+
     curTemp = currentTemp;
     tTemp = targetTemp;
     hPower = heaterPower;
-
-    events.send("ping", NULL, millis());
-    events.send(getTempString().c_str(), "new_temps", millis());
-}
-
-void sendMachineStateEvent(MachineState currentMachineState, double currentKp, double currentKi, double currentKd) {
     curmachinestate = currentMachineState;
     curKp = currentKp;
     curKi = currentKi;
     curkd = currentKd;
 
     events.send("ping", NULL, millis());
-    events.send(getMachineStateString().c_str(), "new_machine_state", millis());
+    events.send(getStatusString().c_str(), "new_status", millis());
 }
+
 #endif
