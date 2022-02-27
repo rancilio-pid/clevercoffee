@@ -351,11 +351,11 @@ void sendTempEvent(float currentTemp, float targetTemp, float heaterPower) {
     events.send(getTempString().c_str(), "new_temps", millis());
 }
 
-void sendMachineStateEvent(enum MachineState, double Kp, double Ki, double Kd) {
-    curmachinestate = machinestate;
-    curKp = Kp;
-    curKi = Ki;
-    curkd = Kd;
+void sendMachineStateEvent(MachineState currentMachineState, double currentKp, double currentKi, double currentKd) {
+    curmachinestate = currentMachineState;
+    curKp = currentKp;
+    curKi = currentKi;
+    curkd = currentKd;
 
     events.send("ping", NULL, millis());
     events.send(getMachineStateString().c_str(), "new_machine_state", millis());
