@@ -1749,7 +1749,7 @@ void tempLed() {
         pinMode(LEDPIN, OUTPUT);
         //Todo: use public values
         // inner Tempregion
-        if ((machinestate == kPidNormal && (fabs(Input - setPoint) < 0.5)) || (Input > 115 && fabs(Input - BrewSetPoint) < 5))  {
+        if ((machinestate == kPidNormal && (fabs(Input - setPoint) < 0.5)) || (Input > 115 && fabs(Input - SteamSetPoint) < 5))  {
             digitalWrite(LEDPIN, LOW);
             //digitalWrite(LEDPIN, brewReadyLedON);
         }
