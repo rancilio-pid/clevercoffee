@@ -1742,21 +1742,18 @@ void debugVerboseOutput() {
 }
 
 /**
- * @brief TODO
+ * @brief set Temp LED to maschine brew/Steam readyness
  */
 void tempLed() {
     if (TEMPLED >= 1) {
         pinMode(LEDPIN, OUTPUT);
-        //Todo: use public values
         // inner Tempregion
         if ((machinestate == kPidNormal && (fabs(Input - setPoint) < 0.5)) || (Input > 115 && fabs(Input - SteamSetPoint) < 5))  {
-            digitalWrite(LEDPIN, LOW);
-            //digitalWrite(LEDPIN, brewReadyLedON);
+            digitalWrite(LEDPIN, brewReadyLedON);
         }
         else
         {
-            digitalWrite(LEDPIN, HIGH);
-            //digitalWrite(LEDPIN, brewReadyLedOFF);
+            digitalWrite(LEDPIN, brewReadyLedOFF);
         }
     }
 }
@@ -1939,10 +1936,11 @@ void setup() {
         }
 
         //int brewReadyLedON, brewReadyLedOFF
-        if (TEMPLED == 1) {
-            brewReadyLedON = HIGH;
-            brewReadyLedOFF = LOW;
-        } else {
+        brewReadyLedON = HIGH;
+        brewReadyLedOFF = LOW;
+        
+        //If TEMPLED is 2, sw. high and low
+        if (TEMPLED == 2) {
             brewReadyLedON = LOW;
             brewReadyLedOFF = HIGH;
         }
