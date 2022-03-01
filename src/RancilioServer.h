@@ -182,6 +182,144 @@ String getValue(String varName) {
     return "(unknown variable " + varName + ")";
 }
 
+double readMinDouble(String valName){
+    double min = 0.0;
+
+    if (valName == "START_KP"){
+        min = sysParaPidKpStart.getMin();
+    } else if (valName == "START_TN"){
+        min = sysParaPidTnStart.getMin();
+    } else if (valName == "PID_KP"){
+        min = sysParaPidKpReg.getMin();
+    } else if (valName == "PID_TN"){
+        min = sysParaPidTnReg.getMin();
+    } else if (valName == "PID_TV"){
+        min = sysParaPidTvReg.getMin();
+    } else if (valName == "STEAM_KP"){
+        min = sysParaPidKpSteam.getMin();
+    } else if (valName == "BREW_SET_POINT"){
+        min = sysParaBrewSetPoint.getMin();
+    } else if (valName == "BREW_TIME"){
+        min = sysParaBrewTime.getMin();
+    } else if (valName == "BREW_PREINFUSUINPAUSE"){
+        min = sysParaPreInfPause.getMin();
+    } else if (valName == "BREW_PREINFUSION"){
+        min = sysParaPreInfTime.getMin();
+    } else if (valName == "SCALE_WEIGHTSETPOINT"){
+        min = sysParaWeightSetPoint.getMin();
+    } else if (valName == "PID_BD_TN"){
+        min = sysParaPidTnBd.getMin();
+    } else if (valName == "PID_BD_KP"){
+        min = sysParaPidKpBd.getMin();
+    } else if (valName == "PID_BD_TN"){
+        min = sysParaPidTnBd.getMin();
+    } else if (valName == "PID_BD_TV"){
+        min = sysParaPidTvBd.getMin();
+    } else if (valName == "PID_BD_TIMER"){
+        min = sysParaBrewSwTimer.getMin();
+    } else if (valName == "PID_BD_BREWBOARDER"){
+        min = sysParaBrewThresh.getMin();
+    } else { 
+        Serial.println(valName);
+        Serial.println("Unknown parameter");        
+    }
+    return min;
+}
+
+double readMaxDouble(String valName){
+    double max = 0.0;
+
+    if (valName == "START_KP"){
+        max = sysParaPidKpStart.getMax();
+    } else if (valName == "START_TN"){
+        max = sysParaPidTnStart.getMax();
+    } else if (valName == "PID_KP"){
+        max = sysParaPidKpReg.getMax();
+    } else if (valName == "PID_TN"){
+        max = sysParaPidTnReg.getMax();
+    } else if (valName == "PID_TV"){
+        max = sysParaPidTvReg.getMax();
+    } else if (valName == "STEAM_KP"){
+        max = sysParaPidKpSteam.getMax();
+    } else if (valName == "BREW_SET_POINT"){
+        max = sysParaBrewSetPoint.getMax();
+    } else if (valName == "BREW_TIME"){
+        max = sysParaBrewTime.getMax();
+    } else if (valName == "BREW_PREINFUSUINPAUSE"){
+        max = sysParaPreInfPause.getMax();
+    } else if (valName == "BREW_PREINFUSION"){
+        max = sysParaPreInfTime.getMax();
+    } else if (valName == "SCALE_WEIGHTSETPOINT"){
+        max = sysParaWeightSetPoint.getMax();
+    } else if (valName == "PID_BD_TN"){
+        max = sysParaPidTnBd.getMax();
+    } else if (valName == "PID_BD_KP"){
+        max = sysParaPidKpBd.getMax();
+    } else if (valName == "PID_BD_TN"){
+        max = sysParaPidTnBd.getMax();
+    } else if (valName == "PID_BD_TV"){
+        max = sysParaPidTvBd.getMax();
+    } else if (valName == "PID_BD_TIMER"){
+        max = sysParaBrewSwTimer.getMax();
+    } else if (valName == "PID_BD_BREWBOARDER"){
+        max = sysParaBrewThresh.getMax();
+    } else { 
+        Serial.println(valName);
+        Serial.println("Unknown parameter");        
+    }
+
+
+    return max;
+}
+
+template <typename T> 
+T validateValue(const char* valType, String valName, T Value){
+    bool ret = 1;
+
+    // There has to be a better way to do this using 
+    // typeid(T)==typeid(uint8_t),
+    // but I could not get it to work!
+    if (valType == "int") {
+        Serial.println(valName);
+        Serial.println("I am an int");
+    } else if (valType == "uint8_t") {
+        Serial.println(valName);
+        Serial.println("I am an uint");
+    } else if (valType == "float") {
+        Serial.println(valName);
+        Serial.println("I am an double");
+        
+        double min_Val = readMinDouble(valName);
+        double max_Val = readMaxDouble(valName);
+        Serial.println("min");
+        Serial.println(min_Val);
+        Serial.println("max");
+        Serial.println(max_Val);
+        Serial.println("requested");
+        Serial.println(Value);
+
+        if (Value < min_Val){
+            Serial.println("requested set of value is lower than minimum limit");
+            Serial.println("Value has been set to minium limit.");
+            Value = min_Val;
+        } else if (Value > max_Val){
+            Serial.println("requested set of value is higher than maximum limit");
+            Serial.println("Value has been set to maximum limit.");
+            Value = max_Val;
+        }
+
+        Serial.println("value after checks");
+        Serial.println(Value);
+
+
+    } else if (valType == "char") {
+        Serial.println(valName);
+        Serial.println("I am an string");
+    }
+
+    return Value;
+}
+
 String staticProcessor(const String& var) {
     if (var.startsWith("VAR_EDIT_")) {
         return generateForm(var.substring(9)); // cut off "VAR_EDIT_"
@@ -251,21 +389,39 @@ void serverSetup() {
                 m += " to ";
                 m += p->value();
 
+                const char* newValType = "";
+
                 if (e.type == kInteger) {
+                    newValType = "int";
                     int newVal = atoi(p->value().c_str());
+                    validateValue(newValType, varName,  newVal);
                     *(int *)e.ptr = newVal;
                     m += ", it is now: ";
                     m += *(int *)e.ptr;
                 } else if (e.type == kUInt8) {
-                    *(uint8_t *)e.ptr = (uint8_t)atoi(p->value().c_str());
+                    newValType = "uint8_t";
+                    uint8_t newVal = atoi(p->value().c_str());
+                    validateValue(newValType, varName,  newVal);
+                    *(uint8_t *)e.ptr = newVal;
                     m += ", it is now: ";
                     m += *(uint8_t *)e.ptr;
                 } else if (e.type == kDouble ||e.type == kDoubletime) {
-                    float newVal = atof(p->value().c_str());
-                    *(double *)e.ptr = newVal;
+                    newValType = "float";
+                    double newVal = atof(p->value().c_str());
+                    double validVal = validateValue(newValType, varName,  newVal);
+                    *(double *)e.ptr = validVal;
+                    if (validVal != newVal){
+                        m += " cannot be done! Value outside limits (";
+                        m +=  readMinDouble(varName);
+                        m += ",";
+                        m += readMaxDouble(varName);
+                        m += "). Set to: ";
+                    } else {
                     m += ", it is now: ";
+                    }
                     m += *(double *)e.ptr;
                 } else if (e.type == kCString) {
+                    newValType = "char";
                     // Hum, how do we do this?
                     m += ", unsupported for now.";
                 }
