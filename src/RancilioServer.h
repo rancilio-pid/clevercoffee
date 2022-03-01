@@ -182,6 +182,51 @@ String getValue(String varName) {
     return "(unknown variable " + varName + ")";
 }
 
+
+int readMinInt(String valName){
+    int min = 0;
+ 
+    Serial.println(valName);
+    Serial.println("Unknown parameter");        
+
+    return min;
+}
+
+int readMaxInt(String valName){
+    int max = 0;
+ 
+    Serial.println(valName);
+    Serial.println("Unknown parameter");
+
+    return max;
+}
+
+uint8_t readMinUint(String valName){
+    uint8_t min = 0;
+
+    if (valName == "PID_ON"){
+        min = sysParaPidOn.getMin();
+    } else { 
+        Serial.println(valName);
+        Serial.println("Unknown parameter");        
+    }
+
+    return min;
+}
+
+uint8_t readMaxUint(String valName){
+    uint8_t max = 0;
+
+    if (valName == "PID_ON"){
+        max = sysParaPidOn.getMax();
+    } else { 
+        Serial.println(valName);
+        Serial.println("Unknown parameter");        
+    }
+
+    return max;
+}
+
 double readMinDouble(String valName){
     double min = 0.0;
 
@@ -274,31 +319,15 @@ double readMaxDouble(String valName){
 
 template <typename T> 
 T validateValue(const char* valType, String valName, T Value){
-    bool ret = 1;
 
     // There has to be a better way to do this using 
     // typeid(T)==typeid(uint8_t),
     // but I could not get it to work!
     if (valType == "int") {
-        Serial.println(valName);
-        Serial.println("I am an int");
-    } else if (valType == "uint8_t") {
-        Serial.println(valName);
-        Serial.println("I am an uint");
-    } else if (valType == "float") {
-        Serial.println(valName);
-        Serial.println("I am an double");
-        
-        double min_Val = readMinDouble(valName);
-        double max_Val = readMaxDouble(valName);
-        Serial.println("min");
-        Serial.println(min_Val);
-        Serial.println("max");
-        Serial.println(max_Val);
-        Serial.println("requested");
-        Serial.println(Value);
+        int min_Val = readMinInt(valName);
+        int max_Val = readMaxInt(valName);
 
-        if (Value < min_Val){
+        if (Value < min_Val) {
             Serial.println("requested set of value is lower than minimum limit");
             Serial.println("Value has been set to minium limit.");
             Value = min_Val;
@@ -307,13 +336,33 @@ T validateValue(const char* valType, String valName, T Value){
             Serial.println("Value has been set to maximum limit.");
             Value = max_Val;
         }
+    } else if (valType == "uint8_t") {
+        uint8_t min_Val = readMinUint(valName);
+        uint8_t max_Val = readMaxUint(valName);
 
-        Serial.println("value after checks");
-        Serial.println(Value);
+        if (Value < min_Val) {
+            Serial.println("requested set of value is lower than minimum limit");
+            Serial.println("Value has been set to minium limit.");
+            Value = min_Val;
+        } else if (Value > max_Val){
+            Serial.println("requested set of value is higher than maximum limit");
+            Serial.println("Value has been set to maximum limit.");
+            Value = max_Val;
+        }
+    } else if (valType == "double") {
+        double min_Val = readMinDouble(valName);
+        double max_Val = readMaxDouble(valName);
 
-
-    } else if (valType == "char") {
-        Serial.println(valName);
+        if (Value < min_Val) {
+            Serial.println("requested set of value is lower than minimum limit");
+            Serial.println("Value has been set to minium limit.");
+            Value = min_Val;
+        } else if (Value > max_Val){
+            Serial.println("requested set of value is higher than maximum limit");
+            Serial.println("Value has been set to maximum limit.");
+            Value = max_Val;
+        }
+    } else if (valType == "string") {
         Serial.println("I am an string");
     }
 
@@ -394,19 +443,35 @@ void serverSetup() {
                 if (e.type == kInteger) {
                     newValType = "int";
                     int newVal = atoi(p->value().c_str());
-                    validateValue(newValType, varName,  newVal);
-                    *(int *)e.ptr = newVal;
+                    int validVal = validateValue(newValType, varName,  newVal);
+                        if (validVal != newVal){
+                        m += " cannot be done! Value outside limits (";
+                        m +=  readMinInt(varName);
+                        m += ",";
+                        m += readMaxInt(varName);
+                        m += "). Set to: ";
+                    } else {
                     m += ", it is now: ";
+                    }
+                    *(int *)e.ptr = validVal;
                     m += *(int *)e.ptr;
                 } else if (e.type == kUInt8) {
                     newValType = "uint8_t";
                     uint8_t newVal = atoi(p->value().c_str());
-                    validateValue(newValType, varName,  newVal);
-                    *(uint8_t *)e.ptr = newVal;
+                    uint8_t validVal = validateValue(newValType, varName,  newVal);
+                    if (validVal != newVal){
+                        m += " cannot be done! Value outside limits (";
+                        m +=  readMinUint(varName);
+                        m += ",";
+                        m += readMaxUint(varName);
+                        m += "). Set to: ";
+                    } else {
                     m += ", it is now: ";
+                    }
+                    *(uint8_t *)e.ptr = validVal;
                     m += *(uint8_t *)e.ptr;
                 } else if (e.type == kDouble ||e.type == kDoubletime) {
-                    newValType = "float";
+                    newValType = "double";
                     double newVal = atof(p->value().c_str());
                     double validVal = validateValue(newValType, varName,  newVal);
                     *(double *)e.ptr = validVal;
@@ -421,7 +486,7 @@ void serverSetup() {
                     }
                     m += *(double *)e.ptr;
                 } else if (e.type == kCString) {
-                    newValType = "char";
+                    newValType = "string";
                     // Hum, how do we do this?
                     m += ", unsupported for now.";
                 }
