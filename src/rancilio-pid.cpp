@@ -1741,6 +1741,12 @@ void debugVerboseOutput() {
     }
 }
 
+unsigned long previousMillis = 0;        // will store last time LED was updated
+// constants won't change:
+const long interval = 500;           // interval at which to blink (milliseconds)
+// Variables will change:
+int ledState = LOW;             // ledState used to set the LED
+
 /**
  * @brief set Temp LED to maschine brew/Steam readyness
  */
@@ -1748,14 +1754,41 @@ void tempLed() {
     if (TEMPLED >= 1) {
         pinMode(LEDPIN, OUTPUT);
         // inner Tempregion
-        if ((machinestate == kPidNormal && (fabs(Input - setPoint) < 0.5)) || (Input > 115 && fabs(Input - SteamSetPoint) < 5))  {
+
+        if (machinestate == kPidOffline)
+       {
+         digitalWrite(LEDPIN, LOW);
+         return;
+       }  
+
+        if ((machinestate == kPidNormal && (fabs(Input - setPoint) < 0.5)) || (machinestate == kSteam && Input > SteamSetPoint-2))  {
             digitalWrite(LEDPIN, brewReadyLedON);
         }
+        else if (machinestate == kSteam && Input < SteamSetPoint-2) //If steam heating
+        {
+            unsigned long currentMillis = millis();
+            if (currentMillis - previousMillis >= interval) 
+            {
+                // save the last time you blinked the LED
+                previousMillis = currentMillis;
+
+                // if the LED is off turn it on and vice-versa:
+                if (ledState == LOW) {
+                ledState = HIGH;
+                } else {
+                ledState = LOW;
+                }
+
+                // set the LED with the ledState of the variable:
+                digitalWrite(LEDPIN, ledState);
+            }
+        }        
         else
         {
             digitalWrite(LEDPIN, brewReadyLedOFF);
         }
     }
+    
 }
 
 /**
