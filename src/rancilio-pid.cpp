@@ -214,6 +214,11 @@ int backflushON = 0;      // 1 = activate backflush
 int flushCycles = 0;      // number of active flush cycles
 int backflushState = 10;  // counter for state machine
 
+// Temp LED
+unsigned long previousMillis = 0;       // will store last time LED was updated
+long LEDInterval = 500;                 // interval at which to blink (milliseconds)
+int ledState = LOW;                     // ledState used to set the LED
+
 // Moving average - brewdetection
 const int numReadings = 15;               // number of values per Array
 double readingstemp[numReadings];         // the readings from Temp
@@ -1741,54 +1746,52 @@ void debugVerboseOutput() {
     }
 }
 
-unsigned long previousMillis = 0;        // will store last time LED was updated
-// constants won't change:
-const long interval = 500;           // interval at which to blink (milliseconds)
-// Variables will change:
-int ledState = LOW;             // ledState used to set the LED
-
 /**
  * @brief set Temp LED to maschine brew/Steam readyness
  */
 void tempLed() {
-    if (TEMPLED >= 1) {
-        pinMode(LEDPIN, OUTPUT);
-        // inner Tempregion
+    if (TEMPLED <= 0) 
+    {
+        return;
+    } 
 
-        if (machinestate == kPidOffline)
-       {
-         digitalWrite(LEDPIN, LOW);
-         return;
-       }  
+    // LED off if PID is offline
+    if (machinestate == kPidOffline)
+    {
+        digitalWrite(LEDPIN, LOW);
+        return;
+    }  
 
-        if ((machinestate == kPidNormal && (fabs(Input - setPoint) < 0.5)) || (machinestate == kSteam && Input > SteamSetPoint-2))  {
-            digitalWrite(LEDPIN, brewReadyLedON);
-        }
-        else if (machinestate == kSteam && Input < SteamSetPoint-2) //If steam heating
-        {
-            unsigned long currentMillis = millis();
-            if (currentMillis - previousMillis >= interval) 
-            {
-                // save the last time you blinked the LED
-                previousMillis = currentMillis;
-
-                // if the LED is off turn it on and vice-versa:
-                if (ledState == LOW) {
-                ledState = HIGH;
-                } else {
-                ledState = LOW;
-                }
-
-                // set the LED with the ledState of the variable:
-                digitalWrite(LEDPIN, ledState);
-            }
-        }        
-        else
-        {
-            digitalWrite(LEDPIN, brewReadyLedOFF);
-        }
+    // Brew || Steam ready
+    if ((machinestate == kPidNormal && (fabs(Input - setPoint) < 1.0)) || (machinestate == kSteam && Input > SteamSetPoint-2))  {
+        digitalWrite(LEDPIN, brewReadyLedON);
+        return;
     }
-    
+
+    // Blink led if steam is heating
+    if (machinestate == kSteam && Input < SteamSetPoint-2)
+    {
+        unsigned long currentMillis = millis();
+        if (currentMillis - previousMillis >= LEDInterval) 
+        {
+            // save the last time you blinked the LED
+            previousMillis = currentMillis;
+
+            // if the LED is off turn it on and vice-versa:
+            if (ledState == LOW) {
+            ledState = HIGH;
+            } else {
+            ledState = LOW;
+            }
+
+            // set the LED with the ledState of the variable:
+            digitalWrite(LEDPIN, ledState);
+        }
+        return;
+    }
+
+    //Steam || Brew unready 
+    digitalWrite(LEDPIN, brewReadyLedOFF);
 }
 
 /**
@@ -1972,6 +1975,9 @@ void setup() {
         brewReadyLedON = HIGH;
         brewReadyLedOFF = LOW;
         
+        //Set PIN for tempLED
+        pinMode(LEDPIN, OUTPUT);
+
         //If TEMPLED is 2, sw. high and low
         if (TEMPLED == 2) {
             brewReadyLedON = LOW;
@@ -2155,8 +2161,32 @@ void loop() {
                     softApstate = 10;
                 }
                 break;
-            case 10:
-                ArduinoOTA.handle();  // For OTA
+                case 10:
+                    if (TEMPLED > 0) //blink LED in setupMode
+                    {                   
+                        pinMode(LEDPIN, OUTPUT);
+                        LEDInterval = 100;
+                        unsigned long currentMillis = millis();
+                        if (currentMillis - previousMillis >= LEDInterval) 
+                        {
+                            // save the last time you blinked the LED
+                            previousMillis = currentMillis;
+
+                            // if the LED is off turn it on and vice-versa:
+                            if (ledState == LOW) 
+                            {
+                                ledState = HIGH;
+                            } 
+                            else 
+                            {
+                                ledState = LOW;
+                            }
+
+                            // set the LED with the ledState of the variable:
+                            digitalWrite(LEDPIN, ledState);
+                        }
+                    } 
+                    ArduinoOTA.handle();  // For OTA
 
                 // Disable interrupt it OTA is starting, otherwise it will not work
                 ArduinoOTA.onStart([]() {
