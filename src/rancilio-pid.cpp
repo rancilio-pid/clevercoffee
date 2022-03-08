@@ -981,6 +981,41 @@ char *number2string(unsigned int in) {
   return number2string_uint;
 }
 
+char *MachineState_to_string(MachineState type) {
+   switch(type) {
+    case kInit:
+        return "kInit";
+    case kColdStart:
+        return "kColdStart";
+    case kSetPointNegative:
+        return "kSetPointNegative";
+    case kPidNormal:
+        return "kPidNormal";
+    case kBrew:
+        return "kBrew";
+    case kShotTimerAfterBrew:
+        return "kShotTimerAfterBrew";
+    case kBrewDetectionTrailing:
+        return "kBrewDetectionTrailing";
+    case kSteam:
+         return "kSteam";
+    case kCoolDown:
+         return "kCoolDown";
+    case kBackflush:
+         return "kBackflush";
+    case kEmergencyStop:
+         return "kEmergencyStop";
+    case kPidOffline:
+         return "kPidOffline";
+    case kSensorError:
+         return "kSensorError";
+    case keepromError:
+         return "keepromError";   
+      default:
+         return "Invalid MachineState";
+   }
+}
+
 /**
  * @brief Publish Data to MQTT
  */
@@ -1732,6 +1767,7 @@ void machinestatevoid() {
         Serial.printf("new machinestate: %i -> %i\n", lastmachinestate, machinestate);
         lastmachinestate = machinestate;
     }
+    mqtt_publish("Machinestate", MachineState_to_string(machinestate));    
 }
 
 void debugVerboseOutput() {
@@ -1762,13 +1798,20 @@ void tempLed() {
         return;
     }  
 
-    // Brew || Steam ready
-    if ((machinestate == kPidNormal && (fabs(Input - setPoint) < 1.0)) || (machinestate == kSteam && Input > SteamSetPoint-2))  {
+    // Brew ready 1 degree tollerance 
+    if (machinestate == kPidNormal && (fabs(Input - setPoint) < 1.0)) {
         digitalWrite(LEDPIN, brewReadyLedON);
         return;
     }
 
-    // Blink led if steam is heating
+    // Steam ready 2 degree tollerance
+    if (machinestate == kSteam && Input > SteamSetPoint-2)
+    {
+        digitalWrite(LEDPIN, brewReadyLedON);
+        return;
+    }
+
+    // Blink led on steam heating
     if (machinestate == kSteam && Input < SteamSetPoint-2)
     {
         unsigned long currentMillis = millis();
