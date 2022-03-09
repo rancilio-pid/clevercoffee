@@ -112,12 +112,28 @@ class SysPara {
         }
 
        /**
+        * @brief Sets the current value.
+        *
+        * @param value - new current value
+        *
+        * @return 0 - success, <0 - failure
+        */
+        int set(T value) {
+            if ((value >= _data.min) && (value <= _data.max)) {
+                *_data.curPtr = value;
+                return 0;
+            }
+            Serial.printf("%s(): value outside of range!\n", __FUNCTION__);
+            return -1;
+        }
+
+       /**
         * @brief Writes the current value to storage, if a valid storage ID
         *        was given at instantiation.
         *
         * @param commit - true=commit storage (optional, default=false)
         *
-        * @return  0 - success, <0 - failure
+        * @return 0 - success, <0 - failure
         */
         int setStorage(bool commit = false) {
             if (_stoItemId < STO_ITEM__LAST_ENUM) {
