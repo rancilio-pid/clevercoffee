@@ -49,6 +49,22 @@ class SysPara {
         }
 
        /**
+        * @brief Constructor
+        *
+        * @param sysPara - system parameter object
+        */
+        explicit SysPara(T& sysPara) {
+            this = sysPara;
+        }
+
+       /**
+        * @brief Constructor used for extern declarations
+        */
+        explicit SysPara() {
+            _stoItemId = STO_ITEM__LAST_ENUM;
+        }
+
+       /**
         * @brief Returns the storage ID.
         *
         * @return storage ID (if exist) or STO_ITEM__LAST_ENUM
