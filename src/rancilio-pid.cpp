@@ -132,7 +132,7 @@ IPAddress subnet(255, 255, 255, 0);
 const char *AP_WIFI_SSID = APWIFISSID;
 const char *AP_WIFI_KEY = APWIFIKEY;
 const unsigned long checkpowerofftime = 30 * 1000;
-boolean checklastpoweroffEnabled = false;
+boolean checklastpoweroffEnabled = true;
 boolean softApEnabledcheck = false;
 int softApstate = 0;
 
@@ -1978,6 +1978,9 @@ void setup() {
     // Check AP Mode
     checklastpoweroff();
 
+    //workaround to disable setupMode
+    softApEnabled = 0;
+
     if (softApEnabled == 1) {
         #if OLED_DISPLAY != 0
             u8g2.setI2CAddress(oled_i2c * 2);
@@ -2205,30 +2208,6 @@ void loop() {
                 }
                 break;
                 case 10:
-                    if (TEMPLED > 0) //blink LED in setupMode
-                    {                   
-                        pinMode(LEDPIN, OUTPUT);
-                        LEDInterval = 100;
-                        unsigned long currentMillis = millis();
-                        if (currentMillis - previousMillis >= LEDInterval) 
-                        {
-                            // save the last time you blinked the LED
-                            previousMillis = currentMillis;
-
-                            // if the LED is off turn it on and vice-versa:
-                            if (ledState == LOW) 
-                            {
-                                ledState = HIGH;
-                            } 
-                            else 
-                            {
-                                ledState = LOW;
-                            }
-
-                            // set the LED with the ledState of the variable:
-                            digitalWrite(LEDPIN, ledState);
-                        }
-                    } 
                     ArduinoOTA.handle();  // For OTA
 
                 // Disable interrupt it OTA is starting, otherwise it will not work
