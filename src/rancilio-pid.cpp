@@ -216,7 +216,7 @@ int backflushState = 10;  // counter for state machine
 
 // Temp LED
 unsigned long previousMillis = 0;       // will store last time LED was updated
-long LEDInterval = 500;                 // interval at which to blink (milliseconds)
+unsigned long LEDInterval = 500;                 // interval at which to blink (milliseconds)
 int ledState = LOW;                     // ledState used to set the LED
 
 // Moving average - brewdetection
@@ -1783,6 +1783,28 @@ void debugVerboseOutput() {
 }
 
 /**
+ * @brief blink LED to intervall
+ */
+void blinkLED(){
+    unsigned long currentMillis = millis();
+    if (currentMillis - previousMillis >= LEDInterval) 
+    {
+        // save the last time you blinked the LED
+        previousMillis = currentMillis;
+
+        // if the LED is off turn it on and vice-versa:
+        if (ledState == LOW) {
+            ledState = HIGH;
+        } else {
+            ledState = LOW;
+        }
+
+        // set the LED with the ledState of the variable:
+        digitalWrite(LEDPIN, ledState);
+    }
+}
+
+/**
  * @brief set Temp LED to maschine brew/Steam readyness
  */
 void tempLed() {
@@ -1799,7 +1821,7 @@ void tempLed() {
     }  
 
     // Brew ready 1 degree tollerance 
-    if (machinestate == kPidNormal && (fabs(Input - setPoint) < 1.0)) {
+    if ((machinestate == kPidNormal|| machinestate == kBrewDetectionTrailing) && (fabs(Input - setPoint) < 1.0)) {
         digitalWrite(LEDPIN, brewReadyLedON);
         return;
     }
@@ -1814,22 +1836,16 @@ void tempLed() {
     // Blink led on steam heating
     if (machinestate == kSteam && Input < SteamSetPoint-2)
     {
-        unsigned long currentMillis = millis();
-        if (currentMillis - previousMillis >= LEDInterval) 
-        {
-            // save the last time you blinked the LED
-            previousMillis = currentMillis;
+        LEDInterval = 500;
+        blinkLED();
+        return;
+    }
 
-            // if the LED is off turn it on and vice-versa:
-            if (ledState == LOW) {
-            ledState = HIGH;
-            } else {
-            ledState = LOW;
-            }
-
-            // set the LED with the ledState of the variable:
-            digitalWrite(LEDPIN, ledState);
-        }
+    // Blink led on steam heating
+    if (machinestate == kSensorError)
+    {
+        LEDInterval = 100;
+        blinkLED();
         return;
     }
 
@@ -2360,6 +2376,7 @@ void looppid() {
     sendToBlynkMQTT();
     machinestatevoid();      // calc machinestate
     setchecklastpoweroff();  // FOR AP MODE
+    blinkLED();
     tempLed();
 
     if (INFLUXDB == 1) {
