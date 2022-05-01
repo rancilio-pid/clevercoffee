@@ -373,6 +373,7 @@ std::vector<mqttVars_t> mqttVars = {
     {"preinfusion", tDouble, 0, 10, (void *)&preinfusion},
     {"preinfusionpause", tDouble, 0, 20, (void *)&preinfusionpause},
     {"pidON", tUInt8, 0, 1, (void *)&pidON},
+    {"SteamON", tUInt8, 0, 1, (void *)&SteamON},
     {"backflushON", tUInt8, 0, 1, (void *)&backflushON},
     {"aggKp", tDouble, 0, 100, (void *)&aggKp},
     {"aggTn", tDouble, 0, 999, (void *)&aggTn},
@@ -1204,6 +1205,10 @@ void assignMQTTParam(char *param, double value) {
     }
 
     if (paramValid && paramInRange) {
+        if (key.equals("SteamON")) {
+            SteamFirstON = value;
+        }
+
         mqtt_publish(param, number2string(value));
         writeSysParamsToBlynk();
         writeSysParamsToStorage();
