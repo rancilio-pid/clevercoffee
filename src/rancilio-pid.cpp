@@ -1111,7 +1111,10 @@ void brewdetection() {
                         logbrew.reset();
                     }
 
-                    if (brewSteamDetectedQM == 1) {
+                    const unsigned long minBrewDurationForSteamModeQM_ON = 50;
+                    if (brewSteamDetectedQM == 1 && millis()-timePVStoON > minBrewDurationForSteamModeQM_ON) 
+                    {
+
                         if (pvs == VoltageSensorOFF) {
                             brewSteamDetectedQM = 0;
 
