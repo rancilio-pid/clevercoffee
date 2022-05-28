@@ -197,15 +197,14 @@ char *number2string(double in);
 char *number2string(float in);
 char *number2string(int in);
 char *number2string(unsigned int in);
-int filter(int input);
-
+float filter(float input);
 // Variable declarations
 uint8_t pidON = 1;               // 1 = control loop in closed loop
 int relayON, relayOFF;           // used for relay trigger type. Do not change!
 boolean kaltstart = true;        // true = Rancilio started for first time
 boolean emergencyStop = false;   // Notstop bei zu hoher Temperatur
 double EmergencyStopTemp = 120;  // Temp EmergencyStopTemp
-int inX = 0, inY = 0, inOld = 0, inSum = 0; // used for filter()
+float inX = 0, inY = 0, inOld = 0, inSum = 0; // used for filter()
 int bars = 0;  // used for getSignalStrength()
 boolean brewDetected = 0;
 boolean setupDone = false;
@@ -628,8 +627,7 @@ BLYNK_WRITE(V40) { backflushON = param.asInt(); }
                                         // conversion [psi] -> [bar]
             inputPressureFilter = filter(inputPressure);
 
-            Serial.printf("pressure raw: %f\n", inputPressure);
-            Serial.printf("pressure filtered: %f\n", inputPressureFilter);
+            Serial.printf("pressure raw / filterd: %f / %f\n", inputPressure, inputPressureFilter);
         }
     }
 #endif
@@ -1161,7 +1159,7 @@ void brewdetection() {
  * @brief after ~28 cycles the input is set to 99,66% if the real input value sum of inX and inY
  *      multiplier must be 1 increase inX multiplier to make the filter faster
  */
-int filter(int input) {
+float filter(float input) {
     inX = input * 0.3;
     inY = inOld * 0.7;
     inSum = inX + inY;
