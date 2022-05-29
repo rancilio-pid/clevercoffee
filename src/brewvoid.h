@@ -140,7 +140,7 @@ void checkbrewswitch() {
 void backflush() {
     if (backflushState != 10 && backflushON == 0) {
         backflushState = 43;  // force reset in case backflushON is reset during backflush!
-    } else if (Offlinemodus == 1 || brewcounter > 10 || maxflushCycles <= 0 || backflushON == 0) {
+    } else if (offlineMode == 1 || brewcounter > 10 || maxflushCycles <= 0 || backflushON == 0) {
         return;
     }
 

@@ -17,6 +17,7 @@
 #elif defined(ESP8266)
     #include <ESP8266WiFi.h>
     #include <ESPAsyncTCP.h>
+    #define WEBSERVER_H
 #endif
 
 #include <ESPAsyncWebServer.h>

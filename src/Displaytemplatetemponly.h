@@ -48,7 +48,7 @@ void printScreen() {
         }
 
         // Für Statusinfos
-        if (Offlinemodus == 0) {
+        if (offlineMode == 0) {
             getSignalStrength();
 
             if (WiFi.status() != WL_CONNECTED) {
