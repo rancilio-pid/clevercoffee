@@ -5,7 +5,7 @@
  */
 
 /**
- * @brief Digtalswitch OR Read analog input pin for POWER SWITCH
+ * @brief Digtalswitch input pin for POWER SWITCH
  */
 
 int lastpowerswitchTrigger = LOW;                   // the previous reading from the input pin
