@@ -793,6 +793,7 @@ void refreshTemp() {
 
 
 #include "brewvoid.h"
+#include "powerswitchvoid.h"
 #include "scalevoid.h"
 
 /**
@@ -1111,7 +1112,7 @@ void brewdetection() {
                     }
 
                     const unsigned long minBrewDurationForSteamModeQM_ON = 50;
-                    if (brewSteamDetectedQM == 1 && millis()-timePVStoON > minBrewDurationForSteamModeQM_ON) 
+                    if (brewSteamDetectedQM == 1 && millis()-timePVStoON > minBrewDurationForSteamModeQM_ON)
                     {
 
                         if (pvs == VoltageSensorOFF) {
@@ -1959,6 +1960,11 @@ void setup() {
         pinMode(PINVOLTAGESENSOR, PINMODEVOLTAGESENSOR);
         }
 
+        // IF POWERSWITCH is connected
+        if (POWERSWITCHTYPE > 0) {
+            pinMode(PINPOWERSWITCH, INPUT);
+        }
+
         // IF PINBREWSWITCH & Steam selected
         if (PINBREWSWITCH > 0) {
             #if (defined(ESP8266) && PINBREWSWITCH == 16)
@@ -2266,6 +2272,7 @@ void looppid() {
     brew();          // start brewing if button pressed
     checkSteamON();  // check for steam
     setEmergencyStopTemp();
+    checkpowerswitch();
     sendToBlynkMQTT();
     machinestatevoid();      // calc machinestate
     setchecklastpoweroff();  // FOR AP MODE
@@ -2430,7 +2437,7 @@ void setSteamMode(int steamMode) {
 
 void setPidStatus(int pidStatus) {
     pidON = pidStatus;
-     writeSysParamsToBlynk();
+    writeSysParamsToBlynk();
 }
 
 /**

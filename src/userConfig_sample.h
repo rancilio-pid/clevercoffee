@@ -56,6 +56,7 @@ enum MACHINE {
 #define BREWMODE 1                 // 1 = NORMAL preinfusion ; 2 = Scale with weight
 #define BREWDETECTION 1            // 0 = off, 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = Sensor/Hardware for Only PID
 #define BREWSWITCHTYPE 1           // 1 = normal Switch, 2 = Trigger Switch
+#define POWERSWITCHTYPE 2          // 0 = no switch connected, 1 = normal Switch, 2 = Trigger Switch
 #define COLDSTART_PID 1            // 1 = default coldstart values, 2 = custom values via blynk (expert mode activated)
 #define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay
 #define VOLTAGESENSORTYPE HIGH     // BREWDETECTION 3 configuration
@@ -154,6 +155,7 @@ enum MACHINE {
 // Pin Layout
 #define ONE_WIRE_BUS 2             // Temp sensor pin
 #define PINPRESSURESENSOR 99       // Pressuresensor 0: A0 (ESP8266), >0 ONLY ESP32
+#define PINPOWERSWITCH 99          // Input pin for powerswitch (use a pin which is LOW on startup or use an pull down resistor)
 #define PINVALVE 12                // Output pin for 3-way-valve
 #define PINPUMP 13                 // Output pin for pump
 #define PINHEATER 14               // Output pin for heater
