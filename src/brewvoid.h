@@ -52,7 +52,7 @@ void checkbrewswitch() {
             }
 
             brewswitchTrigger = reading;
-            Serial.println(brewswitchTrigger);
+           // Serial.println(brewswitchTrigger);
         #endif
 
         // Digital Analog
@@ -91,34 +91,34 @@ void checkbrewswitch() {
                     Serial.println("brewswitchTriggerCase 20: Brew Trigger HIGH");
                 }
 
-                // Button one 1sec pushed
+                // Button more than one 1sec pushed
                 if (brewswitchTrigger == HIGH && (brewswitchTriggermillis + 1000 <= millis())) {
                     // DO something
                     Serial.println("brewswitchTriggerCase 20: Manual Trigger - brewing");
-                    brewswitchTriggerCase = 30;
+                    brewswitchTriggerCase = 31;
                     digitalWrite(PINVALVE, relayON);
                     digitalWrite(PINPUMP, relayON);
                 }
                 break;
-
             case 30:
-                // Stop Manual brewing, button goes low:
-                if (brewswitchTrigger == LOW && brewswitch == LOW) {
-                    brewswitchTriggerCase = 40;
-                    brewswitchTriggermillis = millis();
-                    Serial.println("brewswitchTriggerCase 30: Manual Trigger - brewing stop");
-                    digitalWrite(PINVALVE, relayOFF);
-                    digitalWrite(PINPUMP, relayOFF);
-                }
-
-                // Stop Brew trigger  brewswitch == HIGH
-                if (brewswitchTrigger == HIGH && brewswitch == HIGH) {
+                // Stop Brew trigger (one push) brewswitch == HIGH
+                if ((brewswitchTrigger == HIGH && brewswitch == HIGH) || (machinestate == 31) ) {
                     brewswitch = LOW;
                     brewswitchTriggerCase = 40;
                     brewswitchTriggermillis = millis();
                     Serial.println("brewswitchTriggerCase 30: Brew Trigger LOW");
                 }
                 break;
+            case 31:
+                // Stop Manual brewing, button goes low:
+                if (brewswitchTrigger == LOW && brewswitch == LOW) {
+                    brewswitchTriggerCase = 40;
+                    brewswitchTriggermillis = millis();
+                    Serial.println("brewswitchTriggerCase 31: Manual Trigger - brewing stop");
+                    digitalWrite(PINVALVE, relayOFF);
+                    digitalWrite(PINPUMP, relayOFF);
+                }
+            break;
 
             case 40:
                 // wait 5 Sec until next brew, detection
