@@ -45,6 +45,8 @@
 
 #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
     #include <HX711_ADC.h>
+#if (ONLYPID == 2)
+#include <rbhdimmer.h>
 #endif
 
 // Version of userConfig need to match, checked by preprocessor
@@ -285,6 +287,73 @@ double aggKd = aggTv * aggKp;
 
 PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, PonE, DIRECT);
 
+//Pressure PID Controller for RBH Dimmer - might be better in the brewvoid
+unsigned long previousMillistemp;  // initialisation at the end of init()
+const unsigned long intervalpressure = 200; 
+int pidMode = 1;  // 1 = Automatic, 0 = Manual - Is that needed for pressuresensor?
+
+const unsigned int windowSize = 1000;
+unsigned int isrCounter = 0;  // counter for ISR
+unsigned long windowStartTime;
+double Input, Output;
+double setPointPressure;
+double previousInput = 0;
+
+double PressureSetPoint = PRESSETPOINT;
+double pressuresetPoint = PressureSetPoint;
+double aggKp2 = AGGKP2;
+double aggTn2 = AGGTN2;
+double aggTv2 = AGGTV2;
+
+#if aggTn2 == 0
+    double aggKi2 = 0;
+#else
+    double aggKi2 = aggKp2 / aggTn2;
+#endif
+
+double aggKd2 = aggTv2 * aggKp2;
+
+// Timer - ISR for PID calculation and heat realay output
+#include "ISR.h"
+
+//define variable setpoint
+// look-up tables for mapping readings to measurements (brewTime, pressuresetPoint)
+float pressuresetPoint;
+  float theArray[42] = {
+  1, 1,
+  1000, 2,
+  2000, 3,
+  3000, 3.5,
+  4000, 3.7,
+  5000, 3.8,
+  6000, 3,
+  7000, 2.5,
+  8000, 3,
+  9000, 3.5,
+  10000, 3.6,
+  11000, 3.7,
+  12000, 3.8,
+  13000, 3.9,
+  14000, 4,
+  15000, 4,
+  16000, 4,
+  17000, 4,
+  18000, 7,
+  25000, 9,
+  60000, 7,
+};
+for (int i = 0; i < 42-2; i += 2)
+{
+    if ( (brewTime >= theArray[i])  &&  (brewTime < theArray[i+2]) )
+   {
+      pressuresetPoint = theArray[i+1] + (((theArray[i+3] - theArray[i+1]) * ( (float) brewTime - theArray[i] ) ) / (theArray[i+2] - theArray[i] ) );
+      break;
+    }
+ 
+}
+PID bPID2(&inputPressure, &OutputDimmer, &pressuresetPoint, aggKp2, aggKi2, aggKd2, PonE, DIRECT);
+
+
 // Dallas temp sensor
 OneWire oneWire(ONE_WIRE_BUS);  // Setup a oneWire instance to communicate with any OneWire
                                 // devices (not just Maxim/Dallas temperature ICs)
@@ -341,6 +410,10 @@ SysPara<double> sysParaPreInfPause(&preinfusionpause, 0, 20, STO_ITEM_PRE_INFUSI
 SysPara<double> sysParaWeightSetPoint(&weightSetpoint, 0, 500, STO_ITEM_WEIGHTSETPOINT);
 SysPara<double> sysParaPidKpSteam(&steamKp, 0, 500, STO_ITEM_PID_KP_STEAM);
 SysPara<uint8_t> sysParaPidOn(&pidON, 0, 1, STO_ITEM_PID_ON);
+SysPara<double> sysParaPidKp2(&aggKp2, 0, 200, STO_ITEM_PID_KP2_REGULAR);
+SysPara<double> sysParaPidTn2(&aggTn2, 0, 999, STO_ITEM_PID_TN2_REGULAR);
+SysPara<double> sysParaPidTv2(&aggTv2, 0, 999, STO_ITEM_PID_TV2_REGULAR);
+SysPara<double> sysParaPressureSetPoint(&pressuresetPoint, 1, 12, STO_ITEM_PRESSURE_SETPOINT);
 
 
 enum MQTTSettableType {
@@ -398,6 +471,9 @@ std::vector<editable_t> editableVars = {
     {"BACKFLUSH_ON", "Backflush", rInteger, (void *)&backflushON},
     {"SCALE_WEIGHTSETPOINT", "Brew weight setpoint (g)",kDouble, (void *)&weightSetpoint},
     {"STEAM_KP", "Steam P",kDouble, (void *)&steamKp},
+    {"PID_KP2", "PID P2", kDouble, (void *)&aggKp2},
+    {"PID_TN2", "PID I2", kDouble, (void *)&aggTn2},
+    {"PID_TV2", "PID D2", kDouble, (void *)&aggTv2},
 };
 
 unsigned long lastTempEvent = 0;
@@ -2301,6 +2377,10 @@ int readSysParamsFromStorage(void) {
     if (sysParaWeightSetPoint.getStorage() != 0) return -1;
     if (sysParaPidOn.getStorage() != 0) return -1;
     if (sysParaPidKpSteam.getStorage() != 0) return -1;
+    if (sysParaPidKp2.getStorage() != 0) return -1;
+    if (sysParaPidTn2() != 0) return -1;
+    if (sysParaPidTv2() != 0) return -1;
+    if (sysParaPresSetPoint() != 0) return -1;
 
     return 0;
 }
@@ -2328,6 +2408,10 @@ int writeSysParamsToStorage(void) {
     if (sysParaWeightSetPoint.setStorage() != 0) return -1;
     if (sysParaPidOn.setStorage() != 0) return -1;
     if (sysParaPidKpSteam.setStorage() != 0) return -1;
+    if (sysParaPidKp2.getStorage() != 0) return -1;
+    if (sysParaPidTn2() != 0) return -1;
+    if (sysParaPidTv2() != 0) return -1;
+    if (sysParaPresSetPoint() != 0) return -1;
     return storageCommit();
 }
 
