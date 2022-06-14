@@ -459,3 +459,191 @@ void brew() {
     }
 }
 #endif
+
+#if (BREWMODE == 1)  // old Brew MODE
+/**
+ * @brief PreInfusion, Brew Normal
+ */
+void brew() {
+    if (OnlyPID == 2) {
+        unsigned long currentMillistemp = millis();
+        checkbrewswitch();
+
+        if (brewswitch == LOW && brewcounter > 10) {
+            // abort function for state machine from every state
+            Serial.println("Brew stopped manually");
+            brewcounter = 43;
+        }
+
+        if (brewcounter > 10 && brewcounter < 43) {
+            brewTime = currentMillistemp - startingTime;
+        }
+
+        if (brewswitch == LOW && firstreading == 0) {
+            // check if brewswitch was turned off at least once, last time,
+            brewswitchWasOFF = true;
+        }
+
+        totalbrewtime = (brewtime * 1000);  // running every cycle, in case changes are done during brew
+
+        // state machine for brew
+        switch (brewcounter) {
+            case 10:
+                // waiting step for brew switch turning on
+                if (brewswitch == HIGH && backflushState == 10 && backflushON == 0 && brewswitchWasOFF) {
+                    startingTime = millis();
+
+                    if (preinfusionpause == 0 || preinfusion == 0) {
+                        brewcounter = 40;
+                    } else {
+                        brewcounter = 20;
+                    }
+
+                    kaltstart = false;  // force reset kaltstart if shot is pulled
+                } else {
+                    backflush();
+                }
+
+                break;
+
+            case 40:  // brew running
+                Serial.println("Brew started");
+                digitalWrite(PINVALVE, relayON);
+                digitalWrite(PINPUMP, relayON);
+                setPower(OutputDimmer)
+                brewcounter = 41;
+
+                break;
+
+            case 41:  // waiting time brew
+                lastbrewTime = brewTime;
+
+                if (brewTime > totalbrewtime) {
+                    brewcounter = 42;
+                }
+
+                break;
+
+            case 42:  // brew finished
+                Serial.println("Brew stopped");
+                setPower(0)
+                digitalWrite(PINVALVE, relayOFF);
+                digitalWrite(PINPUMP, relayOFF);
+                brewcounter = 43;
+                brewTime = 0;
+
+                break;
+
+            case 43:  // waiting for brewswitch off position
+                if (brewswitch == LOW) {
+                    digitalWrite(PINVALVE, relayOFF);
+                    digitalWrite(PINPUMP, relayOFF);
+
+                    // disarmed button
+                    currentMillistemp = 0;
+                    brewDetected = 0;  // rearm brewdetection
+                    brewcounter = 10;
+                    brewTime = 0;
+                }
+
+                break;
+        }
+    }
+}
+#endif
+
+#if (BREWMODE == 2)
+/**
+ * @brief Scale brew mode
+ */
+void brew() {
+    if (OnlyPID == 0) {
+        checkbrewswitch();
+        unsigned long currentMillistemp = millis();
+
+        if (brewswitch == LOW && brewcounter > 10) {
+            // abort function for state machine from every state
+            brewcounter = 43;
+        }
+
+        if (brewcounter > 10 && brewcounter < 43) {
+            brewTime = currentMillistemp - startingTime;
+            weightBrew = weight - weightPreBrew;
+        }
+
+        if (brewswitch == LOW && firstreading == 0) {
+            // check if brewswitch was turned off at least once, last time,
+            brewswitchWasOFF = true;
+        }
+
+        totalbrewtime = ((preinfusion * 1000) + (preinfusionpause * 1000) +
+            (brewtime * 1000));  // running every cycle, in case changes are done during brew
+
+        // state machine for brew
+        switch (brewcounter) {
+            case 10:  // waiting step for brew switch turning on
+                if (brewswitch == HIGH && backflushState == 10 && backflushON == 0 && brewswitchWasOFF) {
+                    startingTime = millis();
+                    brewcounter = 20;
+
+                    if (preinfusionpause == 0 || preinfusion == 0) {
+                        brewcounter = 40;
+                    }
+
+                    kaltstart = false;  // force reset kaltstart if shot is pulled
+                    weightPreBrew = weight;
+                } else {
+                    backflush();
+                }
+
+                break;
+
+            case 40:  // brew running
+                Serial.println("Brew started");
+                digitalWrite(PINVALVE, relayON);
+                digitalWrite(PINPUMP, relayON);
+                setPower(OutputDimmer)
+                brewcounter = 41;
+
+                break;
+
+            case 41:  // waiting time brew
+                if (brewTime > totalbrewtime || (weightBrew > (weightSetpoint - scaleDelayValue))) {
+                    brewcounter = 42;
+                }
+
+                if (brewTime > totalbrewtime) {
+                    brewcounter = 42;
+                }
+
+                break;
+
+            case 42:  // brew finished
+                Serial.println("Brew stopped");
+                setPower(0)
+                digitalWrite(PINVALVE, relayOFF);
+                digitalWrite(PINPUMP, relayOFF);
+                brewcounter = 43;
+
+                break;
+
+            case 43:  // waiting for brewswitch off position
+                if (brewswitch == LOW) {
+                    digitalWrite(PINVALVE, relayOFF);
+                    digitalWrite(PINPUMP, relayOFF);
+
+                    // disarmed button bezugsZeitAlt = bezugsZeit;
+                    currentMillistemp = 0;
+                    brewTime = 0;
+                    brewDetected = 0;  // rearm brewdetection
+                    brewcounter = 10;
+                }
+
+                weightBrew = weight - weightPreBrew;  // always calculate weight to show on display
+
+                break;
+        }
+    }
+}
+#endif
+
