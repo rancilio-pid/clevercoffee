@@ -47,7 +47,7 @@ enum MACHINE {
 #define WIFICINNECTIONDELAY 10000  // delay between reconnects in ms
 
 // PID & Hardware
-#define ONLYPID 1                  // 1 = Only PID, 0 = PID and preinfusion
+#define ONLYPID 1                  // 1 = Only PID, 0 = PID and preinfusion, 2 = Profiling (BREWDETECTION 2, BREWSWITCHTYPE 1, PRESSURESENSOR 1)
 #define ONLYPIDSCALE 0             // 0 = off , 1= OnlyPID with Scale
 #define BREWMODE 1                 // 1 = NORMAL preinfusion ; 2 = Scale with weight
 #define BREWDETECTION 1            // 0 = off, 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = Sensor/Hardware for Only PID
@@ -136,6 +136,9 @@ enum MACHINE {
 #define BREW_SW_TIMER 45           // brew software timer after detection in seconds
 #define PRE_INFUSION_TIME 2        // pre-infusion time in seconds
 #define PRE_INFUSION_PAUSE_TIME 5  // pre-infusion pause time in seconds
+#define AGGKP2 20                   // PID Kp (regular phase)
+#define AGGTN2 100                  // PID Tn (regular phase)
+#define AGGTV2 5                    // PID Tv (regular phase)
 
 // Backflush values
 #define FILLTIME 3000              // time in ms the pump is running
@@ -159,6 +162,8 @@ enum MACHINE {
 #define HXCLKPIN 99                // weight scale PIN
 #define SCREEN_WIDTH 128           // OLED display width, in pixels
 #define SCREEN_HEIGHT 64           // OLED display height, in pixels
+#define outputPin  7               // Output Pin for Robotdyn Dimmer
+#define zerocross  6               // Zerocroos for Robotdyn Dimmer
 
 // Historic (no settings)
 #define PONE 1                     // 1 = P_ON_E (default), 0 = P_ON_M (special PID mode, other PID-parameter are needed)
