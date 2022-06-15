@@ -351,8 +351,8 @@ for (int i = 0; i < 42-2; i += 2)
     }
  
 }
-PID bPID2(&inputPressure, &OutputDimmer, &pressuresetPoint, aggKp2, aggKi2, aggKd2, PonE, DIRECT);
-
+PID pressurePID(&inputPressure, &OutputDimmer, &pressuresetPoint, aggKp2, aggKi2, aggKd2, PonE, DIRECT);
+SetOutputLimits (0, 99) // PID::SetOutputLimits(double Min, double Max)
 
 // Dallas temp sensor
 OneWire oneWire(ONE_WIRE_BUS);  // Setup a oneWire instance to communicate with any OneWire
