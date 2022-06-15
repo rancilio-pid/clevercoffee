@@ -299,8 +299,7 @@ double Input, Output;
 double setPointPressure;
 double previousInput = 0;
 
-double PressureSetPoint = PRESSETPOINT;
-double pressuresetPoint = PressureSetPoint;
+double pressuresetPoint = 0
 double aggKp2 = AGGKP2;
 double aggTn2 = AGGTN2;
 double aggTv2 = AGGTV2;
@@ -314,12 +313,11 @@ double aggTv2 = AGGTV2;
 double aggKd2 = aggTv2 * aggKp2;
 
 // Timer - ISR for PID calculation and heat realay output
-#include "ISR.h"
+#include "ISR.h";
 
 //define variable setpoint
 // look-up tables for mapping readings to measurements (brewTime, pressuresetPoint)
-float pressuresetPoint;
-  float theArray[42] = {
+float theArray[42] = {
   1, 1,
   1000, 2,
   2000, 3,
@@ -352,7 +350,7 @@ for (int i = 0; i < 42-2; i += 2)
  
 }
 PID pressurePID(&inputPressure, &OutputDimmer, &pressuresetPoint, aggKp2, aggKi2, aggKd2, PonE, DIRECT);
-SetOutputLimits (0, 99) // PID::SetOutputLimits(double Min, double Max)
+SetOutputLimits (0, 99); // PID::SetOutputLimits(double Min, double Max)
 
 // Dallas temp sensor
 OneWire oneWire(ONE_WIRE_BUS);  // Setup a oneWire instance to communicate with any OneWire
