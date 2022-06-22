@@ -1956,10 +1956,15 @@ void setup() {
     #endif
 
     // Init Scale by BREWMODE 2 or SHOTTIMER 2
-    #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
+    #if (BREWMODE == 2 || ONLYPIDSCALE == 1 || BREWMODE == 4)
         initScale();
     #endif
 
+    // Init RBH Dimmer
+    #if (BREWMODE == 3 || BREWMODE == 4)
+        pinMode(outputPin, OUTPUT)
+        pinMode(zerocross, INPUT)
+            
     // VL530L0x TOF sensor
     if (TOF != 0) {
         lox.begin(tof_i2c);  // initialize TOF sensor at I2C address
@@ -2170,7 +2175,7 @@ void looppid() {
         lastTempEvent = millis();
     }
 
-    #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
+    #if (BREWMODE == 2 || ONLYPIDSCALE == 1 || BREWMODE == 4)
         checkWeight();  // Check Weight Scale in the loop
     #endif
 
@@ -2371,9 +2376,8 @@ int readSysParamsFromStorage(void) {
     if (sysParaPidOn.getStorage() != 0) return -1;
     if (sysParaPidKpSteam.getStorage() != 0) return -1;
     if (sysParaPidKp2.getStorage() != 0) return -1;
-    if (sysParaPidTn2() != 0) return -1;
-    if (sysParaPidTv2() != 0) return -1;
-    if (sysParaPresSetPoint() != 0) return -1;
+    if (sysParaPidTn2.getStorage() != 0) return -1;
+    if (sysParaPidTv2.getStorage() != 0) return -1;
 
     return 0;
 }
@@ -2401,10 +2405,9 @@ int writeSysParamsToStorage(void) {
     if (sysParaWeightSetPoint.setStorage() != 0) return -1;
     if (sysParaPidOn.setStorage() != 0) return -1;
     if (sysParaPidKpSteam.setStorage() != 0) return -1;
-    if (sysParaPidKp2.getStorage() != 0) return -1;
-    if (sysParaPidTn2() != 0) return -1;
-    if (sysParaPidTv2() != 0) return -1;
-    if (sysParaPresSetPoint() != 0) return -1;
+    if (sysParaPidKp2.setStorage() != 0) return -1;
+    if (sysParaPidTn2.setStorage() != 0) return -1;
+    if (sysParaPidTv2.setStorage() != 0) return -1;
     return storageCommit();
 }
 
