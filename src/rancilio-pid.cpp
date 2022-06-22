@@ -43,9 +43,9 @@
     hw_timer_t *timer = NULL;
 #endif
 
-#if (BREWMODE == 2 || ONLYPIDSCALE == 1)
+#if (BREWMODE == 2 || ONLYPIDSCALE == 1 || BREWMODE == 4)
     #include <HX711_ADC.h>
-#if (ONLYPID == 2)
+#if (BREWMODE == 3 || BREWMODE == 4)
 #include <rbhdimmer.h>
 #endif
 
@@ -290,14 +290,11 @@ PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, PonE, DIRECT);
 //Pressure PID Controller for RBH Dimmer - might be better in the brewvoid
 unsigned long previousMillistemp;  // initialisation at the end of init()
 const unsigned long intervalpressure = 200; 
-int pidMode = 1;  // 1 = Automatic, 0 = Manual - Is that needed for pressuresensor?
-
-const unsigned int windowSize = 1000;
+const unsigned int windowSize = 200;
 unsigned int isrCounter = 0;  // counter for ISR
 unsigned long windowStartTime;
-double Input, Output;
-double setPointPressure;
-double previousInput = 0;
+double inputPressure, OutputDimmer;
+double pressuresetPoint;
 
 double pressuresetPoint = 0
 double aggKp2 = AGGKP2;
@@ -319,26 +316,16 @@ double aggKd2 = aggTv2 * aggKp2;
 // look-up tables for mapping readings to measurements (brewTime, pressuresetPoint)
 float theArray[42] = {
   1, 1,
-  1000, 2,
-  2000, 3,
-  3000, 3.5,
-  4000, 3.7,
-  5000, 3.8,
-  6000, 3,
-  7000, 2.5,
+  1000, 1,
+  2000, 2,
+  5000, 3,
   8000, 3,
-  9000, 3.5,
-  10000, 3.6,
-  11000, 3.7,
-  12000, 3.8,
-  13000, 3.9,
-  14000, 4,
-  15000, 4,
-  16000, 4,
-  17000, 4,
-  18000, 7,
-  25000, 9,
-  60000, 7,
+  10000, 5,
+  12000, 6,
+  16000, 6,
+  18000, 6,
+  25000, 6,
+  60000, 5,
 };
 for (int i = 0; i < 42-2; i += 2)
 {
