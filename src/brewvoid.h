@@ -460,23 +460,23 @@ void brew() {
 }
 #endif
 
-#if (BREWMODE == 1)  // old Brew MODE
+#if (BREWMODE == 3)  // old Brew MODE
 /**
  * @brief PreInfusion, Brew Normal
  */
 void brew() {
-    if (OnlyPID == 2) {
-        unsigned long currentMillistemp = millis();
+    if (OnlyPID == 0) {
         checkbrewswitch();
+        unsigned long currentMillistemp = millis();
 
         if (brewswitch == LOW && brewcounter > 10) {
             // abort function for state machine from every state
-            Serial.println("Brew stopped manually");
             brewcounter = 43;
         }
 
         if (brewcounter > 10 && brewcounter < 43) {
             brewTime = currentMillistemp - startingTime;
+            weightBrew = weight - weightPreBrew;
         }
 
         if (brewswitch == LOW && firstreading == 0) {
@@ -484,22 +484,22 @@ void brew() {
             brewswitchWasOFF = true;
         }
 
-        totalbrewtime = (brewtime * 1000);  // running every cycle, in case changes are done during brew
+        totalbrewtime = ((preinfusion * 1000) + (preinfusionpause * 1000) +
+            (brewtime * 1000));  // running every cycle, in case changes are done during brew
 
         // state machine for brew
         switch (brewcounter) {
-            case 10:
-                // waiting step for brew switch turning on
+            case 10:  // waiting step for brew switch turning on
                 if (brewswitch == HIGH && backflushState == 10 && backflushON == 0 && brewswitchWasOFF) {
                     startingTime = millis();
+                    brewcounter = 20;
 
                     if (preinfusionpause == 0 || preinfusion == 0) {
                         brewcounter = 40;
-                    } else {
-                        brewcounter = 20;
                     }
 
                     kaltstart = false;  // force reset kaltstart if shot is pulled
+                    weightPreBrew = weight;
                 } else {
                     backflush();
                 }
@@ -510,7 +510,8 @@ void brew() {
                 Serial.println("Brew started");
                 digitalWrite(PINVALVE, relayON);
                 digitalWrite(PINPUMP, relayON);
-                setPower(OutputDimmer)
+                pressurePID.SetMode(AUTOMATIC);
+                setPower(OutputDimmer);
                 brewcounter = 41;
 
                 break;
@@ -526,6 +527,7 @@ void brew() {
 
             case 42:  // brew finished
                 Serial.println("Brew stopped");
+                pressurePID.SetMode(MANUAL);
                 setPower(0)
                 digitalWrite(PINVALVE, relayOFF);
                 digitalWrite(PINPUMP, relayOFF);
@@ -552,7 +554,7 @@ void brew() {
 }
 #endif
 
-#if (BREWMODE == 2)
+#if (BREWMODE == 4)
 /**
  * @brief Scale brew mode
  */
