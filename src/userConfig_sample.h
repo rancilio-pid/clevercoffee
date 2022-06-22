@@ -47,9 +47,9 @@ enum MACHINE {
 #define WIFICINNECTIONDELAY 10000  // delay between reconnects in ms
 
 // PID & Hardware
-#define ONLYPID 1                  // 1 = Only PID, 0 = PID and preinfusion, 2 = Profiling (BREWDETECTION 2, BREWSWITCHTYPE 1, PRESSURESENSOR 1)
+#define ONLYPID 1                  // 1 = Only PID, 0 = PID and preinfusion
 #define ONLYPIDSCALE 0             // 0 = off , 1= OnlyPID with Scale
-#define BREWMODE 1                 // 1 = NORMAL preinfusion ; 2 = Scale with weight
+#define BREWMODE 1                 // 1 = NORMAL preinfusion ; 2 = Scale with weight; 3 = Profiling (BREWDETECTION 2, BREWSWITCHTYPE 1, PRESSURESENSOR 1); 4 = Profiling with Scale
 #define BREWDETECTION 1            // 0 = off, 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = Sensor/Hardware for Only PID
 #define BREWSWITCHTYPE 1           // 1 = normal Switch, 2 = Trigger Switch
 #define COLDSTART_PID 1            // 1 = default coldstart values, 2 = custom values via blynk (expert mode activated)
