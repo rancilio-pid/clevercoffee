@@ -287,14 +287,14 @@ double aggKd = aggTv * aggKp;
 
 PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, PonE, DIRECT);
 
-//Pressure PID Controller for RBH Dimmer - might be better in the brewvoid
+//Pressure PID Controller for RBH Dimmer 
 unsigned long previousMillistemp;  // initialisation at the end of init()
 const unsigned long intervalpressure = 200; 
-const unsigned int windowSize = 200;
-unsigned int isrCounter = 0;  // counter for ISR
+const unsigned int PressureWindowSize = 200;
 unsigned long windowStartTime;
 double inputPressure, OutputDimmer;
 double pressuresetPoint;
+unsigned int DimmerValue = OutputDimmer
 
 double pressuresetPoint = 0
 double aggKp2 = AGGKP2;
@@ -308,9 +308,6 @@ double aggTv2 = AGGTV2;
 #endif
 
 double aggKd2 = aggTv2 * aggKp2;
-
-// Timer - ISR for PID calculation and heat realay output
-#include "ISR.h";
 
 //define variable setpoint
 // look-up tables for mapping readings to measurements (brewTime, pressuresetPoint)
@@ -874,6 +871,13 @@ void sendInflux() {
         influxSensor.addField("preinfusionpause", preinfusionpause);
         influxSensor.addField("preinfusion", preinfusion);
         influxSensor.addField("SteamON", SteamON);
+        influxSensor.addField("inputPressure"; inputPressure);
+        influxSensor.addField("Weight"; weight);
+        influxSensor.addField("pressuresetPoint"; pressuresetPoint);
+        influxSensor.addField("Brewtime"; brewTime);
+        influxSensor.addField("Kp2", pressurePID.GetKp());
+        influxSensor.addField("Ki2", pressurePID.GetKi());
+        influxSensor.addField("Kd2", pressurePID.GetKd());
 
         byte mac[6];
         WiFi.macAddress(mac);
@@ -2000,9 +2004,9 @@ void setup() {
     bPID.SetMode(AUTOMATIC);
 
     // Initialize pressuePID
-    pressurePID.SetSampleTime(windowSize)
+    pressurePID.SetSampleTime(PressureWindowSize)
     pressurePID.SetOutputLimits(0, 99)
-    pressurePID.SetMode(AUTOMATIC)
+    pressurePID.SetMode(Manual)
     
     // Temp sensor
     if (TempSensor == 1) {
