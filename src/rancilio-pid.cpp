@@ -571,7 +571,7 @@ BLYNK_WRITE(V16) { SteamSetPoint = param.asDouble(); }
     BLYNK_WRITE(V18) { weightSetpoint = param.asFloat(); }
 #endif
 #if (BREWMODE == 3 || BREWMODE == 4)
-BLYNK_WRITE(V22) { aggKd2 = param.asInt(); }
+BLYNK_WRITE(V22) { aggKp2 = param.asInt(); }
 
 BLYNK_WRITE(V23) { aggTn2 = param.asInt(); }
 
