@@ -1968,10 +1968,11 @@ void setup() {
         initScale();
     #endif
 
-    // Init RBH Dimmer
+    // Init RBD Dimmer
     #if (BREWMODE == 3 || BREWMODE == 4)
         pinMode(outputPin, OUTPUT)
         pinMode(zerocross, INPUT)
+        profilingDimmer dimmer(outputPin, zerocross)
     #endif
             
     // VL530L0x TOF sensor
