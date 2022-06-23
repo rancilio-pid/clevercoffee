@@ -883,6 +883,7 @@ void sendInflux() {
         influxSensor.addField("Kp2", pressurePID.GetKp());
         influxSensor.addField("Ki2", pressurePID.GetKi());
         influxSensor.addField("Kd2", pressurePID.GetKd());
+        influxSensor.addField("DimmerValue", dimmer.getPower());
 
         byte mac[6];
         WiFi.macAddress(mac);
@@ -2023,6 +2024,10 @@ void setup() {
     pressurePID.SetOutputLimits(0, 99)
     pressurePID.SetMode(Manual)
     
+    // Initialize dimmer    
+    dimmmer.begin(NORMAL_MODE, ON); //dimmer initialisation: name.begin(MODE, STATE)
+    dimmer.setPower(0); // setPower is calculated during brew
+        
     // Temp sensor
     if (TempSensor == 1) {
         sensors.begin();
