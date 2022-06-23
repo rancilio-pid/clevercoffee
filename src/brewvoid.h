@@ -507,11 +507,11 @@ void brew() {
                 break;
 
             case 40:  // brew running
-                Serial.println("Brew started");
+                Serial.println("Profiling started");
                 digitalWrite(PINVALVE, relayON);
                 digitalWrite(PINPUMP, relayON);
                 pressurePID.SetMode(AUTOMATIC);
-                setPower(OutputDimmer);
+                setPower(DimmerValue);
                 brewcounter = 41;
 
                 break;
@@ -604,7 +604,7 @@ void brew() {
                 Serial.println("Brew started");
                 digitalWrite(PINVALVE, relayON);
                 digitalWrite(PINPUMP, relayON);
-                setPower(OutputDimmer)
+                setPower(DimmerValue)
                 brewcounter = 41;
 
                 break;
