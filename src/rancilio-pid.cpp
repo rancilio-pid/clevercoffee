@@ -394,7 +394,6 @@ SysPara<uint8_t> sysParaPidOn(&pidON, 0, 1, STO_ITEM_PID_ON);
 SysPara<double> sysParaPidKp2(&aggKp2, 0, 200, STO_ITEM_PID_KP2_REGULAR);
 SysPara<double> sysParaPidTn2(&aggTn2, 0, 999, STO_ITEM_PID_TN2_REGULAR);
 SysPara<double> sysParaPidTv2(&aggTv2, 0, 999, STO_ITEM_PID_TV2_REGULAR);
-SysPara<double> sysParaPressureSetPoint(&pressuresetPoint, 1, 12, STO_ITEM_PRESSURE_SETPOINT);
 
 
 enum MQTTSettableType {
@@ -568,10 +567,16 @@ BLYNK_WRITE(V15) {
 
 BLYNK_WRITE(V16) { SteamSetPoint = param.asDouble(); }
 
-#if (BREWMODE == 2)
+#if (BREWMODE == 2 || BREWMODE == 4)
     BLYNK_WRITE(V18) { weightSetpoint = param.asFloat(); }
 #endif
+#if (BREWMODE == 3 || BREWMODE == 4)
+BLYNK_WRITE(V22) { aggKd2 = param.asInt(); }
 
+BLYNK_WRITE(V23) { aggTn2 = param.asInt(); }
+
+BLYNK_WRITE(V24) { aggTv2 = param.asInt(); }
+#endif
 BLYNK_WRITE(V25) { calibration_mode = param.asInt(); }
 
 BLYNK_WRITE(V26) { water_empty = param.asInt(); }
@@ -1825,6 +1830,9 @@ void BlynkSetup() {
             Blynk.syncVirtual(V13);
             Blynk.syncVirtual(V14);
             Blynk.syncVirtual(V15);
+            Blynk.syncVirtual(V22);
+            Blynk.syncVirtual(V23);
+            Blynk.syncVirtual(V24);
             Blynk.syncVirtual(V30);
             Blynk.syncVirtual(V31);
             Blynk.syncVirtual(V32);
@@ -1964,6 +1972,7 @@ void setup() {
     #if (BREWMODE == 3 || BREWMODE == 4)
         pinMode(outputPin, OUTPUT)
         pinMode(zerocross, INPUT)
+    #endif
             
     // VL530L0x TOF sensor
     if (TOF != 0) {
@@ -2057,7 +2066,7 @@ void setup() {
     previousMillisVoltagesensorreading = currentTime;
     lastMQTTConnectionAttempt = currentTime;
 
-    #if (BREWMODE == 2)
+    #if (BREWMODE == 2 || BREWMODE == 4)
         previousMillisScale = currentTime;
     #endif
     #if (PRESSURESENSOR == 1)
@@ -2433,7 +2442,7 @@ void writeSysParamsToBlynk(void) {
         Blynk.virtualWrite(V40, backflushON);
         Blynk.virtualWrite(V15, SteamON);
 
-        #if (BREWMODE == 2)
+        #if (BREWMODE == 2 || BREWMODE = 4)
             Blynk.virtualWrite(V18, weightSetpoint);
         #endif
 
@@ -2441,6 +2450,11 @@ void writeSysParamsToBlynk(void) {
             Blynk.virtualWrite(V11, startKp);
             Blynk.virtualWrite(V14, startTn);
         #endif
+        #if (BREWMODE == 3 || BREWMODE = 4)
+            Blynk.virtualWrite(V22, aggKp2);
+            Blynk.virtualWrite(V23, aggTn2);
+            Blynk.virtualWrite(V24, aggTv2);
+        #endif        
     }
 }
 
