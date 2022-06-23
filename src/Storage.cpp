@@ -44,9 +44,9 @@ typedef struct __attribute__((packed)) {
     double pidKpStart;
     uint8_t freeToUse12[2];
     uint8_t softApEnabledCheck;
-    uint8_t aggKp2;
-    uint8_t aggTn2;
-    uint8_t aggTv2;
+    uint8_t pidKp2;
+    uint8_t pidTn2;
+    uint8_t pidTv2;
     uint8_t freeToUse13[6];
     double pidTnStart;
     uint8_t freeToUse14[2];
@@ -191,7 +191,22 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
             addr = offsetof(sto_data_t, softApEnabledCheck);
             size = STRUCT_MEMBER_SIZE(sto_data_t, softApEnabledCheck);
             break;
-
+            
+        case STO_ITEM_PID_KP2_REGULAR:
+            addr = offsetof(sto_data_t, pidKp2);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, pidKp2);
+            break;  
+            
+        case STO_ITEM_PID_TN2_REGULAR:
+            addr = offsetof(sto_data_t, pidTn2);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, pidTn2);
+            break;
+            
+        case STO_ITEM_PID_TV2_REGULAR:
+            addr = offsetof(sto_data_t, pidTv2);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, pidTv2);
+            break;
+            
         case STO_ITEM_WIFI_SSID:
             addr = offsetof(sto_data_t, wifiSSID);
             size = STRUCT_MEMBER_SIZE(sto_data_t, wifiSSID);
