@@ -44,7 +44,10 @@ typedef struct __attribute__((packed)) {
     double pidKpStart;
     uint8_t freeToUse12[2];
     uint8_t softApEnabledCheck;
-    uint8_t freeToUse13[9];
+    uint8_t aggKp2;
+    uint8_t aggTn2;
+    uint8_t aggTv2;
+    uint8_t freeToUse13[6];
     double pidTnStart;
     uint8_t freeToUse14[2];
     char wifiSSID[25 + 1];
@@ -87,7 +90,10 @@ static const sto_data_t itemDefaults PROGMEM = {
     STARTKP,                                  // STO_ITEM_PID_KP_START
     {0xFF, 0xFF},                             // free to use
     0,                                        // STO_ITEM_SOFT_AP_ENABLED_CHECK
-    {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},  // free to use
+    AGGKP2,                                   // STO_ITEM_PID_KP2_REGULAR
+    AGGTN2,                                   // STO_ITEM_PID_TN2_REGULAR
+    AGGTV2,                                   // STO_ITEM_PID_TV2_REGULAR
+    {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},  // free to use
     STARTTN,       // STO_ITEM_PID_TN_START
     {0xFF, 0xFF},  // free to use
     "",            // STO_ITEM_WIFI_SSID
