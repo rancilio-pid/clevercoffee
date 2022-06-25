@@ -679,3 +679,4 @@ int storageFactoryReset(void) {
 
     return storageCommit();
 }
+
