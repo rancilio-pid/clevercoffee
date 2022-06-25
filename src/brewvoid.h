@@ -474,11 +474,6 @@ void brew() {
             brewcounter = 43;
         }
 
-        if (brewcounter > 10 && brewcounter < 43) {
-            brewTime = currentMillistemp - startingTime;
-            weightBrew = weight - weightPreBrew;
-        }
-
         if (brewswitch == LOW && firstreading == 0) {
             // check if brewswitch was turned off at least once, last time,
             brewswitchWasOFF = true;
@@ -499,7 +494,6 @@ void brew() {
                     }
 
                     kaltstart = false;  // force reset kaltstart if shot is pulled
-                    weightPreBrew = weight;
                 } else {
                     backflush();
                 }
@@ -511,7 +505,7 @@ void brew() {
                 digitalWrite(PINVALVE, relayON);
                 digitalWrite(PINPUMP, relayON);
                 pressurePID.SetMode(AUTOMATIC);
-                setPower(DimmerValue);
+                dimmer.setPower(DimmerValue);
                 brewcounter = 41;
 
                 break;
@@ -528,7 +522,7 @@ void brew() {
             case 42:  // brew finished
                 Serial.println("Brew stopped");
                 pressurePID.SetMode(MANUAL);
-                setPower(0)
+                dimmer.setPower(0);
                 digitalWrite(PINVALVE, relayOFF);
                 digitalWrite(PINPUMP, relayOFF);
                 brewcounter = 43;
