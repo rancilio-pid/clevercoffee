@@ -45,8 +45,9 @@
 
 #if (BREWMODE == 2 || ONLYPIDSCALE == 1 || BREWMODE == 4)
     #include <HX711_ADC.h>
+#endif
 #if (BREWMODE == 3 || BREWMODE == 4)
-#include <rbhdimmer.h>
+#include <RBDdimmer.h>
 #endif
 
 // Version of userConfig need to match, checked by preprocessor
@@ -169,7 +170,7 @@ bool coolingFlushDetectedQM = false;
     int offset = OFFSET;
     int fullScale = FULLSCALE;
     int maxPressure = MAXPRESSURE;
-    float inputPressure = 0;
+    double inputPressure = 0;
     const unsigned long intervalPressure = 200;
     unsigned long previousMillisPressure;  // initialisation at the end of init()
 #endif
@@ -288,15 +289,13 @@ double aggKd = aggTv * aggKp;
 PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, PonE, DIRECT);
 
 //Pressure PID Controller for RBH Dimmer 
-unsigned long previousMillistemp;  // initialisation at the end of init()
 const unsigned long intervalpressure = 200; 
 const unsigned int PressureWindowSize = 200;
-unsigned long windowStartTime;
-double inputPressure, OutputDimmer;
+double OutputDimmer;
 double pressuresetPoint;
-unsigned int DimmerValue = OutputDimmer
+unsigned int DimmerValue = OutputDimmer;
+int i;
 
-double pressuresetPoint = 0
 double aggKp2 = AGGKP2;
 double aggTn2 = AGGTN2;
 double aggTv2 = AGGTV2;
@@ -311,7 +310,7 @@ double aggKd2 = aggTv2 * aggKp2;
 
 //define variable setpoint
 // look-up tables for mapping readings to measurements (brewTime, pressuresetPoint)
-float theArray[42] = {
+float theArray[22] = {
   1, 1,
   1000, 1,
   2000, 2,
@@ -324,16 +323,10 @@ float theArray[42] = {
   25000, 6,
   60000, 5,
 };
-for (int i = 0; i < 42-2; i += 2)
-{
-    if ( (brewTime >= theArray[i])  &&  (brewTime < theArray[i+2]) )
-   {
-      pressuresetPoint = theArray[i+1] + (((theArray[i+3] - theArray[i+1]) * ( (float) brewTime - theArray[i] ) ) / (theArray[i+2] - theArray[i] ) );
-      break;
-    }
- 
-}
+
 PID pressurePID(&inputPressure, &OutputDimmer, &pressuresetPoint, aggKp2, aggKi2, aggKd2, PonE, DIRECT);
+
+dimmerLamp dimmer(outputPin, zerocross);
 
 // Dallas temp sensor
 OneWire oneWire(ONE_WIRE_BUS);  // Setup a oneWire instance to communicate with any OneWire
@@ -876,10 +869,9 @@ void sendInflux() {
         influxSensor.addField("preinfusionpause", preinfusionpause);
         influxSensor.addField("preinfusion", preinfusion);
         influxSensor.addField("SteamON", SteamON);
-        influxSensor.addField("inputPressure"; inputPressure);
-        influxSensor.addField("Weight"; weight);
-        influxSensor.addField("pressuresetPoint"; pressuresetPoint);
-        influxSensor.addField("Brewtime"; brewTime);
+        influxSensor.addField("inputPressure", inputPressure);
+        influxSensor.addField("pressuresetPoint", pressuresetPoint);
+        influxSensor.addField("Brewtime", brewTime);
         influxSensor.addField("Kp2", pressurePID.GetKp());
         influxSensor.addField("Ki2", pressurePID.GetKi());
         influxSensor.addField("Kd2", pressurePID.GetKd());
@@ -1971,9 +1963,8 @@ void setup() {
 
     // Init RBD Dimmer
     #if (BREWMODE == 3 || BREWMODE == 4)
-        pinMode(outputPin, OUTPUT)
-        pinMode(zerocross, INPUT)
-        profilingDimmer dimmer(outputPin, zerocross)
+        pinMode(outputPin, OUTPUT);
+        pinMode(zerocross, INPUT);
     #endif
             
     // VL530L0x TOF sensor
@@ -2020,12 +2011,12 @@ void setup() {
     bPID.SetMode(AUTOMATIC);
 
     // Initialize pressuePID
-    pressurePID.SetSampleTime(PressureWindowSize)
-    pressurePID.SetOutputLimits(0, 99)
-    pressurePID.SetMode(Manual)
+    pressurePID.SetSampleTime(PressureWindowSize);
+    pressurePID.SetOutputLimits(1, 99);
+    pressurePID.SetMode(MANUAL);
     
     // Initialize dimmer    
-    dimmmer.begin(NORMAL_MODE, ON); //dimmer initialisation: name.begin(MODE, STATE)
+    dimmer.begin(NORMAL_MODE, ON); //dimmer initialisation: name.begin(MODE, STATE)
     dimmer.setPower(0); // setPower is calculated during brew
         
     // Temp sensor
@@ -2341,6 +2332,15 @@ void looppid() {
         bPID.SetTunings(aggbKp, aggbKi, aggbKd, PonE);
     }
     // sensor error OR Emergency Stop
+    if (BREWMODE == 3 || BREWMODE == 4) {
+        for (int i = 0; i < 22-2; i += 2) {
+            if ( (brewTime >= theArray[i])  &&  (brewTime < theArray[i+2]) )
+            {
+            pressuresetPoint = theArray[i+1] + (((theArray[i+3] - theArray[i+1]) * ( (float) brewTime - theArray[i] ) ) / (theArray[i+2] - theArray[i] ) );
+            break;
+            }
+        }
+    }
 }
 
 void setBackflush(int backflush) {
@@ -2448,7 +2448,7 @@ void writeSysParamsToBlynk(void) {
         Blynk.virtualWrite(V40, backflushON);
         Blynk.virtualWrite(V15, SteamON);
 
-        #if (BREWMODE == 2 || BREWMODE = 4)
+        #if (BREWMODE == 2 || BREWMODE == 4)
             Blynk.virtualWrite(V18, weightSetpoint);
         #endif
 
@@ -2456,7 +2456,7 @@ void writeSysParamsToBlynk(void) {
             Blynk.virtualWrite(V11, startKp);
             Blynk.virtualWrite(V14, startTn);
         #endif
-        #if (BREWMODE == 3 || BREWMODE = 4)
+        #if (BREWMODE == 3 || BREWMODE == 4)
             Blynk.virtualWrite(V22, aggKp2);
             Blynk.virtualWrite(V23, aggTn2);
             Blynk.virtualWrite(V24, aggTv2);
