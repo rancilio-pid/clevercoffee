@@ -12,8 +12,8 @@
 </div>
 
 ## Version
-ALPHA VERSION
-Version 3.0.0  (11.01.2021)
+MASTER VERSION
+Version 3.0.1  (20.06.2022)
 
 ## Hinweise
 Unsere Projektwebseite findet ihr hier: [Clever Coffee Website](https://clevercoffee.de).
