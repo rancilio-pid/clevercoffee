@@ -1932,6 +1932,7 @@ void setup() {
     // Initialize PID controller
     bPID.SetSampleTime(windowSize);
     bPID.SetOutputLimits(0, windowSize);
+    bPID.SetIntegratorLimits(0, 70);
     bPID.SetMode(AUTOMATIC);
 
     // Temp sensor
