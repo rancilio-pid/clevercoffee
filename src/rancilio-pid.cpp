@@ -130,6 +130,9 @@ unsigned int wifiReconnects = 0;  // actual number of reconnects
 const char *OTAhost = OTAHOST;
 const char *OTApass = OTAPASS;
 
+//server for monitor connections
+WiFiServer SerialServer(23);
+
 // Blynk
 const char *blynkaddress = BLYNKADDRESS;
 const int blynkport = BLYNKPORT;
@@ -179,6 +182,7 @@ void setPidStatus(int pidStatus);
 void setBackflush(int backflush);
 void loopcalibrate();
 void looppid();
+void CheckForConnections();
 void initSteamQM();
 boolean checkSteamOffQM();
 void writeSysParamsToBlynk(void);
@@ -1725,6 +1729,8 @@ void wiFiSetup() {
     #if OLED_DISPLAY != 0
         displayLogo(langstring_connectwifi1, wm.getWiFiSSID(true));
     #endif
+
+    SerialServer.begin();
 }
 
 /**
@@ -1997,6 +2003,25 @@ void loop() {
     } else {
         looppid();
     }
+
+    CheckForConnections();
+}
+
+WiFiClient RemoteSerial;
+void CheckForConnections() {
+    if (SerialServer.hasClient()) {
+        // If we are already connected to another client,
+        // then reject the new connection. Otherwise accept
+        // the connection.
+        if (RemoteSerial.connected()) {
+            Serial.println("Serial Server Connection rejected");
+            SerialServer.available().stop();
+        }
+        else {
+            Serial.println("Serial Server Connection accepted");
+            RemoteSerial = SerialServer.available();
+        }
+    }
 }
 
 /**
@@ -2095,6 +2120,25 @@ void looppid() {
     if ((millis() - lastTempEvent) > tempEventInterval) {
         sendTempEvent(Input, BrewSetPoint, Output);
         lastTempEvent = millis();
+
+        if (RemoteSerial.connected()) {
+            RemoteSerial.printf("Current PID mode: %s\n", bPID.GetPonE() ? "PonE" : "PonM");
+
+            //P-Part
+            RemoteSerial.printf("Current PID input error: %f\n", bPID.GetInputError());
+            RemoteSerial.printf("Current PID P part: %f\n", bPID.GetLastPPart());
+            RemoteSerial.printf("Current PID kP: %f\n", bPID.GetKp());
+            //I-Part
+            RemoteSerial.printf("Current PID I sum: %f\n", bPID.GetLastIPart());
+            RemoteSerial.printf("Current PID kI: %f\n", bPID.GetKi());
+            //D-Part
+            RemoteSerial.printf("Current PID diff'd input: %f\n", bPID.GetDeltaInput());
+            RemoteSerial.printf("Current PID D part: %f\n", bPID.GetLastDPart());
+            RemoteSerial.printf("Current PID kD: %f\n", bPID.GetKd());
+
+            //Combined PID output
+            RemoteSerial.printf("Current PID Output: %f\n\n", Output);
+        } 
     }
 
     #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
