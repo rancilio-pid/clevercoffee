@@ -1009,7 +1009,7 @@ void brewdetection() {
     // Activate brew detection
     if (Brewdetection == 1) {  // SW BD
         // BD PID only +/- 4 Grad Celsius, no detection if HW was active
-        if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 && (fabs(Input - BrewSetPoint) < 5)) {
+        if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 && (fabs(Input - BrewSetPoint) < 2)) {
             Serial.println("SW Brew detected");
             timeBrewdetection = millis();
             timerBrewdetection = 1;
@@ -1437,7 +1437,7 @@ void machinestatevoid() {
                             (double)(millis() - startingTime) / 1000, Input,
                             heatrateaverage);
 
-            if ((brewTime > 35 * 1000 && Brewdetection == 1 &&
+            if ((brewTime > 34 * 1000 && Brewdetection == 1 &&
                 ONLYPID == 1) ||  // 35 sec later and BD PID active SW Solution
                 (brewTime == 0 && Brewdetection == 3 &&
                 ONLYPID == 1) ||  // Voltagesensor reset brewTime == 0
@@ -1571,8 +1571,7 @@ void machinestatevoid() {
                 }
             }
 
-            if ((Brewdetection == 3 || Brewdetection == 2) &&
-                Input < BrewSetPoint + 2) {
+            if ((Brewdetection == 3 || Brewdetection == 2) && Input < BrewSetPoint + 2) {
                 machinestate = kPidNormal;
             }
 
