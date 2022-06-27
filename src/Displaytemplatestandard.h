@@ -70,27 +70,33 @@ void printScreen()
             if (isrCounter < 500) {
                 u8g2.setCursor(40, 48);
                 u8g2.print(langstring_wasserleer);
-
             }
         } else {
-            u8g2.setCursor(40, 48);
+            u8g2.setCursor(34, 48);
 
-            u8g2.print(bPID.GetKp(), 0); // P
+            // P
+            u8g2.print(bPID.GetKp(), 0);
             u8g2.print("|");
+
+            // I
             if (bPID.GetKi() != 0) {
-            u8g2.print(bPID.GetKp() / bPID.GetKi(), 0);;
-            } // I
+                u8g2.print(bPID.GetKi(), 1);;
+            }
             else
             {
-            u8g2.print("0");
+                u8g2.print("0");
             }
             u8g2.print("|");
-            u8g2.print(bPID.GetKd() / bPID.GetKp(), 0); // D
+
+            //D
+            u8g2.print(bPID.GetKd(), 0);
             u8g2.setCursor(98, 48);
+            
+            //Heater Output
             if (Output < 99) {
-            u8g2.print(Output / 10, 1);
+                u8g2.print(Output / 10, 1);
             } else {
-            u8g2.print(Output / 10, 0);
+                u8g2.print(Output / 10, 0);
             }
             u8g2.print("%");
         }

@@ -1326,18 +1326,16 @@ void machinestatevoid() {
                 case 10:
                     if (Input < (BrewSetPoint - 1)) {
                         machinestatecold = 0;  //  Input was only one time above
-                                            //  BrewSetPoint, reset machinestatecold
-                        Serial.println(
-                            "Reset timer for machinestate 19: Input < (BrewSetPoint-1)");
+                                               //  BrewSetPoint, reset machinestatecold
+                        Serial.println("Reset timer for machinestate 19: Input < (BrewSetPoint-1)");
+
+                        break;
                     }
 
-                    if (machinestatecoldmillis + 10 * 1000 <
-                        millis())  // 10 sec Input above BrewSetPoint, no set new state
-                    {
+                    if (machinestatecoldmillis + 5 * 1000 < millis()) {
+                        // 10 sec Input above BrewSetPoint, no set new state
                         machinestate = kSetPointNegative;
-                        Serial.println(
-                            "10 sec Input >= (BrewSetPoint-1) finished, switch to state "
-                            "19");
+                        Serial.println("5 sec Input >= (BrewSetPoint-1) finished, switch to state 19");
                     }
                     break;
             }
@@ -1638,8 +1636,7 @@ void machinestatevoid() {
                 } else if (!kaltstart && (Input > (BrewSetPoint - 10))) {  // Input higher BrewSetPoint-10, normal PID
                     machinestate = kPidNormal;
                 } else if (Input <= (BrewSetPoint - 10)) {
-                    machinestate =
-                        kColdStart;  // Input 10C below set point, enter cold start
+                    machinestate = kColdStart;  // Input 10C below set point, enter cold start
                     kaltstart = true;
                 }
             }
@@ -1711,7 +1708,7 @@ void wiFiSetup() {
         String macaddr4 = number2string(mac[4]);
         String macaddr5 = number2string(mac[5]);
         String completemac = macaddr0 + macaddr1 + macaddr2 + macaddr3 + macaddr4 + macaddr5;
-        Serial.printf("MAC-ADRESSE: %s\n", completemac.c_str());
+        Serial.printf("MAC-ADDRESS: %s\n", completemac.c_str());
 
     } else {
         Serial.println("WiFi connection timed out...");
@@ -2093,7 +2090,7 @@ void looppid() {
 
     refreshTemp();        // update temperature values
     testEmergencyStop();  // test if temp is too high
-    bPID.Compute();
+    bPID.Compute();       //the variable Output now has new values from PID (will be written to heater pin in ISR.h)
 
     if ((millis() - lastTempEvent) > tempEventInterval) {
         sendTempEvent(Input, BrewSetPoint, Output);
@@ -2127,7 +2124,7 @@ void looppid() {
         shottimerscale();
     #endif
 
-    // Check if PID should run or not. If not, set to manuel and force output to zero
+    // Check if PID should run or not. If not, set to manual and force output to zero
     #if OLED_DISPLAY != 0
     unsigned long currentMillisDisplay = millis();
     if (currentMillisDisplay - previousMillisDisplay >= 100) {
@@ -2158,7 +2155,7 @@ void looppid() {
     }
 
     // Set PID if first start of machine detected, and no SteamON
-    if (machinestate == kInit || machinestate == kColdStart || machinestate == kSetPointNegative) {
+    /*if (machinestate == kInit || machinestate == kColdStart || machinestate == kSetPointNegative) {
         if (startTn != 0) {
             startKi = startKp / startTn;
         } else {
@@ -2171,10 +2168,13 @@ void looppid() {
         }
 
         bPID.SetTunings(startKp, startKi, 0, P_ON_M);
-        // normal PID
-    }
+    }*/
 
-    if (machinestate == kPidNormal) {
+    // normal PID to keep temperature after cold start
+    if (machinestate == kInit || machinestate == kColdStart || machinestate == kSetPointNegative ||
+        machinestate == kPidNormal)
+    {
+        /*
         // Prevent overwriting of brewdetection values
         // calc ki, kd
         if (aggTn != 0) {
@@ -2184,6 +2184,10 @@ void looppid() {
         }
 
         aggKd = aggTv * aggKp;
+        */
+
+        aggKi = aggTn;
+        aggKd = aggTv;
 
         if (lastmachinestatepid != machinestate) {
             Serial.printf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n", aggKp, aggKi, aggKd);
@@ -2196,6 +2200,7 @@ void looppid() {
 
     // BD PID
     if (machinestate >= 30 && machinestate <= 35) {
+        /*
         // calc ki, kd
         if (aggbTn != 0) {
             aggbKi = aggbKp / aggbTn;
@@ -2204,6 +2209,7 @@ void looppid() {
         }
 
         aggbKd = aggbTv * aggbKp;
+        */
 
         if (lastmachinestatepid != machinestate) {
             Serial.printf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n", aggbKp, aggbKi, aggbKd);
