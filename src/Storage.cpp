@@ -44,9 +44,9 @@ typedef struct __attribute__((packed)) {
     double pidKpStart;
     uint8_t freeToUse12[2];
     uint8_t softApEnabledCheck;
-    uint8_t pidKp2;
-    uint8_t pidTn2;
-    uint8_t pidTv2;
+    double pidKp2;
+    double pidTn2;
+    double pidTv2;
     uint8_t freeToUse13[6];
     double pidTnStart;
     uint8_t freeToUse14[2];
@@ -679,4 +679,3 @@ int storageFactoryReset(void) {
 
     return storageCommit();
 }
-
