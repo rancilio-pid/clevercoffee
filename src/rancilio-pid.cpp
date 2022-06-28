@@ -1246,9 +1246,7 @@ void checkSteamON() {
 
     if (SteamON == 1) {
         setPoint = SteamSetPoint;
-    }
-
-    if (SteamON == 0) {
+    } else if (SteamON == 0) {
         setPoint = BrewSetPoint;
     }
 }
@@ -1294,6 +1292,7 @@ void machinestatevoid() {
         case kInit:
             // Prevent coldstart leave by Input 222
             if (Input < (BrewSetPoint - 1) || Input < 150) {
+            #if COLDSTART_PID_ENABLED
                 machinestate = kColdStart;
                 debugPrintf("%d\n", Input);
                 debugPrintf("%d\n", machinestate);
@@ -1303,6 +1302,9 @@ void machinestatevoid() {
                 bPID.SetMode(pidMode);
                 Output = 0;
                 digitalWrite(PINHEATER, LOW);  // Stop heating
+            #else 
+                machinestate = kPidNormal;
+            #endif
 
                 // start PID
                 pidMode = 1;
@@ -1443,7 +1445,8 @@ void machinestatevoid() {
 
         case kBrew:
             brewdetection();
-            // Ausgabe waehrend des Bezugs von Bruehzeit, Temp und heatrateaverage
+
+            // Output during the reference of brew time, temp and heatrateaverage
             if (logbrew.check())
                 debugPrintf("(tB,T,hra) --> %5.2f %6.2f %8.2f\n",
                             (double)(millis() - startingTime) / 1000, Input,
@@ -1487,7 +1490,7 @@ void machinestatevoid() {
             brewdetection();
 
             if (millis() - lastbrewTimeMillis > BREWSWITCHDELAY) {
-                debugPrintf("Bezugsdauer: %4.1f s\n", lastbrewTime / 1000);
+                debugPrintf("Shot time: %4.1f s\n", lastbrewTime / 1000);
                 machinestate = kBrewDetectionTrailing;
                 lastbrewTime = 0;
             }
@@ -2182,11 +2185,11 @@ void looppid() {
         checkPressure();
     #endif
 
-    brew();          // start brewing if button pressed
-    checkSteamON();  // check for steam
+    brew();                  // start brewing if button pressed
+    checkSteamON();          // check for steam
     setEmergencyStopTemp();
     sendToBlynkMQTT();
-    machinestatevoid();      // calc machinestate
+    machinestatevoid();      // update machinestate
     tempLed();
 
     if (INFLUXDB == 1) {
@@ -2202,19 +2205,19 @@ void looppid() {
     #endif
 
     // Check if PID should run or not. If not, set to manual and force output to zero
-    #if OLED_DISPLAY != 0
+#if OLED_DISPLAY != 0
     unsigned long currentMillisDisplay = millis();
     if (currentMillisDisplay - previousMillisDisplay >= 100) {
         displayShottimer();
     }
     if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
         previousMillisDisplay = currentMillisDisplay;
-    #if DISPLAYTEMPLATE < 20  // not in vertikal template
+#if DISPLAYTEMPLATE < 20  // not in vertikal template
         Displaymachinestate();
-    #endif
+#endif
         printScreen();  // refresh display
     }
-    #endif
+#endif
 
     if (machinestate == kPidOffline || machinestate == kSensorError || machinestate == kEmergencyStop || machinestate == keepromError) {
         if (pidMode == 1) {
@@ -2231,8 +2234,9 @@ void looppid() {
         }
     }
 
+    #if COLDSTART_PID_ENABLED
     // Set PID if first start of machine detected, and no SteamON
-    /*if (machinestate == kInit || machinestate == kColdStart || machinestate == kSetPointNegative) {
+    if (machinestate == kInit || machinestate == kColdStart || machinestate == kSetPointNegative) {
         if (startTn != 0) {
             startKi = startKp / startTn;
         } else {
@@ -2245,7 +2249,8 @@ void looppid() {
         }
 
         bPID.SetTunings(startKp, startKi, 0, P_ON_M);
-    }*/
+    }
+    #endif
 
     // normal PID to keep temperature after cold start
     if (machinestate == kInit || machinestate == kColdStart || machinestate == kSetPointNegative ||
