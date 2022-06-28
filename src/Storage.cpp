@@ -22,7 +22,8 @@ typedef struct __attribute__((packed)) {
     uint8_t pidOn;
     uint8_t freeToUse1;
     double pidTvRegular;
-    uint8_t freeToUse2[2];
+    double pidIMaxRegular;
+    uint8_t freeToUse2;
     double brewSetpoint;
     uint8_t freeToUse3[2];
     double brewTimeMs;
@@ -51,6 +52,7 @@ typedef struct __attribute__((packed)) {
     char wifiPassword[25 + 1];
     double weightsetpoint;
     double steamkp;
+    double pidIMax;
 } sto_data_t;
 
 
@@ -62,7 +64,8 @@ static const sto_data_t itemDefaults PROGMEM = {
     0,                        // STO_ITEM_PID_ON
     0xFF,                     // free to use
     AGGTV,                    // STO_ITEM_PID_TV_REGULAR
-    {0xFF, 0xFF},             // free to use
+    AGGIMAX,                  // STO_ITEM_PID_I_MAX_REGULAR
+    0xFF,                     // free to use
     SETPOINT,                 // STO_ITEM_BREW_SETPOINT
     {0xFF, 0xFF},             // free to use
     BREW_TIME,                // STO_ITEM_BREW_TIME
@@ -93,7 +96,7 @@ static const sto_data_t itemDefaults PROGMEM = {
     "",            // STO_ITEM_WIFI_SSID
     "",            // STO_ITEM_WIFI_PASSWORD
     SCALE_WEIGHTSETPOINT,
-    STEAMKP,
+    STEAMKP    
 };
 
 /**
@@ -124,6 +127,11 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
         case STO_ITEM_PID_TV_REGULAR:
             addr = offsetof(sto_data_t, pidTvRegular);
             size = STRUCT_MEMBER_SIZE(sto_data_t, pidTvRegular);
+            break;
+
+        case STO_ITEM_PID_I_MAX_REGULAR:
+            addr = offsetof(sto_data_t, pidIMaxRegular);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, pidIMaxRegular);
             break;
 
         case STO_ITEM_BREW_SETPOINT:
