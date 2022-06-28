@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 
-
 // Functions
 int factoryReset(void);
 const char* getFwVersion(void);

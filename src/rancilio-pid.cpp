@@ -182,7 +182,10 @@ void setPidStatus(int pidStatus);
 void setBackflush(int backflush);
 void loopcalibrate();
 void looppid();
-void CheckForConnections();
+void checkForRemoteSerialClients();
+void debugPrint(const char *message);
+void debugPrintln(const char *message);
+void debugPrintf(const char *format, ...);
 void initSteamQM();
 boolean checkSteamOffQM();
 void writeSysParamsToBlynk(void);
@@ -192,19 +195,20 @@ char *number2string(float in);
 char *number2string(int in);
 char *number2string(unsigned int in);
 float filter(float input);
+
 // Variable declarations
 uint8_t pidON = 1;               // 1 = control loop in closed loop
 int relayON, relayOFF;           // used for relay trigger type. Do not change!
-boolean kaltstart = true;        // true = Rancilio started for first time
-boolean emergencyStop = false;   // Notstop bei zu hoher Temperatur
+boolean coldstart = true;        // true = Rancilio started for first time
+boolean emergencyStop = false;   // Emergency stop if temperature is too high 
 double EmergencyStopTemp = 120;  // Temp EmergencyStopTemp
 float inX = 0, inY = 0, inOld = 0, inSum = 0; // used for filter()
-int bars = 0;  // used for getSignalStrength()
+int bars = 0;                    // used for getSignalStrength()
 boolean brewDetected = 0;
 boolean setupDone = false;
-int backflushON = 0;      // 1 = activate backflush
-int flushCycles = 0;      // number of active flush cycles
-int backflushState = 10;  // counter for state machine
+int backflushON = 0;             // 1 = activate backflush
+int flushCycles = 0;             // number of active flush cycles
+int backflushState = 10;         // counter for state machine
 
 // Moving average - brewdetection
 const int numReadings = 15;               // number of values per Array
@@ -565,7 +569,7 @@ BLYNK_WRITE(V40) { backflushON = param.asInt(); }
                                         // conversion [psi] -> [bar]
             inputPressureFilter = filter(inputPressure);
 
-            Serial.printf("pressure raw / filterd: %f / %f\n", inputPressure, inputPressureFilter);
+            debugPrintf("pressure raw / filterd: %f / %f\n", inputPressure, inputPressureFilter);
         }
     }
 #endif
@@ -645,7 +649,7 @@ boolean checkSensor(float tempInput) {
         sensorOK = false;
 
         if (error >= 5) {  // warning after 5 times error
-            Serial.printf(
+            debugPrintf(
                 "*** WARNING: temperature sensor reading: consec_errors = %i, "
                 "temp_current = %.1f\n",
                 error, tempInput);
@@ -657,7 +661,7 @@ boolean checkSensor(float tempInput) {
 
     if (error >= maxErrorCounter && !sensorError) {
         sensorError = true;
-        Serial.printf(
+        debugPrintf(
             "*** ERROR: temperature sensor malfunction: temp_current = %.1f\n",
             tempInput);
     } else if (error == 0 && sensorError) {
@@ -741,7 +745,7 @@ void initOfflineMode() {
         displayMessage("", "", "", "", "Begin Fallback,", "No Wifi");
     #endif
 
-    Serial.println("Start offline mode with eeprom values, no wifi :(");
+    debugPrintln("Start offline mode with eeprom values, no wifi :(");
     offlineMode = 1;
 
     if (readSysParamsFromStorage() != 0) {
@@ -749,7 +753,7 @@ void initOfflineMode() {
             displayMessage("", "", "", "", "No eeprom,", "Values");
         #endif
 
-        Serial.println(
+        debugPrintln(
             "No working eeprom value, I am sorry, but use default offline value "
             ":)");
 
@@ -763,7 +767,7 @@ void initOfflineMode() {
 void checkWifi() {
     if (offlineMode == 1 || brewcounter > 11) return;
 
-    /* if kaltstart ist still true when checkWifi() is called, then there was no WIFI connection
+    /* if coldstart ist still true when checkWifi() is called, then there was no WIFI connection
      * at boot -> connect or offlinemode
      */
     do {
@@ -773,7 +777,7 @@ void checkWifi() {
             if (statusTemp != WL_CONNECTED) {  // check WiFi connection status
                 lastWifiConnectionAttempt = millis();
                 wifiReconnects++;
-                Serial.printf("Attempting WIFI reconnection: %i\n", wifiReconnects);
+                debugPrintf("Attempting WIFI reconnection: %i\n", wifiReconnects);
 
                 if (!setupDone) {
                     #if OLED_DISPLAY != 0
@@ -835,7 +839,7 @@ void sendInflux() {
 
         // Write point
         if (!influxClient.writePoint(influxSensor)) {
-            Serial.printf("InfluxDB write failed: %s\n", influxClient.getLastErrorMessage().c_str());
+            debugPrintf("InfluxDB write failed: %s\n", influxClient.getLastErrorMessage().c_str());
         }
     }
 }
@@ -853,7 +857,7 @@ void checkBlynk() {
         if (statusTemp != 1) {
             lastBlynkConnectionAttempt = millis();  // Reconnection Timer Function
             blynkReCnctCount++;                     // Increment reconnection Counter
-            Serial.printf("Attempting blynk reconnection: %i\n", blynkReCnctCount);
+            debugPrintf("Attempting blynk reconnection: %i\n", blynkReCnctCount);
             Blynk.connect(3000);    // Try to reconnect to the server; connect() is
                                     // a blocking function, watch the timeout!
         }
@@ -873,11 +877,11 @@ void checkMQTT() {
         if (statusTemp != 1) {
             lastMQTTConnectionAttempt = millis();  // Reconnection Timer Function
             MQTTReCnctCount++;                     // Increment reconnection Counter
-            Serial.printf("Attempting MQTT reconnection: %i\n", MQTTReCnctCount);
+            debugPrintf("Attempting MQTT reconnection: %i\n", MQTTReCnctCount);
 
             if (mqtt.connect(hostname, mqtt_username, mqtt_password, topic_will, 0, 0,"exit") == true) {
                 mqtt.subscribe(topic_set);
-                Serial.println("Subscribe to MQTT Topics");
+                debugPrintln("Subscribe to MQTT Topics");
             }   // Try to reconnect to the server; connect() is a blocking
                 // function, watch the timeout!
         }
@@ -1006,7 +1010,7 @@ void brewdetection() {
             brewTime = 0;
             startingTime = 0;
             coolingFlushDetectedQM = false;
-            Serial.println("HW Brew - Voltage Sensor - End");
+            debugPrintln("HW Brew - Voltage Sensor - End");
         }
 
         if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1) {  // reset PID Brew
@@ -1018,13 +1022,13 @@ void brewdetection() {
     if (Brewdetection == 1) {  // SW BD
         // BD PID only +/- 4 Grad Celsius, no detection if HW was active
         if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 && (fabs(Input - BrewSetPoint) < 2)) {
-            Serial.println("SW Brew detected");
+            debugPrintln("SW Brew detected");
             timeBrewdetection = millis();
             timerBrewdetection = 1;
         }
     } else if (Brewdetection == 2) {  // HW BD
         if (brewcounter > 10 && brewDetected == 0 && brewboarder != 0) {
-            Serial.println("HW Brew detected");
+            debugPrintln("HW Brew detected");
             timeBrewdetection = millis();
             timerBrewdetection = 1;
             brewDetected = 1;
@@ -1044,7 +1048,7 @@ void brewdetection() {
                         brewDetected = 0;
                         lastbrewTime = 0;
                         brewSteamDetectedQM = 1;
-                        Serial.println("Quick Mill: setting brewSteamDetectedQM = 1");
+                        debugPrintln("Quick Mill: setting brewSteamDetectedQM = 1");
                         logbrew.reset();
                     }
 
@@ -1056,19 +1060,19 @@ void brewdetection() {
                             brewSteamDetectedQM = 0;
 
                             if (millis() - timePVStoON < maxBrewDurationForSteamModeQM_ON) {
-                                Serial.println("Quick Mill: steam-mode detected");
+                                debugPrintln("Quick Mill: steam-mode detected");
                                 initSteamQM();
                             } else {
-                                Serial.printf("*** ERROR: QuickMill: neither brew nor steam\n");
+                                debugPrintf("*** ERROR: QuickMill: neither brew nor steam\n");
                             }
                         } else if (millis() - timePVStoON > maxBrewDurationForSteamModeQM_ON) {
                             if (Input < BrewSetPoint + 2) {
-                                Serial.println("Quick Mill: brew-mode detected");
+                                debugPrintln("Quick Mill: brew-mode detected");
                                 startingTime = timePVStoON;
                                 brewDetected = 1;
                                 brewSteamDetectedQM = 0;
                             } else {
-                                Serial.println("Quick Mill: cooling-flush detected");
+                                debugPrintln("Quick Mill: cooling-flush detected");
                                 coolingFlushDetectedQM = true;
                                 brewSteamDetectedQM = 0;
                             }
@@ -1082,7 +1086,7 @@ void brewdetection() {
                 previousMillisVoltagesensorreading = millis();
 
                 if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorON && brewDetected == 0) {
-                    Serial.println("HW Brew - Voltage Sensor -  Start");
+                    debugPrintln("HW Brew - Voltage Sensor -  Start");
                     timeBrewdetection = millis();
                     startingTime = millis();
                     timerBrewdetection = 1;
@@ -1174,15 +1178,15 @@ void mqtt_callback(char *topic, byte *data, unsigned int length) {
     double data_double;
 
     snprintf(topic_pattern, sizeof(topic_pattern), "%s%s/%%[^\\/]/%%[^\\/]", mqtt_topic_prefix, hostname);
-    Serial.println(topic_pattern);
+    debugPrintln(topic_pattern);
 
     if ((sscanf(topic_str, topic_pattern, &configVar, &cmd) != 2) || (strcmp(cmd, "set") != 0)) {
-        Serial.println(topic_str);
+        debugPrintln(topic_str);
         return;
     }
 
-    Serial.println(topic_str);
-    Serial.println(data_str);
+    debugPrintln(topic_str);
+    debugPrintln(data_str);
 
     sscanf(data_str, "%lf", &data_double);
 
@@ -1291,8 +1295,8 @@ void machinestatevoid() {
             // Prevent coldstart leave by Input 222
             if (Input < (BrewSetPoint - 1) || Input < 150) {
                 machinestate = kColdStart;
-                Serial.println(Input);
-                Serial.println(machinestate);
+                debugPrintf("%d\n", Input);
+                debugPrintf("%d\n", machinestate);
 
                 // some users have 100 % Output in kInit / Koldstart, reset PID
                 pidMode = 0;
@@ -1325,7 +1329,7 @@ void machinestatevoid() {
                     if (Input >= (BrewSetPoint - 1) && Input < 150) {
                         machinestatecoldmillis = millis();  // get millis for interval calc
                         machinestatecold = 10;              // new state
-                        Serial.println(
+                        debugPrintln(
                             "Input >= (BrewSetPoint-1), wait 10 sec before machinestate "
                             "19");
                     }
@@ -1335,7 +1339,7 @@ void machinestatevoid() {
                     if (Input < (BrewSetPoint - 1)) {
                         machinestatecold = 0;  //  Input was only one time above
                                                //  BrewSetPoint, reset machinestatecold
-                        Serial.println("Reset timer for machinestate 19: Input < (BrewSetPoint-1)");
+                        debugPrintln("Reset timer for machinestate 19: Input < (BrewSetPoint-1)");
 
                         break;
                     }
@@ -1343,7 +1347,7 @@ void machinestatevoid() {
                     if (machinestatecoldmillis + 5 * 1000 < millis()) {
                         // 10 sec Input above BrewSetPoint, no set new state
                         machinestate = kSetPointNegative;
-                        Serial.println("5 sec Input >= (BrewSetPoint-1) finished, switch to state 19");
+                        debugPrintln("5 sec Input >= (BrewSetPoint-1) finished, switch to state 19");
                     }
                     break;
             }
@@ -1441,7 +1445,7 @@ void machinestatevoid() {
             brewdetection();
             // Ausgabe waehrend des Bezugs von Bruehzeit, Temp und heatrateaverage
             if (logbrew.check())
-                Serial.printf("(tB,T,hra) --> %5.2f %6.2f %8.2f\n",
+                debugPrintf("(tB,T,hra) --> %5.2f %6.2f %8.2f\n",
                             (double)(millis() - startingTime) / 1000, Input,
                             heatrateaverage);
 
@@ -1483,7 +1487,7 @@ void machinestatevoid() {
             brewdetection();
 
             if (millis() - lastbrewTimeMillis > BREWSWITCHDELAY) {
-                Serial.printf("Bezugsdauer: %4.1f s\n", lastbrewTime / 1000);
+                debugPrintf("Bezugsdauer: %4.1f s\n", lastbrewTime / 1000);
                 machinestate = kBrewDetectionTrailing;
                 lastbrewTime = 0;
             }
@@ -1638,13 +1642,13 @@ void machinestatevoid() {
 
         case kPidOffline:
             if (pidON == 1) {
-                if (kaltstart) {
+                if (coldstart) {
                     machinestate = kColdStart;
-                } else if (!kaltstart && (Input > (BrewSetPoint - 10))) {  // Input higher BrewSetPoint-10, normal PID
+                } else if (!coldstart && (Input > (BrewSetPoint - 10))) {  // Input higher BrewSetPoint-10, normal PID
                     machinestate = kPidNormal;
                 } else if (Input <= (BrewSetPoint - 10)) {
                     machinestate = kColdStart;  // Input 10C below set point, enter cold start
-                    kaltstart = true;
+                    coldstart = true;
                 }
             }
 
@@ -1663,7 +1667,7 @@ void machinestatevoid() {
     }
 
     if (machinestate != lastmachinestate) {
-        Serial.printf("new machinestate: %i -> %i\n", lastmachinestate, machinestate);
+        debugPrintf("new machinestate: %i -> %i\n", lastmachinestate, machinestate);
         lastmachinestate = machinestate;
     }
 }
@@ -1672,7 +1676,7 @@ void debugVerboseOutput() {
     static PeriodicTrigger trigger(10000);
 
     if (trigger.check()) {
-        Serial.printf(
+        debugPrintf(
             "Tsoll=%5.1f  Tist=%5.1f Machinestate=%2i KP=%4.2f "
             "KI=%4.2f KD=%4.2f\n",
             BrewSetPoint, Input, machinestate, bPID.GetKp(), bPID.GetKi(),
@@ -1703,7 +1707,7 @@ void wiFiSetup() {
     wm.setBreakAfterConfig(true);
 
     if (wm.autoConnect(hostname, pass)) {
-        Serial.printf("WiFi connected - IP = %i.%i.%i.%i\n", WiFi.localIP()[0],
+        debugPrintf("WiFi connected - IP = %i.%i.%i.%i\n", WiFi.localIP()[0],
                     WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3]);
 
         byte mac[6];
@@ -1715,10 +1719,10 @@ void wiFiSetup() {
         String macaddr4 = number2string(mac[4]);
         String macaddr5 = number2string(mac[5]);
         String completemac = macaddr0 + macaddr1 + macaddr2 + macaddr3 + macaddr4 + macaddr5;
-        Serial.printf("MAC-ADDRESS: %s\n", completemac.c_str());
+        debugPrintf("MAC-ADDRESS: %s\n", completemac.c_str());
 
     } else {
-        Serial.println("WiFi connection timed out...");
+        debugPrintln("WiFi connection timed out...");
 
         #if OLED_DISPLAY != 0
             displayLogo(langstring_nowifi[0], langstring_nowifi[1]);
@@ -1742,7 +1746,7 @@ void wiFiSetup() {
  */
 void BlynkSetup() {
     if (BLYNK == 1) {
-        Serial.println("Wifi works, now try Blynk (timeout 30s)");
+        debugPrintln("Wifi works, now try Blynk (timeout 30s)");
         Blynk.config(auth, blynkaddress, blynkport);
         Blynk.connect(30000);
 
@@ -1751,8 +1755,8 @@ void BlynkSetup() {
                 displayLogo(langstring_connectblynk2[0], langstring_connectblynk2[1]);
             #endif
 
-            Serial.println("Blynk is online");
-            Serial.println("sync all variables and write new values to eeprom");
+            debugPrintln("Blynk is online");
+            debugPrintln("sync all variables and write new values to eeprom");
 
             Blynk.syncVirtual(V4);
             Blynk.syncVirtual(V5);
@@ -1774,7 +1778,7 @@ void BlynkSetup() {
 
             writeSysParamsToStorage();
         } else {
-            Serial.println("No connection to Blynk");
+            debugPrintln("No connection to Blynk");
 
             if (readSysParamsFromStorage() == 0) {
                 #if OLED_DISPLAY != 0
@@ -1857,7 +1861,7 @@ void setup() {
 
     // IF Voltage sensor selected
     if (BREWDETECTION == 3) {
-    pinMode(PINVOLTAGESENSOR, PINMODEVOLTAGESENSOR);
+        pinMode(PINVOLTAGESENSOR, PINMODEVOLTAGESENSOR);
     }
 
     // IF PINBREWSWITCH & Steam selected
@@ -2009,23 +2013,50 @@ void loop() {
         looppid();
     }
 
-    CheckForConnections();
+    checkForRemoteSerialClients();
 }
 
 WiFiClient RemoteSerial;
-void CheckForConnections() {
+void checkForRemoteSerialClients() {
     if (SerialServer.hasClient()) {
         // If we are already connected to another client,
         // then reject the new connection. Otherwise accept
         // the connection.
         if (RemoteSerial.connected()) {
-            Serial.println("Serial Server Connection rejected");
+            debugPrintln("Serial Server Connection rejected");
             SerialServer.available().stop();
         }
         else {
-            Serial.println("Serial Server Connection accepted");
+            debugPrintln("Serial Server Connection accepted");
             RemoteSerial = SerialServer.available();
         }
+    }
+}
+
+// Print to remote serial (e.g. using OTA Monitor Task ) if client is connected, otherwise use hardware serial
+void debugPrintln(const char *message) {
+    if (RemoteSerial.connected()) {
+        RemoteSerial.println(message);
+    } else {
+        Serial.println(message);
+    }
+}
+
+void debugPrint(const char *message) {
+    if (RemoteSerial.connected()) {
+        RemoteSerial.print(message);
+    } else {
+        Serial.print(message);
+    }
+}
+
+void debugPrintf(const char *format, ...) {
+    va_list arg;
+    va_start(arg, format);
+    if (RemoteSerial.connected()) {
+        RemoteSerial.printf(format, arg);
+    } else {
+        Serial.printf(format, arg);
     }
 }
 
@@ -2056,8 +2087,7 @@ void loopcalibrate() {
         VL53L0X_RangingMeasurementData_t measure;   // TOF Sensor measurement
         lox.rangingTest(&measure, false);           // pass in 'true' to get debug data printout!
         distance = measure.RangeMilliMeter;         // write new distence value to 'distance'
-        Serial.println(distance);
-        Serial.println("mm");
+        debugPrintf("%d mm\n", distance);
 
         #if OLED_DISPLAY != 0
             displayDistance(distance);
@@ -2113,7 +2143,7 @@ void looppid() {
 
             if (distance <= 1000) {
                 percentage = (100.00 / (water_empty - water_full)) * (water_empty - distance);  // calculate percentage of waterlevel
-                Serial.println(percentage);
+                debugPrintf("%d\n", percentage);
             }
         }
     }
@@ -2126,24 +2156,22 @@ void looppid() {
         sendTempEvent(Input, BrewSetPoint, Output);
         lastTempEvent = millis();
 
-        if (RemoteSerial.connected()) {
-            RemoteSerial.printf("Current PID mode: %s\n", bPID.GetPonE() ? "PonE" : "PonM");
+        debugPrintf("Current PID mode: %s\n", bPID.GetPonE() ? "PonE" : "PonM");
 
-            //P-Part
-            RemoteSerial.printf("Current PID input error: %f\n", bPID.GetInputError());
-            RemoteSerial.printf("Current PID P part: %f\n", bPID.GetLastPPart());
-            RemoteSerial.printf("Current PID kP: %f\n", bPID.GetKp());
-            //I-Part
-            RemoteSerial.printf("Current PID I sum: %f\n", bPID.GetLastIPart());
-            RemoteSerial.printf("Current PID kI: %f\n", bPID.GetKi());
-            //D-Part
-            RemoteSerial.printf("Current PID diff'd input: %f\n", bPID.GetDeltaInput());
-            RemoteSerial.printf("Current PID D part: %f\n", bPID.GetLastDPart());
-            RemoteSerial.printf("Current PID kD: %f\n", bPID.GetKd());
+        //P-Part
+        debugPrintf("Current PID input error: %f\n", bPID.GetInputError());
+        debugPrintf("Current PID P part: %f\n", bPID.GetLastPPart());
+        debugPrintf("Current PID kP: %f\n", bPID.GetKp());
+        //I-Part
+        debugPrintf("Current PID I sum: %f\n", bPID.GetLastIPart());
+        debugPrintf("Current PID kI: %f\n", bPID.GetKi());
+        //D-Part
+        debugPrintf("Current PID diff'd input: %f\n", bPID.GetDeltaInput());
+        debugPrintf("Current PID D part: %f\n", bPID.GetLastDPart());
+        debugPrintf("Current PID kD: %f\n", bPID.GetKd());
 
-            //Combined PID output
-            RemoteSerial.printf("Current PID Output: %f\n\n", Output);
-        } 
+        //Combined PID output
+        debugPrintf("Current PID Output: %f\n\n", Output);        
     }
 
     #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
@@ -2212,7 +2240,7 @@ void looppid() {
         }
 
         if (lastmachinestatepid != machinestate) {
-            Serial.printf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n", startKp, startKi, 0.0);
+            debugPrintf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n", startKp, startKi, 0.0);
             lastmachinestatepid = machinestate;
         }
 
@@ -2240,12 +2268,12 @@ void looppid() {
         bPID.SetIntegratorLimits(0, aggIMax);
 
         if (lastmachinestatepid != machinestate) {
-            Serial.printf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n", aggKp, aggKi, aggKd);
+            debugPrintf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n", aggKp, aggKi, aggKd);
             lastmachinestatepid = machinestate;
         }
 
         bPID.SetTunings(aggKp, aggKi, aggKd, PonE);
-        kaltstart = false;
+        coldstart = false;
     }
 
     // BD PID
@@ -2262,7 +2290,7 @@ void looppid() {
         */
 
         if (lastmachinestatepid != machinestate) {
-            Serial.printf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n", aggbKp, aggbKi, aggbKd);
+            debugPrintf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n", aggbKp, aggbKi, aggbKd);
             lastmachinestatepid = machinestate;
         }
 
@@ -2272,7 +2300,7 @@ void looppid() {
     // Steam on
     if (machinestate == kSteam) {
         if (lastmachinestatepid != machinestate) {
-            Serial.printf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n", 150.0, 0.0, 0.0);
+            debugPrintf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n", 150.0, 0.0, 0.0);
             lastmachinestatepid = machinestate;
         }
 
@@ -2300,7 +2328,7 @@ void looppid() {
         }
 
         if (lastmachinestatepid != machinestate) {
-            Serial.printf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n", aggbKp, aggbKi, aggbKd);
+            debugPrintf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n", aggbKp, aggbKi, aggbKd);
             lastmachinestatepid = machinestate;
         }
 
