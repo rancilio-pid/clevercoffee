@@ -238,7 +238,7 @@ double aggbTv = AGGBTV;
 
 double aggbKd = aggbTv * aggbKp;
 double brewtimersoftware = BREW_SW_TIMER; // 20-5 for detection
-double brewboarder = BREWDETECTIONLIMIT;  // brew detection limit
+double brewsensitivity = BREWSENSITIVITY;  // brew detection limit
 const int PonE = PONE;
 
 // Brewing, 1 = Normale Prefinfusion , 2 = Scale & Shottimer = 2
@@ -345,7 +345,7 @@ SysPara<double> sysParaPidTvBd(&aggbTv, 0, 999, STO_ITEM_PID_TV_BD);
 SysPara<double> sysParaBrewSetPoint(&BrewSetPoint, 20, 105, STO_ITEM_BREW_SETPOINT);
 SysPara<double> sysParaBrewTime(&brewtime, 0, 60, STO_ITEM_BREW_TIME);
 SysPara<double> sysParaBrewSwTimer(&brewtimersoftware, 0, 999, STO_ITEM_BREW_SW_TIMER);
-SysPara<double> sysParaBrewThresh(&brewboarder, 0, 999, STO_ITEM_BD_THRESHOLD);
+SysPara<double> sysParaBrewThresh(&brewsensitivity, 0, 999, STO_ITEM_BD_THRESHOLD);
 SysPara<double> sysParaPreInfTime(&preinfusion, 0, 10, STO_ITEM_PRE_INFUSION_TIME);
 SysPara<double> sysParaPreInfPause(&preinfusionpause, 0, 20, STO_ITEM_PRE_INFUSION_PAUSE);
 SysPara<double> sysParaWeightSetPoint(&weightSetpoint, 0, 500, STO_ITEM_WEIGHTSETPOINT);
@@ -402,7 +402,7 @@ std::vector<editable_t> editableVars = {
     {"PID_BD_TN", "BD I", kDouble, (void *)&aggbTn},
     {"PID_BD_TV", "BD D", kDouble, (void *)&aggbTv},
     {"PID_BD_TIMER", "PID BD Time (s)", kDouble, (void *)&brewtimersoftware},
-    {"PID_BD_BREWBOARDER", "PID BD Sensitivity", kDouble, (void *)&brewboarder},
+    {"PID_BD_BREWSENSITIVITY", "PID BD Sensitivity", kDouble, (void *)&brewsensitivity},
     {"START_KP", "Start P", kDouble, (void *)&startKp},
     {"START_TN", "Start I", kDouble, (void *)&startTn},
     {"STEAM_MODE", "Steam Mode", rInteger, (void *)&SteamON},
@@ -540,7 +540,7 @@ BLYNK_WRITE(V32) { aggbTv = param.asDouble(); }
 
 BLYNK_WRITE(V33) { brewtimersoftware = param.asDouble(); }
 
-BLYNK_WRITE(V34) { brewboarder = param.asDouble(); }
+BLYNK_WRITE(V34) { brewsensitivity = param.asDouble(); }
 
 BLYNK_WRITE(V40) { backflushON = param.asInt(); }
 
@@ -976,7 +976,7 @@ void sendToBlynkMQTT() {
  * @brief Brewdetection
  */
 void brewdetection() {
-    if (brewboarder == 0) return;  // abort brewdetection if deactivated
+    if (brewsensitivity == 0) return;  // abort brewdetection if deactivated
 
     // Brew detecion: 1 = software solution, 2 = hardware, 3 = voltage sensor
     if (Brewdetection == 1) {
@@ -1021,13 +1021,13 @@ void brewdetection() {
     // Activate brew detection
     if (Brewdetection == 1) {  // SW BD
         // BD PID only +/- 4 Grad Celsius, no detection if HW was active
-        if (heatrateaverage <= -brewboarder && timerBrewdetection == 0 && (fabs(Input - BrewSetPoint) < 2)) {
+        if (heatrateaverage <= -brewsensitivity && timerBrewdetection == 0 && (fabs(Input - BrewSetPoint) < 2)) {
             debugPrintln("SW Brew detected");
             timeBrewdetection = millis();
             timerBrewdetection = 1;
         }
     } else if (Brewdetection == 2) {  // HW BD
-        if (brewcounter > 10 && brewDetected == 0 && brewboarder != 0) {
+        if (brewcounter > 10 && brewDetected == 0 && brewsensitivity != 0) {
             debugPrintln("HW Brew detected");
             timeBrewdetection = millis();
             timerBrewdetection = 1;
@@ -2500,7 +2500,7 @@ void writeSysParamsToMQTT(void) {
 
             //BD Parameter
             mqtt_publish("BrewTimer", number2string(brewtimersoftware));
-            mqtt_publish("BrewLimit", number2string(brewboarder));
+            mqtt_publish("BrewLimit", number2string(brewsensitivity));
 
             #if (BREWMODE == 2)
                 mqtt_publish("weightSetpoint(g)", number2string(weightSetpoint));

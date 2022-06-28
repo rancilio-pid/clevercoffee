@@ -82,7 +82,7 @@ static const sto_data_t itemDefaults PROGMEM = {
     {0xFF, 0xFF},                             // free to use
     BREW_SW_TIMER,                            // STO_ITEM_BREW_SW_TIMER
     {0xFF, 0xFF},                             // free to use
-    BREWDETECTIONLIMIT,                       // STO_ITEM_BD_THRESHOLD
+    BREWSENSITIVITY,                          // STO_ITEM_BD_THRESHOLD
     {0xFF, 0xFF},                             // free to use
     STARTKP,                                  // STO_ITEM_PID_KP_START
     {0xFF, 0xFF},                             // free to use
