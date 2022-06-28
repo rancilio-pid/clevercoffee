@@ -35,6 +35,7 @@ typedef enum
   STO_ITEM_PID_ON,                  // PID on/off state
   STO_ITEM_WEIGHTSETPOINT,          // Brewweight setpoint
   STO_ITEM_PID_KP_STEAM,            // PID P part at steam phase
+  STO_ITEM_PID_I_MAX_REGULAR,       // PID Integrator upper limit
 
   /* WHEN ADDING NEW ITEMS FOLLOWING HAS TO BE UPDATED:
    * - storage structure:  sto_data_t

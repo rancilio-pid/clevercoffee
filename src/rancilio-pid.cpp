@@ -266,6 +266,7 @@ int SteamFirstON = 0;
 double aggKp = AGGKP;
 double aggTn = AGGTN;
 double aggTv = AGGTV;
+double aggIMax = AGGIMAX;
 double startKp = STARTKP;
 double startTn = STARTTN;
 double steamKp = STEAMKP;
@@ -333,6 +334,7 @@ SysPara<double> sysParaPidTnStart(&startTn, 0, 999, STO_ITEM_PID_TN_START);
 SysPara<double> sysParaPidKpReg(&aggKp, 0, 200, STO_ITEM_PID_KP_REGULAR);
 SysPara<double> sysParaPidTnReg(&aggTn, 0, 999, STO_ITEM_PID_TN_REGULAR);
 SysPara<double> sysParaPidTvReg(&aggTv, 0, 999, STO_ITEM_PID_TV_REGULAR);
+SysPara<double> sysParaPidIMaxReg(&aggIMax, 0, 999, STO_ITEM_PID_I_MAX_REGULAR);
 SysPara<double> sysParaPidKpBd(&aggbKp, 0, 200, STO_ITEM_PID_KP_BD);
 SysPara<double> sysParaPidTnBd(&aggbTn, 0, 999, STO_ITEM_PID_TN_BD);
 SysPara<double> sysParaPidTvBd(&aggbTv, 0, 999, STO_ITEM_PID_TV_BD);
@@ -371,6 +373,7 @@ std::vector<mqttVars_t> mqttVars = {
     {"aggKp", tDouble, 0, 100, (void *)&aggKp},
     {"aggTn", tDouble, 0, 999, (void *)&aggTn},
     {"aggTv", tDouble, 0, 999, (void *)&aggTv},
+    {"aggIMax", tDouble, 0, 999, (void *)&aggIMax},
     {"aggbKp", tDouble, 0, 100, (void *)&aggbKp},
     {"aggbTn", tDouble, 0, 999, (void *)&aggbTn},
     {"aggbTv", tDouble, 0, 999, (void *)&aggbTv},
@@ -385,6 +388,7 @@ std::vector<editable_t> editableVars = {
     {"PID_KP", "PID P", kDouble, (void *)&aggKp},
     {"PID_TN", "PID I", kDouble, (void *)&aggTn},
     {"PID_TV", "PID D", kDouble, (void *)&aggTv},
+    {"PID_I_MAX", "PID Integrator Max", kDouble, (void *)&aggIMax},
     {"TEMP", "Temperature", kDouble, (void *)&Input},
     {"BREW_SET_POINT", "Set point (°C)", kDouble, (void *)&BrewSetPoint},
     {"BREW_TIME", "Brew Time (s)", kDouble, (void *)&brewtime},
@@ -1938,7 +1942,8 @@ void setup() {
     // Initialize PID controller
     bPID.SetSampleTime(windowSize);
     bPID.SetOutputLimits(0, windowSize);
-    bPID.SetIntegratorLimits(0, 50);
+    bPID.SetIntegratorLimits(0, AGGIMAX);
+    bPID.SetSmoothingFactor(0.85);
     bPID.SetMode(AUTOMATIC);
 
     // Temp sensor
@@ -2232,6 +2237,7 @@ void looppid() {
 
         aggKi = aggTn;
         aggKd = aggTv;
+        bPID.SetIntegratorLimits(0, aggIMax);
 
         if (lastmachinestatepid != machinestate) {
             Serial.printf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n", aggKp, aggKi, aggKd);
@@ -2338,6 +2344,7 @@ int readSysParamsFromStorage(void) {
     if (sysParaPidKpReg.getStorage() != 0) return -1;
     if (sysParaPidTnReg.getStorage() != 0) return -1;
     if (sysParaPidTvReg.getStorage() != 0) return -1;
+    if (sysParaPidIMaxReg.getStorage() != 0) return -1;
     if (sysParaPidKpBd.getStorage() != 0) return -1;
     if (sysParaPidTnBd.getStorage() != 0) return -1;
     if (sysParaPidTvBd.getStorage() != 0) return -1;
@@ -2365,6 +2372,7 @@ int writeSysParamsToStorage(void) {
     if (sysParaPidKpReg.setStorage() != 0) return -1;
     if (sysParaPidTnReg.setStorage() != 0) return -1;
     if (sysParaPidTvReg.setStorage() != 0) return -1;
+    if (sysParaPidIMaxReg.setStorage() != 0) return -1;
     if (sysParaPidKpBd.setStorage() != 0) return -1;
     if (sysParaPidTnBd.setStorage() != 0) return -1;
     if (sysParaPidTvBd.setStorage() != 0) return -1;
@@ -2443,6 +2451,7 @@ void writeSysParamsToMQTT(void) {
             mqtt_publish("aggKp", number2string(aggKp));
             mqtt_publish("aggTn", number2string(aggTn));
             mqtt_publish("aggTv", number2string(aggTv));
+            mqtt_publish("aggIMax", number2string(aggIMax));
 
             // BD PID
             mqtt_publish("aggbKp", number2string(aggbKp));
