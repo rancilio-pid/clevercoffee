@@ -292,7 +292,7 @@ PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, PonE, DIRECT);
 const unsigned long intervalpressure = 200; 
 const unsigned int PressureWindowSize = 200;
 double OutputDimmer;
-double pressuresetPoint;
+double pressuresetPoint = 6;
 unsigned int DimmerValue = OutputDimmer;
 int i;
 
@@ -612,8 +612,6 @@ BLYNK_WRITE(V40) { backflushON = param.asInt(); }
                 (fullScale - offset);   // pressure conversion and unit
                                         // conversion [psi] -> [bar]
             inputPressureFilter = filter(inputPressure);
-
-            Serial.printf("pressure raw / filterd: %f / %f\n", inputPressure, inputPressureFilter);
         }
     }
 #endif
@@ -875,7 +873,12 @@ void sendInflux() {
         influxSensor.addField("Kp2", pressurePID.GetKp());
         influxSensor.addField("Ki2", pressurePID.GetKi());
         influxSensor.addField("Kd2", pressurePID.GetKd());
+        influxSensor.addField("PressurePID", pressurePID.GetMode());
         influxSensor.addField("DimmerValue", dimmer.getPower());
+        influxSensor.addField("DimmerMode", dimmer.getMode());
+        influxSensor.addField("DimmerState", dimmer.getState());
+        influxSensor.addField("OutputDimmer", OutputDimmer);
+
 
         byte mac[6];
         WiFi.macAddress(mac);
@@ -2014,6 +2017,7 @@ void setup() {
     pressurePID.SetSampleTime(PressureWindowSize);
     pressurePID.SetOutputLimits(1, 99);
     pressurePID.SetMode(MANUAL);
+    pressurePID.SetTunings(aggKp2, aggKd2, aggKi2);
     
     // Initialize dimmer    
     dimmer.begin(NORMAL_MODE, ON); //dimmer initialisation: name.begin(MODE, STATE)
@@ -2175,6 +2179,7 @@ void looppid() {
     refreshTemp();        // update temperature values
     testEmergencyStop();  // test if temp is too high
     bPID.Compute();
+    pressurePID.Compute();
 
     if ((millis() - lastTempEvent) > tempEventInterval) {
         sendTempEvent(Input, BrewSetPoint, Output);
