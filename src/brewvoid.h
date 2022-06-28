@@ -469,6 +469,10 @@ void brew() {
         checkbrewswitch();
         unsigned long currentMillistemp = millis();
 
+        if (brewcounter > 10 && brewcounter < 43) {
+            brewTime = currentMillistemp - startingTime;
+        }
+
         if (brewswitch == LOW && brewcounter > 10) {
             // abort function for state machine from every state
             brewcounter = 43;
@@ -487,15 +491,30 @@ void brew() {
             case 10:  // waiting step for brew switch turning on
                 if (brewswitch == HIGH && backflushState == 10 && backflushON == 0 && brewswitchWasOFF) {
                     startingTime = millis();
-                    brewcounter = 20;
+                    brewcounter = 40;
 
                     if (preinfusionpause == 0 || preinfusion == 0) {
-                        brewcounter = 40;
+                        brewcounter = 20;
                     }
 
                     kaltstart = false;  // force reset kaltstart if shot is pulled
                 } else {
                     backflush();
+                }
+
+                break;
+            case 20:  // preinfusioon
+                Serial.println("Preinfusion");
+                digitalWrite(PINVALVE, relayON);
+                digitalWrite(PINPUMP, relayON);
+                dimmer.setPower(20);
+                brewcounter = 21;
+
+                break;
+
+            case 21:  // waiting time preinfusion
+                if (brewTime > (preinfusion * 1000)) {
+                    brewcounter = 40;
                 }
 
                 break;
@@ -505,7 +524,8 @@ void brew() {
                 digitalWrite(PINVALVE, relayON);
                 digitalWrite(PINPUMP, relayON);
                 pressurePID.SetMode(AUTOMATIC);
-                dimmer.setPower(DimmerValue);
+                pressurePID.Compute();
+                dimmer.setPower(OutputDimmer);
                 brewcounter = 41;
 
                 break;
@@ -532,8 +552,11 @@ void brew() {
 
             case 43:  // waiting for brewswitch off position
                 if (brewswitch == LOW) {
+                    pressurePID.SetMode(MANUAL);
+                    dimmer.setPower(0);
                     digitalWrite(PINVALVE, relayOFF);
                     digitalWrite(PINPUMP, relayOFF);
+                    
 
                     // disarmed button
                     currentMillistemp = 0;
