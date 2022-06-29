@@ -185,7 +185,7 @@ void looppid();
 void checkForRemoteSerialClients();
 void debugPrint(const char *message);
 void debugPrintln(const char *message);
-void debugPrintf(const char *format, ...);
+size_t debugPrintf(const char *format, ...);
 void initSteamQM();
 boolean checkSteamOffQM();
 void writeSysParamsToBlynk(void);
@@ -1415,7 +1415,7 @@ void machinestatevoid() {
             break;
 
         case kPidNormal:
-            brewdetection();  // if brew detected, set PID values
+            brewdetection();     // if brew detected, set PID values
 
             if ((brewTime > 0 && ONLYPID == 1) ||  // brewTime with Only PID
                 (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42)) {
@@ -2053,14 +2053,36 @@ void debugPrint(const char *message) {
     }
 }
 
-void debugPrintf(const char *format, ...) {
+size_t debugPrintf(const char *format, ...) {
     va_list arg;
     va_start(arg, format);
-    if (RemoteSerial.connected()) {
-        RemoteSerial.printf(format, arg);
-    } else {
-        Serial.printf(format, arg);
+    char temp[64];  //allocate a temp buffer
+    char* buffer = temp;
+    size_t len = vsnprintf(temp, sizeof(temp), format, arg);
+    va_end(arg);
+
+    //if temp buffer was too short, create new one with enough room (inludes previous bytes)
+    if (len > sizeof(temp) - 1) {
+        buffer = new char[len + 1];
+        if (!buffer) {
+            return 0;
+        }
+        va_start(arg, format);
+        vsnprintf(buffer, len + 1, format, arg);
+        va_end(arg);
     }
+    //len = write((const uint8_t*) buffer, len);
+
+    if (RemoteSerial.connected()) {
+        len = RemoteSerial.print(buffer);
+    } else {
+        len = Serial.print(buffer);
+    }
+
+    if (buffer != temp) {
+        delete[] buffer;
+    }
+    return len;
 }
 
 /**
