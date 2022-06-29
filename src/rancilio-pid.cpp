@@ -1950,7 +1950,7 @@ void setup() {
     bPID.SetSampleTime(windowSize);
     bPID.SetOutputLimits(0, windowSize);
     bPID.SetIntegratorLimits(0, AGGIMAX);
-    bPID.SetSmoothingFactor(0.85);
+    bPID.SetSmoothingFactor(0.75);
     bPID.SetMode(AUTOMATIC);
 
     // Temp sensor
@@ -2181,22 +2181,26 @@ void looppid() {
         sendTempEvent(Input, BrewSetPoint, Output);
         lastTempEvent = millis();
 
-        debugPrintf("Current PID mode: %s\n", bPID.GetPonE() ? "PonE" : "PonM");
+        #if VERBOSE
+        if (pidON) {
+            debugPrintf("Current PID mode: %s\n", bPID.GetPonE() ? "PonE" : "PonM");
 
-        //P-Part
-        debugPrintf("Current PID input error: %f\n", bPID.GetInputError());
-        debugPrintf("Current PID P part: %f\n", bPID.GetLastPPart());
-        debugPrintf("Current PID kP: %f\n", bPID.GetKp());
-        //I-Part
-        debugPrintf("Current PID I sum: %f\n", bPID.GetLastIPart());
-        debugPrintf("Current PID kI: %f\n", bPID.GetKi());
-        //D-Part
-        debugPrintf("Current PID diff'd input: %f\n", bPID.GetDeltaInput());
-        debugPrintf("Current PID D part: %f\n", bPID.GetLastDPart());
-        debugPrintf("Current PID kD: %f\n", bPID.GetKd());
+            //P-Part
+            debugPrintf("Current PID input error: %f\n", bPID.GetInputError());
+            debugPrintf("Current PID P part: %f\n", bPID.GetLastPPart());
+            debugPrintf("Current PID kP: %f\n", bPID.GetKp());
+            //I-Part
+            debugPrintf("Current PID I sum: %f\n", bPID.GetLastIPart());
+            debugPrintf("Current PID kI: %f\n", bPID.GetKi());
+            //D-Part
+            debugPrintf("Current PID diff'd input: %f\n", bPID.GetDeltaInput());
+            debugPrintf("Current PID D part: %f\n", bPID.GetLastDPart());
+            debugPrintf("Current PID kD: %f\n", bPID.GetKd());
 
-        //Combined PID output
-        debugPrintf("Current PID Output: %f\n\n", Output);        
+            //Combined PID output
+            debugPrintf("Current PID Output: %f\n\n", Output);
+        }  
+        #endif
     }
 
     #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
