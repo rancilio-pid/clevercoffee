@@ -2015,7 +2015,7 @@ void setup() {
 
     // Initialize pressuePID
     pressurePID.SetSampleTime(PressureWindowSize);
-    pressurePID.SetOutputLimits(1, 99);
+    pressurePID.SetOutputLimits(0, 100);
     pressurePID.SetMode(MANUAL);
     pressurePID.SetTunings(aggKp2, aggKd2, aggKi2);
     
