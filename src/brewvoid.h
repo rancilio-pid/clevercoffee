@@ -507,6 +507,7 @@ void brew() {
                 Serial.println("Preinfusion");
                 digitalWrite(PINVALVE, relayON);
                 digitalWrite(PINPUMP, relayON);
+                dimmer.setState(1);
                 dimmer.setPower(20);
                 brewcounter = 21;
 
@@ -525,6 +526,7 @@ void brew() {
                 digitalWrite(PINPUMP, relayON);
                 pressurePID.SetMode(AUTOMATIC);
                 pressurePID.Compute();
+                dimmer.setState(1);
                 dimmer.setPower(OutputDimmer);
                 brewcounter = 41;
 
