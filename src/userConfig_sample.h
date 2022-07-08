@@ -123,6 +123,7 @@ enum MACHINE {
 
 // System Parameters (default values)
 #define SETPOINT 95                // brew temperatur setpoint
+#define TEMPOFFSET 0               // brew temperatur setpoint
 #define STEAMSETPOINT 120          // steam temperatur setpoint
 #define BREWSENSITIVITY 150        // brew detection sensitivity, be careful: if too low, then there is the risk of wrong brew detection and rising temperature
 #define AGGKP 65                   // PID Kp (regular phase)

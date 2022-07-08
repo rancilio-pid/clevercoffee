@@ -263,6 +263,7 @@ double setPointTemp;
 double previousInput = 0;
 
 double BrewSetPoint = SETPOINT;
+double BrewTempOffset = TEMPOFFSET;
 double setPoint = BrewSetPoint;
 double SteamSetPoint = STEAMSETPOINT;
 int SteamON = 0;
@@ -343,6 +344,7 @@ SysPara<double> sysParaPidKpBd(&aggbKp, 0, 200, STO_ITEM_PID_KP_BD);
 SysPara<double> sysParaPidTnBd(&aggbTn, 0, 999, STO_ITEM_PID_TN_BD);
 SysPara<double> sysParaPidTvBd(&aggbTv, 0, 999, STO_ITEM_PID_TV_BD);
 SysPara<double> sysParaBrewSetPoint(&BrewSetPoint, 20, 105, STO_ITEM_BREW_SETPOINT);
+SysPara<double> sysParaTempOffset(&BrewTempOffset, 0, 15, STO_ITEM_BREW_TEMP_OFFSET);
 SysPara<double> sysParaBrewTime(&brewtime, 0, 60, STO_ITEM_BREW_TIME);
 SysPara<double> sysParaBrewSwTimer(&brewtimersoftware, 0, 999, STO_ITEM_BREW_SW_TIMER);
 SysPara<double> sysParaBrewThresh(&brewsensitivity, 0, 999, STO_ITEM_BD_THRESHOLD);
@@ -367,7 +369,8 @@ struct mqttVars_t {
 };
 
 std::vector<mqttVars_t> mqttVars = {
-    {"BrewSetPoint", tDouble, 20, 105, (void *)&BrewSetPoint},
+    {"BrewSetPoint", tDouble, 20, 105, (void *)&BrewSetPoint},    
+    {"BrewTempOffset", tDouble, 0, 15, (void *)&BrewTempOffset},    
     {"brewtime", tDouble, 0, 60, (void *)&brewtime},
     {"preinfusion", tDouble, 0, 10, (void *)&preinfusion},
     {"preinfusionpause", tDouble, 0, 20, (void *)&preinfusionpause},
@@ -395,6 +398,7 @@ std::vector<editable_t> editableVars = {
     {"PID_I_MAX", "PID Integrator Max", kDouble, (void *)&aggIMax},
     {"TEMP", "Temperature", kDouble, (void *)&Input},
     {"BREW_SET_POINT", "Set point (°C)", kDouble, (void *)&BrewSetPoint},
+    {"BREW_TEMP_OFFSET", "Offset (°C)", kDouble, (void *)&BrewTempOffset},
     {"BREW_TIME", "Brew Time (s)", kDouble, (void *)&brewtime},
     {"BREW_PREINFUSION", "Preinfusion Time (s)", kDouble, (void *)&preinfusion},
     {"BREW_PREINFUSUINPAUSE", "Pause (s)", kDouble, (void *)&preinfusionpause},
@@ -677,8 +681,8 @@ boolean checkSensor(float tempInput) {
  *      If the value is not valid, new data is not stored.
  */
 void refreshTemp() {
-  unsigned long currentMillistemp = millis();
-  previousInput = Input;
+    unsigned long currentMillistemp = millis();
+    previousInput = Input;
 
     if (TempSensor == 1) {
         if (currentMillistemp - previousMillistemp >= intervaltempmesds18b20) {
@@ -689,7 +693,7 @@ void refreshTemp() {
                 return; // if sensor data is not valid, abort function; Sensor must
                         // be read at least one time at system startup
 
-            Input = sensors.getTempCByIndex(0);
+            Input = sensors.getTempCByIndex(0) - BrewTempOffset;
 
             if (Brewdetection != 0) {
                 movAvg();
@@ -718,11 +722,11 @@ void refreshTemp() {
             Temperature_C = Sensor2.getTemp();
         #endif
         // Temperature_C = 94; test temp
-        if (!checkSensor(Temperature_C) && firstreading == 0)
+        if (!checkSensor(Temperature_C - BrewTempOffset) && firstreading == 0)
             return; // if sensor data is not valid, abort function; Sensor must
                     // be read at least one time at system startup
 
-            Input = Temperature_C;
+            Input = Temperature_C - BrewTempOffset;
 
             if (Brewdetection != 0) {
                 movAvg();
@@ -1450,8 +1454,7 @@ void machinestatevoid() {
             // Output during the reference of brew time, temp and heatrateaverage
             if (logbrew.check())
                 debugPrintf("(tB,T,hra) --> %5.2f %6.2f %8.2f\n",
-                            (double)(millis() - startingTime) / 1000, Input,
-                            heatrateaverage);
+                            (double)(millis() - startingTime) / 1000, Input, heatrateaverage);
 
             if ((brewTime > 34 * 1000 && Brewdetection == 1 &&
                 ONLYPID == 1) ||  // 35 sec later and BD PID active SW Solution
@@ -1683,8 +1686,7 @@ void debugVerboseOutput() {
         debugPrintf(
             "Tsoll=%5.1f  Tist=%5.1f Machinestate=%2i KP=%4.2f "
             "KI=%4.2f KD=%4.2f\n",
-            BrewSetPoint, Input, machinestate, bPID.GetKp(), bPID.GetKi(),
-            bPID.GetKd());
+            setPoint, Input, machinestate, bPID.GetKp(), bPID.GetKi(), bPID.GetKd());
     }
 }
 
@@ -1960,7 +1962,7 @@ void setup() {
         sensors.getAddress(sensorDeviceAddress, 0);
         sensors.setResolution(sensorDeviceAddress, 10);
         sensors.requestTemperatures();
-        Input = sensors.getTempCByIndex(0);
+        Input = sensors.getTempCByIndex(0) - BrewTempOffset;
     }
 
     if (TempSensor == 2) {
@@ -1968,11 +1970,11 @@ void setup() {
 
         #if (ONE_WIRE_BUS == 16 && defined(ESP8266))
             Sensor1.getTemperature(&temperature);
-            Input = Sensor1.calc_Celsius(&temperature);
+            Input = Sensor1.calc_Celsius(&temperature) - BrewTempOffset;
         #endif
 
         #if ((ONE_WIRE_BUS != 16 && defined(ESP8266)) || defined(ESP32))
-            Input = Sensor2.getTemp();
+            Input = Sensor2.getTemp() - BrewTempOffset;
         #endif
     }
 
@@ -2179,6 +2181,7 @@ void looppid() {
     bPID.Compute();       //the variable Output now has new values from PID (will be written to heater pin in ISR.h)
 
     if ((millis() - lastTempEvent) > tempEventInterval) {
+        //send temperatures to website endpoint
         sendTempEvent(Input, BrewSetPoint, Output);
         lastTempEvent = millis();
 
@@ -2400,6 +2403,7 @@ int readSysParamsFromStorage(void) {
     if (sysParaPidTnBd.getStorage() != 0) return -1;
     if (sysParaPidTvBd.getStorage() != 0) return -1;
     if (sysParaBrewSetPoint.getStorage() != 0) return -1;
+    if (sysParaTempOffset.getStorage() != 0) return -1;
     if (sysParaBrewTime.getStorage() != 0) return -1;
     if (sysParaBrewSwTimer.getStorage() != 0) return -1;
     if (sysParaBrewThresh.getStorage() != 0) return -1;
@@ -2428,6 +2432,7 @@ int writeSysParamsToStorage(void) {
     if (sysParaPidTnBd.setStorage() != 0) return -1;
     if (sysParaPidTvBd.setStorage() != 0) return -1;
     if (sysParaBrewSetPoint.setStorage() != 0) return -1;
+    if (sysParaTempOffset.setStorage() != 0) return -1;
     if (sysParaBrewTime.setStorage() != 0) return -1;
     if (sysParaBrewSwTimer.setStorage() != 0) return -1;
     if (sysParaBrewThresh.setStorage() != 0) return -1;
@@ -2486,6 +2491,7 @@ void writeSysParamsToMQTT(void) {
             mqtt_publish("temperature", number2string(Input));
             mqtt_publish("setPoint", number2string(setPoint));
             mqtt_publish("BrewSetPoint", number2string(BrewSetPoint));
+            mqtt_publish("BrewTempOffset", number2string(BrewTempOffset));
             mqtt_publish("SteamSetPoint", number2string(SteamSetPoint));
             mqtt_publish("HeaterPower", number2string(Output));
             mqtt_publish("currentKp", number2string(bPID.GetKp()));

@@ -25,7 +25,8 @@ typedef struct __attribute__((packed)) {
     double pidIMaxRegular;
     uint8_t freeToUse2;
     double brewSetpoint;
-    uint8_t freeToUse3[2];
+    double brewTempOffset;
+    uint8_t freeToUse3;
     double brewTimeMs;
     uint8_t freeToUse4[2];
     double preInfusionTimeMs;
@@ -52,7 +53,6 @@ typedef struct __attribute__((packed)) {
     char wifiPassword[25 + 1];
     double weightsetpoint;
     double steamkp;
-    double pidIMax;
 } sto_data_t;
 
 
@@ -67,7 +67,8 @@ static const sto_data_t itemDefaults PROGMEM = {
     AGGIMAX,                  // STO_ITEM_PID_I_MAX_REGULAR
     0xFF,                     // free to use
     SETPOINT,                 // STO_ITEM_BREW_SETPOINT
-    {0xFF, 0xFF},             // free to use
+    TEMPOFFSET,             
+    0xFF,                     // free to use
     BREW_TIME,                // STO_ITEM_BREW_TIME
     {0xFF, 0xFF},             // free to use
     PRE_INFUSION_TIME,        // STO_ITEM_PRE_INFUSION_TIME
@@ -137,6 +138,11 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
         case STO_ITEM_BREW_SETPOINT:
             addr = offsetof(sto_data_t, brewSetpoint);
             size = STRUCT_MEMBER_SIZE(sto_data_t, brewSetpoint);
+            break;
+
+        case STO_ITEM_BREW_TEMP_OFFSET:
+            addr = offsetof(sto_data_t, brewTempOffset);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, brewTempOffset);
             break;
 
         case STO_ITEM_BREW_TIME:
