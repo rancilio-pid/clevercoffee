@@ -97,7 +97,7 @@ String generateForm(String varName) {
 
         switch (e.type) {
             case kDouble:
-                result += "<input class=\"form-control form-control-lg\" type=\"number\" step=\"0.01\"";
+                result += "<input class=\"form-control form-control-lg\" type=\"number\" step=\"0.1\"";
                 currVal = String(*(double *)e.ptr);
                 break;
 

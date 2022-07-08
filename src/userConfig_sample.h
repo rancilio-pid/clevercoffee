@@ -126,11 +126,11 @@ enum MACHINE {
 #define STEAMSETPOINT 120          // steam temperatur setpoint
 #define BREWSENSITIVITY 150        // brew detection sensitivity, be careful: if too low, then there is the risk of wrong brew detection and rising temperature
 #define AGGKP 65                   // PID Kp (regular phase)
-#define AGGTN 1.25                 // PID Ki (was Tn) (regular phase)
-#define AGGTV 999                  // PID Kd (was Tv) (regular phase)
-#define AGGIMAX 50                 // PID Kd (was Tv) (regular phase)
+#define AGGTN 52                   // PID Tn (regular phase)
+#define AGGTV 11.538               // PID Tv (regular phase)
+#define AGGIMAX 50                 // PID Integrator Max (regular phase)
 #define STARTKP 50                 // PID Kp (coldstart phase)
-#define STARTTN 150                // PID Tn (coldstart phase)
+#define STARTTN 0.5                // PID Tn (coldstart phase)
 #define STEAMKP 150                // PID kp (steam phase)
 #define AGGBKP 50                  // PID Kp (brew detection phase)
 #define AGGBTN 0                   // PID Tn (brew detection phase)

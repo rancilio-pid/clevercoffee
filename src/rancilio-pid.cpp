@@ -390,8 +390,8 @@ std::vector<mqttVars_t> mqttVars = {
 std::vector<editable_t> editableVars = {
     {"PID_ON", "Enable PID Controller", kUInt8, (void *)&pidON},
     {"PID_KP", "PID P", kDouble, (void *)&aggKp},
-    {"PID_TN", "PID I", kDouble, (void *)&aggTn},
-    {"PID_TV", "PID D", kDouble, (void *)&aggTv},
+    {"PID_TN", "PID Tn (=Kp/Ki)", kDouble, (void *)&aggTn},
+    {"PID_TV", "PID Tv (=Kd/Kp)", kDouble, (void *)&aggTv},
     {"PID_I_MAX", "PID Integrator Max", kDouble, (void *)&aggIMax},
     {"TEMP", "Temperature", kDouble, (void *)&Input},
     {"BREW_SET_POINT", "Set point (°C)", kDouble, (void *)&BrewSetPoint},
@@ -399,8 +399,8 @@ std::vector<editable_t> editableVars = {
     {"BREW_PREINFUSION", "Preinfusion Time (s)", kDouble, (void *)&preinfusion},
     {"BREW_PREINFUSUINPAUSE", "Pause (s)", kDouble, (void *)&preinfusionpause},
     {"PID_BD_KP", "BD P", kDouble, (void *)&aggbKp},
-    {"PID_BD_TN", "BD I", kDouble, (void *)&aggbTn},
-    {"PID_BD_TV", "BD D", kDouble, (void *)&aggbTv},
+    {"PID_BD_TN", "BD Tn", kDouble, (void *)&aggbTn},
+    {"PID_BD_TV", "BD Tv", kDouble, (void *)&aggbTv},
     {"PID_BD_TIMER", "PID BD Time (s)", kDouble, (void *)&brewtimersoftware},
     {"PID_BD_BREWSENSITIVITY", "PID BD Sensitivity", kDouble, (void *)&brewsensitivity},
     {"START_KP", "Start P", kDouble, (void *)&startKp},
@@ -1346,8 +1346,9 @@ void machinestatevoid() {
                         break;
                     }
 
-                    if (machinestatecoldmillis + 5 * 1000 < millis()) {
-                        // 10 sec Input above BrewSetPoint, no set new state
+                    if (machinestatecoldmillis + 10 * 1000 <
+                        millis())  // 10 sec Input above BrewSetPoint, no set new state
+                    {
                         machinestate = kSetPointNegative;
                         debugPrintln("5 sec Input >= (BrewSetPoint-1) finished, switch to state 19");
                     }
@@ -2278,11 +2279,7 @@ void looppid() {
     }
     #endif
 
-    // normal PID to keep temperature after cold start
-    if (machinestate == kInit || machinestate == kColdStart || machinestate == kSetPointNegative ||
-        machinestate == kPidNormal)
-    {
-        /*
+    if (machinestate == kPidNormal) {
         // Prevent overwriting of brewdetection values
         // calc ki, kd
         if (aggTn != 0) {
@@ -2292,10 +2289,7 @@ void looppid() {
         }
 
         aggKd = aggTv * aggKp;
-        */
 
-        aggKi = aggTn;
-        aggKd = aggTv;
         bPID.SetIntegratorLimits(0, aggIMax);
 
         if (lastmachinestatepid != machinestate) {
@@ -2309,7 +2303,6 @@ void looppid() {
 
     // BD PID
     if (machinestate >= 30 && machinestate <= 35) {
-        /*
         // calc ki, kd
         if (aggbTn != 0) {
             aggbKi = aggbKp / aggbTn;
@@ -2318,7 +2311,6 @@ void looppid() {
         }
 
         aggbKd = aggbTv * aggbKp;
-        */
 
         if (lastmachinestatepid != machinestate) {
             debugPrintf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n", aggbKp, aggbKi, aggbKd);
