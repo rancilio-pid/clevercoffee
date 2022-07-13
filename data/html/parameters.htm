@@ -14,10 +14,16 @@
                                 %VAR_EDIT_PID_ON%
                             </div>
                             <div class="mb-1">
+                                <p class="fw-bold">Parameters for cold start controller (PonM mode, <a href="http://brettbeauregard.com/blog/2017/06/introducing-proportional-on-measurement/">Details<a>)</p>
+                            </div>
+                            <div class="mb-1">
                                 %VAR_EDIT_START_KP%
                             </div>
                             <div class="mb-1">
                                 %VAR_EDIT_START_TN%
+                            </div>
+                            <div class="mb-1">
+                                <p class="fw-bold">Parameters for main PID controller (in P-Tn-Tv form, <a href="http://testcon.info/EN_BspPID-Regler.html#strukturen">Details<a>)</p>
                             </div>
                             <div class="mb-1">
                                 %VAR_EDIT_PID_KP%
@@ -27,6 +33,9 @@
                             </div>
                             <div class="mb-1">
                                 %VAR_EDIT_PID_TV%
+                            </div>
+                            <div class="mb-1">
+                               <p class="fw-bold">Internal integrator limit to prevent windup (Relates to the remaining output when the controller is at the setpoint)</p>
                             </div>
                             <div class="mb-1">
                                 %VAR_EDIT_PID_I_MAX%
