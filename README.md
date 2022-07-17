@@ -29,7 +29,7 @@ Ihr seid herzlich Willkommen uns gemeinsam bei der Mission zu besseren Espresso 
 ## Was nach einem Umbau möglich ist
  * **NEU** Eigene über den Node gehostet Webseite für die Einstellung der PID.
  * **NEU** Übergang vom Dampfmodus in den normalen Modus optimiert.
- * **NEU** MQTT (IoT) Suppprt, um alle wichtigen Parameter zu manipulieren. 
+ * **NEU** MQTT (IoT) Support, um alle wichtigen Parameter zu manipulieren. 
  * Automatischer Kaltstart für das perfekte Erreichen der Soll-Temperatur innerhalb von 8 bis 12 Minuten (je nach Maschine) 
  * Integration einer Waagefunktion. Dokumentation im Handbuch steht noch aus. 
  * Steammodus mit Displayausgabe und eigenen PID Regler und Temperatur (in der App unter Expertenmodus) 
