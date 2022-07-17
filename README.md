@@ -41,7 +41,7 @@ Ihr seid herzlich Willkommen uns gemeinsam bei der Mission zu besseren Espresso 
  * Support für Siliva E Maschinen: Trigger mit definierbaren Intervall für ein Relais zum Überbrücken der Eco-Funktion
  * Regelung der Brühtemperatur mit einer Genauigkeit von bis zu +/- 0,1°
  * Steuerung der Brühzeit inkl. Pre-Infusion in der Ausbaustufe „Vollausbau“ möglich
- * Bedienung über eine Smartphone-App (iOS & Android) via Blynk (Blynk ist leider abgekündigt, unterstützen wir aber weiter)
+ * Bedienung über eine Smartphone-App (iOS & Android) via Blynk (Blynk Server ist leider abgekündigt, unterstützen wir aber weiter)
  * Datenmonitoring über Grafana (webbasiert) 
  * Updates der PID-Software sind drahtlos über WLAN möglich
  * Unsere PID-Software ist OpenSource: für euch kostenfrei und auf persönliche Anforderungen anpassbar
