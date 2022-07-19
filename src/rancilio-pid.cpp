@@ -392,9 +392,9 @@ std::vector<mqttVars_t> mqttVars = {
 
 std::vector<editable_t> editableVars = {
     {"PID_ON", "Enable PID Controller", "", kUInt8, (void *)&pidON},
-    {"PID_KP", "PID P", "P parameter for main PID controller (in P-Tn-Tv form, <a href='http://testcon.info/EN_BspPID-Regler.html#strukturen'>Details<a>)", kDouble, (void *)&aggKp},
-    {"PID_TN", "PID Tn (=Kp/Ki)", "Tn parameter for main PID controller (in P-Tn-Tv form, <a href='http://testcon.info/EN_BspPID-Regler.html#strukturen'>Details<a>)", kDouble, (void *)&aggTn},
-    {"PID_TV", "PID Tv (=Kd/Kp)", "Tv parameter for main PID controller (in P-Tn-Tv form, <a href='http://testcon.info/EN_BspPID-Regler.html#strukturen'>Details<a>)", kDouble, (void *)&aggTv},
+    {"PID_KP", "PID P", "P parameter for main PID controller (in P-Tn-Tv form, <a href='http://testcon.info/EN_BspPID-Regler.html#strukturen' target='_blank'>Details<a>)", kDouble, (void *)&aggKp},
+    {"PID_TN", "PID Tn (=Kp/Ki)", "Tn parameter for main PID controller (in P-Tn-Tv form, <a href='http://testcon.info/EN_BspPID-Regler.html#strukturen' target='_blank'>Details<a>)", kDouble, (void *)&aggTn},
+    {"PID_TV", "PID Tv (=Kd/Kp)", "Tv parameter for main PID controller (in P-Tn-Tv form, <a href='http://testcon.info/EN_BspPID-Regler.html#strukturen' target='_blank'>Details<a>)", kDouble, (void *)&aggTv},
     {"PID_I_MAX", "PID Integrator Max", "Internal integrator limit to prevent windup (Relates to the remaining output when the controller is at the setpoint)", kDouble, (void *)&aggIMax},
     {"TEMP", "Temperature", "", kDouble, (void *)&Input},
     {"BREW_SET_POINT", "Set point (°C)", "", kDouble, (void *)&BrewSetPoint},
