@@ -39,6 +39,7 @@ enum EditableKind {
 struct editable_t {
     String templateString;
     String displayName;
+    String helpText;
     EditableKind type;
     void *ptr;  // TODO: there must be a tidier way to do this? could we use c++ templates?
 };
@@ -87,12 +88,17 @@ String generateForm(String varName) {
             continue;
         }
 
-        String result = "<label class=\"form-label\" for=\"var";
+        String result = "<label class=\"form-label me-1\" for=\"var";
         result += e.templateString;
         result += "\">";
         result += e.displayName;
-        result += "</label><br />";
-
+        result += "</label>";
+        if (!e.helpText.isEmpty()) {
+            result += "<a href=\"#\" role=\"button\" data-bs-toggle=\"popover\" data-bs-html=\"true\" data-bs-original-title=\"" +
+                    e.helpText + "\"><span class=\"fa fa-question-circle\"></span></a></br>";
+        } else {
+            result += "<br/>";
+        }
         String currVal;
 
         switch (e.type) {
