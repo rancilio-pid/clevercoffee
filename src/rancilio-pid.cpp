@@ -395,10 +395,10 @@ std::vector<editable_t> editableVars = {
     {"PID_KP", "PID P", "P parameter for main PID controller (in P-Tn-Tv form, <a href='http://testcon.info/EN_BspPID-Regler.html#strukturen' target='_blank'>Details<a>)", kDouble, (void *)&aggKp},
     {"PID_TN", "PID Tn (=Kp/Ki)", "Tn parameter for main PID controller (in P-Tn-Tv form, <a href='http://testcon.info/EN_BspPID-Regler.html#strukturen' target='_blank'>Details<a>)", kDouble, (void *)&aggTn},
     {"PID_TV", "PID Tv (=Kd/Kp)", "Tv parameter for main PID controller (in P-Tn-Tv form, <a href='http://testcon.info/EN_BspPID-Regler.html#strukturen' target='_blank'>Details<a>)", kDouble, (void *)&aggTv},
-    {"PID_I_MAX", "PID Integrator Max", "Internal integrator limit to prevent windup (Relates to the remaining output when the controller is at the setpoint)", kDouble, (void *)&aggIMax},
+    {"PID_I_MAX", "PID Integrator Max", "Internal integrator limit to prevent windup. This is usually equal to the output needed to hold the temperature after the setpoint has been reached.", kDouble, (void *)&aggIMax},
     {"TEMP", "Temperature", "", kDouble, (void *)&Input},
-    {"BREW_SET_POINT", "Set point (°C)", "", kDouble, (void *)&BrewSetPoint},
-    {"BREW_TEMP_OFFSET", "Offset (°C)", "Optional offset that is added to the user-visible setpoint. Can be used to compensate the average temperature loss between boiler and group so that the setpoint represents the approx. brew temperature.", kDouble, (void *)&BrewTempOffset}, {"BREW_TIME", "Brew Time (s)", "", kDouble, (void *)&brewtime},
+    {"BREW_SET_POINT", "Set point (°C)", "The temperature that the PID will try to reach and hold", kDouble, (void *)&BrewSetPoint},
+    {"BREW_TEMP_OFFSET", "Offset (°C)", "Optional offset that is added to the user-visible setpoint. Can be used to compensate sensor offsets and the average temperature loss between boiler and group so that the setpoint represents the approximate brew temperature.", kDouble, (void *)&BrewTempOffset}, {"BREW_TIME", "Brew Time (s)", "", kDouble, (void *)&brewtime},
     {"BREW_PREINFUSION", "Preinfusion Time (s)", "", kDouble, (void *)&preinfusion},
     {"BREW_PREINFUSUINPAUSE", "Pause (s)", "", kDouble, (void *)&preinfusionpause},
     {"PID_BD_KP", "BD P", "", kDouble, (void *)&aggbKp},
@@ -411,7 +411,7 @@ std::vector<editable_t> editableVars = {
     {"STEAM_MODE", "Steam Mode", "", rInteger, (void *)&SteamON},
     {"BACKFLUSH_ON", "Backflush", "", rInteger, (void *)&backflushON},
     {"SCALE_WEIGHTSETPOINT", "Brew weight setpoint (g)", "", kDouble, (void *)&weightSetpoint},
-    {"STEAM_KP", "Steam P", "", kDouble, (void *)&steamKp}
+    {"STEAM_KP", "Steam P", "P value for the steaming mode (I or D are not used)", kDouble, (void *)&steamKp}
 };
 
 unsigned long lastTempEvent = 0;

@@ -95,7 +95,7 @@ String generateForm(String varName) {
         result += "</label>";
         if (!e.helpText.isEmpty()) {
             result += "<a href=\"#\" role=\"button\" data-bs-toggle=\"popover\" data-bs-html=\"true\" data-bs-original-title=\"" +
-                    e.helpText + "\"><span class=\"fa fa-question-circle\"></span></a></br>";
+                e.helpText + "\"><span class=\"fa fa-question-circle\"></span></a></br>";
         } else {
             result += "<br/>";
         }
