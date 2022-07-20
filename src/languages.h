@@ -10,7 +10,8 @@
 #if (DISPLAYTEMPLATE == 1) || (DISPLAYTEMPLATE == 2)
     static const char *langstring_set_temp =      "Soll:  ";
     static const char *langstring_current_temp =  "Ist:   ";
-    static const char *langstring_brew =          "Zeit:  ";
+    static const char *langstring_brew =          "Brew:  ";
+    static const char *langstring_uptime =        "Uptime:  ";
 #endif
 #if (DISPLAYTEMPLATE >= 20)  //vertical templates
     static const char *langstring_set_temp_rot_ur =      "S: ";
@@ -40,6 +41,7 @@ static const char *langstring_bckfrunning[] = {"Backflush aktiv:", "seit"};
     static const char *langstring_set_temp =      "Set:   ";
     static const char *langstring_current_temp =  "Temp:  ";
     static const char *langstring_brew =          "Brew:  ";
+    static const char *langstring_uptime =        "Uptime:  ";
 #endif
 #if (DISPLAYTEMPLATE >= 20)  //vertical templates
     static const char *langstring_set_temp_rot_ur =      "S: ";
@@ -69,6 +71,7 @@ static const char *langstring_bckfrunning[] = {"Backflush running:", "from"};
     static const char *langstring_set_temp =      "Obj:  ";
     static const char *langstring_current_temp =  "T:    ";
     static const char *langstring_brew =          "Brew:  ";
+    static const char *langstring_uptime =        "Uptime:  ";
 #endif
 #if (DISPLAYTEMPLATE >= 20)  //vertical templates
     static const char *langstring_set_temp_rot_ur =      "O: ";

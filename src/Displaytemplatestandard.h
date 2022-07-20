@@ -94,18 +94,34 @@ void printScreen()
             }
             u8g2.print("%");
         }
-            // Brew
+            // Brew time or uptime
             u8g2.setCursor(32, 34);
-            u8g2.print(langstring_brew);
-            u8g2.print(brewTime / 1000, 0);
-            u8g2.print("/");
 
-        if (ONLYPID == 1) {
-            u8g2.print(brewtimersoftware, 0);   // deaktivieren wenn Preinfusion
-        }
-        else {
-            u8g2.print(totalbrewtime / 1000, 1);    // aktivieren wenn Preinfusion und eine Nachkommastelle oder alternativ keine
-        }
+            if (brewDetected) {
+                //show shot time
+                u8g2.print(langstring_brew);
+                u8g2.print(brewTime / 1000, 0);
+                u8g2.print("/");
+
+                if (BREWDETECTION == 0) {
+                    u8g2.print(brewtimersoftware, 0);   // deactivate if only pid
+                }
+                else {
+                    u8g2.print(totalbrewtime / 1000, 1);  // Activate if pre-infusion and one decimal place or alternatively no
+                }
+            } else {
+                //show uptime of machine
+                u8g2.print(langstring_uptime);
+                float seconds = millis() / 1000;
+                int hours = seconds / 3600;
+                int minutes = (seconds - hours * 60 * 60) / 60;
+
+                //print hours and minutes
+                u8g2.print(hours);
+                u8g2.print("h ");
+                u8g2.print(minutes);
+                u8g2.print("m");
+            }
 
         //draw box
         u8g2.drawFrame(0, 0, 128, 64);
