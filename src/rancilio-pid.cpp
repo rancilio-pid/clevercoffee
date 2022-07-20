@@ -118,7 +118,7 @@ double percentage;
 
 // WiFi
 WiFiManager wm;
-const unsigned long wifiConnectionDelay = WIFICINNECTIONDELAY;
+const unsigned long wifiConnectionDelay = WIFICONNECTIONDELAY;
 const unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
 const char *hostname = HOSTNAME;
 const char *auth = AUTH;
@@ -981,7 +981,7 @@ void sendToBlynkMQTT() {
 void brewdetection() {
     if (brewsensitivity == 0) return;  // abort brewdetection if deactivated
 
-    // Brew detecion: 1 = software solution, 2 = hardware, 3 = voltage sensor
+    // Brew detection: 1 = software solution, 2 = hardware, 3 = voltage sensor
     if (Brewdetection == 1) {
         if (timerBrewdetection == 1) {
             brewTime = millis() - timeBrewdetection;
@@ -1006,8 +1006,8 @@ void brewdetection() {
             lastbrewTime = brewTime;
         }
 
-        //  OFF: reset brew
-        if ((digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF) &&(brewDetected == 1 || coolingFlushDetectedQM == true)) {
+        // OFF: reset brew
+        if ((digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF) && (brewDetected == 1 || coolingFlushDetectedQM == true)) {
             brewDetected = 0;
             timePVStoON = brewTime;  // for QuickMill
             brewTime = 0;
@@ -1039,7 +1039,6 @@ void brewdetection() {
     } else if (Brewdetection == 3) {  // voltage sensor
         switch (machine) {
             case QuickMill:
-
                 if (!coolingFlushDetectedQM) {
                     int pvs = digitalRead(PINVOLTAGESENSOR);
 
@@ -1089,7 +1088,7 @@ void brewdetection() {
                 previousMillisVoltagesensorreading = millis();
 
                 if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorON && brewDetected == 0) {
-                    debugPrintln("HW Brew - Voltage Sensor -  Start");
+                    debugPrintln("HW Brew - Voltage Sensor - Start");
                     timeBrewdetection = millis();
                     startingTime = millis();
                     timerBrewdetection = 1;
@@ -1363,7 +1362,8 @@ void machinestatevoid() {
             }
 
             if ((brewTime > 0 && ONLYPID == 1) ||  // brewTime with Only PID
-                (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42)) {
+                (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42))
+            {
                 machinestate = kBrew;
             }
 
@@ -1393,7 +1393,8 @@ void machinestatevoid() {
             }
 
             if ((brewTime > 0 && ONLYPID == 1) ||  // brewTime with Only PID
-                (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42)) {
+                (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42))
+            {
                 machinestate = kBrew;
             }
 
@@ -1422,7 +1423,8 @@ void machinestatevoid() {
             brewdetection();     // if brew detected, set PID values
 
             if ((brewTime > 0 && ONLYPID == 1) ||  // brewTime with Only PID
-                (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42)) {
+                (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42))
+            {
                 machinestate = kBrew;
             }
 
@@ -1450,19 +1452,19 @@ void machinestatevoid() {
         case kBrew:
             brewdetection();
 
-            // Output during the reference of brew time, temp and heatrateaverage
-            if (logbrew.check())
+            // Output brew time, temp and heatrateaverage during brew
+            if (logbrew.check()) {
                 debugPrintf("(tB,T,hra) --> %5.2f %6.2f %8.2f\n",
                             (double)(millis() - startingTime) / 1000, Input, heatrateaverage);
+            }
 
-            if ((brewTime > 34 * 1000 && Brewdetection == 1 &&
-                ONLYPID == 1) ||  // 35 sec later and BD PID active SW Solution
-                (brewTime == 0 && Brewdetection == 3 &&
-                ONLYPID == 1) ||  // Voltagesensor reset brewTime == 0
-                ((brewcounter == 10 || brewcounter == 43) && ONLYPID == 0)) {
+            if ((brewTime > 34 * 1000 && Brewdetection == 1 && ONLYPID == 1) ||  // 35 sec later and BD PID active SW Solution
+                (brewTime == 0 && Brewdetection == 3 && ONLYPID == 1) ||         // Voltage sensor reset brewTime == 0
+                ((brewcounter == 10 || brewcounter == 43) && ONLYPID == 0))
+            {
                 if ((ONLYPID == 1 && Brewdetection == 3) ||
-                    ONLYPID ==
-                        0) {  // only delay of shotimer for voltagesensor or brewcounter
+                    ONLYPID == 0)  // only delay of shot timer for voltage sensor or brew counter
+                {
                     machinestate = kShotTimerAfterBrew;
                     lastbrewTimeMillis = millis();  // for delay
                 }
@@ -2241,9 +2243,9 @@ void looppid() {
     }
     if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
         previousMillisDisplay = currentMillisDisplay;
-#if DISPLAYTEMPLATE < 20  // not in vertikal template
+    #if DISPLAYTEMPLATE < 20  // not using vertical template
         Displaymachinestate();
-#endif
+    #endif
         printScreen();  // refresh display
     }
 #endif

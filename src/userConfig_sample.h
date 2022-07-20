@@ -45,7 +45,7 @@ enum MACHINE {
 #define HOSTNAME "silvia"
 #define PASS "CleverCoffee"        // default password for WiFiManager
 #define MAXWIFIRECONNECTS 5        // maximum number of reconnection attempts, use -1 to deactivate
-#define WIFICINNECTIONDELAY 10000  // delay between reconnects in ms
+#define WIFICONNECTIONDELAY 10000  // delay between reconnects in ms
 
 // PID & Hardware
 #define ONLYPID 1                  // 1 = Only PID, 0 = PID and preinfusion
@@ -53,7 +53,7 @@ enum MACHINE {
 #define BREWMODE 1                 // 1 = NORMAL preinfusion ; 2 = Scale with weight
 #define BREWDETECTION 0            // 0 = off, 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = Sensor/Hardware for Only PID
 #define BREWSWITCHTYPE 1           // 1 = normal Switch, 2 = Trigger Switch
-#define COLDSTART_PID_ENABLED 0    // 0 use normal PID right away, 1 = use separate cold start mode
+#define COLDSTART_PID_ENABLED 0    // 0 use normal PID right away, 1 = use separate cold start PID (PonM)
 #define COLDSTART_PID 1            // 1 = default coldstart values, 2 = custom values via blynk (expert mode activated)
 #define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay
 #define VOLTAGESENSORTYPE HIGH     // BREWDETECTION 3 configuration
