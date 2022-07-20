@@ -103,11 +103,11 @@ void printScreen()
                 u8g2.print(brewTime / 1000, 0);
                 u8g2.print("/");
 
-                if (BREWDETECTION == 0) {
-                    u8g2.print(brewtimersoftware, 0);   // deactivate if only pid
+                if (ONLYPID == 1) {
+                    u8g2.print(brewtimersoftware, 0);       // deactivate if only pid without preinfusion
                 }
                 else {
-                    u8g2.print(totalbrewtime / 1000, 1);  // Activate if pre-infusion and one decimal place or alternatively no
+                    u8g2.print(totalbrewtime / 1000, 1);    // activate if pre-infusion and one decimal place or alternatively none                }
                 }
             } else {
                 //show uptime of machine
