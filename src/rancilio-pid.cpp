@@ -188,6 +188,8 @@ void checkForRemoteSerialClients();
 void debugPrint(const char *message);
 void debugPrintln(const char *message);
 size_t debugPrintf(const char *format, ...);
+void printMachineState();
+char const* machinestateEnumToString(MachineState machinestate);
 void initSteamQM();
 boolean checkSteamOffQM();
 void writeSysParamsToBlynk(void);
@@ -406,7 +408,7 @@ std::vector<editable_t> editableVars = {
     {"PID_BD_KP", "BD P", "", kDouble, (void *)&aggbKp},
     {"PID_BD_TN", "BD Tn (=Kp/Ki)", "", kDouble, (void *)&aggbTn},
     {"PID_BD_TV", "BD Tv (=Kd/Kp)", "", kDouble, (void *)&aggbTv},
-    {"PID_BD_TIMER", "PID BD Time (s)", "Fixed time in seconds for which the BD PID will be enabled. Not used when hardware switch detection is built in.", kDouble, (void *)&brewtimersoftware},
+    {"PID_BD_TIMER", "PID BD Time (s)", "Fixed time in seconds for which the BD PID will stay enabled (also after Brew switch is inactive again).", kDouble, (void *)&brewtimersoftware},
     {"PID_BD_BREWSENSITIVITY", "PID BD Sensitivity", "Software brew detection sensitivity that looks at average temperature, <a href='https://manual.rancilio-pid.de/de/customization/brueherkennung.html' target='_blank'>Details</a>. Needs to be &gt;0 also for Hardware switch detection.", kDouble, (void *)&brewsensitivity},
     {"START_KP", "Start P (PonM)", "P parameter for cold start controller (PonM mode, <a href='http://brettbeauregard.com/blog/2017/06/introducing-proportional-on-measurement/' target='_blank'>details</a>)", kDouble, (void *)&startKp},
     {"START_TN", "Start Tn", "I/Tn parameter for cold start controller (PonM mode, <a href='http://brettbeauregard.com/blog/2017/06/introducing-proportional-on-measurement/' target='_blank'>details</a>)", kDouble, (void *)&startTn},
@@ -1332,8 +1334,7 @@ void machinestatevoid() {
                         machinestatecoldmillis = millis();  // get millis for interval calc
                         machinestatecold = 10;              // new state
                         debugPrintln(
-                            "Input >= (BrewSetPoint-1), wait 10 sec before machinestate "
-                            "19");
+                            "Input >= (BrewSetPoint-1), wait 10 sec before machinestate SetPointNegative");
                     }
                     break;
 
@@ -1341,16 +1342,15 @@ void machinestatevoid() {
                     if (Input < (BrewSetPoint - 1)) {
                         machinestatecold = 0;  //  Input was only one time above
                                                //  BrewSetPoint, reset machinestatecold
-                        debugPrintln("Reset timer for machinestate 19: Input < (BrewSetPoint-1)");
+                        debugPrintln("Reset timer for machinestate SetPointNegative: Input < (BrewSetPoint-1)");
 
                         break;
                     }
 
-                    if (machinestatecoldmillis + 10 * 1000 <
-                        millis())  // 10 sec Input above BrewSetPoint, no set new state
+                    if (machinestatecoldmillis + 10 * 1000 < millis())  // 10 sec Input above BrewSetPoint, no set new state
                     {
                         machinestate = kSetPointNegative;
-                        debugPrintln("5 sec Input >= (BrewSetPoint-1) finished, switch to state 19");
+                        debugPrintln("5 sec Input >= (BrewSetPoint-1) finished, switch to state SetPointNegative");
                     }
                     break;
             }
@@ -1527,7 +1527,8 @@ void machinestatevoid() {
             }
 
             if ((brewTime > 0 && ONLYPID == 1 && Brewdetection == 3) ||  // New Brew inner BD only by Only PID AND Voltage Sensor
-                (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42)) {
+                (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42))
+            {
                 machinestate = kBrew;
             }
 
@@ -1673,10 +1674,50 @@ void machinestatevoid() {
     }
 
     if (machinestate != lastmachinestate) {
-        debugPrintf("new machinestate: %i -> %i\n", lastmachinestate, machinestate);
+        printMachineState();
         lastmachinestate = machinestate;
     }
 }
+
+void printMachineState() {
+    debugPrintf("new machinestate: %s -> %s\n",
+                machinestateEnumToString(lastmachinestate), machinestateEnumToString(machinestate));
+}
+
+char const* machinestateEnumToString(MachineState machinestate) {
+    switch (machinestate) {
+        case kInit:
+            return "Init";
+        case kColdStart:
+            return "Cold Start";
+        case kSetPointNegative:
+            return "Set Point Negative";
+        case kPidNormal:
+            return "PID Normal";
+        case kBrew:
+            return "Brew";
+        case kShotTimerAfterBrew:
+            return "Shot Timer After Brew";
+        case kBrewDetectionTrailing:
+            return "Brew Detection Trailing";
+        case kSteam:
+            return "Steam";
+        case kCoolDown:
+            return "Cool Down";
+        case kBackflush:
+            return "Backflush";
+        case kEmergencyStop:
+            return "Emergency Stop";
+        case kPidOffline:
+            return "PID Offline";
+        case kSensorError:
+            return "Sensore Error";
+        case keepromError:
+            return "EEPROM Error";
+    }
+
+    return "Unknown";
+} 
 
 void debugVerboseOutput() {
     static PeriodicTrigger trigger(10000);
