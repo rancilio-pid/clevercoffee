@@ -180,6 +180,8 @@ bool mqtt_publish(const char *reading, char *payload);
 void setSteamMode(int steamMode);
 void setPidStatus(int pidStatus);
 void setBackflush(int backflush);
+void setNormalPIDTunings();
+void setBDPIDTunings();
 void loopcalibrate();
 void looppid();
 void checkForRemoteSerialClients();
@@ -1294,7 +1296,6 @@ void machinestatevoid() {
         case kInit:
             // Prevent coldstart leave by Input 222
             if (Input < (BrewSetPoint - 1) || Input < 150) {
-            #if COLDSTART_PID_ENABLED
                 machinestate = kColdStart;
                 debugPrintf("%d\n", Input);
                 debugPrintf("%d\n", machinestate);
@@ -1304,9 +1305,6 @@ void machinestatevoid() {
                 bPID.SetMode(pidMode);
                 Output = 0;
                 digitalWrite(PINHEATER, LOW);  // Stop heating
-            #else 
-                machinestate = kPidNormal;
-            #endif
 
                 // start PID
                 pidMode = 1;
@@ -2265,63 +2263,38 @@ void looppid() {
         }
     }
 
-    #if COLDSTART_PID_ENABLED
     // Set PID if first start of machine detected, and no SteamON
-    if (machinestate == kInit || machinestate == kColdStart || machinestate == kSetPointNegative) {
-        if (startTn != 0) {
-            startKi = startKp / startTn;
+    if ((machinestate == kInit || machinestate == kColdStart || machinestate == kSetPointNegative)) {
+        if (COLDSTART_PID_ENABLED) { 
+            if (startTn != 0) {
+                startKi = startKp / startTn;
+            } else {
+                startKi = 0;
+            }
+
+            if (lastmachinestatepid != machinestate) {
+                debugPrintf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n", startKp, startKi, 0.0);
+                lastmachinestatepid = machinestate;
+            }
+
+            bPID.SetTunings(startKp, startKi, 0, P_ON_M);
         } else {
-            startKi = 0;
+            setNormalPIDTunings();
         }
-
-        if (lastmachinestatepid != machinestate) {
-            debugPrintf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n", startKp, startKi, 0.0);
-            lastmachinestatepid = machinestate;
-        }
-
-        bPID.SetTunings(startKp, startKi, 0, P_ON_M);
     }
-    #endif
 
     if (machinestate == kPidNormal) {
-        // Prevent overwriting of brewdetection values
-        // calc ki, kd
-        if (aggTn != 0) {
-            aggKi = aggKp / aggTn;
-        } else {
-            aggKi = 0;
-        }
-
-        aggKd = aggTv * aggKp;
-
-        bPID.SetIntegratorLimits(0, aggIMax);
-
-        if (lastmachinestatepid != machinestate) {
-            debugPrintf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n", aggKp, aggKi, aggKd);
-            lastmachinestatepid = machinestate;
-        }
-
-        bPID.SetTunings(aggKp, aggKi, aggKd, PonE);
+        setNormalPIDTunings();
         coldstart = false;
     }
 
     // BD PID
-    if (machinestate >= 30 && machinestate <= 35) {
-        // calc ki, kd
-        if (aggbTn != 0) {
-            aggbKi = aggbKp / aggbTn;
+    if (machinestate >= kBrew && machinestate <= kBrewDetectionTrailing) {
+        if (BREWPID_ENABLED) {
+            setBDPIDTunings();
         } else {
-            aggbKi = 0;
+            setNormalPIDTunings();
         }
-
-        aggbKd = aggbTv * aggbKp;
-
-        if (lastmachinestatepid != machinestate) {
-            debugPrintf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n", aggbKp, aggbKi, aggbKd);
-            lastmachinestatepid = machinestate;
-        }
-
-        bPID.SetTunings(aggbKp, aggbKi, aggbKd, PonE);
     }
 
     // Steam on
@@ -2369,7 +2342,6 @@ void setBackflush(int backflush) {
     writeSysParamsToBlynk();
 }
 
-
 void setSteamMode(int steamMode) {
     SteamON = steamMode;
 
@@ -2386,6 +2358,45 @@ void setSteamMode(int steamMode) {
 void setPidStatus(int pidStatus) {
     pidON = pidStatus;
      writeSysParamsToBlynk();
+}
+
+void setNormalPIDTunings() {
+    // Prevent overwriting of brewdetection values
+    // calc ki, kd
+    if (aggTn != 0) {
+        aggKi = aggKp / aggTn;
+    } else {
+        aggKi = 0;
+    }
+
+    aggKd = aggTv * aggKp;
+
+    bPID.SetIntegratorLimits(0, aggIMax);
+
+    if (lastmachinestatepid != machinestate) {
+        debugPrintf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n", aggKp, aggKi, aggKd);
+        lastmachinestatepid = machinestate;
+    }
+
+    bPID.SetTunings(aggKp, aggKi, aggKd, PonE);
+}
+
+void setBDPIDTunings() {
+    // calc ki, kd
+    if (aggbTn != 0) {
+        aggbKi = aggbKp / aggbTn;
+    } else {
+        aggbKi = 0;
+    }
+
+    aggbKd = aggbTv * aggbKp;
+
+    if (lastmachinestatepid != machinestate) {
+        debugPrintf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n", aggbKp, aggbKi, aggbKd);
+        lastmachinestatepid = machinestate;
+    }
+
+    bPID.SetTunings(aggbKp, aggbKi, aggbKd, PonE);
 }
 
 /**
