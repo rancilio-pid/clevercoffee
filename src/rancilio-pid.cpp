@@ -404,13 +404,13 @@ std::vector<editable_t> editableVars = {
     {"PID_BD_KP", "BD P", "", kDouble, (void *)&aggbKp},
     {"PID_BD_TN", "BD Tn (=Kp/Ki)", "", kDouble, (void *)&aggbTn},
     {"PID_BD_TV", "BD Tv (=Kd/Kp)", "", kDouble, (void *)&aggbTv},
-    {"PID_BD_TIMER", "PID BD Time (s)", "", kDouble, (void *)&brewtimersoftware},
-    {"PID_BD_BREWSENSITIVITY", "PID BD Sensitivity", "", kDouble, (void *)&brewsensitivity},
+    {"PID_BD_TIMER", "PID BD Time (s)", "Fixed time in seconds for which the BD PID will be enabled. Not used when hardware switch detection is built in.", kDouble, (void *)&brewtimersoftware},
+    {"PID_BD_BREWSENSITIVITY", "PID BD Sensitivity", "Software brew detection sensitivity that looks at average temperature, <a href='https://manual.rancilio-pid.de/de/customization/brueherkennung.html' target='_blank'>Details</a>. Needs to be &gt;0 also for Hardware switch detection.", kDouble, (void *)&brewsensitivity},
     {"START_KP", "Start P (PonM)", "P parameter for cold start controller (PonM mode, <a href='http://brettbeauregard.com/blog/2017/06/introducing-proportional-on-measurement/' target='_blank'>details</a>)", kDouble, (void *)&startKp},
     {"START_TN", "Start Tn", "I/Tn parameter for cold start controller (PonM mode, <a href='http://brettbeauregard.com/blog/2017/06/introducing-proportional-on-measurement/' target='_blank'>details</a>)", kDouble, (void *)&startTn},
     {"STEAM_MODE", "Steam Mode", "", rInteger, (void *)&SteamON},
     {"BACKFLUSH_ON", "Backflush", "", rInteger, (void *)&backflushON},
-    {"SCALE_WEIGHTSETPOINT", "Brew weight setpoint (g)", "", kDouble, (void *)&weightSetpoint},
+    {"SCALE_WEIGHTSETPOINT", "Brew weight setpoint (g)", "Only used when a scale is built in", kDouble, (void *)&weightSetpoint},
     {"STEAM_KP", "Steam P", "P value for the steaming mode (I or D are not used)", kDouble, (void *)&steamKp}
 };
 
