@@ -658,7 +658,8 @@ boolean checkSensor(float tempInput) {
             debugPrintf(
                 "*** WARNING: temperature sensor reading: consec_errors = %i, "
                 "temp_current = %.1f\n",
-                error, tempInput);
+                "temp_prev = %.1f\n",
+                error, tempInput, previousInput);
         }
     } else if (badCondition == false && sensorOK == false) {
         error = 0;
@@ -1450,7 +1451,7 @@ void machinestatevoid() {
             brewdetection();
 
             // Output brew time, temp and heatrateaverage during brew
-            if (logbrew.check()) {
+            if (BREWDETECTION == 1 && logbrew.check()) {
                 debugPrintf("(tB,T,hra) --> %5.2f %6.2f %8.2f\n",
                             (double)(millis() - startingTime) / 1000, Input, heatrateaverage);
             }
@@ -2078,19 +2079,35 @@ void checkForRemoteSerialClients() {
     }
 }
 
+void getCurrentTimeString(char *output) {
+    time_t rawtime;
+    struct tm *timeinfo;
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    snprintf(output, 12, "[%02d:%02d:%02d] ", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+}
+
 // Print to remote serial (e.g. using OTA Monitor Task ) if client is connected, otherwise use hardware serial
 void debugPrintln(const char *message) {
+    char time[10];
+    getCurrentTimeString(time);
     if (RemoteSerial.connected()) {
+        RemoteSerial.print(time);
         RemoteSerial.println(message);
     } else {
+        Serial.print(time);
         Serial.println(message);
     }
 }
 
 void debugPrint(const char *message) {
+    char time[10];
+    getCurrentTimeString(time);
     if (RemoteSerial.connected()) {
+        RemoteSerial.print(time);
         RemoteSerial.print(message);
     } else {
+        Serial.print(time);
         Serial.print(message);
     }
 }
@@ -2113,12 +2130,17 @@ size_t debugPrintf(const char *format, ...) {
         vsnprintf(buffer, len + 1, format, arg);
         va_end(arg);
     }
-    //len = write((const uint8_t*) buffer, len);
+
+    //get time to prepend to message
+    char time[10];
+    getCurrentTimeString(time);
 
     if (RemoteSerial.connected()) {
-        len = RemoteSerial.print(buffer);
+        len = RemoteSerial.print(time);        
+        len += RemoteSerial.print(buffer);
     } else {
-        len = Serial.print(buffer);
+        len = Serial.print(time);        
+        len += Serial.print(buffer);
     }
 
     if (buffer != temp) {
