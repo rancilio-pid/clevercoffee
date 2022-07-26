@@ -987,15 +987,15 @@ void brewdetection() {
     // Brew detection: 1 = software solution, 2 = hardware, 3 = voltage sensor
     if (Brewdetection == 1) {
         if (timerBrewdetection == 1) {
-            brewTime = millis() - timeBrewdetection;
+            timeBrewed = millis() - timeBrewdetection;
         }
 
         // deactivate brewtimer after end of brewdetection pid
         if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1) {
             timerBrewdetection = 0;  // rearm brewdetection
 
-            if (machinestate != 30) { // if Onlypid = 1, brewTime > 0, no reset of brewTime in case of brewing.
-                brewTime = 0;
+            if (machinestate != kBrew) { // if Onlypid = 1, timeBrewed > 0, no reset of timeBrewed in case of brewing.
+                timeBrewed = 0;
             }
         }
     } else if (Brewdetection == 2) {
@@ -1003,17 +1003,17 @@ void brewdetection() {
             timerBrewdetection = 0;  // rearm brewdetection
         }
     } else if (Brewdetection == 3) {
-        // brewTime counter
+        // timeBrewed counter
         if ((digitalRead(PINVOLTAGESENSOR) == VoltageSensorON) && brewDetected == 1) {
-            brewTime = millis() - startingTime;
-            lastbrewTime = brewTime;
+            timeBrewed = millis() - startingTime;
+            lastbrewTime = timeBrewed;
         }
 
         // OFF: reset brew
         if ((digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF) && (brewDetected == 1 || coolingFlushDetectedQM == true)) {
             brewDetected = 0;
-            timePVStoON = brewTime;  // for QuickMill
-            brewTime = 0;
+            timePVStoON = timeBrewed;  // for QuickMill
+            timeBrewed = 0;
             startingTime = 0;
             coolingFlushDetectedQM = false;
             debugPrintln("HW Brew - Voltage Sensor - End");
@@ -1358,7 +1358,7 @@ void machinestatevoid() {
                 machinestate = kSteam;
             }
 
-            if ((brewTime > 0 && ONLYPID == 1) ||  // brewTime with Only PID
+            if ((timeBrewed > 0 && ONLYPID == 1) ||  // timeBrewed with Only PID
                 (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42))
             {
                 machinestate = kBrew;
@@ -1389,7 +1389,7 @@ void machinestatevoid() {
                 machinestate = kPidNormal;
             }
 
-            if ((brewTime > 0 && ONLYPID == 1) ||  // brewTime with Only PID
+            if ((timeBrewed > 0 && ONLYPID == 1) ||  // timeBrewed with Only PID
                 (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42))
             {
                 machinestate = kBrew;
@@ -1419,7 +1419,7 @@ void machinestatevoid() {
         case kPidNormal:
             brewdetection();     // if brew detected, set PID values
 
-            if ((brewTime > 0 && ONLYPID == 1) ||  // brewTime with Only PID
+            if ((timeBrewed > 0 && ONLYPID == 1) ||  // timeBrewed with Only PID
                 (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42))
             {
                 machinestate = kBrew;
@@ -1455,8 +1455,8 @@ void machinestatevoid() {
                             (double)(millis() - startingTime) / 1000, Input, heatrateaverage);
             }
 
-            if ((brewTime > 34 * 1000 && Brewdetection == 1 && ONLYPID == 1) ||  // 35 sec later and BD PID active SW Solution
-                (brewTime == 0 && Brewdetection == 3 && ONLYPID == 1) ||         // Voltage sensor reset brewTime == 0
+            if ((timeBrewed > 34 * 1000 && Brewdetection == 1 && ONLYPID == 1) ||  // 35 sec later and BD PID active SW Solution
+                (timeBrewed == 0 && Brewdetection == 3 && ONLYPID == 1) ||         // Voltage sensor reset timeBrewed == 0
                 ((brewcounter == 10 || brewcounter == 43) && ONLYPID == 0))
             {
                 if ((ONLYPID == 1 && Brewdetection == 3) ||
@@ -1525,7 +1525,7 @@ void machinestatevoid() {
                 machinestate = kPidNormal;
             }
 
-            if ((brewTime > 0 && ONLYPID == 1 && Brewdetection == 3) ||  // New Brew inner BD only by Only PID AND Voltage Sensor
+            if ((timeBrewed > 0 && ONLYPID == 1 && Brewdetection == 3) ||  // New Brew inner BD only by Only PID AND Voltage Sensor
                 (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42))
             {
                 machinestate = kBrew;

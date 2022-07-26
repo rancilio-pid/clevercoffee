@@ -91,7 +91,7 @@ void printScreen() {
             // Brew
             u8g2.setCursor(1, 34);
             u8g2.print(langstring_brew_rot_ur);
-            u8g2.print(brewTime / 1000, 0);
+            u8g2.print(timeBrewed / 1000, 0);
             u8g2.print("/");
 
             if (ONLYPID == 1) {

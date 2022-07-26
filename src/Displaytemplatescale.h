@@ -61,7 +61,7 @@ void printScreen() {
         // Brew
         u8g2.setCursor(32, 34);
         u8g2.print("t: ");
-        u8g2.print(brewTime / 1000, 0);
+        u8g2.print(timeBrewed / 1000, 0);
         u8g2.print("/");
 
         if (ONLYPID == 1) {

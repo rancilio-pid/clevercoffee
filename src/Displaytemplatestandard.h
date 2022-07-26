@@ -100,7 +100,7 @@ void printScreen()
             if (brewDetected) {
                 //show shot time
                 u8g2.print(langstring_brew);
-                u8g2.print(brewTime / 1000, 0);
+                u8g2.print(timeBrewed / 1000, 0);
                 u8g2.print("/");
 
                 if (ONLYPID == 1) {

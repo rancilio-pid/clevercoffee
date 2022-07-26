@@ -232,7 +232,7 @@ void brew() {
         }
 
         if (brewcounter > 10 && brewcounter < 43) {
-            brewTime = currentMillistemp - startingTime;
+            timeBrewed = currentMillistemp - startingTime;
         }
 
         if (brewswitch == LOW && firstreading == 0) {
@@ -272,7 +272,7 @@ void brew() {
                 break;
 
             case 21:  // waiting time preinfusion
-                if (brewTime > (preinfusion * 1000)) {
+                if (timeBrewed > (preinfusion * 1000)) {
                     brewcounter = 30;
                 }
 
@@ -287,7 +287,7 @@ void brew() {
                 break;
 
             case 31:  // waiting time preinfusion pause
-                if (brewTime > ((preinfusion * 1000) + (preinfusionpause * 1000))) {
+                if (timeBrewed > ((preinfusion * 1000) + (preinfusionpause * 1000))) {
                     brewcounter = 40;
                 }
 
@@ -302,9 +302,9 @@ void brew() {
                 break;
 
             case 41:  // waiting time brew
-                lastbrewTime = brewTime;
+                lastbrewTime = timeBrewed;
 
-                if (brewTime > totalbrewtime) {
+                if (timeBrewed > totalbrewtime) {
                     brewcounter = 42;
                 }
 
@@ -315,7 +315,7 @@ void brew() {
                 digitalWrite(PINVALVE, relayOFF);
                 digitalWrite(PINPUMP, relayOFF);
                 brewcounter = 43;
-                brewTime = 0;
+                timeBrewed = 0;
 
                 break;
 
@@ -328,7 +328,7 @@ void brew() {
                     currentMillistemp = 0;
                     brewDetected = 0;  // rearm brewdetection
                     brewcounter = 10;
-                    brewTime = 0;
+                    timeBrewed = 0;
                 }
 
                 break;
@@ -352,7 +352,7 @@ void brew() {
         }
 
         if (brewcounter > 10 && brewcounter < 43) {
-            brewTime = currentMillistemp - startingTime;
+            timeBrewed = currentMillistemp - startingTime;
             weightBrew = weight - weightPreBrew;
         }
 
@@ -392,7 +392,7 @@ void brew() {
                 break;
 
             case 21:  // waiting time preinfusion
-                if (brewTime > (preinfusion * 1000)) {
+                if (timeBrewed > (preinfusion * 1000)) {
                     brewcounter = 30;
                 }
 
@@ -407,7 +407,7 @@ void brew() {
                 break;
 
             case 31:  // waiting time preinfusion pause
-                if (brewTime > ((preinfusion * 1000) + (preinfusionpause * 1000))) {
+                if (timeBrewed > ((preinfusion * 1000) + (preinfusionpause * 1000))) {
                     brewcounter = 40;
                 }
 
@@ -422,11 +422,11 @@ void brew() {
                 break;
 
             case 41:  // waiting time brew
-                if (brewTime > totalbrewtime || (weightBrew > (weightSetpoint - scaleDelayValue))) {
+                if (timeBrewed > totalbrewtime || (weightBrew > (weightSetpoint - scaleDelayValue))) {
                     brewcounter = 42;
                 }
 
-                if (brewTime > totalbrewtime) {
+                if (timeBrewed > totalbrewtime) {
                     brewcounter = 42;
                 }
 
@@ -447,7 +447,7 @@ void brew() {
 
                     // disarmed button bezugsZeitAlt = bezugsZeit;
                     currentMillistemp = 0;
-                    brewTime = 0;
+                    timeBrewed = 0;
                     brewDetected = 0;  // rearm brewdetection
                     brewcounter = 10;
                 }

@@ -101,7 +101,7 @@ void displayEmergencyStop(void)
  */
 void displayShottimer(void)
  {
-    if (((brewTime > 0 && ONLYPID == 1) || // brewTime bei Only PID
+    if (((timeBrewed > 0 && ONLYPID == 1) || // timeBrewed bei Only PID
         (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42)) // oder Bezug bei nicht only PID über brewcounter
         && SHOTTIMER == 1) // Shotimer muss 1 = True sein und Bezug vorliegen
     {
@@ -112,7 +112,7 @@ void displayShottimer(void)
         u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
         u8g2.setFont(u8g2_font_profont22_tf);
         u8g2.setCursor(5, 70);
-        u8g2.print(brewTime / 1000, 1);
+        u8g2.print(timeBrewed / 1000, 1);
         u8g2.setFont(u8g2_font_profont11_tf);
         u8g2.sendBuffer();
 
