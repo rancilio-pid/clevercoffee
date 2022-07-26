@@ -2310,7 +2310,7 @@ void looppid() {
     }
 #endif
 
-    if (machinestate == kPidOffline || machinestate == kSensorError || machinestate == kEmergencyStop || machinestate == keepromError) {
+    if (machinestate == kPidOffline || machinestate == kSensorError || machinestate == kEmergencyStop || machinestate == keepromError || brewPIDdisabled) {
         if (pidMode == 1) {
             // Force PID shutdown
             pidMode = 0;
@@ -2352,10 +2352,26 @@ void looppid() {
 
     // BD PID
     if (machinestate >= kBrew && machinestate <= kBrewDetectionTrailing) {
-        if (BREWPID_ENABLED) {
-            setBDPIDTunings();
+        if (BREWPID_DELAY > 0 && timeBrewed > 0 && timeBrewed < BREWPID_DELAY*1000) {
+            //disable PID for BREWPID_DELAY seconds, enable PID again with new tunings after that
+            if (!brewPIDdisabled) {
+                brewPIDdisabled = true;
+                bPID.SetMode(MANUAL);
+                debugPrintf("disabled PID, waiting for %d seconds before enabling PID again\n", BREWPID_DELAY);
+            }
         } else {
-            setNormalPIDTunings();
+            if (brewPIDdisabled) {
+                //enable PID again
+                bPID.SetMode(AUTOMATIC);
+                brewPIDdisabled = false;
+                debugPrintln("Enabled PID again after delay");
+            }
+
+            if (BREWPID_ENABLED) {
+                setBDPIDTunings();
+            } else {
+                setNormalPIDTunings();
+            }
         }
     }
 
@@ -2419,7 +2435,7 @@ void setSteamMode(int steamMode) {
 
 void setPidStatus(int pidStatus) {
     pidON = pidStatus;
-     writeSysParamsToBlynk();
+    writeSysParamsToBlynk();
 }
 
 void setNormalPIDTunings() {
