@@ -55,7 +55,7 @@ enum MACHINE {
 #define BREWSWITCHTYPE 1           // 1 = normal Switch, 2 = Trigger Switch
 #define BREWPID_ENABLED 0          // 0 = use normal PID also when brew was detected, 1 = use separate BD parameters when brewing
 #define COLDSTART_PID_ENABLED 0    // 0 use normal PID right away, 1 = use separate cold start PID (PonM)
-#define COLDSTART_PID 1            // 1 = default coldstart values, 2 = custom values via blynk (expert mode activated)
+#define COLDSTART_PID 1            // 1 = default coldstart values, 2 = custom values via webinterface/blynk (expert mode activated)
 #define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay
 #define VOLTAGESENSORTYPE HIGH     // BREWDETECTION 3 configuration
 #define PINMODEVOLTAGESENSOR INPUT // Mode INPUT_PULLUP, INPUT or INPUT_PULLDOWN_16 (Only Pin 16)

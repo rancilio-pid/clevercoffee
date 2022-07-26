@@ -99,7 +99,6 @@ const int triggerType = TRIGGERTYPE;
 const int VoltageSensorType = VOLTAGESENSORTYPE;
 const boolean ota = OTA;
 const int grafana = GRAFANA;
-const unsigned long brewswitchDelay = BREWSWITCHDELAY;
 int BrewMode = BREWMODE;
 
 // Display
@@ -245,7 +244,7 @@ double brewtimersoftware = BREW_SW_TIMER; // 20-5 for detection
 double brewsensitivity = BREWSENSITIVITY;  // brew detection limit
 const int PonE = PONE;
 
-// Brewing, 1 = Normale Prefinfusion , 2 = Scale & Shottimer = 2
+// Brewing, 1 = Normal Preinfusion , 2 = Scale & Shottimer = 2
 #include "brewscaleini.h"
 
 // Sensor check
@@ -396,26 +395,26 @@ std::vector<mqttVars_t> mqttVars = {
 
 std::vector<editable_t> editableVars = {
     {"PID_ON", "Enable PID Controller", "", kUInt8, (void *)&pidON},
-    {"PID_KP", "PID P", "P parameter for main PID controller (in P-Tn-Tv form, <a href='http://testcon.info/EN_BspPID-Regler.html#strukturen' target='_blank'>Details<a>)", kDouble, (void *)&aggKp},
-    {"PID_TN", "PID Tn (=Kp/Ki)", "Tn parameter for main PID controller (in P-Tn-Tv form, <a href='http://testcon.info/EN_BspPID-Regler.html#strukturen' target='_blank'>Details<a>)", kDouble, (void *)&aggTn},
-    {"PID_TV", "PID Tv (=Kd/Kp)", "Tv parameter for main PID controller (in P-Tn-Tv form, <a href='http://testcon.info/EN_BspPID-Regler.html#strukturen' target='_blank'>Details<a>)", kDouble, (void *)&aggTv},
-    {"PID_I_MAX", "PID Integrator Max", "Internal integrator limit to prevent windup. This is usually equal to the output needed to hold the temperature after the setpoint has been reached.", kDouble, (void *)&aggIMax},
+    {"PID_KP", "PID P", "Proportional gain (in Watts/C°) for the main PID controller (in P-Tn-Tv form, <a href='http://testcon.info/EN_BspPID-Regler.html#strukturen' target='_blank'>Details<a>). The higher this value is, the higher is the output of the heater for a given temperature difference. E.g. 5°C difference will result in P*5 Watts of heater output.", kDouble, (void *)&aggKp},
+    {"PID_TN", "PID Tn (=Kp/Ki)", "Integral time constant (in seconds) for the main PID controller (in P-Tn-Tv form, <a href='http://testcon.info/EN_BspPID-Regler.html#strukturen' target='_blank'>Details<a>). The larger this value is, the slower the integral part of the PID will increase (or decrease) if the process value remains above (or below) the setpoint in spite of proportional action. The smaller this value, the faster the integral term changes.", kDouble, (void *)&aggTn},
+    {"PID_TV", "PID Tv (=Kd/Kp)", "Differential time constant (in seconds) for the main PID controller (in P-Tn-Tv form, <a href='http://testcon.info/EN_BspPID-Regler.html#strukturen' target='_blank'>Details<a>). This value determines how far the PID equation projects the current trend into the future. The higher the value, the greater the dampening. Select it carefully, it can cause oscillations if it is set too high or too low.", kDouble, (void *)&aggTv},
+    {"PID_I_MAX", "PID Integrator Max", "Internal integrator limit to prevent windup (in Watts). This will allow the integrator to only grow to the specified value. This should be approximally equal to the output needed to hold the temperature after the setpoint has been reached and is depending on machine type and whether the boiler is isolated or not.", kDouble, (void *)&aggIMax},
     {"TEMP", "Temperature", "", kDouble, (void *)&Input},
-    {"BREW_SET_POINT", "Set point (°C)", "The temperature that the PID will try to reach and hold", kDouble, (void *)&BrewSetPoint},
+    {"BREW_SET_POINT", "Set point (°C)", "The temperature that the PID will attempt to reach and hold", kDouble, (void *)&BrewSetPoint},
     {"BREW_TEMP_OFFSET", "Offset (°C)", "Optional offset that is added to the user-visible setpoint. Can be used to compensate sensor offsets and the average temperature loss between boiler and group so that the setpoint represents the approximate brew temperature.", kDouble, (void *)&BrewTempOffset}, {"BREW_TIME", "Brew Time (s)", "", kDouble, (void *)&brewtime},
     {"BREW_PREINFUSION", "Preinfusion Time (s)", "", kDouble, (void *)&preinfusion},
     {"BREW_PREINFUSUINPAUSE", "Pause (s)", "", kDouble, (void *)&preinfusionpause},
-    {"PID_BD_KP", "BD P", "", kDouble, (void *)&aggbKp},
-    {"PID_BD_TN", "BD Tn (=Kp/Ki)", "", kDouble, (void *)&aggbTn},
-    {"PID_BD_TV", "BD Tv (=Kd/Kp)", "", kDouble, (void *)&aggbTv},
+    {"PID_BD_KP", "BD P", "Proportional gain (in Watts/°C) for the PID when brewing has been detected. Use this controller to either increase heating during the brew to counter temperature drop from fresh cold water in the boiler. Some machines, e.g. Rancilio Silvia, actually need to heat less not at all during the brew because of high temperature stability (<a href='https://www.kaffee-netz.de/threads/installation-eines-temperatursensors-in-silvia-bruehgruppe.111093/#post-1453641' target='_blank'>Details<a>)", kDouble, (void *)&aggbKp},
+    {"PID_BD_TN", "BD Tn (=Kp/Ki)", "Integral time constant (in seconds) for the PID when brewing has been detected.", kDouble, (void *)&aggbTn},
+    {"PID_BD_TV", "BD Tv (=Kd/Kp)", "Differential time constant (in seconds) for the PID when brewing has been detected.", kDouble, (void *)&aggbTv},
     {"PID_BD_TIMER", "PID BD Time (s)", "Fixed time in seconds for which the BD PID will stay enabled (also after Brew switch is inactive again).", kDouble, (void *)&brewtimersoftware},
     {"PID_BD_BREWSENSITIVITY", "PID BD Sensitivity", "Software brew detection sensitivity that looks at average temperature, <a href='https://manual.rancilio-pid.de/de/customization/brueherkennung.html' target='_blank'>Details</a>. Needs to be &gt;0 also for Hardware switch detection.", kDouble, (void *)&brewsensitivity},
-    {"START_KP", "Start P (PonM)", "P parameter for cold start controller (PonM mode, <a href='http://brettbeauregard.com/blog/2017/06/introducing-proportional-on-measurement/' target='_blank'>details</a>)", kDouble, (void *)&startKp},
-    {"START_TN", "Start Tn", "I/Tn parameter for cold start controller (PonM mode, <a href='http://brettbeauregard.com/blog/2017/06/introducing-proportional-on-measurement/' target='_blank'>details</a>)", kDouble, (void *)&startTn},
+    {"START_KP", "Start P", "Proportional gain for cold start controller (PonM mode, <a href='http://brettbeauregard.com/blog/2017/06/introducing-proportional-on-measurement/' target='_blank'>details</a>). This value is not used with the the error as usual but the absolute value of the temperature and counteracts the integral part as the temperature rises. Ideally, both parameters are set so that they balance each other out when the target temperature is reached.", kDouble, (void *)&startKp},
+    {"START_TN", "Start Tn", "Integral gain for cold start controller (PonM mode, <a href='http://brettbeauregard.com/blog/2017/06/introducing-proportional-on-measurement/' target='_blank'>details</a>)", kDouble, (void *)&startTn},
     {"STEAM_MODE", "Steam Mode", "", rInteger, (void *)&SteamON},
     {"BACKFLUSH_ON", "Backflush", "", rInteger, (void *)&backflushON},
     {"SCALE_WEIGHTSETPOINT", "Brew weight setpoint (g)", "Only used when a scale is built in", kDouble, (void *)&weightSetpoint},
-    {"STEAM_KP", "Steam P", "P value for the steaming mode (I or D are not used)", kDouble, (void *)&steamKp}
+    {"STEAM_KP", "Steam P", "Proportional gain for the steaming mode (I or D are not used)", kDouble, (void *)&steamKp}
 };
 
 unsigned long lastTempEvent = 0;
