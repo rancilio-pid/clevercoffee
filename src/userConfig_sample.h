@@ -31,13 +31,12 @@ enum MACHINE {
 // Display
 #define OLED_DISPLAY 2             // 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64)
 #define OLED_I2C 0x3C              // I2C address for OLED, 0x3C by default
-#define DISPLAYTEMPLATE 3          // 1 = Standard Display Template, 2 = Minimal Template, 3 = only Temperatur, 4 = Scale Template, 20 = vertical Display see git Handbook for further information
+#define DISPLAYTEMPLATE 3          // 1 = Standard display template, 2 = Minimal template, 3 = only temperature, 4 = scale template, 20 = vertical display (see git Handbook for further information)
 #define DISPLAYROTATE U8G2_R0      // rotate display clockwise: U8G2_R0 = no rotation; U8G2_R1 = 90°; U8G2_R2 = 180°; U8G2_R3 = 270°
 #define SHOTTIMER 1                // 0 = deactivated, 1 = activated 2 = with scale
 #define HEATINGLOGO 0              // 0 = deactivated, 1 = Rancilio, 2 = Gaggia
 #define OFFLINEGLOGO 1             // 0 = deactivated, 1 = activated
-#define BREWSWITCHDELAY 3000       // time in ms
-#define LANGUAGE 1                 // LANGUAGE = 0 (DE), LANGUAGE = 1 (EN), LANGUAGE = 2 (ES)
+#define BREWSWITCHDELAY 3000       // time in ms that the brew switch will be delayed (shot timer will show that much longer after switching off)
 #define VERBOSE 0                  // 1 = Show verbose output (serial connection), 0 = show less
 
 // Connectivity
@@ -49,14 +48,14 @@ enum MACHINE {
 
 // PID & Hardware
 #define ONLYPID 1                  // 1 = Only PID, 0 = PID and preinfusion
-#define ONLYPIDSCALE 0             // 0 = off , 1= OnlyPID with Scale
+#define ONLYPIDSCALE 0             // 0 = off , 1 = OnlyPID with Scale
 #define BREWMODE 1                 // 1 = NORMAL preinfusion ; 2 = Scale with weight
 #define BREWDETECTION 0            // 0 = off, 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = Sensor/Hardware for Only PID
 #define BREWSWITCHTYPE 1           // 1 = normal Switch, 2 = Trigger Switch
 #define BREWPID_ENABLED 0          // 0 = use normal PID also when brew was detected, 1 = use separate BD parameters when brewing
 #define BREWPID_DELAY 10           // delay until enabling PID controller during brew (no heating during this time)
 #define COLDSTART_PID_ENABLED 0    // 0 use normal PID right away, 1 = use separate cold start PID (PonM)
-#define COLDSTART_PID 1            // 1 = default coldstart values, 2 = custom values via webinterface/blynk (expert mode activated)
+#define COLDSTART_PID 2            // 1 = default coldstart values, 2 = custom values via webinterface/blynk (expert mode activated)
 #define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay
 #define VOLTAGESENSORTYPE HIGH     // BREWDETECTION 3 configuration
 #define PINMODEVOLTAGESENSOR INPUT // Mode INPUT_PULLUP, INPUT or INPUT_PULLDOWN_16 (Only Pin 16)
@@ -124,17 +123,17 @@ enum MACHINE {
 #define INFLUXDB_INTERVAL 5000     // Send interval in milliseconds
 
 // System Parameters (default values)
-#define SETPOINT 95                // brew temperatur setpoint
-#define TEMPOFFSET 0               // brew temperatur setpoint
-#define STEAMSETPOINT 120          // steam temperatur setpoint
+#define SETPOINT 95                // brew temperature setpoint
+#define TEMPOFFSET 0               // brew temperature setpoint
+#define STEAMSETPOINT 120          // steam temperature setpoint
 #define BREWSENSITIVITY 150        // brew detection sensitivity, be careful: if too low, then there is the risk of wrong brew detection and rising temperature
-#define AGGKP 65                   // PID Kp (regular phase)
-#define AGGTN 52                   // PID Tn (regular phase)
-#define AGGTV 11.538               // PID Tv (regular phase)
-#define AGGIMAX 50                 // PID Integrator Max (regular phase)
+#define AGGKP 33                   // PID Kp (regular phase)
+#define AGGTN 255                  // PID Tn (regular phase)
+#define AGGTV 0                    // PID Tv (regular phase)
+#define AGGIMAX 500                // PID Integrator Max (regular phase)
 #define STARTKP 50                 // PID Kp (coldstart phase)
 #define STARTTN 0.5                // PID Tn (coldstart phase)
-#define STEAMKP 150                // PID kp (steam phase)
+#define STEAMKP 150                // PID Kp (steam phase)
 #define AGGBKP 50                  // PID Kp (brew detection phase)
 #define AGGBTN 0                   // PID Tn (brew detection phase)
 #define AGGBTV 20                  // PID Tv (brew detection phase)
@@ -154,13 +153,13 @@ enum MACHINE {
 #define PINVALVE 12                // Output pin for 3-way-valve
 #define PINPUMP 13                 // Output pin for pump
 #define PINHEATER 14               // Output pin for heater
-#define PINVOLTAGESENSOR  15       //Input pin for volatage sensor
+#define PINVOLTAGESENSOR 15        // Input pin for voltage sensor
 #define PINETRIGGER 16             // PIN for E-Trigger relay
 #define PINBREWSWITCH 0            // 0: A0 (ESP8266) ; >0 : DIGITAL PIN, ESP32 OR ESP8266: ONLY USE PIN15 AND PIN16!
 #define PINSTEAMSWITCH 17          // STEAM active
 #define LEDPIN    18               // LED PIN ON near setpoint
-#define OLED_SCL 5                 // Output pin for dispaly clock pin
-#define OLED_SDA 4                 // Output pin for dispaly data pin
+#define OLED_SCL 5                 // Output pin for display clock pin
+#define OLED_SDA 4                 // Output pin for display data pin
 #define HXDATPIN 99                // weight scale PIN
 #define HXCLKPIN 99                // weight scale PIN
 #define SCREEN_WIDTH 128           // OLED display width, in pixels
