@@ -292,6 +292,7 @@ PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, PonE, DIRECT);
 const unsigned long intervalpressure = 200; 
 const unsigned int PressureWindowSize = 200;
 double OutputDimmer;
+double PreinfusionDimmer = PUMPPOWER;
 double pressuresetPoint = 6;
 unsigned int DimmerValue = OutputDimmer;
 int i;
@@ -387,6 +388,7 @@ SysPara<uint8_t> sysParaPidOn(&pidON, 0, 1, STO_ITEM_PID_ON);
 SysPara<double> sysParaPidKp2(&aggKp2, 0, 200, STO_ITEM_PID_KP2_REGULAR);
 SysPara<double> sysParaPidTn2(&aggTn2, 0, 999, STO_ITEM_PID_TN2_REGULAR);
 SysPara<double> sysParaPidTv2(&aggTv2, 0, 999, STO_ITEM_PID_TV2_REGULAR);
+SysPara<double> sysParaPumpPower(&PreinfusionDimmer, 0, 100, STO_ITEM_PREINFUSIONDIMMER);
 
 
 enum MQTTSettableType {
@@ -447,6 +449,7 @@ std::vector<editable_t> editableVars = {
     {"PID_KP2", "PID P2", kDouble, (void *)&aggKp2},
     {"PID_TN2", "PID I2", kDouble, (void *)&aggTn2},
     {"PID_TV2", "PID D2", kDouble, (void *)&aggTv2},
+    {"PUMP_POWER", "Pump Power", kDouble, (void *)&PreinfusionDimmer},
 };
 
 unsigned long lastTempEvent = 0;
@@ -2398,6 +2401,7 @@ int readSysParamsFromStorage(void) {
     if (sysParaPidKp2.getStorage() != 0) return -1;
     if (sysParaPidTn2.getStorage() != 0) return -1;
     if (sysParaPidTv2.getStorage() != 0) return -1;
+    if (sysParaPumpPower.getStorage() != 0) return -1;
 
     return 0;
 }
@@ -2428,6 +2432,7 @@ int writeSysParamsToStorage(void) {
     if (sysParaPidKp2.setStorage() != 0) return -1;
     if (sysParaPidTn2.setStorage() != 0) return -1;
     if (sysParaPidTv2.setStorage() != 0) return -1;
+    if (sysParaPumpPower.setStorage() != 0) return -1;
     return storageCommit();
 }
 
