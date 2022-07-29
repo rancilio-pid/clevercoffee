@@ -38,6 +38,7 @@ typedef enum
   STO_ITEM_PID_KP2_REGULAR,          // PID P part at pressure profiling
   STO_ITEM_PID_TN2_REGULAR,          // PID I part at pressure profiling
   STO_ITEM_PID_TV2_REGULAR,          // PID D part at pressure profiling
+  STO_ITEM_PREINFUSIONDIMMER,        // Power of Dimmer during Preinfusion
 
   /* WHEN ADDING NEW ITEMS FOLLOWING HAS TO BE UPDATED:
    * - storage structure:  sto_data_t
