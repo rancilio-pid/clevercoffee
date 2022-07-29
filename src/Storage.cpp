@@ -20,7 +20,7 @@ typedef struct __attribute__((packed)) {
     uint8_t reserved1[2];
     double pidTnRegular;
     uint8_t pidOn;
-    uint8_t freeToUse1;
+    double PumpPower;
     double pidTvRegular;
     uint8_t freeToUse2[2];
     double brewSetpoint;
@@ -63,7 +63,7 @@ static const sto_data_t itemDefaults PROGMEM = {
     {0xFF, 0xFF},             // reserved (maybe for structure version)
     AGGTN,                    // STO_ITEM_PID_TN_REGULAR
     0,                        // STO_ITEM_PID_ON
-    0xFF,                     // free to use
+    PUMPPOWER,                // STO_ITEM_PREINFUSIONDIMMER Pump Dimmer Power during Preinfusion
     AGGTV,                    // STO_ITEM_PID_TV_REGULAR
     {0xFF, 0xFF},             // free to use
     SETPOINT,                 // STO_ITEM_BREW_SETPOINT
@@ -206,6 +206,11 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
             addr = offsetof(sto_data_t, pidTv2);
             size = STRUCT_MEMBER_SIZE(sto_data_t, pidTv2);
             break;
+         
+        case STO_ITEM_PREINFUSIONDIMMER:
+            addr = offsetof(sto_data_t, PumpPower);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, PumpPower);
+            break;   
             
         case STO_ITEM_WIFI_SSID:
             addr = offsetof(sto_data_t, wifiSSID);
