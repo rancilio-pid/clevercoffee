@@ -491,10 +491,10 @@ void brew() {
             case 10:  // waiting step for brew switch turning on
                 if (brewswitch == HIGH && backflushState == 10 && backflushON == 0 && brewswitchWasOFF) {
                     startingTime = millis();
-                    brewcounter = 40;
+                    brewcounter = 20;
 
                     if (preinfusionpause == 0 || preinfusion == 0) {
-                        brewcounter = 20;
+                        brewcounter = 40;
                     }
 
                     kaltstart = false;  // force reset kaltstart if shot is pulled
@@ -507,18 +507,11 @@ void brew() {
                 Serial.println("Preinfusion");
                 digitalWrite(PINVALVE, relayON);
                 digitalWrite(PINPUMP, relayON);
-                dimmer.setState(1);
-                dimmer.setPower(20);
-                brewcounter = 21;
+                dimmer.setPower(PreinfusionDimmer);
+                brewcounter = 40;
 
                 break;
 
-            case 21:  // waiting time preinfusion
-                if (brewTime > (preinfusion * 1000)) {
-                    brewcounter = 40;
-                }
-
-                break;
 
             case 40:  // brew running
                 Serial.println("Profiling started");
@@ -526,7 +519,6 @@ void brew() {
                 digitalWrite(PINPUMP, relayON);
                 pressurePID.SetMode(AUTOMATIC);
                 pressurePID.Compute();
-                dimmer.setState(1);
                 dimmer.setPower(OutputDimmer);
                 brewcounter = 41;
 
@@ -608,7 +600,7 @@ void brew() {
                     brewcounter = 20;
 
                     if (preinfusionpause == 0 || preinfusion == 0) {
-                        brewcounter = 40;
+                        brewcounter = 20;
                     }
 
                     kaltstart = false;  // force reset kaltstart if shot is pulled
@@ -618,7 +610,15 @@ void brew() {
                 }
 
                 break;
+            case 20:  // preinfusioon
+                Serial.println("Preinfusion");
+                digitalWrite(PINVALVE, relayON);
+                digitalWrite(PINPUMP, relayON);
+                dimmer.setPower(PreinfusionDimmer);
+                brewcounter = 40;
 
+                break;
+                
             case 40:  // brew running
                 Serial.println("Brew started");
                 digitalWrite(PINVALVE, relayON);
