@@ -11,7 +11,7 @@
 #define USR_FW_VERSION    3
 #define USR_FW_SUBVERSION 0
 #define USR_FW_HOTFIX     1
-#define USR_FW_BRANCH     "ALPHA"
+#define USR_FW_BRANCH     "Profiling"
 
 // List of supported machines
 enum MACHINE {
@@ -139,6 +139,7 @@ enum MACHINE {
 #define AGGKP2 20                   // PID Kp (regular phase)
 #define AGGTN2 100                  // PID Tn (regular phase)
 #define AGGTV2 5                    // PID Tv (regular phase)
+#define PUMPPOWER 30                // Pump Power during Preinfusion
 
 // Backflush values
 #define FILLTIME 3000              // time in ms the pump is running
