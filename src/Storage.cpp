@@ -20,7 +20,7 @@ typedef struct __attribute__((packed)) {
     uint8_t reserved1[2];
     double pidTnRegular;
     uint8_t pidOn;
-    uint8_t freeToUse1;
+    double PumpPower;
     double pidTvRegular;
     double pidIMaxRegular;
     uint8_t freeToUse2;
@@ -46,7 +46,10 @@ typedef struct __attribute__((packed)) {
     double pidKpStart;
     uint8_t freeToUse12[2];
     uint8_t softApEnabledCheck;
-    uint8_t freeToUse13[9];
+    double pidKp2;
+    double pidTn2;
+    double pidTv2;
+    uint8_t freeToUse13[6];
     double pidTnStart;
     uint8_t freeToUse14[2];
     char wifiSSID[25 + 1];
@@ -62,7 +65,7 @@ static const sto_data_t itemDefaults PROGMEM = {
     {0xFF, 0xFF},             // reserved (maybe for structure version)
     AGGTN,                    // STO_ITEM_PID_TN_REGULAR
     0,                        // STO_ITEM_PID_ON
-    0xFF,                     // free to use
+    PUMPPOWER,                     // free to use
     AGGTV,                    // STO_ITEM_PID_TV_REGULAR
     AGGIMAX,                  // STO_ITEM_PID_I_MAX_REGULAR
     0xFF,                     // free to use
@@ -91,7 +94,10 @@ static const sto_data_t itemDefaults PROGMEM = {
     STARTKP,                                  // STO_ITEM_PID_KP_START
     {0xFF, 0xFF},                             // free to use
     0,                                        // STO_ITEM_SOFT_AP_ENABLED_CHECK
-    {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},  // free to use
+    AGGKP2,                                   // STO_ITEM_PID_KP2_REGULAR
+    AGGTN2,                                   // STO_ITEM_PID_TN2_REGULAR
+    AGGTV2,                                   // STO_ITEM_PID_TV2_REGULAR
+    {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},  // free to use
     STARTTN,       // STO_ITEM_PID_TN_START
     {0xFF, 0xFF},  // free to use
     "",            // STO_ITEM_WIFI_SSID
@@ -199,7 +205,27 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
             addr = offsetof(sto_data_t, softApEnabledCheck);
             size = STRUCT_MEMBER_SIZE(sto_data_t, softApEnabledCheck);
             break;
-
+            
+        case STO_ITEM_PID_KP2_REGULAR:
+            addr = offsetof(sto_data_t, pidKp2);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, pidKp2);
+            break;  
+            
+        case STO_ITEM_PID_TN2_REGULAR:
+            addr = offsetof(sto_data_t, pidTn2);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, pidTn2);
+            break;
+            
+        case STO_ITEM_PID_TV2_REGULAR:
+            addr = offsetof(sto_data_t, pidTv2);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, pidTv2);
+            break;
+         
+        case STO_ITEM_PREINFUSIONDIMMER:
+            addr = offsetof(sto_data_t, PumpPower);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, PumpPower);
+            break;   
+            
         case STO_ITEM_WIFI_SSID:
             addr = offsetof(sto_data_t, wifiSSID);
             size = STRUCT_MEMBER_SIZE(sto_data_t, wifiSSID);

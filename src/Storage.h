@@ -37,6 +37,10 @@ typedef enum
   STO_ITEM_PID_KP_STEAM,            // PID P part at steam phase
   STO_ITEM_PID_I_MAX_REGULAR,       // PID Integrator upper limit
   STO_ITEM_BREW_TEMP_OFFSET,        // brew temp offset
+  STO_ITEM_PID_KP2_REGULAR,          // PID P part at pressure profiling
+  STO_ITEM_PID_TN2_REGULAR,          // PID I part at pressure profiling
+  STO_ITEM_PID_TV2_REGULAR,          // PID D part at pressure profiling
+  STO_ITEM_PREINFUSIONDIMMER,        // Power of Dimmer during Preinfusion
 
   /* WHEN ADDING NEW ITEMS FOLLOWING HAS TO BE UPDATED:
    * - storage structure:  sto_data_t
