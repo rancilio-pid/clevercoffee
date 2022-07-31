@@ -212,6 +212,25 @@ void Displaymachinestate() {
             u8g2.drawXBMP(53, 14, Heiz_Logo_width, Heiz_Logo_height, Heiz_Logo);
             u8g2.setFont(u8g2_font_profont22_tf);
         }
+        //new Gaggia with new Heiz
+        if (HEATINGLOGO == 3) {
+            u8g2.drawXBMP(0, 14, Gaggia_Classic_Logo_width, Gaggia_Classic_Logo_height, Gaggia_Classic_Logo_new);
+            u8g2.drawXBMP(53, 14, Heiz_Logo_width, Heiz_Logo_height, Heiz_Logo_new);
+            u8g2.setFont(u8g2_font_profont22_tf);
+        }
+        // Rancilio logo with new Heiz
+        if (HEATINGLOGO == 4) {
+            u8g2.drawXBMP(0, 14, Rancilio_Silvia_Logo_width, Rancilio_Silvia_Logo_height, Rancilio_Silvia_Logo);
+            u8g2.drawXBMP(53, 14, Heiz_Logo_width, Heiz_Logo_height, Heiz_Logo_new);
+            u8g2.setFont(u8g2_font_profont22_tf);
+        }
+
+        // Gaggia Logo with new Heiz
+        if (HEATINGLOGO == 5) {
+            u8g2.drawXBMP(0, 14, Gaggia_Classic_Logo_width, Gaggia_Classic_Logo_height, Gaggia_Classic_Logo);
+            u8g2.drawXBMP(53, 14, Heiz_Logo_width, Heiz_Logo_height, Heiz_Logo_new);
+            u8g2.setFont(u8g2_font_profont22_tf);
+        }
 
         // Temperature
         u8g2.setCursor(92, 30);
