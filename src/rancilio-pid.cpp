@@ -11,7 +11,7 @@
 #define FW_VERSION    3
 #define FW_SUBVERSION 0
 #define FW_HOTFIX     1
-#define FW_BRANCH     "ALPHA"
+#define FW_BRANCH     "MASTER"
 
 // Includes
 #include <ArduinoOTA.h>
@@ -705,7 +705,7 @@ void refreshTemp() {
         #if ((ONE_WIRE_BUS != 16 && defined(ESP8266)) || defined(ESP32))
             Temperature_C = Sensor2.getTemp();
         #endif
-        // Temperature_C = 94; test temp
+       // Temperature_C = 94; 
         if (!checkSensor(Temperature_C) && firstreading == 0)
             return; // if sensor data is not valid, abort function; Sensor must
                     // be read at least one time at system startup
@@ -1696,6 +1696,8 @@ void tempLed() {
  */
 void wiFiSetup() {
     wm.setCleanConnect(true);
+    wm.setConfigPortalTimeout(60); // sec Timeout for Portal
+    wm.setConnectTimeout(10); // Try 10 Sec to Connect to WLAN
     wm.setBreakAfterConfig(true);
 
     if (wm.autoConnect(hostname, pass)) {
