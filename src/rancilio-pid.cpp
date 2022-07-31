@@ -2089,7 +2089,7 @@ void getCurrentTimeString(char *output) {
 
 // Print to remote serial (e.g. using OTA Monitor Task ) if client is connected, otherwise use hardware serial
 void debugPrintln(const char *message) {
-    char time[10];
+    char time[12];
     getCurrentTimeString(time);
     if (RemoteSerial.connected()) {
         RemoteSerial.print(time);
@@ -2101,7 +2101,7 @@ void debugPrintln(const char *message) {
 }
 
 void debugPrint(const char *message) {
-    char time[10];
+    char time[12];
     getCurrentTimeString(time);
     if (RemoteSerial.connected()) {
         RemoteSerial.print(time);
@@ -2132,7 +2132,7 @@ size_t debugPrintf(const char *format, ...) {
     }
 
     //get time to prepend to message
-    char time[10];
+    char time[12];
     getCurrentTimeString(time);
 
     if (RemoteSerial.connected()) {
