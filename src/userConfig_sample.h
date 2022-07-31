@@ -34,7 +34,7 @@ enum MACHINE {
 #define DISPLAYTEMPLATE 3          // 1 = Standard Display Template, 2 = Minimal Template, 3 = only Temperatur, 4 = Scale Template, 20 = vertical Display see git Handbook for further information
 #define DISPLAYROTATE U8G2_R0      // rotate display clockwise: U8G2_R0 = no rotation; U8G2_R1 = 90°; U8G2_R2 = 180°; U8G2_R3 = 270°
 #define SHOTTIMER 1                // 0 = deactivated, 1 = activated 2 = with scale
-#define HEATINGLOGO 0              // 0 = deactivated, 1 = Rancilio, 2 = Gaggia
+#define HEATINGLOGO 3              // 0 = deactivated, 1 = Rancilio, 2 = Gaggia, 3 = new Gaggia with new Heizlogo, 4 = Rancilio with new Heizlogo, 5 = Old Gaggia with new Heizlogo
 #define OFFLINEGLOGO 1             // 0 = deactivated, 1 = activated
 #define BREWSWITCHDELAY 3000       // time in ms
 #define LANGUAGE 1                 // LANGUAGE = 0 (DE), LANGUAGE = 1 (EN), LANGUAGE = 2 (ES)
