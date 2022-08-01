@@ -300,9 +300,9 @@ void serverSetup() {
     });
 
     SPIFFS.begin();
-    server.serveStatic("/css", SPIFFS, "/css/");
-    server.serveStatic("/js", SPIFFS, "/js/");
-    server.serveStatic("/", SPIFFS, "/html/").setTemplateProcessor(staticProcessor);
+    server.serveStatic("/css", SPIFFS, "/css/", "max-age=86400");
+    server.serveStatic("/js", SPIFFS, "/js/", "max-age=86400");
+    server.serveStatic("/", SPIFFS, "/html/", "max-age=0").setTemplateProcessor(staticProcessor);
 
     server.onNotFound([](AsyncWebServerRequest *request) {
         request->send(404, "text/plain", "Not found");
