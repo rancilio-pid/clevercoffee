@@ -347,9 +347,9 @@ SysPara<double> sysParaPidKpBd(&aggbKp, 0, 200, STO_ITEM_PID_KP_BD);
 SysPara<double> sysParaPidTnBd(&aggbTn, 0, 999, STO_ITEM_PID_TN_BD);
 SysPara<double> sysParaPidTvBd(&aggbTv, 0, 999, STO_ITEM_PID_TV_BD);
 SysPara<double> sysParaBrewSetPoint(&BrewSetPoint, 20, 105, STO_ITEM_BREW_SETPOINT);
-SysPara<double> sysParaTempOffset(&BrewTempOffset, 0, 15, STO_ITEM_BREW_TEMP_OFFSET);
-SysPara<double> sysParaBrewTime(&brewtime, 0, 60, STO_ITEM_BREW_TIME);
-SysPara<double> sysParaBrewSwTimer(&brewtimersoftware, 0, 999, STO_ITEM_BREW_SW_TIMER);
+SysPara<double> sysParaTempOffset(&BrewTempOffset, 0, 20, STO_ITEM_BREW_TEMP_OFFSET);
+SysPara<double> sysParaBrewTime(&brewtime, 5, 60, STO_ITEM_BREW_TIME);
+SysPara<double> sysParaBrewSwTimer(&brewtimersoftware, 5, 60, STO_ITEM_BREW_SW_TIMER);
 SysPara<double> sysParaBrewThresh(&brewsensitivity, 0, 999, STO_ITEM_BD_THRESHOLD);
 SysPara<double> sysParaPreInfTime(&preinfusion, 0, 10, STO_ITEM_PRE_INFUSION_TIME);
 SysPara<double> sysParaPreInfPause(&preinfusionpause, 0, 20, STO_ITEM_PRE_INFUSION_PAUSE);
@@ -1028,7 +1028,7 @@ void brewdetection() {
     // Activate brew detection
     if (Brewdetection == 1) {  // SW BD
         // BD PID only +/- 4 Grad Celsius, no detection if HW was active
-        if (heatrateaverage <= -brewsensitivity && timerBrewdetection == 0 && (fabs(Input - BrewSetPoint) < 2)) {
+        if (heatrateaverage <= -brewsensitivity && timerBrewdetection == 0 && (fabs(Input - BrewSetPoint) < 5)) {
             debugPrintln("SW Brew detected");
             timeBrewdetection = millis();
             timerBrewdetection = 1;
@@ -1456,12 +1456,12 @@ void machinestatevoid() {
                             (double)(millis() - startingTime) / 1000, Input, heatrateaverage);
             }
 
-            if ((timeBrewed > 34 * 1000 && Brewdetection == 1 && ONLYPID == 1) ||  // 35 sec later and BD PID active SW Solution
-                (timeBrewed == 0 && Brewdetection == 3 && ONLYPID == 1) ||         // Voltage sensor reset timeBrewed == 0
-                ((brewcounter == 10 || brewcounter == 43) && ONLYPID == 0))
+            if ((timeBrewed >= brewtimersoftware * 1000 && Brewdetection == 1 && ONLYPID == 1) || // SW BD, kBrew was active for set time
+                (timeBrewed == 0 && Brewdetection == 3 && ONLYPID == 1) ||  // OnlyPID+ - Voltage sensor BD timeBrewed == 0 -> switch is off again
+                ((brewcounter == 10 || brewcounter == 43) && ONLYPID == 0)) // Hardware BD
             {
                 if ((ONLYPID == 1 && Brewdetection == 3) ||
-                    ONLYPID == 0)  // only delay of shot timer for voltage sensor or brew counter
+                    ONLYPID == 0)  // only delay shot timer display for voltage sensor or hw brew toggle switch (brew counter)
                 {
                     machinestate = kShotTimerAfterBrew;
                     lastbrewTimeMillis = millis();  // for delay
@@ -2141,7 +2141,7 @@ size_t debugPrintf(const char *format, ...) {
         len = RemoteSerial.print(time);        
         len += RemoteSerial.print(buffer);
     } else {
-        len = Serial.print(time);        
+        len = Serial.print(time);
         len += Serial.print(buffer);
     }
 

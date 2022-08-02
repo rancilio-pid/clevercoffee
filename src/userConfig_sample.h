@@ -138,7 +138,7 @@ enum MACHINE {
 #define AGGBTN 0                   // PID Tn (brew detection phase)
 #define AGGBTV 20                  // PID Tv (brew detection phase)
 #define BREW_TIME 25               // brew time in seconds
-#define BREW_SW_TIMER 45           // brew software timer after detection in seconds
+#define BREW_SW_TIMER 25           // brew software timer after detection in seconds
 #define PRE_INFUSION_TIME 2        // pre-infusion time in seconds
 #define PRE_INFUSION_PAUSE_TIME 5  // pre-infusion pause time in seconds
 
