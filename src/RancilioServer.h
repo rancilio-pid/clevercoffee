@@ -293,27 +293,29 @@ void serverSetup() {
 
                 m += "Setting ";
                 m += e.displayName;
-                m += " to ";
-                m += p->value();
+                m += " from ";
 
                 if (e.type == kInteger) {
+                    m += *(int *)e.ptr;
+
                     int newVal = atoi(p->value().c_str());
                     *(int *)e.ptr = newVal;
-                    m += ", it is now: ";
-                    m += *(int *)e.ptr;
                 } else if (e.type == kUInt8) {
-                    *(uint8_t *)e.ptr = (uint8_t)atoi(p->value().c_str());
-                    m += ", it is now: ";
                     m += *(uint8_t *)e.ptr;
+
+                    *(uint8_t *)e.ptr = (uint8_t)atoi(p->value().c_str());
                 } else if (e.type == kDouble ||e.type == kDoubletime) {
+                    m += *(double *)e.ptr;
+
                     float newVal = atof(p->value().c_str());
                     *(double *)e.ptr = newVal;
-                    m += ", it is now: ";
-                    m += *(double *)e.ptr;
                 } else if (e.type == kCString) {
                     // Hum, how do we do this?
-                    m += ", unsupported for now.";
+                    m += "(unsupported for now)";
                 }
+
+                m += " to ";
+                m += p->value();
 
                 m += "<br />";
             }
