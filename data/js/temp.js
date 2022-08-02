@@ -134,7 +134,7 @@ function plotData(jsonValue) {
   var keys = Object.keys(jsonValue);
 
   var date = new Date();
-  console.log(date);
+  //console.log(date);
   dates.push(date);
 
   const curTempKey = keys[0];
@@ -142,15 +142,15 @@ function plotData(jsonValue) {
   const heaterPowerKey = keys[2];
 
   var curTemp = Number(jsonValue[curTempKey]);
-  console.log(curTemp);
+  //console.log(curTemp);
   curTempVals.push(curTemp);
 
   var targetTemp = Number(jsonValue[targetTempKey]);
-  console.log(targetTemp);
+  //console.log(targetTemp);
   targetTempVals.push(targetTemp);
 
   var heaterPower = Number(jsonValue[heaterPowerKey]);
-  console.log(heaterPower);
+  //console.log(heaterPower);
   heaterPowerVals.push(heaterPower);
 
   Plotly.extendTraces(
@@ -193,7 +193,7 @@ function getTemperatures() {
   xhr.onreadystatechange = function () {
     if (this.readyState == 4 && this.status == 200) {
       var myObj = JSON.parse(this.responseText);
-      console.log(myObj);
+      //console.log(myObj);
       plotData(myObj);
     }
   };
@@ -224,19 +224,21 @@ if (!!window.EventSource) {
     false
   );
 
+  /*
   source.addEventListener(
     'message',
     function (e) {
       console.log("message", e.data);
     },
     false);
+  */
 
   source.addEventListener(
     'new_temps',
     function (e) {
-      console.log("new_temps", e.data);
+      //console.log("new_temps", e.data);
       var myObj = JSON.parse(e.data);
-      console.log(myObj);
+      //console.log(myObj);
       plotData(myObj);
 
       document.getElementById("varTEMP").innerText = myObj["currentTemp"].toFixed(1);
