@@ -189,11 +189,49 @@ String getValue(String varName) {
     return "(unknown variable " + varName + ")";
 }
 
+//hash strings at compile time to use in switch statement
+//(from https://stackoverflow.com/questions/2111667/compile-time-string-hashing)
+constexpr unsigned int str2int(const char* str, int h = 0) {
+    return !str[h] ? 5381 : (str2int(str, h+1) * 33) ^ str[h];
+}
+
+String getHeader(String varName) {
+    switch (str2int(varName.c_str())) {
+        case (str2int("FONTAWESOME")):
+            #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
+                return "<link href=\"/css/fntawsm-4.7.0.min.css\" rel=\"stylesheet\">";
+            #else
+                return "<link href=\"https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css\" rel=\"stylesheet\">";
+            #endif
+        case (str2int("BOOTSTRAP")):
+            #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
+                return "<link href=\"/css/bootstrap-5.1.3.min.css\" rel=\"stylesheet\">";
+            #else
+                return "<link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css\" rel=\"stylesheet\" integrity=\"sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3\" crossorigin=\"anonymous\">";
+            #endif
+        case (str2int("BOOTSTRAP_BUNDLE")):
+            #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
+                return "<script src=\"/js/bootstrap-5.1.3.min.js\" integrity=\"sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p\"></script>";
+            #else
+                return "<script src=\"https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js\" integrity=\"sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p\" crossorigin=\"anonymous\"></script>";
+            #endif
+        case (str2int("PLOTLY")):
+            //#if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
+            //    return "<script src=\"/js/plotly-2.13.3.min.js\"></script>";
+            //#else
+                return "<script src=\"https://cdn.plot.ly/plotly-basic-2.13.3.min.js\"></script>";
+            //#endif
+    }
+    return "";
+}
+
 String staticProcessor(const String& var) {
     if (var.startsWith("VAR_EDIT_")) {
         return generateForm(var.substring(9)); // cut off "VAR_EDIT_"
     } else if (var.startsWith("VAR_SHOW_")) {
         return getValue(var.substring(9)); // cut off "VAR_SHOW_"
+    } else if (var.startsWith("VAR_HEADER_")) {
+        return getHeader(var.substring(11)); // cut off "VAR_HEADER_"
     }
 
     String varLower(var);
