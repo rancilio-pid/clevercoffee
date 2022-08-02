@@ -109,7 +109,7 @@ enum MACHINE {
 #define BLYNKPORT 8080                          // blynk-server portver
 
 // Grafana
-#define GRAFANA 0                 // 2= custom Grafana 1 = grafana visualisation (access required), 0 = off (default)
+#define GRAFANA 0                  // 2= custom Grafana 1 = grafana visualisation (access required), 0 = off (default)
 
 // INFLUXDB
 #define INFLUXDB 0                 // 1 = INFLUX enabled, 0 = INFLUX disabled

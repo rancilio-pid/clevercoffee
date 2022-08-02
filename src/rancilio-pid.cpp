@@ -403,7 +403,7 @@ std::vector<editable_t> editableVars = {
     {"BREW_SET_POINT", "Set point (°C)", "The temperature that the PID will attempt to reach and hold", kDouble, (void *)&BrewSetPoint},
     {"BREW_TEMP_OFFSET", "Offset (°C)", "Optional offset that is added to the user-visible setpoint. Can be used to compensate sensor offsets and the average temperature loss between boiler and group so that the setpoint represents the approximate brew temperature.", kDouble, (void *)&BrewTempOffset}, {"BREW_TIME", "Brew Time (s)", "", kDouble, (void *)&brewtime},
     {"BREW_PREINFUSION", "Preinfusion Time (s)", "", kDouble, (void *)&preinfusion},
-    {"BREW_PREINFUSUINPAUSE", "Preinfusion Pause Time (s)", "", kDouble, (void *)&preinfusionpause},
+    {"BREW_PREINFUSIONPAUSE", "Preinfusion Pause Time (s)", "", kDouble, (void *)&preinfusionpause},
     {"PID_BD_KP", "BD Kp", "Proportional gain (in Watts/°C) for the PID when brewing has been detected. Use this controller to either increase heating during the brew to counter temperature drop from fresh cold water in the boiler. Some machines, e.g. Rancilio Silvia, actually need to heat less not at all during the brew because of high temperature stability (<a href='https://www.kaffee-netz.de/threads/installation-eines-temperatursensors-in-silvia-bruehgruppe.111093/#post-1453641' target='_blank'>Details<a>)", kDouble, (void *)&aggbKp},
     {"PID_BD_TN", "BD Tn (=Kp/Ki)", "Integral time constant (in seconds) for the PID when brewing has been detected.", kDouble, (void *)&aggbTn},
     {"PID_BD_TV", "BD Tv (=Kd/Kp)", "Differential time constant (in seconds) for the PID when brewing has been detected.", kDouble, (void *)&aggbTv},

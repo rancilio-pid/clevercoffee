@@ -54,7 +54,7 @@ double hPower = 0.0;
 void serverSetup();
 void setEepromWriteFcn(int (*fcnPtr)(void));
 
-// We define these in the ino file
+// We define these in rancilio-pid.cpp
 extern std::vector<editable_t> editableVars;
 
 // EEPROM
