@@ -1995,7 +1995,7 @@ void setup() {
     bPID.SetSampleTime(windowSize);
     bPID.SetOutputLimits(0, windowSize);
     bPID.SetIntegratorLimits(0, AGGIMAX);
-    bPID.SetSmoothingFactor(0.75);
+    bPID.SetSmoothingFactor(EMA_FACTOR);
     bPID.SetMode(AUTOMATIC);
 
     // Temp sensor

@@ -131,6 +131,7 @@ enum MACHINE {
 #define AGGTN 255                  // PID Tn (regular phase)
 #define AGGTV 0                    // PID Tv (regular phase)
 #define AGGIMAX 500                // PID Integrator Max (regular phase)
+#define EMA_FACTOR 0.5             // Smoothing of input that is used for Tv (derivative component of PID). Smaller means less smoothing but also less delay, 0 means no filtering
 #define STARTKP 45                 // PID Kp (coldstart phase)
 #define STARTTN 130                // PID Tn (coldstart phase)
 #define STEAMKP 150                // PID Kp (steam phase)
