@@ -76,7 +76,6 @@ String getTempString() {
     doc["heaterPower"] = hPower;
 
     String jsonTemps;
-
     serializeJson(doc, jsonTemps);
 
     return jsonTemps;
@@ -88,64 +87,72 @@ String generateForm(String varName) {
             continue;
         }
 
-        String result = "<label class=\"form-label me-1\" for=\"var";
+        String result = F("<label class=\"form-label me-1\" for=\"var");
         result += e.templateString;
-        result += "\">";
+        result += F("\">");
         result += e.displayName;
         result += "</label>";
         if (!e.helpText.isEmpty()) {
-            result += "<a href=\"#\" role=\"button\" data-bs-toggle=\"popover\" data-bs-html=\"true\" data-bs-original-title=\"" +
-                e.helpText + "\"><span class=\"fa fa-question-circle\"></span></a></br>";
+            result += F("<a href=\"#\" role=\"button\" data-bs-toggle=\"popover\" data-bs-html=\"true\" data-bs-original-title=\"");
+            result += e.helpText;
+            result += F("\"><span class=\"fa fa-question-circle\"></span></a></br>");
         } else {
-            result += "<br/>";
+            result += F("<br/>");
         }
         String currVal;
 
         switch (e.type) {
             case kDouble:
-                result += "<input class=\"form-control form-control-lg\" type=\"number\" step=\"0.1\"";
-                currVal = String(*(double *)e.ptr);
+                result += F("<input class=\"form-control form-control-lg\" type=\"number\" step=\"0.1\"");
+                currVal = *(double *)e.ptr;
                 break;
 
             case kDoubletime:
-                result += "<input class=\"form-control form-control-lg\" type=\"number\" step=\"0.1\"";
-                currVal = String(*(double *)e.ptr/1000);
+                result += F("<input class=\"form-control form-control-lg\" type=\"number\" step=\"0.1\"");
+                currVal = *(double *)e.ptr/1000;
                 break;
 
             case kInteger:
-                result += "<input class=\"form-control form-control-lg\" type=\"number\" step=\"1\"";
-                currVal = String(*(int *)e.ptr);
+                result += F("<input class=\"form-control form-control-lg\" type=\"number\" step=\"1\"");
+                currVal = *(int *)e.ptr;
                 break;
 
             case kUInt8:
             {
                 uint8_t val = *(uint8_t *)e.ptr;
 
-                result += "<input type=\"hidden\" id=\"var" + e.templateString + "\" name=\"var" + e.templateString + "\" value=\"0\" />";
-                result += "<input type=\"checkbox\" class=\"form-check-input form-control-lg\" id=\"var" + e.templateString + "\" name=\"var" + e.templateString + "\" value=\"1\"";
+                result += F("<input type=\"hidden\" id=\"var");
+                result += e.templateString;
+                result += F("\" name=\"var");
+                result += e.templateString + F("\" value=\"0\" />");
+                result += F("<input type=\"checkbox\" class=\"form-check-input form-control-lg\" id=\"var");
+                result += e.templateString;
+                result += F("\" name=\"var");
+                result += e.templateString;
+                result += F("\" value=\"1\"");
 
-                if(val) {
-                    result += " checked=\"checked\"";
+                if (val) {
+                    result += F(" checked=\"checked\"");
                 }
 
-                result += "><br />";
+                result += F("><br />");
 
                 break;
             }
 
             default:
-                result += "<input class=\"form-control form-control-lg\" type=\"text\"";
+                result += F("<input class=\"form-control form-control-lg\" type=\"text\"");
                 currVal = (const char *)e.ptr;
         }
 
         if (e.type != kUInt8) {
-            result += " id=\"var";
+            result += F(" id=\"var");
             result += e.templateString;
-            result += "\" name=\"var";
+            result += F("\" name=\"var");
             result += e.templateString;
-            result += "\" value=\"";
+            result += F("\" value=\"");
             result += currVal;
-            result += "\"><br />";
+            result += F("\"><br />");
         }
 
         return result;
@@ -182,7 +189,7 @@ String getValue(String varName) {
              case rCString:
                 return String((const char *)e.ptr);
             default:
-                return "Unknown type";
+                return F("Unknown type");
                 break;
         }
     }
@@ -199,28 +206,28 @@ String getHeader(String varName) {
     switch (str2int(varName.c_str())) {
         case (str2int("FONTAWESOME")):
             #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
-                return "<link href=\"/css/fntawsm-4.7.0.min.css\" rel=\"stylesheet\">";
+                return F("<link href=\"/css/fntawsm-4.7.0.min.css\" rel=\"stylesheet\">");
             #else
-                return "<link href=\"https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css\" rel=\"stylesheet\">";
+                return F("<link href=\"https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css\" rel=\"stylesheet\">");
             #endif
         case (str2int("BOOTSTRAP")):
             #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
                 return "<link href=\"/css/bootstrap-5.1.3.min.css\" rel=\"stylesheet\">";
             #else
-                return "<link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css\" rel=\"stylesheet\" integrity=\"sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3\" crossorigin=\"anonymous\">";
+                return F("<link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css\" rel=\"stylesheet\" integrity=\"sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3\" crossorigin=\"anonymous\">");
             #endif
         case (str2int("BOOTSTRAP_BUNDLE")):
             #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
                 return "<script src=\"/js/bootstrap-5.1.3.min.js\" integrity=\"sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p\"></script>";
             #else
-                return "<script src=\"https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js\" integrity=\"sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p\" crossorigin=\"anonymous\"></script>";
+                return F("<script src=\"https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js\" integrity=\"sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p\" crossorigin=\"anonymous\"></script>");
             #endif
         case (str2int("PLOTLY")):
             //file is too large for flash mem on ESP8288
             //#if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
-            //    return "<script src=\"/js/plotly-2.13.3.min.js\"></script>";
+            //    return F("<script src=\"/js/plotly-2.13.3.min.js\"></script>");
             //#else
-                return "<script src=\"https://cdn.plot.ly/plotly-basic-2.13.3.min.js\"></script>";
+                return F("<script src=\"https://cdn.plot.ly/plotly-basic-2.13.3.min.js\"></script>");
             //#endif
     }
     return "";
@@ -281,8 +288,8 @@ void serverSetup() {
         //this for some reason also gets called when HTTP_HEAD is the method (although should be POST from a form) -> does it set the wrong code?
         //debugPrintf("/parameters requested, method: %d", request->method());
 
-        if (request->method() == HTTP_POST || request->method() == HTTP_GET &&
-            request->params() > 0 || request->method() == HTTP_HEAD)
+        if (request->method() == HTTP_POST || request->method() == HTTP_GET && request->params() > 0
+            || request->method() == HTTP_HEAD)
         {
             //update all given params and match var name in editableVars
             int params = request->params();
@@ -293,7 +300,7 @@ void serverSetup() {
             for (int i = 0 ; i < params; i++) {
                 AsyncWebParameter* p = request->getParam(i);
                 String varName;
-                if (p->name().startsWith("VAR_")) {
+                if (p->name().startsWith("var")) {
                     varName = p->name().substring(3);
                 } else {
                     varName = p->name();
@@ -323,9 +330,9 @@ void serverSetup() {
                         float newVal = atof(p->value().c_str());
                         *(double *)e.ptr = newVal;
                     } else if (e.type == kCString) {
-                        m += String((char *)e.ptr);
+                        m += (char *)e.ptr;
 
-                        String val = p->value();
+                        const String& val = p->value();
                         char* newVal = new char[val.length() + 1];
                         val.toCharArray(newVal, val.length() + 1); 
 
@@ -338,7 +345,6 @@ void serverSetup() {
                     m += "<br />";
                 }
             }
-            // ms to s
 
             request->send(200, "text/html", m);
 
@@ -392,7 +398,7 @@ void serverSetup() {
         String paramString;
 
         AsyncWebParameter* p = request->getParam(0);
-        String varValue= p->value();
+        const String& varValue = p->value();
         for (editable_t e : editableVars) {
             if (e.templateString != varValue) {
                 continue;
@@ -423,7 +429,7 @@ void serverSetup() {
     });
 
     events.onConnect([](AsyncEventSourceClient *client) {
-        if(client->lastId()) {
+        if (client->lastId()) {
             Serial.printf("Reconnected, last message ID was: %u\n", client->lastId());
         }
 

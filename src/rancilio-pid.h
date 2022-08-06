@@ -5,7 +5,7 @@
 
 // Functions
 int factoryReset(void);
-const char* getFwVersion(void);
+const String getFwVersion(void);
 int readSysParamsFromStorage(void);
 int writeSysParamsToStorage(void);
 

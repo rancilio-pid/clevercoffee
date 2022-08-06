@@ -1859,7 +1859,7 @@ void websiteSetup() {
 }
 
 void setup() {
-    const String sysVersion = "Version " + String(getFwVersion()) + " " + FW_BRANCH;
+    const String sysVersion = "Version " + getFwVersion() + " " + FW_BRANCH;
 
     Serial.begin(115200);
 
@@ -2630,12 +2630,11 @@ void writeSysParamsToMQTT(void) {
  *
  * @return firmware version string
  */
-const char* getFwVersion(void)
-{
+const String getFwVersion(void) {
     static const String sysVersion = String(FW_VERSION) + "." +
                                      String(FW_SUBVERSION) + "." +
                                      String(FW_HOTFIX);
-    return sysVersion.c_str();
+    return sysVersion;
 }
 
 
