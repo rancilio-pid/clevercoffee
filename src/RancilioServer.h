@@ -277,67 +277,111 @@ void serverSetup() {
         request->redirect("/");
     });
 
-    server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request) {
-        int params = request->params();
-        String m = "Got ";
-        m += params;
-        m += " request parameters: <br />";
+    server.on("/parameters", HTTP_GET | HTTP_POST, [](AsyncWebServerRequest *request) {
+        //this for some reason also gets called when HTTP_HEAD is the method (although should be POST from a form) -> does it set the wrong code?
+        //debugPrintf("/parameters requested, method: %d", request->method());
 
-        for(int i = 0 ; i < params; i++) {
-            AsyncWebParameter* p = request->getParam(i);
-            String varName = p->name().substring(3);
+        if (request->method() == HTTP_POST || request->method() == HTTP_GET &&
+            request->params() > 0 || request->method() == HTTP_HEAD)
+        {
+            //update all given params and match var name in editableVars
+            int params = request->params();
+            String m = "Got ";
+            m += params;
+            m += " request parameters: <br />";
+
+            for(int i = 0 ; i < params; i++) {
+                AsyncWebParameter* p = request->getParam(i);
+                String varName = p->name().substring(3);
+
+                for (editable_t e : editableVars) {
+                    if (e.templateString != varName) {
+                        continue;
+                    }
+
+                    m += "Setting ";
+                    m += e.displayName;
+                    m += " from ";
+
+                    if (e.type == kInteger) {
+                        m += *(int *)e.ptr;
+
+                        int newVal = atoi(p->value().c_str());
+                        *(int *)e.ptr = newVal;
+                    } else if (e.type == kUInt8) {
+                        m += *(uint8_t *)e.ptr;
+
+                        *(uint8_t *)e.ptr = (uint8_t)atoi(p->value().c_str());
+                    } else if (e.type == kDouble || e.type == kDoubletime) {
+                        m += *(double *)e.ptr;
+
+                        float newVal = atof(p->value().c_str());
+                        *(double *)e.ptr = newVal;
+                    } else if (e.type == kCString) {
+                        m += String((char *)e.ptr);
+
+                        String val = p->value();
+                        char* newVal = new char[val.length() + 1];
+                        val.toCharArray(newVal, val.length() + 1); 
+
+                        *(char **)e.ptr = newVal;
+                    }
+
+                    m += " to ";
+                    m += p->value();
+
+                    m += "<br />";
+                }
+            }
+            // ms to s
+
+            request->send(200, "text/html", m);
+
+            // Write to EEPROM
+            if (writeToEeprom) {
+                if (writeToEeprom() == 0)
+                {
+                    Serial.println("successfully wrote EEPROM");
+                } else {
+                    Serial.println("EEPROM write failed");
+                }
+            }
+
+            // Write to Blynk and MQTT the new values
+            writeSysParamsToBlynk();
+            writeSysParamsToMQTT();
+
+        } else if (request->method() == HTTP_GET) {
+            //return all params as json
+            //TODO: this can grow to full size and might use too much memory, should send chunked and only create part of json?
+            //or just send help texts from a new endpoint for param help texts
+            DynamicJsonDocument doc(4096);
+            String paramString;
 
             for (editable_t e : editableVars) {
-                if (e.templateString != varName) {
-                    continue;
-                }
+                JsonObject paramObj = doc.createNestedObject();
+                //set parameter name etc.
+                paramObj["name"] = e.templateString;
+                paramObj["displayName"] = e.displayName;
+                //paramObj["helpText"] = e.helpText;
+                paramObj["type"] = e.type;
 
-                m += "Setting ";
-                m += e.displayName;
-                m += " from ";
-
+                //set parameter value
                 if (e.type == kInteger) {
-                    m += *(int *)e.ptr;
-
-                    int newVal = atoi(p->value().c_str());
-                    *(int *)e.ptr = newVal;
+                    paramObj["value"] = *(int *)e.ptr;
                 } else if (e.type == kUInt8) {
-                    m += *(uint8_t *)e.ptr;
-
-                    *(uint8_t *)e.ptr = (uint8_t)atoi(p->value().c_str());
-                } else if (e.type == kDouble ||e.type == kDoubletime) {
-                    m += *(double *)e.ptr;
-
-                    float newVal = atof(p->value().c_str());
-                    *(double *)e.ptr = newVal;
+                    paramObj["value"] = *(uint8_t *)e.ptr;
+                } else if (e.type == kDouble || e.type == kDoubletime) {
+                    paramObj["value"] = *(double *)e.ptr;
                 } else if (e.type == kCString) {
-                    // Hum, how do we do this?
-                    m += "(unsupported for now)";
-                }
-
-                m += " to ";
-                m += p->value();
-
-                m += "<br />";
+                    paramObj["value"] = String(*(char **)e.ptr);
+                }                
             }
+
+            String paramsJson;
+            serializeJson(doc, paramsJson);
+            request->send(200, "application/json", paramsJson);
         }
-         // ms to s
-
-        request->send(200, "text/html", m);
-
-        // Write to EEPROM
-        if (writeToEeprom) {
-            if (writeToEeprom() == 0)
-            {
-                Serial.println("successfully wrote EEPROM");
-            } else {
-                Serial.println("EEPROM write failed");
-            }
-        }
-
-        // Write to Blynk and MQTT the new values
-        writeSysParamsToBlynk();
-        writeSysParamsToMQTT();
     });
 
     SPIFFS.begin();
