@@ -290,9 +290,14 @@ void serverSetup() {
             m += params;
             m += " request parameters: <br />";
 
-            for(int i = 0 ; i < params; i++) {
+            for (int i = 0 ; i < params; i++) {
                 AsyncWebParameter* p = request->getParam(i);
-                String varName = p->name().substring(3);
+                String varName;
+                if (p->name().startsWith("VAR_")) {
+                    varName = p->name().substring(3);
+                } else {
+                    varName = p->name();
+                }
 
                 for (editable_t e : editableVars) {
                     if (e.templateString != varName) {
@@ -339,8 +344,7 @@ void serverSetup() {
 
             // Write to EEPROM
             if (writeToEeprom) {
-                if (writeToEeprom() == 0)
-                {
+                if (writeToEeprom() == 0) {
                     Serial.println("successfully wrote EEPROM");
                 } else {
                     Serial.println("EEPROM write failed");
@@ -353,18 +357,17 @@ void serverSetup() {
 
         } else if (request->method() == HTTP_GET) {
             //return all params as json
-            //TODO: this can grow to full size and might use too much memory, should send chunked and only create part of json?
-            //or just send help texts from a new endpoint for param help texts
             DynamicJsonDocument doc(4096);
             String paramString;
 
             for (editable_t e : editableVars) {
                 JsonObject paramObj = doc.createNestedObject();
-                //set parameter name etc.
+                //set all parameter fields
+                paramObj["type"] = e.type;
                 paramObj["name"] = e.templateString;
                 paramObj["displayName"] = e.displayName;
+                //TODO: send help texts from a new endpoint for param help texts
                 //paramObj["helpText"] = e.helpText;
-                paramObj["type"] = e.type;
 
                 //set parameter value
                 if (e.type == kInteger) {
@@ -384,6 +387,27 @@ void serverSetup() {
         }
     });
 
+    server.on("/parameterHelp", HTTP_GET, [](AsyncWebServerRequest *request) {
+        DynamicJsonDocument doc(4096);
+        String paramString;
+
+        AsyncWebParameter* p = request->getParam(0);
+        String varValue= p->value();
+        for (editable_t e : editableVars) {
+            if (e.templateString != varValue) {
+                continue;
+            }
+
+            doc["name"] = e.templateString;
+            doc["helpText"] = e.helpText;
+            break;
+        }
+
+        String helpJson;
+        serializeJson(doc, helpJson);
+        request->send(200, "application/json", helpJson);
+    });
+
     SPIFFS.begin();
     server.serveStatic("/css", SPIFFS, "/css/", "max-age=604800");   //cache for one week
     server.serveStatic("/js", SPIFFS, "/js/", "max-age=604800");
@@ -396,7 +420,6 @@ void serverSetup() {
     server.on("/temperatures", HTTP_GET, [](AsyncWebServerRequest *request) {
         String json = getTempString();
         request->send(200, "application/json", json);
-        json = String();
     });
 
     events.onConnect([](AsyncEventSourceClient *client) {
