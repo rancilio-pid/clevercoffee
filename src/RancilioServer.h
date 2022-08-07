@@ -41,6 +41,7 @@ struct editable_t {
     String displayName;
     String helpText;
     EditableKind type;
+    bool publish; //show this parameter to users?
     void *ptr;  // TODO: there must be a tidier way to do this? could we use c++ templates?
 };
 
@@ -367,13 +368,17 @@ void serverSetup() {
             String paramString;
 
             for (editable_t e : editableVars) {
+                if (!e.publish) {
+                    continue;
+                }
+
                 JsonObject paramObj = doc.createNestedObject();
                 //set all parameter fields
                 paramObj["type"] = e.type;
                 paramObj["name"] = e.templateString;
                 paramObj["displayName"] = e.displayName;
-                //TODO: send help texts from a new endpoint for param help texts
-                //paramObj["helpText"] = e.helpText;
+                paramObj["hasHelpText"] = !e.helpText.isEmpty();
+                //paramObj["category"] = e.;
 
                 //set parameter value
                 if (e.type == kInteger) {
