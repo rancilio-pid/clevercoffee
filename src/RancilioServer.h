@@ -41,6 +41,7 @@ struct editable_t {
     String displayName;
     String helpText;
     EditableKind type;
+    int section;  //parameter section number
     bool publish; //show this parameter to users?
     void *ptr;  // TODO: there must be a tidier way to do this? could we use c++ templates?
 };
@@ -213,15 +214,21 @@ String getHeader(String varName) {
             #endif
         case (str2int("BOOTSTRAP")):
             #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
-                return "<link href=\"/css/bootstrap-5.1.3.min.css\" rel=\"stylesheet\">";
+                return F"<link href=\"/css/bootstrap-5.1.3.min.css\" rel=\"stylesheet\">";
             #else
                 return F("<link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css\" rel=\"stylesheet\" integrity=\"sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3\" crossorigin=\"anonymous\">");
             #endif
         case (str2int("BOOTSTRAP_BUNDLE")):
             #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
-                return "<script src=\"/js/bootstrap-5.1.3.min.js\" integrity=\"sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p\"></script>";
+                return F"<script src=\"/js/bootstrap-5.1.3.min.js\" integrity=\"sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p\"></script>";
             #else
                 return F("<script src=\"https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js\" integrity=\"sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p\" crossorigin=\"anonymous\"></script>");
+            #endif
+        case (str2int("VUEJS")):
+            #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
+                return F("<script src=\"/js/vue.global.prod.min.js\"></script>");
+            #else
+                return F("<script src=\"https://cdn.jsdelivr.net/npm/vue@3.2/dist/vue.global.prod.min.js\"></script>");
             #endif
         case (str2int("PLOTLY")):
             //file is too large for flash mem on ESP8288
@@ -289,8 +296,7 @@ void serverSetup() {
         //this for some reason also gets called when HTTP_HEAD is the method (although should be POST from a form) -> does it set the wrong code?
         //debugPrintf("/parameters requested, method: %d", request->method());
 
-        if (request->method() == HTTP_POST || request->method() == HTTP_GET && request->params() > 0
-            || request->method() == HTTP_HEAD)
+        if (request->method() == HTTP_POST || request->method() == HTTP_HEAD)
         {
             //update all given params and match var name in editableVars
             int params = request->params();
@@ -364,6 +370,7 @@ void serverSetup() {
 
         } else if (request->method() == HTTP_GET) {
             //return all params as json
+            //TODO: get value etc. for given parameter id, e.g. /parameters/PID_ON
             DynamicJsonDocument doc(4096);
             String paramString;
 
@@ -377,8 +384,8 @@ void serverSetup() {
                 paramObj["type"] = e.type;
                 paramObj["name"] = e.templateString;
                 paramObj["displayName"] = e.displayName;
+                paramObj["section"] = e.section;
                 paramObj["hasHelpText"] = !e.helpText.isEmpty();
-                //paramObj["category"] = e.;
 
                 //set parameter value
                 if (e.type == kInteger) {
