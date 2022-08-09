@@ -292,12 +292,11 @@ void serverSetup() {
         request->redirect("/");
     });
 
-    server.on("/parameters", HTTP_GET | HTTP_POST, [](AsyncWebServerRequest *request) {
-        //this for some reason also gets called when HTTP_HEAD is the method (although should be POST from a form) -> does it set the wrong code?
-        //debugPrintf("/parameters requested, method: %d", request->method());
+    //the constants seem wrong, HTTP_HEAD is coming through although request was submitted with POST) -> ESP bug?
+    server.on("/parameters", HTTP_GET | HTTP_HEAD, [](AsyncWebServerRequest *request) {
+        debugPrintf("/parameters requested, method: %d", request->method());
 
-        if (request->method() == HTTP_POST || request->method() == HTTP_HEAD)
-        {
+        if (request->method() == HTTP_HEAD) {
             //update all given params and match var name in editableVars
             int params = request->params();
             String m = "Got ";
