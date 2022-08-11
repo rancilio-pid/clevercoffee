@@ -25,6 +25,8 @@
 
 #include "userConfig.h"
 
+#include <functional>
+
 
 enum EditableKind {
     kInteger,
@@ -41,9 +43,9 @@ struct editable_t {
     String displayName;
     String helpText;
     EditableKind type;
-    int section;  //parameter section number
-    bool publish; //show this parameter to users?
-    void *ptr;  // TODO: there must be a tidier way to do this? could we use c++ templates?
+    int section;      // parameter section number
+    std::function<bool()> show;    // method that determines if we show this parameter (on the web interface)
+    void *ptr;        // TODO: there must be a tidier way to do this? could we use c++ templates?
 };
 
 AsyncWebServer server(80);
@@ -294,7 +296,7 @@ void serverSetup() {
 
     //the constants seem wrong, HTTP_HEAD is coming through although request was submitted with POST) -> ESP bug?
     server.on("/parameters", HTTP_GET | HTTP_HEAD, [](AsyncWebServerRequest *request) {
-        debugPrintf("/parameters requested, method: %d\n", request->method());
+        //debugPrintf("/parameters requested, method: %d\n", request->method());
 
         if (request->method() == HTTP_HEAD) {
             //update all given params and match var name in editableVars
@@ -385,7 +387,7 @@ void serverSetup() {
                     }                        
                 }
 
-                if (!e.publish) {
+                if (!e.show()) {
                     continue;
                 }
 

@@ -201,6 +201,7 @@ float filter(float input);
 
 // Variable declarations
 uint8_t pidON = 1;               // 1 = control loop in closed loop
+uint8_t usePonM = 1;             // 1 = use PonM for cold start PID, 0 = use normal PID for cold start
 int relayON, relayOFF;           // used for relay trigger type. Do not change!
 boolean coldstart = true;        // true = Rancilio started for first time
 boolean emergencyStop = false;   // Emergency stop if temperature is too high 
@@ -229,6 +230,7 @@ int timerBrewdetection = 0;  // flag is set if brew was detected
 int firstreading = 1;        // Ini of the field, also used for sensor check
 
 // PID - values for offline brewdetection
+uint8_t useBDPID = 1;
 double aggbKp = AGGBKP;
 double aggbTn = AGGBTN;
 double aggbTv = AGGBTV;
@@ -356,6 +358,8 @@ SysPara<double> sysParaPreInfPause(&preinfusionpause, 0, 20, STO_ITEM_PRE_INFUSI
 SysPara<double> sysParaWeightSetPoint(&weightSetpoint, 0, 500, STO_ITEM_WEIGHTSETPOINT);
 SysPara<double> sysParaPidKpSteam(&steamKp, 0, 500, STO_ITEM_PID_KP_STEAM);
 SysPara<uint8_t> sysParaPidOn(&pidON, 0, 1, STO_ITEM_PID_ON);
+SysPara<uint8_t> sysParaUsePonM(&usePonM, 0, 1, STO_ITEM_PID_START_PONM);
+SysPara<uint8_t> sysParaUseBDPID(&useBDPID, 0, 1, STO_ITEM_USE_BD_PID);
 
 
 enum MQTTSettableType {
@@ -401,29 +405,32 @@ enum SectionNames {
     sOtherSection
 };
 
-std::vector<editable_t> editableVars = {
-    {"PID_ON", "Enable PID Controller", "", kUInt8, 0, true, (void *)&pidON},
-    {"START_KP", "Start Kp", "Proportional gain for cold start controller (PonM mode, <a href='http://brettbeauregard.com/blog/2017/06/introducing-proportional-on-measurement/' target='_blank'>details</a>). This value is not used with the the error as usual but the absolute value of the temperature and counteracts the integral part as the temperature rises. Ideally, both parameters are set so that they balance each other out when the target temperature is reached.", kDouble, sPIDSection, true && COLDSTART_PID_ENABLED, (void *)&startKp},
-    {"START_TN", "Start Tn", "Integral gain for cold start controller (PonM mode, <a href='http://brettbeauregard.com/blog/2017/06/introducing-proportional-on-measurement/' target='_blank'>details</a>)", kDouble, sPIDSection, true && COLDSTART_PID_ENABLED, (void *)&startTn},
-    {"PID_KP", "PID Kp", "Proportional gain (in Watts/C°) for the main PID controller (in P-Tn-Tv form, <a href='http://testcon.info/EN_BspPID-Regler.html#strukturen' target='_blank'>Details<a>). The higher this value is, the higher is the output of the heater for a given temperature difference. E.g. 5°C difference will result in P*5 Watts of heater output.", kDouble, sPIDSection, true, (void *)&aggKp},
-    {"PID_TN", "PID Tn (=Kp/Ki)", "Integral time constant (in seconds) for the main PID controller (in P-Tn-Tv form, <a href='http://testcon.info/EN_BspPID-Regler.html#strukturen' target='_blank'>Details<a>). The larger this value is, the slower the integral part of the PID will increase (or decrease) if the process value remains above (or below) the setpoint in spite of proportional action. The smaller this value, the faster the integral term changes.", kDouble, sPIDSection, true, (void *)&aggTn},
-    {"PID_TV", "PID Tv (=Kd/Kp)", "Differential time constant (in seconds) for the main PID controller (in P-Tn-Tv form, <a href='http://testcon.info/EN_BspPID-Regler.html#strukturen' target='_blank'>Details<a>). This value determines how far the PID equation projects the current trend into the future. The higher the value, the greater the dampening. Select it carefully, it can cause oscillations if it is set too high or too low.", kDouble, sPIDSection, true, (void *)&aggTv},
-    {"PID_I_MAX", "PID Integrator Max", "Internal integrator limit to prevent windup (in Watts). This will allow the integrator to only grow to the specified value. This should be approximally equal to the output needed to hold the temperature after the setpoint has been reached and is depending on machine type and whether the boiler is insulated or not.", kDouble, sPIDSection, true, (void *)&aggIMax},
-    {"STEAM_KP", "Steam Kp", "Proportional gain for the steaming mode (I or D are not used)", kDouble, sPIDSection, true, (void *)&steamKp},
-    {"TEMP", "Temperature", "", kDouble, sPIDSection, false, (void *)&Input},
-    {"BREW_SET_POINT", "Set point (°C)", "The temperature that the PID will attempt to reach and hold", kDouble, sTempSection, true, (void *)&BrewSetPoint},
-    {"BREW_TEMP_OFFSET", "Offset (°C)", "Optional offset that is added to the user-visible setpoint. Can be used to compensate sensor offsets and the average temperature loss between boiler and group so that the setpoint represents the approximate brew temperature.", kDouble, sTempSection, true, (void *)&BrewTempOffset},
-    {"BREW_TIME", "Brew Time (s)", "Stop brew after this time", kDouble, sTempSection, true && ONLYPID == 0, (void *)&brewtime},
-    {"BREW_PREINFUSIONPAUSE", "Preinfusion Pause Time (s)", "", kDouble, sTempSection, true && ONLYPID == 0, (void *)&preinfusionpause},
-    {"BREW_PREINFUSION", "Preinfusion Time (s)", "", kDouble, sTempSection, true && ONLYPID == 0, (void *)&preinfusion},
-    {"SCALE_WEIGHTSETPOINT", "Brew weight setpoint (g)", "Brew until this weight has been measured.", kDouble, sTempSection, true && (ONLYPIDSCALE == 1 || BREWMODE == 2), (void *)&weightSetpoint},
-    {"PID_BD_KP", "BD Kp", "Proportional gain (in Watts/°C) for the PID when brewing has been detected. Use this controller to either increase heating during the brew to counter temperature drop from fresh cold water in the boiler. Some machines, e.g. Rancilio Silvia, actually need to heat less not at all during the brew because of high temperature stability (<a href='https://www.kaffee-netz.de/threads/installation-eines-temperatursensors-in-silvia-bruehgruppe.111093/#post-1453641' target='_blank'>Details<a>)", kDouble, sBDSection, true && BREWDETECTION > 0 && BREWPID_ENABLED, (void *)&aggbKp},
-    {"PID_BD_TN", "BD Tn (=Kp/Ki)", "Integral time constant (in seconds) for the PID when brewing has been detected.", kDouble, sBDSection, true && BREWDETECTION > 0 && BREWPID_ENABLED, (void *)&aggbTn},
-    {"PID_BD_TV", "BD Tv (=Kd/Kp)", "Differential time constant (in seconds) for the PID when brewing has been detected.", kDouble, sBDSection, true && BREWDETECTION > 0 && BREWPID_ENABLED, (void *)&aggbTv},
-    {"PID_BD_TIMER", "PID BD Time (s)", "Fixed time in seconds for which the BD PID will stay enabled (also after Brew switch is inactive again).", kDouble, sBDSection, true && BREWDETECTION > 0 && BREWPID_ENABLED, (void *)&brewtimersoftware},
-    {"PID_BD_BREWSENSITIVITY", "PID BD Sensitivity", "Software brew detection sensitivity that looks at average temperature, <a href='https://manual.rancilio-pid.de/de/customization/brueherkennung.html' target='_blank'>Details</a>. Needs to be &gt;0 also for Hardware switch detection.", kDouble, sBDSection, true && BREWDETECTION > 0 && BREWPID_ENABLED, (void *)&brewsensitivity},
-    {"STEAM_MODE", "Steam Mode", "", rInteger, sOtherSection, false, (void *)&SteamON},
-    {"BACKFLUSH_ON", "Backflush", "", rInteger, sOtherSection, false, (void *)&backflushON},
+std::vector<editable_t> editableVars = 
+{
+    {"PID_ON", "Enable PID Controllers", "", kUInt8, 0, []{ return true; }, (void *)&pidON},
+    {"START_USE_PONM", "Enable PonM", "Use PonM mode (<a href='http://brettbeauregard.com/blog/2017/06/introducing-proportional-on-measurement/' target='_blank'>details</a>) while heating up the machine. Otherwise, just use the same PID values that are used later", kUInt8, 0, []{ return true; }, (void *)&usePonM},
+    {"START_KP", "Start Kp", "Proportional gain for cold start controller. This value is not used with the the error as usual but the absolute value of the temperature and counteracts the integral part as the temperature rises. Ideally, both parameters are set so that they balance each other out when the target temperature is reached.", kDouble, sPIDSection, []{ return true && usePonM; }, (void *)&startKp},
+    {"START_TN", "Start Tn", "Integral gain for cold start controller (PonM mode, <a href='http://brettbeauregard.com/blog/2017/06/introducing-proportional-on-measurement/' target='_blank'>details</a>)", kDouble, sPIDSection, []{ return true && usePonM; }, (void *)&startTn},
+    {"PID_KP", "PID Kp", "Proportional gain (in Watts/C°) for the main PID controller (in P-Tn-Tv form, <a href='http://testcon.info/EN_BspPID-Regler.html#strukturen' target='_blank'>Details<a>). The higher this value is, the higher is the output of the heater for a given temperature difference. E.g. 5°C difference will result in P*5 Watts of heater output.", kDouble, sPIDSection, []{ return true; }, (void *)&aggKp},
+    {"PID_TN", "PID Tn (=Kp/Ki)", "Integral time constant (in seconds) for the main PID controller (in P-Tn-Tv form, <a href='http://testcon.info/EN_BspPID-Regler.html#strukturen' target='_blank'>Details<a>). The larger this value is, the slower the integral part of the PID will increase (or decrease) if the process value remains above (or below) the setpoint in spite of proportional action. The smaller this value, the faster the integral term changes.", kDouble, sPIDSection, []{ return true; }, (void *)&aggTn},
+    {"PID_TV", "PID Tv (=Kd/Kp)", "Differential time constant (in seconds) for the main PID controller (in P-Tn-Tv form, <a href='http://testcon.info/EN_BspPID-Regler.html#strukturen' target='_blank'>Details<a>). This value determines how far the PID equation projects the current trend into the future. The higher the value, the greater the dampening. Select it carefully, it can cause oscillations if it is set too high or too low.", kDouble, sPIDSection, []{ return true; }, (void *)&aggTv},
+    {"PID_I_MAX", "PID Integrator Max", "Internal integrator limit to prevent windup (in Watts). This will allow the integrator to only grow to the specified value. This should be approximally equal to the output needed to hold the temperature after the setpoint has been reached and is depending on machine type and whether the boiler is insulated or not.", kDouble, sPIDSection, []{ return true; }, (void *)&aggIMax},
+    {"STEAM_KP", "Steam Kp", "Proportional gain for the steaming mode (I or D are not used)", kDouble, sPIDSection, []{ return true; }, (void *)&steamKp},
+    {"TEMP", "Temperature", "", kDouble, sPIDSection, []{ return false; }, (void *)&Input},
+    {"BREW_SET_POINT", "Set point (°C)", "The temperature that the PID will attempt to reach and hold", kDouble, sTempSection, []{ return true; }, (void *)&BrewSetPoint},
+    {"BREW_TEMP_OFFSET", "Offset (°C)", "Optional offset that is added to the user-visible setpoint. Can be used to compensate sensor offsets and the average temperature loss between boiler and group so that the setpoint represents the approximate brew temperature.", kDouble, sTempSection, []{ return true; }, (void *)&BrewTempOffset},
+    {"BREW_TIME", "Brew Time (s)", "Stop brew after this time", kDouble, sTempSection, []{ return true && ONLYPID == 0; }, (void *)&brewtime},
+    {"BREW_PREINFUSIONPAUSE", "Preinfusion Pause Time (s)", "", kDouble, sTempSection, []{ return true && ONLYPID == 0; }, (void *)&preinfusionpause},
+    {"BREW_PREINFUSION", "Preinfusion Time (s)", "", kDouble, sTempSection, []{ return true && ONLYPID == 0; }, (void *)&preinfusion},
+    {"SCALE_WEIGHTSETPOINT", "Brew weight setpoint (g)", "Brew until this weight has been measured.", kDouble, sTempSection, []{ return true && (ONLYPIDSCALE == 1 || BREWMODE == 2); }, (void *)&weightSetpoint},
+    {"PID_BD_ON", "Enable Brew PID", "Use separate PID parameters while brew is running", kUInt8, sBDSection, []{ return true && BREWDETECTION > 0; }, (void *)&useBDPID},
+    {"PID_BD_KP", "BD Kp", "Proportional gain (in Watts/°C) for the PID when brewing has been detected. Use this controller to either increase heating during the brew to counter temperature drop from fresh cold water in the boiler. Some machines, e.g. Rancilio Silvia, actually need to heat less not at all during the brew because of high temperature stability (<a href='https://www.kaffee-netz.de/threads/installation-eines-temperatursensors-in-silvia-bruehgruppe.111093/#post-1453641' target='_blank'>Details<a>)", kDouble, sBDSection, []{ return true && BREWDETECTION > 0 && useBDPID; }, (void *)&aggbKp},
+    {"PID_BD_TN", "BD Tn (=Kp/Ki)", "Integral time constant (in seconds) for the PID when brewing has been detected.", kDouble, sBDSection, []{ return true && BREWDETECTION > 0 && useBDPID; }, (void *)&aggbTn},
+    {"PID_BD_TV", "BD Tv (=Kd/Kp)", "Differential time constant (in seconds) for the PID when brewing has been detected.", kDouble, sBDSection, []{ return true && BREWDETECTION > 0 && useBDPID; }, (void *)&aggbTv},
+    {"PID_BD_TIMER", "PID BD Time (s)", "Fixed time in seconds for which the BD PID will stay enabled (also after Brew switch is inactive again).", kDouble, sBDSection, []{ return true && BREWDETECTION > 0 && useBDPID; }, (void *)&brewtimersoftware},
+    {"PID_BD_BREWSENSITIVITY", "PID BD Sensitivity", "Software brew detection sensitivity that looks at average temperature, <a href='https://manual.rancilio-pid.de/de/customization/brueherkennung.html' target='_blank'>Details</a>. Needs to be &gt;0 also for Hardware switch detection.", kDouble, sBDSection, []{ return true && BREWDETECTION == 1; }, (void *)&brewsensitivity},
+    {"STEAM_MODE", "Steam Mode", "", rInteger, sOtherSection, []{ return false; }, (void *)&SteamON},
+    {"BACKFLUSH_ON", "Backflush", "", rInteger, sOtherSection, []{ return false; }, (void *)&backflushON},
 };
 
 unsigned long lastTempEvent = 0;
@@ -2338,7 +2345,7 @@ void looppid() {
 
     // Set PID if first start of machine detected, and no SteamON
     if ((machinestate == kInit || machinestate == kColdStart || machinestate == kSetPointNegative)) {
-        if (COLDSTART_PID_ENABLED) { 
+        if (usePonM) { 
             if (startTn != 0) {
                 startKi = startKp / startTn;
             } else {
@@ -2378,7 +2385,7 @@ void looppid() {
                 debugPrintln("Enabled PID again after delay");
             }
 
-            if (BREWPID_ENABLED) {
+            if (useBDPID) {
                 setBDPIDTunings();
             } else {
                 setNormalPIDTunings();
@@ -2513,6 +2520,8 @@ int readSysParamsFromStorage(void) {
     if (sysParaWeightSetPoint.getStorage() != 0) return -1;
     if (sysParaPidOn.getStorage() != 0) return -1;
     if (sysParaPidKpSteam.getStorage() != 0) return -1;
+    if (sysParaUsePonM.getStorage() != 0) return -1;
+    if (sysParaUseBDPID.getStorage() != 0) return -1;
 
     return 0;
 }
@@ -2542,6 +2551,9 @@ int writeSysParamsToStorage(void) {
     if (sysParaWeightSetPoint.setStorage() != 0) return -1;
     if (sysParaPidOn.setStorage() != 0) return -1;
     if (sysParaPidKpSteam.setStorage() != 0) return -1;
+    if (sysParaUsePonM.setStorage() != 0) return -1;
+    if (sysParaUseBDPID.setStorage() != 0) return -1;
+
     return storageCommit();
 }
 

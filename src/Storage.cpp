@@ -32,7 +32,8 @@ typedef struct __attribute__((packed)) {
     double preInfusionTimeMs;
     uint8_t freeToUse5[2];
     double preInfusionPauseMs;
-    uint8_t freeToUse6[22];
+    uint8_t freeToUse6[21];
+    uint8_t pidBdOn;
     double pidKpBd;
     uint8_t freeToUse7[2];
     double pidTnBd;
@@ -42,7 +43,8 @@ typedef struct __attribute__((packed)) {
     double brewSwTimerSec;
     uint8_t freeToUse10[2];
     double brewDetectionThreshold;
-    uint8_t freeToUse11[2];
+    uint8_t freeToUse11;
+    uint8_t useStartPonM;
     double pidKpStart;
     uint8_t freeToUse12[2];
     uint8_t softApEnabledCheck;
@@ -74,10 +76,10 @@ static const sto_data_t itemDefaults PROGMEM = {
     PRE_INFUSION_TIME,        // STO_ITEM_PRE_INFUSION_TIME
     {0xFF, 0xFF},             // free to use
     PRE_INFUSION_PAUSE_TIME,  // STO_ITEM_PRE_INFUSION_PAUSE
-    {
+    {   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
         0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},  // free to use
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF },       // free to use
+    0,                                        // STO_ITEM_USE_PID_BD
     AGGBKP,                                   // STO_ITEM_PID_KP_BD
     {0xFF, 0xFF},                             // free to use
     AGGBTN,                                   // STO_ITEM_PID_TN_BD
@@ -87,7 +89,8 @@ static const sto_data_t itemDefaults PROGMEM = {
     BREW_SW_TIMER,                            // STO_ITEM_BREW_SW_TIMER
     {0xFF, 0xFF},                             // free to use
     BREWSENSITIVITY,                          // STO_ITEM_BD_THRESHOLD
-    {0xFF, 0xFF},                             // free to use
+    0xFF,                                     // free to use
+    1,                                        // STO_ITEM_USE_START_PON_M
     STARTKP,                                  // STO_ITEM_PID_KP_START
     {0xFF, 0xFF},                             // free to use
     0,                                        // STO_ITEM_SOFT_AP_ENABLED_CHECK
@@ -160,6 +163,11 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
             size = STRUCT_MEMBER_SIZE(sto_data_t, preInfusionPauseMs);
             break;
 
+        case STO_ITEM_USE_BD_PID:
+            addr = offsetof(sto_data_t, pidBdOn);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, pidBdOn);
+            break;
+
         case STO_ITEM_PID_KP_BD:
             addr = offsetof(sto_data_t, pidKpBd);
             size = STRUCT_MEMBER_SIZE(sto_data_t, pidKpBd);
@@ -183,6 +191,11 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
         case STO_ITEM_BD_THRESHOLD:
             addr = offsetof(sto_data_t, brewDetectionThreshold);
             size = STRUCT_MEMBER_SIZE(sto_data_t, brewDetectionThreshold);
+            break;
+
+        case STO_ITEM_PID_START_PONM:
+            addr = offsetof(sto_data_t, useStartPonM);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, useStartPonM);
             break;
 
         case STO_ITEM_PID_KP_START:
@@ -214,6 +227,7 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
             addr = offsetof(sto_data_t, pidOn);
             size = STRUCT_MEMBER_SIZE(sto_data_t, pidOn);
             break;
+
          case STO_ITEM_PID_KP_STEAM:
             addr = offsetof(sto_data_t, steamkp);
             size = STRUCT_MEMBER_SIZE(sto_data_t, steamkp);

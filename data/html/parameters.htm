@@ -60,6 +60,8 @@
                         .catch(err => console.log(err.messages))
                         .finally(() => {
                             this.isPostingForm = false
+                            //refresh parameters to be shown
+                            this.fetchParameters()
                         })
                 },
                 fetchHelpText(paramName) {
