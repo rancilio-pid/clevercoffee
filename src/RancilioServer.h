@@ -287,14 +287,14 @@ void serverSetup() {
         int backflush = flipUintValue(backflushON);
 
         setBackflush(backflush);
-        Serial.printf("Toggle Backflush %i \n", backflush);
+        Serial.printf("Toggle backflush mode: %i \n", backflush);
 
         request->redirect("/");
     });
 
     //the constants seem wrong, HTTP_HEAD is coming through although request was submitted with POST) -> ESP bug?
     server.on("/parameters", HTTP_GET | HTTP_HEAD, [](AsyncWebServerRequest *request) {
-        debugPrintf("/parameters requested, method: %d", request->method());
+        debugPrintf("/parameters requested, method: %d\n", request->method());
 
         if (request->method() == HTTP_HEAD) {
             //update all given params and match var name in editableVars
@@ -363,17 +363,28 @@ void serverSetup() {
                 }
             }
 
-            // Write to Blynk and MQTT the new values
+            // Write the new values to Blynk and MQTT
             writeSysParamsToBlynk();
             writeSysParamsToMQTT();
 
         } else if (request->method() == HTTP_GET) {
             //return all params as json
-            //TODO: get value etc. for given parameter id, e.g. /parameters/PID_ON
             DynamicJsonDocument doc(4096);
             String paramString;
 
+            //get parameter id from frst parameter, e.g. /parameters?param=PID_ON
+            int paramCount = request->params();
+            String paramId = paramCount > 0 ? request->getParam(0)->value() : "";
+
             for (editable_t e : editableVars) {
+                if (!paramId.isEmpty()) {
+                    //we have a parameter to select a single var,
+                    //skip vars until we find the one for the id in the request parameter
+                    if (paramId != e.templateString) {
+                        continue;
+                    }                        
+                }
+
                 if (!e.publish) {
                     continue;
                 }
@@ -396,6 +407,16 @@ void serverSetup() {
                 } else if (e.type == kCString) {
                     paramObj["value"] = String(*(char **)e.ptr);
                 }                
+
+                //we found the parameter, no need to search further
+                if (!paramId.isEmpty()) {
+                    break;
+                }
+            }
+
+            if (doc.size() == 0) {
+                request->send(404, "application/json", "{ \"code\": 404, \"message\": \"Parameter not found\"}");
+                return;
             }
 
             String paramsJson;
