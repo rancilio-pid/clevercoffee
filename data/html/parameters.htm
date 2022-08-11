@@ -91,7 +91,7 @@
         <div class="container my-5">
             <div id="parameters">
                 <div class="card card-accent-dark mb-5 shadow-sm rounded">
-                    <template v-for="(section, sectionKey) in parameterSections">
+                    <template v-for="(section, sectionKey, sectionIndex) in parameterSections">
                         <div class="card-body bg-light pb-1 rounded">
                             <h5 class="card-title"> {{ sectionName(sectionKey) }} </h5>
                         </div>
@@ -119,7 +119,7 @@
                                     </template>
                                 </div>
                                 <br>
-                                <div class="float-end me-2">
+                                <div v-if="sectionIndex  == Object.keys(parameterSections).length-1" class="float-end me-2">
                                     <button type="submit" class="btn btn-primary" :disabled="isPostingForm">
                                         <span v-show="isPostingForm" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
                                         Save
