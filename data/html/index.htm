@@ -1,65 +1,9 @@
 %HEADER%
     %VAR_HEADER_PLOTLY%
-    <script type="module">
-        const app = Vue.createApp({
-            data() {
-                return {
-                    parameters: [],
-                    parameterSections: [],
-                    parametersHelpTexts: [],
-                    isPostingForm: false
-                }
-            },
-            methods: {
-                fetchParameters() {
-                    fetch("/parameters")
-                        .then(response => response.json())
-                        .then(data => {
-                            this.parameters = data
-                            this.getParameterSections()
-                        })
-                        .catch(err => console.log(err.messages))
-                },
-                postParameters() {
-                    //post parameter array same as if it was posted from a form
-                    var formBody = [];
-                    this.parameters.forEach(param => {
-                        var encodedKey = encodeURIComponent(param.name);
-                        var encodedValue = encodeURIComponent(param.value);
-                        formBody.push(encodedKey + "=" + encodedValue);
-                    });
-                    formBody = formBody.join("&");
-
-                    const requestOptions = {
-                        method: "POST",
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        cache: 'no-cache',
-                        body: formBody
-                    };
-                    this.isPostingForm = true
-                    fetch("/parameters", requestOptions)
-                        .then(response => 0)
-                        .catch(err => console.log(err.messages))
-                        .finally(() => {
-                            this.isPostingForm = false
-                            //refresh parameters to be shown
-                            this.fetchParameters()
-                        })
-                },
-                fetchHelpText(paramName) {
-                    if (!(paramName in this.parametersHelpTexts)) {
-                        fetch("/parameterHelp/?param="+paramName)
-                            .then(response => response.json())
-                            .then(data => { this.parametersHelpTexts[paramName] = data['helpText'] })
-                    }
-                },
-            },
-            mounted() {
-                this.fetchParameters()
-            }
-        }).mount('#status')
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            vueApp.mount('#status')
+        })
     </script>
 
     <div class="content-wrapper">
@@ -75,7 +19,7 @@
                         <div class="row row-cols-3">
                             <div class="col-5">
                                 <label class="form-label me-1 col-form-label">Current Temperature</label><br/>
-                                <span id="varTEMP">%VAR_SHOW_TEMP%</span>° C
+                                <b><span id="varTEMP">%VAR_SHOW_TEMP%</span> °C</b>
                             </div>
                                     
                             <template v-for="param in parameters">
@@ -119,7 +63,6 @@
                                             <input type="hidden" id="varPID_ON" name="varPID_ON" />
                                             <input type="submit" id="pid_toggle" />
                                         </form>
-                                        </form>
                                     </td>
                                 </tr>
                                 <tr>
@@ -130,7 +73,6 @@
                                             <input type="hidden" id="varSTEAM_MODE" name="varSTEAM_MODE" />
                                             <input type="submit" id="steam_toggle" />
                                         </form>
-                                        </form>
                                     </td>
                                 </tr>
                                 <tr>
@@ -140,7 +82,6 @@
                                         <form action="/backflush" method="post">
                                             <input type="hidden" id="varBACKFLUSH_ON" name="varBACKFLUSH_ON" />
                                             <input type="submit" id="backflush_toggle" />
-                                        </form>
                                         </form>
                                     </td>
                                 </tr>

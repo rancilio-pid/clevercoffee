@@ -407,7 +407,7 @@ enum SectionNames {
 
 std::vector<editable_t> editableVars = 
 {
-    {"PID_ON", "Enable PID Controllers", "", kUInt8, 0, []{ return true; }, (void *)&pidON},
+    {"PID_ON", "Enable PID Controller", "", kUInt8, 0, []{ return true; }, (void *)&pidON},
     {"START_USE_PONM", "Enable PonM", "Use PonM mode (<a href='http://brettbeauregard.com/blog/2017/06/introducing-proportional-on-measurement/' target='_blank'>details</a>) while heating up the machine. Otherwise, just use the same PID values that are used later", kUInt8, 0, []{ return true; }, (void *)&usePonM},
     {"START_KP", "Start Kp", "Proportional gain for cold start controller. This value is not used with the the error as usual but the absolute value of the temperature and counteracts the integral part as the temperature rises. Ideally, both parameters are set so that they balance each other out when the target temperature is reached.", kDouble, sPIDSection, []{ return true && usePonM; }, (void *)&startKp},
     {"START_TN", "Start Tn", "Integral gain for cold start controller (PonM mode, <a href='http://brettbeauregard.com/blog/2017/06/introducing-proportional-on-measurement/' target='_blank'>details</a>)", kDouble, sPIDSection, []{ return true && usePonM; }, (void *)&startTn},
