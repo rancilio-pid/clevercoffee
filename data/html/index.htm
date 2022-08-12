@@ -1,29 +1,106 @@
 %HEADER%
     %VAR_HEADER_PLOTLY%
+    <script type="module">
+        const app = Vue.createApp({
+            data() {
+                return {
+                    parameters: [],
+                    parameterSections: [],
+                    parametersHelpTexts: [],
+                    isPostingForm: false
+                }
+            },
+            methods: {
+                fetchParameters() {
+                    fetch("/parameters")
+                        .then(response => response.json())
+                        .then(data => {
+                            this.parameters = data
+                            this.getParameterSections()
+                        })
+                        .catch(err => console.log(err.messages))
+                },
+                postParameters() {
+                    //post parameter array same as if it was posted from a form
+                    var formBody = [];
+                    this.parameters.forEach(param => {
+                        var encodedKey = encodeURIComponent(param.name);
+                        var encodedValue = encodeURIComponent(param.value);
+                        formBody.push(encodedKey + "=" + encodedValue);
+                    });
+                    formBody = formBody.join("&");
+
+                    const requestOptions = {
+                        method: "POST",
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        cache: 'no-cache',
+                        body: formBody
+                    };
+                    this.isPostingForm = true
+                    fetch("/parameters", requestOptions)
+                        .then(response => 0)
+                        .catch(err => console.log(err.messages))
+                        .finally(() => {
+                            this.isPostingForm = false
+                            //refresh parameters to be shown
+                            this.fetchParameters()
+                        })
+                },
+                fetchHelpText(paramName) {
+                    if (!(paramName in this.parametersHelpTexts)) {
+                        fetch("/parameterHelp/?param="+paramName)
+                            .then(response => response.json())
+                            .then(data => { this.parametersHelpTexts[paramName] = data['helpText'] })
+                    }
+                },
+            },
+            mounted() {
+                this.fetchParameters()
+            }
+        }).mount('#status')
+    </script>
 
     <div class="content-wrapper">
         <div class="container my-5">
-            <div class="card card-accent-dark mb-5 shadow-sm rounded">
+            <div class="card card-accent-dark mb-5 pb-0 shadow-sm rounded">
                 <div class="card-body bg-light pb-1 rounded">
                     <h5 class="card-title">
-                        Temperature
+                        Status
                     </h5>
                 </div>
-                <div class="card-body">
-                    <div id="chart-temperature"></div>
+                <div id="status" class="card-body">
+                    <form @submit.prevent="postParameters">
+                        <div class="row row-cols-3">
+                            <div class="col-5">
+                                <label class="form-label me-1 col-form-label">Current Temperature</label><br/>
+                                <span id="varTEMP">%VAR_SHOW_TEMP%</span>° C
+                            </div>
+                                    
+                            <template v-for="param in parameters">
+                                <template v-if="param.name == 'BREW_SET_POINT'">
+                                    <div class="col-3">
+                                        <label class="form-label me-1 col-form-label" :for="'var'+param.name">{{param.displayName}}</label>
+                                        <template v-if="param.hasHelpText">
+                                            <a href="#" role="button" @mouseover="fetchHelpText(param.name)" data-bs-toggle="popover" data-bs-html="true" :data-bs-original-title="parametersHelpTexts[param.name]">
+                                                <span class="fa fa-question-circle"></span>
+                                            </a>
+                                        </template>
+                                        <input class="form-control form-control-lg" type="number" step="0.1" :id="'var'+param.name" :name="'var'+param.name" v-model="param.value" style="min-width: 5em;">
+                                    </div>
+                                </template>
+                            </template>
+                            <div class="col-3 mt-5">
+                                <button type="submit" class="btn btn-primary float-end" :disabled="isPostingForm">
+                                    Save
+                                </button>
+                            </div>
+                        </div>
+                    </form>
                 </div>
             </div>
-            <div class="card card-accent-dark mb-5 shadow-sm rounded">
-                <div class="card-body bg-light pb-1 rounded">
-                    <h5 class="card-title">
-                        Heater Output
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div id="chart-heater"></div>
-                </div>
-            </div>
-            <script src="/js/temp.js"></script>
+            
             <div class="card card-accent-dark mb-5 pb-0 shadow-sm rounded">
                 <div class="card-body bg-light pb-1 rounded">
                     <h5 class="card-title">
@@ -72,61 +149,48 @@
                     </div>
                 </div>
             </div>
-            <div class="card card-accent-dark mb-5 pb-0 shadow-sm rounded">
+            <script>
+                // PID Toggle
+                var pid_status = %VAR_SHOW_PID_ON%;
+                document.getElementById("pid_state").innerText = pid_status ? "ON" : "OFF";
+                document.getElementById("varPID_ON").value = pid_status ? 0 : 1;
+                document.getElementById("pid_toggle").value = pid_status ? "OFF" : "ON";
+
+                // Steam Toggle
+                var steam_status = %VAR_SHOW_STEAM_MODE%;
+                document.getElementById("steam_state").innerText = steam_status ? "ON" : "OFF";
+                document.getElementById("varSTEAM_MODE").value = steam_status ? 0 : 1;
+                document.getElementById("steam_toggle").value = steam_status ? "OFF" : "ON";
+
+                // Steam Toggle
+                var backflush_status = %VAR_SHOW_BACKFLUSH_ON%;
+                document.getElementById("backflush_state").innerText = backflush_status ? "ON" : "OFF";
+                document.getElementById("varBACKFLUSH_ON").value = backflush_status ? 0 : 1;
+                document.getElementById("backflush_toggle").value = backflush_status ? "OFF" : "ON";
+            </script>
+            
+            <div class="card card-accent-dark mb-5 shadow-sm rounded">
                 <div class="card-body bg-light pb-1 rounded">
                     <h5 class="card-title">
-                        Status
+                        Temperature
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="table-responsive pb-0">
-                        <table class="table table-borderless pb-0 mb-0">
-                            <tbody>
-                                <tr>
-                                    <td><b>Temperature</b></td>
-                                    <td><span id="varTEMP">%VAR_SHOW_TEMP%</span>° C</td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td><b>P-Term</b></td>
-                                    <td>%VAR_SHOW_PID_KP%</td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td><b>I-Term</b></td>
-                                    <td>%VAR_SHOW_PID_TN%</td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td><b>D-Term</b></td>
-                                    <td>%VAR_SHOW_PID_TV%</td>
-                                    <td></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <div id="chart-temperature"></div>
                 </div>
             </div>
+            <div class="card card-accent-dark mb-5 shadow-sm rounded">
+                <div class="card-body bg-light pb-1 rounded">
+                    <h5 class="card-title">
+                        Heater Output
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="chart-heater"></div>
+                </div>
+            </div>
+            <script src="/js/temp.js"></script>
         </div>
     </div>
-    <script>
-        // PID Toggle
-        var pid_status = %VAR_SHOW_PID_ON%;
-        document.getElementById("pid_state").innerText = pid_status ? "ON" : "OFF";
-        document.getElementById("varPID_ON").value = pid_status ? 0 : 1;
-        document.getElementById("pid_toggle").value = pid_status ? "OFF" : "ON";
-
-        // Steam Toggle
-        var steam_status = %VAR_SHOW_STEAM_MODE%;
-        document.getElementById("steam_state").innerText = steam_status ? "ON" : "OFF";
-        document.getElementById("varSTEAM_MODE").value = steam_status ? 0 : 1;
-        document.getElementById("steam_toggle").value = steam_status ? "OFF" : "ON";
-
-        // Steam Toggle
-        var backflush_status = %VAR_SHOW_BACKFLUSH_ON%;
-        document.getElementById("backflush_state").innerText = backflush_status ? "ON" : "OFF";
-        document.getElementById("varBACKFLUSH_ON").value = backflush_status ? 0 : 1;
-        document.getElementById("backflush_toggle").value = backflush_status ? "OFF" : "ON";
-    </script>
 
 %FOOTER%
