@@ -204,9 +204,15 @@ float inX = 0, inY = 0, inOld = 0, inSum = 0; // used for filter()
 int signalBars = 0;              // used for getSignalStrength()
 boolean brewDetected = 0;
 boolean setupDone = false;
-int backflushON = 0;             // 1 = activate backflush
-int flushCycles = 0;             // number of active flush cycles
-int backflushState = 10;         // counter for state machine
+int backflushON = 0;      // 1 = activate backflush
+int flushCycles = 0;      // number of active flush cycles
+int backflushState = 10;  // counter for state machine
+int brewReadyLedON, brewReadyLedOFF; // used for brewReady LED
+
+// Temp LED
+unsigned long previousMillis = 0;       // will store last time LED was updated
+unsigned long LEDInterval = 500;        // interval at which to blink (milliseconds)
+int ledState = LOW;                     // ledState used to set the LED
 
 // Moving average - brewdetection
 const int numReadings = 15;               // number of values per Array
@@ -1423,22 +1429,27 @@ void machinestatevoid() {
 
         case kBrew:
             brewdetection();
+            // Ausgabe waehrend des Bezugs von Bruehzeit, Temp und heatrateaverage
+            if (logbrew.check())
+                Serial.printf("(tB,T,hra) --> %5.2f %6.2f %8.2f\n",
+                            (double)(millis() - startingTime) / 1000, Input,
+                            heatrateaverage);
 
-            // Output brew time, temp and heatrateaverage during brew
-            if (BREWDETECTION == 1 && logbrew.check()) {
-                debugPrintf("(tB,T,hra) --> %5.2f %6.2f %8.2f\n",
-                            (double)(millis() - startingTime) / 1000, Input, heatrateaverage);
-            }
+            if ((brewTime > 35 * 1000 && Brewdetection == 1 &&
+                ONLYPID == 1) ||  // 35 sec later and BD PID active SW Solution
+                (brewTime == 0 && Brewdetection == 3 &&
+                ONLYPID == 1) ||  // Voltagesensor reset brewTime == 0
+                ((brewcounter == 10 || brewcounter == 43) && ONLYPID == 0)) {
+                if ((ONLYPID == 1 && Brewdetection == 3) ||
+                    ONLYPID ==
+                        0) {  // only delay of shotimer for voltagesensor or brewcounter
+                    machinestate = kShotTimerAfterBrew;
+                    lastbrewTimeMillis = millis();  // for delay
+                }
 
-            if ((timeBrewed == 0 && Brewdetection == 3 && ONLYPID == 1) ||  // OnlyPID+: Voltage sensor BD timeBrewed == 0 -> switch is off again
-                ((brewcounter == 10 || brewcounter == 43) && ONLYPID == 0)) // Hardware BD
-            {
-                // delay shot timer display for voltage sensor or hw brew toggle switch (brew counter)
-                machinestate = kShotTimerAfterBrew;
-                lastbrewTimeMillis = millis();  // for delay
-            } else if (Brewdetection == 1 && ONLYPID == 1 && isBrewDetected == 0) {   // SW BD, kBrew was active for set time
-                // when Software brew is finished, direct to PID BD
-                machinestate = kBrewDetectionTrailing;
+                if (ONLYPID == 1 && Brewdetection == 1 && timerBrewdetection == 1) {  // direct to PID BD
+                    machinestate = kBrewDetectionTrailing;
+                }
             }
 
             if (SteamON == 1) {
@@ -1698,21 +1709,86 @@ void debugVerboseOutput() {
             setPoint, Input, machinestate, bPID.GetKp(), bPID.GetKi(), bPID.GetKd());
     }
 }
-
 /**
- * @brief TODO
+ * @brief blink LED to intervall
  */
-void tempLed() {
-    if (TEMPLED == 1) {
-        pinMode(LEDPIN, OUTPUT);
-        digitalWrite(LEDPIN, LOW);
+void blinkLED(){
+    unsigned long currentMillis = millis();
+    if (currentMillis - previousMillis >= LEDInterval) 
+    {
+        // save the last time you blinked the LED
+        previousMillis = currentMillis;
 
-        // inner Tempregion
-        if ((machinestate == kPidNormal && (fabs(Input - setPoint) < 0.5)) || (Input > 115 && fabs(Input - BrewSetPoint) < 5))  {
-            digitalWrite(LEDPIN, HIGH);
+        // if the LED is off turn it on and vice-versa:
+        if (ledState == LOW) {
+            ledState = HIGH;
+        } else {
+            ledState = LOW;
         }
+
+        // set the LED with the ledState of the variable:
+        digitalWrite(LEDPIN, ledState);
     }
 }
+
+
+
+/**
+ * @brief set Temp LED to maschine brew/Steam readyness
+ */
+void tempLed() {
+    if (TEMPLED <= 0) 
+    {
+        return;
+    } 
+
+    // LED off if PID is offline
+    if (machinestate == kPidOffline)
+    {
+        digitalWrite(LEDPIN, LOW);
+        return;
+    }  
+
+    // Brew ready 1 degree tollerance 
+    if ((machinestate == kPidNormal|| machinestate == kBrewDetectionTrailing) && (fabs(Input - setPoint) < 1.0)) {
+        digitalWrite(LEDPIN, brewReadyLedON);
+        return;
+    }
+
+    // Steam ready 2 degree tollerance
+    if (machinestate == kSteam && Input > SteamSetPoint-2)
+    {
+        digitalWrite(LEDPIN, brewReadyLedON);
+        return;
+    }
+
+    // Blink led on steam heating
+    if (machinestate == kSteam && Input < SteamSetPoint-2)
+    {
+        LEDInterval = 500;
+        blinkLED();
+        return;
+    }
+
+    // Blink led on error
+    if (machinestate == kSensorError)
+    {
+        LEDInterval = 100;
+        blinkLED();
+        return;
+    }
+
+    //Steam || Brew unready 
+    digitalWrite(LEDPIN, brewReadyLedOFF);
+}
+
+static bool previousMode = false;
+void setHardwareLed(bool mode) {
+  if (TEMPLED > 0 && mode != previousMode) {
+    digitalWrite(LEDPIN, mode);
+    previousMode = mode;
+  }
+} 
 
 /**
  * @brief Set up internal WiFi hardware
@@ -1836,7 +1912,7 @@ void setup() {
     initTimer1();
 
     storageSetup();
-    
+
     editableVars =  {
         {"PID_ON", "Enable PID Controller", false, "", kUInt8, 0, []{ return true; }, (void *)&pidON},
         {"START_USE_PONM", "Enable PonM", true, F("Use PonM mode (<a href='http://brettbeauregard.com/blog/2017/06/introducing-proportional-on-measurement/' target='_blank'>details</a>) while heating up the machine. Otherwise, just use the same PID values that are used later"), kUInt8, 0, []{ return true; }, (void *)&usePonM},
@@ -1887,6 +1963,26 @@ void setup() {
         VoltageSensorON = LOW;
         VoltageSensorOFF = HIGH;
     }
+
+    // Initialize TempLED
+    if (TEMPLED > 0) {
+
+        //int brewReadyLedON, brewReadyLedOFF
+        brewReadyLedON = HIGH;
+        brewReadyLedOFF = LOW;
+
+        //If TEMPLED is 2, sw. high and low
+        if (TEMPLED == 2) {
+            brewReadyLedON = LOW;
+            brewReadyLedOFF = HIGH;
+        }
+
+        //Set PIN for tempLED
+        pinMode(LEDPIN, OUTPUT);
+
+        //set LED to start value
+        digitalWrite(LEDPIN, brewReadyLedOFF);
+    } 
 
     // Initialize Pins
     pinMode(PINVALVE, OUTPUT);
