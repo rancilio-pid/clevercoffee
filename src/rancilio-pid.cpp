@@ -910,41 +910,6 @@ char *number2string(unsigned int in) {
   return number2string_uint;
 }
 
- char *MachineState_to_string(MachineState type) {
-   switch(type) {
-    case kInit:
-        return (char *)"Init";
-    case kColdStart:
-        return (char *)"ColdStart";
-    case kSetPointNegative:
-        return (char *)"SetPointNegative";
-    case kPidNormal:
-        return (char *)"PidNormal";
-    case kBrew:
-        return (char *)"Brew";
-    case kShotTimerAfterBrew:
-        return (char *)"ShotTimerAfterBrew";
-    case kBrewDetectionTrailing:
-        return (char *)"BrewDetectionTrailing";
-    case kSteam:
-         return (char *)"Steam";
-    case kCoolDown:
-         return (char *)"CoolDown";
-    case kBackflush:
-         return (char *)"Backflush";
-    case kEmergencyStop:
-         return (char *)"EmergencyStop";
-    case kPidOffline:
-         return (char *)"PidOffline";
-    case kSensorError:
-         return (char *)"SensorError";
-    case keepromError:
-         return (char *)"eepromError";   
-    default:
-         return (char *)"Invalid MachineState";
-   }
-}
-
 /**
  * @brief Publish Data to MQTT
  */
@@ -2647,7 +2612,6 @@ void writeSysParamsToMQTT(void) {
             mqtt_publish("preinfusion", number2string(preinfusion));
             mqtt_publish("SteamON", number2string(SteamON));
             mqtt_publish("backflushON", number2string(backflushON));
-            mqtt_publish("Machinestate", MachineState_to_string(machinestate)); 
 
             // Normal PID
             mqtt_publish("aggKp", number2string(aggKp));
