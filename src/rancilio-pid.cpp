@@ -1010,8 +1010,8 @@ void brewdetection() {
         // deactivate brewtimer after end of brewdetection pid
         if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1) {
             timerBrewdetection = 0;  // rearm brewdetection
-
-            if (machinestate != kBrew) { // if Onlypid = 1, timeBrewed > 0, no reset of timeBrewed in case of brewing.
+            timeBrewed = 0 ;
+            if (machinestate != kBrew  ) { // if Onlypid = 1, timeBrewed > 0, no reset of timeBrewed in case of brewing.
                 timeBrewed = 0;
             }
         }
@@ -1036,8 +1036,9 @@ void brewdetection() {
             debugPrintln("HW Brew - Voltage Sensor - End");
         }
 
-        if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1) {  // reset PID Brew
+        if (millis() - timeBrewdetection >= brewtimersoftware * 1000 && timerBrewdetection == 1) {  // reset PID Brew
             timerBrewdetection = 0; // rearm brewdetection
+            timeBrewed = 0 ;
         }
     }
 
@@ -1472,7 +1473,7 @@ void machinestatevoid() {
                             (double)(millis() - startingTime) / 1000, Input, heatrateaverage);
             }
 
-            if ((timeBrewed >= brewtimersoftware * 1000 && Brewdetection == 1 && ONLYPID == 1) || // SW BD, kBrew was active for set time
+            if ((Brewdetection == 1 && ONLYPID == 1) || // SW BD, kBrew was active for set time
                 (timeBrewed == 0 && Brewdetection == 3 && ONLYPID == 1) ||  // OnlyPID+ - Voltage sensor BD timeBrewed == 0 -> switch is off again
                 ((brewcounter == 10 || brewcounter == 43) && ONLYPID == 0)) // Hardware BD
             {
@@ -1483,7 +1484,7 @@ void machinestatevoid() {
                     lastbrewTimeMillis = millis();  // for delay
                 }
 
-                if (ONLYPID == 1 && Brewdetection == 1 && timerBrewdetection == 1) {  // direct to PID BD
+                if (ONLYPID == 1 && Brewdetection == 1 && timerBrewdetection == 0) {  // direct to PID BD
                     machinestate = kBrewDetectionTrailing;
                 }
             }
@@ -2282,6 +2283,13 @@ void looppid() {
 
             //Combined PID output
             debugPrintf("Current PID Output: %f\n\n", Output);
+            debugPrintf("Current Machinestate: %s\n\n", machinestateEnumToString(machinestate));
+            debugPrintf("timeBrewed %f\n", timeBrewed);
+            debugPrintf("brewtimersoftware %f\n", brewtimersoftware);
+            debugPrintf("timerBrewdetection %i\n", timerBrewdetection);
+            debugPrintf("Brewdetection %i\n", Brewdetection);
+
+    
         }  
         #endif
     }
