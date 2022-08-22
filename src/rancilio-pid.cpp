@@ -1157,13 +1157,13 @@ void assignMQTTParam(char *param, double value) {
                         paramValid = true;
                         break;
                     default:
-                        Serial.println(String(m.type) + " is not a recognized type for this MQTT parameter.");
+                        debugPrintln((String(m.type) + " is not a recognized type for this MQTT parameter.").c_str());
                 }
 
                 paramInRange = true;
             }
             else {
-                Serial.println("Value out of range for MQTT parameter "+ key + ".");
+                debugPrintln(("Value out of range for MQTT parameter "+ key + ".").c_str());
                 paramInRange = false;
             }
 
@@ -1181,7 +1181,7 @@ void assignMQTTParam(char *param, double value) {
         writeSysParamsToStorage();
     }
     else {
-        Serial.println(key + " is not a valid MQTT parameter.");
+        debugPrintln((key + " is not a valid MQTT parameter.").c_str());
     }
 }
 

@@ -207,6 +207,7 @@ constexpr unsigned int str2int(const char* str, int h = 0) {
 }
 
 String getHeader(String varName) {
+    //TODO: actually put the references libs on local file system again (only when using ESP32 which has more flash mem, but also make sure web server can handle this many concurrent requests (might crash, at least with ESP8266)
     switch (str2int(varName.c_str())) {
         case (str2int("FONTAWESOME")):
             #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
@@ -233,7 +234,7 @@ String getHeader(String varName) {
                 return F("<script src=\"https://cdn.jsdelivr.net/npm/vue@3.2/dist/vue.global.prod.min.js\"></script>");
             #endif
         case (str2int("PLOTLY")):
-            //file is too large for flash mem on ESP8288
+            //file is too large for flash mem on ESP8288, replace with chart.js?
             //#if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
             //    return F("<script src=\"/js/plotly-2.13.3.min.js\"></script>");
             //#else
@@ -359,9 +360,9 @@ void serverSetup() {
             // Write to EEPROM
             if (writeToEeprom) {
                 if (writeToEeprom() == 0) {
-                    Serial.println("successfully wrote EEPROM");
+                    debugPrintln("successfully wrote EEPROM");
                 } else {
-                    Serial.println("EEPROM write failed");
+                    debugPrintln("EEPROM write failed");
                 }
             }
 

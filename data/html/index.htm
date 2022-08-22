@@ -1,7 +1,8 @@
 %HEADER%
     %VAR_HEADER_PLOTLY%
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
+    
+    <script type="module">
+        document.addEventListener("load", event => {
             vueApp.mount('#status')
         })
     </script>
@@ -56,7 +57,7 @@
                         <table class="table table-borderless pb-0 mb-0">
                             <tbody>
                                 <tr>
-                                    <td><b>Enable PID Controller</b></td>
+                                    <td><b>Toggle PID Controller (temporary)</b></td>
                                     <td><span id="pid_state"></span></td>
                                     <td>
                                         <form action="/pidstatus" method="post">

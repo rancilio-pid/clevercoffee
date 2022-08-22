@@ -1,16 +1,4 @@
-/**
-* Takes an array of objects and returns an object of arrays with the same value for key
-*/
-function groupBy(array, key) {
-    const result = {}
-    array.forEach(item => {
-        if (!result[item[key]]) {
-            result[item[key]] = []
-    }
-        result[item[key]].push(item)
-    })
-    return result
-}
+const appCreatedEvent = new Event('appCreated')
 
 const vueApp = Vue.createApp({
     data() {
@@ -78,10 +66,25 @@ const vueApp = Vue.createApp({
             }
             return sectionNames[sectionId]
         }
-            },
-            mounted() {
-                this.fetchParameters()
-            }
-        })
+    },
+    mounted() {
+        this.fetchParameters()
+    }
+})
 
 window.vueApp = vueApp
+window.dispatchEvent(appCreatedEvent)
+
+/**
+* Takes an array of objects and returns an object of arrays with the same value for key
+*/
+function groupBy(array, key) {
+    const result = {}
+    array.forEach(item => {
+        if (!result[item[key]]) {
+            result[item[key]] = []
+    }
+        result[item[key]].push(item)
+    })
+    return result
+}
