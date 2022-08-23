@@ -51,7 +51,7 @@ void printScreen() {
             u8g2.setFont(u8g2_font_profont11_tf);
 
             // print brewdetection
-            if (timerBrewdetection == 1) {
+            if (isBrewDetected == 1) {
                 u8g2.setCursor(1, 75);
                 u8g2.print("BD ");
                 u8g2.print((millis() - timeBrewdetection) / 1000, 1);

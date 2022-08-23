@@ -226,7 +226,7 @@ double heatrateaverage = 0;  // the average over the numReadings
 double changerate = 0;       // local change rate of temprature
 double heatrateaveragemin = 0;
 unsigned long timeBrewdetection = 0;
-int timerBrewdetection = 0;  // flag is set if brew was detected
+int isBrewDetected = 0;      // flag is set if brew was detected
 int firstreading = 1;        // Ini of the field, also used for sensor check
 
 // PID - values for offline brewdetection
@@ -242,7 +242,7 @@ double aggbTv = AGGBTV;
 #endif
 
 double aggbKd = aggbTv * aggbKp;
-double brewtimersoftware = BREW_SW_TIMER; // 20-5 for detection
+double brewtimersoftware = BREW_SW_TIMER;  // 20-5 for detection
 double brewsensitivity = BREWSENSITIVITY;  // brew detection limit
 const int PonE = PONE;
 
@@ -1003,21 +1003,18 @@ void brewdetection() {
 
     // Brew detection: 1 = software solution, 2 = hardware, 3 = voltage sensor
     if (Brewdetection == 1) {
-        if (timerBrewdetection == 1) {
+        if (isBrewDetected == 1) {
             timeBrewed = millis() - timeBrewdetection;
         }
 
         // deactivate brewtimer after end of brewdetection pid
-        if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1) {
-            timerBrewdetection = 0;  // rearm brewdetection
-            timeBrewed = 0 ;
-            if (machinestate != kBrew  ) { // if Onlypid = 1, timeBrewed > 0, no reset of timeBrewed in case of brewing.
-                timeBrewed = 0;
-            }
+        if (millis() - timeBrewdetection > brewtimersoftware * 1000 && isBrewDetected == 1) {
+            isBrewDetected = 0;  // rearm brewdetection
+            timeBrewed = 0;
         }
     } else if (Brewdetection == 2) {
-        if (millis() - timeBrewdetection > brewtimersoftware * 1000 && timerBrewdetection == 1) {
-            timerBrewdetection = 0;  // rearm brewdetection
+        if (millis() - timeBrewdetection > brewtimersoftware * 1000 && isBrewDetected == 1) {
+            isBrewDetected = 0;  // rearm brewdetection
         }
     } else if (Brewdetection == 3) {
         // timeBrewed counter
@@ -1035,26 +1032,21 @@ void brewdetection() {
             coolingFlushDetectedQM = false;
             debugPrintln("HW Brew - Voltage Sensor - End");
         }
-
-        if (millis() - timeBrewdetection >= brewtimersoftware * 1000 && timerBrewdetection == 1) {  // reset PID Brew
-            timerBrewdetection = 0; // rearm brewdetection
-            timeBrewed = 0 ;
-        }
     }
 
     // Activate brew detection
     if (Brewdetection == 1) {  // SW BD
         // BD PID only +/- 4 Grad Celsius, no detection if HW was active
-        if (heatrateaverage <= -brewsensitivity && timerBrewdetection == 0 && (fabs(Input - BrewSetPoint) < 5)) {
+        if (heatrateaverage <= -brewsensitivity && isBrewDetected == 0 && (fabs(Input - BrewSetPoint) < 5)) {
             debugPrintln("SW Brew detected");
             timeBrewdetection = millis();
-            timerBrewdetection = 1;
+            isBrewDetected = 1;
         }
     } else if (Brewdetection == 2) {  // HW BD
         if (brewcounter > 10 && brewDetected == 0 && brewsensitivity != 0) {
             debugPrintln("HW Brew detected");
             timeBrewdetection = millis();
-            timerBrewdetection = 1;
+            isBrewDetected = 1;
             brewDetected = 1;
         }
     } else if (Brewdetection == 3) {  // voltage sensor
@@ -1067,7 +1059,7 @@ void brewdetection() {
                         brewSteamDetectedQM == 0 && !steamQM_active) {
                         timeBrewdetection = millis();
                         timePVStoON = millis();
-                        timerBrewdetection = 1;
+                        isBrewDetected = 1;
                         brewDetected = 0;
                         lastbrewTime = 0;
                         brewSteamDetectedQM = 1;
@@ -1112,7 +1104,7 @@ void brewdetection() {
                     debugPrintln("HW Brew - Voltage Sensor - Start");
                     timeBrewdetection = millis();
                     startingTime = millis();
-                    timerBrewdetection = 1;
+                    isBrewDetected = 1;
                     brewDetected = 1;
                     lastbrewTime = 0;
                 }
@@ -1473,20 +1465,15 @@ void machinestatevoid() {
                             (double)(millis() - startingTime) / 1000, Input, heatrateaverage);
             }
 
-            if ((Brewdetection == 1 && ONLYPID == 1) || // SW BD, kBrew was active for set time
-                (timeBrewed == 0 && Brewdetection == 3 && ONLYPID == 1) ||  // OnlyPID+ - Voltage sensor BD timeBrewed == 0 -> switch is off again
+            if ((timeBrewed == 0 && Brewdetection == 3 && ONLYPID == 1) ||  // OnlyPID+: Voltage sensor BD timeBrewed == 0 -> switch is off again
                 ((brewcounter == 10 || brewcounter == 43) && ONLYPID == 0)) // Hardware BD
             {
-                if ((ONLYPID == 1 && Brewdetection == 3) ||
-                    ONLYPID == 0)  // only delay shot timer display for voltage sensor or hw brew toggle switch (brew counter)
-                {
-                    machinestate = kShotTimerAfterBrew;
-                    lastbrewTimeMillis = millis();  // for delay
-                }
-
-                if (ONLYPID == 1 && Brewdetection == 1 && timerBrewdetection == 0) {  // direct to PID BD
-                    machinestate = kBrewDetectionTrailing;
-                }
+                // delay shot timer display for voltage sensor or hw brew toggle switch (brew counter)
+                machinestate = kShotTimerAfterBrew;
+                lastbrewTimeMillis = millis();  // for delay
+            } else if (Brewdetection == 1 && ONLYPID == 1 && isBrewDetected == 0) {   // SW BD, kBrew was active for set time
+                // when Software brew is finished, direct to PID BD
+                machinestate = kBrewDetectionTrailing;
             }
 
             if (SteamON == 1) {
@@ -1539,7 +1526,7 @@ void machinestatevoid() {
         case kBrewDetectionTrailing:
             brewdetection();
 
-            if (timerBrewdetection == 0) {
+            if (isBrewDetected == 0) {
                 machinestate = kPidNormal;
             }
 
@@ -2286,7 +2273,7 @@ void looppid() {
             debugPrintf("Current Machinestate: %s\n\n", machinestateEnumToString(machinestate));
             debugPrintf("timeBrewed %f\n", timeBrewed);
             debugPrintf("brewtimersoftware %f\n", brewtimersoftware);
-            debugPrintf("timerBrewdetection %i\n", timerBrewdetection);
+            debugPrintf("isBrewDetected %i\n", isBrewDetected);
             debugPrintf("Brewdetection %i\n", Brewdetection);
 
     
