@@ -76,7 +76,7 @@ window.vueApp = vueApp
 window.dispatchEvent(appCreatedEvent)
 
 /**
-* Takes an array of objects and returns an object of arrays with the same value for key
+* Takes an array of objects and returns an object of arrays where the value of key is the same
 */
 function groupBy(array, key) {
     const result = {}

@@ -268,7 +268,7 @@ String staticProcessor(const String& var) {
 }
 
 void serverSetup() {
-    server.on("/steam", HTTP_POST, [](AsyncWebServerRequest *request) {
+    server.on("/toggleSteam", HTTP_POST, [](AsyncWebServerRequest *request) {
         int steam = flipUintValue(SteamON);
 
         setSteamMode(steam);
@@ -277,7 +277,9 @@ void serverSetup() {
         request->redirect("/");
     });
 
-    server.on("/pidstatus", HTTP_POST, [](AsyncWebServerRequest *request) {
+    server.on("/togglePid", HTTP_POST, [](AsyncWebServerRequest *request) {
+        debugPrintf("/togglepid requested, method: %d\n", request->method());
+
         int status = flipUintValue(pidON);
 
         setPidStatus(status);
@@ -286,7 +288,7 @@ void serverSetup() {
         request->redirect("/");
     });
 
-    server.on("/backflush", HTTP_POST, [](AsyncWebServerRequest *request) {
+    server.on("/toggleBackflush", HTTP_POST, [](AsyncWebServerRequest *request) {
         int backflush = flipUintValue(backflushON);
 
         setBackflush(backflush);
@@ -297,8 +299,6 @@ void serverSetup() {
 
     //the constants seem wrong, HTTP_HEAD is coming through although request was submitted with POST) -> ESP bug?
     server.on("/parameters", HTTP_GET | HTTP_HEAD, [](AsyncWebServerRequest *request) {
-        //debugPrintf("/parameters requested, method: %d\n", request->method());
-
         if (request->method() == HTTP_HEAD) {
             //update all given params and match var name in editableVars
             int params = request->params();
@@ -388,10 +388,6 @@ void serverSetup() {
                     }                        
                 }
 
-                if (!e.show()) {
-                    continue;
-                }
-
                 JsonObject paramObj = doc.createNestedObject();
                 //set all parameter fields
                 paramObj["type"] = e.type;
@@ -399,6 +395,7 @@ void serverSetup() {
                 paramObj["displayName"] = e.displayName;
                 paramObj["section"] = e.section;
                 paramObj["hasHelpText"] = !e.helpText.isEmpty();
+                paramObj["show"] = e.show();
 
                 //set parameter value
                 if (e.type == kInteger) {
