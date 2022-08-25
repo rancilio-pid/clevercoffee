@@ -13,19 +13,18 @@
     #include <WiFi.h>
     #include <AsyncTCP.h>
     #include "FS.h"
-    #include "SPIFFS.h"
 #elif defined(ESP8266)
     #include <ESP8266WiFi.h>
     #include <ESPAsyncTCP.h>
     #define WEBSERVER_H
 #endif
-
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
 
-#include "userConfig.h"
-
+#include "LittleFS.h"
 #include <functional>
+
+#include "userConfig.h"
 
 
 enum EditableKind {
@@ -248,12 +247,14 @@ String staticProcessor(const String& var) {
     String varLower(var);
     varLower.toLowerCase();
 
-    File file = SPIFFS.open("/html_fragments/" + varLower + ".htm", "r");
+    File file = LittleFS.open("/html_fragments/" + varLower + ".htm", "r");
 
-    if (file) {
+    if (file && file.size()*2 < ESP.getFreeHeap()) {
         String ret = file.readString();
         file.close();
         return ret;
+    } else {
+        debugPrintf("Can't open file %s, not enough memory available\n", file.name());
     }
 
     return String();
@@ -365,7 +366,6 @@ void serverSetup() {
         } else if (request->method() == HTTP_GET) {
             //return all params as json
             DynamicJsonDocument doc(4096);
-            String paramString;
 
             //get parameter id from frst parameter, e.g. /parameters?param=PID_ON
             int paramCount = request->params();
@@ -407,7 +407,7 @@ void serverSetup() {
             }
 
             if (doc.size() == 0) {
-                request->send(404, "application/json", "{ \"code\": 404, \"message\": \"Parameter not found\"}");
+                request->send(404, "application/json", F("{ \"code\": 404, \"message\": \"Parameter not found\"}"));
                 return;
             }
 
@@ -419,7 +419,6 @@ void serverSetup() {
 
     server.on("/parameterHelp", HTTP_GET, [](AsyncWebServerRequest *request) {
         DynamicJsonDocument doc(4096);
-        String paramString;
 
         AsyncWebParameter* p = request->getParam(0);
         const String& varValue = p->value();
@@ -438,10 +437,10 @@ void serverSetup() {
         request->send(200, "application/json", helpJson);
     });
 
-    SPIFFS.begin();
-    server.serveStatic("/css", SPIFFS, "/css/", "max-age=604800");   //cache for one week
-    server.serveStatic("/js", SPIFFS, "/js/", "max-age=604800");
-    server.serveStatic("/", SPIFFS, "/html/", "max-age=604800").setTemplateProcessor(staticProcessor);
+    LittleFS.begin();
+    server.serveStatic("/css", LittleFS, "/css/", "max-age=604800");   //cache for one week
+    server.serveStatic("/js", LittleFS, "/js/", "max-age=604800");
+    server.serveStatic("/", LittleFS, "/html/", "max-age=604800").setTemplateProcessor(staticProcessor);
 
     server.onNotFound([](AsyncWebServerRequest *request) {
         request->send(404, "text/plain", "Not found");
@@ -465,7 +464,6 @@ void serverSetup() {
     server.begin();
     debugPrintln(("Server started at " + WiFi.localIP().toString()).c_str());
 }
-
 
 void sendTempEvent(float currentTemp, float targetTemp, float heaterPower) {
     curTemp = currentTemp;

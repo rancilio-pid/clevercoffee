@@ -2561,7 +2561,6 @@ const String getFwVersion(void) {
 }
 
 
-
 /**
  * @brief Performs a factory reset.
  *
@@ -2575,4 +2574,3 @@ int factoryReset(void) {
 
     return readSysParamsFromStorage();
 }
-
