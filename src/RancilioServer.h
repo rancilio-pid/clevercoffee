@@ -272,7 +272,7 @@ void serverSetup() {
         int steam = flipUintValue(SteamON);
 
         setSteamMode(steam);
-        Serial.printf("Toggle steam mode: %i \n", steam);
+        debugPrintf("Toggle steam mode: %i \n", steam);
 
         request->redirect("/");
     });
@@ -281,7 +281,7 @@ void serverSetup() {
         int status = flipUintValue(pidON);
 
         setPidStatus(status);
-        Serial.printf("Toggle PID controller status: %i \n", status);
+        debugPrintf("Toggle PID state: %i \n", status);
 
         request->redirect("/");
     });
@@ -290,7 +290,7 @@ void serverSetup() {
         int backflush = flipUintValue(backflushON);
 
         setBackflush(backflush);
-        Serial.printf("Toggle backflush mode: %i \n", backflush);
+        debugPrintf("Toggle backflush mode: %i \n", backflush);
 
         request->redirect("/");
     });
@@ -465,7 +465,7 @@ void serverSetup() {
 
     events.onConnect([](AsyncEventSourceClient *client) {
         if (client->lastId()) {
-            Serial.printf("Reconnected, last message ID was: %u\n", client->lastId());
+            debugPrintf("Reconnected, last message ID was: %u\n", client->lastId());
         }
 
         client->send("hello", NULL, millis(), 10000);
@@ -474,7 +474,7 @@ void serverSetup() {
     server.addHandler(&events);
 
     server.begin();
-    Serial.println("Server started at " + WiFi.localIP().toString());
+    debugPrintln(("Server started at " + WiFi.localIP().toString()).c_str());
 }
 
 

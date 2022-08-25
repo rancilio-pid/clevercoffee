@@ -6,7 +6,6 @@
  * @version 3.0.1 Alpha
  */
 
-
 // Firmware version
 #define FW_VERSION    3
 #define FW_SUBVERSION 0
@@ -15,12 +14,14 @@
 
 // Includes
 #include <ArduinoOTA.h>
-#include "rancilio-pid.h"
 #include "Storage.h"
 #include "SysPara.h"
 #include "icon.h"        // user icons for display
 #include "languages.h"   // for language translation
 #include "userConfig.h"  // needs to be configured by the user
+#include "debugSerial.h"
+
+#include "rancilio-pid.h"
 
 // Libraries
 #include <Adafruit_VL53L0X.h>   // for ToF Sensor
@@ -129,9 +130,6 @@ unsigned int wifiReconnects = 0;  // actual number of reconnects
 const char *OTAhost = OTAHOST;
 const char *OTApass = OTAPASS;
 
-//server for monitor connections
-WiFiServer SerialServer(23);
-
 // Blynk
 const char *blynkaddress = BLYNKADDRESS;
 const int blynkport = BLYNKPORT;
@@ -183,10 +181,6 @@ void setNormalPIDTunings();
 void setBDPIDTunings();
 void loopcalibrate();
 void looppid();
-void checkForRemoteSerialClients();
-void debugPrint(const char *message);
-void debugPrintln(const char *message);
-size_t debugPrintf(const char *format, ...);
 void printMachineState();
 char const* machinestateEnumToString(MachineState machinestate);
 void initSteamQM();
@@ -1789,8 +1783,8 @@ void wiFiSetup() {
     #if OLED_DISPLAY != 0
         displayLogo(langstring_connectwifi1, wm.getWiFiSSID(true));
     #endif
-
-    SerialServer.begin();
+        
+    startRemoteSerialServer();
 }
 
 /**
@@ -2066,93 +2060,6 @@ void loop() {
     }
 
     checkForRemoteSerialClients();
-}
-
-WiFiClient RemoteSerial;
-void checkForRemoteSerialClients() {
-    if (SerialServer.hasClient()) {
-        // If we are already connected to another client,
-        // then reject the new connection. Otherwise accept
-        // the connection.
-        if (RemoteSerial.connected()) {
-            debugPrintln("Serial Server Connection rejected");
-            SerialServer.available().stop();
-        }
-        else {
-            debugPrintln("Serial Server Connection accepted");
-            RemoteSerial = SerialServer.available();
-        }
-    }
-}
-
-void getCurrentTimeString(char *output) {
-    time_t rawtime;
-    struct tm *timeinfo;
-    time(&rawtime);
-    timeinfo = localtime(&rawtime);
-    snprintf(output, 12, "[%02d:%02d:%02d] ", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
-}
-
-// Print to remote serial (e.g. using OTA Monitor Task ) if client is connected, otherwise use hardware serial
-void debugPrintln(const char *message) {
-    char time[12];
-    getCurrentTimeString(time);
-    if (RemoteSerial.connected()) {
-        RemoteSerial.print(time);
-        RemoteSerial.println(message);
-    } else {
-        Serial.print(time);
-        Serial.println(message);
-    }
-}
-
-void debugPrint(const char *message) {
-    char time[12];
-    getCurrentTimeString(time);
-    if (RemoteSerial.connected()) {
-        RemoteSerial.print(time);
-        RemoteSerial.print(message);
-    } else {
-        Serial.print(time);
-        Serial.print(message);
-    }
-}
-
-size_t debugPrintf(const char *format, ...) {
-    va_list arg;
-    va_start(arg, format);
-    char temp[64];  //allocate a temp buffer
-    char* buffer = temp;
-    size_t len = vsnprintf(temp, sizeof(temp), format, arg);
-    va_end(arg);
-
-    //if temp buffer was too short, create new one with enough room (inludes previous bytes)
-    if (len > sizeof(temp) - 1) {
-        buffer = new char[len + 1];
-        if (!buffer) {
-            return 0;
-        }
-        va_start(arg, format);
-        vsnprintf(buffer, len + 1, format, arg);
-        va_end(arg);
-    }
-
-    //get time to prepend to message
-    char time[12];
-    getCurrentTimeString(time);
-
-    if (RemoteSerial.connected()) {
-        len = RemoteSerial.print(time);        
-        len += RemoteSerial.print(buffer);
-    } else {
-        len = Serial.print(time);
-        len += Serial.print(buffer);
-    }
-
-    if (buffer != temp) {
-        delete[] buffer;
-    }
-    return len;
 }
 
 /**
