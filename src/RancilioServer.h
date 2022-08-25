@@ -33,9 +33,7 @@ enum EditableKind {
     kUInt8,
     kDouble,
     kDoubletime,
-    kCString,
-    rInteger,
-    rCString,
+    kCString
 };
 
 struct editable_t {
@@ -175,22 +173,13 @@ String getValue(String varName) {
         switch (e.type) {
             case kDouble:
                 return String(*(double *)e.ptr);
-                break;
             case kDoubletime:
                 return String(*(double *)e.ptr);
-                break;
             case kInteger:
                 return String(*(int *)e.ptr);
-                break;
             case kUInt8:
                 return String(*(uint8_t *)e.ptr);
-                break;
             case kCString:
-                return String((const char *)e.ptr);
-            case rInteger :
-                return String(*(int *)e.ptr);
-                break;
-             case rCString:
                 return String((const char *)e.ptr);
             default:
                 return F("Unknown type");

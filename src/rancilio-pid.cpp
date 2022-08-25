@@ -423,8 +423,8 @@ std::vector<editable_t> editableVars =
     {"PID_BD_TV", "BD Tv (=Kd/Kp)", "Differential time constant (in seconds) for the PID when brewing has been detected.", kDouble, sBDSection, []{ return true && BREWDETECTION > 0 && useBDPID; }, (void *)&aggbTv},
     {"PID_BD_TIMER", "PID BD Time (s)", "Fixed time in seconds for which the BD PID will stay enabled (also after Brew switch is inactive again).", kDouble, sBDSection, []{ return true && BREWDETECTION > 0 && useBDPID; }, (void *)&brewtimersoftware},
     {"PID_BD_BREWSENSITIVITY", "PID BD Sensitivity", "Software brew detection sensitivity that looks at average temperature, <a href='https://manual.rancilio-pid.de/de/customization/brueherkennung.html' target='_blank'>Details</a>. Needs to be &gt;0 also for Hardware switch detection.", kDouble, sBDSection, []{ return true && BREWDETECTION == 1; }, (void *)&brewsensitivity},
-    {"STEAM_MODE", "Steam Mode", "", rInteger, sOtherSection, []{ return false; }, (void *)&SteamON},
-    {"BACKFLUSH_ON", "Backflush", "", rInteger, sOtherSection, []{ return false; }, (void *)&backflushON},
+    {"STEAM_MODE", "Steam Mode", "", kUInt8, sOtherSection, []{ return false; }, (void *)&SteamON},
+    {"BACKFLUSH_ON", "Backflush", "", kUInt8, sOtherSection, []{ return false; }, (void *)&backflushON},
 };
 
 unsigned long lastTempEvent = 0;
