@@ -9,31 +9,6 @@
     %VAR_HEADER_BOOTSTRAP%
     %VAR_HEADER_BOOTSTRAP_BUNDLE%
 
-    <!-- Init Bootstrap Popovers -->
-    <script>
-        document.addEventListener("DOMContentLoaded", function (event) {
-            document.querySelector('body').addEventListener('click', function (e) {
-                //if click was not on an opened popover (ignore those)
-                if (!e.target.classList.contains("popover-header")) {
-                    //close popovers when clicking elsewhere
-                    if (e.target.parentElement.getAttribute("data-bs-toggle") != "popover") {
-                        document.querySelectorAll('[data-bs-toggle="popover"]').forEach(function(el) {
-                            var popover = bootstrap.Popover.getInstance(el);
-                            if (popover != null) {
-                                popover.hide();
-                            }
-                        });
-                    } else {
-                        e.preventDefault();
-                        //create new popover
-                        var popover = bootstrap.Popover.getOrCreateInstance(e.target.parentElement);
-                        popover.show();
-                    }
-                }
-            });
-        });
-    </script>
-
     %VAR_HEADER_VUEJS%
 
     <script>

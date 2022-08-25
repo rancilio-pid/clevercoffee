@@ -2,9 +2,13 @@
     %VAR_HEADER_PLOTLY%
     
     <script type="module">
-        window.addEventListener('appCreated', () => {
+        if (window.appCreated == true) {
             vueApp.mount('#content')
-        })
+        } else {
+            window.addEventListener('appCreated', () => {
+                vueApp.mount('#content')
+            })
+        }
     </script>
 
     <div class="content-wrapper">
@@ -118,9 +122,13 @@
             </div>
             <!-- <script src="/js/temp.js"></script> -->
             <script>
-                window.addEventListener('appCreated', () => {
+                if (window.appCreated == true) {
                     import('/js/temp.js')
-                })
+                } else {
+                    window.addEventListener('appCreated', () => {
+                        import('/js/temp.js')
+                    })
+                }
             </script>
         </div>
     </div>

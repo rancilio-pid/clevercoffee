@@ -206,19 +206,19 @@ String getHeader(String varName) {
             #endif
         case (str2int("BOOTSTRAP")):
             #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
-                return F"<link href=\"/css/bootstrap-5.1.3.min.css\" rel=\"stylesheet\">";
+                return F("<link href=\"/css/bootstrap-5.1.3.min.css\" rel=\"stylesheet\">");
             #else
                 return F("<link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css\" rel=\"stylesheet\" integrity=\"sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3\" crossorigin=\"anonymous\">");
             #endif
         case (str2int("BOOTSTRAP_BUNDLE")):
             #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
-                return F"<script src=\"/js/bootstrap-5.1.3.min.js\" integrity=\"sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p\"></script>";
+                return F("<script src=\"/js/bootstrap-5.1.3.min.js\" integrity=\"sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p\"></script>");
             #else
                 return F("<script src=\"https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js\" integrity=\"sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p\" crossorigin=\"anonymous\"></script>");
             #endif
         case (str2int("VUEJS")):
             #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
-                return F("<script src=\"/js/vue.global.prod.min.js\"></script>");
+                return F("<script src=\"/js/vue.3.2.37.js\"></script>");
             #else
                 return F("<script src=\"https://cdn.jsdelivr.net/npm/vue@3.2/dist/vue.global.prod.min.js\"></script>");
             #endif
@@ -234,6 +234,7 @@ String getHeader(String varName) {
 }
 
 String staticProcessor(const String& var) {
+    //try replacing var for variables in editableVars
     if (var.startsWith("VAR_EDIT_")) {
         return generateForm(var.substring(9)); // cut off "VAR_EDIT_"
     } else if (var.startsWith("VAR_SHOW_")) {
@@ -242,12 +243,14 @@ String staticProcessor(const String& var) {
         return getHeader(var.substring(11)); // cut off "VAR_HEADER_"
     }
 
+    //var didn't start with above names, try opening var as fragment file and use contents if it exists
+    //TODO: this seems to consume too much heap in some cases, probably better to remove fragment loading and only one SPA 
     String varLower(var);
     varLower.toLowerCase();
 
     File file = SPIFFS.open("/html_fragments/" + varLower + ".htm", "r");
 
-    if(file) {
+    if (file) {
         String ret = file.readString();
         file.close();
         return ret;

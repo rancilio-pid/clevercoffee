@@ -74,6 +74,7 @@ const vueApp = Vue.createApp({
 
 window.vueApp = vueApp
 window.dispatchEvent(appCreatedEvent)
+window.appCreated = true
 
 /**
 * Takes an array of objects and returns an object of arrays where the value of key is the same
@@ -88,3 +89,24 @@ function groupBy(array, key) {
     })
     return result
 }
+
+//Init Bootstrap Popovers
+document.querySelector('body').addEventListener('click', function (e) {
+    //if click was not on an opened popover (ignore those)
+    if (!e.target.classList.contains("popover-header")) {
+        //close popovers when clicking elsewhere
+        if (e.target.parentElement.getAttribute("data-bs-toggle") != "popover") {
+            document.querySelectorAll('[data-bs-toggle="popover"]').forEach(function(el) {
+                var popover = bootstrap.Popover.getInstance(el);
+                if (popover != null) {
+                    popover.hide();
+                }
+            });
+        } else {
+            e.preventDefault();
+            //create new popover
+            var popover = bootstrap.Popover.getOrCreateInstance(e.target.parentElement);
+            popover.show();
+        }
+    }
+});

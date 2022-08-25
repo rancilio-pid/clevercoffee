@@ -1,8 +1,12 @@
 %HEADER%
     <script type="module">
-        window.addEventListener('appCreated', () => {
+        if (window.appCreated == true) {
             vueApp.mount('#parameters')
-        })
+        } else {
+            window.addEventListener('appCreated', () => {
+                vueApp.mount('#parameters')
+            })
+        }
     </script>
 
     <div class="content-wrapper">

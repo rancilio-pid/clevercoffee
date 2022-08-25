@@ -585,7 +585,7 @@ BLYNK_WRITE(V40) { backflushON = param.asInt(); }
                                         // conversion [psi] -> [bar]
             inputPressureFilter = filter(inputPressure);
 
-            debugPrintf("pressure raw / filterd: %f / %f\n", inputPressure, inputPressureFilter);
+            debugPrintf("pressure raw / filtered: %f / %f\n", inputPressure, inputPressureFilter);
         }
     }
 #endif
