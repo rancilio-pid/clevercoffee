@@ -78,7 +78,7 @@ void checkbrewswitch() {
                 if (brewswitchTrigger == HIGH) {
                     brewswitchTriggermillis = millis();
                     brewswitchTriggerCase = 20;
-                    debugPrintln("brewswitchTriggerCase 10:  HIGH");
+                    debugPrintln("brewswitchTriggerCase 10: HIGH");
                 }
                 break;
 
@@ -279,7 +279,7 @@ void brew() {
                 break;
 
             case 30:  // preinfusion pause
-                debugPrintln("preinfusion pause");
+                debugPrintln("Preinfusion pause");
                 digitalWrite(PINVALVE, relayON);
                 digitalWrite(PINPUMP, relayOFF);
                 brewcounter = 31;

@@ -38,6 +38,7 @@ enum EditableKind {
 struct editable_t {
     String templateString;
     String displayName;
+    boolean hasHelpText;
     String helpText;
     EditableKind type;
     int section;      // parameter section number
@@ -386,7 +387,7 @@ void serverSetup() {
                 paramObj["name"] = e.templateString;
                 paramObj["displayName"] = e.displayName;
                 paramObj["section"] = e.section;
-                paramObj["hasHelpText"] = !e.helpText.isEmpty();
+                paramObj["hasHelpText"] = e.hasHelpText;
                 paramObj["show"] = e.show();
 
                 //set parameter value
