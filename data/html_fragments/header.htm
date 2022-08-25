@@ -36,7 +36,12 @@
 
     %VAR_HEADER_VUEJS%
 
-    <script type="module" src="js/app.js"></script>
+    <script>
+        //delay loading app js until html has been loaded (to reduce concurrent requests)
+        document.addEventListener("DOMContentLoaded", function(event) {
+            import('/js/app.js')
+        })
+    </script>
 </head>
 
 <body>

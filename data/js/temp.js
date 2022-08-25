@@ -1,4 +1,9 @@
-window.addEventListener('load', getTemperatures);
+//TODO: this might have a short race condition where readyState is complete but load has not yet fired
+if (document.readyState === 'complete') {
+  getTemperatures()
+} else {
+  window.addEventListener('load', getTemperatures)
+}
 
 const maxRange = 3600;
 

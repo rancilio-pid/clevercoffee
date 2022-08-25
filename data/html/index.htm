@@ -2,7 +2,7 @@
     %VAR_HEADER_PLOTLY%
     
     <script type="module">
-        document.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('appCreated', () => {
             vueApp.mount('#status')
         })
     </script>
@@ -131,7 +131,12 @@
                     <div id="chart-heater"></div>
                 </div>
             </div>
-            <script src="/js/temp.js"></script>
+            <!-- <script src="/js/temp.js"></script> -->
+            <script>
+                window.addEventListener('appCreated', () => {
+                    import('/js/temp.js')
+                })
+            </script>
         </div>
     </div>
 
