@@ -4,7 +4,6 @@ const vueApp = Vue.createApp({
     data() {
         return {
             parameters: [],
-            parameterSections: [],
             parametersHelpTexts: [],
             isPostingForm: false
         }
@@ -15,7 +14,6 @@ const vueApp = Vue.createApp({
                 .then(response => response.json())
                 .then(data => {
                     this.parameters = data
-                    this.getParameterSections()
                 })
                 .catch(err => console.log(err.messages))
         },
@@ -54,10 +52,6 @@ const vueApp = Vue.createApp({
                     .then(data => { this.parametersHelpTexts[paramName] = data['helpText'] })
             }
         },
-        getParameterSections() {
-            var sections = groupBy(this.parameters, "section")
-            this.parameterSections = sections
-        },
         sectionName(sectionId) {
             const sectionNames = {
                 0: 'PID Parameters',
@@ -65,6 +59,11 @@ const vueApp = Vue.createApp({
                 2: 'Brew Detection and Brew PID Parameters'
             }
             return sectionNames[sectionId]
+        }
+    },
+    computed: {
+        parameterSections() {
+            return groupBy(this.parameters, "section")
         }
     },
     mounted() {
