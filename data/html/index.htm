@@ -1,11 +1,15 @@
 %HEADER%
+    <script src="https://unpkg.com/@chenfengyuan/vue-number-input@2/dist/vue-number-input.js"></script>
+
     %VAR_HEADER_PLOTLY%
     
     <script type="module">
         if (window.appCreated == true) {
+            vueApp.component(VueNumberInput.name, VueNumberInput);
             vueApp.mount('#content')
         } else {
             window.addEventListener('appCreated', () => {
+                vueApp.component(VueNumberInput.name, VueNumberInput);
                 vueApp.mount('#content')
             })
         }
@@ -21,26 +25,26 @@
                 </div>
                 <div class="card-body">
                     <form @submit.prevent="postParameters">
-                        <div class="row row-cols-3">
-                            <div class="col-5">
+                        <div class="row row-cols-1 row-cols-md-3">
+                            <div class="col-md-5 mb-4">
                                 <label class="form-label me-1 col-form-label">Current Temperature</label><br/>
                                 <b><span id="varTEMP">%VAR_SHOW_TEMP%</span> °C</b>
                             </div>
                                     
                             <template v-for="param in parameters">
                                 <template v-if="param.name == 'BREW_SET_POINT'">
-                                    <div class="col-3">
+                                    <div class="col-md-4">
                                         <label class="form-label me-1 col-form-label" :for="'var'+param.name">{{param.displayName}}</label>
                                         <template v-if="param.hasHelpText">
                                             <a href="#" role="button" @mouseover="fetchHelpText(param.name)" data-bs-toggle="popover" data-bs-html="true" :data-bs-original-title="parametersHelpTexts[param.name]">
                                                 <span class="fa fa-question-circle"></span>
                                             </a>
                                         </template>
-                                        <input class="form-control form-control-lg" type="number" step="0.1" :id="'var'+param.name" :name="'var'+param.name" v-model="param.value" style="min-width: 5em;">
+                                        <vue-number-input :step="0.1" :id="'var'+param.name" :name="'var'+param.name" v-model="param.value" :min="0" :max="150" style="min-width: 150px; max-width: 200px;   touch-action: manipulation;" center controls></vue-number-input>
                                     </div>
                                 </template>
                             </template>
-                            <div class="col-3 mt-5">
+                            <div class="col-md-3 pt-5 pe-5">
                                 <button type="submit" class="btn btn-primary float-end" :disabled="isPostingForm">
                                     Save
                                 </button>
@@ -68,7 +72,7 @@
                                             <td>
                                                 <form action="/togglePid" method="post">
                                                     <input type="hidden" id="varPID_ON" name="varPID_ON" />
-                                                    <input type="submit" :value="param.value == 1 ? 'Off' : 'On'" id="pid_toggle" />
+                                                    <input type="submit" class="btn btn-primary" :value="param.value == 1 ? 'Off' : 'On'" id="pid_toggle" />
                                                 </form>
                                             </td>
                                         </template>
@@ -78,7 +82,7 @@
                                             <td>
                                                 <form action="/toggleSteam" method="post">
                                                     <input type="hidden" id="varSTEAM_MODE" name="varSTEAM_MODE" />
-                                                    <input type="submit" :value="param.value == 1 ? 'Off' : 'On' "id="steam_toggle" />
+                                                    <input type="submit" class="btn btn-primary" :value="param.value == 1 ? 'Off' : 'On'" id="steam_toggle" />
                                                 </form>
                                             </td>
                                         </template>
@@ -88,7 +92,7 @@
                                             <td>
                                                 <form action="/toggleBackflush" method="post">
                                                     <input type="hidden" id="varBACKFLUSH_ON" name="varBACKFLUSH_ON" />
-                                                    <input type="submit" :value="param.value == 1 ? 'Off' : 'On' "id="backflush_toggle" />
+                                                    <input type="submit" class="btn btn-primary" :value="param.value == 1 ? 'Off' : 'On'" id="backflush_toggle" />
                                                 </form>
                                             </td>
                                         </template>
