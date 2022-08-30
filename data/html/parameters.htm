@@ -26,7 +26,7 @@
                                                 <label class="form-label me-1 col-form-label" :for="'var'+param.name">{{param.displayName}}</label>
                                                 <template v-if="param.hasHelpText">
                                                     <a href="#" role="button" @mouseover="fetchHelpText(param.name)" data-bs-toggle="popover" data-bs-html="true" :data-bs-original-title="parametersHelpTexts[param.name]">
-                                                        <span class="fa fa-question-circle"></span>
+                                                        <span class="fa-solid fa-question-circle"></span>
                                                     </a>
                                                 </template>
                                             </div>

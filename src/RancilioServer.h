@@ -97,7 +97,7 @@ String generateForm(String varName) {
         if (!e.helpText.isEmpty()) {
             result += F("<a href=\"#\" role=\"button\" data-bs-toggle=\"popover\" data-bs-html=\"true\" data-bs-original-title=\"");
             result += e.helpText;
-            result += F("\"><span class=\"fa fa-question-circle\"></span></a></br>");
+            result += F("\"><span class=\"fa-solid fa-circle-question\"></span></a></br>");
         } else {
             result += F("<br/>");
         }
@@ -200,9 +200,9 @@ String getHeader(String varName) {
     switch (str2int(varName.c_str())) {
         case (str2int("FONTAWESOME")):
             #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
-                return F("<link href=\"/css/fntawsm-4.7.0.min.css\" rel=\"stylesheet\">");
+                return F("<link href=\"/css/fontawesome-6.1.2.min.css\" rel=\"stylesheet\">");
             #else
-                return F("<link href=\"https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css\" rel=\"stylesheet\">");
+                return F("<link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css\">");
             #endif
         case (str2int("BOOTSTRAP")):
             #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
@@ -212,13 +212,13 @@ String getHeader(String varName) {
             #endif
         case (str2int("BOOTSTRAP_BUNDLE")):
             #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
-                return F("<script src=\"/js/bootstrap-5.1.3.min.js\" integrity=\"sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p\"></script>");
+                return F("<script src=\"/js/bootstrap.bundle.5.1.3.min.js\" integrity=\"sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p\"></script>");
             #else
                 return F("<script src=\"https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js\" integrity=\"sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p\" crossorigin=\"anonymous\"></script>");
             #endif
         case (str2int("VUEJS")):
             #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
-                return F("<script src=\"/js/vue.3.2.37.js\"></script>");
+                return F("<script src=\"/js/vue.3.2.37.min.js\"></script>");
             #else
                 return F("<script src=\"https://cdn.jsdelivr.net/npm/vue@3.2/dist/vue.global.prod.min.js\"></script>");
             #endif

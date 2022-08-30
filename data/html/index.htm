@@ -37,7 +37,7 @@
                                         <label class="form-label me-1 col-form-label" :for="'var'+param.name">{{param.displayName}}</label>
                                         <template v-if="param.hasHelpText">
                                             <a href="#" role="button" @mouseover="fetchHelpText(param.name)" data-bs-toggle="popover" data-bs-html="true" :data-bs-original-title="parametersHelpTexts[param.name]">
-                                                <span class="fa fa-question-circle"></span>
+                                                <span class="fa-solid fa-question-circle"></span>
                                             </a>
                                         </template>
                                         <vue-number-input :step="0.1" :id="'var'+param.name" :name="'var'+param.name" v-model="param.value" :min="0" :max="150" style="min-width: 150px; max-width: 200px;   touch-action: manipulation;" center controls></vue-number-input>
