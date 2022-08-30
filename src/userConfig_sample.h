@@ -53,7 +53,6 @@ enum MACHINE {
 #define BREWDETECTION 0            // 0 = off, 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = Sensor/Hardware for Only PID
 #define BREWSWITCHTYPE 1           // 1 = normal Switch, 2 = Trigger Switch
 #define BREWPID_DELAY 0            // delay until enabling PID controller during brew (no heating during this time)
-#define COLDSTART_PID 2            // 1 = default coldstart values, 2 = custom values via webinterface/blynk (expert mode activated)
 #define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay
 #define VOLTAGESENSORTYPE HIGH     // BREWDETECTION 3 configuration
 #define PINMODEVOLTAGESENSOR INPUT // Mode INPUT_PULLUP, INPUT or INPUT_PULLDOWN_16 (Only Pin 16)
@@ -107,7 +106,7 @@ enum MACHINE {
 #define BLYNKPORT 8080                          // blynk-server portver
 
 // Grafana
-#define GRAFANA 0                  // 2= custom Grafana 1 = grafana visualisation (access required), 0 = off (default)
+#define GRAFANA 0                  // 2 = custom Grafana 1 = Grafana visualisation (access required), 0 = off (default)
 
 // INFLUXDB
 #define INFLUXDB 0                 // 1 = INFLUX enabled, 0 = INFLUX disabled

@@ -534,11 +534,9 @@ BLYNK_WRITE(V34) { brewsensitivity = param.asDouble(); }
 
 BLYNK_WRITE(V40) { backflushON = param.asInt(); }
 
-#if (COLDSTART_PID == 2)  // Blynk values, else default starttemp from config
-    BLYNK_WRITE(V11) { startKp = param.asDouble(); }
+BLYNK_WRITE(V11) { startKp = param.asDouble(); }
 
-    BLYNK_WRITE(V14) { startTn = param.asDouble(); }
-#endif
+BLYNK_WRITE(V14) { startTn = param.asDouble(); }
 
 #if (PRESSURESENSOR == 1)  // Pressure sensor connected
     /**
@@ -2486,10 +2484,8 @@ void writeSysParamsToBlynk(void) {
             Blynk.virtualWrite(V18, weightSetpoint);
         #endif
 
-        #if (COLDSTART_PID == 2)  // 2=?Blynk values, else default starttemp from config
-            Blynk.virtualWrite(V11, startKp);
-            Blynk.virtualWrite(V14, startTn);
-        #endif
+        Blynk.virtualWrite(V11, startKp);
+        Blynk.virtualWrite(V14, startTn);
     }
 }
 
