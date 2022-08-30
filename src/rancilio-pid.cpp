@@ -224,7 +224,7 @@ int isBrewDetected = 0;      // flag is set if brew was detected
 int firstreading = 1;        // Ini of the field, also used for sensor check
 
 // PID - values for offline brewdetection
-uint8_t useBDPID = 1;
+uint8_t useBDPID = 0;
 double aggbKp = AGGBKP;
 double aggbTn = AGGBTN;
 double aggbTv = AGGBTV;
@@ -236,8 +236,8 @@ double aggbTv = AGGBTV;
 #endif
 
 double aggbKd = aggbTv * aggbKp;
-double brewtimersoftware = BREW_SW_TIMER;  // 20-5 for detection
-double brewsensitivity = BREWSENSITIVITY;  // brew detection limit
+double brewtimersoftware = BREW_SW_TIMER;  // use userConfig time until disabling BD PID
+double brewsensitivity = BREWSENSITIVITY;  // user userConfig brew detection sensitivity 
 const int PonE = PONE;
 
 // Brewing, 1 = Normal Preinfusion , 2 = Scale & Shottimer = 2
