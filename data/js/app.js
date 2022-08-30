@@ -5,7 +5,8 @@ const vueApp = Vue.createApp({
         return {
             parameters: [],
             parametersHelpTexts: [],
-            isPostingForm: false
+            isPostingForm: false,
+            showPostSucceeded: false
         }
     },
     methods: {
@@ -18,7 +19,8 @@ const vueApp = Vue.createApp({
                 .catch(err => console.log(err.messages))
         },
         postParameters() {
-            //post parameter array same as if it was posted from a form
+            //post parameter array the same as if it was posted from a form (the values are already updated
+            //from the v-model bindings)
             var formBody = [];
             this.parameters.forEach(param => {
                 var encodedKey = encodeURIComponent(param.name);
@@ -38,9 +40,18 @@ const vueApp = Vue.createApp({
             this.isPostingForm = true
             fetch("/parameters", requestOptions)
                 .then(response => 0)
-                .catch(err => console.log(err.messages))
+                .catch(err => {
+                    console.log(err.messages)
+                    //TODO: show (red) error symbol
+                })
                 .finally(() => {
                     this.isPostingForm = false
+                    //show checkmark, hide after timeout
+                    this.showPostSucceeded = true
+                    setTimeout(() => {
+                        this.showPostSucceeded = false
+                    }, 3000)
+
                     //refresh parameters to be shown
                     this.fetchParameters()
                 })

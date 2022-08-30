@@ -46,6 +46,8 @@
                             </template>
                             <div class="col-md-3 pt-5 pe-5">
                                 <button type="submit" class="btn btn-primary float-end" :disabled="isPostingForm">
+                                    <span v-show="showPostSucceeded" class="fa-solid fa-check text-success me-1"></span>
+                                    <span v-show="isPostingForm" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
                                     Save
                                 </button>
                             </div>
