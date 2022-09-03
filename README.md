@@ -13,45 +13,40 @@
 
 ## Version
 MASTER VERSION
-Version 3.0.1  (07.06.2022)
+Version 3.0.1 (07.06.2022)
 
-## Hinweise
-Unsere Projektwebseite findet ihr hier: [Clever Coffee Website](https://clevercoffee.de).
+## Notes
+You can find our project website here: [Clever Coffee Website](https://clevercoffee.de).
 
-Wir empfehlen euch gerne unser Handbuch hier in Github zu erst anzuschauen,
-hier geht es zum deutschen Handbuch: [Link](https://rancilio-pid.github.io/ranciliopid-handbook/)
+We recommend you to have a look at our manual here in Github first,
+here you can find the german manual: [Link](https://rancilio-pid.github.io/ranciliopid-handbook/)
 
-Unseren Chat für die gemeinsame Zusammenarbeit und Fragen findet ihr hier: [Link](https://chat.rancilio-pid.de)
+Our chat for collaboration and questions can be found here: [Link](https://chat.rancilio-pid.de)
 
-Anregungen zur Weiterentwicklung der Software werden von uns gerne aufgenommen. User-Input ist immer willkommen und bringt den PID weiter!
-Ihr seid herzlich Willkommen uns gemeinsam bei der Mission zu besseren Espresso zu helfen. 
+## What is possible after integrating
+ * **NEW** Own web page hosted via the node for setting the PID.
+ * **NEW** Transition from steam mode to normal mode optimized.
+ * **NEW** MQTT (IoT) support to manipulate all important parameters.
+ * Control of the brewing temperature with an accuracy of up to +/- 0,1°.
+ * Perfectly reach the set temperature within 8 to 12 minutes after switching on (depending on the machine). 
+ * Control of the brewing time incl. pre-infusion possible in the expansion stage "full expansion".
+ * Brew detection using a sensor with OnlyPID. [read more](https://rancilio-pid.github.io/ranciliopid-handbook/de/customization/brueherkennung.html#konfiguration-der-erkennung).
+ * Shot timer adjustable to see the reference time.
+ * Integration of a scale function. Documentation in the manual is still pending. 
+ * Steam mode with own PID controller and set temperature (in the web interface). 
+ * Integration of a water level sensor.
+ * Currently 3 designs for the display, possibility to integrate further designs easily (including vertical template)
+ * Support for Siliva E machines: trigger with definable interval for a relay to bypass the Eco function
+ * Configurable via integrated web interface
+ * Data monitoring via Grafana (web-based). 
+ * Updates of the PID software are possible wirelessly via WLAN
+ * Our PID software is Open Source: free of charge for you and customizable to your personal needs
+ * Small footprint, fits easily into most smaller espresso machines
+ * The standard wiring of the machine remains and is only extended. The machine can be easily retrofitted after the conversion.
+ * Active user community in project chat with fast support
+ * Support for 4 years with continuous adjustments
 
-## Was nach einem Umbau möglich ist
- * **NEU** Eigene über den Node gehostet Webseite für die Einstellung der PID.
- * **NEU** Übergang vom Dampfmodus in den normalen Modus optimiert.
- * **NEU** MQTT (IoT) Support, um alle wichtigen Parameter zu manipulieren. 
- * Automatischer Kaltstart für das perfekte Erreichen der Soll-Temperatur innerhalb von 8 bis 12 Minuten (je nach Maschine) 
- * Integration einer Waagefunktion. Dokumentation im Handbuch steht noch aus. 
- * Steammodus mit Displayausgabe und eigenen PID Regler und Temperatur (in der App unter Expertenmodus) 
- * Integration von einem Füllstandssensor. 
- * Brüherkennung per Sensor bei OnlyPID. [mehr dazu](https://rancilio-pid.github.io/ranciliopid-handbook/de/customization/brueherkennung.html#konfiguration-der-erkennung).
- * Shottimer einstellbar, um die Bezugdauer zu sehen.
- * Aktuell 3 Displaydesgins für die Anzeige, Möglichkeit weitere Designs einfach einzubinden. 
- * Vertikales Template fürs Display 
- * Support für Siliva E Maschinen: Trigger mit definierbaren Intervall für ein Relais zum Überbrücken der Eco-Funktion
- * Regelung der Brühtemperatur mit einer Genauigkeit von bis zu +/- 0,1°
- * Steuerung der Brühzeit inkl. Pre-Infusion in der Ausbaustufe „Vollausbau“ möglich
- * Bedienung über eine Smartphone-App (iOS & Android) via Blynk (Blynk Server ist leider abgekündigt, unterstützen wir aber weiter)
- * Datenmonitoring über Grafana (webbasiert) 
- * Updates der PID-Software sind drahtlos über WLAN möglich
- * Unsere PID-Software ist OpenSource: für euch kostenfrei und auf persönliche Anforderungen anpassbar
- * Geringer Platzbedarf, passt problemlos in die meisten kleineren Espressomaschinen
- * Die serienmäßige Verkabelung der Maschine bleibt erhalten und wird nur erweitert. Die Maschine kann nach dem Umbau problemlos wieder zurückgerüstet werden.
- * Aktive User-Community im Projektchat mit schnellem Support
- * Support seit 4 Jahren mit kontinuerlichen Anpassungen
+Suggestions for further development of the software are welcome. User input is always welcome and brings the PID forward!
+You are welcome to help us together in our mission to make better espresso. 
 
-Anregungen zur Weiterentwicklung der Software werden von uns gerne aufgenommen. User-Input ist immer willkommen und bringt den PID weiter!
-Ihr seid herzlich Willkommen uns gemeinsam bei der Mission zu besseren Espresso zu helfen. 
-
-Vielen Dank an jeden einzelnen Unterstützer!
-
+Thanks to every single supporter!
