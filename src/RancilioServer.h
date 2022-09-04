@@ -53,6 +53,16 @@ double curTemp = 0.0;
 double tTemp = 0.0;
 double hPower = 0.0;
 
+#if defined(ESP8266)
+    #define HISTORY_LENGTH 120    //10 mins of values
+#elif defined(ESP32)
+    #define HISTORY_LENGTH 720    //60 mins of values
+#endif
+
+static float tempHistory[3][HISTORY_LENGTH] = {0};
+int historyCurrentIndex = 0;
+int historyValueCount = 0;
+
 void serverSetup();
 void setEepromWriteFcn(int (*fcnPtr)(void));
 
@@ -76,6 +86,44 @@ String getTempString() {
     doc["currentTemp"] = curTemp;
     doc["targetTemp"] = tTemp;
     doc["heaterPower"] = hPower;
+
+    String jsonTemps;
+    serializeJson(doc, jsonTemps);
+
+    return jsonTemps;
+}
+
+//proper modulo function (% is remainder, so will return negatives)
+int mod(int a, int b) {
+    int r = a % b;
+    return r < 0 ? r + b : r;
+}
+
+// rounds a number to 2 decimal places
+// example: round(3.14159) -> 3.14
+double round2(double value) {
+   return (int)(value * 100 + 0.5) / 100.0;
+}
+
+String getTimeseriesString() {
+    StaticJsonDocument <HISTORY_LENGTH*3*10>doc;
+
+    //for each value in mem history array, add json array element
+    //(how many elements can we use, memory esp8266 vs esp32?)
+    JsonArray currentTemps = doc.createNestedArray("currentTemps");
+    JsonArray targetTemps = doc.createNestedArray("targetTemps");
+    JsonArray heaterPowers = doc.createNestedArray("heaterPowers");
+    
+    //go through history values backwards starting from currentIndex and wrap around beginning
+    //to include valueCount many values
+    for (int i=mod(historyCurrentIndex-historyValueCount, HISTORY_LENGTH);
+             i!=mod(historyCurrentIndex, HISTORY_LENGTH);
+             i=mod(i+1, HISTORY_LENGTH))
+    {
+        currentTemps.add(round2(tempHistory[0][i]));
+        targetTemps.add(round2(tempHistory[1][i]));
+        heaterPowers.add(round2(tempHistory[2][i]));
+    }
 
     String jsonTemps;
     serializeJson(doc, jsonTemps);
@@ -255,13 +303,15 @@ String staticProcessor(const String& var) {
         file.close();
         return ret;
     } else {
-        debugPrintf("Can't open file %s, not enough memory available\n", file.name());
+        debugPrintf("Can't open file %s, not enough memory available\n", file ? file.name() : "");
     }
 
     return String();
 }
 
 void serverSetup() {
+    // set up dynamic routes (endpoints)
+
     server.on("/toggleSteam", HTTP_POST, [](AsyncWebServerRequest *request) {
         int steam = flipUintValue(SteamON);
 
@@ -438,20 +488,21 @@ void serverSetup() {
         request->send(200, "application/json", helpJson);
     });
 
-    LittleFS.begin();
-    server.serveStatic("/css", LittleFS, "/css/", "max-age=604800");   //cache for one week
-    server.serveStatic("/js", LittleFS, "/js/", "max-age=604800");
-    server.serveStatic("/", LittleFS, "/html/", "max-age=604800").setTemplateProcessor(staticProcessor);
-
-    server.onNotFound([](AsyncWebServerRequest *request) {
-        request->send(404, "text/plain", "Not found");
-    });
-
     server.on("/temperatures", HTTP_GET, [](AsyncWebServerRequest *request) {
         String json = getTempString();
         request->send(200, "application/json", json);
     });
 
+    server.on("/timeseries", HTTP_GET, [](AsyncWebServerRequest *request) {
+        String json = getTimeseriesString();
+        request->send(200, "application/json", json);
+    });
+    
+    server.onNotFound([](AsyncWebServerRequest *request) {
+        request->send(404, "text/plain", "Not found");
+    });
+
+    // set up event handler for temperature messages
     events.onConnect([](AsyncEventSourceClient *client) {
         if (client->lastId()) {
             debugPrintf("Reconnected, last message ID was: %u\n", client->lastId());
@@ -462,14 +513,43 @@ void serverSetup() {
 
     server.addHandler(&events);
 
+    // serve static files
+    LittleFS.begin();
+    server.serveStatic("/css", LittleFS, "/css/", "max-age=604800");   //cache for one week
+    server.serveStatic("/js", LittleFS, "/js/", "max-age=604800");
+    server.serveStatic("/", LittleFS, "/html/", "max-age=604800").setTemplateProcessor(staticProcessor);
+
     server.begin();
+
     debugPrintln(("Server started at " + WiFi.localIP().toString()).c_str());
 }
 
-void sendTempEvent(float currentTemp, float targetTemp, float heaterPower) {
+//skip counter so we don't keep a value every second
+int skippedValues = 0;
+
+void sendTempEvent(double currentTemp, double targetTemp, double heaterPower) {
     curTemp = currentTemp;
     tTemp = targetTemp;
     hPower = heaterPower;
+
+    if (skippedValues > 0 && skippedValues % 4 == 0) {
+        //use array and int value for start index (round robin)
+        //one record (3 float values == 12 bytes) every five seconds, for half an hour -> 4.3kB of static memory
+        tempHistory[0][historyCurrentIndex] = (float)currentTemp;
+        tempHistory[1][historyCurrentIndex] = (float)targetTemp;
+        tempHistory[2][historyCurrentIndex] = (float)heaterPower;
+        historyCurrentIndex = (historyCurrentIndex+1) % HISTORY_LENGTH;
+        historyValueCount = (historyValueCount + 1) % HISTORY_LENGTH;
+        skippedValues = 0;
+    } else {
+        skippedValues++;
+    }
+
+    /*
+    debugPrintf("histIndex: %d\n", historyCurrentIndex);
+    debugPrintf("histValCount: %d\n", historyValueCount);
+    debugPrintf("currentTemp: %f\n", currentTemp);
+    */
 
     events.send("ping", NULL, millis());
     events.send(getTempString().c_str(), "new_temps", millis());
