@@ -69,7 +69,7 @@
                                 <template v-for="param in parameters">
                                     <tr>
                                         <template v-if="param.name == 'PID_ON'">
-                                            <td><b>Toggle PID Controller (temporary)</b></td>
+                                            <td><b>Toggle PID Controller</b></td>
                                             <td><span id="pid_state"></span></td>
                                             <td>
                                                 <form action="/togglePid" method="post">

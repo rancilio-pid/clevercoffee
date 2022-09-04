@@ -2355,6 +2355,7 @@ void setSteamMode(int steamMode) {
 void setPidStatus(int pidStatus) {
     pidON = pidStatus;
     writeSysParamsToBlynk();
+    writeSysParamsToStorage();
 }
 
 void setNormalPIDTunings() {
