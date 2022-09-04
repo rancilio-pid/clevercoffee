@@ -10,6 +10,7 @@
 #include "debugSerial.h"
 #include "userConfig.h"
 #include "Storage.h"
+#include "rancilio-pid.h"
 
 #define STRUCT_MEMBER_SIZE(Type, Member) sizeof(((Type*)0)->Member)
 
@@ -57,8 +58,7 @@ typedef struct __attribute__((packed)) {
     double steamkp;
 } sto_data_t;
 
-
-// item defaults
+// set item defaults
 static const sto_data_t itemDefaults PROGMEM = {
     AGGKP,                    // STO_ITEM_PID_KP_REGULAR
     {0xFF, 0xFF},             // reserved (maybe for structure version)

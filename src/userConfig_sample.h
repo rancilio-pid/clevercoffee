@@ -52,7 +52,6 @@ enum MACHINE {
 #define BREWMODE 1                 // 1 = NORMAL preinfusion ; 2 = Scale with weight
 #define BREWDETECTION 0            // 0 = off, 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = Sensor/Hardware for Only PID
 #define BREWSWITCHTYPE 1           // 1 = normal Switch, 2 = Trigger Switch
-#define BREWPID_DELAY 0            // delay until enabling PID controller during brew (no heating during this time)
 #define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay
 #define VOLTAGESENSORTYPE HIGH     // BREWDETECTION 3 configuration
 #define PINMODEVOLTAGESENSOR INPUT // Mode INPUT_PULLUP, INPUT or INPUT_PULLDOWN_16 (Only Pin 16)
@@ -72,7 +71,6 @@ enum MACHINE {
 #define TRIGGERRELAYTYPE HIGH      // LOW = low trigger, HIGH = high trigger relay for E-Trigger
 
 // Brew Scale
-#define SCALE_WEIGHTSETPOINT 30             // In grams
 #define SCALE_SAMPLES 2                     // Load cell sample rate
 #define SCALE_CALIBRATION_FACTOR 3195.83    // Raw data is divided by this value to convert to readable data
 
@@ -119,26 +117,9 @@ enum MACHINE {
 #define INFLUXDB_DB_NAME "coffee"  // InfluxDB bucket name
 #define INFLUXDB_INTERVAL 5000     // Send interval in milliseconds
 
-// System Parameters (default values)
-#define SETPOINT 95                // brew temperature setpoint
-#define TEMPOFFSET 0               // brew temperature setpoint
-#define STEAMSETPOINT 120          // steam temperature setpoint
-#define BREWSENSITIVITY 120        // brew detection sensitivity, be careful: if too low, then there is the risk of wrong brew detection and rising temperature
-#define AGGKP 60                   // PID Kp (regular phase)
-#define AGGTN 52                   // PID Tn (regular phase)
-#define AGGTV 15                   // PID Tv (regular phase)
-#define AGGIMAX 55                 // PID Integrator Max (regular phase)
+// PID Parameters (not yet in Web interface)
 #define EMA_FACTOR 0.6             // Smoothing of input that is used for Tv (derivative component of PID). Smaller means less smoothing but also less delay, 0 means no filtering
-#define STARTKP 45                 // PID Kp (coldstart phase)
-#define STARTTN 130                // PID Tn (coldstart phase)
-#define STEAMKP 150                // PID Kp (steam phase)
-#define AGGBKP 50                  // PID Kp (brew detection phase)
-#define AGGBTN 0                   // PID Tn (brew detection phase)
-#define AGGBTV 20                  // PID Tv (brew detection phase)
-#define BREW_TIME 25               // brew time in seconds (only used if pump is being controlled)
-#define BREW_SW_TIMER 25           // keep brew PID params for this many seconds after detection (only for software BD)
-#define PRE_INFUSION_TIME 2        // pre-infusion time in seconds
-#define PRE_INFUSION_PAUSE_TIME 5  // pre-infusion pause time in seconds
+#define BREWPID_DELAY 10           // delay until enabling PID controller during brew (no heating during this time)
 
 // Backflush values
 #define FILLTIME 3000              // time in ms the pump is running
