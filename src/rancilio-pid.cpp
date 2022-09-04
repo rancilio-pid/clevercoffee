@@ -9,7 +9,7 @@
 // Firmware version
 #define FW_VERSION    3
 #define FW_SUBVERSION 0
-#define FW_HOTFIX     1
+#define FW_HOTFIX     2
 #define FW_BRANCH     "MASTER"
 
 // Includes

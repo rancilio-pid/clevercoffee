@@ -10,8 +10,8 @@
 // firmware version (must match with definitions in the main source file)
 #define USR_FW_VERSION    3
 #define USR_FW_SUBVERSION 0
-#define USR_FW_HOTFIX     1
-#define USR_FW_BRANCH     "ALPHA"
+#define USR_FW_HOTFIX     2
+#define USR_FW_BRANCH     "MASTER"
 
 // List of supported machines
 enum MACHINE {
@@ -74,7 +74,6 @@ enum MACHINE {
 #define SCALE_SAMPLES 2                     // Load cell sample rate
 #define SCALE_CALIBRATION_FACTOR 3195.83    // Raw data is divided by this value to convert to readable data
 
-
 /* Pressure sensor
  *
  * measure and verify "offset" value, should be 10% of ADC bit reading @supply volate (3.3V)
@@ -84,7 +83,7 @@ enum MACHINE {
 #define FULLSCALE   922            // 90% of ADC input @3.3V supply = 922
 #define MAXPRESSURE 200
 
-// OTA
+// PlatformIO OTA
 #define OTA true                   // true = OTA activated, false = OTA deactivated
 #define OTAHOST "ota_hostname"     // Name to be shown in ARUDINO IDE Port
 #define OTAPASS "otapass"          // Password for OTA updtates
@@ -145,7 +144,7 @@ enum MACHINE {
 #define SCREEN_HEIGHT 64           // OLED display height, in pixels
 
 // Historic (no settings)
-#define TEMPSENSOR 2               // 2 = TSIC306 1=DS18B20
+#define TEMPSENSOR 2               // 2 = TSIC306, 1 = DS18B20
 
 // Check BrewSwitch
 #if (defined(ESP8266) && ((PINBREWSWITCH != 15 && PINBREWSWITCH != 0 && PINBREWSWITCH != 16 )))
@@ -155,7 +154,7 @@ enum MACHINE {
 
 // defined compiler errors
 #if (PRESSURESENSOR == 1) && (PINPRESSURESENSOR == 0) && (PINBREWSWITCH == 0)
-    #error Change PINBREWSWITCH or PRESSURESENSOR!
+  #error Change PINBREWSWITCH or PRESSURESENSOR!
 #endif
 
 #endif
