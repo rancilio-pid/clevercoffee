@@ -238,7 +238,6 @@ double aggbTv = AGGBTV;
 double aggbKd = aggbTv * aggbKp;
 double brewtimersoftware = BREW_SW_TIMER;  // use userConfig time until disabling BD PID
 double brewsensitivity = BREWSENSITIVITY;  // user userConfig brew detection sensitivity 
-const int PonE = PONE;
 
 // Brewing, 1 = Normal Preinfusion , 2 = Scale & Shottimer = 2
 #include "brewscaleini.h"
@@ -292,7 +291,7 @@ double aggKd = aggTv * aggKp;
 // Timer - ISR for PID calculation and heat realay output
 #include "ISR.h"
 
-PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, PonE, DIRECT);
+PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, 1, DIRECT);
 
 // Dallas temp sensor
 OneWire oneWire(ONE_WIRE_BUS);  // Setup a oneWire instance to communicate with any OneWire
@@ -2301,7 +2300,7 @@ void looppid() {
             lastmachinestatepid = machinestate;
         }
 
-        bPID.SetTunings(steamKp, 0, 0, PonE);
+        bPID.SetTunings(steamKp, 0, 0, 1);
     }
 
     // chill-mode after steam
@@ -2329,7 +2328,7 @@ void looppid() {
             lastmachinestatepid = machinestate;
         }
 
-        bPID.SetTunings(aggbKp, aggbKi, aggbKd, PonE);
+        bPID.SetTunings(aggbKp, aggbKi, aggbKd, 1);
     }
     // sensor error OR Emergency Stop
 }
@@ -2376,7 +2375,7 @@ void setNormalPIDTunings() {
         lastmachinestatepid = machinestate;
     }
 
-    bPID.SetTunings(aggKp, aggKi, aggKd, PonE);
+    bPID.SetTunings(aggKp, aggKi, aggKd, 1);
 }
 
 void setBDPIDTunings() {
@@ -2394,7 +2393,7 @@ void setBDPIDTunings() {
         lastmachinestatepid = machinestate;
     }
 
-    bPID.SetTunings(aggbKp, aggbKi, aggbKd, PonE);
+    bPID.SetTunings(aggbKp, aggbKi, aggbKd, 1);
 }
 
 /**

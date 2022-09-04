@@ -145,7 +145,6 @@ enum MACHINE {
 #define SCREEN_HEIGHT 64           // OLED display height, in pixels
 
 // Historic (no settings)
-#define PONE 1                     // 1 = P_ON_E (default), 0 = P_ON_M (special PID mode, other PID-parameter are needed)
 #define TEMPSENSOR 2               // 2 = TSIC306 1=DS18B20
 
 // Check BrewSwitch
