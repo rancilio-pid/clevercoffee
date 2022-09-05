@@ -108,7 +108,7 @@ void printScreen() {
             if (WiFi.status() == WL_CONNECTED) {
                 u8g2.drawXBMP(40, 2, 8, 8, antenna_OK_u8g2);
 
-                for (int b = 0; b <= bars; b++) {
+                for (int b = 0; b <= signalBars; b++) {
                     u8g2.drawVLine(45 + (b * 2), 10 - (b * 2), b * 2);
                 }
             } else {
