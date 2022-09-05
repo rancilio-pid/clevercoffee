@@ -194,7 +194,7 @@ char *number2string(unsigned int in);
 float filter(float input);
 
 // Variable declarations
-uint8_t pidON = 1;               // 1 = control loop in closed loop
+uint8_t pidON = 0;               // 1 = control loop in closed loop
 uint8_t usePonM = 0;             // 1 = use PonM for cold start PID, 0 = use normal PID for cold start
 int relayON, relayOFF;           // used for relay trigger type. Do not change!
 boolean coldstart = true;        // true = Rancilio started for first time

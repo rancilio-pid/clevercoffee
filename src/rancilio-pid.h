@@ -8,7 +8,7 @@
 #define TEMPOFFSET 0               // brew temperature setpoint
 #define STEAMSETPOINT 120          // steam temperature setpoint
 #define BREWSENSITIVITY 120        // brew detection sensitivity, be careful: if too low, then there is the risk of wrong brew detection and rising temperature
-#define AGGKP 65                   // PID Kp (regular phase)
+#define AGGKP 62                   // PID Kp (regular phase)
 #define AGGTN 52                   // PID Tn (regular phase)
 #define AGGTV 11.5                 // PID Tv (regular phase)
 #define AGGIMAX 55                 // PID Integrator Max (regular phase)
