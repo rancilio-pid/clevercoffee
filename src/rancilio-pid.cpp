@@ -1722,6 +1722,7 @@ void wiFiSetup() {
     wm.setConfigPortalTimeout(60); // sec Timeout for Portal
     wm.setConnectTimeout(10); // Try 10 Sec to Connect to WLAN
     wm.setBreakAfterConfig(true);
+    wm.setHostname(hostname);
 
     if (wm.autoConnect(hostname, pass)) {
         debugPrintf("WiFi connected - IP = %i.%i.%i.%i\n", WiFi.localIP()[0],
