@@ -194,14 +194,14 @@ char *number2string(unsigned int in);
 float filter(float input);
 
 // Variable declarations
-uint8_t pidON = 1;               // 1 = control loop in closed loop
+uint8_t pidON = 0;               // 1 = control loop in closed loop
 uint8_t usePonM = 0;             // 1 = use PonM for cold start PID, 0 = use normal PID for cold start
 int relayON, relayOFF;           // used for relay trigger type. Do not change!
 boolean coldstart = true;        // true = Rancilio started for first time
 boolean emergencyStop = false;   // Emergency stop if temperature is too high 
 double EmergencyStopTemp = 120;  // Temp EmergencyStopTemp
 float inX = 0, inY = 0, inOld = 0, inSum = 0; // used for filter()
-int bars = 0;                    // used for getSignalStrength()
+int signalBars = 0;              // used for getSignalStrength()
 boolean brewDetected = 0;
 boolean setupDone = false;
 int backflushON = 0;             // 1 = activate backflush
@@ -404,7 +404,7 @@ unsigned long lastTempEvent = 0;
 unsigned long tempEventInterval = 1000;
 
 /**
- * @brief Get Wifi signal strength and set bars for display
+ * @brief Get Wifi signal strength and set signalBars for display
  */
 void getSignalStrength() {
     if (offlineMode == 1) return;
@@ -418,15 +418,15 @@ void getSignalStrength() {
     }
 
     if (rssi >= -50) {
-        bars = 4;
+        signalBars = 4;
     } else if (rssi < -50 && rssi >= -65) {
-        bars = 3;
+        signalBars = 3;
     } else if (rssi < -65 && rssi >= -75) {
-        bars = 2;
+        signalBars = 2;
     } else if (rssi < -75 && rssi >= -80) {
-        bars = 1;
+        signalBars = 1;
     } else {
-        bars = 0;
+        signalBars = 0;
     }
 }
 
@@ -1722,6 +1722,7 @@ void wiFiSetup() {
     wm.setConfigPortalTimeout(60); // sec Timeout for Portal
     wm.setConnectTimeout(10); // Try 10 Sec to Connect to WLAN
     wm.setBreakAfterConfig(true);
+    wm.setHostname(hostname);
 
     if (wm.autoConnect(hostname, pass)) {
         debugPrintf("WiFi connected - IP = %i.%i.%i.%i\n", WiFi.localIP()[0],
