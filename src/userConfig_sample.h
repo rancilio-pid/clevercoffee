@@ -1,7 +1,7 @@
 /**
  * @file    userConfig_sample.h
  * @brief   Values must be configured by the user
- * @version 3.0.1 Alpha
+ * @version 3.0.2 Master 
  *
  */
 #ifndef _userConfig_H
@@ -56,7 +56,7 @@ enum MACHINE {
 #define VOLTAGESENSORTYPE HIGH     // BREWDETECTION 3 configuration
 #define PINMODEVOLTAGESENSOR INPUT // Mode INPUT_PULLUP, INPUT or INPUT_PULLDOWN_16 (Only Pin 16)
 #define PRESSURESENSOR 0           // 1 = pressure sensor connected to A0; PINBREWSWITCH must be set to the connected input!
-#define TEMPLED 1                  // set led pin high when brew or steam set point is within range
+#define TEMPLED 0                  // set led pin high when brew or steam set point is within range
 
 // TOF sensor for water level
 #define TOF 0                      // 0 = no TOF sensor connected; 1 = water level by TOF sensor
@@ -85,8 +85,8 @@ enum MACHINE {
 
 // PlatformIO OTA
 #define OTA true                   // true = OTA activated, false = OTA deactivated
-#define OTAHOST "ota_hostname"     // Name to be shown in ARUDINO IDE Port
-#define OTAPASS "otapass"          // Password for OTA updtates
+#define OTAHOST "silvia"           // Name to be shown in Arduino IDE/PlatformIO port
+#define OTAPASS "otapass"          // Password for OTA updates
 
 // MQTT
 #define MQTT 0                             // 1 = MQTT enabled, 0 = MQTT disabled
