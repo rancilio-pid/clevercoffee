@@ -106,32 +106,6 @@ double round2(double value) {
    return (int)(value * 100 + 0.5) / 100.0;
 }
 
-String getTimeseriesString() {
-    DynamicJsonDocument doc(JSON_OBJECT_SIZE(3) + JSON_ARRAY_SIZE(HISTORY_LENGTH)*3);
-
-    //for each value in mem history array, add json array element
-    //(how many elements can we use, memory esp8266 vs esp32?)
-    JsonArray currentTemps = doc.createNestedArray("currentTemps");
-    JsonArray targetTemps = doc.createNestedArray("targetTemps");
-    JsonArray heaterPowers = doc.createNestedArray("heaterPowers");
-    
-    //go through history values backwards starting from currentIndex and wrap around beginning
-    //to include valueCount many values
-    for (int i=mod(historyCurrentIndex-historyValueCount, HISTORY_LENGTH);
-             i!=mod(historyCurrentIndex, HISTORY_LENGTH);
-             i=mod(i+1, HISTORY_LENGTH))
-    {
-        currentTemps.add(round2(tempHistory[0][i]));
-        targetTemps.add(round2(tempHistory[1][i]));
-        heaterPowers.add(round2(tempHistory[2][i]));
-    }
-
-    String jsonTemps;
-    serializeJson(doc, jsonTemps);
-
-    return jsonTemps;
-}
-
 String generateForm(String varName) {
     for (editable_t e : editableVars) {
         if (e.templateString != varName) {
@@ -494,9 +468,32 @@ void serverSetup() {
         request->send(200, "application/json", json);
     });
 
+    //TODO: could send values also chunked and without json (but needs three endpoints then?)
+    //https://stackoverflow.com/questions/61559745/espasyncwebserver-serve-large-array-from-ram
     server.on("/timeseries", HTTP_GET, [](AsyncWebServerRequest *request) {
-        String json = getTimeseriesString();
-        request->send(200, "application/json", json);
+        AsyncResponseStream *response = request->beginResponseStream("application/json");
+
+        //set capacity of json doc for history structure
+        DynamicJsonDocument doc(JSON_ARRAY_SIZE(2) + JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(HISTORY_LENGTH)*3);
+
+        //for each value in mem history array, add json array element
+        JsonArray currentTemps = doc.createNestedArray("currentTemps");
+        JsonArray targetTemps = doc.createNestedArray("targetTemps");
+        JsonArray heaterPowers = doc.createNestedArray("heaterPowers");
+        
+        //go through history values backwards starting from currentIndex and wrap around beginning
+        //to include valueCount many values
+        for (int i=mod(historyCurrentIndex-historyValueCount, HISTORY_LENGTH);
+                 i!=mod(historyCurrentIndex, HISTORY_LENGTH);
+                 i=mod(i+1, HISTORY_LENGTH))
+        {
+            currentTemps.add(round2(tempHistory[0][i]));
+            targetTemps.add(round2(tempHistory[1][i]));
+            heaterPowers.add(round2(tempHistory[2][i]));
+        }
+
+        serializeJson(doc, *response);
+        request->send(response);
     });
     
     server.onNotFound([](AsyncWebServerRequest *request) {
