@@ -54,7 +54,7 @@ double tTemp = 0.0;
 double hPower = 0.0;
 
 #if defined(ESP8266)
-    #define HISTORY_LENGTH 60     //5 mins of values
+    #define HISTORY_LENGTH 120    //10 mins of values
 #elif defined(ESP32)
     #define HISTORY_LENGTH 720    //60 mins of values
 #endif
@@ -536,7 +536,7 @@ void sendTempEvent(double currentTemp, double targetTemp, double heaterPower) {
         tempHistory[1][historyCurrentIndex] = (float)targetTemp;
         tempHistory[2][historyCurrentIndex] = (float)heaterPower;
         historyCurrentIndex = (historyCurrentIndex+1) % HISTORY_LENGTH;
-        historyValueCount = (historyValueCount + 1) % HISTORY_LENGTH;
+        historyValueCount = min(HISTORY_LENGTH-1, historyValueCount + 1);
         skippedValues = 0;
     } else {
         skippedValues++;
