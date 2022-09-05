@@ -94,18 +94,34 @@ void printScreen()
             }
             u8g2.print("%");
         }
-            // Brew
+            // Brew time or uptime
             u8g2.setCursor(32, 34);
-            u8g2.print(langstring_brew);
-            u8g2.print(brewTime / 1000, 0);
-            u8g2.print("/");
 
-        if (ONLYPID == 1) {
-            u8g2.print(brewtimersoftware, 0);   // deaktivieren wenn Preinfusion
-        }
-        else {
-            u8g2.print(totalbrewtime / 1000, 1);    // aktivieren wenn Preinfusion und eine Nachkommastelle oder alternativ keine
-        }
+            if (brewDetected) {
+                //show shot time
+                u8g2.print(langstring_brew);
+                u8g2.print(timeBrewed / 1000, 0);
+                u8g2.print("/");
+
+                if (ONLYPID == 1) {
+                    u8g2.print(brewtimersoftware, 0);       // deactivate if only pid without preinfusion
+                }
+                else {
+                    u8g2.print(totalbrewtime / 1000, 1);    // activate if pre-infusion and one decimal place or alternatively none
+                }
+            } else {
+                //show uptime of machine
+                u8g2.print(langstring_uptime);
+                float seconds = millis() / 1000;
+                int hours = seconds / 3600;
+                int minutes = (seconds - hours * 60 * 60) / 60;
+
+                //print hours and minutes
+                u8g2.print(hours);
+                u8g2.print("h ");
+                u8g2.print(minutes);
+                u8g2.print("m");
+            }
 
         //draw box
         u8g2.drawFrame(0, 0, 128, 64);
@@ -118,7 +134,7 @@ void printScreen()
 
             if (WiFi.status() == WL_CONNECTED) {
                 u8g2.drawXBMP(40, 2, 8, 8, antenna_OK_u8g2);
-                for (int b = 0; b <= bars; b++) {
+                for (int b = 0; b <= signalBars; b++) {
                     u8g2.drawVLine(45 + (b * 2), 10 - (b * 2), b * 2);
                 }
             } else {

@@ -6,12 +6,13 @@
 
 #include <Arduino.h>
 #include <EEPROM.h>
+
+#include "debugSerial.h"
 #include "userConfig.h"
 #include "Storage.h"
-
+#include "rancilio-pid.h"
 
 #define STRUCT_MEMBER_SIZE(Type, Member) sizeof(((Type*)0)->Member)
-
 
 // storage data structure
 typedef struct __attribute__((packed)) {
@@ -22,15 +23,18 @@ typedef struct __attribute__((packed)) {
     uint8_t pidOn;
     uint8_t freeToUse1;
     double pidTvRegular;
-    uint8_t freeToUse2[2];
+    double pidIMaxRegular;
+    uint8_t freeToUse2;
     double brewSetpoint;
-    uint8_t freeToUse3[2];
+    double brewTempOffset;
+    uint8_t freeToUse3;
     double brewTimeMs;
     uint8_t freeToUse4[2];
     double preInfusionTimeMs;
     uint8_t freeToUse5[2];
     double preInfusionPauseMs;
-    uint8_t freeToUse6[22];
+    uint8_t freeToUse6[21];
+    uint8_t pidBdOn;
     double pidKpBd;
     uint8_t freeToUse7[2];
     double pidTnBd;
@@ -40,7 +44,8 @@ typedef struct __attribute__((packed)) {
     double brewSwTimerSec;
     uint8_t freeToUse10[2];
     double brewDetectionThreshold;
-    uint8_t freeToUse11[2];
+    uint8_t freeToUse11;
+    uint8_t useStartPonM;
     double pidKpStart;
     uint8_t freeToUse12[2];
     uint8_t softApEnabledCheck;
@@ -53,8 +58,7 @@ typedef struct __attribute__((packed)) {
     double steamkp;
 } sto_data_t;
 
-
-// item defaults
+// set item defaults
 static const sto_data_t itemDefaults PROGMEM = {
     AGGKP,                    // STO_ITEM_PID_KP_REGULAR
     {0xFF, 0xFF},             // reserved (maybe for structure version)
@@ -62,18 +66,20 @@ static const sto_data_t itemDefaults PROGMEM = {
     0,                        // STO_ITEM_PID_ON
     0xFF,                     // free to use
     AGGTV,                    // STO_ITEM_PID_TV_REGULAR
-    {0xFF, 0xFF},             // free to use
+    AGGIMAX,                  // STO_ITEM_PID_I_MAX_REGULAR
+    0xFF,                     // free to use
     SETPOINT,                 // STO_ITEM_BREW_SETPOINT
-    {0xFF, 0xFF},             // free to use
+    TEMPOFFSET,             
+    0xFF,                     // free to use
     BREW_TIME,                // STO_ITEM_BREW_TIME
     {0xFF, 0xFF},             // free to use
     PRE_INFUSION_TIME,        // STO_ITEM_PRE_INFUSION_TIME
     {0xFF, 0xFF},             // free to use
     PRE_INFUSION_PAUSE_TIME,  // STO_ITEM_PRE_INFUSION_PAUSE
-    {
+    {   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
         0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},  // free to use
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF },       // free to use
+    0,                                        // STO_ITEM_USE_PID_BD
     AGGBKP,                                   // STO_ITEM_PID_KP_BD
     {0xFF, 0xFF},                             // free to use
     AGGBTN,                                   // STO_ITEM_PID_TN_BD
@@ -82,8 +88,9 @@ static const sto_data_t itemDefaults PROGMEM = {
     {0xFF, 0xFF},                             // free to use
     BREW_SW_TIMER,                            // STO_ITEM_BREW_SW_TIMER
     {0xFF, 0xFF},                             // free to use
-    BREWDETECTIONLIMIT,                       // STO_ITEM_BD_THRESHOLD
-    {0xFF, 0xFF},                             // free to use
+    BREWSENSITIVITY,                          // STO_ITEM_BD_THRESHOLD
+    0xFF,                                     // free to use
+    1,                                        // STO_ITEM_USE_START_PON_M
     STARTKP,                                  // STO_ITEM_PID_KP_START
     {0xFF, 0xFF},                             // free to use
     0,                                        // STO_ITEM_SOFT_AP_ENABLED_CHECK
@@ -93,7 +100,7 @@ static const sto_data_t itemDefaults PROGMEM = {
     "",            // STO_ITEM_WIFI_SSID
     "",            // STO_ITEM_WIFI_PASSWORD
     SCALE_WEIGHTSETPOINT,
-    STEAMKP,
+    STEAMKP    
 };
 
 /**
@@ -126,9 +133,19 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
             size = STRUCT_MEMBER_SIZE(sto_data_t, pidTvRegular);
             break;
 
+        case STO_ITEM_PID_I_MAX_REGULAR:
+            addr = offsetof(sto_data_t, pidIMaxRegular);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, pidIMaxRegular);
+            break;
+
         case STO_ITEM_BREW_SETPOINT:
             addr = offsetof(sto_data_t, brewSetpoint);
             size = STRUCT_MEMBER_SIZE(sto_data_t, brewSetpoint);
+            break;
+
+        case STO_ITEM_BREW_TEMP_OFFSET:
+            addr = offsetof(sto_data_t, brewTempOffset);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, brewTempOffset);
             break;
 
         case STO_ITEM_BREW_TIME:
@@ -144,6 +161,11 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
         case STO_ITEM_PRE_INFUSION_PAUSE:
             addr = offsetof(sto_data_t, preInfusionPauseMs);
             size = STRUCT_MEMBER_SIZE(sto_data_t, preInfusionPauseMs);
+            break;
+
+        case STO_ITEM_USE_BD_PID:
+            addr = offsetof(sto_data_t, pidBdOn);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, pidBdOn);
             break;
 
         case STO_ITEM_PID_KP_BD:
@@ -169,6 +191,11 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
         case STO_ITEM_BD_THRESHOLD:
             addr = offsetof(sto_data_t, brewDetectionThreshold);
             size = STRUCT_MEMBER_SIZE(sto_data_t, brewDetectionThreshold);
+            break;
+
+        case STO_ITEM_PID_START_PONM:
+            addr = offsetof(sto_data_t, useStartPonM);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, useStartPonM);
             break;
 
         case STO_ITEM_PID_KP_START:
@@ -200,6 +227,7 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
             addr = offsetof(sto_data_t, pidOn);
             size = STRUCT_MEMBER_SIZE(sto_data_t, pidOn);
             break;
+
          case STO_ITEM_PID_KP_STEAM:
             addr = offsetof(sto_data_t, steamkp);
             size = STRUCT_MEMBER_SIZE(sto_data_t, steamkp);

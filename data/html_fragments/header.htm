@@ -1,27 +1,25 @@
 <!doctype html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Clever Coffee PID</title>
 
-    <title>Rancilio PID</title>
+    %VAR_HEADER_FONTAWESOME%
+    %VAR_HEADER_BOOTSTRAP%
+    %VAR_HEADER_BOOTSTRAP_BUNDLE%
 
-    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    %VAR_HEADER_VUEJS%
 
-    <!-- Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
-
-    <script src='https://cdn.plot.ly/plotly-2.8.3.min.js'></script>
+    <script>
+        //delay loading app js until html has been loaded (to reduce concurrent requests)
+        document.addEventListener("DOMContentLoaded", function(event) {
+            import('/js/app.js?v=1')
+        })
+    </script>
 </head>
 
 <body>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
-    integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
-    crossorigin="anonymous"></script>
-
 <div id="page-container">
     <div id="navigation">
         <nav class="navbar navbar-expand-xl navbar-dark bg-secondary">
@@ -38,10 +36,10 @@
                 </button>
                 <div class="collapse navbar-collapse" id="navbarToggleExternalContent">
                     <div class="navbar-nav">
-                        <a class="nav-item nav-link" href="/"><i class="fa fa-home" aria-hidden="true"></i> Home</a>
-                        <a class="nav-item nav-link" href="/parameters.htm"><i class="fa fa-sliders" aria-hidden="true"></i> Parameters</a>
-                        <a class="nav-item nav-link" href="/settings.htm"><i class="fa fa-wrench" aria-hidden="true"></i> Settings</a>
-                        <a class="nav-item nav-link" href="/about.htm"><i class="fa fa-desktop"></i> About</a>
+                        <a class="nav-item nav-link" href="/"><i class="fa-solid fa-house" aria-hidden="true"></i> Home</a>
+                        <a class="nav-item nav-link" href="/parameters.htm"><i class="fa-solid fa-sliders" aria-hidden="true"></i> Parameters</a>
+                        <!-- <a class="nav-item nav-link" href="/settings.htm"><i class="fa-solid fa-wrench" aria-hidden="true"></i> Settings</a> -->
+                        <a class="nav-item nav-link" href="/about.htm"><i class="fa-solid fa-desktop"></i> About</a>
                     </div>
                 </div>
             </div>

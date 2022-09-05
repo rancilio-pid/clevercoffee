@@ -82,7 +82,7 @@ void printScreen() {
             }
 
             u8g2.print(langstring_brew);
-            u8g2.print(brewTime / 1000, 0);
+            u8g2.print(timeBrewed / 1000, 0);
             u8g2.print("/");
 
             if (ONLYPID == 1) {
@@ -91,7 +91,7 @@ void printScreen() {
                 u8g2.print(totalbrewtime / 1000, 0); // aktivieren wenn Preinfusion
             }
 
-            if (timerBrewdetection == 1 && brewcounter == 10) {
+            if (isBrewDetected == 1 && brewcounter == 10) {
                 u8g2.setFont(u8g2_font_profont11_tf);
 
                 // Brew

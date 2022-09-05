@@ -1,110 +1,60 @@
 %HEADER%
-        <div class="content-wrapper">
-            <div class="container my-5">
+    <script type="module">
+        if (window.appCreated == true) {
+            vueApp.mount('#parameters')
+        } else {
+            window.addEventListener('appCreated', () => {
+                vueApp.mount('#parameters')
+            })
+        }
+    </script>
 
+    <div class="content-wrapper">
+        <div class="container my-5">
+            <div id="parameters">
                 <div class="card card-accent-dark mb-5 shadow-sm rounded">
-                    <div class="card-body bg-light pb-1 rounded">
-                        <h5 class="card-title">
-                            PID Values
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <form action="/post" method="post">
-                            <div class="mb-4">
-                                %VAR_EDIT_PID_ON%
-                            </div>
-                            <div class="mb-1">
-                                %VAR_EDIT_START_KP%
-                            </div>
-                            <div class="mb-1">
-                                %VAR_EDIT_START_TN%
-                            </div>
-                            <div class="mb-1">
-                                %VAR_EDIT_PID_KP%
-                            </div>
-                            <div class="mb-1">
-                                %VAR_EDIT_PID_TN%
-                            </div>
-                            <div class="mb-1">
-                                %VAR_EDIT_PID_TV%
-                            </div>
-                            <div class="mb-1">
-                                %VAR_EDIT_STEAM_KP%
-                            </div>
-                            <br>
-                            <button type="submit" class="btn btn-primary">Save</button>
-                        </form>
-                    </div>
-                </div>
-
-                <div class="card card-accent-dark mb-5 shadow-sm rounded">
-                    <div class="card-body bg-light pb-1 rounded">
-                        <h5 class="card-title">
-                            Brewing
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <form action="/post" method="post">
-                            <div class="mb-1">
-                                %VAR_EDIT_BREW_SET_POINT%
-                            </div>
-                            <div class="mb-1">
-                                %VAR_EDIT_BREW_TIME%
-                            </div>
-                            <div class="mb-1">
-                                %VAR_EDIT_BREW_PREINFUSUINPAUSE%
-                            </div>
-                            <div class="mb-1">
-                                %VAR_EDIT_BREW_PREINFUSION%
-                            </div>
-                            <div class="mb-1">
-                                %VAR_EDIT_SCALE_WEIGHTSETPOINT%
-                            </div>
-                            <br>
-                            <button type="submit" class="btn btn-primary">Save</button>
-                        </form>
-                    </div>
-                </div>
-
-                <div class="card card-accent-dark mb-5 shadow-sm rounded">
-                    <div class="card-body bg-light pb-1 rounded">
-                        <h5 class="card-title">
-                            Brew Detection
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <form action="/post" method="post">
-                            <div class="mb-1">
-                                %VAR_EDIT_PID_BD_KP%
-                            </div>
-                            <div class="mb-1">
-                                %VAR_EDIT_PID_BD_TN%
-                            </div>
-                            <div class="mb-1">
-                                %VAR_EDIT_PID_BD_TV%
-                            </div>
-                            <div class="mb-1">
-                                %VAR_EDIT_PID_BD_TIMER%
-                            </div>
-                            <div class="mb-1">
-                                %VAR_EDIT_PID_BD_BREWBOARDER%
-                            </div>
-                            <br>
-                            <button type="submit" class="btn btn-primary">Save</button>
-                        </form>
-                    </div>
-                </div>
-
-                <div class="card card-accent-dark mb-5 shadow-sm rounded">
-                    <div class="card-body bg-light pb-1 rounded">
-                        <h5 class="card-title">
-                            Load Factory Defaults
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <h5>TODO...</h5>
-                    </div>
+                    <template v-for="(section, sectionKey, sectionIndex) in parameterSections">
+                        <div class="card-body bg-light pb-1 rounded">
+                            <h5 class="card-title"> {{ sectionName(sectionKey) }} </h5>
+                        </div>
+                        <div class="card-body">
+                            <form @submit.prevent="postParameters">
+                                <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6">
+                                    <template v-for="param in section">
+                                        <template v-if="param.show">
+                                            <div class="col-md-3">
+                                                <label class="form-label me-1 col-form-label" :for="'var'+param.name">{{param.displayName}}</label>
+                                                <template v-if="param.hasHelpText">
+                                                    <a href="#" role="button" @mouseover="fetchHelpText(param.name)" data-bs-toggle="popover" data-bs-html="true" :data-bs-original-title="parametersHelpTexts[param.name]">
+                                                        <span class="fa-solid fa-question-circle"></span>
+                                                    </a>
+                                                </template>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div v-if="param.type == 1" class="col-5 mb-1">
+                                                    <input type="hidden" :id="'var'+param.name" :name="'var'+param.name" :value="0">
+                                                    <input type="checkbox" class="form-check-input form-control-lg" :id="'var'+param.name" :name="'var'+param.name" value="1" @change="param.value = 1-param.value" :checked="param.value != 0 ? 'checked' : null">
+                                                </div>
+                                                <div v-if="param.type == 2 || param.type == 5" class="col-5 mb-1">
+                                                    <input class="form-control form-control-lg" type="number" step="0.1" :id="'var'+param.name" :name="'var'+param.name" v-model="param.value" style="min-width: 5em;">
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </template>
+                                </div>
+                                <br>
+                                <div v-if="sectionIndex  == Object.keys(parameterSections).length-1" class="float-end me-2">
+                                    <button type="submit" class="btn btn-primary" :disabled="isPostingForm">
+                                        <span v-show="showPostSucceeded" class="fa-solid fa-check me-1"></span>
+                                        <span v-show="isPostingForm" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                        Save
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </template>
                 </div>
             </div>
         </div>
+    </div>
 %FOOTER%

@@ -35,8 +35,12 @@ typedef enum
   STO_ITEM_PID_ON,                  // PID on/off state
   STO_ITEM_WEIGHTSETPOINT,          // Brewweight setpoint
   STO_ITEM_PID_KP_STEAM,            // PID P part at steam phase
+  STO_ITEM_PID_I_MAX_REGULAR,       // PID Integrator upper limit
+  STO_ITEM_BREW_TEMP_OFFSET,        // brew temp offset
+  STO_ITEM_PID_START_PONM,          // Use PonM for cold start phase (otherwise use normal PID and same params)
+  STO_ITEM_USE_BD_PID,              // use separate PID for brew detection (otherwise continue with regular PID)
 
-  /* WHEN ADDING NEW ITEMS FOLLOWING HAS TO BE UPDATED:
+  /* WHEN ADDING NEW ITEMS, THE FOLLOWING HAS TO BE UPDATED:
    * - storage structure:  sto_data_t
    * - item default value: itemDefaults
    * - item address/size:  getItemAddr()

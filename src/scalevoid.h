@@ -49,7 +49,7 @@ void initScale() {
     LoadCell.start(stabilizingtime, _tare);
 
     if (LoadCell.getTareTimeoutFlag()) {
-        Serial.println("Timeout, check MCU>HX711 wiring and pin designations");
+        debugPrintln("Timeout, check MCU>HX711 wiring and pin designations");
         u8g2.drawStr(0, 32, "failed!");
         u8g2.drawStr(0, 42, "Scale not working...");    // scale timeout will most likely trigger after OTA update, but will still work after boot
         delay(5000);
@@ -70,7 +70,7 @@ void initScale() {
 void shottimerscale() {
     switch (shottimercounter)  {
         case 10:    // waiting step for brew switch turning on
-            if (brewTime > 0) {
+            if (timeBrewed > 0) {
                 weightPreBrew = weight;
                 shottimercounter = 20;
             }
@@ -80,7 +80,7 @@ void shottimerscale() {
         case 20:
             weightBrew = weight - weightPreBrew;
 
-            if (brewTime == 0) {
+            if (timeBrewed == 0) {
                 shottimercounter = 10;
             }
 

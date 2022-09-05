@@ -97,7 +97,7 @@ void displayShottimer(void) {
         u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
         u8g2.setFont(u8g2_font_profont22_tf);
         u8g2.setCursor(64, 25);
-        u8g2.print(brewTime / 1000, 1);
+        u8g2.print(timeBrewed / 1000, 1);
         u8g2.setFont(u8g2_font_profont11_tf);
         u8g2.sendBuffer();
     }
@@ -126,7 +126,7 @@ void displayShottimer(void) {
             u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
             u8g2.setFont(u8g2_font_profont22_tf);
             u8g2.setCursor(64, 15);
-            u8g2.print(brewTime / 1000, 1);
+            u8g2.print(timeBrewed / 1000, 1);
             u8g2.print("s");
             u8g2.setCursor(64, 38);
             u8g2.print(weightBrew, 0);
@@ -166,7 +166,7 @@ void Displaymachinestate() {
             if (WiFi.status() == WL_CONNECTED) {
                 u8g2.drawXBMP(40, 2, 8, 8, antenna_OK_u8g2);
 
-                for (int b = 0; b <= bars; b++) {
+                for (int b = 0; b <= signalBars; b++) {
                     u8g2.drawVLine(45 + (b * 2), 10 - (b * 2), b * 2);
                 }
             } else {
