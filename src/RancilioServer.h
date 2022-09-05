@@ -315,9 +315,8 @@ void serverSetup() {
         request->redirect("/");
     });
 
-    //the constants seem wrong, HTTP_HEAD is coming through although request was submitted with POST) -> ESP bug?
-    server.on("/parameters", HTTP_GET | HTTP_HEAD, [](AsyncWebServerRequest *request) {
-        if (request->method() == HTTP_HEAD) {
+    server.on("/parameters", HTTP_GET | HTTP_POST, [](AsyncWebServerRequest *request) {
+        if (request->method() == 2) {   //returns values from WebRequestMethod enum -> 2 == HTTP_POST
             //update all given params and match var name in editableVars
             int params = request->params();
             String m = "Got ";
@@ -388,7 +387,7 @@ void serverSetup() {
             writeSysParamsToBlynk();
             writeSysParamsToMQTT();
 
-        } else if (request->method() == HTTP_GET) {
+        } else if (request->method() == 1) {  //WebRequestMethod enum -> HTTP_GET
             //return all params as json
             DynamicJsonDocument doc(4096);
 
