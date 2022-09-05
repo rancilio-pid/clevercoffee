@@ -54,7 +54,7 @@ double tTemp = 0.0;
 double hPower = 0.0;
 
 #if defined(ESP8266)
-    #define HISTORY_LENGTH 120    //10 mins of values
+    #define HISTORY_LENGTH 60     //5 mins of values
 #elif defined(ESP32)
     #define HISTORY_LENGTH 720    //60 mins of values
 #endif
@@ -101,12 +101,13 @@ int mod(int a, int b) {
 
 // rounds a number to 2 decimal places
 // example: round(3.14159) -> 3.14
+// (less characters when serialized to json)
 double round2(double value) {
    return (int)(value * 100 + 0.5) / 100.0;
 }
 
 String getTimeseriesString() {
-    StaticJsonDocument <HISTORY_LENGTH*3*10>doc;
+    DynamicJsonDocument doc(JSON_OBJECT_SIZE(3) + JSON_ARRAY_SIZE(HISTORY_LENGTH)*3);
 
     //for each value in mem history array, add json array element
     //(how many elements can we use, memory esp8266 vs esp32?)
