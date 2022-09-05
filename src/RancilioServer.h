@@ -297,12 +297,11 @@ void serverSetup() {
     });
 
     server.on("/togglePid", HTTP_POST, [](AsyncWebServerRequest *request) {
-        debugPrintf("/togglepid requested, method: %d\n", request->method());
-
+        debugPrintf("/togglePid requested, method: %d\n", request->method());
         int status = flipUintValue(pidON);
 
         setPidStatus(status);
-        debugPrintf("Toggle PID state: %i \n", status);
+        debugPrintf("Toggle PID state: %d\n", status);
 
         request->redirect("/");
     });
