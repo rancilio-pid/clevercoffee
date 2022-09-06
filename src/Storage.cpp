@@ -92,7 +92,7 @@ static const sto_data_t itemDefaults PROGMEM = {
     {0xFF, 0xFF},                             // free to use
     BREWSENSITIVITY,                          // STO_ITEM_BD_THRESHOLD
     0xFF,                                     // free to use
-    1,                                        // STO_ITEM_USE_START_PON_M
+    0,                                        // STO_ITEM_USE_START_PON_M
     STARTKP,                                  // STO_ITEM_PID_KP_START
     {0xFF, 0xFF},                             // free to use
     0,                                        // STO_ITEM_SOFT_AP_ENABLED_CHECK
