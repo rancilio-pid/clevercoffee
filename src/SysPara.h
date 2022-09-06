@@ -39,7 +39,7 @@ class SysPara {
             if (curPtr) {
                 _data.curPtr = curPtr;
             } else {
-                Serial.printf("%s(): empty pointer!\n", __FUNCTION__);
+                Serial.printf("%s(): empty pointer!\n", __func__);
                 _data.curPtr = (T*)&_dummyCur;
             }
             _data.min = min;
@@ -90,7 +90,7 @@ class SysPara {
                     *_data.curPtr = _dummyCur;
                 return stoStatus;
             }
-            Serial.printf("%s(): no storage ID set!\n", __FUNCTION__);
+            Serial.printf("%s(): no storage ID set!\n", __func__);
             return -1;
         }
 
@@ -106,10 +106,10 @@ class SysPara {
             if (_stoItemId < STO_ITEM__LAST_ENUM) {
                 if ((*_data.curPtr >= _data.min) && (*_data.curPtr <= _data.max))
                     return storageSet(_stoItemId, *_data.curPtr, commit);
-                Serial.printf("%s(): value outside of range!\n", __FUNCTION__);
+                Serial.printf("%s(): value outside of range!\n", __func__);
                 return -1;
             }
-            Serial.printf("%s(): no storage ID set!\n", __FUNCTION__);
+            Serial.printf("%s(): no storage ID set!\n", __func__);
             return -1;
         }
 
@@ -118,7 +118,5 @@ class SysPara {
         sys_para_data<T> _data;         //!< parameter data
         T _dummyCur;
 };
-
-
 
 #endif

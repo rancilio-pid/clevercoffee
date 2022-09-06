@@ -257,6 +257,8 @@ String getHeader(String varName) {
 }
 
 String staticProcessor(const String& var) {
+    skipHeaterISR = true;
+
     //try replacing var for variables in editableVars
     if (var.startsWith("VAR_EDIT_")) {
         return generateForm(var.substring(9)); // cut off "VAR_EDIT_"
@@ -267,7 +269,7 @@ String staticProcessor(const String& var) {
     }
 
     //var didn't start with above names, try opening var as fragment file and use contents if it exists
-    //TODO: this seems to consume too much heap in some cases, probably better to remove fragment loading and only one SPA 
+    //TODO: this seems to consume too much heap in some cases, probably better to remove fragment loading and only use one SPA in the long term (or only support ESP32 which has more RAM)
     String varLower(var);
     varLower.toLowerCase();
 
@@ -280,6 +282,8 @@ String staticProcessor(const String& var) {
     } else {
         debugPrintf("Can't open file %s, not enough memory available\n", file ? file.name() : "");
     }
+    
+    skipHeaterISR = false;
 
     return String();
 }
@@ -316,6 +320,9 @@ void serverSetup() {
     });
 
     server.on("/parameters", HTTP_GET | HTTP_POST, [](AsyncWebServerRequest *request) {
+        //stop writing to heater in ISR method (digitalWrite) as it causes crashes when called at the same time as flash is read or written
+        skipHeaterISR = true;
+
         if (request->method() == 2) {   //returns values from WebRequestMethod enum -> 2 == HTTP_POST
             //update all given params and match var name in editableVars
             int params = request->params();
@@ -432,6 +439,7 @@ void serverSetup() {
 
             if (doc.size() == 0) {
                 request->send(404, "application/json", F("{ \"code\": 404, \"message\": \"Parameter not found\"}"));
+                skipHeaterISR = false;
                 return;
             }
 
@@ -439,6 +447,7 @@ void serverSetup() {
             serializeJson(doc, paramsJson);
             request->send(200, "application/json", paramsJson);
         }
+        skipHeaterISR = false;
     });
 
     server.on("/parameterHelp", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -446,6 +455,9 @@ void serverSetup() {
 
         AsyncWebParameter* p = request->getParam(0);
         const String& varValue = p->value();
+
+        skipHeaterISR = true;
+
         for (editable_t e : editableVars) {
             if (e.templateString != varValue) {
                 continue;
@@ -459,6 +471,8 @@ void serverSetup() {
         String helpJson;
         serializeJson(doc, helpJson);
         request->send(200, "application/json", helpJson);
+
+        skipHeaterISR = false;
     });
 
     server.on("/temperatures", HTTP_GET, [](AsyncWebServerRequest *request) {

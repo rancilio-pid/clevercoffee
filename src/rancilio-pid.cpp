@@ -12,18 +12,8 @@
 #define FW_HOTFIX     2
 #define FW_BRANCH     "MASTER"
 
-// Includes
-#include <ArduinoOTA.h>
-#include "Storage.h"
-#include "SysPara.h"
-#include "icon.h"        // user icons for display
-#include "languages.h"   // for language translation
-#include "userConfig.h"  // needs to be configured by the user
-#include "debugSerial.h"
-
-#include "rancilio-pid.h"
-
 // Libraries
+#include <ArduinoOTA.h>
 #include <Adafruit_VL53L0X.h>   // for ToF Sensor
 #include <DallasTemperature.h>  // Library for dallas temp sensor
 #include <WiFiManager.h>
@@ -33,6 +23,16 @@
 #include <ZACwire.h>    // new TSIC bus library
 #include "PID_v1.h"     // for PID calculation
 #include "TSIC.h"       // library for TSIC temp sensor
+
+// Includes
+#include "icon.h"        // user icons for display
+#include "languages.h"   // for language translation
+#include "Storage.h"
+#include "SysPara.h"
+#include "ISR.h"
+#include "debugSerial.h"
+#include "userConfig.h"  // needs to be configured by the user
+#include "rancilio-pid.h"
 
 #if defined(ESP8266)
     #include <BlynkSimpleEsp8266.h>
@@ -253,13 +253,10 @@ const unsigned long intervaltempmestsic = 400;
 const unsigned long intervaltempmesds18b20 = 400;
 int pidMode = 1;  // 1 = Automatic, 0 = Manual
 
-const unsigned int windowSize = 1000;
-unsigned int isrCounter = 0;  // counter for ISR
-unsigned long windowStartTime;
-double Input, Output;
 double setPointTemp;
 double previousInput = 0;
 
+double Input, Output;
 double BrewSetPoint = SETPOINT;
 double BrewTempOffset = TEMPOFFSET;
 double setPoint = BrewSetPoint;
@@ -2435,15 +2432,14 @@ int readSysParamsFromStorage(void) {
  * @return 0 = success, < 0 = failure
  */
 int writeSysParamsToStorage(void) {
+    if (sysParaPidOn.setStorage() != 0) return -1;
+    if (sysParaUsePonM.setStorage() != 0) return -1;
     if (sysParaPidKpStart.setStorage() != 0) return -1;
     if (sysParaPidTnStart.setStorage() != 0) return -1;
     if (sysParaPidKpReg.setStorage() != 0) return -1;
     if (sysParaPidTnReg.setStorage() != 0) return -1;
     if (sysParaPidTvReg.setStorage() != 0) return -1;
     if (sysParaPidIMaxReg.setStorage() != 0) return -1;
-    if (sysParaPidKpBd.setStorage() != 0) return -1;
-    if (sysParaPidTnBd.setStorage() != 0) return -1;
-    if (sysParaPidTvBd.setStorage() != 0) return -1;
     if (sysParaBrewSetPoint.setStorage() != 0) return -1;
     if (sysParaTempOffset.setStorage() != 0) return -1;
     if (sysParaBrewTime.setStorage() != 0) return -1;
@@ -2452,10 +2448,11 @@ int writeSysParamsToStorage(void) {
     if (sysParaPreInfTime.setStorage() != 0) return -1;
     if (sysParaPreInfPause.setStorage() != 0) return -1;
     if (sysParaWeightSetPoint.setStorage() != 0) return -1;
-    if (sysParaPidOn.setStorage() != 0) return -1;
     if (sysParaPidKpSteam.setStorage() != 0) return -1;
-    if (sysParaUsePonM.setStorage() != 0) return -1;
     if (sysParaUseBDPID.setStorage() != 0) return -1;
+    if (sysParaPidKpBd.setStorage() != 0) return -1;
+    if (sysParaPidTnBd.setStorage() != 0) return -1;
+    if (sysParaPidTvBd.setStorage() != 0) return -1;
 
     return storageCommit();
 }
