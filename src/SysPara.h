@@ -107,7 +107,7 @@ class SysPara {
                 if ((*_data.curPtr >= _data.min) && (*_data.curPtr <= _data.max)) {
                     return storageSet(_stoItemId, *_data.curPtr, commit);
                 } else {
-                    Serial.printf("%s(): value outside of allowed range! (item: %i)\n", __func__, _stoItemId);
+                    debugPrintf("%s(): value outside of allowed range! (item: %i)\n", __func__, _stoItemId);
                     return -1;
                 }
             }
