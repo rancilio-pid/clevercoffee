@@ -42,7 +42,9 @@ struct editable_t {
     String helpText;
     EditableKind type;
     int section;      // parameter section number
-    std::function<bool()> show;    // method that determines if we show this parameter (on the web interface)
+    std::function<bool()> show;    // method that determines if we show this parameter (on the web interface)    
+    int minValue;
+    int maxValue;
     void *ptr;        // TODO: there must be a tidier way to do this? could we use c++ templates?
 };
 
@@ -396,7 +398,7 @@ void serverSetup() {
 
         } else if (request->method() == 1) {  //WebRequestMethod enum -> HTTP_GET
             //return all params as json
-            DynamicJsonDocument doc(4096);
+            DynamicJsonDocument doc(5120);
 
             //get parameter id from frst parameter, e.g. /parameters?param=PID_ON
             int paramCount = request->params();
@@ -430,6 +432,8 @@ void serverSetup() {
                 } else if (e.type == kCString) {
                     paramObj["value"] = String(*(char **)e.ptr);
                 }                
+                paramObj["min"] = e.minValue;
+                paramObj["max"] = e.maxValue;
 
                 //we found the parameter, no need to search further
                 if (!paramId.isEmpty()) {
