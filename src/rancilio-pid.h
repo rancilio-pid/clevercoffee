@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
+
 // default parameters
 #define SETPOINT 95                // brew temperature setpoint
 #define TEMPOFFSET 0               // brew temperature setpoint

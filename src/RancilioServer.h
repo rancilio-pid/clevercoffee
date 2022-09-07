@@ -41,11 +41,11 @@ struct editable_t {
     boolean hasHelpText;
     String helpText;
     EditableKind type;
-    int section;      // parameter section number
-    std::function<bool()> show;    // method that determines if we show this parameter (on the web interface)    
+    int section;                   // parameter section number
+    std::function<bool()> show;    // method that determines if we show this parameter (in the web interface)    
     int minValue;
     int maxValue;
-    void *ptr;        // TODO: there must be a tidier way to do this? could we use c++ templates?
+    void *ptr;                     // TODO: there must be a tidier way to do this? could we use c++ templates?
 };
 
 AsyncWebServer server(80);
@@ -205,7 +205,7 @@ String getValue(String varName) {
             case kUInt8:
                 return String(*(uint8_t *)e.ptr);
             case kCString:
-                return String((const char *)e.ptr);
+                return String((char *)e.ptr);
             default:
                 return F("Unknown type");
                 break;
@@ -364,20 +364,24 @@ void serverSetup() {
 
                         float newVal = atof(p->value().c_str());
                         *(double *)e.ptr = newVal;
-                    } else if (e.type == kCString) {
-                        m += (char *)e.ptr;
+                    }
+                    //we don't need to set strings at the moment 
+                    /*} else if (e.type == kCString) {
+                        m += String((char *)e.ptr);
 
-                        const String& val = p->value();
-                        char* newVal = new char[val.length() + 1];
+                        //TODO: we need to dealloc previous string
+                        //as well to prevent memory leaks (what if const though?)
+                        String val = p->value();
+                        static const char* newVal = new char[val.length() + 1]; //is this persistent or on stack?
                         val.toCharArray(newVal, val.length() + 1); 
 
-                        *(char **)e.ptr = newVal;
-                    }
+                        e.ptr = (void *)newVal;
+                    }*/
 
                     m += " to ";
                     m += p->value();
 
-                    m += "<br />";
+                    m += "<br/>";
                 }
             }
 
@@ -428,9 +432,9 @@ void serverSetup() {
                 } else if (e.type == kUInt8) {
                     paramObj["value"] = *(uint8_t *)e.ptr;
                 } else if (e.type == kDouble || e.type == kDoubletime) {
-                    paramObj["value"] = *(double *)e.ptr;
+                    paramObj["value"] = round2(*(double *)e.ptr);
                 } else if (e.type == kCString) {
-                    paramObj["value"] = String(*(char **)e.ptr);
+                    paramObj["value"] = (char *)e.ptr;
                 }                
                 paramObj["min"] = e.minValue;
                 paramObj["max"] = e.maxValue;

@@ -1866,15 +1866,9 @@ void websiteSetup() {
   serverSetup();
 }
 
+const char sysVersion[] = (STR(FW_VERSION) "." STR(FW_SUBVERSION) "." STR(FW_HOTFIX) " " FW_BRANCH);
+
 void setup() {
-    const String sysVersion = "Version " + getFwVersion() + " " + FW_BRANCH;
-
-    Serial.begin(115200);
-
-    initTimer1();
-
-    storageSetup();
-    
     editableVars =  {
         {"PID_ON", "Enable PID Controller", false, "", kUInt8, 0, []{ return true; }, 0, 1, (void *)&pidON},
 
@@ -1923,7 +1917,15 @@ void setup() {
         {"STEAM_MODE", "Steam Mode", false, "", kUInt8, sOtherSection, []{ return false; }, 0, 1, (void *)&SteamON},
 
         {"BACKFLUSH_ON", "Backflush", false, "", kUInt8, sOtherSection, []{ return false; }, 0, 1, (void *)&backflushON},
+
+        {"VERSION", "Version", false, "", kCString, sOtherSection, []{ return false; }, 0, 1, (void *)sysVersion}
     };
+
+    Serial.begin(115200);
+
+    initTimer1();
+
+    storageSetup();
 
     // Define trigger type
     if (triggerType) {
@@ -2002,7 +2004,7 @@ void setup() {
         u8g2.setI2CAddress(oled_i2c * 2);
         u8g2.begin();
         u8g2_prepare();
-        displayLogo(sysVersion, "");
+        displayLogo(String("Version ") + String(sysVersion), "");
         delay(2000);
     #endif
 
@@ -2606,19 +2608,6 @@ void writeSysParamsToMQTT(void) {
         }
     }
 }
-
-/**
- * @brief Returns the firmware version as string (x.y.z).
- *
- * @return firmware version string
- */
-const String getFwVersion(void) {
-    static const String sysVersion = String(FW_VERSION) + "." +
-                                     String(FW_SUBVERSION) + "." +
-                                     String(FW_HOTFIX);
-    return sysVersion;
-}
-
 
 /**
  * @brief Performs a factory reset.
