@@ -18,9 +18,9 @@ You can find our project website here: [Clever Coffee Website](https://clevercof
 
 The PID software is Open Source: free of charge for you and customizable to your personal needs. 
 
-We recommend you to have a look at the manual before starting a build, you can find the german one here: [Link](https://rancilio-pid.github.io/ranciliopid-handbook/). It is currently being reworked to include all the latest features. The english one is sadly still very outdated but will also be updated soon. 
+We recommend you to have a look at the manual before starting a build, you can find the german one [here](https://rancilio-pid.github.io/ranciliopid-handbook/). It is currently being reworked to include all the latest features. The english one is sadly still very outdated but will also be updated soon. 
 
-Our chat for collaboration and questions can be found here: [Link](https://chat.rancilio-pid.de)
+Our chat for collaboration and questions can be found[here](https://chat.rancilio-pid.de).
 
 Video tutorial on how to flash the firmware (a little outdated but mostly still valid):<br>
 https://youtu.be/KZPjisOEcQ4
@@ -28,7 +28,7 @@ https://youtu.be/KZPjisOEcQ4
 ## Version
 The next version is going to be 3.1.0 (xx.09.2022)
 
-## What is possible after adding to your espresso machine? 
+## What is possible after installation into your espresso machine? 
  * Control of the brewing temperature with an accuracy of up to +/- 0,1°.
  * Reach the target temperature within 8 to 12 minutes after switching on (you should however wait a bit longer, e.g. 20 min depending on the machine to heat up brew head etc.)
  * **NEW** Control all parameters and see temperature and heater graphs on a web page hosted on the ESP controller
@@ -39,7 +39,7 @@ The next version is going to be 3.1.0 (xx.09.2022)
  * Multiple designs for the display, possibility to integrate further designs easily (including vertical template)
  * **NEW** MQTT (IoT) support to manipulate all important parameters.
  * **NEW** Transition from steam mode to normal mode optimized.
- * Brew switch detection also supported using an optocoupler when using OnlyPID. [read more](https://rancilio-pid.github.io/ranciliopid-handbook/de/customization/brueherkennung.html#konfiguration-der-erkennung).
+ * Brew switch detection also supported using an optocoupler when using OnlyPID ([details](https://rancilio-pid.github.io/ranciliopid-handbook/de/customization/brueherkennung.html#konfiguration-der-erkennung)).
  * Shot timer adjustable to see the reference time.
  * Support for Siliva E machines: trigger with definable interval for a relay to bypass the Eco function
  * Extended data monitoring via Influxdb/Grafana.
