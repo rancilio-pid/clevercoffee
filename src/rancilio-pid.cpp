@@ -3,13 +3,13 @@
  *
  * @brief Main sketch
  *
- * @version 3.0.1 Alpha
+ * @version 3.1.0 Master 
  */
 
 // Firmware version
 #define FW_VERSION    3
-#define FW_SUBVERSION 0
-#define FW_HOTFIX     2
+#define FW_SUBVERSION 1
+#define FW_HOTFIX     0
 #define FW_BRANCH     "MASTER"
 
 // Libraries
