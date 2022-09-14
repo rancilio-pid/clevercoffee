@@ -29,7 +29,6 @@
 
 // Functions
 int factoryReset(void);
-const String getFwVersion(void);
 int readSysParamsFromStorage(void);
 int writeSysParamsToStorage(void);
 
