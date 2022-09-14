@@ -159,4 +159,5 @@ class SysPara {
         T _dummyCur;
 };
 
+
 #endif
