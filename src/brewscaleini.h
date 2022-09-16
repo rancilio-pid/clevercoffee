@@ -19,10 +19,7 @@ unsigned long debounceDelayBrewTrigger = 50;
 unsigned long brewswitchTriggermillis = 0;
 int brewswitchTriggerCase = 10;
 boolean brewswitchWasOFF = false;
-double brewtime = BREW_TIME;                        // brewtime in s
 double totalbrewtime = 0;                           // total brewtime set in software or blynk
-double preinfusion = PRE_INFUSION_TIME;             // preinfusion time in s
-double preinfusionpause = PRE_INFUSION_PAUSE_TIME;  // preinfusion pause time in s
 double timeBrewed = 0;                              // total brewed time
 double lastbrewTimeMillis = 0;                      // for shottimer delay after disarmed button
 double lastbrewTime = 0 ;
@@ -30,7 +27,6 @@ unsigned long startingTime = 0;                     // start time of brew
 boolean brewPIDdisabled = false;                    // is PID disabled for delay after brew has started?
 const unsigned long analogreadingtimeinterval = 10; // ms
 unsigned long previousMillistempanalogreading;      // ms for analogreading
-double weightSetpoint = SCALE_WEIGHTSETPOINT;
 
 // Shot timer with or without scale
 #if (ONLYPIDSCALE == 1 || BREWMODE == 2)

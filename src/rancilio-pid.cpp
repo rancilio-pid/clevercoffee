@@ -19,19 +19,18 @@
 #include <WiFiManager.h>
 #include <InfluxDbClient.h>
 #include <PubSubClient.h>
-#include <U8g2lib.h>    // i2c display
-#include <ZACwire.h>    // new TSIC bus library
-#include "PID_v1.h"     // for PID calculation
-#include "TSIC.h"       // library for TSIC temp sensor
+#include <U8g2lib.h>            // i2c display
+#include <ZACwire.h>            // new TSIC bus library
+#include "PID_v1.h"             // for PID calculation
+#include "TSIC.h"               // library for TSIC temp sensor
 
 // Includes
-#include "icon.h"        // user icons for display
-#include "languages.h"   // for language translation
+#include "icon.h"               // user icons for display
+#include "languages.h"          // for language translation
 #include "Storage.h"
-#include "SysPara.h"
 #include "ISR.h"
 #include "debugSerial.h"
-#include "userConfig.h"  // needs to be configured by the user
+#include "userConfig.h"         // needs to be configured by the user
 #include "rancilio-pid.h"
 
 #if defined(ESP8266)
@@ -193,35 +192,24 @@ char *number2string(int in);
 char *number2string(unsigned int in);
 float filter(float input);
 
-// Variable declarations
-uint8_t pidON = 0;               // 1 = control loop in closed loop
-uint8_t usePonM = 0;             // 1 = use PonM for cold start PID, 0 = use normal PID for cold start
-int relayON, relayOFF;           // used for relay trigger type. Do not change!
-boolean coldstart = true;        // true = Rancilio started for first time
-boolean emergencyStop = false;   // Emergency stop if temperature is too high 
-double EmergencyStopTemp = 120;  // Temp EmergencyStopTemp
-float inX = 0, inY = 0, inOld = 0, inSum = 0; // used for filter()
-int signalBars = 0;              // used for getSignalStrength()
-boolean brewDetected = 0;
-boolean setupDone = false;
-int backflushON = 0;             // 1 = activate backflush
-int flushCycles = 0;             // number of active flush cycles
-int backflushState = 10;         // counter for state machine
-
-// Moving average - brewdetection
-const int numReadings = 15;               // number of values per Array
-double readingstemp[numReadings];         // the readings from Temp
-unsigned long readingstime[numReadings];  // the readings from time
-double readingchangerate[numReadings];
-
-int readIndex = 1;           // the index of the current reading
-double total = 0;            // total sum of readingchangerate[]
-double heatrateaverage = 0;  // the average over the numReadings
-double changerate = 0;       // local change rate of temprature
-double heatrateaveragemin = 0;
-unsigned long timeBrewdetection = 0;
-int isBrewDetected = 0;      // flag is set if brew was detected
-int firstreading = 1;        // Ini of the field, also used for sensor check
+// system parameters
+uint8_t pidON = 0;                 // 1 = control loop in closed loop
+double BrewSetPoint = SETPOINT;
+double BrewTempOffset = TEMPOFFSET;
+double setPoint = BrewSetPoint;
+double SteamSetPoint = STEAMSETPOINT;
+uint8_t usePonM = 0;               // 1 = use PonM for cold start PID, 0 = use normal PID for cold start
+double steamKp = STEAMKP;
+double startKp = STARTKP;
+double startTn = STARTTN;
+double aggKp = AGGKP;
+double aggTn = AGGTN;
+double aggTv = AGGTV;
+double aggIMax = AGGIMAX;
+double brewtime = BREW_TIME;                        // brewtime in s
+double preinfusion = PRE_INFUSION_TIME;             // preinfusion time in s
+double preinfusionpause = PRE_INFUSION_PAUSE_TIME;  // preinfusion pause time in s
+double weightSetpoint = SCALE_WEIGHTSETPOINT;
 
 // PID - values for offline brewdetection
 uint8_t useBDPID = 0;
@@ -239,37 +227,77 @@ double aggbKd = aggbTv * aggbKp;
 double brewtimersoftware = BREW_SW_TIMER;  // use userConfig time until disabling BD PID
 double brewsensitivity = BREWSENSITIVITY;  // user userConfig brew detection sensitivity 
 
+// system parameter EEPROM storage wrappers (current value as pointer to variable, minimum, maximum, optional storage ID)
+SysPara<double> sysParaPidKpStart(&startKp, PID_KP_START_MIN, PID_KP_START_MAX, STO_ITEM_PID_KP_START);
+SysPara<double> sysParaPidTnStart(&startTn, PID_TN_START_MIN, PID_TN_START_MAX, STO_ITEM_PID_TN_START);
+SysPara<double> sysParaPidKpReg(&aggKp, PID_KP_REGULAR_MIN, PID_KP_REGULAR_MAX, STO_ITEM_PID_KP_REGULAR);
+SysPara<double> sysParaPidTnReg(&aggTn, PID_TN_REGULAR_MIN, PID_TN_REGULAR_MAX, STO_ITEM_PID_TN_REGULAR);
+SysPara<double> sysParaPidTvReg(&aggTv, PID_TV_REGULAR_MIN, PID_TV_REGULAR_MAX, STO_ITEM_PID_TV_REGULAR);
+SysPara<double> sysParaPidIMaxReg(&aggIMax, PID_I_MAX_REGULAR_MIN, PID_I_MAX_REGULAR_MAX, STO_ITEM_PID_I_MAX_REGULAR);
+SysPara<double> sysParaPidKpBd(&aggbKp, PID_KP_BD_MIN, PID_KP_BD_MAX, STO_ITEM_PID_KP_BD);
+SysPara<double> sysParaPidTnBd(&aggbTn, PID_TN_BD_MIN, PID_KP_BD_MAX, STO_ITEM_PID_TN_BD);
+SysPara<double> sysParaPidTvBd(&aggbTv, PID_TV_BD_MIN, PID_TV_BD_MAX, STO_ITEM_PID_TV_BD);
+SysPara<double> sysParaBrewSetPoint(&BrewSetPoint, BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, STO_ITEM_BREW_SETPOINT);
+SysPara<double> sysParaTempOffset(&BrewTempOffset, BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, STO_ITEM_BREW_TEMP_OFFSET);
+SysPara<double> sysParaBrewTime(&brewtime, BREW_TIME_MIN, BREW_TIME_MAX, STO_ITEM_BREW_TIME);
+SysPara<double> sysParaBrewSwTimer(&brewtimersoftware, BREW_SW_TIMER_MIN, BREW_SW_TIMER_MAX, STO_ITEM_BREW_SW_TIMER);
+SysPara<double> sysParaBrewThresh(&brewsensitivity, BD_THRESHOLD_MIN, BD_THRESHOLD_MAX, STO_ITEM_BD_THRESHOLD);
+SysPara<double> sysParaPreInfTime(&preinfusion, PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX, STO_ITEM_PRE_INFUSION_TIME);
+SysPara<double> sysParaPreInfPause(&preinfusionpause, PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, STO_ITEM_PRE_INFUSION_PAUSE);
+SysPara<double> sysParaWeightSetPoint(&weightSetpoint, WEIGHTSETPOINT_MIN, WEIGHTSETPOINT_MAX, STO_ITEM_WEIGHTSETPOINT);
+SysPara<double> sysParaPidKpSteam(&steamKp, PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, STO_ITEM_PID_KP_STEAM);
+SysPara<uint8_t> sysParaPidOn(&pidON, 0, 1, STO_ITEM_PID_ON);
+SysPara<uint8_t> sysParaUsePonM(&usePonM, 0, 1, STO_ITEM_PID_START_PONM);
+SysPara<uint8_t> sysParaUseBDPID(&useBDPID, 0, 1, STO_ITEM_USE_BD_PID);
+
+// Other variables
+int relayON, relayOFF;           // used for relay trigger type. Do not change!
+boolean coldstart = true;        // true = Rancilio started for first time
+boolean emergencyStop = false;   // Emergency stop if temperature is too high 
+double EmergencyStopTemp = 120;  // Temp EmergencyStopTemp
+float inX = 0, inY = 0, inOld = 0, inSum = 0; // used for filter()
+int signalBars = 0;              // used for getSignalStrength()
+boolean brewDetected = 0;
+boolean setupDone = false;
+int backflushON = 0;             // 1 = activate backflush
+int flushCycles = 0;             // number of active flush cycles
+int backflushState = 10;         // counter for state machine
+
+// Moving average for software brewdetection
+const int numReadings = 15;               // number of values per Array
+double readingstemp[numReadings];         // the readings from Temp
+unsigned long readingstime[numReadings];  // the readings from time
+double readingchangerate[numReadings];
+
+int readIndex = 1;               // the index of the current reading
+double total = 0;                // total sum of readingchangerate[]
+double heatrateaverage = 0;      // the average over the numReadings
+double changerate = 0;           // local change rate of temprature
+double heatrateaveragemin = 0;
+unsigned long timeBrewdetection = 0;
+int isBrewDetected = 0;          // flag is set if brew was detected
+int firstreading = 1;            // Ini of the field, also used for sensor check
+
 // Brewing, 1 = Normal Preinfusion , 2 = Scale & Shottimer = 2
 #include "brewscaleini.h"
 
 // Sensor check
 boolean sensorError = false;
 int error = 0;
-int maxErrorCounter = 10;  // depends on intervaltempmes* , define max seconds for invalid data
+int maxErrorCounter = 10;        // depends on intervaltempmes* , define max seconds for invalid data
 
 // PID controller
-unsigned long previousMillistemp;  // initialisation at the end of init()
+unsigned long previousMillistemp;    // initialisation at the end of init()
 const unsigned long intervaltempmestsic = 400;
 const unsigned long intervaltempmesds18b20 = 400;
-int pidMode = 1;  // 1 = Automatic, 0 = Manual
+int pidMode = 1;    // 1 = Automatic, 0 = Manual
 
 double setPointTemp;
 double previousInput = 0;
 
 double Input, Output;
-double BrewSetPoint = SETPOINT;
-double BrewTempOffset = TEMPOFFSET;
-double setPoint = BrewSetPoint;
-double SteamSetPoint = STEAMSETPOINT;
 int SteamON = 0;
 int SteamFirstON = 0;
-double aggKp = AGGKP;
-double aggTn = AGGTN;
-double aggTv = AGGTV;
-double aggIMax = AGGIMAX;
-double startKp = STARTKP;
-double startTn = STARTTN;
-double steamKp = STEAMKP;
 
 #if startTn == 0
     double startKi = 0;
@@ -326,69 +354,6 @@ char topic_set[256];
 unsigned long lastMQTTConnectionAttempt = millis();
 unsigned int MQTTReCnctFlag;       // Blynk Reconnection Flag
 unsigned int MQTTReCnctCount = 0;  // Blynk Reconnection counter
-
-#define PID_KP_START_MIN 0
-#define PID_KP_START_MAX 200
-#define PID_TN_START_MIN 0
-#define PID_TN_START_MAX 999
-#define PID_KP_REGULAR_MIN 0
-#define PID_KP_REGULAR_MAX 200
-#define PID_TN_REGULAR_MIN 0
-#define PID_TN_REGULAR_MAX 999
-#define PID_TV_REGULAR_MIN 0
-#define PID_TV_REGULAR_MAX 999
-#define PID_I_MAX_REGULAR_MIN 0
-#define PID_I_MAX_REGULAR_MAX 999
-#define PID_KP_BD_MIN 0
-#define PID_KP_BD_MAX 200
-#define PID_TN_BD_MIN 0
-#define PID_TN_BD_MAX 999
-#define PID_TV_BD_MIN 0
-#define PID_TV_BD_MAX 999
-#define BREW_SETPOINT_MIN 20
-#define BREW_SETPOINT_MAX 110
-#define BREW_TEMP_OFFSET_MIN 0
-#define BREW_TEMP_OFFSET_MAX 20
-#define BREW_TEMP_TIME_MIN 1
-#define BREW_TEMP_TIME_MAX 180
-#define BREW_TIME_MIN 1
-#define BREW_TIME_MAX 180
-#define BREW_SW_TIMER_MIN 1
-#define BREW_SW_TIMER_MAX 180
-#define BD_THRESHOLD_MIN 0
-#define BD_THRESHOLD_MAX 999
-#define PRE_INFUSION_TIME_MIN 0
-#define PRE_INFUSION_TIME_MAX 60
-#define PRE_INFUSION_PAUSE_MIN 0
-#define PRE_INFUSION_PAUSE_MAX 60
-#define WEIGHTSETPOINT_MIN 0
-#define WEIGHTSETPOINT_MAX 500
-#define PID_KP_STEAM_MIN 0
-#define PID_KP_STEAM_MAX 500
-
-// system parameters (current value as pointer to variable, minimum, maximum, optional storage ID)
-SysPara<double> sysParaPidKpStart(&startKp, PID_KP_START_MIN, PID_KP_START_MAX, STO_ITEM_PID_KP_START);
-SysPara<double> sysParaPidTnStart(&startTn, PID_TN_START_MIN, PID_TN_START_MAX, STO_ITEM_PID_TN_START);
-SysPara<double> sysParaPidKpReg(&aggKp, PID_KP_REGULAR_MIN, PID_KP_REGULAR_MAX, STO_ITEM_PID_KP_REGULAR);
-SysPara<double> sysParaPidTnReg(&aggTn, PID_TN_REGULAR_MIN, PID_TN_REGULAR_MAX, STO_ITEM_PID_TN_REGULAR);
-SysPara<double> sysParaPidTvReg(&aggTv, PID_TV_REGULAR_MIN, PID_TV_REGULAR_MAX, STO_ITEM_PID_TV_REGULAR);
-SysPara<double> sysParaPidIMaxReg(&aggIMax, PID_I_MAX_REGULAR_MIN, PID_I_MAX_REGULAR_MAX, STO_ITEM_PID_I_MAX_REGULAR);
-SysPara<double> sysParaPidKpBd(&aggbKp, PID_KP_BD_MIN, PID_KP_BD_MAX, STO_ITEM_PID_KP_BD);
-SysPara<double> sysParaPidTnBd(&aggbTn, PID_TN_BD_MIN, PID_KP_BD_MAX, STO_ITEM_PID_TN_BD);
-SysPara<double> sysParaPidTvBd(&aggbTv, PID_TV_BD_MIN, PID_TV_BD_MAX, STO_ITEM_PID_TV_BD);
-SysPara<double> sysParaBrewSetPoint(&BrewSetPoint, BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, STO_ITEM_BREW_SETPOINT);
-SysPara<double> sysParaTempOffset(&BrewTempOffset, BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, STO_ITEM_BREW_TEMP_OFFSET);
-SysPara<double> sysParaBrewTime(&brewtime, BREW_TIME_MIN, BREW_TIME_MAX, STO_ITEM_BREW_TIME);
-SysPara<double> sysParaBrewSwTimer(&brewtimersoftware, BREW_SW_TIMER_MIN, BREW_SW_TIMER_MAX, STO_ITEM_BREW_SW_TIMER);
-SysPara<double> sysParaBrewThresh(&brewsensitivity, BD_THRESHOLD_MIN, BD_THRESHOLD_MAX, STO_ITEM_BD_THRESHOLD);
-SysPara<double> sysParaPreInfTime(&preinfusion, PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX, STO_ITEM_PRE_INFUSION_TIME);
-SysPara<double> sysParaPreInfPause(&preinfusionpause, PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, STO_ITEM_PRE_INFUSION_PAUSE);
-SysPara<double> sysParaWeightSetPoint(&weightSetpoint, WEIGHTSETPOINT_MIN, WEIGHTSETPOINT_MAX, STO_ITEM_WEIGHTSETPOINT);
-SysPara<double> sysParaPidKpSteam(&steamKp, PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, STO_ITEM_PID_KP_STEAM);
-SysPara<uint8_t> sysParaPidOn(&pidON, 0, 1, STO_ITEM_PID_ON);
-SysPara<uint8_t> sysParaUsePonM(&usePonM, 0, 1, STO_ITEM_PID_START_PONM);
-SysPara<uint8_t> sysParaUseBDPID(&useBDPID, 0, 1, STO_ITEM_USE_BD_PID);
-
 
 enum MQTTSettableType {
     tUInt8,
