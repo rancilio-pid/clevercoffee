@@ -89,8 +89,7 @@ void displayDistance(int display_distance) {
  * @brief display shot timer
  */
 void displayShottimer(void) {
-    if ((machinestate == kBrew) && SHOTTIMER == 1) { // Shotimer muss 1 = True sein und Bezug vorliegen
-        // Dann Zeit anzeigen
+    if ((machinestate == kBrew) && SHOTTIMER == 1) { // Shotimer has to be 1 and brew is running, then show time
         u8g2.clearBuffer();
 
         // temp icon

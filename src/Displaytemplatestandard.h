@@ -10,7 +10,7 @@
 void printScreen()
 {
     if  ((machinestate == kSetPointNegative || machinestate == kPidNormal || machinestate == kBrewDetectionTrailing) ||
-        ((machinestate == kBrew || machinestate == kShotTimerAfterBrew)  && SHOTTIMER == 0) ||// shottimer == 0, auch Bezug anzeigen
+        ((machinestate == kBrew || machinestate == kShotTimerAfterBrew) && SHOTTIMER == 0) ||  // shottimer == 0, also show brew
         machinestate == kCoolDown || ((machinestate == kInit || machinestate == kColdStart ) && HEATINGLOGO == 0) ||
         ((machinestate == kPidOffline)  && OFFLINEGLOGO == 0))
     {

@@ -99,8 +99,7 @@ void displayEmergencyStop(void)
 /**
  * @brief display shot timer
  */
-void displayShottimer(void)
- {
+void displayShottimer(void) {
     if (((timeBrewed > 0 && ONLYPID == 1) || // timeBrewed bei Only PID
         (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42)) // oder Bezug bei nicht only PID über brewcounter
         && SHOTTIMER == 1) // Shotimer muss 1 = True sein und Bezug vorliegen

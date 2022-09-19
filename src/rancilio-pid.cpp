@@ -325,9 +325,6 @@ DallasTemperature sensors(&oneWire);    // Pass our oneWire reference to Dallas 
 DeviceAddress sensorDeviceAddress;      // arrays to hold device address
 
 // TSIC 306 temp sensor
-uint16_t temperature = 0;   // internal variable used to read temeprature
-float Temperature_C = 0;    // internal variable that holds the converted temperature in °C
-
 #if (ONE_WIRE_BUS == 16 && TEMPSENSOR == 2 && defined(ESP8266))
     TSIC Sensor1(ONE_WIRE_BUS);  // only Signalpin, VCCpin unused by default
 #else
@@ -675,11 +672,15 @@ void refreshTemp() {
             previousMillistemp = currentMillistemp;
             sensors.requestTemperatures();
 
-            if (!checkSensor(sensors.getTempCByIndex(0)) && firstreading == 0)
+            Input = sensors.getTempCByIndex(0);
+            if (machinestate != kSteam) {
+                Input -= BrewTempOffset;
+            }
+
+            if (!checkSensor(Input) && firstreading == 0) {
                 return; // if sensor data is not valid, abort function; Sensor must
                         // be read at least one time at system startup
-
-            Input = sensors.getTempCByIndex(0) - BrewTempOffset;
+            }
 
             if (Brewdetection != 0) {
                 movAvg();
@@ -693,27 +694,24 @@ void refreshTemp() {
         if (currentMillistemp - previousMillistemp >= intervaltempmestsic) {
             previousMillistemp = currentMillistemp;
 
-            /* variable "temperature" must be set to zero, before reading new
-            * data getTemperature only updates if data is valid, otherwise
-            * "temperature" will still hold old values
-            */
-            temperature = 0;
-
         #if (ONE_WIRE_BUS == 16 && defined(ESP8266))
+            uint16_t temperature = 0;
             Sensor1.getTemperature(&temperature);
-            Temperature_C = Sensor1.calc_Celsius(&temperature);
+            Input = Sensor1.calc_Celsius(&temperature);
         #endif
 
         #if ((ONE_WIRE_BUS != 16 && defined(ESP8266)) || defined(ESP32))
-            Temperature_C = Sensor2.getTemp();
+            Input = Sensor2.getTemp();
         #endif
-            // Temperature_C = 94;
-            if (!checkSensor(Temperature_C - BrewTempOffset) && firstreading == 0) {
+
+            if (machinestate != kSteam) {
+                Input -= BrewTempOffset;
+            }
+
+            if (!checkSensor(Input) && firstreading == 0) {
                 return; // if sensor data is not valid, abort function; Sensor must
                         // be read at least one time at system startup
             }
-
-            Input = Temperature_C - BrewTempOffset;
 
             if (Brewdetection != 0) {
                 movAvg();
@@ -1828,7 +1826,7 @@ void websiteSetup() {
         #endif
     }
 
-  serverSetup();
+    serverSetup();
 }
 
 const char sysVersion[] = (STR(FW_VERSION) "." STR(FW_SUBVERSION) "." STR(FW_HOTFIX) " " FW_BRANCH);
@@ -2029,22 +2027,23 @@ void setup() {
         sensors.getAddress(sensorDeviceAddress, 0);
         sensors.setResolution(sensorDeviceAddress, 10);
         sensors.requestTemperatures();
-        Input = sensors.getTempCByIndex(0) - BrewTempOffset;
+        Input = sensors.getTempCByIndex(0);
     }
 
     if (TempSensor == 2) {
-        temperature = 0;
-
         #if (ONE_WIRE_BUS == 16 && defined(ESP8266))
+            uint16_t temperature = 0;
             Sensor1.getTemperature(&temperature);
-            Input = Sensor1.calc_Celsius(&temperature) - BrewTempOffset;
+            Input = Sensor1.calc_Celsius(&temperature);
         #endif
 
         #if ((ONE_WIRE_BUS != 16 && defined(ESP8266)) || defined(ESP32))
-            Input = Sensor2.getTemp() - BrewTempOffset;
+            Input = Sensor2.getTemp();
         #endif
     }
 
+    Input -= BrewTempOffset;
+    
     // moving average ini array
     if (Brewdetection == 1) {
         for (int thisReading = 0; thisReading < numReadings; thisReading++) {
