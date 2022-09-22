@@ -20,9 +20,9 @@
 #include <InfluxDbClient.h>
 #include <PubSubClient.h>
 #include <U8g2lib.h>            // i2c display
+#include "TSIC.h"               // old library for TSIC temp sensor
 #include <ZACwire.h>            // new TSIC bus library
 #include "PID_v1.h"             // for PID calculation
-#include "TSIC.h"               // library for TSIC temp sensor
 
 // Includes
 #include "icon.h"               // user icons for display
@@ -319,21 +319,21 @@ double aggKd = aggTv * aggKp;
 PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, 1, DIRECT);
 
 // Dallas temp sensor
-OneWire oneWire(ONE_WIRE_BUS);  // Setup a oneWire instance to communicate with any OneWire
-                                // devices (not just Maxim/Dallas temperature ICs)
-DallasTemperature sensors(&oneWire);    // Pass our oneWire reference to Dallas Temperature.
+OneWire oneWire(ONE_WIRE_BUS);          // Setup a OneWire instance to communicate with OneWire
+                                        // devices (not just Maxim/Dallas temperature ICs)
+DallasTemperature sensors(&oneWire);   
 DeviceAddress sensorDeviceAddress;      // arrays to hold device address
 
 // TSIC 306 temp sensor
 #if (ONE_WIRE_BUS == 16 && TEMPSENSOR == 2 && defined(ESP8266))
-    TSIC Sensor1(ONE_WIRE_BUS);  // only Signalpin, VCCpin unused by default
+    TSIC Sensor1(ONE_WIRE_BUS);          // only Signal pin, VCC pin unused by default
 #else
-    ZACwire Sensor2(ONE_WIRE_BUS, 306);  // set OneWire pin to receive signal from the TSic "306"
+    ZACwire Sensor2(ONE_WIRE_BUS, 306);  // set OneWire pin to receive signal from the TSic 306
 #endif
 
 // Blynk update Interval
-unsigned long previousMillisBlynk;  // initialisation at the end of init()
-unsigned long previousMillisMQTT;   // initialisation at the end of init()
+unsigned long previousMillisBlynk;       // initialised at the end of init()
+unsigned long previousMillisMQTT;        // initialised at the end of init()
 const unsigned long intervalBlynk = 1000;
 const unsigned long intervalMQTT = 5000;
 int blynksendcounter = 1;
@@ -349,8 +349,8 @@ const char *mqtt_topic_prefix = MQTT_TOPIC_PREFIX;
 char topic_will[256];
 char topic_set[256];
 unsigned long lastMQTTConnectionAttempt = millis();
-unsigned int MQTTReCnctFlag;       // Blynk Reconnection Flag
-unsigned int MQTTReCnctCount = 0;  // Blynk Reconnection counter
+unsigned int MQTTReCnctFlag;             // Blynk Reconnection Flag
+unsigned int MQTTReCnctCount = 0;        // Blynk Reconnection counter
 
 enum MQTTSettableType {
     tUInt8,
@@ -1182,7 +1182,7 @@ void handleETrigger() {
     static int ETriggeractive = 0;
     unsigned long currentMillisETrigger = millis();
 
-    if (ETRIGGER == 1) {  // E Trigger is active from userconfig
+    if (ETRIGGER == 1) {  // E Trigger has been activated in userconfig
         if (currentMillisETrigger - previousMillisETrigger >= (1000 * intervalETrigger))  { // s to ms * 1000
             ETriggeractive = 1;
             previousMillisETrigger = currentMillisETrigger;

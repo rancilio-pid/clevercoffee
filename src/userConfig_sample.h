@@ -125,13 +125,15 @@ enum MACHINE {
 #define FLUSHTIME 6000             // time in ms the 3-way valve is open -> backflush
 #define MAXFLUSHCYCLES 5           // number of cycles the backflush should run, 0 = disabled
 
+#define TEMPSENSOR 2               // Temp sensor type: 1 = DS18B20, 2 = TSIC306
+
 // Pin Layout
 #define ONE_WIRE_BUS 2             // Temp sensor pin
 #define PINPRESSURESENSOR 99       // Pressuresensor 0: A0 (ESP8266), >0 ONLY ESP32
 #define PINVALVE 12                // Output pin for 3-way-valve
 #define PINPUMP 13                 // Output pin for pump
 #define PINHEATER 14               // Output pin for heater
-#define PINVOLTAGESENSOR 15        // Input pin for voltage sensor
+#define PINVOLTAGESENSOR 15        // Input pin for voltage sensor (optocoupler to detect brew switch)
 #define PINETRIGGER 16             // PIN for E-Trigger relay
 #define PINBREWSWITCH 0            // 0: A0 (ESP8266) ; >0 : DIGITAL PIN, ESP32 OR ESP8266: ONLY USE PIN15 AND PIN16!
 #define PINSTEAMSWITCH 17          // STEAM active
@@ -143,14 +145,10 @@ enum MACHINE {
 #define SCREEN_WIDTH 128           // OLED display width, in pixels
 #define SCREEN_HEIGHT 64           // OLED display height, in pixels
 
-// Historic (no settings)
-#define TEMPSENSOR 2               // 2 = TSIC306, 1 = DS18B20
-
 // Check BrewSwitch
 #if (defined(ESP8266) && ((PINBREWSWITCH != 15 && PINBREWSWITCH != 0 && PINBREWSWITCH != 16 )))
   #error("WRONG Brewswitch PIN for ESP8266, Only PIN 15 and PIN 16");
 #endif
-
 
 // defined compiler errors
 #if (PRESSURESENSOR == 1) && (PINPRESSURESENSOR == 0) && (PINBREWSWITCH == 0)
