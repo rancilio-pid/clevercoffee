@@ -128,7 +128,7 @@ enum MACHINE {
 #define TEMPSENSOR 2               // Temp sensor type: 1 = DS18B20, 2 = TSIC306
 
 // Pin Layout
-#define ONE_WIRE_BUS 2             // Temp sensor pin
+#define PINTEMPSENSOR 2            // Temp sensor pin
 #define PINPRESSURESENSOR 99       // Pressuresensor 0: A0 (ESP8266), >0 ONLY ESP32
 #define PINVALVE 12                // Output pin for 3-way-valve
 #define PINPUMP 13                 // Output pin for pump

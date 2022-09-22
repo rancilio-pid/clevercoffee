@@ -15,7 +15,9 @@
 // Libraries
 #include <ArduinoOTA.h>
 #include <Adafruit_VL53L0X.h>   // for ToF Sensor
-#include <DallasTemperature.h>  // Library for dallas temp sensor
+#if TEMPSENSOR == 1
+    #include <DallasTemperature.h>  // Library for dallas temp sensor
+#endif
 #include <WiFiManager.h>
 #include <InfluxDbClient.h>
 #include <PubSubClient.h>
@@ -295,6 +297,7 @@ int pidMode = 1;    // 1 = Automatic, 0 = Manual
 double setPointTemp;
 double previousInput = 0;
 
+// Variables to hold PID values (Temp input, Heater output)
 double Input, Output;
 int SteamON = 0;
 int SteamFirstON = 0;
@@ -319,21 +322,24 @@ double aggKd = aggTv * aggKp;
 PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, 1, DIRECT);
 
 // Dallas temp sensor
-OneWire oneWire(ONE_WIRE_BUS);          // Setup a OneWire instance to communicate with OneWire
-                                        // devices (not just Maxim/Dallas temperature ICs)
-DallasTemperature sensors(&oneWire);   
-DeviceAddress sensorDeviceAddress;      // arrays to hold device address
+#if TEMPSENSOR == 1
+    OneWire oneWire(PINTEMPSENSOR);         // Setup a OneWire instance to communicate with OneWire
+                                            // devices (not just Maxim/Dallas temperature ICs)
+    DallasTemperature sensors(&oneWire);   
+    DeviceAddress sensorDeviceAddress;      // arrays to hold device address
+#endif
 
 // TSIC 306 temp sensor
-#if (ONE_WIRE_BUS == 16 && TEMPSENSOR == 2 && defined(ESP8266))
-    TSIC Sensor1(ONE_WIRE_BUS);          // only Signal pin, VCC pin unused by default
+#if (PINTEMPSENSOR == 16 && TEMPSENSOR == 2 && defined(ESP8266))
+    TSIC Sensor1(PINTEMPSENSOR);            // only Signal pin, VCC pin unused by default
 #else
-    ZACwire Sensor2(ONE_WIRE_BUS, 306);  // set OneWire pin to receive signal from the TSic 306
+    ZACwire Sensor2(PINTEMPSENSOR, 306);    // set pin to receive signal from the TSic 306
+#endif
 #endif
 
 // Blynk update Interval
-unsigned long previousMillisBlynk;       // initialised at the end of init()
-unsigned long previousMillisMQTT;        // initialised at the end of init()
+unsigned long previousMillisBlynk;          // initialised at the end of init()
+unsigned long previousMillisMQTT;           // initialised at the end of init()
 const unsigned long intervalBlynk = 1000;
 const unsigned long intervalMQTT = 5000;
 int blynksendcounter = 1;
@@ -670,9 +676,12 @@ void refreshTemp() {
     if (TempSensor == 1) {
         if (currentMillistemp - previousMillistemp >= intervaltempmesds18b20) {
             previousMillistemp = currentMillistemp;
-            sensors.requestTemperatures();
 
+        #if TEMPSENSOR == 1
+            sensors.requestTemperatures();
             Input = sensors.getTempCByIndex(0);
+        #endif
+
             if (machinestate != kSteam) {
                 Input -= BrewTempOffset;
             }
@@ -694,15 +703,17 @@ void refreshTemp() {
         if (currentMillistemp - previousMillistemp >= intervaltempmestsic) {
             previousMillistemp = currentMillistemp;
 
-        #if (ONE_WIRE_BUS == 16 && defined(ESP8266))
+    #if TEMPSENSOR == 2
+        #if (PINTEMPSENSOR == 16 && defined(ESP8266))
             uint16_t temperature = 0;
             Sensor1.getTemperature(&temperature);
             Input = Sensor1.calc_Celsius(&temperature);
         #endif
 
-        #if ((ONE_WIRE_BUS != 16 && defined(ESP8266)) || defined(ESP32))
+        #if ((PINTEMPSENSOR != 16 && defined(ESP8266)) || defined(ESP32))
             Input = Sensor2.getTemp();
         #endif
+    #endif
 
             if (machinestate != kSteam) {
                 Input -= BrewTempOffset;
@@ -2021,26 +2032,29 @@ void setup() {
     bPID.SetSmoothingFactor(EMA_FACTOR);
     bPID.SetMode(AUTOMATIC);
 
-    // Temp sensor
-    if (TempSensor == 1) {
+    // Dallas temp sensor
+    #if TEMPSENSOR == 1
         sensors.begin();
         sensors.getAddress(sensorDeviceAddress, 0);
         sensors.setResolution(sensorDeviceAddress, 10);
         sensors.requestTemperatures();
         Input = sensors.getTempCByIndex(0);
-    }
+    #endif
 
-    if (TempSensor == 2) {
-        #if (ONE_WIRE_BUS == 16 && defined(ESP8266))
+    //TSic 306 temp sensor
+    #if TEMPSENSOR == 2
+        //use old TSic library if connected to pin 16 of ESP8266
+        #if (PINTEMPSENSOR == 16 && defined(ESP8266))
             uint16_t temperature = 0;
             Sensor1.getTemperature(&temperature);
             Input = Sensor1.calc_Celsius(&temperature);
         #endif
 
-        #if ((ONE_WIRE_BUS != 16 && defined(ESP8266)) || defined(ESP32))
+        //in all other cases, use ZACwire
+        #if ((PINTEMPSENSOR != 16 && defined(ESP8266)) || defined(ESP32))
             Input = Sensor2.getTemp();
         #endif
-    }
+    #endif
 
     Input -= BrewTempOffset;
     

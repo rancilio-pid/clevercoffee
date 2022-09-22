@@ -550,6 +550,7 @@ void sendTempEvent(double currentTemp, double targetTemp, double heaterPower) {
     tTemp = targetTemp;
     hPower = heaterPower;
 
+    //save all values in memory to show history
     if (skippedValues > 0 && skippedValues % 4 == 0) {
         //use array and int value for start index (round robin)
         //one record (3 float values == 12 bytes) every five seconds, for half an hour -> 4.3kB of static memory
@@ -562,12 +563,6 @@ void sendTempEvent(double currentTemp, double targetTemp, double heaterPower) {
     } else {
         skippedValues++;
     }
-
-    /*
-    debugPrintf("histIndex: %d\n", historyCurrentIndex);
-    debugPrintf("histValCount: %d\n", historyValueCount);
-    debugPrintf("currentTemp: %f\n", currentTemp);
-    */
 
     events.send("ping", NULL, millis());
     events.send(getTempString().c_str(), "new_temps", millis());
