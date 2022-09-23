@@ -335,7 +335,6 @@ PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, 1, DIRECT);
 #else
     ZACwire Sensor2(PINTEMPSENSOR, 306);    // set pin to receive signal from the TSic 306
 #endif
-#endif
 
 // Blynk update Interval
 unsigned long previousMillisBlynk;          // initialised at the end of init()
