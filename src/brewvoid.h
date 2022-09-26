@@ -21,11 +21,11 @@ void checkbrewswitch() {
             if (currentMillistemp - previousMillistempanalogreading >= analogreadingtimeinterval) {
                 previousMillistempanalogreading = currentMillistemp;
 
-                if (filter(analogRead(analogPin)) > 1000) {
+                if (filterPressureValue(analogRead(analogPin)) > 1000) {
                     brewswitch = HIGH;
                 }
 
-                if (filter(analogRead(analogPin)) < 1000) {
+                if (filterPressureValue(analogRead(analogPin)) < 1000) {
                     brewswitch = LOW;
                 }
             }
@@ -235,12 +235,12 @@ void brew() {
             timeBrewed = currentMillistemp - startingTime;
         }
 
-        if (brewswitch == LOW && firstreading == 0) {
+        if (brewswitch == LOW && movingAverageInitialized) {
             // check if brewswitch was turned off at least once, last time,
             brewswitchWasOFF = true;
         }
 
-        totalbrewtime = (preinfusion * 1000) + (preinfusionpause * 1000) +
+        totalBrewTime = (preinfusion * 1000) + (preinfusionpause * 1000) +
             (brewtime * 1000);  // running every cycle, in case changes are done during brew
 
         // state machine for brew
@@ -304,7 +304,7 @@ void brew() {
             case 41:  // waiting time brew
                 lastbrewTime = timeBrewed;
 
-                if (timeBrewed > totalbrewtime) {
+                if (timeBrewed > totalBrewTime) {
                     brewcounter = 42;
                 }
 
@@ -361,7 +361,7 @@ void brew() {
             brewswitchWasOFF = true;
         }
 
-        totalbrewtime = ((preinfusion * 1000) + (preinfusionpause * 1000) +
+        totalBrewTime = ((preinfusion * 1000) + (preinfusionpause * 1000) +
             (brewtime * 1000));  // running every cycle, in case changes are done during brew
 
         // state machine for brew
@@ -422,11 +422,11 @@ void brew() {
                 break;
 
             case 41:  // waiting time brew
-                if (timeBrewed > totalbrewtime || (weightBrew > (weightSetpoint - scaleDelayValue))) {
+                if (timeBrewed > totalBrewTime || (weightBrew > (weightSetpoint - scaleDelayValue))) {
                     brewcounter = 42;
                 }
 
-                if (timeBrewed > totalbrewtime) {
+                if (timeBrewed > totalBrewTime) {
                     brewcounter = 42;
                 }
 

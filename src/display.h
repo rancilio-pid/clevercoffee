@@ -101,9 +101,9 @@ void displayShottimer(void) {
         u8g2.sendBuffer();
     }
 
-    /* wenn die totalbrewtime automatisch erreicht wird,
-     * soll nichts gemacht werden, da sonst falsche Zeit angezeigt
-     * wird, da Schalter später betätigt wird als totalbrewtime
+    /* if the totalBrewTime is reached automatically,
+     * nothing should be done, otherwise wrong time is displayed
+     * because the switch is pressed later than totalBrewTime
      */
     if (((machinestate == kShotTimerAfterBrew) && SHOTTIMER == 1)) {
         u8g2.clearBuffer();

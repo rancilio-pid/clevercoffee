@@ -54,7 +54,7 @@ void printScreen() {
             if (isBrewDetected == 1) {
                 u8g2.setCursor(1, 75);
                 u8g2.print("BD ");
-                u8g2.print((millis() - timeBrewdetection) / 1000, 1);
+                u8g2.print((millis() - timeBrewDetection) / 1000, 1);
                 u8g2.print("/");
                 u8g2.print(brewtimersoftware, 0);
             }
@@ -98,7 +98,7 @@ void printScreen() {
                 u8g2.print(brewtimersoftware, 0);// deaktivieren wenn Preinfusion ( // voransetzen )
             }
             else {
-                u8g2.print(totalbrewtime / 1000, 0);            // aktivieren wenn Preinfusion
+                u8g2.print(totalBrewTime / 1000, 0);            // aktivieren wenn Preinfusion
             }
 
             u8g2.print(" s");

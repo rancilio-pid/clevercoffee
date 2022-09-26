@@ -192,7 +192,7 @@ char *number2string(double in);
 char *number2string(float in);
 char *number2string(int in);
 char *number2string(unsigned int in);
-float filter(float input);
+float filterPressureValue(float input);
 
 // system parameters
 uint8_t pidON = 0;                 // 1 = control loop in closed loop
@@ -257,28 +257,20 @@ int relayON, relayOFF;           // used for relay trigger type. Do not change!
 boolean coldstart = true;        // true = Rancilio started for first time
 boolean emergencyStop = false;   // Emergency stop if temperature is too high 
 double EmergencyStopTemp = 120;  // Temp EmergencyStopTemp
-float inX = 0, inY = 0, inOld = 0, inSum = 0; // used for filter()
+float inX = 0, inY = 0, inOld = 0, inSum = 0; // used for filterPressureValue()
 int signalBars = 0;              // used for getSignalStrength()
 boolean brewDetected = 0;
 boolean setupDone = false;
-int backflushON = 0;             // 1 = activate backflush
+int backflushON = 0;             // 1 = backflush mode active
 int flushCycles = 0;             // number of active flush cycles
 int backflushState = 10;         // counter for state machine
 
-// Moving average for software brewdetection
-const int numReadings = 15;               // number of values per Array
-double readingstemp[numReadings];         // the readings from Temp
-unsigned long readingstime[numReadings];  // the readings from time
-double readingchangerate[numReadings];
-
-int readIndex = 1;               // the index of the current reading
-double total = 0;                // total sum of readingchangerate[]
-double heatrateaverage = 0;      // the average over the numReadings
-double changerate = 0;           // local change rate of temprature
-double heatrateaveragemin = 0;
-unsigned long timeBrewdetection = 0;
-int isBrewDetected = 0;          // flag is set if brew was detected
-int firstreading = 1;            // Ini of the field, also used for sensor check
+// Moving average for software brew detection
+double tempRateAverage = 0;             // average value of temp values
+double tempChangeRateAverageMin = 0;
+unsigned long timeBrewDetection = 0;
+int isBrewDetected = 0;                 // flag is set if brew was detected
+bool movingAverageInitialized = false;  // flag set when average filter is initialized, also used for sensor check
 
 // Brewing, 1 = Normal Preinfusion , 2 = Scale & Shottimer = 2
 #include "brewscaleini.h"
@@ -558,7 +550,7 @@ BLYNK_WRITE(V14) { startTn = param.asDouble(); }
                 ((analogRead(PINPRESSURESENSOR) - offset) * maxPressure * 0.0689476) /
                 (fullScale - offset);   // pressure conversion and unit
                                         // conversion [psi] -> [bar]
-            inputPressureFilter = filter(inputPressure);
+            inputPressureFilter = filterPressureValue(inputPressure);
 
             debugPrintf("pressure raw / filtered: %f / %f\n", inputPressure, inputPressureFilter);
         }
@@ -580,49 +572,54 @@ void testEmergencyStop() {
 }
 
 /**
- * @brief Moving average - brewdetection (SW)
+ * @brief FIR moving average filter for software brew detection
  */
-void movAvg() {
-    if (firstreading == 1) {
-        for (int thisReading = 0; thisReading < numReadings; thisReading++) {
-            readingstemp[thisReading] = Input;
-            readingstime[thisReading] = 0;
-            readingchangerate[thisReading] = 0;
+void calculateTemperatureMovingAverage() {
+    const int numValues = 15;                      // moving average filter length 
+    static double tempValues[numValues];           // array of temp values
+    static unsigned long timeValues[numValues];    // array of time values 
+    static double tempChangeRates[numValues];
+    static int valueIndex = 1;                     // the index of the current value 
+
+    if (Brewdetection == 1 && !movingAverageInitialized) {
+        for (int index = 0; index < numValues; index++) {
+            tempValues[index] = Input;
+            timeValues[index] = 0;
+            tempChangeRates[index] = 0;
         }
 
-        firstreading = 0;
+        movingAverageInitialized = true;
     }
 
-    readingstime[readIndex] = millis();
-    readingstemp[readIndex] = Input;
+    timeValues[valueIndex] = millis();
+    tempValues[valueIndex] = Input;
 
-    if (readIndex == numReadings - 1) {
-        changerate = (readingstemp[numReadings - 1] - readingstemp[0]) /
-                        (readingstime[numReadings - 1] - readingstime[0]) * 10000;
+    double tempChangeRate = 0;                     // local change rate of temperature
+    if (valueIndex == numValues - 1) {
+        tempChangeRate = (tempValues[numValues - 1] - tempValues[0]) /
+                        (timeValues[numValues - 1] - timeValues[0]) * 10000;
     } else {
-        changerate = (readingstemp[readIndex] - readingstemp[readIndex + 1]) /
-                        (readingstime[readIndex] - readingstime[readIndex + 1]) *
-                        10000;
+        tempChangeRate = (tempValues[valueIndex] - tempValues[valueIndex + 1]) /
+                        (timeValues[valueIndex] - timeValues[valueIndex + 1]) * 10000;
+    }
+    tempChangeRates[valueIndex] = tempChangeRate;
+
+    double totalTempChangeRateSum = 0;
+    for (int i = 0; i < numValues; i++) {
+        totalTempChangeRateSum += tempChangeRates[i];
     }
 
-    readingchangerate[readIndex] = changerate;
-    total = 0;
+    tempRateAverage = totalTempChangeRateSum / numValues * 100;
 
-    for (int i = 0; i < numReadings; i++) {
-        total += readingchangerate[i];
+    if (tempRateAverage < tempChangeRateAverageMin) {
+        tempChangeRateAverageMin = tempRateAverage;
     }
 
-    heatrateaverage = total / numReadings * 100;
-
-    if (heatrateaveragemin > heatrateaverage) {
-        heatrateaveragemin = heatrateaverage;
-    }
-
-    if (readIndex >= numReadings - 1) {
+    if (valueIndex >= numValues - 1) {
         // ...wrap around to the beginning:
-        readIndex = 0;
+        valueIndex = 0;
     } else {
-        readIndex++;
+        valueIndex++;
     }
 }
 
@@ -685,15 +682,15 @@ void refreshTemp() {
                 Input -= BrewTempOffset;
             }
 
-            if (!checkSensor(Input) && firstreading == 0) {
+            if (!checkSensor(Input) && movingAverageInitialized) {
                 return; // if sensor data is not valid, abort function; Sensor must
                         // be read at least one time at system startup
             }
 
             if (Brewdetection == 1) {
-                movAvg();
-            } else if (firstreading != 0) {
-                firstreading = 0;
+                calculateTemperatureMovingAverage();
+            } else if (!movingAverageInitialized) {
+                movingAverageInitialized = true;
             }
         }
     }
@@ -718,15 +715,15 @@ void refreshTemp() {
                 Input -= BrewTempOffset;
             }
 
-            if (!checkSensor(Input) && firstreading == 0) {
+            if (!checkSensor(Input) && movingAverageInitialized) {
                 return; // if sensor data is not valid, abort function; Sensor must
                         // be read at least one time at system startup
             }
 
             if (Brewdetection == 1) {
-                movAvg();
-            } else if (firstreading != 0) {
-                firstreading = 0;
+                calculateTemperatureMovingAverage();
+            } else if (!movingAverageInitialized) {                
+                movingAverageInitialized = true;
             }
         }
     }
@@ -953,15 +950,15 @@ void sendToBlynkMQTT() {
         }
 
         if (blynksendcounter == 4) {
-            Blynk.virtualWrite(V35, heatrateaverage);
+            Blynk.virtualWrite(V35, tempRateAverage);
         }
 
         if (blynksendcounter == 5) {
-            Blynk.virtualWrite(V36, heatrateaveragemin);
+            Blynk.virtualWrite(V36, tempChangeRateAverageMin);
         }
 
         if (grafana == 1 && blynksendcounter >= 6) {
-            Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint, heatrateaverage);
+            Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint, tempRateAverage);
         } else if (blynksendcounter >= 6) {
             blynksendcounter = 0;
         }
@@ -980,16 +977,16 @@ void brewdetection() {
     // Brew detection: 1 = software solution, 2 = hardware, 3 = voltage sensor
     if (Brewdetection == 1) {
         if (isBrewDetected == 1) {
-            timeBrewed = millis() - timeBrewdetection;
+            timeBrewed = millis() - timeBrewDetection;
         }
 
         // deactivate brewtimer after end of brewdetection pid
-        if (millis() - timeBrewdetection > brewtimersoftware * 1000 && isBrewDetected == 1) {
+        if (millis() - timeBrewDetection > brewtimersoftware * 1000 && isBrewDetected == 1) {
             isBrewDetected = 0;  // rearm brewdetection
             timeBrewed = 0;
         }
     } else if (Brewdetection == 2) {
-        if (millis() - timeBrewdetection > brewtimersoftware * 1000 && isBrewDetected == 1) {
+        if (millis() - timeBrewDetection > brewtimersoftware * 1000 && isBrewDetected == 1) {
             isBrewDetected = 0;  // rearm brewdetection
         }
     } else if (Brewdetection == 3) {
@@ -1013,15 +1010,15 @@ void brewdetection() {
     // Activate brew detection
     if (Brewdetection == 1) {  // SW BD
         // BD PID only +/- 4 °C, no detection if HW was active
-        if (heatrateaverage <= -brewsensitivity && isBrewDetected == 0 && (fabs(Input - BrewSetPoint) < 5)) {
+        if (tempRateAverage <= -brewsensitivity && isBrewDetected == 0 && (fabs(Input - BrewSetPoint) < 5)) {
             debugPrintln("SW Brew detected");
-            timeBrewdetection = millis();
+            timeBrewDetection = millis();
             isBrewDetected = 1;
         }
     } else if (Brewdetection == 2) {  // HW BD
         if (brewcounter > 10 && brewDetected == 0 && brewsensitivity != 0) {
             debugPrintln("HW Brew detected");
-            timeBrewdetection = millis();
+            timeBrewDetection = millis();
             isBrewDetected = 1;
             brewDetected = 1;
         }
@@ -1033,7 +1030,7 @@ void brewdetection() {
 
                     if (pvs == VoltageSensorON && brewDetected == 0 &&
                         brewSteamDetectedQM == 0 && !steamQM_active) {
-                        timeBrewdetection = millis();
+                        timeBrewDetection = millis();
                         timePVStoON = millis();
                         isBrewDetected = 1;
                         brewDetected = 0;
@@ -1078,7 +1075,7 @@ void brewdetection() {
 
                 if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorON && brewDetected == 0) {
                     debugPrintln("HW Brew - Voltage Sensor - Start");
-                    timeBrewdetection = millis();
+                    timeBrewDetection = millis();
                     startingTime = millis();
                     isBrewDetected = 1;
                     brewDetected = 1;
@@ -1089,10 +1086,11 @@ void brewdetection() {
 }
 
 /**
- * @brief after ~28 cycles the input is set to 99,66% if the real input value sum of inX and inY
+ * @brief Filter input value using exponential moving average filter (using fixed coefficients)
+ *      After ~28 cycles the input is set to 99,66% if the real input value sum of inX and inY
  *      multiplier must be 1 increase inX multiplier to make the filter faster
  */
-float filter(float input) {
+float filterPressureValue(float input) {
     inX = input * 0.3;
     inY = inOld * 0.7;
     inSum = inX + inY;
@@ -1435,10 +1433,10 @@ void machinestatevoid() {
         case kBrew:
             brewdetection();
 
-            // Output brew time, temp and heatrateaverage during brew
+            // Output brew time, temp and tempRateAverage during brew
             if (BREWDETECTION == 1 && logbrew.check()) {
                 debugPrintf("(tB,T,hra) --> %5.2f %6.2f %8.2f\n",
-                            (double)(millis() - startingTime) / 1000, Input, heatrateaverage);
+                            (double)(millis() - startingTime) / 1000, Input, tempRateAverage);
             }
 
             if ((timeBrewed == 0 && Brewdetection == 3 && ONLYPID == 1) ||  // OnlyPID+: Voltage sensor BD timeBrewed == 0 -> switch is off again
@@ -1564,8 +1562,8 @@ void machinestatevoid() {
             }
 
             if (Brewdetection == 1 && ONLYPID == 1) {
-                // if local max reached enable state 20, then heat to settemp.
-                if (heatrateaverage > 0 && Input < BrewSetPoint + 2) {
+                // if machine cooled down to 2°C above setpoint, enabled PID again
+                if (tempRateAverage > 0 && Input < BrewSetPoint + 2) {
                     machinestate = kPidNormal;
                 }
             }
@@ -2057,15 +2055,6 @@ void setup() {
 
     Input -= BrewTempOffset;
     
-    // moving average ini array
-    if (Brewdetection == 1) {
-        for (int thisReading = 0; thisReading < numReadings; thisReading++) {
-            readingstemp[thisReading] = 0;
-            readingstime[thisReading] = 0;
-            readingchangerate[thisReading] = 0;
-        }
-    }
-
     // Initialisation MUST be at the very end of the init(), otherwise the
     // time comparision in loop() will have a big offset
     unsigned long currentTime = millis();

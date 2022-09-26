@@ -116,9 +116,9 @@ void displayShottimer(void) {
         u8g2.sendBuffer();
 
     }
-    if (SHOTTIMER == 1 && millis() >= brewTime_last_Millis && // direkt nach Erstellen von brewTime_last_mills (passiert beim ausschalten des Brühschalters, case 43 im Code) soll gestartet werden
-        brewTime_last_Millis+brewswitchDelay >= millis() && // soll solange laufen, bis millis() den brewswitchDelay aufgeholt hat, damit kann die Anzeigedauer gesteuert werden
-        brewTime_last_Millis < totalbrewtime) // wenn die totalbrewtime automatisch erreicht wird, soll nichts gemacht werden, da sonst falsche Zeit angezeigt wird, da Schalter später betätigt wird als totalbrewtime
+    if (SHOTTIMER == 1 && millis() >= brewTime_last_Millis && // directly after creating brewTime_last_mills (happens when turning off the brew switch, case 43 in the code) should be started
+        brewTime_last_Millis+brewswitchDelay >= millis() && // should run until millis() has caught up with brewswitchDelay, this can be used to control the display duration
+        brewTime_last_Millis < totalBrewTime) // if the totalBrewTime is reached automatically, nothing should be done, otherwise wrong time will be displayed because switch is pressed later than totalBrewTime
     {
         u8g2.clearBuffer();
         u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
