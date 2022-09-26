@@ -227,7 +227,7 @@ double aggbTv = AGGBTV;
 
 double aggbKd = aggbTv * aggbKp;
 double brewtimersoftware = BREW_SW_TIMER;  // use userConfig time until disabling BD PID
-double brewsensitivity = BREWSENSITIVITY;  // user userConfig brew detection sensitivity 
+double brewsensitivity = BREWSENSITIVITY;  // use userConfig brew detection sensitivity 
 
 // system parameter EEPROM storage wrappers (current value as pointer to variable, minimum, maximum, optional storage ID)
 SysPara<double> sysParaPidKpStart(&startKp, PID_KP_START_MIN, PID_KP_START_MAX, STO_ITEM_PID_KP_START);
@@ -690,7 +690,7 @@ void refreshTemp() {
                         // be read at least one time at system startup
             }
 
-            if (Brewdetection != 0) {
+            if (Brewdetection == 1) {
                 movAvg();
             } else if (firstreading != 0) {
                 firstreading = 0;
@@ -723,7 +723,7 @@ void refreshTemp() {
                         // be read at least one time at system startup
             }
 
-            if (Brewdetection != 0) {
+            if (Brewdetection == 1) {
                 movAvg();
             } else if (firstreading != 0) {
                 firstreading = 0;
@@ -1012,7 +1012,7 @@ void brewdetection() {
 
     // Activate brew detection
     if (Brewdetection == 1) {  // SW BD
-        // BD PID only +/- 4 Grad Celsius, no detection if HW was active
+        // BD PID only +/- 4 °C, no detection if HW was active
         if (heatrateaverage <= -brewsensitivity && isBrewDetected == 0 && (fabs(Input - BrewSetPoint) < 5)) {
             debugPrintln("SW Brew detected");
             timeBrewdetection = millis();
@@ -1367,9 +1367,9 @@ void machinestatevoid() {
             }
             break;
 
-        // Setpoint -1 Celsius
+        // Setpoint is below current temperature 
         case kSetPointNegative:
-            brewdetection();  // if brew detected, set PID values
+            brewdetection();
 
             if (Input >= (BrewSetPoint)) {
                 machinestate = kPidNormal;
@@ -1403,7 +1403,7 @@ void machinestatevoid() {
             break;
 
         case kPidNormal:
-            brewdetection();     // if brew detected, set PID values
+            brewdetection();     // if brew detected, set BD PID values (if enabled)
 
             if ((timeBrewed > 0 && ONLYPID == 1) ||  // timeBrewed with Only PID
                 (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42))
@@ -1506,7 +1506,7 @@ void machinestatevoid() {
                 machinestate = kPidNormal;
             }
 
-            if ((timeBrewed > 0 && ONLYPID == 1 && Brewdetection == 3) ||  // New Brew inner BD only by Only PID AND Voltage Sensor
+            if ((timeBrewed > 0 && ONLYPID == 1 && Brewdetection == 3) ||  // Allow brew directly after BD only when using OnlyPID AND hardware brew switch detection
                 (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42))
             {
                 machinestate = kBrew;
