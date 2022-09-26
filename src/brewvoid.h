@@ -216,7 +216,7 @@ void backflush() {
     }
 }
 
-#if (BREWMODE == 1)  // old Brew MODE
+#if (BREWMODE == 1)  // normal brew mode (based on time)
 /**
  * @brief PreInfusion, Brew Normal
  */
@@ -339,7 +339,7 @@ void brew() {
 
 #if (BREWMODE == 2)
 /**
- * @brief Scale brew mode
+ * @brief Weight based brew mode
  */
 void brew() {
     if (OnlyPID == 0) {
@@ -445,7 +445,7 @@ void brew() {
                     digitalWrite(PINVALVE, relayOFF);
                     digitalWrite(PINPUMP, relayOFF);
 
-                    // disarmed button bezugsZeitAlt = bezugsZeit;
+                    // disarmed button
                     currentMillistemp = 0;
                     timeBrewed = 0;
                     brewDetected = 0;  // rearm brewdetection

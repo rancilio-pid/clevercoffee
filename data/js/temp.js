@@ -24,7 +24,8 @@ var curTempTrace = {
     y: curTempVals,
     line: {
         color: '#008080',
-        shape: 'spline'
+        shape: 'spline',
+        smoothing: 0.25
     }
 }
 
@@ -37,7 +38,8 @@ var targetTempTrace = {
     y: targetTempVals,
     line: {
         color: '#9932CC',
-        shape: 'spline'
+        shape: 'spline',
+        smoothing: 0.25
     }
 }
 
@@ -50,7 +52,8 @@ var heaterPowerTrace = {
     y: heaterPowerVals,
     line: {
         color: '#778899',
-        shape: 'spline'
+        shape: 'spline',
+        smoothing: 0.25
     }
 }
 
