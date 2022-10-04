@@ -14,7 +14,9 @@
 
 // Libraries
 #include <ArduinoOTA.h>
-#include <Adafruit_VL53L0X.h>   // for ToF Sensor
+#if TOF == 1
+    #include <Adafruit_VL53L0X.h>   // for ToF Sensor
+#endif
 #if TEMPSENSOR == 1
     #include <DallasTemperature.h>  // Library for dallas temp sensor
 #endif
@@ -107,6 +109,7 @@ int BrewMode = BREWMODE;
 uint8_t oled_i2c = OLED_I2C;
 
 // ToF Sensor
+#if TOF == 1
 Adafruit_VL53L0X lox = Adafruit_VL53L0X();
 int calibration_mode = CALIBRATION_MODE;
 uint8_t tof_i2c = TOF_I2C;
@@ -116,6 +119,7 @@ unsigned long previousMillisTOF;         // initialisation at the end of init()
 const unsigned long intervalTOF = 5000;  // ms
 double distance;
 double percentage;
+#endif
 
 // WiFi
 WiFiManager wm;
@@ -196,10 +200,10 @@ float filterPressureValue(float input);
 
 // system parameters
 uint8_t pidON = 0;                 // 1 = control loop in closed loop
-double BrewSetPoint = SETPOINT;
-double BrewTempOffset = TEMPOFFSET;
-double setPoint = BrewSetPoint;
-double SteamSetPoint = STEAMSETPOINT;
+double brewSetPoint = SETPOINT;
+double brewTempOffset = TEMPOFFSET;
+double setPoint = brewSetPoint;
+double steamSetPoint = STEAMSETPOINT;
 uint8_t usePonM = 0;               // 1 = use PonM for cold start PID, 0 = use normal PID for cold start
 double steamKp = STEAMKP;
 double startKp = STARTKP;
@@ -239,8 +243,8 @@ SysPara<double> sysParaPidIMaxReg(&aggIMax, PID_I_MAX_REGULAR_MIN, PID_I_MAX_REG
 SysPara<double> sysParaPidKpBd(&aggbKp, PID_KP_BD_MIN, PID_KP_BD_MAX, STO_ITEM_PID_KP_BD);
 SysPara<double> sysParaPidTnBd(&aggbTn, PID_TN_BD_MIN, PID_KP_BD_MAX, STO_ITEM_PID_TN_BD);
 SysPara<double> sysParaPidTvBd(&aggbTv, PID_TV_BD_MIN, PID_TV_BD_MAX, STO_ITEM_PID_TV_BD);
-SysPara<double> sysParaBrewSetPoint(&BrewSetPoint, BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, STO_ITEM_BREW_SETPOINT);
-SysPara<double> sysParaTempOffset(&BrewTempOffset, BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, STO_ITEM_BREW_TEMP_OFFSET);
+SysPara<double> sysParaBrewSetPoint(&brewSetPoint, BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, STO_ITEM_BREW_SETPOINT);
+SysPara<double> sysParaTempOffset(&brewTempOffset, BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, STO_ITEM_BREW_TEMP_OFFSET);
 SysPara<double> sysParaBrewTime(&brewtime, BREW_TIME_MIN, BREW_TIME_MAX, STO_ITEM_BREW_TIME);
 SysPara<double> sysParaBrewSwTimer(&brewtimersoftware, BREW_SW_TIMER_MIN, BREW_SW_TIMER_MAX, STO_ITEM_BREW_SW_TIMER);
 SysPara<double> sysParaBrewThresh(&brewsensitivity, BD_THRESHOLD_MIN, BD_THRESHOLD_MAX, STO_ITEM_BD_THRESHOLD);
@@ -290,9 +294,9 @@ double setPointTemp;
 double previousInput = 0;
 
 // Variables to hold PID values (Temp input, Heater output)
-double Input, Output;
-int SteamON = 0;
-int SteamFirstON = 0;
+double temperature, pidOutput;
+int steamON = 0;
+int steamFirstON = 0;
 
 #if startTn == 0
     double startKi = 0;
@@ -311,7 +315,7 @@ double aggKd = aggTv * aggKp;
 // Timer - ISR for PID calculation and heat realay output
 #include "ISR.h"
 
-PID bPID(&Input, &Output, &setPoint, aggKp, aggKi, aggKd, 1, DIRECT);
+PID bPID(&temperature, &pidOutput, &setPoint, aggKp, aggKi, aggKd, 1, DIRECT);
 
 // Dallas temp sensor
 #if TEMPSENSOR == 1
@@ -363,13 +367,13 @@ struct mqttVars_t {
 };
 
 std::vector<mqttVars_t> mqttVars = {
-    {"BrewSetPoint", tDouble, BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, (void *)&BrewSetPoint},    
-    {"BrewTempOffset", tDouble, BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, (void *)&BrewTempOffset},    
+    {"brewSetPoint", tDouble, BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, (void *)&brewSetPoint},    
+    {"brewTempOffset", tDouble, BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, (void *)&brewTempOffset},    
     {"brewtime", tDouble, BREW_TIME_MIN, BREW_TIME_MAX, (void *)&brewtime},
     {"preinfusion", tDouble, PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX, (void *)&preinfusion},
     {"preinfusionpause", tDouble, PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, (void *)&preinfusionpause},
     {"pidON", tUInt8, 0, 1, (void *)&pidON},
-    {"SteamON", tUInt8, 0, 1, (void *)&SteamON},
+    {"steamON", tUInt8, 0, 1, (void *)&steamON},
     {"backflushON", tUInt8, 0, 1, (void *)&backflushON},
     {"aggKp", tDouble, PID_KP_REGULAR_MIN, PID_KP_REGULAR_MAX, (void *)&aggKp},
     {"aggTn", tDouble, PID_TN_REGULAR_MIN, PID_TN_REGULAR_MAX, (void *)&aggTn},
@@ -478,59 +482,44 @@ BLYNK_CONNECTED() {
 }
 
 BLYNK_WRITE(V4) { aggKp = param.asDouble(); }
-
 BLYNK_WRITE(V5) { aggTn = param.asDouble(); }
-
 BLYNK_WRITE(V6) { aggTv = param.asDouble(); }
-
-BLYNK_WRITE(V7) { BrewSetPoint = param.asDouble(); }
-
+BLYNK_WRITE(V7) { brewSetPoint = param.asDouble(); }
 BLYNK_WRITE(V8) { brewtime = param.asDouble(); }
-
 BLYNK_WRITE(V9) { preinfusion = param.asDouble(); }
-
 BLYNK_WRITE(V10) { preinfusionpause = param.asDouble(); }
-
 BLYNK_WRITE(V13) { pidON = param.asInt(); }
-
 BLYNK_WRITE(V15) {
-    SteamON = param.asInt();
+    steamON = param.asInt();
 
-    if (SteamON == 1) {
-        SteamFirstON = 1;
+    if (steamON == 1) {
+        steamFirstON = 1;
     }
 
-    if (SteamON == 0) {
-        SteamFirstON = 0;
+    if (steamON == 0) {
+        steamFirstON = 0;
     }
 }
 
-BLYNK_WRITE(V16) { SteamSetPoint = param.asDouble(); }
+BLYNK_WRITE(V16) { steamSetPoint = param.asDouble(); }
 
 #if (BREWMODE == 2)
     BLYNK_WRITE(V18) { weightSetpoint = param.asFloat(); }
 #endif
 
+#if TOF == 1
 BLYNK_WRITE(V25) { calibration_mode = param.asInt(); }
-
 BLYNK_WRITE(V26) { water_empty = param.asInt(); }
-
 BLYNK_WRITE(V27) { water_full = param.asInt(); }
+#endif
 
 BLYNK_WRITE(V30) { aggbKp = param.asDouble(); }
-
 BLYNK_WRITE(V31) { aggbTn = param.asDouble(); }
-
 BLYNK_WRITE(V32) { aggbTv = param.asDouble(); }
-
 BLYNK_WRITE(V33) { brewtimersoftware = param.asDouble(); }
-
 BLYNK_WRITE(V34) { brewsensitivity = param.asDouble(); }
-
 BLYNK_WRITE(V40) { backflushON = param.asInt(); }
-
 BLYNK_WRITE(V11) { startKp = param.asDouble(); }
-
 BLYNK_WRITE(V14) { startTn = param.asDouble(); }
 
 #if (PRESSURESENSOR == 1)  // Pressure sensor connected
@@ -564,9 +553,9 @@ int relayETriggerON, relayETriggerOFF;
 
 // Emergency stop if temp is too high
 void testEmergencyStop() {
-    if (Input > EmergencyStopTemp && emergencyStop == false) {
+    if (temperature > EmergencyStopTemp && emergencyStop == false) {
         emergencyStop = true;
-    } else if (Input < 100 && emergencyStop == true) {
+    } else if (temperature < 100 && emergencyStop == true) {
         emergencyStop = false;
     }
 }
@@ -583,7 +572,7 @@ void calculateTemperatureMovingAverage() {
 
     if (Brewdetection == 1 && !movingAverageInitialized) {
         for (int index = 0; index < numValues; index++) {
-            tempValues[index] = Input;
+            tempValues[index] = temperature;
             timeValues[index] = 0;
             tempChangeRates[index] = 0;
         }
@@ -592,7 +581,7 @@ void calculateTemperatureMovingAverage() {
     }
 
     timeValues[valueIndex] = millis();
-    tempValues[valueIndex] = Input;
+    tempValues[valueIndex] = temperature;
 
     double tempChangeRate = 0;                     // local change rate of temperature
     if (valueIndex == numValues - 1) {
@@ -667,7 +656,7 @@ boolean checkSensor(float tempInput) {
  */
 void refreshTemp() {
     unsigned long currentMillistemp = millis();
-    previousInput = Input;
+    previousInput = temperature;
 
     if (TempSensor == 1) {
         if (currentMillistemp - previousMillistemp >= intervaltempmesds18b20) {
@@ -675,14 +664,14 @@ void refreshTemp() {
 
         #if TEMPSENSOR == 1
             sensors.requestTemperatures();
-            Input = sensors.getTempCByIndex(0);
+            temperature = sensors.getTempCByIndex(0);
         #endif
 
             if (machinestate != kSteam) {
-                Input -= BrewTempOffset;
+                temperature -= brewTempOffset;
             }
 
-            if (!checkSensor(Input) && movingAverageInitialized) {
+            if (!checkSensor(temperature) && movingAverageInitialized) {
                 return; // if sensor data is not valid, abort function; Sensor must
                         // be read at least one time at system startup
             }
@@ -703,19 +692,19 @@ void refreshTemp() {
         #if (PINTEMPSENSOR == 16 && defined(ESP8266))
             uint16_t temperature = 0;
             Sensor1.getTemperature(&temperature);
-            Input = Sensor1.calc_Celsius(&temperature);
+            temperature = Sensor1.calc_Celsius(&temperature);
         #endif
 
         #if ((PINTEMPSENSOR != 16 && defined(ESP8266)) || defined(ESP32))
-            Input = Sensor2.getTemp();
+            temperature = Sensor2.getTemp();
         #endif
     #endif
 
             if (machinestate != kSteam) {
-                Input -= BrewTempOffset;
+                temperature -= brewTempOffset;
             }
 
-            if (!checkSensor(Input) && movingAverageInitialized) {
+            if (!checkSensor(temperature) && movingAverageInitialized) {
                 return; // if sensor data is not valid, abort function; Sensor must
                         // be read at least one time at system startup
             }
@@ -810,9 +799,9 @@ void sendInflux() {
     if (currentMillisInflux - previousMillisInflux >= intervalInflux) {
         previousMillisInflux = currentMillisInflux;
         influxSensor.clearFields();
-        influxSensor.addField("value", Input);
+        influxSensor.addField("value", temperature);
         influxSensor.addField("setPoint", setPoint);
-        influxSensor.addField("HeaterPower", Output);
+        influxSensor.addField("HeaterPower", pidOutput);
         influxSensor.addField("Kp", bPID.GetKp());
         influxSensor.addField("Ki", bPID.GetKi());
         influxSensor.addField("Kd", bPID.GetKd());
@@ -820,7 +809,7 @@ void sendInflux() {
         influxSensor.addField("brewtime", brewtime);
         influxSensor.addField("preinfusionpause", preinfusionpause);
         influxSensor.addField("preinfusion", preinfusion);
-        influxSensor.addField("SteamON", SteamON);
+        influxSensor.addField("steamON", steamON);
 
         byte mac[6];
         WiFi.macAddress(mac);
@@ -936,13 +925,16 @@ void sendToBlynkMQTT() {
     if ((currentMillisBlynk - previousMillisBlynk >= intervalBlynk) && (BLYNK == 1)) {
         previousMillisBlynk = currentMillisBlynk;
 
-        if (Blynk.connected()) {
+        if (!Blynk.connected()) {
+            return;
+        }
+
         if (blynksendcounter == 1) {
-            Blynk.virtualWrite(V2, Input);
+            Blynk.virtualWrite(V2, temperature);
         }
 
         if (blynksendcounter == 2) {
-            Blynk.virtualWrite(V23, Output);
+            Blynk.virtualWrite(V23, pidOutput);
         }
 
         if (blynksendcounter == 3) {
@@ -958,20 +950,19 @@ void sendToBlynkMQTT() {
         }
 
         if (grafana == 1 && blynksendcounter >= 6) {
-            Blynk.virtualWrite(V60, Input, Output, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint, tempRateAverage);
+            Blynk.virtualWrite(V60, temperature, pidOutput, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint, tempRateAverage);
         } else if (blynksendcounter >= 6) {
             blynksendcounter = 0;
         }
 
         blynksendcounter++;
-        }
     }
 }
 
 /**
  * @brief Brewdetection
  */
-void brewdetection() {
+void brewDetection() {
     if (brewsensitivity == 0) return;  // abort brewdetection if deactivated
 
     // Brew detection: 1 = software solution, 2 = hardware, 3 = voltage sensor
@@ -982,12 +973,12 @@ void brewdetection() {
 
         // deactivate brewtimer after end of brewdetection pid
         if (millis() - timeBrewDetection > brewtimersoftware * 1000 && isBrewDetected == 1) {
-            isBrewDetected = 0;  // rearm brewdetection
+            isBrewDetected = 0;  // rearm brewDetection
             timeBrewed = 0;
         }
     } else if (Brewdetection == 2) {
         if (millis() - timeBrewDetection > brewtimersoftware * 1000 && isBrewDetected == 1) {
-            isBrewDetected = 0;  // rearm brewdetection
+            isBrewDetected = 0;  // rearm brewDetection
         }
     } else if (Brewdetection == 3) {
         // timeBrewed counter
@@ -1010,7 +1001,7 @@ void brewdetection() {
     // Activate brew detection
     if (Brewdetection == 1) {  // SW BD
         // BD PID only +/- 4 °C, no detection if HW was active
-        if (tempRateAverage <= -brewsensitivity && isBrewDetected == 0 && (fabs(Input - BrewSetPoint) < 5)) {
+        if (tempRateAverage <= -brewsensitivity && isBrewDetected == 0 && (fabs(temperature - brewSetPoint) < 5)) {
             debugPrintln("SW Brew detected");
             timeBrewDetection = millis();
             isBrewDetected = 1;
@@ -1054,7 +1045,7 @@ void brewdetection() {
                                 debugPrintf("*** ERROR: QuickMill: neither brew nor steam\n");
                             }
                         } else if (millis() - timePVStoON > maxBrewDurationForSteamModeQM_ON) {
-                            if (Input < BrewSetPoint + 2) {
+                            if (temperature < brewSetPoint + 2) {
                                 debugPrintln("Quick Mill: brew-mode detected");
                                 startingTime = timePVStoON;
                                 brewDetected = 1;
@@ -1138,8 +1129,8 @@ void assignMQTTParam(char *param, double value) {
     }
 
     if (paramValid && paramInRange) {
-        if (key.equals("SteamON")) {
-            SteamFirstON = value;
+        if (key.equals("steamON")) {
+            steamFirstON = value;
         }
 
         mqtt_publish(param, number2string(value));
@@ -1207,36 +1198,36 @@ void handleETrigger() {
 }
 
 /**
- * @brief SteamON & Quickmill
+ * @brief steamON & Quickmill
  */
 void checkSteamON() {
     // check digital GIPO
     if (digitalRead(PINSTEAMSWITCH) == HIGH) {
-        SteamON = 1;
+        steamON = 1;
     }
 
-    // if via blynk on, then SteamFirstON == 1, prevent override
-    if (digitalRead(PINSTEAMSWITCH) == LOW && SteamFirstON == 0) {
-        SteamON = 0;
+    // if via blynk on, then steamFirstON == 1, prevent override
+    if (digitalRead(PINSTEAMSWITCH) == LOW && steamFirstON == 0) {
+        steamON = 0;
     }
 
     // monitor QuickMill thermoblock steam-mode
     if (machine == QuickMill) {
         if (steamQM_active == true) {
             if (checkSteamOffQM() == true) {  // if true: steam-mode can be turned off
-                SteamON = 0;
+                steamON = 0;
                 steamQM_active = false;
                 lastTimePVSwasON = 0;
             } else {
-                SteamON = 1;
+                steamON = 1;
             }
         }
     }
 
-    if (SteamON == 1) {
-        setPoint = SteamSetPoint;
-    } else if (SteamON == 0) {
-        setPoint = BrewSetPoint;
+    if (steamON == 1) {
+        setPoint = steamSetPoint;
+    } else if (steamON == 0) {
+        setPoint = brewSetPoint;
     }
 }
 
@@ -1253,7 +1244,7 @@ void initSteamQM() {
     lastTimePVSwasON = millis();  // time when pinvoltagesensor changes from ON to OFF
     steamQM_active = true;
     timePVStoON = 0;
-    SteamON = 1;
+    steamON = 1;
 }
 
 boolean checkSteamOffQM() {
@@ -1279,16 +1270,16 @@ boolean checkSteamOffQM() {
 void machinestatevoid() {
     switch (machinestate) {
         case kInit:
-            // Prevent coldstart leave by Input 222
-            if (Input < (BrewSetPoint - 1) || Input < 150) {
+            // Prevent coldstart leave by temperature 222
+            if (temperature < (brewSetPoint - 1) || temperature < 150) {
                 machinestate = kColdStart;
-                debugPrintf("%d\n", Input);
+                debugPrintf("%d\n", temperature);
                 debugPrintf("%d\n", machinestate);
 
-                // some users have 100 % Output in kInit / Koldstart, reset PID
+                // some users have 100 % Output in kInit / KColdstart, reset PID
                 pidMode = 0;
                 bPID.SetMode(pidMode);
-                Output = 0;
+                pidOutput = 0;
                 digitalWrite(PINHEATER, LOW);  // Stop heating
 
                 // start PID
@@ -1306,39 +1297,39 @@ void machinestatevoid() {
             break;
 
         case kColdStart:
-            /* One high Input let the state jump to 19.
+            /* One high temperature let the state jump to 19.
             * switch (machinestatecold) prevent it, we wait 10 sec with new state.
-            * during the 10 sec the Input has to be Input >= (BrewSetPoint-1),
+            * during the 10 sec the temperature has to be temperature >= (BrewSetPoint-1),
             * If not, reset machinestatecold
             */
             switch (machinestatecold) {
                 case 0:
-                    if (Input >= (BrewSetPoint - 1) && Input < 150) {
+                    if (temperature >= (brewSetPoint - 1) && temperature < 150) {
                         machinestatecoldmillis = millis();  // get millis for interval calc
                         machinestatecold = 10;              // new state
                         debugPrintln(
-                            "Input >= (BrewSetPoint-1), wait 10 sec before machinestate SetPointNegative");
+                            "temperature >= (BrewSetPoint-1), wait 10 sec before machinestate SetPointNegative");
                     }
                     break;
 
                 case 10:
-                    if (Input < (BrewSetPoint - 1)) {
-                        machinestatecold = 0;  //  Input was only one time above
+                    if (temperature < (brewSetPoint - 1)) {
+                        machinestatecold = 0;  //  temperature was only one time above
                                                //  BrewSetPoint, reset machinestatecold
-                        debugPrintln("Reset timer for machinestate SetPointNegative: Input < (BrewSetPoint-1)");
+                        debugPrintln("Reset timer for machinestate SetPointNegative: temperature < (BrewSetPoint-1)");
 
                         break;
                     }
 
-                    if (machinestatecoldmillis + 10 * 1000 < millis())  // 10 sec Input above BrewSetPoint, no set new state
+                    if (machinestatecoldmillis + 10 * 1000 < millis())  // 10 sec temperature above BrewSetPoint, no set new state
                     {
                         machinestate = kSetPointNegative;
-                        debugPrintln("5 sec Input >= (BrewSetPoint-1) finished, switch to state SetPointNegative");
+                        debugPrintln("5 sec temperature >= (BrewSetPoint-1) finished, switch to state SetPointNegative");
                     }
                     break;
             }
 
-            if (SteamON == 1) {
+            if (steamON == 1) {
                 machinestate = kSteam;
             }
 
@@ -1348,7 +1339,7 @@ void machinestatevoid() {
                 machinestate = kBrew;
             }
 
-            if (SteamON == 1) {
+            if (steamON == 1) {
                 machinestate = kSteam;
             }
 
@@ -1367,9 +1358,9 @@ void machinestatevoid() {
 
         // Setpoint is below current temperature 
         case kSetPointNegative:
-            brewdetection();
+            brewDetection();
 
-            if (Input >= (BrewSetPoint)) {
+            if (temperature >= (brewSetPoint)) {
                 machinestate = kPidNormal;
             }
 
@@ -1379,7 +1370,7 @@ void machinestatevoid() {
                 machinestate = kBrew;
             }
 
-            if (SteamON == 1) {
+            if (steamON == 1) {
                 machinestate = kSteam;
             }
 
@@ -1387,7 +1378,7 @@ void machinestatevoid() {
                 machinestate = kBackflush;
             }
 
-            if (SteamON == 1) {
+            if (steamON == 1) {
                 machinestate = kSteam;
             }
 
@@ -1401,7 +1392,7 @@ void machinestatevoid() {
             break;
 
         case kPidNormal:
-            brewdetection();     // if brew detected, set BD PID values (if enabled)
+            brewDetection();     // if brew detected, set BD PID values (if enabled)
 
             if ((timeBrewed > 0 && ONLYPID == 1) ||  // timeBrewed with Only PID
                 (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42))
@@ -1409,7 +1400,7 @@ void machinestatevoid() {
                 machinestate = kBrew;
             }
 
-            if (SteamON == 1) {
+            if (steamON == 1) {
                 machinestate = kSteam;
             }
 
@@ -1431,12 +1422,12 @@ void machinestatevoid() {
             break;
 
         case kBrew:
-            brewdetection();
+            brewDetection();
 
             // Output brew time, temp and tempRateAverage during brew
             if (BREWDETECTION == 1 && logbrew.check()) {
                 debugPrintf("(tB,T,hra) --> %5.2f %6.2f %8.2f\n",
-                            (double)(millis() - startingTime) / 1000, Input, tempRateAverage);
+                            (double)(millis() - startingTime) / 1000, temperature, tempRateAverage);
             }
 
             if ((timeBrewed == 0 && Brewdetection == 3 && ONLYPID == 1) ||  // OnlyPID+: Voltage sensor BD timeBrewed == 0 -> switch is off again
@@ -1450,7 +1441,7 @@ void machinestatevoid() {
                 machinestate = kBrewDetectionTrailing;
             }
 
-            if (SteamON == 1) {
+            if (steamON == 1) {
                 machinestate = kSteam;
             }
 
@@ -1468,7 +1459,7 @@ void machinestatevoid() {
             break;
 
         case kShotTimerAfterBrew:
-            brewdetection();
+            brewDetection();
 
             if (millis() - lastbrewTimeMillis > BREWSWITCHDELAY) {
                 debugPrintf("Shot time: %4.1f s\n", lastbrewTime / 1000);
@@ -1476,7 +1467,7 @@ void machinestatevoid() {
                 lastbrewTime = 0;
             }
 
-            if (SteamON == 1) {
+            if (steamON == 1) {
                 machinestate = kSteam;
             }
 
@@ -1498,7 +1489,7 @@ void machinestatevoid() {
             break;
 
         case kBrewDetectionTrailing:
-            brewdetection();
+            brewDetection();
 
             if (isBrewDetected == 0) {
                 machinestate = kPidNormal;
@@ -1510,7 +1501,7 @@ void machinestatevoid() {
                 machinestate = kBrew;
             }
 
-            if (SteamON == 1) {
+            if (steamON == 1) {
                 machinestate = kSteam;
             }
 
@@ -1532,7 +1523,7 @@ void machinestatevoid() {
             break;
 
         case kSteam:
-            if (SteamON == 0) {
+            if (steamON == 0) {
                 machinestate = kCoolDown;
             }
 
@@ -1556,23 +1547,23 @@ void machinestatevoid() {
         case kCoolDown:
             if (Brewdetection == 2 || Brewdetection == 3) {
                 /* For quickmill:  steam detection only via switch, calling
-                 * brewdetection() detects new steam request
+                 * brewDetection() detects new steam request
                  */
-                brewdetection();
+                brewDetection();
             }
 
             if (Brewdetection == 1 && ONLYPID == 1) {
                 // if machine cooled down to 2°C above setpoint, enabled PID again
-                if (tempRateAverage > 0 && Input < BrewSetPoint + 2) {
+                if (tempRateAverage > 0 && temperature < brewSetPoint + 2) {
                     machinestate = kPidNormal;
                 }
             }
 
-            if ((Brewdetection == 3 || Brewdetection == 2) && Input < BrewSetPoint + 2) {
+            if ((Brewdetection == 3 || Brewdetection == 2) && temperature < brewSetPoint + 2) {
                 machinestate = kPidNormal;
             }
 
-            if (SteamON == 1) {
+            if (steamON == 1) {
                 machinestate = kSteam;
             }
 
@@ -1629,10 +1620,10 @@ void machinestatevoid() {
             if (pidON == 1) {
                 if (coldstart) {
                     machinestate = kColdStart;
-                } else if (!coldstart && (Input > (BrewSetPoint - 10))) {  // Input higher BrewSetPoint-10, normal PID
+                } else if (!coldstart && (temperature > (brewSetPoint - 10))) {  // temperature higher BrewSetPoint-10, normal PID
                     machinestate = kPidNormal;
-                } else if (Input <= (BrewSetPoint - 10)) {
-                    machinestate = kColdStart;  // Input 10C below set point, enter cold start
+                } else if (temperature <= (brewSetPoint - 10)) {
+                    machinestate = kColdStart;  // temperature 10C below set point, enter cold start
                     coldstart = true;
                 }
             }
@@ -1704,7 +1695,7 @@ void debugVerboseOutput() {
         debugPrintf(
             "Tsoll=%5.1f  Tist=%5.1f Machinestate=%2i KP=%4.2f "
             "KI=%4.2f KD=%4.2f\n",
-            setPoint, Input, machinestate, bPID.GetKp(), bPID.GetKi(), bPID.GetKd());
+            setPoint, temperature, machinestate, bPID.GetKp(), bPID.GetKi(), bPID.GetKd());
     }
 }
 
@@ -1717,7 +1708,7 @@ void tempLed() {
         digitalWrite(LEDPIN, LOW);
 
         // inner Tempregion
-        if ((machinestate == kPidNormal && (fabs(Input - setPoint) < 0.5)) || (Input > 115 && fabs(Input - BrewSetPoint) < 5))  {
+        if ((machinestate == kPidNormal && (fabs(temperature - setPoint) < 0.5)) || (temperature > 115 && fabs(temperature - brewSetPoint) < 5))  {
             digitalWrite(LEDPIN, HIGH);
         }
     }
@@ -1859,11 +1850,11 @@ void setup() {
 
         {"STEAM_KP", "Steam Kp", true, F("Proportional gain for the steaming mode (I or D are not used)"), kDouble, sPIDSection, []{ return true; }, PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, (void *)&steamKp},
 
-        {"TEMP", "Temperature", false, "", kDouble, sPIDSection, []{ return false; }, 0, 200, (void *)&Input},
+        {"TEMP", "Temperature", false, "", kDouble, sPIDSection, []{ return false; }, 0, 200, (void *)&temperature},
 
-        {"BREW_SET_POINT", "Set point (°C)", true, F("The temperature that the PID will attempt to reach and hold"), kDouble, sTempSection, []{ return true; }, BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, (void *)&BrewSetPoint},
+        {"BREW_SET_POINT", "Set point (°C)", true, F("The temperature that the PID will attempt to reach and hold"), kDouble, sTempSection, []{ return true; }, BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, (void *)&brewSetPoint},
 
-        {"BREW_TEMP_OFFSET", "Offset (°C)", true, F("Optional offset that is added to the user-visible setpoint. Can be used to compensate sensor offsets and the average temperature loss between boiler and group so that the setpoint represents the approximate brew temperature."), kDouble, sTempSection, []{ return true; }, BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, (void *)&BrewTempOffset},
+        {"BREW_TEMP_OFFSET", "Offset (°C)", true, F("Optional offset that is added to the user-visible setpoint. Can be used to compensate sensor offsets and the average temperature loss between boiler and group so that the setpoint represents the approximate brew temperature."), kDouble, sTempSection, []{ return true; }, BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, (void *)&brewTempOffset},
 
         {"BREW_TIME", "Brew Time (s)", true, F("Stop brew after this time"), kDouble, sTempSection, []{ return true && ONLYPID == 0; }, BREW_TIME_MIN, BREW_TIME_MAX, (void *)&brewtime},
 
@@ -1885,7 +1876,7 @@ void setup() {
 
         {"PID_BD_BREWSENSITIVITY", "PID BD Sensitivity", true, F("Software brew detection sensitivity that looks at average temperature, <a href='https://manual.rancilio-pid.de/de/customization/brueherkennung.html' target='_blank'>Details</a>. Needs to be &gt;0 also for Hardware switch detection."), kDouble, sBDSection, []{ return true && BREWDETECTION == 1; }, BD_THRESHOLD_MIN, BD_THRESHOLD_MAX, (void *)&brewsensitivity},
 
-        {"STEAM_MODE", "Steam Mode", false, "", kUInt8, sOtherSection, []{ return false; }, 0, 1, (void *)&SteamON},
+        {"STEAM_MODE", "Steam Mode", false, "", kUInt8, sOtherSection, []{ return false; }, 0, 1, (void *)&steamON},
 
         {"BACKFLUSH_ON", "Backflush", false, "", kUInt8, sOtherSection, []{ return false; }, 0, 1, (void *)&backflushON},
 
@@ -1985,10 +1976,10 @@ void setup() {
     #endif
 
     // VL530L0x TOF sensor
-    if (TOF != 0) {
+    #if TOF == 1
         lox.begin(tof_i2c);  // initialize TOF sensor at I2C address
         lox.setMeasurementTimingBudgetMicroSeconds(2000000);
-    }
+    #endif
 
     // BLYNK & Fallback offline
     if (connectmode == 1) {  // WiFi Mode
@@ -2035,7 +2026,7 @@ void setup() {
         sensors.getAddress(sensorDeviceAddress, 0);
         sensors.setResolution(sensorDeviceAddress, 10);
         sensors.requestTemperatures();
-        Input = sensors.getTempCByIndex(0);
+        temperature = sensors.getTempCByIndex(0);
     #endif
 
     //TSic 306 temp sensor
@@ -2044,16 +2035,16 @@ void setup() {
         #if (PINTEMPSENSOR == 16 && defined(ESP8266))
             uint16_t temperature = 0;
             Sensor1.getTemperature(&temperature);
-            Input = Sensor1.calc_Celsius(&temperature);
+            temperature = Sensor1.calc_Celsius(&temperature);
         #endif
 
         //in all other cases, use ZACwire
         #if ((PINTEMPSENSOR != 16 && defined(ESP8266)) || defined(ESP32))
-            Input = Sensor2.getTemp();
+            temperature = Sensor2.getTemp();
         #endif
     #endif
 
-    Input -= BrewTempOffset;
+    temperature -= brewTempOffset;
     
     // Initialisation MUST be at the very end of the init(), otherwise the
     // time comparision in loop() will have a big offset
@@ -2081,15 +2072,20 @@ void setup() {
 }
 
 void loop() {
-    if (calibration_mode == 1 && TOF == 1) {
+#if TOF == 1
+    if (calibration_mode == 1) {
         loopcalibrate();
     } else {
         looppid();
     }
+#else
+    looppid();
+#endif
 
     checkForRemoteSerialClients();
 }
 
+#if TOF == 1
 /**
  * @brief ToF sensor calibration mode
  */
@@ -2098,7 +2094,7 @@ void loopcalibrate() {
     if (pidMode == 1) {
         pidMode = 0;
         bPID.SetMode(pidMode);
-        Output = 0;
+        pidOutput = 0;
     }
 
     if (Blynk.connected() && BLYNK == 1) {  // If connected run as normal
@@ -2124,6 +2120,7 @@ void loopcalibrate() {
         #endif
     }
 }
+#endif
 
 void looppid() {
     // Only do Wifi stuff, if Wifi is connected
@@ -2162,7 +2159,7 @@ void looppid() {
         checkWifi();
     }
 
-    if (TOF != 0) {
+    #if TOF != 0
         unsigned long currentMillisTOF = millis();
 
         if (currentMillisTOF - previousMillisTOF >= intervalTOF) {
@@ -2176,15 +2173,15 @@ void looppid() {
                 debugPrintf("%d\n", percentage);
             }
         }
-    }
+    #endif
 
     refreshTemp();        // update temperature values
     testEmergencyStop();  // test if temp is too high
-    bPID.Compute();       //the variable Output now has new values from PID (will be written to heater pin in ISR.h)
+    bPID.Compute();       //the variable pidOutput now has new values from PID (will be written to heater pin in ISR.h)
 
     if ((millis() - lastTempEvent) > tempEventInterval) {
         //send temperatures to website endpoint
-        sendTempEvent(Input, BrewSetPoint, Output);
+        sendTempEvent(temperature, brewSetPoint, pidOutput);
         lastTempEvent = millis();
 
         #if VERBOSE
@@ -2263,7 +2260,7 @@ void looppid() {
             // Force PID shutdown
             pidMode = 0;
             bPID.SetMode(pidMode);
-            Output = 0;
+            pidOutput = 0;
             digitalWrite(PINHEATER, LOW);  // Stop heating
         }
     } else {  // no sensorerror, no pid off or no Emergency Stop
@@ -2273,7 +2270,7 @@ void looppid() {
         }
     }
 
-    // Set PID if first start of machine detected, and no SteamON
+    // Set PID if first start of machine detected, and no steamON
     if ((machinestate == kInit || machinestate == kColdStart || machinestate == kSetPointNegative)) {
         if (usePonM) { 
             if (startTn != 0) {
@@ -2369,14 +2366,14 @@ void setBackflush(int backflush) {
 }
 
 void setSteamMode(int steamMode) {
-    SteamON = steamMode;
+    steamON = steamMode;
 
-    if (SteamON == 1) {
-        SteamFirstON = 1;
+    if (steamON == 1) {
+        steamFirstON = 1;
     }
 
-    if (SteamON == 0) {
-        SteamFirstON = 0;
+    if (steamON == 0) {
+        steamFirstON = 0;
     }
     writeSysParamsToBlynk();
 }
@@ -2495,20 +2492,20 @@ int writeSysParamsToStorage(void) {
  */
 void writeSysParamsToBlynk(void) {
     if (BLYNK == 1 && Blynk.connected()) {
-        Blynk.virtualWrite(V2, Input);
+        Blynk.virtualWrite(V2, temperature);
         Blynk.virtualWrite(V4, aggKp);
         Blynk.virtualWrite(V5, aggTn);
         Blynk.virtualWrite(V6, aggTv);
-        Blynk.virtualWrite(V7, BrewSetPoint);
+        Blynk.virtualWrite(V7, brewSetPoint);
         Blynk.virtualWrite(V8, brewtime);
         Blynk.virtualWrite(V9, preinfusion);
         Blynk.virtualWrite(V10, preinfusionpause);
         Blynk.virtualWrite(V13, pidON);
-        Blynk.virtualWrite(V15, SteamON);
-        Blynk.virtualWrite(V16, SteamSetPoint);
+        Blynk.virtualWrite(V15, steamON);
+        Blynk.virtualWrite(V16, steamSetPoint);
         Blynk.virtualWrite(V17, setPoint);
         Blynk.virtualWrite(V40, backflushON);
-        Blynk.virtualWrite(V15, SteamON);
+        Blynk.virtualWrite(V15, steamON);
 
         #if (BREWMODE == 2)
             Blynk.virtualWrite(V18, weightSetpoint);
@@ -2526,16 +2523,15 @@ void writeSysParamsToBlynk(void) {
  */
 void writeSysParamsToMQTT(void) {
     unsigned long currentMillisMQTT = millis();
-    if ((currentMillisMQTT - previousMillisMQTT >= intervalMQTT) && (MQTT == 1)) {
+    if ((currentMillisMQTT - previousMillisMQTT >= intervalMQTT) && MQTT == 1) {
         previousMillisMQTT = currentMillisMQTT;
 
         if (mqtt.connected() == 1) {
-            mqtt_publish("temperature", number2string(Input));
-            mqtt_publish("setPoint", number2string(setPoint));
-            mqtt_publish("BrewSetPoint", number2string(BrewSetPoint));
-            mqtt_publish("BrewTempOffset", number2string(BrewTempOffset));
-            mqtt_publish("SteamSetPoint", number2string(SteamSetPoint));
-            mqtt_publish("HeaterPower", number2string(Output));
+            mqtt_publish("temperature", number2string(temperature));
+            mqtt_publish("brewSetPoint", number2string(brewSetPoint));
+            mqtt_publish("brewTempOffset", number2string(brewTempOffset));
+            mqtt_publish("steamSetPoint", number2string(steamSetPoint));
+            mqtt_publish("heaterPower", number2string(pidOutput));
             mqtt_publish("currentKp", number2string(bPID.GetKp()));
             mqtt_publish("currentKi", number2string(bPID.GetKi()));
             mqtt_publish("currentKd", number2string(bPID.GetKd()));
@@ -2543,7 +2539,7 @@ void writeSysParamsToMQTT(void) {
             mqtt_publish("brewtime", number2string(brewtime));
             mqtt_publish("preinfusionpause", number2string(preinfusionpause));
             mqtt_publish("preinfusion", number2string(preinfusion));
-            mqtt_publish("SteamON", number2string(SteamON));
+            mqtt_publish("steamON", number2string(steamON));
             mqtt_publish("backflushON", number2string(backflushON));
 
             // Normal PID
@@ -2565,12 +2561,14 @@ void writeSysParamsToMQTT(void) {
             mqtt_publish("steamKp", number2string(steamKp));
 
             //BD Parameter
-            mqtt_publish("BrewTimer", number2string(brewtimersoftware));
-            mqtt_publish("BrewLimit", number2string(brewsensitivity));
+        #if BREWDETECTION == 1
+            mqtt_publish("brewTimer", number2string(brewtimersoftware));
+            mqtt_publish("brewLimit", number2string(brewsensitivity));
+        #endif
 
-            #if (BREWMODE == 2)
-                mqtt_publish("weightSetpoint(g)", number2string(weightSetpoint));
-            #endif
+        #if BREWMODE == 2
+            mqtt_publish("weightSetpoint", number2string(weightSetpoint));
+        #endif
         }
     }
 }

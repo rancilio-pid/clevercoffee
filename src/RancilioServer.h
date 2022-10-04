@@ -294,7 +294,7 @@ void serverSetup() {
     // set up dynamic routes (endpoints)
 
     server.on("/toggleSteam", HTTP_POST, [](AsyncWebServerRequest *request) {
-        int steam = flipUintValue(SteamON);
+        int steam = flipUintValue(steamON);
 
         setSteamMode(steam);
         debugPrintf("Toggle steam mode: %i \n", steam);

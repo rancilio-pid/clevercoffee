@@ -147,7 +147,7 @@ void backflush() {
     if (pidMode == 1) {  // Deactivate PID
         pidMode = 0;
         bPID.SetMode(pidMode);
-        Output = 0;
+        pidOutput = 0;
     }
 
     digitalWrite(PINHEATER, LOW);  // Stop heating
@@ -326,7 +326,7 @@ void brew() {
 
                     // disarmed button
                     currentMillistemp = 0;
-                    brewDetected = 0;  // rearm brewdetection
+                    brewDetected = 0;  // rearm brewDetection
                     brewcounter = 10;
                     timeBrewed = 0;
                 }
@@ -448,7 +448,7 @@ void brew() {
                     // disarmed button
                     currentMillistemp = 0;
                     timeBrewed = 0;
-                    brewDetected = 0;  // rearm brewdetection
+                    brewDetected = 0;  // rearm brewDetection
                     brewcounter = 10;
                 }
 

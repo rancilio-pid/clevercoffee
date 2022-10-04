@@ -14,7 +14,7 @@ void IRAM_ATTR onTimer1ISR() {
 
     if (skipHeaterISR) return;
 
-    if (Output <= isrCounter) {
+    if (pidOutput <= isrCounter) {
         digitalWrite(PINHEATER, LOW);
     } else {
         digitalWrite(PINHEATER, HIGH);

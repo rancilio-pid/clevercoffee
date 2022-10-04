@@ -73,7 +73,7 @@ void displayEmergencyStop(void)
     u8g2.clearBuffer();
     u8g2.setCursor(1, 34);
     u8g2.print(langstring_current_temp_rot_ur);
-    u8g2.print(Input, 1);
+    u8g2.print(temperature, 1);
     u8g2.print(" ");
     u8g2.print((char)176);
     u8g2.print("C");

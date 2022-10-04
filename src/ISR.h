@@ -8,7 +8,7 @@
 #define _ISR_H_
 
 extern unsigned long windowStartTime;
-extern double Output; 
+extern double pidOutput; 
 extern unsigned int isrCounter;
 extern unsigned int windowSize;
 extern bool skipHeaterISR;
