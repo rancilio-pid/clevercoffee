@@ -365,16 +365,17 @@ void serverSetup() {
                         float newVal = atof(p->value().c_str());
                         *(double *)e.ptr = newVal;
                     }
-                    //we don't need to set strings at the moment 
+                    //we don't need to set strings at the moment, needs testing also
                     /*} else if (e.type == kCString) {
                         m += String((char *)e.ptr);
 
-                        //TODO: we need to dealloc previous string
-                        //as well to prevent memory leaks (what if const though?)
                         String val = p->value();
                         static const char* newVal = new char[val.length() + 1]; //is this persistent or on stack?
                         val.toCharArray(newVal, val.length() + 1); 
 
+                        if (e.ptr) {
+                            delete[] ((char *)e.ptr);
+                        }
                         e.ptr = (void *)newVal;
                     }*/
 
