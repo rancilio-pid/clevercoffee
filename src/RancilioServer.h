@@ -436,7 +436,7 @@ void serverSetup() {
                 } else if (e.type == kDouble || e.type == kDoubletime) {
                     paramObj["value"] = round2(*(double *)e.ptr);
                 } else if (e.type == kCString) {
-                    paramObj["value"] = (char *)e.ptr;
+                    paramObj["value"] = String((char *)e.ptr);
                 }                
                 paramObj["min"] = e.minValue;
                 paramObj["max"] = e.maxValue;
