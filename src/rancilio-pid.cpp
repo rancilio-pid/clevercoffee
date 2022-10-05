@@ -2227,7 +2227,7 @@ void looppid() {
             debugPrintf("Current PID kD: %f\n", bPID.GetKd());
 
             //Combined PID output
-            debugPrintf("Current PID Output: %f\n\n", Output);
+            debugPrintf("Current PID Output: %f\n\n", pidOutput);
             debugPrintf("Current Machinestate: %s\n\n", machinestateEnumToString(machinestate));
             debugPrintf("timeBrewed %f\n", timeBrewed);
             debugPrintf("brewtimersoftware %f\n", brewtimersoftware);

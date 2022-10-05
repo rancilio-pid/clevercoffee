@@ -31,7 +31,7 @@ void IRAM_ATTR onTimer1ISR() {
 void IRAM_ATTR onTimer(){
     timerAlarmWrite(timer, 10000, true);
 
-    if (Output <= isrCounter) {
+    if (pidOutput <= isrCounter) {
         digitalWrite(PINHEATER, LOW);
     } else {
         digitalWrite(PINHEATER, HIGH);
