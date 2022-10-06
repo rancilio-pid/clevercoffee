@@ -207,12 +207,13 @@ boolean setupDone = false;
 int backflushON = 0;      // 1 = activate backflush
 int flushCycles = 0;      // number of active flush cycles
 int backflushState = 10;  // counter for state machine
-int brewReadyLedON, brewReadyLedOFF; // used for brewReady LED
 
 // Temp LED
-unsigned long previousMillis = 0;       // will store last time LED was updated
-unsigned long LEDInterval = 500;        // interval at which to blink (milliseconds)
-int ledState = LOW;                     // ledState used to set the LED
+unsigned long previousTempLedMillis = 0;    // will store last time LED was updated
+unsigned long tempLedInterval = 500;            // interval at which to blink (milliseconds)
+int ledState = LOW;                         // ledState used to set the LED
+int brewReadyLedON, brewReadyLedOFF;        // used for brewReady LED
+
 
 // Moving average - brewdetection
 const int numReadings = 15;               // number of values per Array
@@ -1714,10 +1715,9 @@ void debugVerboseOutput() {
  */
 void blinkLED(){
     unsigned long currentMillis = millis();
-    if (currentMillis - previousMillis >= LEDInterval) 
-    {
+    if (currentMillis - previousTempLedMillis >= tempLedInterval) {
         // save the last time you blinked the LED
-        previousMillis = currentMillis;
+        previousTempLedMillis = currentMillis;
 
         // if the LED is off turn it on and vice-versa:
         if (ledState == LOW) {
@@ -1731,63 +1731,56 @@ void blinkLED(){
     }
 }
 
-
-
 /**
  * @brief set Temp LED to maschine brew/Steam readyness
  */
 void tempLed() {
-    if (TEMPLED <= 0) 
-    {
+    if (TEMPLED <= 0) {
         return;
     } 
 
     // LED off if PID is offline
-    if (machinestate == kPidOffline)
-    {
+    if (machinestate == kPidOffline) {
         digitalWrite(LEDPIN, LOW);
         return;
     }  
 
-    // Brew ready 1 degree tollerance 
+    // Brew ready 1 degree tolerance 
     if ((machinestate == kPidNormal|| machinestate == kBrewDetectionTrailing) && (fabs(Input - setPoint) < 1.0)) {
         digitalWrite(LEDPIN, brewReadyLedON);
         return;
     }
 
     // Steam ready 2 degree tollerance
-    if (machinestate == kSteam && Input > SteamSetPoint-2)
-    {
+    if (machinestate == kSteam && Input > SteamSetPoint-2) {
         digitalWrite(LEDPIN, brewReadyLedON);
         return;
     }
 
     // Blink led on steam heating
-    if (machinestate == kSteam && Input < SteamSetPoint-2)
-    {
-        LEDInterval = 500;
+    if (machinestate == kSteam && Input < SteamSetPoint-2) {
+        tempLedInterval = 500;
         blinkLED();
         return;
     }
 
     // Blink led on error
-    if (machinestate == kSensorError)
-    {
-        LEDInterval = 100;
+    if (machinestate == kSensorError) {
+        tempLedInterval = 100;
         blinkLED();
         return;
     }
 
-    //Steam || Brew unready 
+    //Steam || Brew not ready 
     digitalWrite(LEDPIN, brewReadyLedOFF);
 }
 
 static bool previousMode = false;
 void setHardwareLed(bool mode) {
-  if (TEMPLED > 0 && mode != previousMode) {
-    digitalWrite(LEDPIN, mode);
-    previousMode = mode;
-  }
+    if (TEMPLED > 0 && mode != previousMode) {
+        digitalWrite(LEDPIN, mode);
+        previousMode = mode;
+    }
 } 
 
 /**
@@ -1966,7 +1959,6 @@ void setup() {
 
     // Initialize TempLED
     if (TEMPLED > 0) {
-
         //int brewReadyLedON, brewReadyLedOFF
         brewReadyLedON = HIGH;
         brewReadyLedOFF = LOW;
