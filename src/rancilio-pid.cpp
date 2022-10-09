@@ -2059,9 +2059,9 @@ void setup() {
     #if TEMPSENSOR == 2
         //use old TSic library if connected to pin 16 of ESP8266
         #if (PINTEMPSENSOR == 16 && defined(ESP8266))
-            uint16_t temperature = 0;
-            Sensor1.getTemperature(&temperature);
-            temperature = Sensor1.calc_Celsius(&temperature);
+            uint16_t temp = 0;
+            Sensor1.getTemperature(&temp);
+            temperature = Sensor1.calc_Celsius(&temp);
         #endif
 
         //in all other cases, use ZACwire
