@@ -690,9 +690,9 @@ void refreshTemp() {
 
     #if TEMPSENSOR == 2
         #if (PINTEMPSENSOR == 16 && defined(ESP8266))
-            uint16_t temperature = 0;
-            Sensor1.getTemperature(&temperature);
-            temperature = Sensor1.calc_Celsius(&temperature);
+            uint16_t temp = 0;
+            Sensor1.getTemperature(&temp);
+            temperature = Sensor1.calc_Celsius(&temp);
         #endif
 
         #if ((PINTEMPSENSOR != 16 && defined(ESP8266)) || defined(ESP32))
