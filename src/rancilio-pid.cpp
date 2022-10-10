@@ -312,7 +312,7 @@ int steamFirstON = 0;
 
 double aggKd = aggTv * aggKp;
 
-// Timer - ISR for PID calculation and heat realay output
+// Timer - ISR for PID calculation and heat relay output
 #include "ISR.h"
 
 PID bPID(&temperature, &pidOutput, &setPoint, aggKp, aggKi, aggKd, 1, DIRECT);
@@ -672,6 +672,7 @@ void refreshTemp() {
             }
 
             if (!checkSensor(temperature) && movingAverageInitialized) {
+                temperature = previousInput;
                 return; // if sensor data is not valid, abort function; Sensor must
                         // be read at least one time at system startup
             }
@@ -705,6 +706,7 @@ void refreshTemp() {
             }
 
             if (!checkSensor(temperature) && movingAverageInitialized) {
+                temperature = previousInput;
                 return; // if sensor data is not valid, abort function; Sensor must
                         // be read at least one time at system startup
             }
@@ -2203,7 +2205,7 @@ void looppid() {
 
     refreshTemp();        // update temperature values
     testEmergencyStop();  // test if temp is too high
-    bPID.Compute();       //the variable pidOutput now has new values from PID (will be written to heater pin in ISR.h)
+    bPID.Compute();       // the variable pidOutput now has new values from PID (will be written to heater pin in ISR.cpp)
 
     if ((millis() - lastTempEvent) > tempEventInterval) {
         //send temperatures to website endpoint
