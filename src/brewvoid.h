@@ -21,11 +21,11 @@ void checkbrewswitch() {
             if (currentMillistemp - previousMillistempanalogreading >= analogreadingtimeinterval) {
                 previousMillistempanalogreading = currentMillistemp;
 
-                if (filter(analogRead(analogPin)) > 1000) {
+                if (filterPressureValue(analogRead(analogPin)) > 1000) {
                     brewswitch = HIGH;
                 }
 
-                if (filter(analogRead(analogPin)) < 1000) {
+                if (filterPressureValue(analogRead(analogPin)) < 1000) {
                     brewswitch = LOW;
                 }
             }
@@ -147,7 +147,7 @@ void backflush() {
     if (pidMode == 1) {  // Deactivate PID
         pidMode = 0;
         bPID.SetMode(pidMode);
-        Output = 0;
+        pidOutput = 0;
     }
 
     digitalWrite(PINHEATER, LOW);  // Stop heating
@@ -216,7 +216,7 @@ void backflush() {
     }
 }
 
-#if (BREWMODE == 1)  // old Brew MODE
+#if (BREWMODE == 1)  // normal brew mode (based on time)
 /**
  * @brief PreInfusion, Brew Normal
  */
@@ -235,12 +235,12 @@ void brew() {
             timeBrewed = currentMillistemp - startingTime;
         }
 
-        if (brewswitch == LOW && firstreading == 0) {
+        if (brewswitch == LOW && movingAverageInitialized) {
             // check if brewswitch was turned off at least once, last time,
             brewswitchWasOFF = true;
         }
 
-        totalbrewtime = (preinfusion * 1000) + (preinfusionpause * 1000) +
+        totalBrewTime = (preinfusion * 1000) + (preinfusionpause * 1000) +
             (brewtime * 1000);  // running every cycle, in case changes are done during brew
 
         // state machine for brew
@@ -304,7 +304,7 @@ void brew() {
             case 41:  // waiting time brew
                 lastbrewTime = timeBrewed;
 
-                if (timeBrewed > totalbrewtime) {
+                if (timeBrewed > totalBrewTime) {
                     brewcounter = 42;
                 }
 
@@ -326,7 +326,7 @@ void brew() {
 
                     // disarmed button
                     currentMillistemp = 0;
-                    brewDetected = 0;  // rearm brewdetection
+                    brewDetected = 0;  // rearm brewDetection
                     brewcounter = 10;
                     timeBrewed = 0;
                 }
@@ -339,7 +339,7 @@ void brew() {
 
 #if (BREWMODE == 2)
 /**
- * @brief Scale brew mode
+ * @brief Weight based brew mode
  */
 void brew() {
     if (OnlyPID == 0) {
@@ -361,7 +361,7 @@ void brew() {
             brewswitchWasOFF = true;
         }
 
-        totalbrewtime = ((preinfusion * 1000) + (preinfusionpause * 1000) +
+        totalBrewTime = ((preinfusion * 1000) + (preinfusionpause * 1000) +
             (brewtime * 1000));  // running every cycle, in case changes are done during brew
 
         // state machine for brew
@@ -422,11 +422,11 @@ void brew() {
                 break;
 
             case 41:  // waiting time brew
-                if (timeBrewed > totalbrewtime || (weightBrew > (weightSetpoint - scaleDelayValue))) {
+                if (timeBrewed > totalBrewTime || (weightBrew > (weightSetpoint - scaleDelayValue))) {
                     brewcounter = 42;
                 }
 
-                if (timeBrewed > totalbrewtime) {
+                if (timeBrewed > totalBrewTime) {
                     brewcounter = 42;
                 }
 
@@ -445,10 +445,10 @@ void brew() {
                     digitalWrite(PINVALVE, relayOFF);
                     digitalWrite(PINPUMP, relayOFF);
 
-                    // disarmed button bezugsZeitAlt = bezugsZeit;
+                    // disarmed button
                     currentMillistemp = 0;
                     timeBrewed = 0;
-                    brewDetected = 0;  // rearm brewdetection
+                    brewDetected = 0;  // rearm brewDetection
                     brewcounter = 10;
                 }
 

@@ -2,6 +2,16 @@
 #define _RANCILIO_PID_H_
 
 #include <stdint.h>
+#include "SysPara.h"
+
+// Functions
+int factoryReset(void);
+int readSysParamsFromStorage(void);
+int writeSysParamsToStorage(void);
+
+// system parameter defaults and ranges
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
 
 // default parameters
 #define SETPOINT 95                // brew temperature setpoint
@@ -24,10 +34,42 @@
 #define PRE_INFUSION_PAUSE_TIME 5  // pre-infusion pause time in seconds
 #define SCALE_WEIGHTSETPOINT 30    // Target weight in grams
 
-// Functions
-int factoryReset(void);
-const String getFwVersion(void);
-int readSysParamsFromStorage(void);
-int writeSysParamsToStorage(void);
-
+#define PID_KP_START_MIN 0
+#define PID_KP_START_MAX 200
+#define PID_TN_START_MIN 0
+#define PID_TN_START_MAX 999
+#define PID_KP_REGULAR_MIN 0
+#define PID_KP_REGULAR_MAX 200
+#define PID_TN_REGULAR_MIN 0
+#define PID_TN_REGULAR_MAX 999
+#define PID_TV_REGULAR_MIN 0
+#define PID_TV_REGULAR_MAX 999
+#define PID_I_MAX_REGULAR_MIN 0
+#define PID_I_MAX_REGULAR_MAX 999
+#define PID_KP_BD_MIN 0
+#define PID_KP_BD_MAX 200
+#define PID_TN_BD_MIN 0
+#define PID_TN_BD_MAX 999
+#define PID_TV_BD_MIN 0
+#define PID_TV_BD_MAX 999
+#define BREW_SETPOINT_MIN 20
+#define BREW_SETPOINT_MAX 110
+#define BREW_TEMP_OFFSET_MIN 0
+#define BREW_TEMP_OFFSET_MAX 20
+#define BREW_TEMP_TIME_MIN 1
+#define BREW_TEMP_TIME_MAX 180
+#define BREW_TIME_MIN 1
+#define BREW_TIME_MAX 180
+#define BREW_SW_TIMER_MIN 1
+#define BREW_SW_TIMER_MAX 180
+#define BD_THRESHOLD_MIN 0
+#define BD_THRESHOLD_MAX 999
+#define PRE_INFUSION_TIME_MIN 0
+#define PRE_INFUSION_TIME_MAX 60
+#define PRE_INFUSION_PAUSE_MIN 0
+#define PRE_INFUSION_PAUSE_MAX 60
+#define WEIGHTSETPOINT_MIN 0
+#define WEIGHTSETPOINT_MAX 500
+#define PID_KP_STEAM_MIN 0
+#define PID_KP_STEAM_MAX 500
 #endif

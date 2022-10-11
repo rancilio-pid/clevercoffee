@@ -89,8 +89,7 @@ void displayDistance(int display_distance) {
  * @brief display shot timer
  */
 void displayShottimer(void) {
-    if ((machinestate == kBrew) && SHOTTIMER == 1) { // Shotimer muss 1 = True sein und Bezug vorliegen
-        // Dann Zeit anzeigen
+    if ((machinestate == kBrew) && SHOTTIMER == 1) { // Shotimer has to be 1 and brew is running, then show time
         u8g2.clearBuffer();
 
         // temp icon
@@ -102,9 +101,9 @@ void displayShottimer(void) {
         u8g2.sendBuffer();
     }
 
-    /* wenn die totalbrewtime automatisch erreicht wird,
-     * soll nichts gemacht werden, da sonst falsche Zeit angezeigt
-     * wird, da Schalter später betätigt wird als totalbrewtime
+    /* if the totalBrewTime is reached automatically,
+     * nothing should be done, otherwise wrong time is displayed
+     * because the switch is pressed later than totalBrewTime
      */
     if (((machinestate == kShotTimerAfterBrew) && SHOTTIMER == 1)) {
         u8g2.clearBuffer();
@@ -216,7 +215,7 @@ void Displaymachinestate() {
         // Temperature
         u8g2.setCursor(92, 30);
         u8g2.setFont(u8g2_font_profont17_tf);
-        u8g2.print(Input, 1);
+        u8g2.print(temperature, 1);
         u8g2.sendBuffer();
     }
 
@@ -236,7 +235,7 @@ void Displaymachinestate() {
         u8g2.drawXBMP(0, 0, steamlogo_width, steamlogo_height, steamlogo);
         u8g2.setCursor(64, 25);
         u8g2.setFont(u8g2_font_profont22_tf);
-        u8g2.print(Input, 0);
+        u8g2.print(temperature, 0);
         u8g2.setCursor(64, 25);
         u8g2.sendBuffer();
     }
@@ -266,7 +265,7 @@ void Displaymachinestate() {
         u8g2.drawXBMP(0, 0, logo_width, logo_height, logo_bits_u8g2);  // draw temp icon
         u8g2.setCursor(32, 24);
         u8g2.print("Ist :  ");
-        u8g2.print(Input, 1);
+        u8g2.print(temperature, 1);
         u8g2.print(" ");
         u8g2.print((char)176);
         u8g2.print("C");
@@ -295,7 +294,7 @@ void Displaymachinestate() {
     if (machinestate == kSensorError) {
         u8g2.clearBuffer();
         u8g2.setFont(u8g2_font_profont11_tf);
-        displayMessage(langstring_error_tsensor[0], String(Input), langstring_error_tsensor[1], "", "", "");
+        displayMessage(langstring_error_tsensor[0], String(temperature), langstring_error_tsensor[1], "", "", "");
     }
 
     // EEPROM error
