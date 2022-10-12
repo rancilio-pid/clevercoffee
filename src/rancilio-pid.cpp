@@ -991,6 +991,7 @@ void brewDetection() {
 
         // OFF: reset brew
         if ((digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF) && (brewDetected == 1 || coolingFlushDetectedQM == true)) {
+            isBrewDetected = 0;  // rearm brewDetection
             brewDetected = 0;
             timePVStoON = timeBrewed;  // for QuickMill
             timeBrewed = 0;
