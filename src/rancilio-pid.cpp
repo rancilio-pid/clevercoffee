@@ -1896,7 +1896,7 @@ void setup() {
         {F("PID_BD_TV"), F("BD Tv (=Kd/Kp)"), true, F("Differential time constant (in seconds) for the PID when brewing has been detected."), kDouble, sBDSection, []{ return true && BREWDETECTION > 0 && useBDPID; }, PID_TV_BD_MIN, PID_TV_BD_MAX, (void *)&aggbTv},
 
         //#21
-        {F("PID_BD_TIMER"), F("PID BD Time (s)"), true, F("Fixed time in seconds for which the BD PID will stay enabled (also after Brew switch is inactive again)."), kDouble, sBDSection, []{ return true && BREWDETECTION > 0 && useBDPID; }, BREW_SW_TIMER_MIN, BREW_SW_TIMER_MAX, (void *)&brewtimersoftware},
+        {F("PID_BD_TIMER"), F("PID BD Time (s)"), true, F("Fixed time in seconds for which the BD PID will stay enabled (also after Brew switch is inactive again)."), kDouble, sBDSection, []{ return true && BREWDETECTION > 0 && (useBDPID || BREWDETECTION == 0); }, BREW_SW_TIMER_MIN, BREW_SW_TIMER_MAX, (void *)&brewtimersoftware},
 
         //#22
         {F("PID_BD_BREWSENSITIVITY"), F("PID BD Sensitivity"), true, F("Software brew detection sensitivity that looks at average temperature, <a href='https://manual.rancilio-pid.de/de/customization/brueherkennung.html' target='_blank'>Details</a>. Needs to be &gt;0 also for Hardware switch detection."), kDouble, sBDSection, []{ return true && BREWDETECTION == 1; }, BD_THRESHOLD_MIN, BD_THRESHOLD_MAX, (void *)&brewsensitivity},
