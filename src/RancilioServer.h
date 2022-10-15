@@ -41,9 +41,11 @@ struct editable_t {
     boolean hasHelpText;
     String helpText;
     EditableKind type;
-    int section;      // parameter section number
-    std::function<bool()> show;    // method that determines if we show this parameter (on the web interface)
-    void *ptr;        // TODO: there must be a tidier way to do this? could we use c++ templates?
+    int section;                   // parameter section number
+    std::function<bool()> show;    // method that determines if we show this parameter (in the web interface)    
+    int minValue;
+    int maxValue;
+    void *ptr;                     // TODO: there must be a tidier way to do this? could we use c++ templates?
 };
 
 AsyncWebServer server(80);
@@ -53,10 +55,21 @@ double curTemp = 0.0;
 double tTemp = 0.0;
 double hPower = 0.0;
 
+#if defined(ESP8266)
+    #define HISTORY_LENGTH 120    //10 mins of values
+#elif defined(ESP32)
+    #define HISTORY_LENGTH 720    //60 mins of values
+#endif
+
+static float tempHistory[3][HISTORY_LENGTH] = {0};
+int historyCurrentIndex = 0;
+int historyValueCount = 0;
+
 void serverSetup();
 void setEepromWriteFcn(int (*fcnPtr)(void));
 
 // We define these in rancilio-pid.cpp
+#define EDITABLE_VARS_LEN 28
 extern std::vector<editable_t> editableVars;
 
 // EEPROM
@@ -81,6 +94,19 @@ String getTempString() {
     serializeJson(doc, jsonTemps);
 
     return jsonTemps;
+}
+
+//proper modulo function (% is remainder, so will return negatives)
+int mod(int a, int b) {
+    int r = a % b;
+    return r < 0 ? r + b : r;
+}
+
+// rounds a number to 2 decimal places
+// example: round(3.14159) -> 3.14
+// (less characters when serialized to json)
+double round2(double value) {
+   return (int)(value * 100 + 0.5) / 100.0;
 }
 
 String generateForm(String varName) {
@@ -180,7 +206,7 @@ String getValue(String varName) {
             case kUInt8:
                 return String(*(uint8_t *)e.ptr);
             case kCString:
-                return String((const char *)e.ptr);
+                return String((char *)e.ptr);
             default:
                 return F("Unknown type");
                 break;
@@ -234,6 +260,8 @@ String getHeader(String varName) {
 }
 
 String staticProcessor(const String& var) {
+    skipHeaterISR = true;
+
     //try replacing var for variables in editableVars
     if (var.startsWith("VAR_EDIT_")) {
         return generateForm(var.substring(9)); // cut off "VAR_EDIT_"
@@ -244,7 +272,7 @@ String staticProcessor(const String& var) {
     }
 
     //var didn't start with above names, try opening var as fragment file and use contents if it exists
-    //TODO: this seems to consume too much heap in some cases, probably better to remove fragment loading and only one SPA 
+    //TODO: this seems to consume too much heap in some cases, probably better to remove fragment loading and only use one SPA in the long term (or only support ESP32 which has more RAM)
     String varLower(var);
     varLower.toLowerCase();
 
@@ -255,15 +283,19 @@ String staticProcessor(const String& var) {
         file.close();
         return ret;
     } else {
-        debugPrintf("Can't open file %s, not enough memory available\n", file.name());
+        debugPrintf("Can't open file %s, not enough memory available\n", file ? file.name() : "");
     }
+    
+    skipHeaterISR = false;
 
     return String();
 }
 
 void serverSetup() {
+    // set up dynamic routes (endpoints)
+
     server.on("/toggleSteam", HTTP_POST, [](AsyncWebServerRequest *request) {
-        int steam = flipUintValue(SteamON);
+        int steam = flipUintValue(steamON);
 
         setSteamMode(steam);
         debugPrintf("Toggle steam mode: %i \n", steam);
@@ -291,6 +323,9 @@ void serverSetup() {
     });
 
     server.on("/parameters", HTTP_GET | HTTP_POST, [](AsyncWebServerRequest *request) {
+        //stop writing to heater in ISR method (digitalWrite) as it causes crashes when called at the same time as flash is read or written
+        skipHeaterISR = true;
+
         if (request->method() == 2) {   //returns values from WebRequestMethod enum -> 2 == HTTP_POST
             //update all given params and match var name in editableVars
             int params = request->params();
@@ -330,20 +365,25 @@ void serverSetup() {
 
                         float newVal = atof(p->value().c_str());
                         *(double *)e.ptr = newVal;
-                    } else if (e.type == kCString) {
-                        m += (char *)e.ptr;
+                    }
+                    //we don't need to set strings at the moment, needs testing also
+                    /*} else if (e.type == kCString) {
+                        m += String((char *)e.ptr);
 
-                        const String& val = p->value();
-                        char* newVal = new char[val.length() + 1];
+                        String val = p->value();
+                        static const char* newVal = new char[val.length() + 1]; //is this persistent or on stack?
                         val.toCharArray(newVal, val.length() + 1); 
 
-                        *(char **)e.ptr = newVal;
-                    }
+                        if (e.ptr) {
+                            delete[] ((char *)e.ptr);
+                        }
+                        e.ptr = (void *)newVal;
+                    }*/
 
                     m += " to ";
                     m += p->value();
 
-                    m += "<br />";
+                    m += "<br/>";
                 }
             }
 
@@ -364,7 +404,7 @@ void serverSetup() {
 
         } else if (request->method() == 1) {  //WebRequestMethod enum -> HTTP_GET
             //return all params as json
-            DynamicJsonDocument doc(4096);
+            DynamicJsonDocument doc(JSON_ARRAY_SIZE(1) + JSON_OBJECT_SIZE(9+1) * EDITABLE_VARS_LEN);
 
             //get parameter id from frst parameter, e.g. /parameters?param=PID_ON
             int paramCount = request->params();
@@ -394,10 +434,12 @@ void serverSetup() {
                 } else if (e.type == kUInt8) {
                     paramObj["value"] = *(uint8_t *)e.ptr;
                 } else if (e.type == kDouble || e.type == kDoubletime) {
-                    paramObj["value"] = *(double *)e.ptr;
+                    paramObj["value"] = round2(*(double *)e.ptr);
                 } else if (e.type == kCString) {
-                    paramObj["value"] = String(*(char **)e.ptr);
+                    paramObj["value"] = String((char *)e.ptr);
                 }                
+                paramObj["min"] = e.minValue;
+                paramObj["max"] = e.maxValue;
 
                 //we found the parameter, no need to search further
                 if (!paramId.isEmpty()) {
@@ -407,6 +449,7 @@ void serverSetup() {
 
             if (doc.size() == 0) {
                 request->send(404, "application/json", F("{ \"code\": 404, \"message\": \"Parameter not found\"}"));
+                skipHeaterISR = false;
                 return;
             }
 
@@ -414,6 +457,7 @@ void serverSetup() {
             serializeJson(doc, paramsJson);
             request->send(200, "application/json", paramsJson);
         }
+        skipHeaterISR = false;
     });
 
     server.on("/parameterHelp", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -421,6 +465,9 @@ void serverSetup() {
 
         AsyncWebParameter* p = request->getParam(0);
         const String& varValue = p->value();
+
+        skipHeaterISR = true;
+
         for (editable_t e : editableVars) {
             if (e.templateString != varValue) {
                 continue;
@@ -434,15 +481,8 @@ void serverSetup() {
         String helpJson;
         serializeJson(doc, helpJson);
         request->send(200, "application/json", helpJson);
-    });
 
-    LittleFS.begin();
-    server.serveStatic("/css", LittleFS, "/css/", "max-age=604800");   //cache for one week
-    server.serveStatic("/js", LittleFS, "/js/", "max-age=604800");
-    server.serveStatic("/", LittleFS, "/html/", "max-age=604800").setTemplateProcessor(staticProcessor);
-
-    server.onNotFound([](AsyncWebServerRequest *request) {
-        request->send(404, "text/plain", "Not found");
+        skipHeaterISR = false;
     });
 
     server.on("/temperatures", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -450,6 +490,39 @@ void serverSetup() {
         request->send(200, "application/json", json);
     });
 
+    //TODO: could send values also chunked and without json (but needs three endpoints then?)
+    //https://stackoverflow.com/questions/61559745/espasyncwebserver-serve-large-array-from-ram
+    server.on("/timeseries", HTTP_GET, [](AsyncWebServerRequest *request) {
+        AsyncResponseStream *response = request->beginResponseStream("application/json");
+
+        //set capacity of json doc for history structure
+        DynamicJsonDocument doc(JSON_ARRAY_SIZE(2) + JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(HISTORY_LENGTH)*3);
+
+        //for each value in mem history array, add json array element
+        JsonArray currentTemps = doc.createNestedArray("currentTemps");
+        JsonArray targetTemps = doc.createNestedArray("targetTemps");
+        JsonArray heaterPowers = doc.createNestedArray("heaterPowers");
+        
+        //go through history values backwards starting from currentIndex and wrap around beginning
+        //to include valueCount many values
+        for (int i=mod(historyCurrentIndex-historyValueCount, HISTORY_LENGTH);
+                 i!=mod(historyCurrentIndex, HISTORY_LENGTH);
+                 i=mod(i+1, HISTORY_LENGTH))
+        {
+            currentTemps.add(round2(tempHistory[0][i]));
+            targetTemps.add(round2(tempHistory[1][i]));
+            heaterPowers.add(round2(tempHistory[2][i]));
+        }
+
+        serializeJson(doc, *response);
+        request->send(response);
+    });
+    
+    server.onNotFound([](AsyncWebServerRequest *request) {
+        request->send(404, "text/plain", "Not found");
+    });
+
+    // set up event handler for temperature messages
     events.onConnect([](AsyncEventSourceClient *client) {
         if (client->lastId()) {
             debugPrintf("Reconnected, last message ID was: %u\n", client->lastId());
@@ -460,14 +533,38 @@ void serverSetup() {
 
     server.addHandler(&events);
 
+    // serve static files
+    LittleFS.begin();
+    server.serveStatic("/css", LittleFS, "/css/", "max-age=604800");   //cache for one week
+    server.serveStatic("/js", LittleFS, "/js/", "max-age=604800");
+    server.serveStatic("/", LittleFS, "/html/", "max-age=604800").setTemplateProcessor(staticProcessor);
+
     server.begin();
+
     debugPrintln(("Server started at " + WiFi.localIP().toString()).c_str());
 }
 
-void sendTempEvent(float currentTemp, float targetTemp, float heaterPower) {
+//skip counter so we don't keep a value every second
+int skippedValues = 0;
+
+void sendTempEvent(double currentTemp, double targetTemp, double heaterPower) {
     curTemp = currentTemp;
     tTemp = targetTemp;
     hPower = heaterPower;
+
+    //save all values in memory to show history
+    if (skippedValues > 0 && skippedValues % 4 == 0) {
+        //use array and int value for start index (round robin)
+        //one record (3 float values == 12 bytes) every five seconds, for half an hour -> 4.3kB of static memory
+        tempHistory[0][historyCurrentIndex] = (float)currentTemp;
+        tempHistory[1][historyCurrentIndex] = (float)targetTemp;
+        tempHistory[2][historyCurrentIndex] = (float)heaterPower;
+        historyCurrentIndex = (historyCurrentIndex+1) % HISTORY_LENGTH;
+        historyValueCount = min(HISTORY_LENGTH-1, historyValueCount + 1);
+        skippedValues = 0;
+    } else {
+        skippedValues++;
+    }
 
     events.send("ping", NULL, millis());
     events.send(getTempString().c_str(), "new_temps", millis());

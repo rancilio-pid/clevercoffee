@@ -10,6 +10,7 @@
 #include <Arduino.h>
 #include <stdint.h>
 #include "Storage.h"
+#include "debugSerial.h"
 
 
 //! system parameter data
@@ -39,13 +40,29 @@ class SysPara {
             if (curPtr) {
                 _data.curPtr = curPtr;
             } else {
-                Serial.printf("%s(): empty pointer!\n", __FUNCTION__);
+                debugPrintf("%s(): empty pointer!\n", __func__);
                 _data.curPtr = (T*)&_dummyCur;
             }
             _data.min = min;
             _data.max = max;
             _stoItemId = stoItemId;
             getStorage();           // init current value with storage value
+        }
+
+       /**
+        * @brief Constructor
+        *
+        * @param sysPara - system parameter object
+        */
+        explicit SysPara(T& sysPara) {
+            this = sysPara;
+        }
+
+       /**
+        * @brief Constructor used for extern declarations
+        */
+        explicit SysPara() {
+            _stoItemId = STO_ITEM__LAST_ENUM;
         }
 
        /**
@@ -84,13 +101,34 @@ class SysPara {
         */
         int getStorage(void) {
             int stoStatus;
-            if (_stoItemId < STO_ITEM__LAST_ENUM) {             // valid storage ID?
+            if (_stoItemId < STO_ITEM__LAST_ENUM) {                             // valid storage ID?
                 // use dummy variable to comply with storage API
-                if ((stoStatus = storageGet(_stoItemId, _dummyCur)) == 0)
-                    *_data.curPtr = _dummyCur;
+                if ((stoStatus = storageGet(_stoItemId, _dummyCur)) == 0) {
+                    if ((_dummyCur >= _data.min) && (_dummyCur <= _data.max)) {  // did we read a valid value?
+                        *_data.curPtr = _dummyCur;                               // yes -> set data to new value
+                    } else {
+                        *_data.curPtr = _data.min;                               // no -> set data to min value
+                    }
+                }
                 return stoStatus;
             }
-            Serial.printf("%s(): no storage ID set!\n", __FUNCTION__);
+            debugPrintf("%s(): no storage ID set!\n", __func__);
+            return -1;
+        }
+
+       /**
+        * @brief Sets the current value.
+        *
+        * @param value - new current value
+        *
+        * @return 0 - success, <0 - failure
+        */
+        int set(T value) {
+            if ((value >= _data.min) && (value <= _data.max)) {
+                *_data.curPtr = value;
+                return 0;
+            }
+            debugPrintf("%s(): value is outside of range!\n", __func__);
             return -1;
         }
 
@@ -104,12 +142,14 @@ class SysPara {
         */
         int setStorage(bool commit = false) {
             if (_stoItemId < STO_ITEM__LAST_ENUM) {
-                if ((*_data.curPtr >= _data.min) && (*_data.curPtr <= _data.max))
+                if ((*_data.curPtr >= _data.min) && (*_data.curPtr <= _data.max)) {
                     return storageSet(_stoItemId, *_data.curPtr, commit);
-                Serial.printf("%s(): value outside of range!\n", __FUNCTION__);
-                return -1;
+                } else {
+                    debugPrintf("%s(): value outside of allowed range! (item: %i)\n", __func__, _stoItemId);
+                    return -1;
+                }
             }
-            Serial.printf("%s(): no storage ID set!\n", __FUNCTION__);
+            debugPrintf("%s(): no storage ID set!\n", __func__);
             return -1;
         }
 
@@ -118,7 +158,6 @@ class SysPara {
         sys_para_data<T> _data;         //!< parameter data
         T _dummyCur;
 };
-
 
 
 #endif
