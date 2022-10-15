@@ -2,10 +2,10 @@ name: Build
 on:
   push:
     branches:
-    - master 
+    - Alpha-3.0.0
   pull_request:
     branches:
-    - master 
+    - Alpha-3.0.0
 jobs:
     build:
       runs-on: self-hosted
@@ -14,6 +14,10 @@ jobs:
           uses: actions/checkout@v2
           with: 
             fetch-depth: 0
+        
+        - name: Add platformio_sample.ini
+          working-directory: ./
+          run: cp platformio_sample.ini platformio.ini
         
         - name: Add config file
           working-directory: ./src

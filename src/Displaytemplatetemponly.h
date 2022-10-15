@@ -21,28 +21,28 @@ void printScreen() {
             u8g2.clearBuffer();
 
             // draw (blinking) temp
-            if ((fabs(temperature - setPoint) < blinkingtempoffset && blinkingtemp == 0) ||
-                (fabs(temperature - setPoint) >= blinkingtempoffset && blinkingtemp == 1)) {
+            if ((fabs(Input - setPoint) < blinkingtempoffset && blinkingtemp == 0) ||
+                (fabs(Input - setPoint) >= blinkingtempoffset && blinkingtemp == 1)) {
                 if (isrCounter < 500) {
-                    if (temperature < 99.999) {
+                    if (Input < 99.999) {
                         u8g2.setCursor(13, 12);
                         u8g2.setFont(u8g2_font_fub35_tf);
-                        u8g2.print(temperature, 1);
+                        u8g2.print(Input, 1);
                     } else {
                         u8g2.setCursor(-1, 12);
                         u8g2.setFont(u8g2_font_fub35_tf);
-                        u8g2.print(temperature, 1);
+                        u8g2.print(Input, 1);
                     }
                 }
             } else {
-                if (temperature < 99.999) {
+                if (Input < 99.999) {
                     u8g2.setCursor(13, 12);
                     u8g2.setFont(u8g2_font_fub35_tf);
-                    u8g2.print(temperature, 1);
+                    u8g2.print(Input, 1);
                 } else {
                     u8g2.setCursor(-1, 12);
                     u8g2.setFont(u8g2_font_fub35_tf);
-                    u8g2.print(temperature, 1);
+                    u8g2.print(Input, 1);
                 }
             }
         }

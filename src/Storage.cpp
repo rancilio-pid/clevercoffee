@@ -12,8 +12,6 @@
 #include "Storage.h"
 #include "rancilio-pid.h"
 
-#include "ISR.h"
-
 #define STRUCT_MEMBER_SIZE(Type, Member) sizeof(((Type*)0)->Member)
 
 // storage data structure
@@ -92,7 +90,7 @@ static const sto_data_t itemDefaults PROGMEM = {
     {0xFF, 0xFF},                             // free to use
     BREWSENSITIVITY,                          // STO_ITEM_BD_THRESHOLD
     0xFF,                                     // free to use
-    0,                                        // STO_ITEM_USE_START_PON_M
+    1,                                        // STO_ITEM_USE_START_PON_M
     STARTKP,                                  // STO_ITEM_PID_KP_START
     {0xFF, 0xFF},                             // free to use
     0,                                        // STO_ITEM_SOFT_AP_ENABLED_CHECK
@@ -241,7 +239,7 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
             break;
 
         default:
-            debugPrintf("%s(): invalid item ID %i!\n", __func__, itemId);
+            Serial.printf("%s(): invalid item ID %i!\n", __FUNCTION__, itemId);
             addr = -1;
             size = 0;
             break;
@@ -299,8 +297,8 @@ static inline bool isString(const void* buf, uint16_t bufSize) {
  * @brief Sets the default values.
  */
 static void setDefaults(void) {
-    debugPrintf("%s(): %p <- %p (%u)\n", __func__, EEPROM.getDataPtr(), &itemDefaults, sizeof(itemDefaults));
-    memcpy_P(EEPROM.getDataPtr(), &itemDefaults, sizeof(itemDefaults));
+  Serial.printf("%s(): %p <- %p (%u)\n", __FUNCTION__, EEPROM.getDataPtr(), &itemDefaults, sizeof(itemDefaults));
+  memcpy_P(EEPROM.getDataPtr(), &itemDefaults, sizeof(itemDefaults));
 }
 #endif
 
@@ -315,11 +313,11 @@ int storageSetup(void) {
         EEPROM.begin(sizeof(sto_data_t));
     #elif defined(ESP32)
         if (!EEPROM.begin(sizeof(sto_data_t))) {
-            debugPrintf("%s(): EEPROM initialization failed!\n", __func__);
+            Serial.printf("%s(): EEPROM initialization failed!\n", __FUNCTION__);
             return -1;
         }
     #else
-        #error("unsupported MCU");
+        #error("not supported MCU");
     #endif
 
     /* It's not necessary here to check if any valid data are stored,
@@ -344,21 +342,21 @@ static inline int getNumber(sto_item_id_t itemId, T& itemValue) {
     int32_t itemAddr = getItemAddr(itemId, &maxItemSize);
 
     if (itemAddr < 0) {
-        debugPrintf("%s(): invalid item address!\n", __func__);
+        Serial.printf("%s(): invalid item address!\n", __FUNCTION__);
         return -1;
     }
 
-    debugPrintf("%s(): addr=%i size=%u/%u\n", __func__, itemAddr, sizeof(itemValue), maxItemSize);
+    Serial.printf("%s(): addr=%i size=%u/%u\n", __FUNCTION__, itemAddr, sizeof(itemValue), maxItemSize);
 
     if (sizeof(itemValue) != maxItemSize) {
-        debugPrintf("%s(): invalid item size (wrong data type)!\n", __func__);
+        Serial.printf("%s(): invalid item size (wrong data type)!\n", __FUNCTION__);
         return -2;
     }
 
     EEPROM.get(itemAddr, itemValue);
 
     if (isEmpty(&itemValue, sizeof(itemValue))) { // item storage empty?
-        debugPrintf("%s(): storage empty -> returning default\n", __func__);
+        Serial.printf("%s(): storage empty -> returning default\n", __FUNCTION__);
 
         memcpy_P(&itemValue, (PGM_P)&itemDefaults + itemAddr, sizeof(itemValue));  // set default value
     }
@@ -384,19 +382,19 @@ static inline int setNumber(sto_item_id_t itemId, const T& itemValue, bool commi
     int32_t itemAddr = getItemAddr(itemId, &maxItemSize);
 
     if (itemAddr < 0) {
-        debugPrintf("%s(): invalid item address!\n", __func__);
+        Serial.printf("%s(): invalid item address!\n", __FUNCTION__);
         return -1;
     }
 
-    debugPrintf("%s(): addr=%i size=%u/%u commit=%u\n", __func__, itemAddr, sizeof(itemValue), maxItemSize, commit);
+    Serial.printf("%s(): addr=%i size=%u/%u commit=%u\n", __FUNCTION__, itemAddr, sizeof(itemValue), maxItemSize, commit);
 
     if (sizeof(itemValue) != maxItemSize) {
-        debugPrintf("%s(): invalid item size (wrong data type)!\n", __func__);
+        Serial.printf("%s(): invalid item size (wrong data type)!\n", __FUNCTION__);
         return -2;
     }
 
     if (isEmpty(&itemValue, sizeof(T))) {
-        debugPrintf("%s(): invalid item value!\n", __func__);
+        Serial.printf("%s(): invalid item value!\n", __FUNCTION__);
         return -3;
     }
 
@@ -421,7 +419,7 @@ int storageGet(sto_item_id_t itemId, float& itemValue) {
 
     if (retCode != 0) return retCode;
 
-    debugPrintf("%s(): item=%i value=%.1f\n", __func__, itemId, itemValue);
+    Serial.printf("%s(): item=%i value=%.1f\n", __FUNCTION__, itemId, itemValue);
 
     return 0;
 }
@@ -431,7 +429,7 @@ int storageGet(sto_item_id_t itemId, double& itemValue) {
 
     if (retCode != 0) return retCode;
 
-    debugPrintf("%s(): item=%i value=%.1f\n", __func__, itemId, itemValue);
+    Serial.printf("%s(): item=%i value=%.1f\n", __FUNCTION__, itemId, itemValue);
 
     return 0;
 }
@@ -441,7 +439,7 @@ int storageGet(sto_item_id_t itemId, int8_t& itemValue) {
 
     if (retCode != 0) return retCode;
 
-    debugPrintf("%s(): item=%i value=%i\n", __func__, itemId, itemValue);
+    Serial.printf("%s(): item=%i value=%i\n", __FUNCTION__, itemId, itemValue);
 
     return 0;
 }
@@ -451,7 +449,7 @@ int storageGet(sto_item_id_t itemId, int16_t& itemValue) {
 
     if (retCode != 0) return retCode;
 
-    debugPrintf("%s(): item=%i value=%i\n", __func__, itemId, itemValue);
+    Serial.printf("%s(): item=%i value=%i\n", __FUNCTION__, itemId, itemValue);
 
     return 0;
 }
@@ -461,7 +459,7 @@ int storageGet(sto_item_id_t itemId, int32_t& itemValue) {
 
     if (retCode != 0) return retCode;
 
-    debugPrintf("%s(): item=%i value=%i\n", __func__, itemId, itemValue);
+    Serial.printf("%s(): item=%i value=%i\n", __FUNCTION__, itemId, itemValue);
 
     return 0;
 }
@@ -471,7 +469,7 @@ int storageGet(sto_item_id_t itemId, uint8_t& itemValue) {
 
     if (retCode != 0) return retCode;
 
-    debugPrintf("%s(): item=%i value=%u\n", __func__, itemId, itemValue);
+    Serial.printf("%s(): item=%i value=%u\n", __FUNCTION__, itemId, itemValue);
 
     return 0;
 }
@@ -479,7 +477,7 @@ int storageGet(sto_item_id_t itemId, uint8_t& itemValue) {
 int storageGet(sto_item_id_t itemId, uint16_t& itemValue) {
     int retCode = getNumber(itemId, itemValue);
     if (retCode != 0) return retCode;
-    debugPrintf("%s(): item=%i value=%u\n", __func__, itemId, itemValue);
+    Serial.printf("%s(): item=%i value=%u\n", __FUNCTION__, itemId, itemValue);
 
     return 0;
 }
@@ -489,7 +487,7 @@ int storageGet(sto_item_id_t itemId, uint32_t& itemValue) {
 
     if (retCode != 0) return retCode;
 
-    debugPrintf("%s(): item=%i value=%u\n", __func__, itemId, itemValue);
+    Serial.printf("%s(): item=%i value=%u\n", __FUNCTION__, itemId, itemValue);
 
     return 0;
 }
@@ -498,7 +496,7 @@ int storageGet(sto_item_id_t itemId, uint32_t& itemValue) {
 /* The ESP32 EEPROM class does not support getConstDataPtr(). The available
  * getDataPtr() always leads to a "dirty" status (= erase/program cycle), even
  * if only read operations will be done!
- * If this function is needed, a temporary read buffer has to be used.
+ * If this functions is needed, a temporary read buffer has to be used.
  */
 int storageGet(sto_item_id_t itemId, const char** itemValue) {
     size_t itemSize;
@@ -512,11 +510,11 @@ int storageGet(sto_item_id_t itemId, const char** itemValue) {
     itemSize = strlen(*itemValue) + 1;
 
     if (isEmpty(*itemValue, itemSize)) { // item storage empty?
-        debugPrintf("%s(): storage empty -> returning default\n", __func__);
+        Serial.printf("%s(): storage empty -> returning default\n", __FUNCTION__);
         memcpy_P(&itemValue, (const void*)(&itemDefaults+itemAddr), itemSize);      // set default value
     }
 
-    debugPrintf("%s(): addr=%i size=%u item=%i value=\"%s\"\n", __func__, itemAddr, itemSize, itemId, *itemValue);
+    Serial.printf("%s(): addr=%i size=%u item=%i value=\"%s\"\n", __FUNCTION__, itemAddr, itemSize, itemId, *itemValue);
 
     return 0;
 }
@@ -527,7 +525,7 @@ int storageGet(sto_item_id_t itemId, String& itemValue) {
     int32_t itemAddr = getItemAddr(itemId, &maxItemSize);
 
     if (itemAddr < 0) {
-        debugPrintf("%s(): invalid item address!\n", __func__);
+        Serial.printf("%s(): invalid item address!\n", __FUNCTION__);
         return -1;
     }
 
@@ -538,7 +536,7 @@ int storageGet(sto_item_id_t itemId, String& itemValue) {
         if (isString(storageDataPtr, maxItemSize))  { // exist a null terminator?
             itemValue = String((const char*)storageDataPtr); // convert to C++ string
         } else {
-            debugPrintf("%s(): storage empty -> returning default\n", __func__);
+            Serial.printf("%s(): storage empty -> returning default\n", __FUNCTION__);
             itemValue = String((PGM_P)&itemDefaults + itemAddr);  // set default string
         }
     #elif defined(ESP32)
@@ -549,14 +547,14 @@ int storageGet(sto_item_id_t itemId, String& itemValue) {
         if (isString(buf, maxItemSize)) { // exist a null terminator?
             itemValue = String((const char*)buf);
         } else {
-            debugPrintf("%s(): storage empty -> returning default\n", __func__);
+            Serial.printf("%s(): storage empty -> returning default\n", __FUNCTION__);
             itemValue = String((PGM_P)&itemDefaults + itemAddr);  // set default string
         }
     #else
         #error("MCU not supported");
     #endif
 
-    debugPrintf("%s(): addr=%i size=%u item=%i value=\"%s\"\n", __func__, itemAddr, itemValue.length() + 1, itemId, itemValue.c_str());
+    Serial.printf("%s(): addr=%i size=%u item=%i value=\"%s\"\n", __FUNCTION__, itemAddr, itemValue.length() + 1, itemId, itemValue.c_str());
 
     return 0;
 }
@@ -574,42 +572,42 @@ int storageGet(sto_item_id_t itemId, String& itemValue) {
  *         <0 - failed
  */
 int storageSet(sto_item_id_t itemId, float itemValue, bool commit) {
-    debugPrintf("%s(): item=%i value=%.1f\n", __func__, itemId, itemValue);
+    Serial.printf("%s(): item=%i value=%.1f\n", __FUNCTION__, itemId, itemValue);
     return setNumber(itemId, itemValue, commit);
 }
 
 int storageSet(sto_item_id_t itemId, double itemValue, bool commit) {
-    debugPrintf("%s(): item=%i value=%.1f\n", __func__, itemId, itemValue);
+    Serial.printf("%s(): item=%i value=%.1f\n", __FUNCTION__, itemId, itemValue);
     return setNumber(itemId, itemValue, commit);
 }
 
 int storageSet(sto_item_id_t itemId, int8_t itemValue, bool commit) {
-    debugPrintf("%s(): item=%i value=%i\n", __func__, itemId, itemValue);
+    Serial.printf("%s(): item=%i value=%i\n", __FUNCTION__, itemId, itemValue);
     return setNumber(itemId, itemValue, commit);
 }
 
 int storageSet(sto_item_id_t itemId, int16_t itemValue, bool commit) {
-    debugPrintf("%s(): item=%i value=%i\n", __func__, itemId, itemValue);
+    Serial.printf("%s(): item=%i value=%i\n", __FUNCTION__, itemId, itemValue);
     return setNumber(itemId, itemValue, commit);
 }
 
 int storageSet(sto_item_id_t itemId, int32_t itemValue, bool commit) {
-    debugPrintf("%s(): item=%i value=%i\n", __func__, itemId, itemValue);
+    Serial.printf("%s(): item=%i value=%i\n", __FUNCTION__, itemId, itemValue);
     return setNumber(itemId, itemValue, commit);
 }
 
 int storageSet(sto_item_id_t itemId, uint8_t itemValue, bool commit) {
-    debugPrintf("%s(): item=%i value=%u\n", __func__, itemId, itemValue);
+    Serial.printf("%s(): item=%i value=%u\n", __FUNCTION__, itemId, itemValue);
     return setNumber(itemId, itemValue, commit);
 }
 
 int storageSet(sto_item_id_t itemId, uint16_t itemValue, bool commit) {
-    debugPrintf("%s(): item=%i value=%u\n", __func__, itemId, itemValue);
+    Serial.printf("%s(): item=%i value=%u\n", __FUNCTION__, itemId, itemValue);
     return setNumber(itemId, itemValue, commit);
 }
 
 int storageSet(sto_item_id_t itemId, uint32_t itemValue, bool commit) {
-    debugPrintf("%s(): item=%i value=%u\n", __func__, itemId, itemValue);
+    Serial.printf("%s(): item=%i value=%u\n", __FUNCTION__, itemId, itemValue);
     return setNumber(itemId, itemValue, commit);
 }
 
@@ -619,15 +617,15 @@ int storageSet(sto_item_id_t itemId, const char* itemValue, bool commit) {
     int32_t itemAddr = getItemAddr(itemId, &maxItemSize);
 
     if (itemAddr < 0) {
-        debugPrintf("%s(): invalid item address!\n", __func__);
+        Serial.printf("%s(): invalid item address!\n", __FUNCTION__);
         return -1;
     }
 
     valueSize = strlen(itemValue) + 1;
-    debugPrintf("%s(): item=%i value=\"%s\" addr=%i size=%u/%u\n", __func__, itemId, itemValue, itemAddr, valueSize, maxItemSize);
+    Serial.printf("%s(): item=%i value=\"%s\" addr=%i size=%u/%u\n", __FUNCTION__, itemId, itemValue, itemAddr, valueSize, maxItemSize);
 
     if (valueSize > maxItemSize) { // invalid value size?
-        debugPrintf("%s(): string too large!\n", __func__);
+        Serial.printf("%s(): string too large!\n", __FUNCTION__);
         return -2;
     }
 
@@ -649,16 +647,29 @@ int storageSet(sto_item_id_t itemId, String& itemValue, bool commit) {
  *         <0 - failed
  */
 int storageCommit(void) {
-    debugPrintf("%s(): save all data to NV memory\n", __func__);
+    int returnCode;
+    // bool isTimerEnabled;
 
-    //While Flash memory erase/write operations no other code must be executed from
-    //Flash
-    skipHeaterISR = true;
+    Serial.printf("%s(): save all data to NV memory\n", __FUNCTION__);
+
+    /* While Flash memory erase/write operations no other code must be executed from
+     * Flash! Since all code of the Timer1-ISR is placed in RAM, the interrupt does
+     * not need to be disabled.
+     */
+    #if 0
+        // disable any ISRs...
+        isTimerEnabled = isTimer1Enabled();
+        disableTimer1();
+    #endif
 
     // really write data to storage...
-    int returnCode = EEPROM.commit() ? 0 : -1;
+    returnCode = EEPROM.commit() ? 0 : -1;
 
-    skipHeaterISR = false;
+    #if 0
+    // recover any ISRs...
+    if (isTimerEnabled)   // was timer enabled before?
+        enableTimer1();   // yes -> re-enable timer
+    #endif
 
     return returnCode;
 }
@@ -670,7 +681,7 @@ int storageCommit(void) {
  *         <0 - failed
  */
 int storageFactoryReset(void) {
-    debugPrintf("%s(): reset all values\n", __func__);
+    Serial.printf("%s(): reset all values\n", __FUNCTION__);
     memset(EEPROM.getDataPtr(), 0xFF, sizeof(sto_data_t));
 
     return storageCommit();

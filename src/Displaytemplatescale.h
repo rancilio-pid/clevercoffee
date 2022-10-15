@@ -18,7 +18,7 @@ void printScreen() {
         u8g2.drawXBMP(0, 0, logo_width, logo_height, logo_bits_u8g2);  // draw temp icon
         u8g2.setCursor(32, 14);
         u8g2.print("T:  ");
-        u8g2.print(temperature, 1);
+        u8g2.print(Input, 1);
 
         u8g2.print("/");
         u8g2.print(setPoint, 1);
@@ -28,31 +28,31 @@ void printScreen() {
         u8g2.drawLine(15, 58, 15, 61);
         u8g2.drawLine(117, 58, 117, 61);
 
-        u8g2.drawLine(16, 59, (pidOutput / 10) + 16, 59);
-        u8g2.drawLine(16, 60, (pidOutput / 10) + 16, 60);
+        u8g2.drawLine(16, 59, (Output / 10) + 16, 59);
+        u8g2.drawLine(16, 60, (Output / 10) + 16, 60);
         u8g2.drawLine(15, 61, 117, 61);
 
         // draw current temp in icon
-        if (fabs(temperature - setPoint) < 0.3) {
+        if (fabs(Input - setPoint) < 0.3) {
             if (isrCounter < 500) {
-                u8g2.drawLine(9, 48, 9, 58 - (temperature / 2));
-                u8g2.drawLine(10, 48, 10, 58 - (temperature / 2));
-                u8g2.drawLine(11, 48, 11, 58 - (temperature / 2));
-                u8g2.drawLine(12, 48, 12, 58 - (temperature / 2));
-                u8g2.drawLine(13, 48, 13, 58 - (temperature / 2));
+                u8g2.drawLine(9, 48, 9, 58 - (Input / 2));
+                u8g2.drawLine(10, 48, 10, 58 - (Input / 2));
+                u8g2.drawLine(11, 48, 11, 58 - (Input / 2));
+                u8g2.drawLine(12, 48, 12, 58 - (Input / 2));
+                u8g2.drawLine(13, 48, 13, 58 - (Input / 2));
             }
-        } else if (temperature > 106) {
+        } else if (Input > 106) {
             u8g2.drawLine(9, 48, 9, 5);
             u8g2.drawLine(10, 48, 10, 4);
             u8g2.drawLine(11, 48, 11, 3);
             u8g2.drawLine(12, 48, 12, 4);
             u8g2.drawLine(13, 48, 13, 5);
         } else {
-            u8g2.drawLine(9, 48, 9, 58 - (temperature / 2));
-            u8g2.drawLine(10, 48, 10, 58 - (temperature / 2));
-            u8g2.drawLine(11, 48, 11, 58 - (temperature / 2));
-            u8g2.drawLine(12, 48, 12, 58 - (temperature / 2));
-            u8g2.drawLine(13, 48, 13, 58 - (temperature / 2));
+            u8g2.drawLine(9, 48, 9, 58 - (Input / 2));
+            u8g2.drawLine(10, 48, 10, 58 - (Input / 2));
+            u8g2.drawLine(11, 48, 11, 58 - (Input / 2));
+            u8g2.drawLine(12, 48, 12, 58 - (Input / 2));
+            u8g2.drawLine(13, 48, 13, 58 - (Input / 2));
         }
 
         // draw setPoint line
@@ -67,7 +67,7 @@ void printScreen() {
         if (ONLYPID == 1) {
             u8g2.print(brewtimersoftware, 0);   // deaktivieren wenn Preinfusion ( // voransetzen )
         } else {
-            u8g2.print(totalBrewTime / 1000, 1);    // aktivieren wenn Preinfusion und eine Nachkommastelle
+            u8g2.print(totalbrewtime / 1000, 1);    // aktivieren wenn Preinfusion und eine Nachkommastelle
                                                     // oder alternativ keine
         }
 

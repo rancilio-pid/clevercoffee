@@ -18,17 +18,17 @@ void printScreen() {
 
             // Draw heat bar outline
             u8g2.drawFrame(15, 58, 102, 4);
-            u8g2.drawLine(16, 59, (pidOutput / 10) + 16, 59);
-            u8g2.drawLine(16, 60, (pidOutput / 10) + 16, 60);
+            u8g2.drawLine(16, 59, (Output / 10) + 16, 59);
+            u8g2.drawLine(16, 60, (Output / 10) + 16, 60);
 
             // Draw heat bar outline
             u8g2.drawFrame(15, 58, 102, 4);
-            u8g2.drawLine(16, 59, (pidOutput / 10) + 16, 59);
-            u8g2.drawLine(16, 60, (pidOutput / 10) + 16, 60);
+            u8g2.drawLine(16, 59, (Output / 10) + 16, 59);
+            u8g2.drawLine(16, 60, (Output / 10) + 16, 60);
 
             int numDecimalsInput = 1;
 
-            if (temperature > 99.999) {
+            if (Input > 99.999) {
                 numDecimalsInput = 0;
             }
 
@@ -39,12 +39,12 @@ void printScreen() {
             }
 
             //draw (blinking) temp
-            if (fabs(temperature - setPoint) < 0.3) {
+            if (fabs(Input - setPoint) < 0.3) {
                 if (isrCounter < 500) {
                     // limit to 4 characters
                     u8g2.setCursor(2, 2);
                     u8g2.setFont(u8g2_font_profont22_tf);
-                    u8g2.print(temperature, numDecimalsInput);
+                    u8g2.print(Input, numDecimalsInput);
                     u8g2.setFont(u8g2_font_open_iconic_arrow_2x_t);
                     u8g2.print(char(78));
                     u8g2.setCursor(78, 2);
@@ -54,7 +54,7 @@ void printScreen() {
             } else {
                 u8g2.setCursor(2, 2);
                 u8g2.setFont(u8g2_font_profont22_tf);
-                u8g2.print(temperature, numDecimalsInput);
+                u8g2.print(Input, numDecimalsInput);
                 u8g2.setFont(u8g2_font_open_iconic_arrow_2x_t);
                 u8g2.setCursor(56, 6);
 
@@ -88,7 +88,7 @@ void printScreen() {
             if (ONLYPID == 1) {
                 u8g2.print(brewtimersoftware, 0); // deaktivieren wenn Preinfusion ( // voransetzen )
             } else {
-                u8g2.print(totalBrewTime / 1000, 0); // aktivieren wenn Preinfusion
+                u8g2.print(totalbrewtime / 1000, 0); // aktivieren wenn Preinfusion
             }
 
             if (isBrewDetected == 1 && brewcounter == 10) {
@@ -97,7 +97,7 @@ void printScreen() {
                 // Brew
                 u8g2.setCursor(30, 40);
                 u8g2.print("BD:  ");
-                u8g2.print((millis() - timeBrewDetection) / 1000, 1);
+                u8g2.print((millis() - timeBrewdetection) / 1000, 1);
                 u8g2.print("/");
                 u8g2.print(brewtimersoftware, 0);
             }
