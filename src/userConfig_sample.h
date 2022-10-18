@@ -116,7 +116,7 @@ enum MACHINE {
 #define FLUSHTIME 6000             // time in ms the 3-way valve is open -> backflush
 #define MAXFLUSHCYCLES 5           // number of cycles the backflush should run, 0 = disabled
 
-#define TEMPSENSOR 2               // Temp sensor type: 1 = DS18B20, 2 = TSIC306
+#define TEMPSENSOR 2               // Temp sensor type: 1 = DS18B20, 2 = TSIC306, 3 = MAX31865
 
 // Pin Layout
 #define PINTEMPSENSOR 2
@@ -135,6 +135,11 @@ enum MACHINE {
 #define HXCLKPIN 99                // weight scale clock pin
 #define SCREEN_WIDTH 128           // OLED display width, in pixels
 #define SCREEN_HEIGHT 64           // OLED display height, in pixels
+#define MAX31865_MOSI 23           // MAX31865 Temp sensor SPI MOSI (VSPI default 23)
+#define MAX31865_MISO 19           // MAX31865 Temp sensor SPI MISO (VSPI default 19)
+#define MAX31865_CLK  18           // MAX31865 Temp sensor SPI Clock (VSPI default 18)
+#define MAX31865_CS   5            // MAX31865 Temp sensor Chip Select (VSPI default 5)
+#define MAX31865_PT100 true        // MAX31865 type. PT1000 if false
 
 // Check BrewSwitch
 #if (defined(ESP8266) && ((PINBREWSWITCH != 15 && PINBREWSWITCH != 0 && PINBREWSWITCH != 16 )))

@@ -12,6 +12,9 @@
 #define FW_HOTFIX     0
 #define FW_BRANCH     "MASTER"
 
+// User config
+#include "userConfig.h"         // needs to be configured by the user
+
 // Libraries
 #include <ArduinoOTA.h>
 #if TOF == 1
@@ -19,6 +22,9 @@
 #endif
 #if TEMPSENSOR == 1
     #include <DallasTemperature.h>  // Library for dallas temp sensor
+#endif
+#if TEMPSENSOR == 3
+    #include <Adafruit_MAX31865.h>  // Library for MAX31865 temp sensor
 #endif
 #include <WiFiManager.h>
 #include <InfluxDbClient.h>
@@ -34,7 +40,6 @@
 #include "Storage.h"
 #include "ISR.h"
 #include "debugSerial.h"
-#include "userConfig.h"         // needs to be configured by the user
 #include "rancilio-pid.h"
 
 #if defined(ESP32)
@@ -311,10 +316,17 @@ PID bPID(&temperature, &pidOutput, &setPoint, aggKp, aggKi, aggKd, 1, DIRECT);
 #endif
 
 // TSIC 306 temp sensor
-#if (PINTEMPSENSOR == 16 && TEMPSENSOR == 2 && defined(ESP8266))
-    TSIC Sensor1(PINTEMPSENSOR);            // only Signal pin, VCC pin unused by default
-#else
-    ZACwire Sensor2(PINTEMPSENSOR, 306);    // set pin to receive signal from the TSic 306
+#if TEMPSENSOR == 2
+    #if (PINTEMPSENSOR == 16 && defined(ESP8266))
+        TSIC Sensor1(PINTEMPSENSOR);            // only Signal pin, VCC pin unused by default
+    #else
+        ZACwire Sensor2(PINTEMPSENSOR, 306);    // set pin to receive signal from the TSic 306
+    #endif
+#endif
+
+// MAX31865
+#if TEMPSENSOR == 3
+    Adafruit_MAX31865 Sensor3 = Adafruit_MAX31865(MAX31865_CS, MAX31865_MOSI, MAX31865_MISO, MAX31865_CLK);
 #endif
 
 
@@ -647,6 +659,59 @@ void refreshTemp() {
             if (Brewdetection == 1) {
                 calculateTemperatureMovingAverage();
             } else if (!movingAverageInitialized) {
+                movingAverageInitialized = true;
+            }
+        }
+    }
+
+    if (TempSensor == 3) {
+        if (currentMillistemp - previousMillistemp >= intervaltempmestsic) {
+            previousMillistemp = currentMillistemp;
+
+    #if TEMPSENSOR == 3
+            #if MAX31865_PT100
+                temperature = Sensor3.temperature(100, 430.0);
+            #else
+                temperature = Sensor3.temperature(1000, 4300.0);
+            #endif
+            uint8_t fault = Sensor3.readFault();
+            if (fault) {
+                debugPrintf("Fault %04x", fault);
+                if (fault & MAX31865_FAULT_HIGHTHRESH) {
+                    debugPrintf("RTD High Threshold");
+                }
+                if (fault & MAX31865_FAULT_LOWTHRESH) {
+                    debugPrintf("RTD Low Threshold");
+                }
+                if (fault & MAX31865_FAULT_REFINLOW) {
+                    debugPrintf("REFIN- > 0.85 x Bias");
+                }
+                if (fault & MAX31865_FAULT_REFINHIGH) {
+                    debugPrintf("REFIN- < 0.85 x Bias - FORCE- open");
+                }
+                if (fault & MAX31865_FAULT_RTDINLOW) {
+                    debugPrintf("RTDIN- < 0.85 x Bias - FORCE- open");
+                }
+                if (fault & MAX31865_FAULT_OVUV) {
+                    debugPrintf("Under/Over voltage");
+                }
+                Sensor3.clearFault();
+    #endif
+    }
+
+            if (machinestate != kSteam) {
+                temperature -= brewTempOffset;
+            }
+
+            if (!checkSensor(temperature) && movingAverageInitialized) {
+                temperature = previousInput;
+                return; // if sensor data is not valid, abort function; Sensor must
+                        // be read at least one time at system startup
+            }
+
+            if (Brewdetection == 1) {
+                calculateTemperatureMovingAverage();
+            } else if (!movingAverageInitialized) {                
                 movingAverageInitialized = true;
             }
         }
@@ -1888,6 +1953,17 @@ void setup() {
         //in all other cases, use ZACwire
         #if ((PINTEMPSENSOR != 16 && defined(ESP8266)) || defined(ESP32))
             temperature = Sensor2.getTemp();
+        #endif
+    #endif
+
+    // MAX31865
+    #if TEMPSENSOR == 3
+        Sensor3.begin(MAX31865_3WIRE);
+
+        #if MAX31865_PT100
+            temperature = Sensor3.temperature(100, 430.0);
+        #else
+            temperature = Sensor3.temperature(1000, 4300.0);
         #endif
     #endif
 
