@@ -59,13 +59,6 @@ enum MACHINE {
 #define PRESSURESENSOR 0           // 1 = pressure sensor connected to A0; PINBREWSWITCH must be set to the connected input!
 #define TEMPLED 0                  // set led pin high when brew or steam set point is within range
 
-// TOF sensor for water level
-#define TOF 0                      // 0 = no TOF sensor connected; 1 = water level by TOF sensor
-#define TOF_I2C 0x29               // I2C address of TOF sensor; 0x29 by default
-#define CALIBRATION_MODE 0         // 1 = enable to obtain water level calibration values; 0 = disable for normal PID operation; can also be done in Blynk
-#define WATER_FULL 102             // value for full water tank (=100%) obtained in calibration procedure (in mm); can also be set in Blynk
-#define WATER_EMPTY 205            // value for empty water tank (=0%) obtained in calibration procedure (in mm); can also be set in Blynk
-
 // E-Trigger
 #define ETRIGGER 0                 // 0 = no trigger (for Rancilio except Rancilio E), 1 = trigger for CPU of Rancilio E
 #define ETRIGGERTIME 600           // seconds, time between trigger signal
@@ -137,11 +130,6 @@ enum MACHINE {
 #define HXCLKPIN 99                // weight scale clock pin
 #define SCREEN_WIDTH 128           // OLED display width, in pixels
 #define SCREEN_HEIGHT 64           // OLED display height, in pixels
-
-// Check BrewSwitch
-#if (defined(ESP8266) && ((PINBREWSWITCH != 15 && PINBREWSWITCH != 0 && PINBREWSWITCH != 16 )))
-  #error("WRONG Brewswitch PIN for ESP8266, Only PIN 15 and PIN 16");
-#endif
 
 // defined compiler errors
 #if (PRESSURESENSOR == 1) && (PINPRESSURESENSOR == 0) && (PINBREWSWITCH == 0)

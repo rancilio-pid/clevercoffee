@@ -318,16 +318,11 @@ static void setDefaults(void) {
  *         <0 - failed
  */
 int storageSetup(void) {
-    #if defined(ESP8266)
-        EEPROM.begin(sizeof(sto_data_t));
-    #elif defined(ESP32)
-        if (!EEPROM.begin(sizeof(sto_data_t))) {
-            debugPrintf("%s(): EEPROM initialization failed!\n", __func__);
-            return -1;
-        }
-    #else
-        #error("unsupported MCU");
-    #endif
+
+    if (!EEPROM.begin(sizeof(sto_data_t))) {
+        debugPrintf("%s(): EEPROM initialization failed!\n", __func__);
+        return -1;
+    }
 
     /* It's not necessary here to check if any valid data are stored,
      * because storageGet() returns a default value in this case.
@@ -538,30 +533,17 @@ int storageGet(sto_item_id_t itemId, String& itemValue) {
         return -1;
     }
 
-    #if defined(ESP8266)
-        const uint8_t* storageDataPtr;
-        storageDataPtr = EEPROM.getConstDataPtr() + itemAddr;
 
-        if (isString(storageDataPtr, maxItemSize))  { // exist a null terminator?
-            itemValue = String((const char*)storageDataPtr); // convert to C++ string
-        } else {
-            debugPrintf("%s(): storage empty -> returning default\n", __func__);
-            itemValue = String((PGM_P)&itemDefaults + itemAddr);  // set default string
-        }
-    #elif defined(ESP32)
-        // The ESP32 EEPROM class does not support getConstDataPtr()!
-        uint8_t buf[maxItemSize];
-        EEPROM.readBytes(itemAddr, buf, maxItemSize);
+    // The ESP32 EEPROM class does not support getConstDataPtr()!
+    uint8_t buf[maxItemSize];
+    EEPROM.readBytes(itemAddr, buf, maxItemSize);
 
-        if (isString(buf, maxItemSize)) { // exist a null terminator?
-            itemValue = String((const char*)buf);
-        } else {
-            debugPrintf("%s(): storage empty -> returning default\n", __func__);
-            itemValue = String((PGM_P)&itemDefaults + itemAddr);  // set default string
-        }
-    #else
-        #error("MCU not supported");
-    #endif
+    if (isString(buf, maxItemSize)) { // exist a null terminator?
+        itemValue = String((const char*)buf);
+    } else {
+        debugPrintf("%s(): storage empty -> returning default\n", __func__);
+        itemValue = String((PGM_P)&itemDefaults + itemAddr);  // set default string
+    }
 
     debugPrintf("%s(): addr=%i size=%u item=%i value=\"%s\"\n", __func__, itemAddr, itemValue.length() + 1, itemId, itemValue.c_str());
 
