@@ -9,15 +9,11 @@
 
 #include <Arduino.h>
 
-#ifdef ESP32
-    #include <WiFi.h>
-    #include <AsyncTCP.h>
-    #include "FS.h"
-#elif defined(ESP8266)
-    #include <ESP8266WiFi.h>
-    #include <ESPAsyncTCP.h>
-    #define WEBSERVER_H
-#endif
+
+#include <WiFi.h>
+#include <AsyncTCP.h>
+#include "FS.h"
+
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
 
@@ -60,11 +56,7 @@ double curWeight = 0.0;
 double weightB = 0.0;
 double weightPB = 0.0;
 
-#if defined(ESP8266)
-    #define HISTORY_LENGTH 120    //10 mins of values
-#elif defined(ESP32)
-    #define HISTORY_LENGTH 720    //60 mins of values
-#endif
+#define HISTORY_LENGTH 720    //60 mins of values
 
 static float tempHistory[3][HISTORY_LENGTH] = {0};
 int historyCurrentIndex = 0;
