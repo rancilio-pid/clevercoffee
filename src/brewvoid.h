@@ -356,7 +356,7 @@ void brew() {
             weightBrew = weight - weightPreBrew;
         }
 
-        if (brewswitch == LOW && firstreading == 0) {
+        if (brewswitch == LOW && movingAverageInitialized) {
             // check if brewswitch was turned off at least once, last time,
             brewswitchWasOFF = true;
         }
