@@ -3,7 +3,7 @@
  *
  * @brief Main sketch
  *
- * @version 3.1.0 Master 
+ * @version 3.1.0 Master
  */
 
 // Firmware version
@@ -37,12 +37,7 @@
 #include "userConfig.h"         // needs to be configured by the user
 #include "rancilio-pid.h"
 
-#if defined(ESP8266)
-    #include <BlynkSimpleEsp8266.h>
-#endif
-
 #if defined(ESP32)
-    #include <BlynkSimpleEsp32.h>
     #include <os.h>
     hw_timer_t *timer = NULL;
 #endif
@@ -102,7 +97,6 @@ const int Brewdetection = BREWDETECTION;
 const int triggerType = TRIGGERTYPE;
 const int VoltageSensorType = VOLTAGESENSORTYPE;
 const boolean ota = OTA;
-const int grafana = GRAFANA;
 int BrewMode = BREWMODE;
 
 // Display
@@ -126,7 +120,6 @@ WiFiManager wm;
 const unsigned long wifiConnectionDelay = WIFICONNECTIONDELAY;
 const unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
 const char *hostname = HOSTNAME;
-const char *auth = AUTH;
 const char *pass = PASS;
 unsigned long lastWifiConnectionAttempt = millis();
 unsigned int wifiReconnects = 0;  // actual number of reconnects
@@ -134,13 +127,6 @@ unsigned int wifiReconnects = 0;  // actual number of reconnects
 // OTA
 const char *OTAhost = OTAHOST;
 const char *OTApass = OTAPASS;
-
-// Blynk
-const char *blynkaddress = BLYNKADDRESS;
-const int blynkport = BLYNKPORT;
-unsigned int blynkReCnctFlag;       // Blynk Reconnection Flag
-unsigned int blynkReCnctCount = 0;  // Blynk Reconnection counter
-unsigned long lastBlynkConnectionAttempt = millis();
 
 // Backflush values
 const unsigned long fillTime = FILLTIME;
@@ -190,7 +176,6 @@ void printMachineState();
 char const* machinestateEnumToString(MachineState machinestate);
 void initSteamQM();
 boolean checkSteamOffQM();
-void writeSysParamsToBlynk(void);
 void writeSysParamsToMQTT(void);
 char *number2string(double in);
 char *number2string(float in);
@@ -231,7 +216,7 @@ double aggbTv = AGGBTV;
 
 double aggbKd = aggbTv * aggbKp;
 double brewtimersoftware = BREW_SW_TIMER;  // use userConfig time until disabling BD PID
-double brewsensitivity = BREWSENSITIVITY;  // use userConfig brew detection sensitivity 
+double brewsensitivity = BREWSENSITIVITY;  // use userConfig brew detection sensitivity
 
 // system parameter EEPROM storage wrappers (current value as pointer to variable, minimum, maximum, optional storage ID)
 SysPara<double> sysParaPidKpStart(&startKp, PID_KP_START_MIN, PID_KP_START_MAX, STO_ITEM_PID_KP_START);
@@ -259,7 +244,7 @@ SysPara<uint8_t> sysParaUseBDPID(&useBDPID, 0, 1, STO_ITEM_USE_BD_PID);
 // Other variables
 int relayON, relayOFF;           // used for relay trigger type. Do not change!
 boolean coldstart = true;        // true = Rancilio started for first time
-boolean emergencyStop = false;   // Emergency stop if temperature is too high 
+boolean emergencyStop = false;   // Emergency stop if temperature is too high
 double EmergencyStopTemp = 120;  // Temp EmergencyStopTemp
 float inX = 0, inY = 0, inOld = 0, inSum = 0; // used for filterPressureValue()
 int signalBars = 0;              // used for getSignalStrength()
@@ -321,7 +306,7 @@ PID bPID(&temperature, &pidOutput, &setPoint, aggKp, aggKi, aggKd, 1, DIRECT);
 #if TEMPSENSOR == 1
     OneWire oneWire(PINTEMPSENSOR);         // Setup a OneWire instance to communicate with OneWire
                                             // devices (not just Maxim/Dallas temperature ICs)
-    DallasTemperature sensors(&oneWire);   
+    DallasTemperature sensors(&oneWire);
     DeviceAddress sensorDeviceAddress;      // arrays to hold device address
 #endif
 
@@ -332,12 +317,6 @@ PID bPID(&temperature, &pidOutput, &setPoint, aggKp, aggKi, aggKd, 1, DIRECT);
     ZACwire Sensor2(PINTEMPSENSOR, 306);    // set pin to receive signal from the TSic 306
 #endif
 
-// Blynk update Interval
-unsigned long previousMillisBlynk;          // initialised at the end of init()
-unsigned long previousMillisMQTT;           // initialised at the end of init()
-const unsigned long intervalBlynk = 1000;
-const unsigned long intervalMQTT = 5000;
-int blynksendcounter = 1;
 
 // MQTT
 WiFiClient net;
@@ -350,8 +329,10 @@ const char *mqtt_topic_prefix = MQTT_TOPIC_PREFIX;
 char topic_will[256];
 char topic_set[256];
 unsigned long lastMQTTConnectionAttempt = millis();
-unsigned int MQTTReCnctFlag;             // Blynk Reconnection Flag
-unsigned int MQTTReCnctCount = 0;        // Blynk Reconnection counter
+unsigned int MQTTReCnctFlag;
+unsigned int MQTTReCnctCount = 0;
+unsigned long previousMillisMQTT;           // initialised at the end of init()
+const unsigned long intervalMQTT = 5000;
 
 enum MQTTSettableType {
     tUInt8,
@@ -367,8 +348,8 @@ struct mqttVars_t {
 };
 
 std::vector<mqttVars_t> mqttVars = {
-    {"brewSetPoint", tDouble, BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, (void *)&brewSetPoint},    
-    {"brewTempOffset", tDouble, BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, (void *)&brewTempOffset},    
+    {"brewSetPoint", tDouble, BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, (void *)&brewSetPoint},
+    {"brewTempOffset", tDouble, BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, (void *)&brewTempOffset},
     {"brewtime", tDouble, BREW_TIME_MIN, BREW_TIME_MAX, (void *)&brewtime},
     {"preinfusion", tDouble, PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX, (void *)&preinfusion},
     {"preinfusionpause", tDouble, PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, (void *)&preinfusionpause},
@@ -474,54 +455,6 @@ const unsigned long intervalDisplay = 500;
 #endif
 
 
-// Blynk define pins and read values
-BLYNK_CONNECTED() {
-    if (offlineMode == 0 && BLYNK == 1) {
-        Blynk.syncAll();
-    }
-}
-
-BLYNK_WRITE(V4) { aggKp = param.asDouble(); }
-BLYNK_WRITE(V5) { aggTn = param.asDouble(); }
-BLYNK_WRITE(V6) { aggTv = param.asDouble(); }
-BLYNK_WRITE(V7) { brewSetPoint = param.asDouble(); }
-BLYNK_WRITE(V8) { brewtime = param.asDouble(); }
-BLYNK_WRITE(V9) { preinfusion = param.asDouble(); }
-BLYNK_WRITE(V10) { preinfusionpause = param.asDouble(); }
-BLYNK_WRITE(V13) { pidON = param.asInt(); }
-BLYNK_WRITE(V15) {
-    steamON = param.asInt();
-
-    if (steamON == 1) {
-        steamFirstON = 1;
-    }
-
-    if (steamON == 0) {
-        steamFirstON = 0;
-    }
-}
-
-BLYNK_WRITE(V16) { steamSetPoint = param.asDouble(); }
-
-#if (BREWMODE == 2)
-    BLYNK_WRITE(V18) { weightSetpoint = param.asFloat(); }
-#endif
-
-#if TOF == 1
-BLYNK_WRITE(V25) { calibration_mode = param.asInt(); }
-BLYNK_WRITE(V26) { water_empty = param.asInt(); }
-BLYNK_WRITE(V27) { water_full = param.asInt(); }
-#endif
-
-BLYNK_WRITE(V30) { aggbKp = param.asDouble(); }
-BLYNK_WRITE(V31) { aggbTn = param.asDouble(); }
-BLYNK_WRITE(V32) { aggbTv = param.asDouble(); }
-BLYNK_WRITE(V33) { brewtimersoftware = param.asDouble(); }
-BLYNK_WRITE(V34) { brewsensitivity = param.asDouble(); }
-BLYNK_WRITE(V40) { backflushON = param.asInt(); }
-BLYNK_WRITE(V11) { startKp = param.asDouble(); }
-BLYNK_WRITE(V14) { startTn = param.asDouble(); }
-
 #if (PRESSURESENSOR == 1)  // Pressure sensor connected
     /**
      * Pressure sensor
@@ -564,11 +497,11 @@ void testEmergencyStop() {
  * @brief FIR moving average filter for software brew detection
  */
 void calculateTemperatureMovingAverage() {
-    const int numValues = 15;                      // moving average filter length 
+    const int numValues = 15;                      // moving average filter length
     static double tempValues[numValues];           // array of temp values
-    static unsigned long timeValues[numValues];    // array of time values 
+    static unsigned long timeValues[numValues];    // array of time values
     static double tempChangeRates[numValues];
-    static int valueIndex = 1;                     // the index of the current value 
+    static int valueIndex = 1;                     // the index of the current value
 
     if (Brewdetection == 1 && !movingAverageInitialized) {
         for (int index = 0; index < numValues; index++) {
@@ -713,7 +646,7 @@ void refreshTemp() {
 
             if (Brewdetection == 1) {
                 calculateTemperatureMovingAverage();
-            } else if (!movingAverageInitialized) {                
+            } else if (!movingAverageInitialized) {
                 movingAverageInitialized = true;
             }
         }
@@ -831,25 +764,6 @@ void sendInflux() {
     }
 }
 
-/**
- * @brief Check if Blynk is connected, if not reconnect abort function if offline, or brew is running
- *      blynk is also using maxWifiReconnects!
- */
-void checkBlynk() {
-    if (offlineMode == 1 || BLYNK == 0 || brewcounter > 11) return;
-
-    if ((millis() - lastBlynkConnectionAttempt >= wifiConnectionDelay) && (blynkReCnctCount <= maxWifiReconnects)) {
-        int statusTemp = Blynk.connected();
-
-        if (statusTemp != 1) {
-            lastBlynkConnectionAttempt = millis();  // Reconnection Timer Function
-            blynkReCnctCount++;                     // Increment reconnection Counter
-            debugPrintf("Attempting blynk reconnection: %i\n", blynkReCnctCount);
-            Blynk.connect(3000);    // Try to reconnect to the server; connect() is
-                                    // a blocking function, watch the timeout!
-        }
-    }
-}
 
 /**
  * @brief Check if MQTT is connected, if not reconnect abort function if offline, or brew is running
@@ -916,50 +830,6 @@ bool mqtt_publish(const char *reading, char *payload) {
     #endif
 }
 
-/**
- * @brief Send data to Blynk server
- */
-void sendToBlynkMQTT() {
-    if (offlineMode == 1) return;
-
-    unsigned long currentMillisBlynk = millis();
-
-    if ((currentMillisBlynk - previousMillisBlynk >= intervalBlynk) && (BLYNK == 1)) {
-        previousMillisBlynk = currentMillisBlynk;
-
-        if (!Blynk.connected()) {
-            return;
-        }
-
-        if (blynksendcounter == 1) {
-            Blynk.virtualWrite(V2, temperature);
-        }
-
-        if (blynksendcounter == 2) {
-            Blynk.virtualWrite(V23, pidOutput);
-        }
-
-        if (blynksendcounter == 3) {
-            Blynk.virtualWrite(V17, setPoint);
-        }
-
-        if (blynksendcounter == 4) {
-            Blynk.virtualWrite(V35, tempRateAverage);
-        }
-
-        if (blynksendcounter == 5) {
-            Blynk.virtualWrite(V36, tempChangeRateAverageMin);
-        }
-
-        if (grafana == 1 && blynksendcounter >= 6) {
-            Blynk.virtualWrite(V60, temperature, pidOutput, bPID.GetKp(), bPID.GetKi(), bPID.GetKd(), setPoint, tempRateAverage);
-        } else if (blynksendcounter >= 6) {
-            blynksendcounter = 0;
-        }
-
-        blynksendcounter++;
-    }
-}
 
 /**
  * @brief Brewdetection
@@ -1137,7 +1007,6 @@ void assignMQTTParam(char *param, double value) {
         }
 
         mqtt_publish(param, number2string(value));
-        writeSysParamsToBlynk();
         writeSysParamsToStorage();
     }
     else {
@@ -1209,7 +1078,7 @@ void checkSteamON() {
         steamON = 1;
     }
 
-    // if via blynk on, then steamFirstON == 1, prevent override
+    // if activated via web interface then steamFirstON == 1, prevent override
     if (digitalRead(PINSTEAMSWITCH) == LOW && steamFirstON == 0) {
         steamON = 0;
     }
@@ -1359,7 +1228,7 @@ void machinestatevoid() {
             }
             break;
 
-        // Setpoint is below current temperature 
+        // Setpoint is below current temperature
         case kSetPointNegative:
             brewDetection();
 
@@ -1689,7 +1558,7 @@ char const* machinestateEnumToString(MachineState machinestate) {
     }
 
     return "Unknown";
-} 
+}
 
 void debugVerboseOutput() {
     static PeriodicTrigger trigger(10000);
@@ -1758,65 +1627,16 @@ void wiFiSetup() {
     #if OLED_DISPLAY != 0
         displayLogo(langstring_connectwifi1, wm.getWiFiSSID(true));
     #endif
-        
+
     startRemoteSerialServer();
 }
 
-/**
- * @brief Blynk Setup
- */
-void BlynkSetup() {
-    if (BLYNK == 1) {
-        debugPrintln("Wifi works, now try Blynk (timeout 30s)");
-        Blynk.config(auth, blynkaddress, blynkport);
-        Blynk.connect(30000);
-
-        if (Blynk.connected() == true) {
-            #if OLED_DISPLAY != 0
-                displayLogo(langstring_connectblynk2[0], langstring_connectblynk2[1]);
-            #endif
-
-            debugPrintln("Blynk is online");
-            debugPrintln("sync all variables and write new values to eeprom");
-
-            Blynk.syncVirtual(V4);
-            Blynk.syncVirtual(V5);
-            Blynk.syncVirtual(V6);
-            Blynk.syncVirtual(V7);
-            Blynk.syncVirtual(V8);
-            Blynk.syncVirtual(V9);
-            Blynk.syncVirtual(V10);
-            Blynk.syncVirtual(V11);
-            Blynk.syncVirtual(V12);
-            Blynk.syncVirtual(V13);
-            Blynk.syncVirtual(V14);
-            Blynk.syncVirtual(V15);
-            Blynk.syncVirtual(V30);
-            Blynk.syncVirtual(V31);
-            Blynk.syncVirtual(V32);
-            Blynk.syncVirtual(V33);
-            Blynk.syncVirtual(V34);
-
-            writeSysParamsToStorage();
-        } else {
-            debugPrintln("No connection to Blynk");
-
-            if (readSysParamsFromStorage() == 0) {
-                #if OLED_DISPLAY != 0
-                        displayLogo("3: Blynk not connected", "use eeprom values..");
-                #endif
-            }
-        }
-    }
-}
 
 /**
  * @brief Set up embedded Website
  */
 void websiteSetup() {
     setEepromWriteFcn(writeSysParamsToStorage);
-    //setBlynkWriteFcn(writeSysParamsToBlynk);
-    //setMQTTWriteFcn(writeSysParamsToMQTT);
 
     if (readSysParamsFromStorage() != 0) {
         #if OLED_DISPLAY != 0
@@ -2010,12 +1830,10 @@ void setup() {
         lox.setMeasurementTimingBudgetMicroSeconds(2000000);
     #endif
 
-    // BLYNK & Fallback offline
+    // Fallback offline
     if (connectmode == 1) {  // WiFi Mode
         wiFiSetup();
         websiteSetup();
-
-        BlynkSetup();
 
         // OTA Updates
         if (ota && WiFi.status() == WL_CONNECTED) {
@@ -2074,14 +1892,13 @@ void setup() {
     #endif
 
     temperature -= brewTempOffset;
-    
+
     // Initialisation MUST be at the very end of the init(), otherwise the
     // time comparision in loop() will have a big offset
     unsigned long currentTime = millis();
     previousMillistemp = currentTime;
     windowStartTime = currentTime;
     previousMillisDisplay = currentTime;
-    previousMillisBlynk = currentTime;
     previousMillisMQTT = currentTime;
     previousMillisInflux = currentTime;
     previousMillisETrigger = currentTime;
@@ -2126,13 +1943,6 @@ void loopcalibrate() {
         pidOutput = 0;
     }
 
-    if (Blynk.connected() && BLYNK == 1) {  // If connected run as normal
-        Blynk.run();
-        blynkReCnctCount = 0;  // reset blynk reconnects if connected
-    } else {
-        checkBlynk();
-    }
-
     digitalWrite(PINHEATER, LOW);   // Stop heating to be on the safe side ...
 
     unsigned long currentMillisTOF = millis();
@@ -2175,13 +1985,6 @@ void looppid() {
 
         // Enable interrupts if OTA is finished
         ArduinoOTA.onEnd([]() { enableTimer1(); });
-
-        if (Blynk.connected() && BLYNK == 1) {  // If connected run as normal
-            Blynk.run();
-            blynkReCnctCount = 0;  // reset blynk reconnects if connected
-        } else {
-            checkBlynk();
-        }
 
         wifiReconnects = 0;  // reset wifi reconnects if connected
     } else {
@@ -2237,8 +2040,8 @@ void looppid() {
             debugPrintf("isBrewDetected %i\n", isBrewDetected);
             debugPrintf("Brewdetection %i\n", Brewdetection);
 
-    
-        }  
+
+        }
         #endif
     }
 
@@ -2253,7 +2056,6 @@ void looppid() {
     brew();                  // start brewing if button pressed
     checkSteamON();          // check for steam
     setEmergencyStopTemp();
-    sendToBlynkMQTT();
     machinestatevoid();      // update machinestate
     tempLed();
 
@@ -2301,7 +2103,7 @@ void looppid() {
 
     // Set PID if first start of machine detected, and no steamON
     if ((machinestate == kInit || machinestate == kColdStart || machinestate == kSetPointNegative)) {
-        if (usePonM) { 
+        if (usePonM) {
             if (startTn != 0) {
                 startKi = startKp / startTn;
             } else {
@@ -2391,7 +2193,6 @@ void looppid() {
 
 void setBackflush(int backflush) {
     backflushON = backflush;
-    writeSysParamsToBlynk();
 }
 
 void setSteamMode(int steamMode) {
@@ -2404,12 +2205,10 @@ void setSteamMode(int steamMode) {
     if (steamON == 0) {
         steamFirstON = 0;
     }
-    writeSysParamsToBlynk();
 }
 
 void setPidStatus(int pidStatus) {
     pidON = pidStatus;
-    writeSysParamsToBlynk();
     writeSysParamsToStorage();
 }
 
@@ -2514,36 +2313,6 @@ int writeSysParamsToStorage(void) {
     return storageCommit();
 }
 
-/**
- * @brief Send all current system parameter values to Blynk
- *
- * @return TODO 0 = success, < 0 = failure
- */
-void writeSysParamsToBlynk(void) {
-    if (BLYNK == 1 && Blynk.connected()) {
-        Blynk.virtualWrite(V2, temperature);
-        Blynk.virtualWrite(V4, aggKp);
-        Blynk.virtualWrite(V5, aggTn);
-        Blynk.virtualWrite(V6, aggTv);
-        Blynk.virtualWrite(V7, brewSetPoint);
-        Blynk.virtualWrite(V8, brewtime);
-        Blynk.virtualWrite(V9, preinfusion);
-        Blynk.virtualWrite(V10, preinfusionpause);
-        Blynk.virtualWrite(V13, pidON);
-        Blynk.virtualWrite(V15, steamON);
-        Blynk.virtualWrite(V16, steamSetPoint);
-        Blynk.virtualWrite(V17, setPoint);
-        Blynk.virtualWrite(V40, backflushON);
-        Blynk.virtualWrite(V15, steamON);
-
-        #if (BREWMODE == 2)
-            Blynk.virtualWrite(V18, weightSetpoint);
-        #endif
-
-        Blynk.virtualWrite(V11, startKp);
-        Blynk.virtualWrite(V14, startTn);
-    }
-}
 
 /**
  * @brief Send all current system parameter values to MQTT

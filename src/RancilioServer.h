@@ -42,7 +42,7 @@ struct editable_t {
     String helpText;
     EditableKind type;
     int section;                   // parameter section number
-    std::function<bool()> show;    // method that determines if we show this parameter (in the web interface)    
+    std::function<bool()> show;    // method that determines if we show this parameter (in the web interface)
     int minValue;
     int maxValue;
     void *ptr;                     // TODO: there must be a tidier way to do this? could we use c++ templates?
@@ -222,7 +222,7 @@ constexpr unsigned int str2int(const char* str, int h = 0) {
 }
 
 String getHeader(String varName) {
-    //TODO: actually put the references libs on local file system again (only when using ESP32 which has more flash mem, but also make sure web server can handle this many concurrent requests (might crash, at least with ESP8266)
+    //TODO: actually put the references libs on local file system again (only when using ESP32 which has more flash mem, but also make sure web server can handle this many concurrent requests (might crash)
     switch (str2int(varName.c_str())) {
         case (str2int("FONTAWESOME")):
             #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
@@ -285,7 +285,7 @@ String staticProcessor(const String& var) {
     } else {
         debugPrintf("Can't open file %s, not enough memory available\n", file ? file.name() : "");
     }
-    
+
     skipHeaterISR = false;
 
     return String();
@@ -372,7 +372,7 @@ void serverSetup() {
 
                         String val = p->value();
                         static const char* newVal = new char[val.length() + 1]; //is this persistent or on stack?
-                        val.toCharArray(newVal, val.length() + 1); 
+                        val.toCharArray(newVal, val.length() + 1);
 
                         if (e.ptr) {
                             delete[] ((char *)e.ptr);
@@ -398,8 +398,7 @@ void serverSetup() {
                 }
             }
 
-            // Write the new values to Blynk and MQTT
-            writeSysParamsToBlynk();
+            // Write the new values to MQTT
             writeSysParamsToMQTT();
 
         } else if (request->method() == 1) {  //WebRequestMethod enum -> HTTP_GET
@@ -416,7 +415,7 @@ void serverSetup() {
                     //skip vars until we find the one for the id in the request parameter
                     if (paramId != e.templateString) {
                         continue;
-                    }                        
+                    }
                 }
 
                 JsonObject paramObj = doc.createNestedObject();
@@ -437,7 +436,7 @@ void serverSetup() {
                     paramObj["value"] = round2(*(double *)e.ptr);
                 } else if (e.type == kCString) {
                     paramObj["value"] = String((char *)e.ptr);
-                }                
+                }
                 paramObj["min"] = e.minValue;
                 paramObj["max"] = e.maxValue;
 
@@ -502,7 +501,7 @@ void serverSetup() {
         JsonArray currentTemps = doc.createNestedArray("currentTemps");
         JsonArray targetTemps = doc.createNestedArray("targetTemps");
         JsonArray heaterPowers = doc.createNestedArray("heaterPowers");
-        
+
         //go through history values backwards starting from currentIndex and wrap around beginning
         //to include valueCount many values
         for (int i=mod(historyCurrentIndex-historyValueCount, HISTORY_LENGTH);
@@ -517,7 +516,7 @@ void serverSetup() {
         serializeJson(doc, *response);
         request->send(response);
     });
-    
+
     server.onNotFound([](AsyncWebServerRequest *request) {
         request->send(404, "text/plain", "Not found");
     });
