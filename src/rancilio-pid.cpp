@@ -3,7 +3,7 @@
  *
  * @brief Main sketch
  *
- * @version 3.1.0 Master
+ * @version 3.1.0 Master 
  */
 
 // Firmware version
@@ -14,12 +14,11 @@
 
 // Libraries
 #include <ArduinoOTA.h>
-#if TOF == 1
-    #include <Adafruit_VL53L0X.h>   // for ToF Sensor
-#endif
+
 #if TEMPSENSOR == 1
     #include <DallasTemperature.h>  // Library for dallas temp sensor
 #endif
+
 #include <WiFiManager.h>
 #include <InfluxDbClient.h>
 #include <PubSubClient.h>
@@ -36,11 +35,10 @@
 #include "debugSerial.h"
 #include "userConfig.h"         // needs to be configured by the user
 #include "rancilio-pid.h"
+#include <os.h>
 
-#if defined(ESP32)
-    #include <os.h>
-    hw_timer_t *timer = NULL;
-#endif
+hw_timer_t *timer = NULL;
+
 
 #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
     #include <HX711_ADC.h>
@@ -101,19 +99,6 @@ int BrewMode = BREWMODE;
 
 // Display
 uint8_t oled_i2c = OLED_I2C;
-
-// ToF Sensor
-#if TOF == 1
-Adafruit_VL53L0X lox = Adafruit_VL53L0X();
-int calibration_mode = CALIBRATION_MODE;
-uint8_t tof_i2c = TOF_I2C;
-int water_full = WATER_FULL;
-int water_empty = WATER_EMPTY;
-unsigned long previousMillisTOF;         // initialisation at the end of init()
-const unsigned long intervalTOF = 5000;  // ms
-double distance;
-double percentage;
-#endif
 
 // WiFi
 WiFiManager wm;
@@ -311,11 +296,7 @@ PID bPID(&temperature, &pidOutput, &setPoint, aggKp, aggKi, aggKd, 1, DIRECT);
 #endif
 
 // TSIC 306 temp sensor
-#if (PINTEMPSENSOR == 16 && TEMPSENSOR == 2 && defined(ESP8266))
-    TSIC Sensor1(PINTEMPSENSOR);            // only Signal pin, VCC pin unused by default
-#else
-    ZACwire Sensor2(PINTEMPSENSOR, 306);    // set pin to receive signal from the TSic 306
-#endif
+ZACwire Sensor2(PINTEMPSENSOR, 306);    // set pin to receive signal from the TSic 306
 
 
 // MQTT
@@ -622,17 +603,9 @@ void refreshTemp() {
         if (currentMillistemp - previousMillistemp >= intervaltempmestsic) {
             previousMillistemp = currentMillistemp;
 
-    #if TEMPSENSOR == 2
-        #if (PINTEMPSENSOR == 16 && defined(ESP8266))
-            uint16_t temp = 0;
-            Sensor1.getTemperature(&temp);
-            temperature = Sensor1.calc_Celsius(&temp);
-        #endif
-
-        #if ((PINTEMPSENSOR != 16 && defined(ESP8266)) || defined(ESP32))
-            temperature = Sensor2.getTemp();
-        #endif
-    #endif
+            #if TEMPSENSOR == 2
+                temperature = Sensor2.getTemp();
+            #endif
 
             if (machinestate != kSteam) {
                 temperature -= brewTempOffset;
@@ -1785,31 +1758,10 @@ void setup() {
 
     // IF PINBREWSWITCH & Steam selected
     if (PINBREWSWITCH > 0) {
-        #if (defined(ESP8266) && PINBREWSWITCH == 16)
-            pinMode(PINBREWSWITCH, INPUT_PULLDOWN_16);
-        #endif
-
-        #if (defined(ESP8266) && PINBREWSWITCH == 15)
-            pinMode(PINBREWSWITCH, INPUT);
-        #endif
-
-        #if defined(ESP32)
-            pinMode(PINBREWSWITCH, INPUT_PULLDOWN);
-            ;
-        #endif
+        pinMode(PINBREWSWITCH, INPUT_PULLDOWN);
     }
 
-    #if (defined(ESP8266) && PINSTEAMSWITCH == 16)
-        pinMode(PINSTEAMSWITCH, INPUT_PULLDOWN_16);
-    #endif
-
-    #if (defined(ESP8266) && PINSTEAMSWITCH == 15)
-        pinMode(PINSTEAMSWITCH, INPUT);
-    #endif
-
-    #if defined(ESP32)
-        pinMode(PINSTEAMSWITCH, INPUT_PULLDOWN);
-    #endif
+    pinMode(PINSTEAMSWITCH, INPUT_PULLDOWN);
 
     #if OLED_DISPLAY != 0
         u8g2.setI2CAddress(oled_i2c * 2);
@@ -1822,12 +1774,6 @@ void setup() {
     // Init Scale by BREWMODE 2 or SHOTTIMER 2
     #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
         initScale();
-    #endif
-
-    // VL530L0x TOF sensor
-    #if TOF == 1
-        lox.begin(tof_i2c);  // initialize TOF sensor at I2C address
-        lox.setMeasurementTimingBudgetMicroSeconds(2000000);
     #endif
 
     // Fallback offline
@@ -1876,19 +1822,9 @@ void setup() {
         temperature = sensors.getTempCByIndex(0);
     #endif
 
-    //TSic 306 temp sensor
+    // TSic 306 temp sensor
     #if TEMPSENSOR == 2
-        //use old TSic library if connected to pin 16 of ESP8266
-        #if (PINTEMPSENSOR == 16 && defined(ESP8266))
-            uint16_t temp = 0;
-            Sensor1.getTemperature(&temp);
-            temperature = Sensor1.calc_Celsius(&temp);
-        #endif
-
-        //in all other cases, use ZACwire
-        #if ((PINTEMPSENSOR != 16 && defined(ESP8266)) || defined(ESP32))
-            temperature = Sensor2.getTemp();
-        #endif
+        temperature = Sensor2.getTemp();
     #endif
 
     temperature -= brewTempOffset;
@@ -1917,49 +1853,12 @@ void setup() {
     enableTimer1();
 }
 
-void loop() {
-#if TOF == 1
-    if (calibration_mode == 1) {
-        loopcalibrate();
-    } else {
-        looppid();
-    }
-#else
-    looppid();
-#endif
 
+void loop() {
+    looppid();
     checkForRemoteSerialClients();
 }
 
-#if TOF == 1
-/**
- * @brief ToF sensor calibration mode
- */
-void loopcalibrate() {
-    // Deactivate PID
-    if (pidMode == 1) {
-        pidMode = 0;
-        bPID.SetMode(pidMode);
-        pidOutput = 0;
-    }
-
-    digitalWrite(PINHEATER, LOW);   // Stop heating to be on the safe side ...
-
-    unsigned long currentMillisTOF = millis();
-
-    if (currentMillisTOF - previousMillisTOF >= intervalTOF) {
-        previousMillisTOF = millis();
-        VL53L0X_RangingMeasurementData_t measure;   // TOF Sensor measurement
-        lox.rangingTest(&measure, false);           // pass in 'true' to get debug data printout!
-        distance = measure.RangeMilliMeter;         // write new distence value to 'distance'
-        debugPrintf("%d mm\n", distance);
-
-        #if OLED_DISPLAY != 0
-            displayDistance(distance);
-        #endif
-    }
-}
-#endif
 
 void looppid() {
     // Only do Wifi stuff, if Wifi is connected
@@ -1990,22 +1889,6 @@ void looppid() {
     } else {
         checkWifi();
     }
-
-    #if TOF != 0
-        unsigned long currentMillisTOF = millis();
-
-        if (currentMillisTOF - previousMillisTOF >= intervalTOF) {
-            previousMillisTOF = millis();
-            VL53L0X_RangingMeasurementData_t measure;   // TOF Sensor measurement
-            lox.rangingTest(&measure, false);           // pass in 'true' to get debug data printout!
-            distance = measure.RangeMilliMeter;         // write new distence value to 'distance'
-
-            if (distance <= 1000) {
-                percentage = (100.00 / (water_empty - water_full)) * (water_empty - distance);  // calculate percentage of waterlevel
-                debugPrintf("%d\n", percentage);
-            }
-        }
-    #endif
 
     refreshTemp();        // update temperature values
     testEmergencyStop();  // test if temp is too high

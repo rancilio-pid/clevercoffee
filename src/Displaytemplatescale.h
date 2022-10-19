@@ -133,12 +133,6 @@ void printScreen() {
             u8g2.print("Offline Mode");
         }
 
-        #if TOF == 1
-            u8g2.setCursor(100, 2);
-            u8g2.printf("%.0f\n", percentage);  // display water level
-            u8g2.print((char)37);
-        #endif
-
         u8g2.sendBuffer();
     }
 }

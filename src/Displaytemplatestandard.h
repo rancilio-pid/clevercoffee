@@ -65,15 +65,6 @@ void printScreen()
         //draw setPoint line
         u8g2.drawLine(18, 58 - (setPoint / 2), 23, 58 - (setPoint / 2));
 
-        // PID values over heat bar, TOF if active
-    #if TOF == 1
-        if (percentage < 10.00) {
-            if (isrCounter < 500) {
-                u8g2.setCursor(40, 48);
-                u8g2.print(langstring_waterempty);
-            }
-        }
-    #else
         u8g2.setCursor(40, 48);
 
         u8g2.print(bPID.GetKp(), 0); // P
@@ -94,7 +85,6 @@ void printScreen()
             u8g2.print(pidOutput / 10, 0);
         }
         u8g2.print("%");
-    #endif
 
         // Brew time or uptime
         u8g2.setCursor(32, 34);
@@ -160,12 +150,6 @@ void printScreen()
             u8g2.setCursor(40, 2);
             u8g2.print(langstring_offlinemod);
         }
-
-    #if TOF == 1
-        u8g2.setCursor(100, 2);
-        u8g2.printf("%.0f\n", percentage);   //display water level
-        u8g2.print((char)37);
-    #endif
 
         u8g2.sendBuffer();
     }
