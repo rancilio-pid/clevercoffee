@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include "ISR.h"
-#include "hardware.h"
+#include "pinmapping.h"
 
 unsigned int isrCounter = 0;  // counter for ISR
 unsigned long windowStartTime;
@@ -12,9 +12,9 @@ void IRAM_ATTR onTimer(){
     timerAlarmWrite(timer, 10000, true);
 
     if (pidOutput <= isrCounter) {
-        digitalWrite(PINHEATER, LOW);
+        digitalWrite(PIN_HEATER, LOW);
     } else {
-        digitalWrite(PINHEATER, HIGH);
+        digitalWrite(PIN_HEATER, HIGH);
     }
 
     isrCounter += 10; // += 10 because one tick = 10ms
