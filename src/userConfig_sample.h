@@ -33,6 +33,8 @@ enum MACHINE {
 #define OLED_I2C 0x3C              // I2C address for OLED, 0x3C by default
 #define DISPLAYTEMPLATE 3          // 1 = Standard display template, 2 = Minimal template, 3 = only temperature, 4 = scale template, 20 = vertical display (see git Handbook for further information)
 #define DISPLAYROTATE U8G2_R0      // rotate display clockwise: U8G2_R0 = no rotation; U8G2_R1 = 90°; U8G2_R2 = 180°; U8G2_R3 = 270°
+#define SCREEN_WIDTH 128           // OLED display width, in pixels
+#define SCREEN_HEIGHT 64           // OLED display height, in pixels
 #define SHOTTIMER 1                // 0 = deactivated, 1 = activated 2 = with scale
 #define HEATINGLOGO 0              // 0 = deactivated, 1 = Rancilio, 2 = Gaggia
 #define OFFLINEGLOGO 1             // 0 = deactivated, 1 = activated
@@ -57,11 +59,6 @@ enum MACHINE {
 #define PINMODEVOLTAGESENSOR INPUT // Mode INPUT_PULLUP, INPUT or INPUT_PULLDOWN_16 (Only Pin 16)
 #define PRESSURESENSOR 0           // 1 = pressure sensor connected to A0; PINBREWSWITCH must be set to the connected input!
 #define TEMPLED 0                  // set led pin high when brew or steam set point is within range
-
-// E-Trigger
-#define ETRIGGER 0                 // 0 = no trigger (for Rancilio except Rancilio E), 1 = trigger for CPU of Rancilio E
-#define ETRIGGERTIME 600           // seconds, time between trigger signal
-#define TRIGGERRELAYTYPE HIGH      // LOW = low trigger, HIGH = high trigger relay for E-Trigger
 
 // Brew Scale
 #define SCALE_SAMPLES 2                     // Load cell sample rate
@@ -110,24 +107,6 @@ enum MACHINE {
 #define MAXFLUSHCYCLES 5           // number of cycles the backflush should run, 0 = disabled
 
 #define TEMPSENSOR 2               // Temp sensor type: 1 = DS18B20, 2 = TSIC306
-
-// Pin Layout
-#define PINTEMPSENSOR 2
-#define PINPRESSURESENSOR 99
-#define PINVALVE 12
-#define PINPUMP 13
-#define PINHEATER 14
-#define PINVOLTAGESENSOR 15        // Input pin for voltage sensor (optocoupler to detect brew switch)
-#define PINETRIGGER 16             // PIN for E-Trigger relay
-#define PINBREWSWITCH 0
-#define PINSTEAMSWITCH 17
-#define LEDPIN    18               // LED PIN ON near setpoint
-#define OLED_SCL 5                 // Output pin for display clock pin
-#define OLED_SDA 4                 // Output pin for display data pin
-#define HXDATPIN 99                // weight scale data pin
-#define HXCLKPIN 99                // weight scale clock pin
-#define SCREEN_WIDTH 128           // OLED display width, in pixels
-#define SCREEN_HEIGHT 64           // OLED display height, in pixels
 
 // defined compiler errors
 #if (PRESSURESENSOR == 1) && (PINPRESSURESENSOR == 0) && (PINBREWSWITCH == 0)
