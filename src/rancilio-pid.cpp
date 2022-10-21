@@ -20,8 +20,6 @@
 #endif
 
 #include <WiFiManager.h>
-#include <InfluxDbClient.h>
-#include <PubSubClient.h>
 #include <U8g2lib.h>            // i2c display
 #include "TSIC.h"               // old library for TSIC temp sensor
 #include <ZACwire.h>            // new TSIC bus library
@@ -119,12 +117,6 @@ const unsigned long fillTime = FILLTIME;
 const unsigned long flushTime = FLUSHTIME;
 int maxflushCycles = MAXFLUSHCYCLES;
 
-// InfluxDB Client
-InfluxDBClient influxClient(INFLUXDB_URL, INFLUXDB_DB_NAME);
-Point influxSensor("machineState");
-const unsigned long intervalInflux = INFLUXDB_INTERVAL;
-unsigned long previousMillisInflux;  // initialisation at the end of init()
-
 // Voltage Sensor
 unsigned long previousMillisVoltagesensorreading = millis();
 const unsigned long intervalVoltagesensor = 200;
@@ -150,7 +142,6 @@ bool coolingFlushDetectedQM = false;
 #endif
 
 // Method forward declarations
-bool mqtt_publish(const char *reading, char *payload);
 void setSteamMode(int steamMode);
 void setPidStatus(int pidStatus);
 void setBackflush(int backflush);
@@ -162,12 +153,14 @@ void printMachineState();
 char const* machinestateEnumToString(MachineState machineState);
 void initSteamQM();
 boolean checkSteamOffQM();
-void writeSysParamsToMQTT(void);
 char *number2string(double in);
 char *number2string(float in);
 char *number2string(int in);
 char *number2string(unsigned int in);
 float filterPressureValue(float input);
+bool mqtt_publish(const char *reading, char *payload);
+void writeSysParamsToMQTT(void);
+
 
 // system parameters
 uint8_t pidON = 0;                 // 1 = control loop in closed loop
@@ -302,33 +295,7 @@ ZACwire Sensor2(PINTEMPSENSOR, 306);    // set pin to receive signal from the TS
 
 
 // MQTT
-WiFiClient net;
-PubSubClient mqtt(net);
-const char *mqtt_server_ip = MQTT_SERVER_IP;
-const int mqtt_server_port = MQTT_SERVER_PORT;
-const char *mqtt_username = MQTT_USERNAME;
-const char *mqtt_password = MQTT_PASSWORD;
-const char *mqtt_topic_prefix = MQTT_TOPIC_PREFIX;
-char topic_will[256];
-char topic_set[256];
-unsigned long lastMQTTConnectionAttempt = millis();
-unsigned int MQTTReCnctFlag;
-unsigned int MQTTReCnctCount = 0;
-unsigned long previousMillisMQTT;           // initialised at the end of init()
-const unsigned long intervalMQTT = 5000;
-
-enum MQTTSettableType {
-    tUInt8,
-    tDouble
-};
-
-struct mqttVars_t {
-    String mqttParamName;
-    MQTTSettableType type;
-    int minValue;
-    int maxValue;
-    void *mqttVarPtr;
-};
+#include "mqtt.h"
 
 std::vector<mqttVars_t> mqttVars = {
     {"brewSetPoint", tDouble, BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, (void *)&brewSetPoint},
@@ -351,6 +318,8 @@ std::vector<mqttVars_t> mqttVars = {
     {"startKp", tDouble, PID_KP_START_MIN, PID_KP_START_MAX, (void *)&startKp},
     {"startTn", tDouble, PID_TN_START_MIN, PID_TN_START_MAX, (void *)&startTn},
 };
+
+#include "influxdb.h"
 
 // Embedded HTTP Server
 #include "RancilioServer.h"
@@ -706,106 +675,40 @@ void checkWifi() {
     }
 }
 
-void sendInflux() {
-    unsigned long currentMillisInflux = millis();
-
-    if (currentMillisInflux - previousMillisInflux >= intervalInflux) {
-        previousMillisInflux = currentMillisInflux;
-        influxSensor.clearFields();
-        influxSensor.addField("value", temperature);
-        influxSensor.addField("setPoint", setPoint);
-        influxSensor.addField("HeaterPower", pidOutput);
-        influxSensor.addField("Kp", bPID.GetKp());
-        influxSensor.addField("Ki", bPID.GetKi());
-        influxSensor.addField("Kd", bPID.GetKd());
-        influxSensor.addField("pidON", pidON);
-        influxSensor.addField("brewtime", brewtime);
-        influxSensor.addField("preinfusionpause", preinfusionpause);
-        influxSensor.addField("preinfusion", preinfusion);
-        influxSensor.addField("steamON", steamON);
-
-        byte mac[6];
-        WiFi.macAddress(mac);
-        String macaddr0 = number2string(mac[0]);
-        String macaddr1 = number2string(mac[1]);
-        String macaddr2 = number2string(mac[2]);
-        String macaddr3 = number2string(mac[3]);
-        String macaddr4 = number2string(mac[4]);
-        String macaddr5 = number2string(mac[5]);
-        String completemac = macaddr0 + macaddr1 + macaddr2 + macaddr3 + macaddr4 + macaddr5;
-        influxSensor.addField("mac", completemac);
-
-        // Write point
-        if (!influxClient.writePoint(influxSensor)) {
-            debugPrintf("InfluxDB write failed: %s\n", influxClient.getLastErrorMessage().c_str());
-        }
-    }
-}
-
-
-/**
- * @brief Check if MQTT is connected, if not reconnect. Abort function if offline or brew is running
- *      MQTT is also using maxWifiReconnects!
- */
-void checkMQTT() {
-    if (offlineMode == 1 || brewcounter > kBrewIdle) return;
-
-    if ((millis() - lastMQTTConnectionAttempt >= wifiConnectionDelay) && (MQTTReCnctCount <= maxWifiReconnects)) {
-        int statusTemp = mqtt.connected();
-
-        if (statusTemp != 1) {
-            lastMQTTConnectionAttempt = millis();  // Reconnection Timer Function
-            MQTTReCnctCount++;                     // Increment reconnection Counter
-            debugPrintf("Attempting MQTT reconnection: %i\n", MQTTReCnctCount);
-
-            if (mqtt.connect(hostname, mqtt_username, mqtt_password, topic_will, 0, 0, "offline") == true) {
-                mqtt.subscribe(topic_set);
-                debugPrintln("Subscribe to MQTT Topics");
-            }   // Try to reconnect to the server; connect() is a blocking
-                // function, watch the timeout!
-        }
-    }
-}
 
 char number2string_double[22];
 
 char *number2string(double in) {
     snprintf(number2string_double, sizeof(number2string_double), "%0.2f", in);
+
     return number2string_double;
 }
+
 
 char number2string_float[22];
 
 char *number2string(float in) {
     snprintf(number2string_float, sizeof(number2string_float), "%0.2f", in);
+
     return number2string_float;
 }
+
 
 char number2string_int[22];
 
 char *number2string(int in) {
     snprintf(number2string_int, sizeof(number2string_int), "%d", in);
+
     return number2string_int;
 }
+
 
 char number2string_uint[22];
 
 char *number2string(unsigned int in) {
-  snprintf(number2string_uint, sizeof(number2string_uint), "%u", in);
-  return number2string_uint;
-}
+    snprintf(number2string_uint, sizeof(number2string_uint), "%u", in);
 
-/**
- * @brief Publish Data to MQTT
- */
-bool mqtt_publish(const char *reading, char *payload) {
-    #if MQTT
-        char topic[120];
-        snprintf(topic, 120, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
-        return mqtt.publish(topic, payload, true);
-    #else
-        return false;
-    #endif
+    return number2string_uint;
 }
 
 
@@ -925,6 +828,7 @@ void brewDetection() {
     }
 }
 
+
 /**
  * @brief Filter input value using exponential moving average filter (using fixed coefficients)
  *      After ~28 cycles the input is set to 99,66% if the real input value sum of inX and inY
@@ -939,87 +843,6 @@ float filterPressureValue(float input) {
     return inSum;
 }
 
-/**
- * @brief Assign the value of the mqtt parameter to the associated variable
- *
- * @param param MQTT parameter name
- * @param value MQTT value
- */
-void assignMQTTParam(char *param, double value) {
-    String key = String(param);
-    boolean paramValid = false;
-    boolean paramInRange = false;
-
-    for (mqttVars_t m : mqttVars) {
-        if (m.mqttParamName.equals(key)) {
-            if (value >= m.minValue && value <= m.maxValue) {
-                switch (m.type) {
-                    case tDouble:
-                        *(double *)m.mqttVarPtr = value;
-                        paramValid = true;
-                        break;
-                    case tUInt8:
-                        *(uint8_t *)m.mqttVarPtr = value;
-                        paramValid = true;
-                        break;
-                    default:
-                        debugPrintln((String(m.type) + " is not a recognized type for this MQTT parameter.").c_str());
-                }
-
-                paramInRange = true;
-            }
-            else {
-                debugPrintln(("Value out of range for MQTT parameter "+ key + ".").c_str());
-                paramInRange = false;
-            }
-
-            break;
-        }
-    }
-
-    if (paramValid && paramInRange) {
-        if (key.equals("steamON")) {
-            steamFirstON = value;
-        }
-
-        mqtt_publish(param, number2string(value));
-        writeSysParamsToStorage();
-    }
-    else {
-        debugPrintln((key + " is not a valid MQTT parameter.").c_str());
-    }
-}
-
-/**
- * @brief MQTT Callback Function: set Parameters through MQTT
- */
-void mqtt_callback(char *topic, byte *data, unsigned int length) {
-    char topic_str[256];
-    os_memcpy(topic_str, topic, sizeof(topic_str));
-    topic_str[255] = '\0';
-    char data_str[length + 1];
-    os_memcpy(data_str, data, length);
-    data_str[length] = '\0';
-    char topic_pattern[255];
-    char configVar[120];
-    char cmd[64];
-    double data_double;
-
-    snprintf(topic_pattern, sizeof(topic_pattern), "%s%s/%%[^\\/]/%%[^\\/]", mqtt_topic_prefix, hostname);
-    debugPrintln(topic_pattern);
-
-    if ((sscanf(topic_str, topic_pattern, &configVar, &cmd) != 2) || (strcmp(cmd, "set") != 0)) {
-        debugPrintln(topic_str);
-        return;
-    }
-
-    debugPrintln(topic_str);
-    debugPrintln(data_str);
-
-    sscanf(data_str, "%lf", &data_double);
-
-    assignMQTTParam(configVar, data_double);
-}
 
 /**
  * @brief E-Trigger for Silvia E
@@ -1044,6 +867,7 @@ void handleETrigger() {
         }
     }
 }
+
 
 /**
  * @brief steamON & Quickmill
@@ -1805,12 +1629,7 @@ void setup() {
         }
 
         if (INFLUXDB == 1) {
-            if (INFLUXDB_AUTH_TYPE == 1) {
-                influxClient.setConnectionParams(INFLUXDB_URL, INFLUXDB_ORG_NAME, INFLUXDB_DB_NAME, INFLUXDB_API_TOKEN);
-            }
-            else if (INFLUXDB_AUTH_TYPE == 2 && (strlen(INFLUXDB_USER) > 0) && (strlen(INFLUXDB_PASSWORD) > 0)) {
-                influxClient.setConnectionParamsV1(INFLUXDB_URL, INFLUXDB_DB_NAME, INFLUXDB_USER, INFLUXDB_PASSWORD);
-            }
+           influxDbSetup();
         }
     } else if (connectmode == 0)
     {
@@ -2211,71 +2030,6 @@ int writeSysParamsToStorage(void) {
     return storageCommit();
 }
 
-
-/**
- * @brief Send all current system parameter values to MQTT
- *
- * @return TODO 0 = success, < 0 = failure
- */
-void writeSysParamsToMQTT(void) {
-    unsigned long currentMillisMQTT = millis();
-    if ((currentMillisMQTT - previousMillisMQTT >= intervalMQTT) && MQTT == 1) {
-        previousMillisMQTT = currentMillisMQTT;
-
-        if (mqtt.connected() == 1) {
-            // status topic (will sets it to offline)
-            mqtt_publish("status", (char *)"online");
-            mqtt_publish("machinestate", (char *)machinestateEnumToString(machineState));
-            mqtt_publish("temperature", number2string(temperature));
-            mqtt_publish("brewSetPoint", number2string(brewSetPoint));
-            mqtt_publish("brewTempOffset", number2string(brewTempOffset));
-            mqtt_publish("steamSetPoint", number2string(steamSetPoint));
-            mqtt_publish("heaterPower", number2string(pidOutput));
-            mqtt_publish("currentKp", number2string(bPID.GetKp()));
-            mqtt_publish("currentKi", number2string(bPID.GetKi()));
-            mqtt_publish("currentKd", number2string(bPID.GetKd()));
-            mqtt_publish("pidON", number2string(pidON));
-            mqtt_publish("brewtime", number2string(brewtime));
-            mqtt_publish("preinfusionpause", number2string(preinfusionpause));
-            mqtt_publish("preinfusion", number2string(preinfusion));
-            mqtt_publish("steamON", number2string(steamON));
-            mqtt_publish("backflushON", number2string(backflushON));
-
-            // Normal PID
-            mqtt_publish("aggKp", number2string(aggKp));
-            mqtt_publish("aggTn", number2string(aggTn));
-            mqtt_publish("aggTv", number2string(aggTv));
-            mqtt_publish("aggIMax", number2string(aggIMax));
-
-            // BD PID
-            mqtt_publish("aggbKp", number2string(aggbKp));
-            mqtt_publish("aggbTn", number2string(aggbTn));
-            mqtt_publish("aggbTv", number2string(aggbTv));
-
-            // Start PI
-            mqtt_publish("startKp", number2string(startKp));
-            mqtt_publish("startTn", number2string(startTn));
-
-             // Steam P
-            mqtt_publish("steamKp", number2string(steamKp));
-
-            //BD Parameter
-        #if BREWDETECTION == 1
-            mqtt_publish("brewTimer", number2string(brewtimesoftware));
-            mqtt_publish("brewLimit", number2string(brewSensitivity));
-        #endif
-
-        #if BREWMODE == 2
-            mqtt_publish("weightSetpoint", number2string(weightSetpoint));
-        #endif
-
-        #if TOF == 1
-            mqtt_publish("waterLevelDistance", number2string(distance));
-            mqtt_publish("waterLevelPercentage", number2string(percentage));
-        #endif
-        }
-    }
-}
 
 /**
  * @brief Performs a factory reset.
