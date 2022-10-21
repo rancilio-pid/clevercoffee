@@ -7,6 +7,10 @@
 #ifndef _userConfig_H
 #define _userConfig_H
 
+// Definitions used below
+#define PT100 100
+#define PT1000 1000
+
 // firmware version (must match with definitions in the main source file)
 #define USR_FW_VERSION    3
 #define USR_FW_SUBVERSION 1
@@ -139,7 +143,7 @@ enum MACHINE {
 #define MAX31865_MISO 19           // MAX31865 Temp sensor SPI MISO (VSPI default 19)
 #define MAX31865_CLK  18           // MAX31865 Temp sensor SPI Clock (VSPI default 18)
 #define MAX31865_CS   5            // MAX31865 Temp sensor Chip Select (VSPI default 5)
-#define MAX31865_PT100 true        // MAX31865 type. PT1000 if false
+#define MAX31865_RTC_TYPE PT100    // MAX31865 type. PT100 or PT1000
 
 // Check BrewSwitch
 #if (defined(ESP8266) && ((PINBREWSWITCH != 15 && PINBREWSWITCH != 0 && PINBREWSWITCH != 16 )))

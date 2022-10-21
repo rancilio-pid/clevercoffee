@@ -669,10 +669,12 @@ void refreshTemp() {
             previousMillistemp = currentMillistemp;
 
     #if TEMPSENSOR == 3
-            #if MAX31865_PT100
+            #if MAX31865_RTC_TYPE == PT100
                 temperature = Sensor3.temperature(100, 430.0);
-            #else
+            #elif MAX31865_RTC_TYPE == PT1000
                 temperature = Sensor3.temperature(1000, 4300.0);
+            #else
+                #error MAX31865_RTC_TYPE not defined (Either PT100 or PT1000)
             #endif
             uint8_t fault = Sensor3.readFault();
             if (fault) {
