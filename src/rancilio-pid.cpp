@@ -31,6 +31,7 @@
 #include "Storage.h"
 #include "ISR.h"
 #include "debugSerial.h"
+#include "pinmapping.h"
 #include "userConfig.h"         // needs to be configured by the user
 #include "rancilio-pid.h"
 #include <os.h>
@@ -291,7 +292,7 @@ PID bPID(&temperature, &pidOutput, &setPoint, aggKp, aggKi, aggKd, 1, DIRECT);
 #endif
 
 // TSIC 306 temp sensor
-ZACwire Sensor2(PINTEMPSENSOR, 306);    // set pin to receive signal from the TSic 306
+ZACwire Sensor2(PIN_TEMPSENSOR, 306);    // set pin to receive signal from the TSic 306
 
 
 // MQTT
@@ -366,10 +367,10 @@ void getSignalStrength() {
 
 // Display define & template
 #if OLED_DISPLAY == 1
-    U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, OLED_SCL, OLED_SDA);  // e.g. 1.3"
+    U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, PIN_I2CSCL, PIN_I2CSDA);  // e.g. 1.3"
 #endif
 #if OLED_DISPLAY == 2
-    U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, OLED_SCL, OLED_SDA);  // e.g. 0.96"
+    U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, PIN_I2CSCL, PIN_I2CSDA);  // e.g. 0.96"
 #endif
 #if OLED_DISPLAY == 3
     #define OLED_CS             5
@@ -427,7 +428,7 @@ const unsigned long intervalDisplay = 500;
             previousMillisPressure = currentMillisPressure;
 
             inputPressure =
-                ((analogRead(PINPRESSURESENSOR) - offset) * maxPressure * 0.0689476) /
+                ((analogRead(PIN_PRESSURESENSOR) - offset) * maxPressure * 0.0689476) /
                 (fullScale - offset);   // pressure conversion and unit
                                         // conversion [psi] -> [bar]
             inputPressureFilter = filterPressureValue(inputPressure);
@@ -436,11 +437,6 @@ const unsigned long intervalDisplay = 500;
         }
     }
 #endif
-
-// Trigger for Rancilio E Machine
-unsigned long previousMillisETrigger;  // initialisation at the end of init()
-const unsigned long intervalETrigger = ETRIGGERTIME;  // in Seconds
-int relayETriggerON, relayETriggerOFF;
 
 // Emergency stop if temp is too high
 void testEmergencyStop() {
@@ -735,13 +731,13 @@ void brewDetection() {
         }
     } else if (brewDetectionMode == 3) {
         // timeBrewed counter
-        if ((digitalRead(PINVOLTAGESENSOR) == VoltageSensorON) && brewDetected == 1) {
+        if ((digitalRead(PIN_BREWSWITCH) == VoltageSensorON) && brewDetected == 1) {
             timeBrewed = millis() - startingTime;
             lastbrewTime = timeBrewed;
         }
 
         // OFF: reset brew
-        if ((digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF) && (brewDetected == 1 || coolingFlushDetectedQM == true)) {
+        if ((digitalRead(PIN_BREWSWITCH) == VoltageSensorOFF) && (brewDetected == 1 || coolingFlushDetectedQM == true)) {
             isBrewDetected = 0;  // rearm brewDetection
             brewDetected = 0;
             timePVStoON = timeBrewed;  // for QuickMill
@@ -771,7 +767,7 @@ void brewDetection() {
         switch (machine) {
             case QuickMill:
                 if (!coolingFlushDetectedQM) {
-                    int pvs = digitalRead(PINVOLTAGESENSOR);
+                    int pvs = digitalRead(PIN_BREWSWITCH);
 
                     if (pvs == VoltageSensorON && brewDetected == 0 &&
                         brewSteamDetectedQM == 0 && !steamQM_active) {
@@ -816,7 +812,7 @@ void brewDetection() {
             default:
                 previousMillisVoltagesensorreading = millis();
 
-                if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorON && brewDetected == 0) {
+                if (digitalRead(PIN_BREWSWITCH) == VoltageSensorON && brewDetected == 0) {
                     debugPrintln("HW Brew - Voltage Sensor - Start");
                     timeBrewDetection = millis();
                     startingTime = millis();
@@ -845,41 +841,16 @@ float filterPressureValue(float input) {
 
 
 /**
- * @brief E-Trigger for Silvia E
- */
-void handleETrigger() {
-    // Static variable only one time is 0
-    static int ETriggeractive = 0;
-    unsigned long currentMillisETrigger = millis();
-
-    if (ETRIGGER == 1) {  // E Trigger has been activated in userconfig
-        if (currentMillisETrigger - previousMillisETrigger >= (1000 * intervalETrigger))  { // s to ms * 1000
-            ETriggeractive = 1;
-            previousMillisETrigger = currentMillisETrigger;
-
-            digitalWrite(PINETRIGGER, relayETriggerON);
-        }
-
-        // 10 Seconds later
-        else if (ETriggeractive == 1 && previousMillisETrigger + (10 * 1000) < (currentMillisETrigger)) {
-            digitalWrite(PINETRIGGER, relayETriggerOFF);
-            ETriggeractive = 0;
-        }
-    }
-}
-
-
-/**
  * @brief steamON & Quickmill
  */
 void checkSteamON() {
     // check digital GIPO
-    if (digitalRead(PINSTEAMSWITCH) == HIGH) {
+    if (digitalRead(PIN_STEAMSWITCH) == HIGH) {
         steamON = 1;
     }
 
     // if activated via web interface then steamFirstON == 1, prevent override
-    if (digitalRead(PINSTEAMSWITCH) == LOW && steamFirstON == 0) {
+    if (digitalRead(PIN_STEAMSWITCH) == LOW && steamFirstON == 0) {
         steamON = 0;
     }
 
@@ -920,11 +891,11 @@ void initSteamQM() {
 }
 
 boolean checkSteamOffQM() {
-    /* Monitor pinvoltagesensor during active steam mode of QuickMill
+    /* Monitor optocoupler during active steam mode of QuickMill
      * thermoblock. Once the pinvolagesenor remains OFF for longer than a
      * pump-pulse time peride the switch is turned off and steam mode finished.
      */
-    if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorON) {
+    if (digitalRead(PIN_BREWSWITCH) == VoltageSensorON) {
         lastTimePVSwasON = millis();
     }
 
@@ -952,7 +923,7 @@ void handleMachineState() {
                 pidMode = 0;
                 bPID.SetMode(pidMode);
                 pidOutput = 0;
-                digitalWrite(PINHEATER, LOW);  // Stop heating
+                digitalWrite(PIN_HEATER, LOW);  // Stop heating
 
                 // start PID
                 pidMode = 1;
@@ -1352,6 +1323,7 @@ char const* machinestateEnumToString(MachineState machineState) {
     return "Unknown";
 }
 
+
 void debugVerboseOutput() {
     static PeriodicTrigger trigger(10000);
 
@@ -1363,20 +1335,6 @@ void debugVerboseOutput() {
     }
 }
 
-/**
- * @brief TODO
- */
-void tempLed() {
-    if (TEMPLED == 1) {
-        pinMode(LEDPIN, OUTPUT);
-        digitalWrite(LEDPIN, LOW);
-
-        // inner Tempregion
-        if ((machineState == kPidNormal && (fabs(temperature - setPoint) < 0.5)) || (temperature > 115 && fabs(temperature - brewSetPoint) < 5))  {
-            digitalWrite(LEDPIN, HIGH);
-        }
-    }
-}
 
 /**
  * @brief Set up internal WiFi hardware
@@ -1546,13 +1504,6 @@ void setup() {
         relayOFF = HIGH;
     }
 
-    if (TRIGGERRELAYTYPE) {
-        relayETriggerON = HIGH;
-        relayETriggerOFF = LOW;
-    } else {
-        relayETriggerON = LOW;
-        relayETriggerOFF = HIGH;
-    }
     if (VOLTAGESENSORTYPE) {
         VoltageSensorON = HIGH;
         VoltageSensorOFF = LOW;
@@ -1561,39 +1512,31 @@ void setup() {
         VoltageSensorOFF = HIGH;
     }
 
-
     // Initialize Pins
-    pinMode(PINVALVE, OUTPUT);
-    pinMode(PINPUMP, OUTPUT);
-    pinMode(PINHEATER, OUTPUT);
-    pinMode(PINSTEAMSWITCH, INPUT);
-    digitalWrite(PINVALVE, relayOFF);
-    digitalWrite(PINPUMP, relayOFF);
-    digitalWrite(PINHEATER, LOW);
-    
+    pinMode(PIN_VALVE, OUTPUT);
+    pinMode(PIN_PUMP, OUTPUT);
+    pinMode(PIN_HEATER, OUTPUT);
+    pinMode(PIN_STEAMSWITCH, INPUT);
+    digitalWrite(PIN_VALVE, relayOFF);
+    digitalWrite(PIN_PUMP, relayOFF);
+    digitalWrite(PIN_HEATER, LOW);
+
     // IF POWERSWITCH is connected
     if (POWERSWITCHTYPE > 0) {
-        pinMode(PINPOWERSWITCH, INPUT);
-    }
-
-    // IF Etrigger selected
-    if (ETRIGGER == 1) {
-        pinMode(PINETRIGGER, OUTPUT);
-        digitalWrite(PINETRIGGER, relayETriggerOFF);  // Set the E-Trigger OFF its,
-                                                        // important for LOW Trigger Relais
+        pinMode(PIN_POWERSWITCH, INPUT);
     }
 
     // IF Voltage sensor selected
     if (BREWDETECTION == 3) {
-        pinMode(PINVOLTAGESENSOR, PINMODEVOLTAGESENSOR);
+        pinMode(PIN_BREWSWITCH, PINMODEVOLTAGESENSOR);
     }
 
     // IF PINBREWSWITCH & Steam selected
-    if (PINBREWSWITCH > 0) {
-        pinMode(PINBREWSWITCH, INPUT_PULLDOWN);
+    if (PIN_BREWSWITCH > 0) {
+        pinMode(PIN_BREWSWITCH, INPUT_PULLDOWN);
     }
 
-    pinMode(PINSTEAMSWITCH, INPUT_PULLDOWN);
+    pinMode(PIN_STEAMSWITCH, INPUT_PULLDOWN);
 
     #if OLED_DISPLAY != 0
         u8g2.setI2CAddress(oled_i2c * 2);
@@ -1670,7 +1613,6 @@ void setup() {
     previousMillisDisplay = currentTime;
     previousMillisMQTT = currentTime;
     previousMillisInflux = currentTime;
-    previousMillisETrigger = currentTime;
     previousMillisVoltagesensorreading = currentTime;
     lastMQTTConnectionAttempt = currentTime;
 
@@ -1710,7 +1652,7 @@ void looppid() {
         // Disable interrupt if OTA is starting, otherwise it will not work
         ArduinoOTA.onStart([]() {
             disableTimer1();
-            digitalWrite(PINHEATER, LOW);  // Stop heating
+            digitalWrite(PIN_HEATER, LOW);  // Stop heating
         });
 
         ArduinoOTA.onError([](ota_error_t error) { enableTimer1(); });
@@ -1772,14 +1714,9 @@ void looppid() {
     setEmergencyStopTemp();
     checkpowerswitch();
     handleMachineState();      // update machineState
-    tempLed();
 
     if (INFLUXDB == 1  && offlineMode == 0 ) {
         sendInflux();
-    }
-
-    if (ETRIGGER == 1) {  // E-Trigger active then void Etrigger()
-        handleETrigger();
     }
 
     #if (ONLYPIDSCALE == 1)  // only by shottimer 2, scale
@@ -1807,7 +1744,7 @@ void looppid() {
             pidMode = 0;
             bPID.SetMode(pidMode);
             pidOutput = 0;
-            digitalWrite(PINHEATER, LOW);  // Stop heating
+            digitalWrite(PIN_HEATER, LOW);  // Stop heating
         }
     } else {  // no sensorerror, no pid off or no Emergency Stop
         if (pidMode == 0) {
