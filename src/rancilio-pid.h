@@ -35,7 +35,7 @@ int writeSysParamsToStorage(void);
 #define SCALE_WEIGHTSETPOINT 30    // Target weight in grams
 
 #define PID_KP_START_MIN 0
-#define PID_KP_START_MAX 200
+#define PID_KP_START_MAX 350
 #define PID_TN_START_MIN 0
 #define PID_TN_START_MAX 999
 #define PID_KP_REGULAR_MIN 0
