@@ -1,4 +1,4 @@
-# Rancilio PID meets Clevercoffee
+# Clevercoffee
 
 <div align="center">
 <img src="https://img.shields.io/github/workflow/status/rancilio-pid/ranciliopid/Build/master">
