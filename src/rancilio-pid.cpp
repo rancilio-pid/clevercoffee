@@ -558,13 +558,9 @@ boolean checkSensor(float tempInput) {
         error++;
         sensorOK = false;
 
-        if (error >= 5) {  // warning after 5 times error
-            debugPrintf(
-                "*** WARNING: temperature sensor reading: consec_errors = %i, "
-                "temp_current = %.1f\n",
-                "temp_prev = %.1f\n",
-                error, tempInput, previousInput);
-        }
+        debugPrintf(
+            "*** WARNING: temperature sensor reading: consec_errors = %i, temp_current = %.1f, temp_prev = %.1f\n",
+            error, tempInput, previousInput);
     } else if (badCondition == false && sensorOK == false) {
         error = 0;
         sensorOK = true;
@@ -1975,7 +1971,7 @@ void looppid() {
 
         ArduinoOTA.handle();  // For OTA
 
-        // Disable interrupt it OTA is starting, otherwise it will not work
+        // Disable interrupt if OTA is starting, otherwise it will not work
         ArduinoOTA.onStart([]() {
             disableTimer1();
             digitalWrite(PINHEATER, LOW);  // Stop heating
