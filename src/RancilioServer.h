@@ -278,16 +278,21 @@ String staticProcessor(const String& var) {
 
     File file = LittleFS.open("/html_fragments/" + varLower + ".htm", "r");
 
-    if (file && file.size()*2 < ESP.getFreeHeap()) {
-        String ret = file.readString();
-        file.close();
-        return ret;
+    if (file) {
+        if (file.size()*2 < ESP.getFreeHeap()) {
+            String ret = file.readString();
+            file.close();
+            return ret;
+        } else {
+            debugPrintf("Can't open file %s, not enough memory available\n", file.name());
+        }
     } else {
-        debugPrintf("Can't open file %s, not enough memory available\n", file ? file.name() : "");
+        debugPrintf("Fragment %s not found\n", varLower.c_str());
     }
 
     skipHeaterISR = false;
 
+    //didn't find a value for the var, replace var with empty string
     return String();
 }
 

@@ -53,7 +53,6 @@
     #error Version of userConfig file and rancilio-pid.cpp need to match!
 #endif
 
-
 MACHINE machine = (enum MACHINE)MACHINEID;
 
 #define HIGH_ACCURACY
@@ -61,7 +60,6 @@ MACHINE machine = (enum MACHINE)MACHINEID;
 #include "PeriodicTrigger.h"
 PeriodicTrigger writeDebugTrigger(5000);  // returns true every 5000 ms
 PeriodicTrigger logbrew(500);
-
 
 enum MachineState {
     kInit = 0,
@@ -85,7 +83,6 @@ int machinestatecold = 0;
 unsigned long machinestatecoldmillis = 0;
 MachineState lastmachinestate = kInit;
 int lastmachinestatepid = -1;
-
 
 // Definitions below must be changed in the userConfig.h file
 int connectmode = CONNECTMODE;
