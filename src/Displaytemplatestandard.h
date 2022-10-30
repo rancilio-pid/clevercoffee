@@ -141,7 +141,7 @@ void printScreen()
                 }
             } else {
                 u8g2.drawXBMP(40, 2, 8, 8, antenna_NOK_u8g2);
-                u8g2.setCursor(88, 2);
+                u8g2.setCursor(88, 1);
                 u8g2.print("RC: ");
                 u8g2.print(wifiReconnects);
             }
@@ -157,8 +157,8 @@ void printScreen()
                 }
             }
         } else {
-            u8g2.setCursor(40, 2);
-            u8g2.print(langstring_offlinemod);
+            u8g2.setCursor(40, 1);
+            u8g2.print(langstring_offlinemode);
         }
 
     #if TOF == 1

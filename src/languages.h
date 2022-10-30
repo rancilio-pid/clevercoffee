@@ -19,7 +19,7 @@
     static const char *langstring_brew_rot_ur =          "B: ";
 #endif
 
-static const char *langstring_offlinemod = "Offline";
+static const char *langstring_offlinemode = "Offline";
 static const char *langstring_waterempty = "Wasser leer";
 
 static const char *langstring_wifirecon = "Wifi reconnect:";
@@ -46,7 +46,7 @@ static const char *langstring_bckfrunning[] = {"Backflush aktiv:", "seit"};
     static const char *langstring_brew_rot_ur = "B: ";
 #endif
 
-static const char *langstring_offlinemod = "Offline";
+static const char *langstring_offlinemode = "Offline";
 static const char *langstring_waterempty = "Empty water";
 
 static const char *langstring_wifirecon = "Wifi reconnect:";
@@ -73,7 +73,7 @@ static const char *langstring_bckfrunning[] = {"Backflush running:", "from"};
     static const char *langstring_brew_rot_ur = "B: ";
 #endif
 
-static const char *langstring_offlinemod = "Offline";
+static const char *langstring_offlinemode = "Offline";
 static const char *langstring_waterempty = "Agua vacía";
 
 static const char *langstring_wifirecon = "Reconecta wifi:";
