@@ -1631,7 +1631,9 @@ void wiFiSetup() {
 void websiteSetup() {
     setEepromWriteFcn(writeSysParamsToStorage);
 
-    if (readSysParamsFromStorage() != 0) {
+    readSysParamsFromStorage();
+
+    /*if (readSysParamsFromStorage() != 0) {
         #if OLED_DISPLAY != 0
             displayLogo("3:", "use eeprom values..");
         #endif
@@ -1639,7 +1641,7 @@ void websiteSetup() {
         #if OLED_DISPLAY != 0
             displayLogo("3:", "config defaults..");
         #endif
-    }
+    }*/
 
     serverSetup();
 }
