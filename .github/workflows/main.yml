@@ -1,23 +1,19 @@
 name: Build
-on:
-  push:
-    branches:
-    - master 
-  pull_request:
-    branches:
-    - master 
+
+on: [push, pull_request]
+
 jobs:
     build:
-      runs-on: self-hosted
+      runs-on: ubuntu-latest
       steps:
         - name: Checkout
-          uses: actions/checkout@v2
-          with: 
-            fetch-depth: 0
-        
+          uses: actions/checkout@v3
         - name: Add config file
           working-directory: ./src
           run: cp userConfig_sample.h userConfig.h
-        
-        - name: Run PlatformIO
-          run: ~/.platformio/penv/bin/platformio run
+        - name: PlatformIO Run
+          uses: karniv00l/platformio-run-action@v1
+          with:
+            silent: false
+            verbose: true
+            disable-auto-clean: false
