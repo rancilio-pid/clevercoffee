@@ -188,28 +188,6 @@ static const unsigned char PROGMEM antenna_NOK[] = {
     B00010001
 };
 
-static const unsigned char PROGMEM blynk_OK[] = {
-    B00000000, B00000000,
-    B10011110, B00100000,
-    B01010001, B01000000,
-    B00010001, B00000000,
-    B11011110, B01100000,
-    B00010001, B00000000,
-    B01010001, B01000000,
-    B10011110, B00100000
-};
-
-static const unsigned char PROGMEM blynk_NOK[] = {
-    B10000000,
-    B01011100,
-    B00100010,
-    B00010010,
-    B00101000,
-    B00100100,
-    B00100010,
-    B00111101
-};
-
 static const unsigned char PROGMEM logo_bits_u8g2[] = {
     0x00, 0x00, 0x00, 0x00, 0x3e, 0x00, 0x80, 0xff, 0x00, 0xc0, 0xc1, 0x01, 0xc0, 0x80, 0x01, 0x60,
     0x00, 0x03, 0x60, 0x00, 0x03, 0x60, 0x00, 0x03, 0x60, 0x00, 0x03, 0x60, 0x00, 0x03, 0x60, 0x00,
@@ -244,28 +222,6 @@ static const unsigned char PROGMEM antenna_NOK_u8g2[] = {
     B00101000,
     B01001000,
     B10001000
-};
-
-static const unsigned char PROGMEM blynk_OK_u8g2[] = {
-    B00000000, B00000000,
-    B01111001, B00000100,
-    B10001010, B00000010,
-    B10001000, B00000000,
-    B01111011, B00000110,
-    B10001000, B00000000,
-    B10001010, B00000010,
-    B01111001, B00000100
-};
-
-static const unsigned char PROGMEM blynk_NOK_u8g2[] = {
-    B00000001,
-    B00111010,
-    B01000100,
-    B01001000,
-    B00010100,
-    B00100100,
-    B01000100,
-    B10111100
 };
 
 // 'logo', 64x59px

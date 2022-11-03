@@ -54,13 +54,6 @@ void printScreen() {
             if (WiFi.status() != WL_CONNECTED) {
                 u8g2.drawFrame(116, 28, 12, 12);
                 u8g2.drawXBMP(118, 30, 8, 8, antenna_NOK_u8g2);
-            } else {
-                if (BLYNK == 1) {
-                    if (!Blynk.connected()) {
-                        u8g2.drawFrame(116, 28, 12, 12);
-                        u8g2.drawXBMP(118, 30, 8, 8, blynk_NOK_u8g2);
-                    }
-                }
             }
         } else {
             u8g2.drawFrame(116, 28, 12, 12);

@@ -71,7 +71,7 @@ static const sto_data_t itemDefaults PROGMEM = {
     AGGIMAX,                  // STO_ITEM_PID_I_MAX_REGULAR
     0xFF,                     // free to use
     SETPOINT,                 // STO_ITEM_BREW_SETPOINT
-    TEMPOFFSET,             
+    TEMPOFFSET,
     0xFF,                     // free to use
     BREW_TIME,                // STO_ITEM_BREW_TIME
     {0xFF, 0xFF},             // free to use
@@ -102,7 +102,7 @@ static const sto_data_t itemDefaults PROGMEM = {
     "",            // STO_ITEM_WIFI_SSID
     "",            // STO_ITEM_WIFI_PASSWORD
     SCALE_WEIGHTSETPOINT,
-    STEAMKP    
+    STEAMKP
 };
 
 /**
@@ -233,7 +233,7 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
          case STO_ITEM_PID_KP_STEAM:
             addr = offsetof(sto_data_t, steamkp);
             size = STRUCT_MEMBER_SIZE(sto_data_t, steamkp);
-            break;    
+            break;
 
          case STO_ITEM_WEIGHTSETPOINT:
             addr = offsetof(sto_data_t,weightsetpoint );

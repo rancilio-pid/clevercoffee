@@ -1,7 +1,7 @@
 /**
  * @file    userConfig_sample.h
  * @brief   Values must be configured by the user
- * @version 3.1.0 Master 
+ * @version 3.1.0 Master
  *
  */
 #ifndef _userConfig_H
@@ -96,15 +96,6 @@ enum MACHINE {
 #define MQTT_SERVER_IP "XXX.XXX.XXX.XXX"   // IP-Address of locally installed mqtt server
 #define MQTT_SERVER_PORT 1883
 
-// BLYNK
-#define BLYNK 0                                 // 0 = no Blynk , 1 = Blynk
-#define AUTH "blynk_auth"
-#define BLYNKADDRESS "blynk.clevercoffee.de"    // blynk-server IP-Address
-#define BLYNKPORT 8080                          // blynk-server portver
-
-// Grafana
-#define GRAFANA 0                  // 2 = custom Grafana 1 = Grafana visualisation (access required), 0 = off (default)
-
 // INFLUXDB
 #define INFLUXDB 0                 // 1 = INFLUX enabled, 0 = INFLUX disabled
 #define INFLUXDB_URL ""            // InfluxDB server address
@@ -128,20 +119,20 @@ enum MACHINE {
 #define TEMPSENSOR 2               // Temp sensor type: 1 = DS18B20, 2 = TSIC306
 
 // Pin Layout
-#define PINTEMPSENSOR 2            // Temp sensor pin
-#define PINPRESSURESENSOR 99       // Pressuresensor 0: A0 (ESP8266), >0 ONLY ESP32
-#define PINVALVE 12                // Output pin for 3-way-valve
-#define PINPUMP 13                 // Output pin for pump
-#define PINHEATER 14               // Output pin for heater
+#define PINTEMPSENSOR 2
+#define PINPRESSURESENSOR 99
+#define PINVALVE 12
+#define PINPUMP 13
+#define PINHEATER 14
 #define PINVOLTAGESENSOR 15        // Input pin for voltage sensor (optocoupler to detect brew switch)
 #define PINETRIGGER 16             // PIN for E-Trigger relay
-#define PINBREWSWITCH 0            // 0: A0 (ESP8266) ; >0 : DIGITAL PIN, ESP32 OR ESP8266: ONLY USE PIN15 AND PIN16!
-#define PINSTEAMSWITCH 17          // STEAM active
+#define PINBREWSWITCH 0
+#define PINSTEAMSWITCH 17
 #define LEDPIN    18               // LED PIN ON near setpoint
 #define OLED_SCL 5                 // Output pin for display clock pin
 #define OLED_SDA 4                 // Output pin for display data pin
-#define HXDATPIN 99                // weight scale PIN
-#define HXCLKPIN 99                // weight scale PIN
+#define HXDATPIN 99                // weight scale data pin
+#define HXCLKPIN 99                // weight scale clock pin
 #define SCREEN_WIDTH 128           // OLED display width, in pixels
 #define SCREEN_HEIGHT 64           // OLED display height, in pixels
 
