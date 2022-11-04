@@ -2,7 +2,10 @@
  * @file brewscaleini.h
  *
  * @brief
+ *
  */
+
+#pragma once
 
 // Analog Input
 #if PINBREWSWITCH == 0

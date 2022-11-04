@@ -1,7 +1,8 @@
 /**
  * @file PeriodicTrigger.cpp
  *
- * @brief
+ * @brief TODO
+ *
  */
 
 #include "PeriodicTrigger.h"
