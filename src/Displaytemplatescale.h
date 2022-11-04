@@ -2,7 +2,10 @@
  * @file Displaytemplatescale.h
  *
  * @brief Display template with brew scale
+ *
  */
+
+#pragma once
 
 /**
  * @brief Send data to display

@@ -2,10 +2,10 @@
  * @file Storage.h
  *
  * @brief
+ *
  */
 
-#ifndef _STORAGE_H_
-#define _STORAGE_H_
+#pragma once
 
 #include <stdint.h>
 
@@ -76,6 +76,3 @@ int storageSet(sto_item_id_t itemId, uint16_t itemValue, bool commit=false);
 int storageSet(sto_item_id_t itemId, uint32_t itemValue, bool commit=false);
 int storageSet(sto_item_id_t itemId, const char* itemValue, bool commit=false);
 int storageSet(sto_item_id_t itemId, String& itemValue, bool commit=false);
-
-
-#endif

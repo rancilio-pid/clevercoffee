@@ -1,11 +1,11 @@
 /**
  * @file SysPara.h
  *
- * @brief Class of system parameter
+ * @brief System parameters
+ *
  */
 
-#ifndef _SYS_PARA_H_
-#define _SYS_PARA_H_
+#pragma once
 
 #include <Arduino.h>
 #include <stdint.h>
@@ -158,6 +158,3 @@ class SysPara {
         sys_para_data<T> _data;         //!< parameter data
         T _dummyCur;
 };
-
-
-#endif

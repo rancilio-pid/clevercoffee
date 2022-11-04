@@ -294,7 +294,7 @@ ZACwire Sensor2(PIN_TEMPSENSOR, 306);    // set pin to receive signal from the T
 
 
 // MQTT
-#include "mqtt.h"
+#include "MQTT.h"
 
 std::vector<mqttVars_t> mqttVars = {
     {"brewSetPoint", tDouble, BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, (void *)&brewSetPoint},
@@ -317,7 +317,7 @@ std::vector<mqttVars_t> mqttVars = {
     {"startTn", tDouble, PID_TN_START_MIN, PID_TN_START_MAX, (void *)&startTn},
 };
 
-#include "influxdb.h"
+#include "InfluxDB.h"
 
 // Embedded HTTP Server
 #include "RancilioServer.h"

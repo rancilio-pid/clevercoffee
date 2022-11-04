@@ -1,8 +1,10 @@
 /**
  * @file scalevoid.h
  *
- * @brief
+ * @brief TODO
  */
+
+#pragma once
 
 #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
 /**
