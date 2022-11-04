@@ -2,8 +2,10 @@
  * @file Displaytemplateminimal.h
  *
  * @brief Minimal display template
+ *
  */
 
+#pragma once
 
 /**
  * @brief Send data to display

@@ -1,7 +1,7 @@
 /**
- * @file mqtt.h
+ * @file MQTT.h
  *
- * @brief
+ * @brief MQTT message handling
  *
  */
 

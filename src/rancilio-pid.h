@@ -1,5 +1,11 @@
-#ifndef _RANCILIO_PID_H_
-#define _RANCILIO_PID_H_
+/**
+ * @file rancilio-pid.h
+ *
+ * @brief TODO
+ *
+ */
+
+#pragma once
 
 #include <stdint.h>
 #include "SysPara.h"

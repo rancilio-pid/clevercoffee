@@ -4,8 +4,7 @@
  * @brief Logging methods using either serial or network port
  */
 
-#ifndef debugserial_h
-#define debugserial_h
+#pragma once
 
 #include <ctime>
 #include <cstdio>
@@ -17,6 +16,4 @@ void checkForRemoteSerialClients();
 void debugPrint(const char *message);
 void debugPrintln(const char *message);
 size_t debugPrintf(const char *format, ...);
-void getCurrentTimeString(char *output); 
-
-#endif
+void getCurrentTimeString(char *output);

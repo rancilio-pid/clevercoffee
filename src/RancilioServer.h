@@ -2,10 +2,10 @@
  * @file RancilioServer.h
  *
  * @brief Embedded webserver
+ *
  */
 
-#ifndef rancilioserver_h
-#define rancilioserver_h
+#pragma once
 
 #include <Arduino.h>
 
