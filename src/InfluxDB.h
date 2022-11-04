@@ -1,7 +1,7 @@
 /**
- * @file influxdb.h
+ * @file InfluxDB.h
  *
- * @brief
+ * @brief InfluxDB time series database client
  *
  */
 

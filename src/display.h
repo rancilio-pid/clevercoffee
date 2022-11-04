@@ -1,8 +1,10 @@
 /**
  * @file display.h
  *
- * @brief
+ * @brief TODO
  */
+
+#pragma once
 
 #if (OLED_DISPLAY != 0)
 

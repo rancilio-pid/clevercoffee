@@ -1,5 +1,11 @@
-#ifndef _RANCILIO_PID_H_
-#define _RANCILIO_PID_H_
+/**
+ * @file rancilio-pid.h
+ *
+ * @brief TODO
+ *
+ */
+
+#pragma once
 
 #include <stdint.h>
 #include "SysPara.h"
@@ -74,4 +80,4 @@ int writeSysParamsToStorage(void);
 #define WEIGHTSETPOINT_MAX 500
 #define PID_KP_STEAM_MIN 0
 #define PID_KP_STEAM_MAX 500
-#endif
+

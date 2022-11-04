@@ -2,7 +2,10 @@
  * @file brewvoid.h
  *
  * @brief
+ *
  */
+
+#pragma once
 
 /**
  * @brief Digtalswitch OR Read analog input pin for BREW SWITCH

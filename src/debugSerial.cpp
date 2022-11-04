@@ -1,3 +1,10 @@
+/**
+ * @file debugSerial.cpp
+ *
+ * @brief TODO
+ *
+ */
+
 #include "debugSerial.h"
 
 //server for monitor connections
@@ -83,7 +90,7 @@ size_t debugPrintf(const char *format, ...) {
     getCurrentTimeString(time);
 
     if (RemoteSerial.connected()) {
-        len = RemoteSerial.print(time);        
+        len = RemoteSerial.print(time);
         len += RemoteSerial.print(buffer);
     } else {
         len = Serial.print(time);
