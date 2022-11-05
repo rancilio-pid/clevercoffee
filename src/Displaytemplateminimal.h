@@ -9,9 +9,9 @@
  * @brief Send data to display
  */
 void printScreen() {
-    if ((machinestate == kSetPointNegative || machinestate == kPidNormal || machinestate == kBrewDetectionTrailing) ||
-        ((machinestate == kBrew || machinestate == kShotTimerAfterBrew) && SHOTTIMER == 0) || // shottimer == 0, auch Bezug anzeigen
-        machinestate == kCoolDown || ((machinestate == kColdStart) && HEATINGLOGO == 0) || ((machinestate == kPidOffline) && OFFLINEGLOGO == 0))
+    if ((machineState == kBelowSetPoint || machineState == kPidNormal || machineState == kBrewDetectionTrailing) ||
+        ((machineState == kBrew || machineState == kShotTimerAfterBrew) && SHOTTIMER == 0) || // shottimer == 0, auch Bezug anzeigen
+        machineState == kCoolDown || ((machineState == kColdStart) && HEATINGLOGO == 0) || ((machineState == kPidOffline) && OFFLINEGLOGO == 0))
     {
         if (!sensorError) {
             u8g2.clearBuffer();

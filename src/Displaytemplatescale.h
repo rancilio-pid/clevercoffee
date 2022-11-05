@@ -8,10 +8,10 @@
  * @brief Send data to display
  */
 void printScreen() {
-    if ((machinestate == kSetPointNegative || machinestate == kPidNormal || machinestate == kBrewDetectionTrailing) ||
-        ((machinestate == kBrew || machinestate == kShotTimerAfterBrew) && SHOTTIMER == 0) ||  // shottimer == 0, auch Bezug anzeigen
-        machinestate == kCoolDown || ((machinestate == kInit || machinestate == kColdStart) &&
-        HEATINGLOGO == 0) || ((machinestate == kPidOffline) && OFFLINEGLOGO == 0))
+    if ((machineState == kBelowSetPoint || machineState == kPidNormal || machineState == kBrewDetectionTrailing) ||
+        ((machineState == kBrew || machineState == kShotTimerAfterBrew) && SHOTTIMER == 0) ||  // shottimer == 0, auch Bezug anzeigen
+        machineState == kCoolDown || ((machineState == kInit || machineState == kColdStart) &&
+        HEATINGLOGO == 0) || ((machineState == kPidOffline) && OFFLINEGLOGO == 0))
     {
         u8g2.clearBuffer();
         u8g2.setFont(u8g2_font_profont11_tf);

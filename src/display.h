@@ -89,7 +89,7 @@ void displayDistance(int display_distance) {
  * @brief display shot timer
  */
 void displayShottimer(void) {
-    if ((machinestate == kBrew) && SHOTTIMER == 1) { // Shotimer has to be 1 and brew is running, then show time
+    if ((machineState == kBrew) && SHOTTIMER == 1) { // Shotimer has to be 1 and brew is running, then show time
         u8g2.clearBuffer();
 
         // temp icon
@@ -105,7 +105,7 @@ void displayShottimer(void) {
      * nothing should be done, otherwise wrong time is displayed
      * because the switch is pressed later than totalBrewTime
      */
-    if (((machinestate == kShotTimerAfterBrew) && SHOTTIMER == 1)) {
+    if (((machineState == kShotTimerAfterBrew) && SHOTTIMER == 1)) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
         u8g2.setFont(u8g2_font_profont22_tf);
@@ -117,7 +117,7 @@ void displayShottimer(void) {
 
     #if (ONLYPIDSCALE == 1 || BREWMODE == 2)
         // Shotimer muss 2 sein und Bezug vorliegen
-        if ((machinestate == kBrew) && SHOTTIMER == 2) {
+        if ((machineState == kBrew) && SHOTTIMER == 2) {
             // Dann Zeit anzeigen
             u8g2.clearBuffer();
 
@@ -134,7 +134,7 @@ void displayShottimer(void) {
             u8g2.sendBuffer();
         }
 
-        if (((machinestate == kShotTimerAfterBrew) && SHOTTIMER == 2)) {
+        if (((machineState == kShotTimerAfterBrew) && SHOTTIMER == 2)) {
             u8g2.clearBuffer();
             u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
             u8g2.setFont(u8g2_font_profont22_tf);
@@ -154,7 +154,7 @@ void displayShottimer(void) {
  * @brief display heating logo
  */
 void Displaymachinestate() {
-    if (HEATINGLOGO > 0 && (machinestate == kInit || machinestate == kColdStart)) {
+    if (HEATINGLOGO > 0 && (machineState == kInit || machineState == kColdStart)) {
         // Für Statusinfos
         u8g2.clearBuffer();
         u8g2.drawFrame(8, 0, 110, 12);
@@ -212,7 +212,7 @@ void Displaymachinestate() {
     }
 
     // Offline logo
-    if (OFFLINEGLOGO == 1 && machinestate == kPidOffline) {
+    if (OFFLINEGLOGO == 1 && machineState == kPidOffline) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(38, 0, OFFLogo_width, OFFLogo_height, OFFLogo);
         u8g2.setCursor(0, 55);
@@ -222,7 +222,7 @@ void Displaymachinestate() {
     }
 
     // Steam
-    if (machinestate == kSteam) {
+    if (machineState == kSteam) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(0, 0, steamlogo_width, steamlogo_height, steamlogo);
         u8g2.setCursor(64, 25);
@@ -233,7 +233,7 @@ void Displaymachinestate() {
     }
 
     // Backflush
-    if (machinestate == kBackflush) {
+    if (machineState == kBackflush) {
         u8g2.setFont(u8g2_font_profont11_tf);
         if (backflushState == 43) {
             #if OLED_DISPLAY != 0
@@ -251,7 +251,7 @@ void Displaymachinestate() {
     }
 
     // PID Off Logo
-    if (machinestate == kEmergencyStop) {
+    if (machineState == kEmergencyStop) {
         u8g2.clearBuffer();
         u8g2.setFont(u8g2_font_profont11_tf);
         u8g2.drawXBMP(0, 0, logo_width, logo_height, logo_bits_u8g2);  // draw temp icon
@@ -283,14 +283,14 @@ void Displaymachinestate() {
     }
 
     // Sensor error
-    if (machinestate == kSensorError) {
+    if (machineState == kSensorError) {
         u8g2.clearBuffer();
         u8g2.setFont(u8g2_font_profont11_tf);
         displayMessage(langstring_error_tsensor[0], String(temperature), langstring_error_tsensor[1], "", "", "");
     }
 
     // EEPROM error
-    if (machinestate == keepromError) {
+    if (machineState == keepromError) {
         u8g2.clearBuffer();
         u8g2.setFont(u8g2_font_profont11_tf);
         displayMessage("EEPROM Error, please set Values", "", "", "", "", "");
