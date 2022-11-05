@@ -212,7 +212,7 @@ double aggbTv = AGGBTV;
 #endif
 
 double aggbKd = aggbTv * aggbKp;
-double brewtimersoftware = BREW_SW_TIMER;  // use userConfig time until disabling BD PID
+double brewtimesoftware = BREW_SW_TIME;  // use userConfig time until disabling BD PID
 double brewsensitivity = BREWSENSITIVITY;  // use userConfig brew detection sensitivity
 
 // system parameter EEPROM storage wrappers (current value as pointer to variable, minimum, maximum, optional storage ID)
@@ -228,7 +228,7 @@ SysPara<double> sysParaPidTvBd(&aggbTv, PID_TV_BD_MIN, PID_TV_BD_MAX, STO_ITEM_P
 SysPara<double> sysParaBrewSetPoint(&brewSetPoint, BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, STO_ITEM_BREW_SETPOINT);
 SysPara<double> sysParaTempOffset(&brewTempOffset, BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, STO_ITEM_BREW_TEMP_OFFSET);
 SysPara<double> sysParaBrewTime(&brewtime, BREW_TIME_MIN, BREW_TIME_MAX, STO_ITEM_BREW_TIME);
-SysPara<double> sysParaBrewSwTimer(&brewtimersoftware, BREW_SW_TIMER_MIN, BREW_SW_TIMER_MAX, STO_ITEM_BREW_SW_TIMER);
+SysPara<double> sysParaBrewSwTime(&brewtimesoftware, BREW_SW_TIME_MIN, BREW_SW_TIME_MAX, STO_ITEM_BREW_SW_TIME);
 SysPara<double> sysParaBrewThresh(&brewsensitivity, BD_THRESHOLD_MIN, BD_THRESHOLD_MAX, STO_ITEM_BD_THRESHOLD);
 SysPara<double> sysParaPreInfTime(&preinfusion, PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX, STO_ITEM_PRE_INFUSION_TIME);
 SysPara<double> sysParaPreInfPause(&preinfusionpause, PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, STO_ITEM_PRE_INFUSION_PAUSE);
@@ -837,12 +837,12 @@ void brewDetection() {
         }
 
         // deactivate brewtimer after end of brewdetection pid
-        if (millis() - timeBrewDetection > brewtimersoftware * 1000 && isBrewDetected == 1) {
+        if (millis() - timeBrewDetection > brewtimesoftware * 1000 && isBrewDetected == 1) {
             isBrewDetected = 0;  // rearm brewDetection
             timeBrewed = 0;
         }
     } else if (Brewdetection == 2) {
-        if (millis() - timeBrewDetection > brewtimersoftware * 1000 && isBrewDetected == 1) {
+        if (millis() - timeBrewDetection > brewtimesoftware * 1000 && isBrewDetected == 1) {
             isBrewDetected = 0;  // rearm brewDetection
         }
     } else if (Brewdetection == 3) {
@@ -1583,10 +1583,12 @@ void tempLed() {
  * @brief Set up internal WiFi hardware
  */
 void wiFiSetup() {
-    wm.setCleanConnect(true);
+    //wm.setCleanConnect(true);
     wm.setConfigPortalTimeout(60); // sec Timeout for Portal
-    wm.setConnectTimeout(10); // Try 10 Sec to Connect to WLAN
+    wm.setConnectTimeout(5); // Try 5 sec to connect to WLAN
     wm.setBreakAfterConfig(true);
+    wm.setConnectRetries(5);
+    wm.setWiFiAutoReconnect(true);
     wm.setHostname(hostname);
 
     if (wm.autoConnect(hostname, pass)) {
@@ -1711,7 +1713,7 @@ void setup() {
         {F("PID_BD_TV"), F("BD Tv (=Kd/Kp)"), true, F("Differential time constant (in seconds) for the PID when brewing has been detected."), kDouble, sBDSection, []{ return true && BREWDETECTION > 0 && useBDPID; }, PID_TV_BD_MIN, PID_TV_BD_MAX, (void *)&aggbTv},
 
         //#21
-        {F("PID_BD_TIMER"), F("PID BD Time (s)"), true, F("Fixed time in seconds for which the BD PID will stay enabled (also after Brew switch is inactive again)."), kDouble, sBDSection, []{ return true && BREWDETECTION > 0 && (useBDPID || BREWDETECTION == 1); }, BREW_SW_TIMER_MIN, BREW_SW_TIMER_MAX, (void *)&brewtimersoftware},
+        {F("PID_BD_TIME"), F("PID BD Time (s)"), true, F("Fixed time in seconds for which the BD PID will stay enabled (also after Brew switch is inactive again)."), kDouble, sBDSection, []{ return true && BREWDETECTION > 0 && (useBDPID || BREWDETECTION == 1); }, BREW_SW_TIME_MIN, BREW_SW_TIME_MAX, (void *)&brewtimesoftware},
 
         //#22
         {F("PID_BD_BREWSENSITIVITY"), F("PID BD Sensitivity"), true, F("Software brew detection sensitivity that looks at average temperature, <a href='https://manual.rancilio-pid.de/de/customization/brueherkennung.html' target='_blank'>Details</a>. Needs to be &gt;0 also for Hardware switch detection."), kDouble, sBDSection, []{ return true && BREWDETECTION == 1; }, BD_THRESHOLD_MIN, BD_THRESHOLD_MAX, (void *)&brewsensitivity},
@@ -2031,11 +2033,9 @@ void looppid() {
             debugPrintf("Current PID Output: %f\n\n", pidOutput);
             debugPrintf("Current Machinestate: %s\n\n", machinestateEnumToString(machinestate));
             debugPrintf("timeBrewed %f\n", timeBrewed);
-            debugPrintf("brewtimersoftware %f\n", brewtimersoftware);
+            debugPrintf("brewtimesoftware %f\n", brewtimesoftware);
             debugPrintf("isBrewDetected %i\n", isBrewDetected);
             debugPrintf("Brewdetection %i\n", Brewdetection);
-
-
         }
         #endif
     }
@@ -2264,7 +2264,7 @@ int readSysParamsFromStorage(void) {
     if (sysParaBrewSetPoint.getStorage() != 0) return -1;
     if (sysParaTempOffset.getStorage() != 0) return -1;
     if (sysParaBrewTime.getStorage() != 0) return -1;
-    if (sysParaBrewSwTimer.getStorage() != 0) return -1;
+    if (sysParaBrewSwTime.getStorage() != 0) return -1;
     if (sysParaBrewThresh.getStorage() != 0) return -1;
     if (sysParaPreInfTime.getStorage() != 0) return -1;
     if (sysParaPreInfPause.getStorage() != 0) return -1;
@@ -2294,7 +2294,7 @@ int writeSysParamsToStorage(void) {
     if (sysParaBrewSetPoint.setStorage() != 0) return -1;
     if (sysParaTempOffset.setStorage() != 0) return -1;
     if (sysParaBrewTime.setStorage() != 0) return -1;
-    if (sysParaBrewSwTimer.setStorage() != 0) return -1;
+    if (sysParaBrewSwTime.setStorage() != 0) return -1;
     if (sysParaBrewThresh.setStorage() != 0) return -1;
     if (sysParaPreInfTime.setStorage() != 0) return -1;
     if (sysParaPreInfPause.setStorage() != 0) return -1;
@@ -2355,7 +2355,7 @@ void writeSysParamsToMQTT(void) {
 
             //BD Parameter
         #if BREWDETECTION == 1
-            mqtt_publish("brewTimer", number2string(brewtimersoftware));
+            mqtt_publish("brewTimer", number2string(brewtimesoftware));
             mqtt_publish("brewLimit", number2string(brewsensitivity));
         #endif
 

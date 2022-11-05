@@ -56,7 +56,7 @@ void printScreen() {
                 u8g2.print("BD ");
                 u8g2.print((millis() - timeBrewDetection) / 1000, 1);
                 u8g2.print("/");
-                u8g2.print(brewtimersoftware, 0);
+                u8g2.print(brewtimesoftware, 0);
             }
 
             // PID Werte ueber heatbar
@@ -95,7 +95,7 @@ void printScreen() {
             u8g2.print("/");
 
             if (ONLYPID == 1) {
-                u8g2.print(brewtimersoftware, 0);// deaktivieren wenn Preinfusion ( // voransetzen )
+                u8g2.print(brewtimesoftware, 0);// deaktivieren wenn Preinfusion ( // voransetzen )
             }
             else {
                 u8g2.print(totalBrewTime / 1000, 0);            // aktivieren wenn Preinfusion

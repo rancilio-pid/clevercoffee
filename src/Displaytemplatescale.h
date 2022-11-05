@@ -65,7 +65,7 @@ void printScreen() {
         u8g2.print("/");
 
         if (ONLYPID == 1) {
-            u8g2.print(brewtimersoftware, 0);   // deaktivieren wenn Preinfusion ( // voransetzen )
+            u8g2.print(brewtimesoftware, 0);   // deaktivieren wenn Preinfusion ( // voransetzen )
         } else {
             u8g2.print(totalBrewTime / 1000, 1);    // aktivieren wenn Preinfusion und eine Nachkommastelle
                                                     // oder alternativ keine

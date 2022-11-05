@@ -222,7 +222,8 @@ constexpr unsigned int str2int(const char* str, int h = 0) {
 }
 
 String getHeader(String varName) {
-    //TODO: actually put the references libs on local file system again (only when using ESP32 which has more flash mem, but also make sure web server can handle this many concurrent requests (might crash)
+    //TODO: actually put the references libs on local file system again (only when using ESP32 which has more flash mem,
+    //but also make sure web server can handle this many concurrent requests (might crash)
     switch (str2int(varName.c_str())) {
         case (str2int("FONTAWESOME")):
             #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1

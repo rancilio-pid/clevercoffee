@@ -106,7 +106,7 @@ void printScreen()
             u8g2.print("/");
 
             if (ONLYPID == 1) {
-                u8g2.print(brewtimersoftware, 0);       // deactivate if only pid without preinfusion
+                u8g2.print(brewtimesoftware, 0);       // deactivate if only pid without preinfusion
             }
             else {
                 u8g2.print(totalBrewTime / 1000, 1);    // activate if pre-infusion and one decimal place or alternatively none
