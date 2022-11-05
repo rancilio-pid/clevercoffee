@@ -828,7 +828,7 @@ bool mqtt_publish(const char *reading, char *payload) {
  * @brief detect if a brew is running
  */
 void brewDetection() {
-    if (brewsensitivity == 0) return;  // abort brewdetection if deactivated
+    if (brewDetectionMode == 1 && brewSensitivity == 0) return;  // abort brewdetection if deactivated
 
     // Brew detection: 1 = software solution, 2 = hardware, 3 = voltage sensor
     if (brewDetectionMode == 1) {
@@ -873,7 +873,7 @@ void brewDetection() {
             isBrewDetected = 1;
         }
     } else if (brewDetectionMode == 2) {  // HW BD
-        if (brewcounter > 10 && brewDetected == 0 && brewsensitivity != 0) {
+        if (brewcounter > 10 && brewDetected == 0) {
             debugPrintln("HW Brew detected");
             timeBrewDetection = millis();
             isBrewDetected = 1;
@@ -926,7 +926,6 @@ void brewDetection() {
             // no Quickmill:
             default:
                 previousMillisVoltagesensorreading = millis();
-
                 if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorON && brewDetected == 0) {
                     debugPrintln("HW Brew - Voltage Sensor - Start");
                     timeBrewDetection = millis();
