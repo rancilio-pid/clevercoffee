@@ -9,9 +9,8 @@
 #include <EEPROM.h>
 
 #include "debugSerial.h"
-#include "userConfig.h"
 #include "Storage.h"
-#include "rancilio-pid.h"
+#include "defaults.h"
 
 #include "ISR.h"
 
