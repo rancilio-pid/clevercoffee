@@ -1,5 +1,5 @@
 /**
- * @file RancilioServer.h
+ * @file EmbeddedWebserver.h
  *
  * @brief Embedded webserver
  *
@@ -19,8 +19,6 @@
 
 #include "LittleFS.h"
 #include <functional>
-
-#include "userConfig.h"
 
 
 enum EditableKind {
@@ -60,8 +58,8 @@ int historyValueCount = 0;
 void serverSetup();
 void setEepromWriteFcn(int (*fcnPtr)(void));
 
-// We define these in rancilio-pid.cpp
-#define EDITABLE_VARS_LEN 26
+// Defined in main.cpp
+#define EDITABLE_VARS_LEN 28
 extern std::vector<editable_t> editableVars;
 
 // EEPROM
