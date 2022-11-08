@@ -1,5 +1,5 @@
 /**
- * @file rancilio-pid.cpp
+ * @file main.cpp
  *
  * @brief Main sketch
  *
@@ -33,7 +33,7 @@
 #include "debugSerial.h"
 #include "pinmapping.h"
 #include "userConfig.h"         // needs to be configured by the user
-#include "rancilio-pid.h"
+#include "defaults.h"
 #include <os.h>
 
 hw_timer_t *timer = NULL;
@@ -51,7 +51,7 @@ hw_timer_t *timer = NULL;
 #if (FW_VERSION != USR_FW_VERSION) || \
     (FW_SUBVERSION != USR_FW_SUBVERSION) || \
     (FW_HOTFIX != USR_FW_HOTFIX)
-    #error Version of userConfig file and rancilio-pid.cpp need to match!
+    #error Version of userConfig file and main.cpp need to match!
 #endif
 
 MACHINE machine = (enum MACHINE)MACHINEID;
@@ -323,7 +323,7 @@ std::vector<mqttVars_t> mqttVars = {
 #include "InfluxDB.h"
 
 // Embedded HTTP Server
-#include "RancilioServer.h"
+#include "EmbeddedWebserver.h"
 
 
 enum SectionNames {

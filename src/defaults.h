@@ -1,7 +1,7 @@
 /**
- * @file rancilio-pid.h
+ * @file defaults.h
  *
- * @brief TODO
+ * @brief Default values for system parameters
  *
  */
 
