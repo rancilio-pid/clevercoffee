@@ -19,12 +19,12 @@
     static const char *langstring_brew_rot_ur =          "B: ";
 #endif
 
-static const char *langstring_offlinemod = "Offlinemodus";
+static const char *langstring_offlinemode = "Offline";
 static const char *langstring_waterempty = "Wasser leer";
 
 static const char *langstring_wifirecon = "Wifi reconnect:";
-static const char *langstring_connectwifi1 = "1: Connect Wifi to:";
-static const char *langstring_nowifi[] = {"No ", "WIFI"};
+static const char *langstring_connectwifi1 = "1: Verbinde WLAN zu::";
+static const char *langstring_nowifi[] = {"Kein ", "WLAN"};
 
 static const char *langstring_error_tsensor[] = {"Fehler, Temp: ", "Temp.-Sensor ueberpruefen!"};
 // static const char *langstring_emergencyStop[] = {"HEATING", "STOPPED"};
@@ -46,14 +46,14 @@ static const char *langstring_bckfrunning[] = {"Backflush aktiv:", "seit"};
     static const char *langstring_brew_rot_ur = "B: ";
 #endif
 
-static const char *langstring_offlinemod = "Offline mode";
+static const char *langstring_offlinemode = "Offline";
 static const char *langstring_waterempty = "Empty water";
 
 static const char *langstring_wifirecon = "Wifi reconnect:";
 static const char *langstring_connectwifi1 = "1: Connect Wifi to:";
 static const char *langstring_nowifi[] = {"No ", "WIFI"};
 
-static const char *langstring_error_tsensor[] = {"Error, Temp: ", "Check Temp. Sensor!"};
+static const char *langstring_error_tsensor[] = {"Error, Temp: ", "Check Temp sensor!"};
 // static const char *langstring_emergencyStop[] = {"HEATING", "STOPPED"};
 
 static const char *langstring_bckffinished[] = {"Backflush finished", "Please reset brew switch..."};
@@ -73,7 +73,7 @@ static const char *langstring_bckfrunning[] = {"Backflush running:", "from"};
     static const char *langstring_brew_rot_ur = "B: ";
 #endif
 
-static const char *langstring_offlinemod = "Modo offline";
+static const char *langstring_offlinemode = "Offline";
 static const char *langstring_waterempty = "Agua vacía";
 
 static const char *langstring_wifirecon = "Reconecta wifi:";
