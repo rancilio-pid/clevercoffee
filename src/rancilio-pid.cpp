@@ -352,6 +352,7 @@ std::vector<mqttVars_t> mqttVars = {
     {"preinfusionpause", tDouble, PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, (void *)&preinfusionpause},
     {"pidON", tUInt8, 0, 1, (void *)&pidON},
     {"steamON", tUInt8, 0, 1, (void *)&steamON},
+    {"steamSetPoint", tDouble, STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, (void *)&steamSetPoint},
     {"backflushON", tUInt8, 0, 1, (void *)&backflushON},
     {"aggKp", tDouble, PID_KP_REGULAR_MIN, PID_KP_REGULAR_MAX, (void *)&aggKp},
     {"aggTn", tDouble, PID_TN_REGULAR_MIN, PID_TN_REGULAR_MAX, (void *)&aggTn},
