@@ -12,6 +12,9 @@
 #define FW_HOTFIX     0
 #define FW_BRANCH     "MASTER"
 
+// User Config
+#include "userConfig.h"         // needs to be configured by the user
+
 // Libraries
 #include <ArduinoOTA.h>
 #if TOF == 1
@@ -34,7 +37,6 @@
 #include "Storage.h"
 #include "ISR.h"
 #include "debugSerial.h"
-#include "userConfig.h"         // needs to be configured by the user
 #include "rancilio-pid.h"
 
 #if defined(ESP32)
