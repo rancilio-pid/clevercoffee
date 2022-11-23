@@ -692,8 +692,9 @@ void refreshTemp() {
                     debugPrintf("Under/Over voltage");
                 }
                 Sensor3.clearFault();
+            
     #endif
-    
+     }
 
             if (machineState != kSteam) {
                 temperature -= brewTempOffset;
