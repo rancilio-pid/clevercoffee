@@ -693,9 +693,9 @@ void refreshTemp() {
                 }
                 Sensor3.clearFault();
     #endif
-    }
+    
 
-            if (machinestate != kSteam) {
+            if (machineState != kSteam) {
                 temperature -= brewTempOffset;
             }
 
@@ -705,7 +705,7 @@ void refreshTemp() {
                         // be read at least one time at system startup
             }
 
-            if (Brewdetection == 1) {
+            if (brewDetectionMode == 1) {
                 calculateTemperatureMovingAverage();
             } else if (!movingAverageInitialized) {                
                 movingAverageInitialized = true;
