@@ -29,7 +29,7 @@ int writeSysParamsToStorage(void);
 #define AGGBTN 0                   // PID Tn (brew detection phase)
 #define AGGBTV 20                  // PID Tv (brew detection phase)
 #define BREW_TIME 25               // brew time in seconds (only used if pump is being controlled)
-#define BREW_SW_TIMER 25           // keep brew PID params for this many seconds after detection (only for software BD)
+#define BREW_SW_TIME 25            // keep brew PID params for this many seconds after detection (only for software BD)
 #define PRE_INFUSION_TIME 2        // pre-infusion time in seconds
 #define PRE_INFUSION_PAUSE_TIME 5  // pre-infusion pause time in seconds
 #define SCALE_WEIGHTSETPOINT 30    // Target weight in grams
@@ -54,14 +54,16 @@ int writeSysParamsToStorage(void);
 #define PID_TV_BD_MAX 999
 #define BREW_SETPOINT_MIN 20
 #define BREW_SETPOINT_MAX 110
+#define STEAM_SETPOINT_MIN 100
+#define STEAM_SETPOINT_MAX 140
 #define BREW_TEMP_OFFSET_MIN 0
 #define BREW_TEMP_OFFSET_MAX 20
 #define BREW_TEMP_TIME_MIN 1
 #define BREW_TEMP_TIME_MAX 180
 #define BREW_TIME_MIN 1
 #define BREW_TIME_MAX 180
-#define BREW_SW_TIMER_MIN 1
-#define BREW_SW_TIMER_MAX 180
+#define BREW_SW_TIME_MIN 1
+#define BREW_SW_TIME_MAX 180
 #define BD_THRESHOLD_MIN 0
 #define BD_THRESHOLD_MAX 999
 #define PRE_INFUSION_TIME_MIN 0

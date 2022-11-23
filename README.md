@@ -1,4 +1,5 @@
-# Clevercoffee
+# CleverCoffee
+(formerly Rancilio PID)
 
 <div align="center">
 <img src="https://img.shields.io/github/workflow/status/rancilio-pid/ranciliopid/Build/master">
@@ -8,7 +9,15 @@
 
 # About
 
-This project implements a PID for stable and accurate temperature control, originally for Rancilio Silvia espresso machines but also includes support for Gaggia and Quickmill machines. Others can easily be added or are already compatible.
+This project implements a PID controller for stable and accurate temperature control, originally for Rancilio Silvia espresso machines but also includes support for Gaggia and Quickmill machines. Others can easily be added or are already compatible.
+
+Additional features include:
+
+* brew timer
+* pre-infusion (reduced initial pressure using a dimmer for the pump)
+* brew by weight (using weight cells, no support for external scales yet)
+* pressure monitoring
+* water level monitoring
 
 The hardware has a small footprint and can easily fit also into most smaller espresso machines. The original wiring of the machine (mostly) remains and is only extended. The machine can be easily reversed to the orignal state after the conversion.
 
@@ -16,7 +25,7 @@ The project has been in active development and supported for 4 years with contin
 
 You can find our project website here: [Clever Coffee Website](https://clevercoffee.de).
 
-The PID software is Open Source: free of charge for you and customizable to your personal needs. 
+This software is Open Source: free of charge for you and customizable to your personal needs. 
 
 We recommend you to have a look at the manual before starting a build, you can find the german one [here](https://rancilio-pid.github.io/ranciliopid-handbook/). It is currently being reworked to include all the latest features. The english one is sadly still very outdated but will also be updated soon. 
 
@@ -26,7 +35,7 @@ Video tutorial on how to flash the firmware (a little outdated but mostly still 
 https://youtu.be/KZPjisOEcQ4
 
 ## Version
-The next version is going to be 3.1.0 (03.11.2022)
+The next version is going to be 3.1.x (last release was on 03.11.2022)
 
 ## What is possible after installation into your espresso machine? 
  * Control of the brewing temperature with an accuracy of up to +/- 0,1°.

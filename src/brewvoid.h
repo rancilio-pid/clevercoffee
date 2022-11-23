@@ -102,7 +102,7 @@ void checkbrewswitch() {
                 break;
             case 30:
                 // Stop Brew trigger (one push) brewswitch == HIGH
-                if ((brewswitchTrigger == HIGH && brewswitch == HIGH) || (machinestate == kShotTimerAfterBrew) ) {
+                if ((brewswitchTrigger == HIGH && brewswitch == HIGH) || (machineState == kShotTimerAfterBrew) ) {
                     brewswitch = LOW;
                     brewswitchTriggerCase = 40;
                     brewswitchTriggermillis = millis();

@@ -25,7 +25,7 @@ typedef enum
   STO_ITEM_PID_KP_BD,               // PID P part at brew detection phase
   STO_ITEM_PID_TN_BD,               // PID I part at brew detection phase
   STO_ITEM_PID_TV_BD,               // PID D part at brew detection phase
-  STO_ITEM_BREW_SW_TIMER,           // brew software timer
+  STO_ITEM_BREW_SW_TIME,            // brew software time
   STO_ITEM_BD_THRESHOLD,            // brew detection limit
   STO_ITEM_PID_KP_START,            // PID P part at cold start phase
   STO_ITEM_PID_TN_START,            // PID I part at cold start phase
