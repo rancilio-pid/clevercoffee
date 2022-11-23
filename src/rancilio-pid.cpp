@@ -1582,12 +1582,12 @@ void tempLed() {
  * @brief Set up internal WiFi hardware
  */
 void wiFiSetup() {
-    //wm.setCleanConnect(true);
+    wm.setCleanConnect(true);
     wm.setConfigPortalTimeout(60); // sec Timeout for Portal
     wm.setConnectTimeout(5); // Try 5 sec to connect to WLAN
     wm.setBreakAfterConfig(true);
-    wm.setConnectRetries(5);
-    wm.setWiFiAutoReconnect(true);
+    //wm.setConnectRetries(5);
+    //wm.setWiFiAutoReconnect(true);
     wm.setHostname(hostname);
 
     if (wm.autoConnect(hostname, pass)) {
