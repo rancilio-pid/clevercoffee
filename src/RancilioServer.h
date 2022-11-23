@@ -335,9 +335,10 @@ void serverSetup() {
         if (request->method() == 2) {   //returns values from WebRequestMethod enum -> 2 == HTTP_POST
             //update all given params and match var name in editableVars
             int params = request->params();
-            String m = "Got ";
+            /*String m = "Got ";
             m += params;
             m += " request parameters: <br />";
+            */
 
             for (int i = 0 ; i < params; i++) {
                 AsyncWebParameter* p = request->getParam(i);
@@ -353,21 +354,23 @@ void serverSetup() {
                         continue;
                     }
 
+                    /*
                     m += "Setting ";
                     m += e.displayName;
                     m += " from ";
+                    */
 
                     if (e.type == kInteger) {
-                        m += *(int *)e.ptr;
+                        //m += *(int *)e.ptr;
 
                         int newVal = atoi(p->value().c_str());
                         *(int *)e.ptr = newVal;
                     } else if (e.type == kUInt8) {
-                        m += *(uint8_t *)e.ptr;
+                        //m += *(uint8_t *)e.ptr;
 
                         *(uint8_t *)e.ptr = (uint8_t)atoi(p->value().c_str());
                     } else if (e.type == kDouble || e.type == kDoubletime) {
-                        m += *(double *)e.ptr;
+                        //m += *(double *)e.ptr;
 
                         float newVal = atof(p->value().c_str());
                         *(double *)e.ptr = newVal;
@@ -386,14 +389,14 @@ void serverSetup() {
                         e.ptr = (void *)newVal;
                     }*/
 
-                    m += " to ";
+                    /*m += " to ";
                     m += p->value();
 
-                    m += "<br/>";
+                    m += "<br/>";*/
                 }
             }
 
-            request->send(200, "text/html", m);
+            request->send(200, "text/html", "Parameters saved");
 
             // Write to EEPROM
             if (writeToEeprom) {
