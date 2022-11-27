@@ -596,14 +596,14 @@ void refreshTemp() {
             temperature = sensors.getTempCByIndex(0);
         #endif
 
-            if (machineState != kSteam) {
-                temperature -= brewTempOffset;
-            }
-
             if (!checkSensor(temperature) && movingAverageInitialized) {
                 temperature = previousInput;
                 return; // if sensor data is not valid, abort function; Sensor must
                         // be read at least one time at system startup
+            }
+
+            if (machineState != kSteam) {
+                temperature -= brewTempOffset;
             }
 
             if (brewDetectionMode == 1) {
@@ -630,14 +630,14 @@ void refreshTemp() {
         #endif
     #endif
 
-            if (machineState != kSteam) {
-                temperature -= brewTempOffset;
-            }
-
             if (!checkSensor(temperature) && movingAverageInitialized) {
                 temperature = previousInput;
                 return; // if sensor data is not valid, abort function; Sensor must
                         // be read at least one time at system startup
+            }
+
+            if (machineState != kSteam) {
+                temperature -= brewTempOffset;
             }
 
             if (brewDetectionMode == 1) {
