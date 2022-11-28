@@ -596,14 +596,14 @@ void refreshTemp() {
             temperature = sensors.getTempCByIndex(0);
         #endif
 
-            if (machineState != kSteam) {
-                temperature -= brewTempOffset;
-            }
-
             if (!checkSensor(temperature) && movingAverageInitialized) {
                 temperature = previousInput;
                 return; // if sensor data is not valid, abort function; Sensor must
                         // be read at least one time at system startup
+            }
+
+            if (machineState != kSteam) {
+                temperature -= brewTempOffset;
             }
 
             if (brewDetectionMode == 1) {
@@ -630,14 +630,14 @@ void refreshTemp() {
         #endif
     #endif
 
-            if (machineState != kSteam) {
-                temperature -= brewTempOffset;
-            }
-
             if (!checkSensor(temperature) && movingAverageInitialized) {
                 temperature = previousInput;
                 return; // if sensor data is not valid, abort function; Sensor must
                         // be read at least one time at system startup
+            }
+
+            if (machineState != kSteam) {
+                temperature -= brewTempOffset;
             }
 
             if (brewDetectionMode == 1) {
@@ -1586,8 +1586,8 @@ void wiFiSetup() {
     wm.setConfigPortalTimeout(60); // sec Timeout for Portal
     wm.setConnectTimeout(5); // Try 5 sec to connect to WLAN
     wm.setBreakAfterConfig(true);
-    wm.setConnectRetries(5);
-    wm.setWiFiAutoReconnect(true);
+    wm.setConnectRetries(3);
+    //wm.setWiFiAutoReconnect(true);
     wm.setHostname(hostname);
 
     if (wm.autoConnect(hostname, pass)) {
