@@ -412,7 +412,7 @@ void serverSetup() {
 
         } else if (request->method() == 1) {  //WebRequestMethod enum -> HTTP_GET
             //return all params as json
-            DynamicJsonDocument doc(4096); //JSON_ARRAY_SIZE(1) + JSON_OBJECT_SIZE(9+1) * EDITABLE_VARS_LEN);
+            DynamicJsonDocument doc(JSON_ARRAY_SIZE(1) + JSON_OBJECT_SIZE(9+1) * EDITABLE_VARS_LEN);
 
             //get parameter id from frst parameter, e.g. /parameters?param=PID_ON
             int paramCount = request->params();
@@ -469,9 +469,13 @@ void serverSetup() {
     });
 
     server.on("/parameterHelp", HTTP_GET, [](AsyncWebServerRequest *request) {
-        DynamicJsonDocument doc(4096);
+        DynamicJsonDocument doc(1024);
 
         AsyncWebParameter* p = request->getParam(0);
+        if (p == NULL) {
+            request->send(422, "text/plain", "parameter is missing");
+            return;
+        }
         const String& varValue = p->value();
 
         skipHeaterISR = true;

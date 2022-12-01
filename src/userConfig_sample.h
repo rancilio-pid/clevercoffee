@@ -1,7 +1,7 @@
 /**
  * @file    userConfig_sample.h
  * @brief   Values must be configured by the user
- * @version 3.1.0 Master
+ * @version 3.1.1 Master
  *
  */
 #ifndef _userConfig_H
@@ -10,7 +10,7 @@
 // firmware version (must match with definitions in the main source file)
 #define USR_FW_VERSION    3
 #define USR_FW_SUBVERSION 1
-#define USR_FW_HOTFIX     0
+#define USR_FW_HOTFIX     1
 #define USR_FW_BRANCH     "MASTER"
 
 // List of supported machines

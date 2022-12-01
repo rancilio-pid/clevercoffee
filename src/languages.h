@@ -20,7 +20,9 @@
 #endif
 
 static const char *langstring_offlinemode = "Offline";
+#if TOF == 1
 static const char *langstring_waterempty = "Wasser leer";
+#endif
 
 static const char *langstring_wifirecon = "Wifi reconnect:";
 static const char *langstring_connectwifi1 = "1: Verbinde WLAN zu::";
@@ -47,7 +49,9 @@ static const char *langstring_bckfrunning[] = {"Backflush aktiv:", "seit"};
 #endif
 
 static const char *langstring_offlinemode = "Offline";
+#if TOF == 1
 static const char *langstring_waterempty = "Empty water";
+#endif
 
 static const char *langstring_wifirecon = "Wifi reconnect:";
 static const char *langstring_connectwifi1 = "1: Connect Wifi to:";
@@ -74,7 +78,9 @@ static const char *langstring_bckfrunning[] = {"Backflush running:", "from"};
 #endif
 
 static const char *langstring_offlinemode = "Offline";
+#if TOF == 1
 static const char *langstring_waterempty = "Agua vacía";
+#endif
 
 static const char *langstring_wifirecon = "Reconecta wifi:";
 static const char *langstring_connectwifi1 = "1: Wifi conectado :";
