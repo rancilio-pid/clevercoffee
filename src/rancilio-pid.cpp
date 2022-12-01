@@ -488,7 +488,7 @@ int relayETriggerON, relayETriggerOFF;
 void testEmergencyStop() {
     if (temperature > EmergencyStopTemp && emergencyStop == false) {
         emergencyStop = true;
-    } else if (temperature < 100 && emergencyStop == true) {
+    } else if (temperature < (setPointTemp+5) && emergencyStop == true) {
         emergencyStop = false;
     }
 }
@@ -552,7 +552,7 @@ void calculateTemperatureMovingAverage() {
  */
 boolean checkSensor(float tempInput) {
     boolean sensorOK = false;
-    boolean badCondition = (tempInput < 0 || tempInput > 150 || fabs(tempInput - previousInput) > 5);
+    boolean badCondition = (tempInput < 0 || tempInput > 150 || fabs(tempInput - previousInput) > (5+brewTempOffset));
 
     if (badCondition && !sensorError) {
         error++;
@@ -596,14 +596,14 @@ void refreshTemp() {
             temperature = sensors.getTempCByIndex(0);
         #endif
 
+            if (machineState != kSteam) {
+                temperature -= brewTempOffset;
+            }
+
             if (!checkSensor(temperature) && movingAverageInitialized) {
                 temperature = previousInput;
                 return; // if sensor data is not valid, abort function; Sensor must
                         // be read at least one time at system startup
-            }
-
-            if (machineState != kSteam) {
-                temperature -= brewTempOffset;
             }
 
             if (brewDetectionMode == 1) {
@@ -629,15 +629,14 @@ void refreshTemp() {
             temperature = Sensor2.getTemp();
         #endif
     #endif
+            if (machineState != kSteam) {
+                temperature -= brewTempOffset;
+            }
 
             if (!checkSensor(temperature) && movingAverageInitialized) {
                 temperature = previousInput;
                 return; // if sensor data is not valid, abort function; Sensor must
                         // be read at least one time at system startup
-            }
-
-            if (machineState != kSteam) {
-                temperature -= brewTempOffset;
             }
 
             if (brewDetectionMode == 1) {
