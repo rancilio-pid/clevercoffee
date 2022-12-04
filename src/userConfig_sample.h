@@ -119,7 +119,7 @@ enum MACHINE {
 #define TEMPSENSOR 2               // Temp sensor type: 1 = DS18B20, 2 = TSIC306
 
 // Pin Layout
-#define PINTEMPSENSOR 2            
+#define PINTEMPSENSOR 2            // Use 16 for ESP32 board
 #define PINPRESSURESENSOR 99       // Pressure sensor 0: A0 (ESP8266), >0 ONLY ESP32
 #define PINVALVE 12
 #define PINPUMP 13
