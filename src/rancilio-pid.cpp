@@ -488,7 +488,7 @@ int relayETriggerON, relayETriggerOFF;
 void testEmergencyStop() {
     if (temperature > EmergencyStopTemp && emergencyStop == false) {
         emergencyStop = true;
-    } else if (temperature < (setPointTemp+5) && emergencyStop == true) {
+    } else if (temperature < (brewSetPoint+5) && emergencyStop == true) {
         emergencyStop = false;
     }
 }
