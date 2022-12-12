@@ -1581,7 +1581,7 @@ void tempLed() {
  * @brief Set up internal WiFi hardware
  */
 void wiFiSetup() {
-    //wm.setCleanConnect(true);
+    wm.setCleanConnect(true);
     wm.setConfigPortalTimeout(60); // sec Timeout for Portal
     wm.setConnectTimeout(10); // Try 10 sec to connect to WLAN, 5 SEC to short!
     wm.setBreakAfterConfig(true);
