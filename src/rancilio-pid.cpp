@@ -1811,7 +1811,7 @@ void setup() {
         u8g2.begin();
         u8g2_prepare();
         displayLogo(String("Version ") + String(sysVersion), "");
-        delay(2000);
+       // delay(2000); // caused crash with wifi manager
     #endif
 
     // Init Scale by BREWMODE 2 or SHOTTIMER 2
