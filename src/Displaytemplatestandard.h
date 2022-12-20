@@ -99,7 +99,7 @@ void printScreen()
         // Brew time or uptime
         u8g2.setCursor(32, 34);
 
-        if (isBrewDetected) {
+        if (machineState == kBrew) {
             //show shot time
             u8g2.print(langstring_brew);
             u8g2.print(timeBrewed / 1000, 0);
