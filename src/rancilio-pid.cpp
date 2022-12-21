@@ -628,7 +628,9 @@ void refreshTemp() {
         #if ((PINTEMPSENSOR != 16 && defined(ESP8266)) || defined(ESP32))
             temperature = Sensor2.getTemp();
         #endif
+       
     #endif
+      // temperature = 94;
             if (machineState != kSteam) {
                 temperature -= brewTempOffset;
             }
@@ -1845,6 +1847,12 @@ void setup() {
                 influxClient.setConnectionParamsV1(INFLUXDB_URL, INFLUXDB_DB_NAME, INFLUXDB_USER, INFLUXDB_PASSWORD);
             }
         }
+    } else if (connectmode == 0) 
+    { 
+        wm.disconnect(); // no wm
+        readSysParamsFromStorage(); // get values from stroage
+        offlineMode = 1 ; //offline mode
+        pidON = 1  ; //pid on
     }
 
     // Initialize PID controller
@@ -2044,7 +2052,7 @@ void looppid() {
     handleMachineState();      // update machineState
     tempLed();
 
-    if (INFLUXDB == 1) {
+    if (INFLUXDB == 1  && offlineMode == 0 ) {
         sendInflux();
     }
 
