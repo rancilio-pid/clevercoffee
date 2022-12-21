@@ -1192,10 +1192,6 @@ void handleMachineState() {
                     break;
             }
 
-            if (steamON == 1) {
-                machineState = kSteam;
-            }
-
             if ((timeBrewed > 0 && ONLYPID == 1) ||  // timeBrewed with Only PID
                 (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42))
             {
@@ -1231,10 +1227,6 @@ void handleMachineState() {
                 (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42))
             {
                 machineState = kBrew;
-            }
-
-            if (steamON == 1) {
-                machineState = kSteam;
             }
 
             if (backflushON || backflushState > 10) {
