@@ -243,8 +243,8 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
             break;
 
         case STO_ITEM_STEAM_SETPOINT:
-            addr = offsetof(sto_data_t,weightsetpoint );
-            size = STRUCT_MEMBER_SIZE(sto_data_t,weightsetpoint);
+            addr = offsetof(sto_data_t,steamsetpoint );
+            size = STRUCT_MEMBER_SIZE(sto_data_t,steamsetpoint);
             break;
 
 
