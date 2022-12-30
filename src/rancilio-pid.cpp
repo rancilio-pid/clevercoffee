@@ -1832,7 +1832,7 @@ void setup() {
         }
 
         if (MQTT == 1) {
-            snprintf(topic_will, sizeof(topic_will), "%s%s/%s", mqtt_topic_prefix, hostname, "available");
+            snprintf(topic_will, sizeof(topic_will), "%s%s/%s", mqtt_topic_prefix, hostname, "status");
             snprintf(topic_set, sizeof(topic_set), "%s%s/+/%s", mqtt_topic_prefix, hostname, "set");
             mqtt.setServer(mqtt_server_ip, mqtt_server_port);
             mqtt.setCallback(mqtt_callback);
@@ -2318,8 +2318,8 @@ void writeSysParamsToMQTT(void) {
         previousMillisMQTT = currentMillisMQTT;
 
         if (mqtt.connected() == 1) {
-            // available topic (will sets it to offline)
-            mqtt_publish("available", "online");
+            // status topic (will sets it to offline)
+            mqtt_publish("status", "online");
 
             mqtt_publish("temperature", number2string(temperature));
             mqtt_publish("brewSetPoint", number2string(brewSetPoint));
