@@ -2363,6 +2363,11 @@ void writeSysParamsToMQTT(void) {
         #if BREWMODE == 2
             mqtt_publish("weightSetpoint", number2string(weightSetpoint));
         #endif
+
+        #if TOF == 1
+            mqtt_publish("waterLevelDistance", number2string(distance));
+            mqtt_publish("waterLevelPercentage", number2string(percentage));
+        #endif
         }
     }
 }
