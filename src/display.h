@@ -160,7 +160,7 @@ void Displaymachinestate() {
         u8g2.clearBuffer();
         u8g2.drawFrame(8, 0, 110, 12);
 
-        if (Offlinemodus == 0) {
+        if (offlineMode == 0) {
             getSignalStrength();
 
             if (WiFi.status() == WL_CONNECTED) {

@@ -102,7 +102,7 @@ void printScreen() {
         // Für Statusinfos
         u8g2.drawFrame(32, 0, 128, 12);
 
-        if (Offlinemodus == 0) {
+        if (offlineMode == 0) {
             getSignalStrength();
 
             if (WiFi.status() == WL_CONNECTED) {
@@ -138,7 +138,7 @@ void printScreen() {
             }
         } else {
             u8g2.setCursor(40, 2);
-            u8g2.print("Offlinemodus");
+            u8g2.print("Offline Mode");
         }
 
         if (TOF == 1) {
