@@ -4,7 +4,7 @@
  * @brief
  */
 
-#if (OLED_DISPLAY == 1 || OLED_DISPLAY == 2)
+#if (OLED_DISPLAY != 0)
 
 /**
  * @brief initialize display
