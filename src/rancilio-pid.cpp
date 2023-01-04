@@ -1262,7 +1262,7 @@ void handleMachineState() {
             brewDetection();     // if brew detected, set BD PID values (if enabled)
 
             if ((timeBrewed > 0 && ONLYPID == 1) ||  // timeBrewed with Only PID
-                (ONLYPID == 0 && brewcounter > kBrewIdle && brewcounter <= kBrewFinished)
+                (ONLYPID == 0 && brewcounter > kBrewIdle && brewcounter <= kBrewFinished))
             {
                 machineState = kBrew;
             }
