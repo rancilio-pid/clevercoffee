@@ -244,6 +244,7 @@ SysPara<double> sysParaSteamSetPoint(&steamSetPoint, STEAM_SETPOINT_MIN, STEAM_S
 SysPara<uint8_t> sysParaPidOn(&pidON, 0, 1, STO_ITEM_PID_ON);
 SysPara<uint8_t> sysParaUsePonM(&usePonM, 0, 1, STO_ITEM_PID_START_PONM);
 SysPara<uint8_t> sysParaUseBDPID(&useBDPID, 0, 1, STO_ITEM_USE_BD_PID);
+SysPara<double> sysParaSteamSetPoint(&steamSetPoint, STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, STO_ITEM_STEAM_SETPOINT);
 
 // Other variables
 int relayON, relayOFF;           // used for relay trigger type. Do not change!
@@ -1730,7 +1731,7 @@ void setup() {
         {F("BACKFLUSH_ON"), F("Backflush"), false, "", kUInt8, sOtherSection, []{ return false; }, 0, 1, (void *)&backflushON},
 
         //#26
-        {F("VERSION"), F("Version"), false, "", kCString, sOtherSection, []{ return false; }, 0, 1, (void *)sysVersion}
+        {F("VERSION"), F("Version"), false, "", kCString, sOtherSection, []{ return false; }, 0, 1, (void *)sysVersion},
     };
     //when adding parameters, update EDITABLE_VARS_LEN!
 
@@ -2285,7 +2286,7 @@ int readSysParamsFromStorage(void) {
     if (sysParaSteamSetPoint.getStorage() != 0) return -1;
     if (sysParaUsePonM.getStorage() != 0) return -1;
     if (sysParaUseBDPID.getStorage() != 0) return -1;
-
+    if (sysParaSteamSetPoint.getStorage() != 0) return -1;
     return 0;
 }
 
@@ -2317,6 +2318,7 @@ int writeSysParamsToStorage(void) {
     if (sysParaPidKpBd.setStorage() != 0) return -1;
     if (sysParaPidTnBd.setStorage() != 0) return -1;
     if (sysParaPidTvBd.setStorage() != 0) return -1;
+    if (sysParaSteamSetPoint.setStorage() != 0) return -1;
 
     return storageCommit();
 }
