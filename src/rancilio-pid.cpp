@@ -2335,6 +2335,7 @@ void writeSysParamsToMQTT(void) {
         if (mqtt.connected() == 1) {
             // status topic (will sets it to offline)
             mqtt_publish("status", (char *)"online");
+            mqtt_publish("machineState", (char *)machinestateEnumToString(machineState));
 
             mqtt_publish("temperature", number2string(temperature));
             mqtt_publish("brewSetPoint", number2string(brewSetPoint));
