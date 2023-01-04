@@ -69,7 +69,7 @@ void printScreen() {
                 u8g2.print(setPoint, numDecimalsSetPoint);
             }
 
-            if (brewcounter > 10) {
+            if (brewcounter > kBrewIdle) {
                 u8g2.setFont(u8g2_font_profont17_tf);
 
                 // Brew
@@ -91,7 +91,7 @@ void printScreen() {
                 u8g2.print(totalBrewTime / 1000, 0); // aktivieren wenn Preinfusion
             }
 
-            if (isBrewDetected == 1 && brewcounter == 10) {
+            if (isBrewDetected == 1 && brewcounter == kBrewIdle) {
                 u8g2.setFont(u8g2_font_profont11_tf);
 
                 // Brew

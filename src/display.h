@@ -290,7 +290,7 @@ void Displaymachinestate() {
     }
 
     // EEPROM error
-    if (machineState == keepromError) {
+    if (machineState == kEepromError) {
         u8g2.clearBuffer();
         u8g2.setFont(u8g2_font_profont11_tf);
         displayMessage("EEPROM Error, please set Values", "", "", "", "", "");

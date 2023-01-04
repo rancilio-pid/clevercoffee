@@ -81,7 +81,7 @@ enum MachineState {
     kEmergencyStop = 80,
     kPidOffline = 90,
     kSensorError = 100,
-    keepromError = 110,
+    kEepromError = 110,
 };
 
 MachineState machineState = kInit;
@@ -692,7 +692,7 @@ void initOfflineMode() {
  * @brief Check if Wifi is connected, if not reconnect abort function if offline, or brew is running
  */
 void checkWifi() {
-    if (offlineMode == 1 || brewcounter > 11) return;
+    if (offlineMode == 1 || brewcounter > kBrewIdle) return;
 
     /* if coldstart ist still true when checkWifi() is called, then there was no WIFI connection
      * at boot -> connect or offlinemode
@@ -773,11 +773,11 @@ void sendInflux() {
 
 
 /**
- * @brief Check if MQTT is connected, if not reconnect abort function if offline, or brew is running
+ * @brief Check if MQTT is connected, if not reconnect. Abort function if offline or brew is running
  *      MQTT is also using maxWifiReconnects!
  */
 void checkMQTT() {
-    if (offlineMode == 1 || brewcounter > 11) return;
+    if (offlineMode == 1 || brewcounter > kBrewIdle) return;
 
     if ((millis() - lastMQTTConnectionAttempt >= wifiConnectionDelay) && (MQTTReCnctCount <= maxWifiReconnects)) {
         int statusTemp = mqtt.connected();
@@ -887,7 +887,7 @@ void brewDetection() {
             isBrewDetected = 1;
         }
     } else if (brewDetectionMode == 2) {  // HW BD
-        if (brewcounter > 10 && brewDetected == 0) {
+        if (brewcounter > kBrewIdle && brewDetected == 0) {
             debugPrintln("HW Brew detected");
             timeBrewDetection = millis();
             isBrewDetected = 1;
@@ -1205,7 +1205,7 @@ void handleMachineState() {
             }
 
             if ((timeBrewed > 0 && ONLYPID == 1) ||  // timeBrewed with Only PID
-                (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42))
+                (ONLYPID == 0 && brewcounter > kBrewIdle && brewcounter <= kBrewFinished))
             {
                 machineState = kBrew;
             }
@@ -1236,7 +1236,7 @@ void handleMachineState() {
             }
 
             if ((timeBrewed > 0 && ONLYPID == 1) ||  // timeBrewed with Only PID
-                (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42))
+                (ONLYPID == 0 && brewcounter > kBrewIdle && brewcounter <= kBrewFinished))
             {
                 machineState = kBrew;
             }
@@ -1262,7 +1262,7 @@ void handleMachineState() {
             brewDetection();     // if brew detected, set BD PID values (if enabled)
 
             if ((timeBrewed > 0 && ONLYPID == 1) ||  // timeBrewed with Only PID
-                (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42))
+                (ONLYPID == 0 && brewcounter > kBrewIdle && brewcounter <= kBrewFinished)
             {
                 machineState = kBrew;
             }
@@ -1298,7 +1298,7 @@ void handleMachineState() {
             }
 
             if ((timeBrewed == 0 && brewDetectionMode == 3 && ONLYPID == 1) || // OnlyPID+: Voltage sensor BD timeBrewed == 0 -> switch is off again
-                ((brewcounter == 10 || brewcounter == 43) && ONLYPID == 0)) // Hardware BD
+                ((brewcounter == kBrewIdle || brewcounter == kWaitBrewOff) && ONLYPID == 0)) // Hardware BD
             {
                 // delay shot timer display for voltage sensor or hw brew toggle switch (brew counter)
                 machineState = kShotTimerAfterBrew;
@@ -1363,7 +1363,7 @@ void handleMachineState() {
             }
 
             if ((timeBrewed > 0 && ONLYPID == 1 && brewDetectionMode == 3) ||  // Allow brew directly after BD only when using OnlyPID AND hardware brew switch detection
-                (ONLYPID == 0 && brewcounter > 10 && brewcounter <= 42))
+                (ONLYPID == 0 && brewcounter > kBrewIdle && brewcounter <= kBrewFinished))
             {
                 machineState = kBrew;
             }
@@ -1504,8 +1504,8 @@ void handleMachineState() {
             machineState = kSensorError;
             break;
 
-        case keepromError:
-            machineState = keepromError;
+        case kEepromError:
+            machineState = kEepromError;
             break;
     }
 
@@ -1548,7 +1548,7 @@ char const* machinestateEnumToString(MachineState machineState) {
             return "PID Offline";
         case kSensorError:
             return "Sensor Error";
-        case keepromError:
+        case kEepromError:
             return "EEPROM Error";
     }
 
@@ -2092,7 +2092,7 @@ void looppid() {
     }
 #endif
 
-    if (machineState == kPidOffline || machineState == kSensorError || machineState == kEmergencyStop || machineState == keepromError || brewPIDdisabled) {
+    if (machineState == kPidOffline || machineState == kSensorError || machineState == kEmergencyStop || machineState == kEepromError || brewPIDdisabled) {
         if (pidMode == 1) {
             // Force PID shutdown
             pidMode = 0;
