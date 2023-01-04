@@ -2285,7 +2285,7 @@ int readSysParamsFromStorage(void) {
     if (sysParaSteamSetPoint.getStorage() != 0) return -1;
     if (sysParaUsePonM.getStorage() != 0) return -1;
     if (sysParaUseBDPID.getStorage() != 0) return -1;
-    if (sysParaSteamSetPoint.getStorage() != 0) return -1;
+
     return 0;
 }
 
