@@ -69,7 +69,7 @@ void serverSetup();
 void setEepromWriteFcn(int (*fcnPtr)(void));
 
 // We define these in rancilio-pid.cpp
-#define EDITABLE_VARS_LEN 28
+#define EDITABLE_VARS_LEN 26
 extern std::vector<editable_t> editableVars;
 
 // EEPROM
@@ -412,7 +412,7 @@ void serverSetup() {
 
         } else if (request->method() == 1) {  //WebRequestMethod enum -> HTTP_GET
             //return all params as json
-            DynamicJsonDocument doc(JSON_ARRAY_SIZE(1) + JSON_OBJECT_SIZE(9+1) * EDITABLE_VARS_LEN);
+            DynamicJsonDocument doc(JSON_ARRAY_SIZE(1) + JSON_OBJECT_SIZE(9+4) * EDITABLE_VARS_LEN);
 
             //get parameter id from frst parameter, e.g. /parameters?param=PID_ON
             int paramCount = request->params();
