@@ -207,6 +207,7 @@ double preinfusionpause = PRE_INFUSION_PAUSE_TIME;  // preinfusion pause time in
 double weightSetpoint = SCALE_WEIGHTSETPOINT;
 float scaleCalibration = SCALE_CALIBRATION;
 double scaleKnownWeight = SCALE_KNOWNWEIGHT;
+double scaleKnownWeight = SCALE_KNOWNWEIGHT;
 
 // PID - values for offline brew detection
 uint8_t useBDPID = 0;
@@ -374,7 +375,7 @@ std::vector<mqttVars_t> mqttVars = {
     {"steamKp", tDouble, PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, (void *)&steamKp},
     {"startKp", tDouble, PID_KP_START_MIN, PID_KP_START_MAX, (void *)&startKp},
     {"startTn", tDouble, PID_TN_START_MIN, PID_TN_START_MAX, (void *)&startTn},
-    {"weightSetpoint", tDouble, WEIGHTSETPOINT_MIN, WEIGHTSETPOINT_MAX, (void *)&weightSetpoint},
+    {"weightSetPoint", tDouble, WEIGHTSETPOINT_MIN, WEIGHTSETPOINT_MAX, (void *)&weightSetPoint},
     {"scaleKnownWeight", tDouble, SCALEKNOWNWEIGHT_MIN, SCALEKNOWNWEIGHT_MAX, (void *)&scaleKnownWeight},
     {"scaleCalibration", tFloat, SCALECALIBRATION_MIN, SCALECALIBRATION_MAX, (void *)&scaleCalibration}
 };
@@ -1798,6 +1799,7 @@ void setup() {
 
         //#28
         {F("VERSION"), F("Version"), false, "", kCString, sOtherSection, []{ return false; }, 0, 1, (void *)sysVersion}
+
     };
     //when adding parameters, update EDITABLE_VARS_LEN!
 
