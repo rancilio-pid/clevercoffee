@@ -56,8 +56,9 @@ typedef struct __attribute__((packed)) {
     uint8_t freeToUse14[2];
     char wifiSSID[25 + 1];
     char wifiPassword[25 + 1];
-    double weightsetpoint;
+    double weightSetPoint;
     double steamkp;
+    float scaleCalibration;
 } sto_data_t;
 
 // set item defaults
@@ -102,6 +103,7 @@ static const sto_data_t itemDefaults PROGMEM = {
     "",            // STO_ITEM_WIFI_SSID
     "",            // STO_ITEM_WIFI_PASSWORD
     SCALE_WEIGHTSETPOINT,
+    SCALE_CALIBRATION,
     STEAMKP
 };
 
@@ -236,8 +238,13 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
             break;
 
          case STO_ITEM_WEIGHTSETPOINT:
-            addr = offsetof(sto_data_t,weightsetpoint );
-            size = STRUCT_MEMBER_SIZE(sto_data_t,weightsetpoint);
+            addr = offsetof(sto_data_t,weightSetPoint );
+            size = STRUCT_MEMBER_SIZE(sto_data_t,weightSetPoint);
+            break;
+        
+         case STO_ITEM_SCALECALIBRATION:
+            addr = offsetof(sto_data_t,scaleCalibration );
+            size = STRUCT_MEMBER_SIZE(sto_data_t,scaleCalibration);
             break;
 
         default:

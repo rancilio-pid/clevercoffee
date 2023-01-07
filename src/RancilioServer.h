@@ -31,6 +31,7 @@ enum EditableKind {
     kInteger,
     kUInt8,
     kDouble,
+    kFloat,
     kDoubletime,
     kCString
 };
@@ -54,6 +55,10 @@ AsyncEventSource events("/events");
 double curTemp = 0.0;
 double tTemp = 0.0;
 double hPower = 0.0;
+double calValue = 0.0;
+double curWeight = 0.0;
+double weightB = 0.0;
+double weightPB = 0.0;
 
 #if defined(ESP8266)
     #define HISTORY_LENGTH 120    //10 mins of values
@@ -89,6 +94,19 @@ String getTempString() {
     doc["currentTemp"] = curTemp;
     doc["targetTemp"] = tTemp;
     doc["heaterPower"] = hPower;
+
+    String jsonTemps;
+    serializeJson(doc, jsonTemps);
+
+    return jsonTemps;
+}
+
+String getWeightString() {
+    StaticJsonDocument<96> doc;
+
+    doc["currentWeight"] = curWeight;
+    doc["weightBrew"] = weightB;
+    doc["weightPreBrew"] = weightPB;
 
     String jsonTemps;
     serializeJson(doc, jsonTemps);
@@ -143,6 +161,11 @@ String generateForm(String varName) {
             case kInteger:
                 result += F("<input class=\"form-control form-control-lg\" type=\"number\" step=\"1\"");
                 currVal = *(int *)e.ptr;
+                break;
+
+            case kFloat:
+                result += F("<input class=\"form-control form-control-lg\" type=\"number\" step=\"0.1\"");
+                currVal = *(float *)e.ptr;
                 break;
 
             case kUInt8:
@@ -502,6 +525,11 @@ void serverSetup() {
         request->send(200, "application/json", json);
     });
 
+    server.on("/scale", HTTP_GET, [](AsyncWebServerRequest *request) {
+        String json = getWeightString();
+        request->send(200, "application/json", json);
+    });
+
     //TODO: could send values also chunked and without json (but needs three endpoints then?)
     //https://stackoverflow.com/questions/61559745/espasyncwebserver-serve-large-array-from-ram
     server.on("/timeseries", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -580,6 +608,15 @@ void sendTempEvent(double currentTemp, double targetTemp, double heaterPower) {
 
     events.send("ping", NULL, millis());
     events.send(getTempString().c_str(), "new_temps", millis());
+}
+
+void sendWeightEvent(double currentWeight, double weightBrew, double weightPreBrew) {
+    curWeight = currentWeight;
+    weightB = weightBrew;
+    weightPB = weightPreBrew;
+
+    events.send("ping", NULL, millis());
+    events.send(getWeightString().c_str(), "new_weights", millis());
 }
 
 #endif

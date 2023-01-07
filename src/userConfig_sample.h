@@ -71,7 +71,7 @@ enum MACHINE {
 #define TRIGGERRELAYTYPE HIGH      // LOW = low trigger, HIGH = high trigger relay for E-Trigger
 
 // Brew Scale
-#define SCALE_SAMPLES 2                     // Load cell sample rate
+#define SCALE_SAMPLES 4                     // Load cell sample rate
 #define SCALE_CALIBRATION_FACTOR 3195.83    // Raw data is divided by this value to convert to readable data
 
 /* Pressure sensor
