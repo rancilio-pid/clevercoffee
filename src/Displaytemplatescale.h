@@ -87,7 +87,7 @@ void printScreen() {
             }
 
             u8g2.print("/");
-            u8g2.print(weightSetpoint, 0);
+            u8g2.print(weightSetPoint, 0);
             u8g2.print(" (");
             u8g2.print(weightBrew, 1);
             u8g2.print(")");
