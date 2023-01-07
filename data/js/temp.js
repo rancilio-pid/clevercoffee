@@ -301,6 +301,15 @@ if (!!window.EventSource) {
 
             document.getElementById("varTEMP").innerText = myObj["currentTemp"].toFixed(1)
         },
+        'new_weights',
+        function (e) {
+            //console.log("new_temps", e.data)
+            var myObj = JSON.parse(e.data)
+            //console.log(myObj)
+            addPlotData(myObj)
+
+            document.getElementById("varWeight").innerText = myObj["currentWeight"].toFixed(1)
+        },
         false
     )
 }

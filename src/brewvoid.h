@@ -370,7 +370,6 @@ void brew() {
 
         // state machine for brew
         switch (brewcounter) {
-            
             case 10:  // waiting step for brew switch turning on
                 if (brewswitch == HIGH && backflushState == 10 && backflushON == 0 && brewswitchWasOFF) {
                     startingTime = millis();
