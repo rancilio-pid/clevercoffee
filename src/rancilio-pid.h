@@ -33,6 +33,7 @@ int writeSysParamsToStorage(void);
 #define PRE_INFUSION_TIME 2        // pre-infusion time in seconds
 #define PRE_INFUSION_PAUSE_TIME 5  // pre-infusion pause time in seconds
 #define SCALE_WEIGHTSETPOINT 30    // Target weight in grams
+#define SCALE_CALIBRATION -250.00
 
 #define PID_KP_START_MIN 0
 #define PID_KP_START_MAX 350
@@ -74,4 +75,6 @@ int writeSysParamsToStorage(void);
 #define WEIGHTSETPOINT_MAX 500
 #define PID_KP_STEAM_MIN 0
 #define PID_KP_STEAM_MAX 500
+#define SCALECALIBRATION_MIN -100000
+#define SCALECALIBRATION_MAX 100000
 #endif

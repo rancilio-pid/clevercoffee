@@ -45,7 +45,7 @@
 #endif
 
 #if OLED_DISPLAY == 3
-#include <SPI.h>
+    #include <SPI.h>
 #endif
 
 #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
@@ -203,7 +203,8 @@ double aggIMax = AGGIMAX;
 double brewtime = BREW_TIME;                        // brewtime in s
 double preinfusion = PRE_INFUSION_TIME;             // preinfusion time in s
 double preinfusionpause = PRE_INFUSION_PAUSE_TIME;  // preinfusion pause time in s
-double weightSetpoint = SCALE_WEIGHTSETPOINT;
+double weightSetPoint = SCALE_WEIGHTSETPOINT;
+float scaleCalibration = SCALE_CALIBRATION;
 
 // PID - values for offline brew detection
 uint8_t useBDPID = 0;
@@ -238,7 +239,8 @@ SysPara<double> sysParaBrewSwTime(&brewtimesoftware, BREW_SW_TIME_MIN, BREW_SW_T
 SysPara<double> sysParaBrewThresh(&brewSensitivity, BD_THRESHOLD_MIN, BD_THRESHOLD_MAX, STO_ITEM_BD_THRESHOLD);
 SysPara<double> sysParaPreInfTime(&preinfusion, PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX, STO_ITEM_PRE_INFUSION_TIME);
 SysPara<double> sysParaPreInfPause(&preinfusionpause, PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, STO_ITEM_PRE_INFUSION_PAUSE);
-SysPara<double> sysParaWeightSetPoint(&weightSetpoint, WEIGHTSETPOINT_MIN, WEIGHTSETPOINT_MAX, STO_ITEM_WEIGHTSETPOINT);
+SysPara<double> sysParaWeightSetPoint(&weightSetPoint, WEIGHTSETPOINT_MIN, WEIGHTSETPOINT_MAX, STO_ITEM_WEIGHTSETPOINT);
+SysPara<float> sysParaScaleCalibration(&scaleCalibration, SCALECALIBRATION_MIN, SCALECALIBRATION_MAX, STO_ITEM_SCALECALIBRATION);
 SysPara<double> sysParaPidKpSteam(&steamKp, PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, STO_ITEM_PID_KP_STEAM);
 SysPara<double> sysParaSteamSetPoint(&steamSetPoint, STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, STO_ITEM_STEAM_SETPOINT);
 SysPara<uint8_t> sysParaPidOn(&pidON, 0, 1, STO_ITEM_PID_ON);
@@ -340,7 +342,8 @@ const unsigned long intervalMQTT = 5000;
 
 enum MQTTSettableType {
     tUInt8,
-    tDouble
+    tDouble,
+    tFloat
 };
 
 struct mqttVars_t {
@@ -371,6 +374,8 @@ std::vector<mqttVars_t> mqttVars = {
     {"steamKp", tDouble, PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, (void *)&steamKp},
     {"startKp", tDouble, PID_KP_START_MIN, PID_KP_START_MAX, (void *)&startKp},
     {"startTn", tDouble, PID_TN_START_MIN, PID_TN_START_MAX, (void *)&startTn},
+    {"weightSetPoint", tDouble, WEIGHTSETPOINT_MIN, WEIGHTSETPOINT_MAX, (void *)&weightSetPoint},
+    {"scaleCalibration", tFloat, SCALECALIBRATION_MIN, SCALECALIBRATION_MAX, (void *)&scaleCalibration},
 };
 
 // Embedded HTTP Server
@@ -420,9 +425,11 @@ void getSignalStrength() {
 #if OLED_DISPLAY == 1
     U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, OLED_SCL, OLED_SDA);  // e.g. 1.3"
 #endif
+
 #if OLED_DISPLAY == 2
     U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, OLED_SCL, OLED_SDA);  // e.g. 0.96"
 #endif
+
 #if OLED_DISPLAY == 3
     #define OLED_CS             5
     #define OLED_DC             2
@@ -987,6 +994,10 @@ void assignMQTTParam(char *param, double value) {
                         break;
                     case tUInt8:
                         *(uint8_t *)m.mqttVarPtr = value;
+                        paramValid = true;
+                        break;
+                    case tFloat:
+                        *(float *)m.mqttVarPtr = value;
                         paramValid = true;
                         break;
                     default:
@@ -1730,6 +1741,9 @@ void setup() {
         {F("BACKFLUSH_ON"), F("Backflush"), false, "", kUInt8, sOtherSection, []{ return false; }, 0, 1, (void *)&backflushON},
 
         //#26
+        {F("SCALE_CALIBRATION"), F("Scale Calibration"), true, F("Calibration Value for the Scale."), kFloat, sBDSection, []{ return true && BREWDETECTION > 0 && (useBDPID || BREWDETECTION == 1); }, BREW_SW_TIME_MIN, BREW_SW_TIME_MAX, (void *)&scaleCalibration},
+
+        //#27
         {F("VERSION"), F("Version"), false, "", kCString, sOtherSection, []{ return false; }, 0, 1, (void *)sysVersion}
     };
     //when adding parameters, update EDITABLE_VARS_LEN!
@@ -2022,6 +2036,7 @@ void looppid() {
     if ((millis() - lastTempEvent) > tempEventInterval) {
         //send temperatures to website endpoint
         sendTempEvent(temperature, brewSetPoint, pidOutput);
+        sendWeightEvent(weight, weightBrew, 22.22);
         lastTempEvent = millis();
 
         #if VERBOSE
@@ -2285,6 +2300,7 @@ int readSysParamsFromStorage(void) {
     if (sysParaSteamSetPoint.getStorage() != 0) return -1;
     if (sysParaUsePonM.getStorage() != 0) return -1;
     if (sysParaUseBDPID.getStorage() != 0) return -1;
+    if (sysParaScaleCalibration.getStorage() != 0) return -1;
 
     return 0;
 }
@@ -2317,6 +2333,7 @@ int writeSysParamsToStorage(void) {
     if (sysParaPidKpBd.setStorage() != 0) return -1;
     if (sysParaPidTnBd.setStorage() != 0) return -1;
     if (sysParaPidTvBd.setStorage() != 0) return -1;
+    if (sysParaScaleCalibration.setStorage() != 0) return -1;
 
     return storageCommit();
 }
@@ -2350,6 +2367,10 @@ void writeSysParamsToMQTT(void) {
             mqtt_publish("preinfusion", number2string(preinfusion));
             mqtt_publish("steamON", number2string(steamON));
             mqtt_publish("backflushON", number2string(backflushON));
+            mqtt_publish("weightPreBrew", number2string(weightPreBrew));
+            mqtt_publish("weight", number2string(weight));
+            mqtt_publish("weightBrew", number2string(weightBrew));
+            mqtt_publish("scaleCalibration", number2string(scaleCalibration));
 
             // Normal PID
             mqtt_publish("aggKp", number2string(aggKp));
@@ -2376,7 +2397,7 @@ void writeSysParamsToMQTT(void) {
         #endif
 
         #if BREWMODE == 2
-            mqtt_publish("weightSetpoint", number2string(weightSetpoint));
+            mqtt_publish("weightSetPoint", number2string(weightSetPoint));
         #endif
 
         #if TOF == 1

@@ -36,8 +36,8 @@ void checkWeight() {
  * @brief Initialize scale
  */
 void initScale() {
-    LoadCell.begin();
-    long stabilizingtime = 2000; // tare preciscion can be improved by adding a few seconds of stabilizing time
+    LoadCell.begin(64);
+    long stabilizingtime = 5000; // tare preciscion can be improved by adding a few seconds of stabilizing time
     boolean _tare = true; //set this to false if you don't want tare to be performed in the next step
 
     u8g2.clearBuffer();
@@ -46,7 +46,8 @@ void initScale() {
     u8g2.drawStr(0, 22, "....");
     delay(2000);
     u8g2.sendBuffer();
-    LoadCell.start(stabilizingtime, _tare);
+    LoadCell.start(stabilizingtime);
+    LoadCell.tare();
 
     if (LoadCell.getTareTimeoutFlag()) {
         debugPrintln("Timeout, check MCU>HX711 wiring and pin designations");
