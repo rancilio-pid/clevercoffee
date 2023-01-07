@@ -40,6 +40,7 @@ typedef enum
   STO_ITEM_PID_START_PONM,          // Use PonM for cold start phase (otherwise use normal PID and same params)
   STO_ITEM_USE_BD_PID,              // use separate PID for brew detection (otherwise continue with regular PID)
   STO_ITEM_SCALECALIBRATION,         // Calibration Value for Scale
+  STO_ITEM_SCALEKNOWNWEIGHT,         // Known Weight for Scale Calibration
 
   /* WHEN ADDING NEW ITEMS, THE FOLLOWING HAS TO BE UPDATED:
    * - storage structure:  sto_data_t
