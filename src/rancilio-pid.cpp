@@ -46,6 +46,7 @@
 
 #if OLED_DISPLAY == 3
     #include <SPI.h>
+    #include <SPI.h>
 #endif
 
 #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
@@ -420,6 +421,57 @@ void getSignalStrength() {
         signalBars = 0;
     }
 }
+
+// Display define & template
+#if OLED_DISPLAY == 1
+    U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, OLED_SCL, OLED_SDA);  // e.g. 1.3"
+#endif
+
+#if OLED_DISPLAY == 2
+    U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, OLED_SCL, OLED_SDA);  // e.g. 0.96"
+#endif
+
+#if OLED_DISPLAY == 3
+    #define OLED_CS             5
+    #define OLED_DC             2
+    U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, OLED_CS, OLED_DC, /* reset=*/U8X8_PIN_NONE); // e.g. 1.3"
+#endif
+
+// Update for Display
+unsigned long previousMillisDisplay;  // initialisation at the end of init()
+const unsigned long intervalDisplay = 500;
+
+// Horizontal or vertical display
+#if (OLED_DISPLAY != 0)
+    #if (DISPLAYTEMPLATE < 20)  // horizontal templates
+        #include "display.h"
+    #endif
+
+    #if (DISPLAYTEMPLATE >= 20)  // vertical templates
+        #include "Displayrotateupright.h"
+    #endif
+
+    #if (DISPLAYTEMPLATE == 1)
+        #include "Displaytemplatestandard.h"
+    #endif
+
+    #if (DISPLAYTEMPLATE == 2)
+        #include "Displaytemplateminimal.h"
+    #endif
+
+    #if (DISPLAYTEMPLATE == 3)
+        #include "Displaytemplatetemponly.h"
+    #endif
+
+    #if (DISPLAYTEMPLATE == 4)
+        #include "Displaytemplatescale.h"
+    #endif
+
+    #if (DISPLAYTEMPLATE == 20)
+        #include "Displaytemplateupright.h"
+    #endif
+#endif
+
 
 #if (PRESSURESENSOR == 1)  // Pressure sensor connected
     /**
