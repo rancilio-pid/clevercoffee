@@ -77,7 +77,7 @@ void initScale() {
             LoadCell.refreshDataSet();
             float newCalibrationValue = LoadCell.getNewCalibration(scaleKnownWeight);
             LoadCell.setCalFactor(newCalibrationValue);
-            scaleCalibration = (double) newCalibrationValue;
+            scaleCalibration = newCalibrationValue;
             u8g2.clearBuffer();
             u8g2.drawStr(0, 2, "Calibration done.");
             u8g2.drawStr(0, 12, "New Calibration factor:");

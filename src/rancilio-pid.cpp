@@ -243,7 +243,7 @@ SysPara<double> sysParaBrewThresh(&brewSensitivity, BD_THRESHOLD_MIN, BD_THRESHO
 SysPara<double> sysParaPreInfTime(&preinfusion, PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX, STO_ITEM_PRE_INFUSION_TIME);
 SysPara<double> sysParaPreInfPause(&preinfusionpause, PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, STO_ITEM_PRE_INFUSION_PAUSE);
 SysPara<double> sysParaWeightSetpoint(&weightSetpoint, WEIGHTSETPOINT_MIN, WEIGHTSETPOINT_MAX, STO_ITEM_WEIGHTSETPOINT);
-SysPara<double> sysParaScaleCalibration(&scaleCalibration, SCALECALIBRATION_MIN, SCALECALIBRATION_MAX, STO_ITEM_SCALECALIBRATION);
+SysPara<float> sysParaScaleCalibration(&scaleCalibration, SCALECALIBRATION_MIN, SCALECALIBRATION_MAX, STO_ITEM_SCALECALIBRATION);
 SysPara<double> sysParaScaleKnownWeight(&scaleKnownWeight, SCALEKNOWNWEIGHT_MIN, SCALEKNOWNWEIGHT_MAX, STO_ITEM_SCALEKNOWNWEIGHT);
 SysPara<double> sysParaPidKpSteam(&steamKp, PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, STO_ITEM_PID_KP_STEAM);
 SysPara<double> sysParaSteamSetPoint(&steamSetPoint, STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, STO_ITEM_STEAM_SETPOINT);
@@ -343,7 +343,8 @@ const unsigned long intervalMQTT = 5000;
 
 enum MQTTSettableType {
     tUInt8,
-    tDouble
+    tDouble,
+    tFloat
 };
 
 struct mqttVars_t {
@@ -376,7 +377,7 @@ std::vector<mqttVars_t> mqttVars = {
     {"startTn", tDouble, PID_TN_START_MIN, PID_TN_START_MAX, (void *)&startTn},
     {"weightSetpoint", tDouble, WEIGHTSETPOINT_MIN, WEIGHTSETPOINT_MAX, (void *)&weightSetpoint},
     {"scaleKnownWeight", tDouble, SCALEKNOWNWEIGHT_MIN, SCALEKNOWNWEIGHT_MAX, (void *)&scaleKnownWeight},
-    {"scaleCalibration", tDouble, SCALECALIBRATION_MIN, SCALECALIBRATION_MAX, (void *)&scaleCalibration}
+    {"scaleCalibration", tFloat, SCALECALIBRATION_MIN, SCALECALIBRATION_MAX, (void *)&scaleCalibration}
 };
 
 // Embedded HTTP Server
@@ -1041,6 +1042,10 @@ void assignMQTTParam(char *param, double value) {
                         break;
                     case tUInt8:
                         *(uint8_t *)m.mqttVarPtr = value;
+                        paramValid = true;
+                        break;
+                    case tFloat:
+                        *(float *)m.mqttVarPtr = value;
                         paramValid = true;
                         break;
                     default:
@@ -1781,13 +1786,7 @@ void setup() {
         {F("STEAM_MODE"), F("Steam Mode"), false, "", kUInt8, sOtherSection, []{ return false; }, 0, 1, (void *)&steamON},
 
         //#26
-        {F("SCALE_CALIBRATION"), F("Scale Calibration"), true, F("Calibration Value for the Scale."), kDouble, sBDSection, []{ return true && BREWDETECTION > 0 && (useBDPID || BREWDETECTION == 1); }, BREW_SW_TIME_MIN, BREW_SW_TIME_MAX, (void *)&scaleCalibration},
-
-        //#27
-        {F("SCALE_KNOWNWEIGHT"), F("Scale Known Weight"), true, F("Calibration Weight for the Scale."), kFloat, sBDSection, []{ return true && BREWDETECTION > 0 && (useBDPID || BREWDETECTION == 1); }, SCALEKNOWNWEIGHT_MIN, SCALEKNOWNWEIGHT_MAX, (void *)&scaleKnownWeight},
-
-        //#28
-        {F("VERSION"), F("Version"), false, "", kCString, sOtherSection, []{ return false; }, 0, 1, (void *)sysVersion}
+        {F("SCALE_CALIBRATION"), F("Scale Calibration"), true, F("Calibration Value for the Scale."), kFloat, sBDSection, []{ return true && BREWDETECTION > 0 && (useBDPID || BREWDETECTION == 1); }, BREW_SW_TIME_MIN, BREW_SW_TIME_MAX, (void *)&scaleCalibration},
     };
     //when adding parameters, update EDITABLE_VARS_LEN!
 
@@ -2457,6 +2456,11 @@ void writeSysParamsToMQTT(void) {
 
         #if BREWMODE == 2
             mqtt_publish("weightSetpoint", number2string(weightSetpoint));
+        #endif
+
+        #if TOF == 1
+            mqtt_publish("waterLevelDistance", number2string(distance));
+            mqtt_publish("waterLevelPercentage", number2string(percentage));
         #endif
 
         #if TOF == 1
