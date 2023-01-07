@@ -205,6 +205,7 @@ double preinfusion = PRE_INFUSION_TIME;             // preinfusion time in s
 double preinfusionpause = PRE_INFUSION_PAUSE_TIME;  // preinfusion pause time in s
 double weightSetPoint = SCALE_WEIGHTSETPOINT;
 float scaleCalibration = SCALE_CALIBRATION;
+double scaleKnownWeight = SCALE_KNOWNWEIGHT;
 
 // PID - values for offline brew detection
 uint8_t useBDPID = 0;
@@ -241,6 +242,7 @@ SysPara<double> sysParaPreInfTime(&preinfusion, PRE_INFUSION_TIME_MIN, PRE_INFUS
 SysPara<double> sysParaPreInfPause(&preinfusionpause, PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, STO_ITEM_PRE_INFUSION_PAUSE);
 SysPara<double> sysParaWeightSetPoint(&weightSetPoint, WEIGHTSETPOINT_MIN, WEIGHTSETPOINT_MAX, STO_ITEM_WEIGHTSETPOINT);
 SysPara<float> sysParaScaleCalibration(&scaleCalibration, SCALECALIBRATION_MIN, SCALECALIBRATION_MAX, STO_ITEM_SCALECALIBRATION);
+SysPara<double> sysParaScaleKnownWeight(&scaleKnownWeight, SCALEKNOWNWEIGHT_MIN, SCALEKNOWNWEIGHT_MAX, STO_ITEM_SCALEKNOWNWEIGHT);
 SysPara<double> sysParaPidKpSteam(&steamKp, PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, STO_ITEM_PID_KP_STEAM);
 SysPara<double> sysParaSteamSetPoint(&steamSetPoint, STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, STO_ITEM_STEAM_SETPOINT);
 SysPara<uint8_t> sysParaPidOn(&pidON, 0, 1, STO_ITEM_PID_ON);
@@ -375,7 +377,8 @@ std::vector<mqttVars_t> mqttVars = {
     {"startKp", tDouble, PID_KP_START_MIN, PID_KP_START_MAX, (void *)&startKp},
     {"startTn", tDouble, PID_TN_START_MIN, PID_TN_START_MAX, (void *)&startTn},
     {"weightSetPoint", tDouble, WEIGHTSETPOINT_MIN, WEIGHTSETPOINT_MAX, (void *)&weightSetPoint},
-    {"scaleCalibration", tFloat, SCALECALIBRATION_MIN, SCALECALIBRATION_MAX, (void *)&scaleCalibration},
+    {"scaleKnownWeight", tDouble, SCALEKNOWNWEIGHT_MIN, SCALEKNOWNWEIGHT_MAX, (void *)&scaleKnownWeight},
+    {"scaleCalibration", tFloat, SCALECALIBRATION_MIN, SCALECALIBRATION_MAX, (void *)&scaleCalibration}
 };
 
 // Embedded HTTP Server
@@ -1744,7 +1747,11 @@ void setup() {
         {F("SCALE_CALIBRATION"), F("Scale Calibration"), true, F("Calibration Value for the Scale."), kFloat, sBDSection, []{ return true && BREWDETECTION > 0 && (useBDPID || BREWDETECTION == 1); }, BREW_SW_TIME_MIN, BREW_SW_TIME_MAX, (void *)&scaleCalibration},
 
         //#27
+        {F("SCALE_KNOWNWEIGHT"), F("Scale Known Weight"), true, F("Calibration Weight for the Scale."), kFloat, sBDSection, []{ return true && BREWDETECTION > 0 && (useBDPID || BREWDETECTION == 1); }, SCALEKNOWNWEIGHT_MIN, SCALEKNOWNWEIGHT_MAX, (void *)&scaleKnownWeight},
+
+        //#28
         {F("VERSION"), F("Version"), false, "", kCString, sOtherSection, []{ return false; }, 0, 1, (void *)sysVersion}
+
     };
     //when adding parameters, update EDITABLE_VARS_LEN!
 
@@ -2301,6 +2308,7 @@ int readSysParamsFromStorage(void) {
     if (sysParaUsePonM.getStorage() != 0) return -1;
     if (sysParaUseBDPID.getStorage() != 0) return -1;
     if (sysParaScaleCalibration.getStorage() != 0) return -1;
+    if (sysParaScaleKnownWeight.getStorage() != 0) return -1;
 
     return 0;
 }
@@ -2334,6 +2342,7 @@ int writeSysParamsToStorage(void) {
     if (sysParaPidTnBd.setStorage() != 0) return -1;
     if (sysParaPidTvBd.setStorage() != 0) return -1;
     if (sysParaScaleCalibration.setStorage() != 0) return -1;
+    if (sysParaScaleKnownWeight.setStorage() != 0) return -1;
 
     return storageCommit();
 }
@@ -2371,6 +2380,7 @@ void writeSysParamsToMQTT(void) {
             mqtt_publish("weight", number2string(weight));
             mqtt_publish("weightBrew", number2string(weightBrew));
             mqtt_publish("scaleCalibration", number2string(scaleCalibration));
+            mqtt_publish("scaleKnownWeight", number2string(scaleKnownWeight));
 
             // Normal PID
             mqtt_publish("aggKp", number2string(aggKp));

@@ -74,7 +74,7 @@ void serverSetup();
 void setEepromWriteFcn(int (*fcnPtr)(void));
 
 // We define these in rancilio-pid.cpp
-#define EDITABLE_VARS_LEN 26
+#define EDITABLE_VARS_LEN 28
 extern std::vector<editable_t> editableVars;
 
 // EEPROM
