@@ -12,5 +12,4 @@ src/userConfig.h
 
 platformio_extra.ini
 **/rancilio-pid.ino.cpp
-src/brewscaleini.h
 src/userConfig_sample.h
