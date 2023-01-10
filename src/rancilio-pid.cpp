@@ -377,7 +377,9 @@ std::vector<mqttVars_t> mqttVars = {
     {"startTn", tDouble, PID_TN_START_MIN, PID_TN_START_MAX, (void *)&startTn},
     {"weightSetpoint", tDouble, WEIGHTSETPOINT_MIN, WEIGHTSETPOINT_MAX, (void *)&weightSetpoint},
     {"scaleKnownWeight", tDouble, SCALEKNOWNWEIGHT_MIN, SCALEKNOWNWEIGHT_MAX, (void *)&scaleKnownWeight},
-    {"scaleCalibration", tFloat, SCALECALIBRATION_MIN, SCALECALIBRATION_MAX, (void *)&scaleCalibration}
+    {"scaleCalibration", tFloat, SCALECALIBRATION_MIN, SCALECALIBRATION_MAX, (void *)&scaleCalibration},
+    {"calibrationON", tUInt8, 0, 1, (void *)&calibrationON},
+    {"calibrationWeightReady", tUInt8, 0, 1, (void *)&calibrationWeightReady}
 };
 
 // Embedded HTTP Server
@@ -1788,7 +1790,7 @@ void setup() {
         //#26
         {F("SCALE_CALIBRATION"), F("Scale Calibration"), true, F("Calibration Value for the Scale."), kFloat, sBDSection, []{ return true && BREWDETECTION > 0 && (useBDPID || BREWDETECTION == 1); }, SCALECALIBRATION_MIN, SCALECALIBRATION_MAX, (void *)&scaleCalibration},
 
-        //#26
+        //#27
         {F("SCALE_KNOWNWEIGHT"), F("Scale Known Weight"), true, F("Calibration Weight for the Scale."), kFloat, sBDSection, []{ return true && BREWDETECTION > 0 && (useBDPID || BREWDETECTION == 1); }, SCALEKNOWNWEIGHT_MIN, SCALEKNOWNWEIGHT_MAX, (void *)&scaleKnownWeight},
     };
     //when adding parameters, update EDITABLE_VARS_LEN!
