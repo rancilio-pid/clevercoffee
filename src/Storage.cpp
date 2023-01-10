@@ -60,6 +60,7 @@ typedef struct __attribute__((packed)) {
     double steamkp;
     float scaleCalibration;
     double scaleKnownWeight;
+    double steamsetpoint;
 } sto_data_t;
 
 // set item defaults
@@ -106,7 +107,8 @@ static const sto_data_t itemDefaults PROGMEM = {
     SCALE_WEIGHTSETPOINT,
     SCALE_CALIBRATION,
     SCALE_KNOWNWEIGHT,
-    STEAMKP
+    STEAMKP,
+    STEAMSETPOINT
 };
 
 /**
@@ -254,6 +256,11 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
             size = STRUCT_MEMBER_SIZE(sto_data_t,scaleKnownWeight);
             break;
 
+        case STO_ITEM_STEAM_SETPOINT:
+            addr = offsetof(sto_data_t,steamsetpoint );
+            size = STRUCT_MEMBER_SIZE(sto_data_t,steamsetpoint);
+            break;
+            
         default:
             debugPrintf("%s(): invalid item ID %i!\n", __func__, itemId);
             addr = -1;

@@ -41,6 +41,8 @@ typedef enum
   STO_ITEM_USE_BD_PID,              // use separate PID for brew detection (otherwise continue with regular PID)
   STO_ITEM_SCALECALIBRATION,         // Calibration Value for Scale
   STO_ITEM_SCALEKNOWNWEIGHT,         // Known Weight for Scale Calibration
+  STO_ITEM_STEAM_SETPOINT,          // Setpoint for Steam mode
+
 
   /* WHEN ADDING NEW ITEMS, THE FOLLOWING HAS TO BE UPDATED:
    * - storage structure:  sto_data_t
