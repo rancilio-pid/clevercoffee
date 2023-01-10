@@ -370,9 +370,7 @@ std::vector<mqttVars_t> mqttVars = {
     {"startTn", tDouble, PID_TN_START_MIN, PID_TN_START_MAX, (void *)&startTn},
     {"weightSetPoint", tDouble, WEIGHTSETPOINT_MIN, WEIGHTSETPOINT_MAX, (void *)&weightSetPoint},
     {"scaleKnownWeight", tDouble, SCALEKNOWNWEIGHT_MIN, SCALEKNOWNWEIGHT_MAX, (void *)&scaleKnownWeight},
-    {"scaleCalibration", tFloat, SCALECALIBRATION_MIN, SCALECALIBRATION_MAX, (void *)&scaleCalibration},
-    {"calibrationON", tUInt8, 0, 1, (void *)&calibrationON},
-    {"calibrationWeightReady", tUInt8, 0, 1, (void *)&calibrationWeightReady}
+    {"scaleCalibration", tFloat, SCALECALIBRATION_MIN, SCALECALIBRATION_MAX, (void *)&scaleCalibration}
 };
 
 // Embedded HTTP Server
