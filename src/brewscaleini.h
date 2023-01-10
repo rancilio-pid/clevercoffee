@@ -33,11 +33,7 @@ unsigned long previousMillistempanalogreading;      // ms for analogreading
 // Shot timer with or without scale
 #if (ONLYPIDSCALE == 1 || BREWMODE == 2)
     int shottimercounter = 10 ;
-    #if scaleCalibration != 0
-        float calibrationValue = scaleCalibration;  // use calibration example to get value - if measured weight is to low, try lower value
-    #else
-        float calibrationValue = SCALE_CALIBRATION;
-    #endif
+    
     float weight = 0;                                   // value from HX711
     float weightPreBrew = 0;                            // value of scale before wrew started
     float weightBrew = 0;                               // weight value of brew

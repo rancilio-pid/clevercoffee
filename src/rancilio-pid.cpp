@@ -269,9 +269,6 @@ unsigned long timeBrewDetection = 0;
 int isBrewDetected = 0;                 // flag is set if brew was detected
 bool movingAverageInitialized = false;  // flag set when average filter is initialized, also used for sensor check
 
-// Brewing, 1 = Normal Preinfusion , 2 = Scale & Shottimer = 2
-#include "brewscaleini.h"
-
 // Sensor check
 boolean sensorError = false;
 int error = 0;
@@ -423,57 +420,6 @@ void getSignalStrength() {
         signalBars = 0;
     }
 }
-
-// Display define & template
-#if OLED_DISPLAY == 1
-    U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, OLED_SCL, OLED_SDA);  // e.g. 1.3"
-#endif
-
-#if OLED_DISPLAY == 2
-    U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, OLED_SCL, OLED_SDA);  // e.g. 0.96"
-#endif
-
-#if OLED_DISPLAY == 3
-    #define OLED_CS             5
-    #define OLED_DC             2
-    U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, OLED_CS, OLED_DC, /* reset=*/U8X8_PIN_NONE); // e.g. 1.3"
-#endif
-
-// Update for Display
-unsigned long previousMillisDisplay;  // initialisation at the end of init()
-const unsigned long intervalDisplay = 500;
-
-// Horizontal or vertical display
-#if (OLED_DISPLAY != 0)
-    #if (DISPLAYTEMPLATE < 20)  // horizontal templates
-        #include "display.h"
-    #endif
-
-    #if (DISPLAYTEMPLATE >= 20)  // vertical templates
-        #include "Displayrotateupright.h"
-    #endif
-
-    #if (DISPLAYTEMPLATE == 1)
-        #include "Displaytemplatestandard.h"
-    #endif
-
-    #if (DISPLAYTEMPLATE == 2)
-        #include "Displaytemplateminimal.h"
-    #endif
-
-    #if (DISPLAYTEMPLATE == 3)
-        #include "Displaytemplatetemponly.h"
-    #endif
-
-    #if (DISPLAYTEMPLATE == 4)
-        #include "Displaytemplatescale.h"
-    #endif
-
-    #if (DISPLAYTEMPLATE == 20)
-        #include "Displaytemplateupright.h"
-    #endif
-#endif
-
 
 #if (PRESSURESENSOR == 1)  // Pressure sensor connected
     /**
@@ -648,7 +594,7 @@ void refreshTemp() {
         #if ((PINTEMPSENSOR != 16 && defined(ESP8266)) || defined(ESP32))
             temperature = Sensor2.getTemp();
         #endif
-       
+
     #endif
       // temperature = 94;
             if (machineState != kSteam) {
@@ -669,7 +615,59 @@ void refreshTemp() {
         }
     }
 }
+boolean sys = readSysParamsFromStorage();
+// Brewing, 1 = Normal Preinfusion , 2 = Scale & Shottimer = 2
+#include "brewscaleini.h"
 
+// Display define & template
+#if OLED_DISPLAY == 1
+    U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, OLED_SCL, OLED_SDA);  // e.g. 1.3"
+#endif
+
+#if OLED_DISPLAY == 2
+    U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, OLED_SCL, OLED_SDA);  // e.g. 0.96"
+#endif
+
+#if OLED_DISPLAY == 3
+    #define OLED_CS             5
+    #define OLED_DC             2
+    U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, OLED_CS, OLED_DC, /* reset=*/U8X8_PIN_NONE); // e.g. 1.3"
+#endif
+
+// Update for Display
+unsigned long previousMillisDisplay;  // initialisation at the end of init()
+const unsigned long intervalDisplay = 500;
+
+// Horizontal or vertical display
+#if (OLED_DISPLAY == 1 || OLED_DISPLAY == 2)
+    #if (DISPLAYTEMPLATE < 20)  // horizontal templates
+        #include "display.h"
+    #endif
+
+    #if (DISPLAYTEMPLATE >= 20)  // vertical templates
+        #include "Displayrotateupright.h"
+    #endif
+
+    #if (DISPLAYTEMPLATE == 1)
+        #include "Displaytemplatestandard.h"
+    #endif
+
+    #if (DISPLAYTEMPLATE == 2)
+        #include "Displaytemplateminimal.h"
+    #endif
+
+    #if (DISPLAYTEMPLATE == 3)
+        #include "Displaytemplatetemponly.h"
+    #endif
+
+    #if (DISPLAYTEMPLATE == 4)
+        #include "Displaytemplatescale.h"
+    #endif
+
+    #if (DISPLAYTEMPLATE == 20)
+        #include "Displaytemplateupright.h"
+    #endif
+#endif
 
 #include "brewvoid.h"
 #include "scalevoid.h"
@@ -1209,7 +1207,7 @@ void handleMachineState() {
 
                         break;
                     }
-                    
+
                     // 10 sec temperature above BrewSetPoint, no set new state
                     if (machinestatecoldmillis + 10 * 1000 < millis()) {
                         machineState = kBelowSetPoint;
@@ -1842,11 +1840,6 @@ void setup() {
        // delay(2000); // caused crash with wifi manager
     #endif
 
-    // Init Scale by BREWMODE 2 or SHOTTIMER 2
-    #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
-        initScale();
-    #endif
-
     // VL530L0x TOF sensor
     #if TOF == 1
         lox.begin(tof_i2c);  // initialize TOF sensor at I2C address
@@ -1881,8 +1874,8 @@ void setup() {
                 influxClient.setConnectionParamsV1(INFLUXDB_URL, INFLUXDB_DB_NAME, INFLUXDB_USER, INFLUXDB_PASSWORD);
             }
         }
-    } else if (connectmode == 0) 
-    { 
+    } else if (connectmode == 0)
+    {
         wm.disconnect(); // no wm
         readSysParamsFromStorage(); // get values from stroage
         offlineMode = 1 ; //offline mode
@@ -1939,6 +1932,11 @@ void setup() {
     #endif
     #if (PRESSURESENSOR == 1)
         previousMillisPressure = currentTime;
+    #endif
+
+    // Init Scale by BREWMODE 2 or SHOTTIMER 2
+    #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
+        initScale();
     #endif
 
     setupDone = true;
@@ -2381,6 +2379,7 @@ void writeSysParamsToMQTT(void) {
             mqtt_publish("weightBrew", number2string(weightBrew));
             mqtt_publish("scaleCalibration", number2string(scaleCalibration));
             mqtt_publish("scaleKnownWeight", number2string(scaleKnownWeight));
+            mqtt_publish("scaleCalFactor", number2string(LoadCell.getCalFactor()));
 
             // Normal PID
             mqtt_publish("aggKp", number2string(aggKp));
