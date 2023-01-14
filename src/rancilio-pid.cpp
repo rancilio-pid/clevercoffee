@@ -203,7 +203,7 @@ double aggIMax = AGGIMAX;
 double brewtime = BREW_TIME;                        // brewtime in s
 double preinfusion = PRE_INFUSION_TIME;             // preinfusion time in s
 double preinfusionpause = PRE_INFUSION_PAUSE_TIME;  // preinfusion pause time in s
-double weightSetPoint = SCALE_WEIGHTSETPOINT;
+double weightSetpoint = SCALE_WEIGHTSETPOINT;
 float scaleCalibration = SCALE_CALIBRATION;
 double scaleKnownWeight = SCALE_KNOWNWEIGHT;
 
@@ -240,7 +240,7 @@ SysPara<double> sysParaBrewSwTime(&brewtimesoftware, BREW_SW_TIME_MIN, BREW_SW_T
 SysPara<double> sysParaBrewThresh(&brewSensitivity, BD_THRESHOLD_MIN, BD_THRESHOLD_MAX, STO_ITEM_BD_THRESHOLD);
 SysPara<double> sysParaPreInfTime(&preinfusion, PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX, STO_ITEM_PRE_INFUSION_TIME);
 SysPara<double> sysParaPreInfPause(&preinfusionpause, PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, STO_ITEM_PRE_INFUSION_PAUSE);
-SysPara<double> sysParaWeightSetPoint(&weightSetPoint, WEIGHTSETPOINT_MIN, WEIGHTSETPOINT_MAX, STO_ITEM_WEIGHTSETPOINT);
+SysPara<double> sysParaWeightSetpoint(&weightSetpoint, WEIGHTSETPOINT_MIN, WEIGHTSETPOINT_MAX, STO_ITEM_WEIGHTSETPOINT);
 SysPara<float> sysParaScaleCalibration(&scaleCalibration, SCALECALIBRATION_MIN, SCALECALIBRATION_MAX, STO_ITEM_SCALECALIBRATION);
 SysPara<double> sysParaScaleKnownWeight(&scaleKnownWeight, SCALEKNOWNWEIGHT_MIN, SCALEKNOWNWEIGHT_MAX, STO_ITEM_SCALEKNOWNWEIGHT);
 SysPara<double> sysParaPidKpSteam(&steamKp, PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, STO_ITEM_PID_KP_STEAM);
@@ -373,7 +373,7 @@ std::vector<mqttVars_t> mqttVars = {
     {"steamKp", tDouble, PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, (void *)&steamKp},
     {"startKp", tDouble, PID_KP_START_MIN, PID_KP_START_MAX, (void *)&startKp},
     {"startTn", tDouble, PID_TN_START_MIN, PID_TN_START_MAX, (void *)&startTn},
-    {"weightSetPoint", tDouble, WEIGHTSETPOINT_MIN, WEIGHTSETPOINT_MAX, (void *)&weightSetPoint},
+    {"weightSetpoint", tDouble, WEIGHTSETPOINT_MIN, WEIGHTSETPOINT_MAX, (void *)&weightSetpoint},
     {"scaleKnownWeight", tDouble, SCALEKNOWNWEIGHT_MIN, SCALEKNOWNWEIGHT_MAX, (void *)&scaleKnownWeight},
     {"scaleCalibration", tFloat, SCALECALIBRATION_MIN, SCALECALIBRATION_MAX, (void *)&scaleCalibration}
 };
@@ -1665,7 +1665,7 @@ void websiteSetup() {
 const char sysVersion[] = (STR(FW_VERSION) "." STR(FW_SUBVERSION) "." STR(FW_HOTFIX) " " FW_BRANCH);
 
 void setup() {
-    editableVars =  {
+    editableVars = {
         //#1
         {F("PID_ON"), "Enable PID Controller", false, "", kUInt8, 0, []{ return true; }, 0, 1, (void *)&pidON},
 
@@ -1749,7 +1749,6 @@ void setup() {
 
         //#28
         {F("VERSION"), F("Version"), false, "", kCString, sOtherSection, []{ return false; }, 0, 1, (void *)sysVersion}
-
     };
     //when adding parameters, update EDITABLE_VARS_LEN!
 
@@ -2299,7 +2298,7 @@ int readSysParamsFromStorage(void) {
     if (sysParaBrewThresh.getStorage() != 0) return -1;
     if (sysParaPreInfTime.getStorage() != 0) return -1;
     if (sysParaPreInfPause.getStorage() != 0) return -1;
-    if (sysParaWeightSetPoint.getStorage() != 0) return -1;
+    if (sysParaWeightSetpoint.getStorage() != 0) return -1;
     if (sysParaPidOn.getStorage() != 0) return -1;
     if (sysParaPidKpSteam.getStorage() != 0) return -1;
     if (sysParaSteamSetPoint.getStorage() != 0) return -1;
@@ -2332,7 +2331,7 @@ int writeSysParamsToStorage(void) {
     if (sysParaBrewThresh.setStorage() != 0) return -1;
     if (sysParaPreInfTime.setStorage() != 0) return -1;
     if (sysParaPreInfPause.setStorage() != 0) return -1;
-    if (sysParaWeightSetPoint.setStorage() != 0) return -1;
+    if (sysParaWeightSetpoint.setStorage() != 0) return -1;
     if (sysParaPidKpSteam.setStorage() != 0) return -1;
     if (sysParaSteamSetPoint.setStorage() != 0) return -1;
     if (sysParaUseBDPID.setStorage() != 0) return -1;
@@ -2406,7 +2405,7 @@ void writeSysParamsToMQTT(void) {
         #endif
 
         #if BREWMODE == 2
-            mqtt_publish("weightSetPoint", number2string(weightSetPoint));
+            mqtt_publish("weightSetpoint", number2string(weightSetpoint));
         #endif
 
         #if TOF == 1
