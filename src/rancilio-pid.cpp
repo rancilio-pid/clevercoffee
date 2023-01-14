@@ -669,9 +669,9 @@ const unsigned long intervalDisplay = 500;
     #endif
 #endif
 
-#include "brewvoid.h"
-#include "scalevoid.h"
 
+#include "scalevoid.h"
+#include "brewvoid.h"
 /**
  * @brief Switch to offline mode if maxWifiReconnects were exceeded during boot
  */
@@ -2040,7 +2040,9 @@ void looppid() {
     if ((millis() - lastTempEvent) > tempEventInterval) {
         //send temperatures to website endpoint
         sendTempEvent(temperature, brewSetPoint, pidOutput);
-        sendWeightEvent(weight, weightBrew, 22.22);
+        #if (ONLYPIDSCALE == 1)
+            sendWeightEvent(weight, weightBrew, 22.22);
+        #endif
         lastTempEvent = millis();
 
         #if VERBOSE
@@ -2373,12 +2375,16 @@ void writeSysParamsToMQTT(void) {
             mqtt_publish("preinfusion", number2string(preinfusion));
             mqtt_publish("steamON", number2string(steamON));
             mqtt_publish("backflushON", number2string(backflushON));
-            mqtt_publish("weightPreBrew", number2string(weightPreBrew));
-            mqtt_publish("weight", number2string(weight));
-            mqtt_publish("weightBrew", number2string(weightBrew));
-            mqtt_publish("scaleCalibration", number2string(scaleCalibration));
-            mqtt_publish("scaleKnownWeight", number2string(scaleKnownWeight));
-            mqtt_publish("scaleCalFactor", number2string(LoadCell.getCalFactor()));
+
+            // Scale Parameters
+            #if (ONLYPIDSCALE == 1)
+                mqtt_publish("weightPreBrew", number2string(weightPreBrew));
+                mqtt_publish("weight", number2string(weight));
+                mqtt_publish("weightBrew", number2string(weightBrew));
+                mqtt_publish("scaleCalibration", number2string(scaleCalibration));
+                mqtt_publish("scaleKnownWeight", number2string(scaleKnownWeight));
+                mqtt_publish("scaleCalFactor", number2string(LoadCell.getCalFactor()));
+            #endif
 
             // Normal PID
             mqtt_publish("aggKp", number2string(aggKp));
