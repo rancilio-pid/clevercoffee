@@ -53,7 +53,7 @@ void initScale() {
     }
     delay(1000);
     u8g2.sendBuffer();
-    LoadCell.start(stabilizingtime);
+    LoadCell.startMultiple(stabilizingtime);
     LoadCell.tare();
 
     if (LoadCell.getTareTimeoutFlag()) {
