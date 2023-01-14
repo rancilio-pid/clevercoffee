@@ -37,7 +37,7 @@ void checkWeight() {
  */
 void initScale() {
     String scaleCalibrationString = number2string(scaleCalibration);
-    String StringCompare = "1.00";
+    String stringCompare = "1.00";
     boolean calibration = false;
     LoadCell.begin(128);
     long stabilizingtime = 4000; // tare preciscion can be improved by adding a few seconds of stabilizing time
@@ -47,7 +47,7 @@ void initScale() {
     u8g2.drawStr(0, 2, "Taring scale,");
     u8g2.drawStr(0, 12, "remove any load!");
     
-    if(scaleCalibrationString == StringCompare){
+    if(scaleCalibrationString == stringCompare){
         u8g2.drawStr(0, 22, "Calibration coming up");
         calibration = true;
     }
@@ -71,8 +71,10 @@ void initScale() {
             LoadCell.setCalFactor(1.0);
             u8g2.clearBuffer();
             u8g2.drawStr(0, 2, "Calibration in progress.");
-            u8g2.drawStr(0, 12, "Place known weight on scale in next 10 seconds");
-            u8g2.drawStr(0, 22, number2string(scaleKnownWeight));
+            u8g2.drawStr(0, 12, "Place known weight on");
+            u8g2.drawStr(0, 22, "scale in next 10 seconds ");
+            
+            u8g2.drawStr(0, 32, number2string(scaleKnownWeight));
             u8g2.sendBuffer();
             LoadCell.tare();
             delay(10000);
