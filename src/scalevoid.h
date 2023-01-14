@@ -40,6 +40,7 @@ void initScale() {
     String StringCompare = "1.00";
     boolean calibration = false;
     LoadCell.begin(128);
+    LoadCell2.begin(128);
     long stabilizingtime = 4000; // tare preciscion can be improved by adding a few seconds of stabilizing time
     boolean _tare = true; //set this to false if you don't want tare to be performed in the next step
 
@@ -56,7 +57,7 @@ void initScale() {
     }
     delay(1000);
     u8g2.sendBuffer();
-    LoadCell.start(stabilizingtime);
+    LoadCell.startMultiple(stabilizingtime);
     LoadCell.tare();
 
     if (LoadCell.getTareTimeoutFlag()) {
