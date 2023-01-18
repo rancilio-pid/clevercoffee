@@ -58,6 +58,8 @@ typedef struct __attribute__((packed)) {
     char wifiPassword[25 + 1];
     double weightSetpoint;
     double steamkp;
+    float scaleCalibration;
+    double scaleKnownWeight;
     double steamsetpoint;
     double scaleCalibration;
     double scaleKnownWeight;
@@ -105,6 +107,8 @@ static const sto_data_t itemDefaults PROGMEM = {
     "",            // STO_ITEM_WIFI_SSID
     "",            // STO_ITEM_WIFI_PASSWORD
     SCALE_WEIGHTSETPOINT,
+    SCALE_CALIBRATION,
+    SCALE_KNOWNWEIGHT,
     SCALE_CALIBRATION,
     SCALE_KNOWNWEIGHT,
     STEAMKP,

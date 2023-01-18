@@ -35,7 +35,6 @@ int writeSysParamsToStorage(void);
 #define SCALE_WEIGHTSETPOINT 30    // Target weight in grams
 #define SCALE_CALIBRATION -250.00  // Calibration value
 #define SCALE_KNOWNWEIGHT 200      // Known weight in grams for calibrating the scale
-
 #define PID_KP_START_MIN 0
 #define PID_KP_START_MAX 350
 #define PID_TN_START_MIN 0
@@ -76,6 +75,10 @@ int writeSysParamsToStorage(void);
 #define WEIGHTSETPOINT_MAX 500
 #define PID_KP_STEAM_MIN 0
 #define PID_KP_STEAM_MAX 500
+#define SCALECALIBRATION_MIN -100000
+#define SCALECALIBRATION_MAX 100000
+#define SCALEKNOWNWEIGHT_MIN 0
+#define SCALEKNOWNWEIGHT_MAX 1500
 #define SCALECALIBRATION_MIN -100000
 #define SCALECALIBRATION_MAX 100000
 #define SCALEKNOWNWEIGHT_MIN 0
