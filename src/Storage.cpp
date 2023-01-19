@@ -63,6 +63,7 @@ typedef struct __attribute__((packed)) {
     double steamSetpoint;
     float scaleCalibration;
     double scaleKnownWeight;
+    double steamSetpoint;
 } sto_data_t;
 
 // set item defaults
