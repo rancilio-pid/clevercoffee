@@ -40,8 +40,6 @@ boolean brewPIDdisabled = false;                    // is PID disabled for delay
 const unsigned long analogreadingtimeinterval = 10; // ms
 unsigned long previousMillistempanalogreading;      // ms for analogreading
 
-
-
 // Shot timer with or without scale
 #if (ONLYPIDSCALE == 1 || BREWMODE == 2)
     int shottimercounter = 10 ;
