@@ -58,7 +58,7 @@ typedef struct __attribute__((packed)) {
     char wifiPassword[25 + 1];
     double weightsetPoint;
     double steamkp;
-    double scaleCalibration;
+    float scaleCalibration;
     double scaleKnownWeight;
     double steamSetpoint;
 } sto_data_t;
