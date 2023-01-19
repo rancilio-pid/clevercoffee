@@ -45,7 +45,7 @@ void initScale() {
     u8g2.drawStr(0, 2, "Taring scale,");
     u8g2.drawStr(0, 12, "remove any load!");
     
-    if(scaleCalibration == 1.00){
+    if((double) scaleCalibration == 1.00){
         u8g2.drawStr(0, 22, "Calibration coming up");
         calibration = true;
     }
@@ -79,7 +79,7 @@ void initScale() {
             LoadCell.refreshDataSet();
             float newCalibrationValue = LoadCell.getNewCalibration(scaleKnownWeight);
             LoadCell.setCalFactor(newCalibrationValue);
-            scaleCalibration = (double) newCalibrationValue;
+            scaleCalibration = newCalibrationValue;
             u8g2.clearBuffer();
             u8g2.drawStr(0, 2, "Calibration done.");
             u8g2.drawStr(0, 12, "New Calibration factor:");
