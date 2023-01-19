@@ -618,9 +618,6 @@ void refreshTemp() {
 boolean sys = readSysParamsFromStorage();
 // Brewing, 1 = Normal Preinfusion , 2 = Scale & Shottimer = 2
 #include "brewscaleini.h"
-boolean sys = readSysParamsFromStorage();
-// Brewing, 1 = Normal Preinfusion , 2 = Scale & Shottimer = 2
-#include "brewscaleini.h"
 
 // Display define & template
 #if OLED_DISPLAY == 1
@@ -1713,9 +1710,6 @@ void setup() {
 
         //#15
         {F("BREW_PREINFUSIONPAUSE"), F("Preinfusion Pause Time (s)"), false, "", kDouble, sTempSection, []{ return true && ONLYPID == 0; }, PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, (void *)&preinfusionpause},
-
-        //#16
-        {F("SCALE_WEIGHTSETPOINT"), F("Brew weight setpoint (g)"), true, F("Brew until this weight has been measured."), kDouble, sTempSection, []{ return true && (ONLYPIDSCALE == 1 || BREWMODE == 2); }, WEIGHTSETPOINT_MIN, WEIGHTSETPOINT_MAX, (void *)&weightSetPoint},
 
         //#17
         {F("BREW_PREINFUSION"), F("Preinfusion Time (s)"), false, "", kDouble, sTempSection, []{ return true && ONLYPID == 0; }, PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX, (void *)&preinfusion},
