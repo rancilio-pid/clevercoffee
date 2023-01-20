@@ -56,7 +56,7 @@ typedef struct __attribute__((packed)) {
     uint8_t freeToUse14[2];
     char wifiSSID[25 + 1];
     char wifiPassword[25 + 1];
-    double weightsetPoint;
+    double weightSetpoint;
     double steamkp;
     float scaleCalibration;
     double scaleKnownWeight;
