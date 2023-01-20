@@ -315,18 +315,11 @@ void brew() {
                 digitalWrite(PINVALVE, relayOFF);
                 digitalWrite(PINPUMP, relayOFF);
                 brewcounter = 43;
+                timeBrewed = 0;
 
                 break;
 
-            case 43:  // waiting time after brew
-                if (timeBrewed > totalBrewTime + scaleDelayValue) {
-                    brewcounter = 44;
-                    timeBrewed = 0;
-                }
-
-                break;
-
-            case 44:  // waiting for brewswitch off position
+            case 43:  // waiting for brewswitch off position
                 if (brewswitch == LOW) {
                     digitalWrite(PINVALVE, relayOFF);
                     digitalWrite(PINPUMP, relayOFF);
