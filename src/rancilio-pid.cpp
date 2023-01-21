@@ -1612,9 +1612,9 @@ void wiFiSetup() {
     } else {
         debugPrintln("WiFi connection timed out...");
 
-        #if OLED_DISPLAY != 0
-            displayLogo(langstring_nowifi[0], langstring_nowifi[1]);
-        #endif
+       // #if OLED_DISPLAY != 0
+       //     displayLogo(langstring_nowifi[0], langstring_nowifi[1]);
+       // #endif
 
         wm.disconnect();
         delay(1000);
@@ -1622,9 +1622,9 @@ void wiFiSetup() {
         offlineMode = 1;
     }
 
-    #if OLED_DISPLAY != 0
-        displayLogo(langstring_connectwifi1, wm.getWiFiSSID(true));
-    #endif
+   // #if OLED_DISPLAY != 0
+    //    displayLogo(langstring_connectwifi1, wm.getWiFiSSID(true));
+   // #endif
 
     startRemoteSerialServer();
 }
@@ -1820,14 +1820,6 @@ void setup() {
         pinMode(PINSTEAMSWITCH, INPUT_PULLDOWN);
     #endif
 
-    #if OLED_DISPLAY != 0
-        u8g2.setI2CAddress(oled_i2c * 2);
-        u8g2.begin();
-        u8g2_prepare();
-        displayLogo(String("Version ") + String(sysVersion), "");
-       // delay(2000); // caused crash with wifi manager
-    #endif
-
     // Init Scale by BREWMODE 2 or SHOTTIMER 2
     #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
         initScale();
@@ -1930,6 +1922,15 @@ void setup() {
     setupDone = true;
 
     enableTimer1();
+
+    // Display has to be initialized after the display because ESP8266 can crash during wifi manager setup. 
+    #if OLED_DISPLAY != 0
+    u8g2.setI2CAddress(oled_i2c * 2);
+    u8g2.begin();
+    u8g2_prepare();
+    displayLogo(String("Version ") + String(sysVersion), "");
+    // delay(2000); // caused crash with wifi manager
+    #endif
 }
 
 void loop() {
