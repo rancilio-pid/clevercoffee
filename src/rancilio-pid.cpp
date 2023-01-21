@@ -1779,6 +1779,7 @@ void setup() {
         VoltageSensorOFF = HIGH;
     }
 
+
     // Initialize Pins
     pinMode(PINVALVE, OUTPUT);
     pinMode(PINPUMP, OUTPUT);
@@ -1787,6 +1788,11 @@ void setup() {
     digitalWrite(PINVALVE, relayOFF);
     digitalWrite(PINPUMP, relayOFF);
     digitalWrite(PINHEATER, LOW);
+    
+    // IF POWERSWITCH is connected
+    if (POWERSWITCHTYPE > 0) {
+        pinMode(PINPOWERSWITCH, INPUT);
+    }
 
     // IF Etrigger selected
     if (ETRIGGER == 1) {
@@ -2079,6 +2085,7 @@ void looppid() {
     brew();                  // start brewing if button pressed
     checkSteamON();          // check for steam
     setEmergencyStopTemp();
+    checkpowerswitch();
     handleMachineState();      // update machineState
     tempLed();
 
@@ -2336,8 +2343,6 @@ int writeSysParamsToStorage(void) {
     if (sysParaPidKpBd.setStorage() != 0) return -1;
     if (sysParaPidTnBd.setStorage() != 0) return -1;
     if (sysParaPidTvBd.setStorage() != 0) return -1;
-    if (sysParaScaleCalibration.setStorage() != 0) return -1;
-    if (sysParaScaleKnownWeight.setStorage() != 0) return -1;
     if (sysParaScaleCalibration.setStorage() != 0) return -1;
     if (sysParaScaleKnownWeight.setStorage() != 0) return -1;
 
