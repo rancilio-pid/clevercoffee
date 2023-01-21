@@ -52,6 +52,7 @@ enum MACHINE {
 #define BREWMODE 1                 // 1 = Brew by time (with preinfusion); 2 = Brew by weight (from scale)
 #define BREWDETECTION 0            // 0 = off, 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = Sensor/Hardware for Only PID
 #define BREWSWITCHTYPE 1           // 1 = normal Switch, 2 = Trigger Switch
+#define POWERSWITCHTYPE 2          // 0 = no switch connected, 1 = normal Switch, 2 = Trigger Switch
 #define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay
 #define VOLTAGESENSORTYPE HIGH     // BREWDETECTION 3 configuration
 #define PINMODEVOLTAGESENSOR INPUT // Mode INPUT_PULLUP, INPUT or INPUT_PULLDOWN_16 (Only Pin 16)
@@ -121,6 +122,7 @@ enum MACHINE {
 // Pin Layout
 #define PINTEMPSENSOR 2            
 #define PINPRESSURESENSOR 99       // Pressure sensor 0: A0 (ESP8266), >0 ONLY ESP32
+#define PINPOWERSWITCH 99          // Input pin for powerswitch (use a pin which is LOW on startup or use an pull down resistor)
 #define PINVALVE 12
 #define PINPUMP 13
 #define PINHEATER 14
