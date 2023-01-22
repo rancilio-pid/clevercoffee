@@ -10,8 +10,8 @@
 // firmware version (must match with definitions in the main source file)
 #define USR_FW_VERSION    3
 #define USR_FW_SUBVERSION 1
-#define USR_FW_HOTFIX     1
-#define USR_FW_BRANCH     "MASTER"
+#define USR_FW_HOTFIX     2
+#define USR_FW_BRANCH     "ESP8222-MASTER"
 
 // List of supported machines
 enum MACHINE {
