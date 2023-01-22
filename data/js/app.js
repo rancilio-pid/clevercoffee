@@ -14,7 +14,7 @@ const vueApp = Vue.createApp({
             fetch("/parameters")
                 .then(response => response.json())
                 .then(data => {
-                    this.parameters = data
+                    this.parameters = data.sort((a,b) => a["position"] - b["position"])
                 })
                 .catch(err => console.log(err.messages))
         },
