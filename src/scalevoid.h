@@ -40,12 +40,12 @@ void initScale() {
     LoadCell.begin(128);
     long stabilizingtime = 4000; // tare precision can be improved by adding a few seconds of stabilizing time
     boolean _tare = true; //set this to false if you don't want tare to be performed in the next step
-
+    float scaleInitCompare = 1.00
     u8g2.clearBuffer();
     u8g2.drawStr(0, 2, "Taring scale,");
     u8g2.drawStr(0, 12, "remove any load!");
     
-    if((double) scaleCalibration == 1.00){
+    if(scaleCalibration - scaleInitCompare < 0.00001){
         u8g2.drawStr(0, 22, "Calibration coming up");
         calibration = true;
     }
@@ -71,7 +71,6 @@ void initScale() {
             u8g2.drawStr(0, 2, "Calibration in progress.");
             u8g2.drawStr(0, 12, "Place known weight on");
             u8g2.drawStr(0, 22, "scale in next 10 seconds ");
-            
             u8g2.drawStr(0, 32, number2string(scaleKnownWeight));
             u8g2.sendBuffer();
             LoadCell.tare();
