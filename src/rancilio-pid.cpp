@@ -207,7 +207,6 @@ double preinfusionpause = PRE_INFUSION_PAUSE_TIME;  // preinfusion pause time in
 double weightSetpoint = SCALE_WEIGHTSETPOINT;
 float scaleCalibration = SCALE_CALIBRATION;
 double scaleKnownWeight = SCALE_KNOWNWEIGHT;
-double scaleKnownWeight = SCALE_KNOWNWEIGHT;
 
 // PID - values for offline brew detection
 uint8_t useBDPID = 0;
@@ -681,41 +680,9 @@ const unsigned long intervalDisplay = 500;
     U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, OLED_CS, OLED_DC, /* reset=*/U8X8_PIN_NONE); // e.g. 1.3"
 #endif
 
-// Update for Display
-unsigned long previousMillisDisplay;  // initialisation at the end of init()
-const unsigned long intervalDisplay = 500;
-
-// Horizontal or vertical display
-#if (OLED_DISPLAY == 1 || OLED_DISPLAY == 2)
-    #if (DISPLAYTEMPLATE < 20)  // horizontal templates
-        #include "display.h"
-    #endif
-
-    #if (DISPLAYTEMPLATE >= 20)  // vertical templates
-        #include "Displayrotateupright.h"
-    #endif
-
-    #if (DISPLAYTEMPLATE == 1)
-        #include "Displaytemplatestandard.h"
-    #endif
-
-    #if (DISPLAYTEMPLATE == 2)
-        #include "Displaytemplateminimal.h"
-    #endif
-
-    #if (DISPLAYTEMPLATE == 3)
-        #include "Displaytemplatetemponly.h"
-    #endif
-
-    #if (DISPLAYTEMPLATE == 4)
-        #include "Displaytemplatescale.h"
-    #endif
-
-    #if (DISPLAYTEMPLATE == 20)
-        #include "Displaytemplateupright.h"
-    #endif
-#endif
-
+#include "brewvoid.h"
+#include "powerswitchvoid.h"
+#include "scalevoid.h"
 
 /**
  * @brief Switch to offline mode if maxWifiReconnects were exceeded during boot
