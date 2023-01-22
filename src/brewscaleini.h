@@ -9,8 +9,20 @@
     const int analogPin = 0; // AI0 will be used
 #endif
 
+enum BrewState {
+    kBrewIdle = 10,
+    kPreinfusion = 20,
+    kWaitPreinfusion = 21,
+    kPreinfusionPause = 30,
+    kWaitPreinfusionPause = 31,
+    kBrewRunning = 40,
+    kWaitBrew = 41,
+    kBrewFinished = 42,
+    kWaitBrewOff = 43
+};
+
 // Normal Brew
-int brewcounter = 10;
+BrewState brewcounter = kBrewIdle;
 int brewswitch = 0;
 int brewswitchTrigger = LOW;
 int buttonStateBrewTrigger;                     // the current reading from the input pin
