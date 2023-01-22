@@ -662,6 +662,7 @@ void refreshTemp() {
 
 
 #include "brewvoid.h"
+#include "powerswitchvoid.h"
 #include "scalevoid.h"
 
 /**
@@ -1764,6 +1765,7 @@ void setup() {
         VoltageSensorOFF = HIGH;
     }
 
+
     // Initialize Pins
     pinMode(PINVALVE, OUTPUT);
     pinMode(PINPUMP, OUTPUT);
@@ -1772,6 +1774,11 @@ void setup() {
     digitalWrite(PINVALVE, relayOFF);
     digitalWrite(PINPUMP, relayOFF);
     digitalWrite(PINHEATER, LOW);
+    
+    // IF POWERSWITCH is connected
+    if (POWERSWITCHTYPE > 0) {
+        pinMode(PINPOWERSWITCH, INPUT);
+    }
 
     // IF Etrigger selected
     if (ETRIGGER == 1) {
@@ -2062,6 +2069,7 @@ void looppid() {
     brew();                  // start brewing if button pressed
     checkSteamON();          // check for steam
     setEmergencyStopTemp();
+    checkpowerswitch();
     handleMachineState();      // update machineState
     tempLed();
 
