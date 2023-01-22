@@ -562,7 +562,7 @@ void calculateTemperatureMovingAverage() {
  */
 boolean checkSensor(float tempInput) {
     boolean sensorOK = false;
-    boolean badCondition = (tempInput < 0 || tempInput > 150 || fabs(tempInput - previousInput) > (5+brewTempOffset));
+    boolean badCondition = (tempInput < 0 || tempInput > 150 || fabs(tempInput - previousInput) > (10+brewTempOffset));
 
     if (badCondition && !sensorError) {
         error++;
