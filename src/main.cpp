@@ -14,6 +14,7 @@
 
 // Libraries
 #include <ArduinoOTA.h>
+#include <map>
 
 #if TEMPSENSOR == 1
     #include <DallasTemperature.h>  // Library for dallas temp sensor
@@ -352,7 +353,7 @@ enum SectionNames {
     sOtherSection
 };
 
-std::vector<editable_t> editableVars = {};
+std::map<String, editable_t> editableVars = {};
 
 unsigned long lastTempEvent = 0;
 unsigned long tempEventInterval = 1000;
