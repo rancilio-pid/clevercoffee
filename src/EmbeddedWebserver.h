@@ -58,7 +58,7 @@ int historyValueCount = 0;
 void serverSetup();
 void setEepromWriteFcn(int (*fcnPtr)(void));
 
-// Defined in main.cpp
+// editable vars are specified in main.cpp
 #define EDITABLE_VARS_LEN 28
 extern std::map<String, editable_t> editableVars;
 

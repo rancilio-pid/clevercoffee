@@ -415,7 +415,7 @@ const unsigned long intervalDisplay = 500;
 #endif
 
 
-#if (PRESSURESENSOR == 1)  // Pressure sensor connected
+#if (PRESSURESENSOR == 1)
     /**
      * Pressure sensor
      * Verify before installation: meassured analog input value (should be 3,300 V

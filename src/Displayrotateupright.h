@@ -49,7 +49,7 @@ void displayLogo(String displaymessagetext, String displaymessagetext2) {
     u8g2.drawStr(0, 47, displaymessagetext.c_str());
     u8g2.drawStr(0, 55, displaymessagetext2.c_str());
 
-    //Rancilio startup logo
+    // Rancilio startup logo
     switch (machineLogo) {
         case 1:
             u8g2.drawXBMP(9, 2, startLogoRancilio_width, startLogoRancilio_height, startLogoRancilio_bits);
@@ -103,11 +103,10 @@ void displayEmergencyStop(void)
  * @brief display shot timer
  */
 void displayShottimer(void) {
-    if (((timeBrewed > 0 && ONLYPID == 1) || // timeBrewed bei Only PID
-        (ONLYPID == 0 && brewcounter > kBrewIdle && brewcounter <= kBrewFinished)) // oder Bezug bei nicht only PID über brewcounter
-        && SHOTTIMER == 1) // Shotimer muss 1 = True sein und Bezug vorliegen
+    if (((timeBrewed > 0 && ONLYPID == 1) ||
+        (ONLYPID == 0 && brewcounter > kBrewIdle && brewcounter <= kBrewFinished))
+        && SHOTTIMER == 1)
     {
-        // Dann Zeit anzeigen
         u8g2.clearBuffer();
 
         // draw temp icon
