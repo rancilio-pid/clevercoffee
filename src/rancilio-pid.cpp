@@ -717,8 +717,6 @@ const unsigned long intervalDisplay = 500;
 #endif
 
 
-#include "scalevoid.h"
-#include "brewvoid.h"
 /**
  * @brief Switch to offline mode if maxWifiReconnects were exceeded during boot
  */
