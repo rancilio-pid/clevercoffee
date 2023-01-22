@@ -9,8 +9,8 @@
 // Firmware version
 #define FW_VERSION    3
 #define FW_SUBVERSION 1
-#define FW_HOTFIX     1
-#define FW_BRANCH     "MASTER"
+#define FW_HOTFIX     2
+#define FW_BRANCH     "ESP8222-MASTER"
 
 // User Config
 #include "userConfig.h"         // needs to be configured by the user
