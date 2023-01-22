@@ -1,11 +1,12 @@
 /**
  * @file brewvoid.h
  *
- * @brief
+ * @brief TODO
  *
  */
 
 #pragma once
+
 
 /**
  * @brief Digtalswitch OR Read analog input pin for BREW SWITCH
@@ -35,7 +36,7 @@ void checkbrewswitch() {
         #endif
     #endif
 
-    #if BREWSWITCHTYPE == 2  // TRIGGER
+    #if BREWSWITCHTYPE == 2
         #if (PIN_BREWSWITCH > 0)
             int reading = digitalRead(PIN_BREWSWITCH);
 
@@ -55,7 +56,6 @@ void checkbrewswitch() {
             }
 
             brewswitchTrigger = reading;
-           // debugPrintln(brewswitchTrigger);
         #endif
 
         // Digital Analog
@@ -75,7 +75,7 @@ void checkbrewswitch() {
             }
         #endif
 
-        // Triggersignal umsetzen in brewswitch
+        // Convert trigger signal to brew switch state
         switch (brewswitchTriggerCase) {
             case 10:
                 if (brewswitchTrigger == HIGH) {
@@ -86,7 +86,7 @@ void checkbrewswitch() {
                 break;
 
             case 20:
-                // only one push, brew
+                // Only one push, brew
                 if (brewswitchTrigger == LOW) {
                     // Brew trigger
                     brewswitch = HIGH;
@@ -96,7 +96,6 @@ void checkbrewswitch() {
 
                 // Button more than one 1sec pushed
                 if (brewswitchTrigger == HIGH && (brewswitchTriggermillis + 1000 <= millis())) {
-                    // DO something
                     debugPrintln("brewswitchTriggerCase 20: Manual Trigger - brewing");
                     brewswitchTriggerCase = 31;
                     digitalWrite(PIN_VALVE, relayON);
@@ -104,7 +103,7 @@ void checkbrewswitch() {
                 }
                 break;
             case 30:
-                // Stop Brew trigger (one push) brewswitch == HIGH
+                // Stop brew trigger (one push) brewswitch == HIGH
                 if ((brewswitchTrigger == HIGH && brewswitch == HIGH) || (machineState == kShotTimerAfterBrew) ) {
                     brewswitch = LOW;
                     brewswitchTriggerCase = 40;
@@ -137,12 +136,13 @@ void checkbrewswitch() {
     #endif
 }
 
+
 /**
  * @brief Backflush
  */
 void backflush() {
     if (backflushState != 10 && backflushON == 0) {
-        backflushState = 43;  // force reset in case backflushON is reset during backflush!
+        backflushState = 43;  // Force reset in case backflushON is reset during backflush!
     } else if (offlineMode == 1 || brewcounter > kBrewIdle || maxflushCycles <= 0 || backflushON == 0) {
         return;
     }
@@ -157,11 +157,11 @@ void backflush() {
 
     checkbrewswitch();
 
-    if (brewswitch == LOW && backflushState > 10) {  // abort function for state machine from every state
+    if (brewswitch == LOW && backflushState > 10) {  // Abort function for state machine from every state
         backflushState = 43;
     }
 
-    // state machine for brew
+    // State machine for brew
     switch (backflushState) {
         case 10:  // waiting step for brew switch turning on
             if (brewswitch == HIGH && backflushON) {
@@ -218,6 +218,7 @@ void backflush() {
             break;
     }
 }
+
 
 #if (BREWMODE == 1)  // normal brew mode (based on time)
 /**
@@ -338,6 +339,7 @@ void brew() {
     }
 }
 #endif
+
 
 #if (BREWMODE == 2)
 /**
