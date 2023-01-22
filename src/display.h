@@ -8,6 +8,7 @@
 
 #if (OLED_DISPLAY != 0)
 
+
 /**
  * @brief initialize display
  */
@@ -19,6 +20,7 @@ void u8g2_prepare(void) {
     u8g2.setFontDirection(0);
     u8g2.setDisplayRotation(DISPLAYROTATE);
 }
+
 
 /**
  * @brief print message
@@ -39,6 +41,7 @@ void displayMessage(String text1, String text2, String text3, String text4, Stri
     u8g2.print(text6);
     u8g2.sendBuffer();
 }
+
 
 /**
  * @brief print logo and message at boot
@@ -118,9 +121,7 @@ void displayShottimer(void) {
     }
 
     #if (ONLYPIDSCALE == 1 || BREWMODE == 2)
-        // Shotimer muss 2 sein und Bezug vorliegen
         if ((machineState == kBrew) && SHOTTIMER == 2) {
-            // Dann Zeit anzeigen
             u8g2.clearBuffer();
 
             // temp icon
@@ -152,12 +153,13 @@ void displayShottimer(void) {
     #endif
 }
 
+
 /**
  * @brief display heating logo
  */
 void Displaymachinestate() {
     if (HEATINGLOGO > 0 && (machineState == kInit || machineState == kColdStart)) {
-        // Für Statusinfos
+        // For status info
         u8g2.clearBuffer();
         u8g2.drawFrame(8, 0, 110, 12);
 
@@ -284,14 +286,12 @@ void Displaymachinestate() {
         u8g2.sendBuffer();
     }
 
-    // Sensor error
     if (machineState == kSensorError) {
         u8g2.clearBuffer();
         u8g2.setFont(u8g2_font_profont11_tf);
         displayMessage(langstring_error_tsensor[0], String(temperature), langstring_error_tsensor[1], "", "", "");
     }
 
-    // EEPROM error
     if (machineState == kEepromError) {
         u8g2.clearBuffer();
         u8g2.setFont(u8g2_font_profont11_tf);
