@@ -30,12 +30,12 @@ enum EditableKind {
 };
 
 struct editable_t {
-    String templateString;
     String displayName;
     boolean hasHelpText;
     String helpText;
     EditableKind type;
     int section;                   // parameter section number
+    int position;
     std::function<bool()> show;    // method that determines if we show this parameter (in the web interface)
     int minValue;
     int maxValue;
@@ -60,7 +60,8 @@ void setEepromWriteFcn(int (*fcnPtr)(void));
 
 // Defined in main.cpp
 #define EDITABLE_VARS_LEN 28
-extern std::vector<editable_t> editableVars;
+extern std::map<String, editable_t> editableVars;
+
 
 // EEPROM
 int (*writeToEeprom)(void) = NULL;
@@ -99,93 +100,9 @@ double round2(double value) {
    return (int)(value * 100 + 0.5) / 100.0;
 }
 
-String generateForm(String varName) {
-    for (editable_t e : editableVars) {
-        if (e.templateString != varName) {
-            continue;
-        }
-
-        String result = F("<label class=\"form-label me-1\" for=\"var");
-        result += e.templateString;
-        result += F("\">");
-        result += e.displayName;
-        result += "</label>";
-        if (!e.helpText.isEmpty()) {
-            result += F("<a href=\"#\" role=\"button\" data-bs-toggle=\"popover\" data-bs-html=\"true\" data-bs-original-title=\"");
-            result += e.helpText;
-            result += F("\"><span class=\"fa-solid fa-circle-question\"></span></a></br>");
-        } else {
-            result += F("<br/>");
-        }
-        String currVal;
-
-        switch (e.type) {
-            case kDouble:
-                result += F("<input class=\"form-control form-control-lg\" type=\"number\" step=\"0.1\"");
-                currVal = *(double *)e.ptr;
-                break;
-
-            case kDoubletime:
-                result += F("<input class=\"form-control form-control-lg\" type=\"number\" step=\"0.1\"");
-                currVal = *(double *)e.ptr/1000;
-                break;
-
-            case kInteger:
-                result += F("<input class=\"form-control form-control-lg\" type=\"number\" step=\"1\"");
-                currVal = *(int *)e.ptr;
-                break;
-
-            case kUInt8:
-            {
-                uint8_t val = *(uint8_t *)e.ptr;
-
-                result += F("<input type=\"hidden\" id=\"var");
-                result += e.templateString;
-                result += F("\" name=\"var");
-                result += e.templateString + F("\" value=\"0\" />");
-                result += F("<input type=\"checkbox\" class=\"form-check-input form-control-lg\" id=\"var");
-                result += e.templateString;
-                result += F("\" name=\"var");
-                result += e.templateString;
-                result += F("\" value=\"1\"");
-
-                if (val) {
-                    result += F(" checked=\"checked\"");
-                }
-
-                result += F("><br />");
-
-                break;
-            }
-
-            default:
-                result += F("<input class=\"form-control form-control-lg\" type=\"text\"");
-                currVal = (const char *)e.ptr;
-        }
-
-        if (e.type != kUInt8) {
-            result += F(" id=\"var");
-            result += e.templateString;
-            result += F("\" name=\"var");
-            result += e.templateString;
-            result += F("\" value=\"");
-            result += currVal;
-            result += F("\"><br />");
-        }
-
-        return result;
-    }
-
-    return "(unknown variable " + varName + ")";
-}
-
 String getValue(String varName) {
-    // Yikes, we don't have std::map available
-    for (editable_t e : editableVars) {
-        if (e.templateString != varName) {
-            continue;
-        }
-
+    try {
+        editable_t e = editableVars.at(varName);
         switch (e.type) {
             case kDouble:
                 return String(*(double *)e.ptr);
@@ -201,8 +118,33 @@ String getValue(String varName) {
                 return F("Unknown type");
                 break;
         }
+    } catch (const std::out_of_range &exc) {
+        return "(unknown variable " + varName + ")";
     }
-    return "(unknown variable " + varName + ")";
+}
+
+void paramToJson(String name, editable_t &e, DynamicJsonDocument &doc) {
+    JsonObject paramObj = doc.createNestedObject();
+    paramObj["type"] = e.type;
+    paramObj["name"] = name;
+    paramObj["displayName"] = e.displayName;
+    paramObj["section"] = e.section;
+    paramObj["position"] = e.position;
+    paramObj["hasHelpText"] = e.hasHelpText;
+    paramObj["show"] = e.show();
+
+    // set parameter value
+    if (e.type == kInteger) {
+        paramObj["value"] = *(int *)e.ptr;
+    } else if (e.type == kUInt8) {
+        paramObj["value"] = *(uint8_t *)e.ptr;
+    } else if (e.type == kDouble || e.type == kDoubletime) {
+        paramObj["value"] = round2(*(double *)e.ptr);
+    } else if (e.type == kCString) {
+        paramObj["value"] = String((char *)e.ptr);
+    }
+    paramObj["min"] = e.minValue;
+    paramObj["max"] = e.maxValue;
 }
 
 //hash strings at compile time to use in switch statement
@@ -254,9 +196,7 @@ String staticProcessor(const String& var) {
     skipHeaterISR = true;
 
     //try replacing var for variables in editableVars
-    if (var.startsWith("VAR_EDIT_")) {
-        return generateForm(var.substring(9)); // cut off "VAR_EDIT_"
-    } else if (var.startsWith("VAR_SHOW_")) {
+    if (var.startsWith("VAR_SHOW_")) {
         return getValue(var.substring(9)); // cut off "VAR_SHOW_"
     } else if (var.startsWith("VAR_HEADER_")) {
         return getHeader(var.substring(11)); // cut off "VAR_HEADER_"
@@ -319,18 +259,31 @@ void serverSetup() {
     });
 
     server.on("/parameters", HTTP_GET | HTTP_POST, [](AsyncWebServerRequest *request) {
-        //stop writing to heater in ISR method (digitalWrite) as it causes crashes when called at the same time as flash is read or written
+        // stop writing to heater in ISR method (digitalWrite) as it causes
+        // crashes when called at the same time as flash is read or written
         skipHeaterISR = true;
 
-        if (request->method() == 2) {   //returns values from WebRequestMethod enum -> 2 == HTTP_POST
-            //update all given params and match var name in editableVars
-            int params = request->params();
-            /*String m = "Got ";
-            m += params;
-            m += " request parameters: <br />";
-            */
+        // Determine the size of the document to allocate based on the number
+        // of parameters
+        // GET = either
+        int requestParams = request->params();
+        int docLength = EDITABLE_VARS_LEN;
+        if (request->method() == 1) {
+            if (requestParams > 0) {
+                docLength = std::min(requestParams, EDITABLE_VARS_LEN);
+            }
+        } else if (request->method() == 2) {
+            docLength = std::min(requestParams, EDITABLE_VARS_LEN);
+        }
 
-            for (int i = 0 ; i < params; i++) {
+        DynamicJsonDocument doc(JSON_STRING_SIZE(262) + JSON_ARRAY_SIZE(docLength) +
+                                JSON_OBJECT_SIZE(9 + 1) * docLength);
+
+        if (request->method() == 2) {   // method() returns values from WebRequestMethod enum -> 2 == HTTP_POST
+            // returns values from WebRequestMethod enum -> 2 == HTTP_POST
+            // update all given params and match var name in editableVars
+
+            for (int i = 0; i < requestParams; i++) {
                 AsyncWebParameter* p = request->getParam(i);
                 String varName;
                 if (p->name().startsWith("var")) {
@@ -339,54 +292,27 @@ void serverSetup() {
                     varName = p->name();
                 }
 
-                for (editable_t e : editableVars) {
-                    if (e.templateString != varName) {
-                        continue;
-                    }
-
-                    /*
-                    m += "Setting ";
-                    m += e.displayName;
-                    m += " from ";
-                    */
-
+                try {
+                    editable_t e = editableVars.at(varName);
                     if (e.type == kInteger) {
-                        //m += *(int *)e.ptr;
-
                         int newVal = atoi(p->value().c_str());
                         *(int *)e.ptr = newVal;
                     } else if (e.type == kUInt8) {
-                        //m += *(uint8_t *)e.ptr;
-
-                        *(uint8_t *)e.ptr = (uint8_t)atoi(p->value().c_str());
+                        *(uint8_t *)e.ptr =
+                            (uint8_t)atoi(p->value().c_str());
                     } else if (e.type == kDouble || e.type == kDoubletime) {
-                        //m += *(double *)e.ptr;
-
                         float newVal = atof(p->value().c_str());
                         *(double *)e.ptr = newVal;
                     }
-                    //we don't need to set strings at the moment, needs testing also
-                    /*} else if (e.type == kCString) {
-                        m += String((char *)e.ptr);
-
-                        String val = p->value();
-                        static const char* newVal = new char[val.length() + 1]; //is this persistent or on stack?
-                        val.toCharArray(newVal, val.length() + 1);
-
-                        if (e.ptr) {
-                            delete[] ((char *)e.ptr);
-                        }
-                        e.ptr = (void *)newVal;
-                    }*/
-
-                    /*m += " to ";
-                    m += p->value();
-
-                    m += "<br/>";*/
+                    paramToJson(varName, e, doc);
+                } catch (const std::out_of_range &exc) {
+                    continue;
                 }
             }
 
-            request->send(200, "text/html", "Parameters saved");
+            String paramsJson;
+            serializeJson(doc, paramsJson);
+            request->send(200, "application/json", paramsJson);
 
             // Write to EEPROM
             if (writeToEeprom) {
@@ -408,54 +334,33 @@ void serverSetup() {
             int paramCount = request->params();
             String paramId = paramCount > 0 ? request->getParam(0)->value() : "";
 
-            for (editable_t e : editableVars) {
-                if (!paramId.isEmpty()) {
-                    //we have a parameter to select a single var,
-                    //skip vars until we find the one for the id in the request parameter
-                    if (paramId != e.templateString) {
-                        continue;
-                    }
-                }
+            std::map<String, editable_t>::iterator it;
+            if (!paramId.isEmpty()) {
+                it = editableVars.find(paramId);
+            } else {
+                it = editableVars.begin();
+            }
 
-                JsonObject paramObj = doc.createNestedObject();
-                //set all parameter fields
-                paramObj["type"] = e.type;
-                paramObj["name"] = e.templateString;
-                paramObj["displayName"] = e.displayName;
-                paramObj["section"] = e.section;
-                paramObj["hasHelpText"] = e.hasHelpText;
-                paramObj["show"] = e.show();
+            for (; it != editableVars.end(); it++) {
+                editable_t e = it->second;
+                paramToJson(it->first, e, doc);
 
-                //set parameter value
-                if (e.type == kInteger) {
-                    paramObj["value"] = *(int *)e.ptr;
-                } else if (e.type == kUInt8) {
-                    paramObj["value"] = *(uint8_t *)e.ptr;
-                } else if (e.type == kDouble || e.type == kDoubletime) {
-                    paramObj["value"] = round2(*(double *)e.ptr);
-                } else if (e.type == kCString) {
-                    paramObj["value"] = String((char *)e.ptr);
-                }
-                paramObj["min"] = e.minValue;
-                paramObj["max"] = e.maxValue;
-
-                //we found the parameter, no need to search further
                 if (!paramId.isEmpty()) {
                     break;
                 }
             }
-
-            if (doc.size() == 0) {
-                request->send(404, "application/json", F("{ \"code\": 404, \"message\": \"Parameter not found\"}"));
-                skipHeaterISR = false;
-                return;
-            }
-
-            String paramsJson;
-            serializeJson(doc, paramsJson);
-            request->send(200, "application/json", paramsJson);
         }
-        skipHeaterISR = false;
+        if (doc.size() == 0) {
+            request->send(404, "application/json",
+                            F("{ \"code\": 404, \"message\": "
+                            "\"Parameter not found\"}"));
+            skipHeaterISR = false;
+            return;
+        }
+
+        String paramsJson;
+        serializeJson(doc, paramsJson);
+        request->send(200, "application/json", paramsJson);
     });
 
     server.on("/parameterHelp", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -470,14 +375,14 @@ void serverSetup() {
 
         skipHeaterISR = true;
 
-        for (editable_t e : editableVars) {
-            if (e.templateString != varValue) {
-                continue;
-            }
-
-            doc["name"] = e.templateString;
+        try {
+            editable_t e = editableVars.at(varValue);
+            doc["name"] = varValue;
             doc["helpText"] = e.helpText;
-            break;
+        } catch (const std::out_of_range &exc) {
+            request->send(404, "application/json", "parameter not found");
+            skipHeaterISR = false;
+            return;
         }
 
         String helpJson;
@@ -492,24 +397,25 @@ void serverSetup() {
         request->send(200, "application/json", json);
     });
 
-    //TODO: could send values also chunked and without json (but needs three endpoints then?)
-    //https://stackoverflow.com/questions/61559745/espasyncwebserver-serve-large-array-from-ram
+    // TODO: could send values also chunked and without json (but needs three
+    // endpoints then?)
+    // https://stackoverflow.com/questions/61559745/espasyncwebserver-serve-large-array-from-ram
     server.on("/timeseries", HTTP_GET, [](AsyncWebServerRequest *request) {
         AsyncResponseStream *response = request->beginResponseStream("application/json");
 
-        //set capacity of json doc for history structure
-        DynamicJsonDocument doc(JSON_ARRAY_SIZE(2) + JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(HISTORY_LENGTH)*3);
+        // set capacity of json doc for history structure
+        DynamicJsonDocument doc(JSON_ARRAY_SIZE(2) + JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(HISTORY_LENGTH) * 3);
 
-        //for each value in mem history array, add json array element
+        // for each value in mem history array, add json array element
         JsonArray currentTemps = doc.createNestedArray("currentTemps");
         JsonArray targetTemps = doc.createNestedArray("targetTemps");
         JsonArray heaterPowers = doc.createNestedArray("heaterPowers");
 
-        //go through history values backwards starting from currentIndex and wrap around beginning
-        //to include valueCount many values
-        for (int i=mod(historyCurrentIndex-historyValueCount, HISTORY_LENGTH);
-                 i!=mod(historyCurrentIndex, HISTORY_LENGTH);
-                 i=mod(i+1, HISTORY_LENGTH))
+        // go through history values backwards starting from currentIndex and
+        // wrap around beginning to include valueCount many values
+        for (int i = mod(historyCurrentIndex - historyValueCount, HISTORY_LENGTH);
+            i != mod(historyCurrentIndex, HISTORY_LENGTH);
+            i = mod(i + 1, HISTORY_LENGTH))
         {
             currentTemps.add(round2(tempHistory[0][i]));
             targetTemps.add(round2(tempHistory[1][i]));
@@ -537,7 +443,7 @@ void serverSetup() {
 
     // serve static files
     LittleFS.begin();
-    server.serveStatic("/css", LittleFS, "/css/", "max-age=604800");   //cache for one week
+    server.serveStatic("/css", LittleFS, "/css/", "max-age=604800");  // cache for one week
     server.serveStatic("/js", LittleFS, "/js/", "max-age=604800");
     server.serveStatic("/", LittleFS, "/html/", "max-age=604800").setTemplateProcessor(staticProcessor);
 
@@ -554,15 +460,16 @@ void sendTempEvent(double currentTemp, double targetTemp, double heaterPower) {
     tTemp = targetTemp;
     hPower = heaterPower;
 
-    //save all values in memory to show history
+    // save all values in memory to show history
     if (skippedValues > 0 && skippedValues % 4 == 0) {
-        //use array and int value for start index (round robin)
-        //one record (3 float values == 12 bytes) every five seconds, for half an hour -> 4.3kB of static memory
+        // use array and int value for start index (round robin)
+        // one record (3 float values == 12 bytes) every five seconds, for half
+        // an hour -> 4.3kB of static memory
         tempHistory[0][historyCurrentIndex] = (float)currentTemp;
         tempHistory[1][historyCurrentIndex] = (float)targetTemp;
         tempHistory[2][historyCurrentIndex] = (float)heaterPower;
-        historyCurrentIndex = (historyCurrentIndex+1) % HISTORY_LENGTH;
-        historyValueCount = min(HISTORY_LENGTH-1, historyValueCount + 1);
+        historyCurrentIndex = (historyCurrentIndex + 1) % HISTORY_LENGTH;
+        historyValueCount = min(HISTORY_LENGTH - 1, historyValueCount + 1);
         skippedValues = 0;
     } else {
         skippedValues++;
