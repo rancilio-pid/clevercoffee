@@ -104,7 +104,7 @@ void printScreen() {
                 u8g2.print(brewtimesoftware, 0);
             }
 
-            // Für Statusinfos
+            // For status info
             if (offlineMode == 0) {
                 getSignalStrength();
 

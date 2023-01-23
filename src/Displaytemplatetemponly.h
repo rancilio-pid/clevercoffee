@@ -50,7 +50,7 @@ void printScreen() {
             }
         }
 
-        // Für Statusinfos
+        // For status info
         if (offlineMode == 0) {
             getSignalStrength();
 
