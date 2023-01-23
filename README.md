@@ -35,7 +35,8 @@ Video tutorial on how to flash the firmware (a little outdated but mostly still 
 https://youtu.be/KZPjisOEcQ4
 
 ## Version
-ESP8266 Version 3.1.3
+The last version is going to be 3.1.2 for ESP 8266 (last release was on 22.01.2023)
+
 
 ## What is possible after installation into your espresso machine? 
  * Control of the brewing temperature with an accuracy of up to +/- 0,1°.
