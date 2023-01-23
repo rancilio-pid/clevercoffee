@@ -181,11 +181,11 @@ void Displaymachinestate() {
 
             if (MQTT == 1) {
                 if (mqtt.connected() == 1) {
-                    u8g2.setCursor(77, 1);
+                    u8g2.setCursor(60, 1);
                     u8g2.setFont(u8g2_font_profont11_tf);
                     u8g2.print("MQTT");
                 } else {
-                    u8g2.setCursor(77, 2);
+                    u8g2.setCursor(60, 2);
                     u8g2.print("");
                 }
             }
