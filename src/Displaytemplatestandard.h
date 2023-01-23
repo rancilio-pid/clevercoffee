@@ -2,7 +2,11 @@
  * @file Displaytemplatestandard.h
  *
  * @brief Standard display template
+ *
  */
+
+#pragma once
+
 
 /**
  * @brief Send data to display
@@ -39,7 +43,7 @@ void printScreen()
         u8g2.drawLine(16, 60, (pidOutput / 10) + 16, 60);
         u8g2.drawLine(15, 61, 117, 61);
 
-        // draw current temp in icon
+        // Draw current temp in icon
         if (fabs(temperature  - setPoint) < 0.3) {
             if (isrCounter < 500) {
                 u8g2.drawLine(9, 48, 9, 58 - (temperature  / 2));
@@ -62,28 +66,22 @@ void printScreen()
             u8g2.drawLine(13, 48, 13, 58 - (temperature  / 2));
         }
 
-        //draw setPoint line
+        // draw setPoint line
         u8g2.drawLine(18, 58 - (setPoint / 2), 23, 58 - (setPoint / 2));
 
-        // PID values over heat bar, TOF if active
-    #if TOF == 1
-        if (percentage < 10.00) {
-            if (isrCounter < 500) {
-                u8g2.setCursor(40, 48);
-                u8g2.print(langstring_waterempty);
-            }
-        }
-    #else
+        // PID values over heat bar
         u8g2.setCursor(40, 48);
 
         u8g2.print(bPID.GetKp(), 0); // P
         u8g2.print("|");
+
         if (bPID.GetKi() != 0) {
             u8g2.print(bPID.GetKp() / bPID.GetKi(), 0);;
         } // I
         else {
             u8g2.print("0");
         }
+
         u8g2.print("|");
         u8g2.print(bPID.GetKd() / bPID.GetKp(), 0); // D
         u8g2.setCursor(98, 48);
@@ -93,12 +91,13 @@ void printScreen()
         } else {
             u8g2.print(pidOutput / 10, 0);
         }
+
         u8g2.print("%");
-    #endif
 
         // Brew time or uptime
         u8g2.setCursor(32, 34);
-        // Shotimer shown if machine is brewing and after the brew 
+
+        // Shot timer shown if machine is brewing and after the brew
         if (machineState == kBrew || machineState == kShotTimerAfterBrew) {
             //show shot time
             u8g2.print(langstring_brew);
@@ -106,29 +105,29 @@ void printScreen()
             u8g2.print("/");
 
             if (ONLYPID == 1) {
-                u8g2.print(brewtimesoftware, 0);       // deactivate if only pid without preinfusion
+                u8g2.print(brewtimesoftware, 0); // Deactivate if only pid without preinfusion
             }
             else {
-                u8g2.print(totalBrewTime / 1000, 1);    // activate if pre-infusion and one decimal place or alternatively none
+                u8g2.print(totalBrewTime / 1000, 1); // Activate if pre-infusion and one decimal place or alternatively none
             }
         } else {
-            //show uptime of machine
+            // Show uptime of machine
             u8g2.print(langstring_uptime);
             float seconds = millis() / 1000;
             int hours = seconds / 3600;
             int minutes = (seconds - hours * 60 * 60) / 60;
 
-            //print hours and minutes
+            // Print hours and minutes
             u8g2.print(hours);
             u8g2.print("h ");
             u8g2.print(minutes);
             u8g2.print("m");
         }
 
-        //draw box
+        // Draw box
         u8g2.drawFrame(0, 0, 128, 64);
 
-        // Für Statusinfos
+        // For status info
         u8g2.drawFrame(32, 0, 128, 12);
 
         if (offlineMode == 0) {
@@ -160,12 +159,6 @@ void printScreen()
             u8g2.setCursor(40, 1);
             u8g2.print(langstring_offlinemode);
         }
-
-    #if TOF == 1
-        u8g2.setCursor(105, 1);
-        u8g2.printf("%.0f\n", percentage);   //display water level
-        u8g2.print((char)37);
-    #endif
 
         u8g2.sendBuffer();
     }

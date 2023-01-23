@@ -1,11 +1,11 @@
 /**
  * @file PeriodicTrigger.h
  *
- * @brief
+ * @brief TODO
+ *
  */
 
-#ifndef PeriodicTrigger_h
-#define PeriodicTrigger_h
+#pragma once
 
 class PeriodicTrigger {
  public:
@@ -20,4 +20,3 @@ class PeriodicTrigger {
     unsigned long m_tref;
 };
 
-#endif

@@ -1,8 +1,11 @@
 /**
  * @file brewscaleini.h
  *
- * @brief
+ * @brief TODO
+ *
  */
+
+#pragma once
 
 // Analog Input
 #if PINBREWSWITCH == 0

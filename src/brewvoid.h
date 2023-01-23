@@ -1,21 +1,25 @@
 /**
  * @file brewvoid.h
  *
- * @brief
+ * @brief TODO
+ *
  */
+
+#pragma once
+
 
 /**
  * @brief Digtalswitch OR Read analog input pin for BREW SWITCH
  */
 void checkbrewswitch() {
     #if BREWSWITCHTYPE == 1
-        #if (PINBREWSWITCH > 0)
+        #if (PIN_BREWSWITCH > 0)
             // Digital GIPO
-            brewswitch = digitalRead(PINBREWSWITCH);
+            brewswitch = digitalRead(PIN_BREWSWITCH);
         #endif
 
         // Digital Analog
-        #if (PINBREWSWITCH == 0)
+        #if (PIN_BREWSWITCH == 0)
             unsigned long currentMillistemp = millis();
 
             if (currentMillistemp - previousMillistempanalogreading >= analogreadingtimeinterval) {
@@ -32,9 +36,9 @@ void checkbrewswitch() {
         #endif
     #endif
 
-    #if BREWSWITCHTYPE == 2  // TRIGGER
-        #if (PINBREWSWITCH > 0)
-            int reading = digitalRead(PINBREWSWITCH);
+    #if BREWSWITCHTYPE == 2
+        #if (PIN_BREWSWITCH > 0)
+            int reading = digitalRead(PIN_BREWSWITCH);
 
             if (reading != brewswitchTrigger) {
                 // reset the debouncing timer
@@ -52,11 +56,10 @@ void checkbrewswitch() {
             }
 
             brewswitchTrigger = reading;
-           // debugPrintln(brewswitchTrigger);
         #endif
 
         // Digital Analog
-        #if (PINBREWSWITCH == 0)
+        #if (PIN_BREWSWITCH == 0)
             unsigned long currentMillistemp = millis();
 
             if (currentMillistemp - previousMillistempanalogreading >= analogreadingtimeinterval) {
@@ -72,7 +75,7 @@ void checkbrewswitch() {
             }
         #endif
 
-        // Triggersignal umsetzen in brewswitch
+        // Convert trigger signal to brew switch state
         switch (brewswitchTriggerCase) {
             case 10:
                 if (brewswitchTrigger == HIGH) {
@@ -83,7 +86,7 @@ void checkbrewswitch() {
                 break;
 
             case 20:
-                // only one push, brew
+                // Only one push, brew
                 if (brewswitchTrigger == LOW) {
                     // Brew trigger
                     brewswitch = HIGH;
@@ -93,15 +96,14 @@ void checkbrewswitch() {
 
                 // Button more than one 1sec pushed
                 if (brewswitchTrigger == HIGH && (brewswitchTriggermillis + 1000 <= millis())) {
-                    // DO something
                     debugPrintln("brewswitchTriggerCase 20: Manual Trigger - brewing");
                     brewswitchTriggerCase = 31;
-                    digitalWrite(PINVALVE, relayON);
-                    digitalWrite(PINPUMP, relayON);
+                    digitalWrite(PIN_VALVE, relayON);
+                    digitalWrite(PIN_PUMP, relayON);
                 }
                 break;
             case 30:
-                // Stop Brew trigger (one push) brewswitch == HIGH
+                // Stop brew trigger (one push) brewswitch == HIGH
                 if ((brewswitchTrigger == HIGH && brewswitch == HIGH) || (machineState == kShotTimerAfterBrew) ) {
                     brewswitch = LOW;
                     brewswitchTriggerCase = 40;
@@ -115,8 +117,8 @@ void checkbrewswitch() {
                     brewswitchTriggerCase = 40;
                     brewswitchTriggermillis = millis();
                     debugPrintln("brewswitchTriggerCase 31: Manual Trigger - brewing stop");
-                    digitalWrite(PINVALVE, relayOFF);
-                    digitalWrite(PINPUMP, relayOFF);
+                    digitalWrite(PIN_VALVE, relayOFF);
+                    digitalWrite(PIN_PUMP, relayOFF);
                 }
             break;
 
@@ -134,12 +136,13 @@ void checkbrewswitch() {
     #endif
 }
 
+
 /**
  * @brief Backflush
  */
 void backflush() {
     if (backflushState != 10 && backflushON == 0) {
-        backflushState = 43;  // force reset in case backflushON is reset during backflush!
+        backflushState = 43;  // Force reset in case backflushON is reset during backflush!
     } else if (offlineMode == 1 || brewcounter > kBrewIdle || maxflushCycles <= 0 || backflushON == 0) {
         return;
     }
@@ -150,15 +153,15 @@ void backflush() {
         pidOutput = 0;
     }
 
-    digitalWrite(PINHEATER, LOW);  // Stop heating
+    digitalWrite(PIN_HEATER, LOW);  // Stop heating
 
     checkbrewswitch();
 
-    if (brewswitch == LOW && backflushState > 10) {  // abort function for state machine from every state
+    if (brewswitch == LOW && backflushState > 10) {  // Abort function for state machine from every state
         backflushState = 43;
     }
 
-    // state machine for brew
+    // State machine for brew
     switch (backflushState) {
         case 10:  // waiting step for brew switch turning on
             if (brewswitch == HIGH && backflushON) {
@@ -170,8 +173,8 @@ void backflush() {
 
         case 20:  // portafilter filling
             debugPrintln("portafilter filling");
-            digitalWrite(PINVALVE, relayON);
-            digitalWrite(PINPUMP, relayON);
+            digitalWrite(PIN_VALVE, relayON);
+            digitalWrite(PIN_PUMP, relayON);
             backflushState = 21;
 
             break;
@@ -186,8 +189,8 @@ void backflush() {
 
         case 30:  // flushing
             debugPrintln("flushing");
-            digitalWrite(PINVALVE, relayOFF);
-            digitalWrite(PINPUMP, relayOFF);
+            digitalWrite(PIN_VALVE, relayOFF);
+            digitalWrite(PIN_PUMP, relayOFF);
             flushCycles++;
             backflushState = 31;
 
@@ -206,8 +209,8 @@ void backflush() {
         case 43:  // waiting for brewswitch off position
             if (brewswitch == LOW) {
                 debugPrintln("backflush finished");
-                digitalWrite(PINVALVE, relayOFF);
-                digitalWrite(PINPUMP, relayOFF);
+                digitalWrite(PIN_VALVE, relayOFF);
+                digitalWrite(PIN_PUMP, relayOFF);
                 flushCycles = 0;
                 backflushState = 10;
             }
@@ -215,6 +218,7 @@ void backflush() {
             break;
     }
 }
+
 
 #if (BREWMODE == 1)  // normal brew mode (based on time)
 /**
@@ -264,8 +268,8 @@ void brew() {
 
             case kPreinfusion:  // preinfusioon
                 debugPrintln("Preinfusion");
-                digitalWrite(PINVALVE, relayON);
-                digitalWrite(PINPUMP, relayON);
+                digitalWrite(PIN_VALVE, relayON);
+                digitalWrite(PIN_PUMP, relayON);
                 brewcounter = kWaitPreinfusion;
 
                 break;
@@ -279,8 +283,8 @@ void brew() {
 
             case kPreinfusionPause:  // preinfusion pause
                 debugPrintln("Preinfusion pause");
-                digitalWrite(PINVALVE, relayON);
-                digitalWrite(PINPUMP, relayOFF);
+                digitalWrite(PIN_VALVE, relayON);
+                digitalWrite(PIN_PUMP, relayOFF);
                 brewcounter = kWaitPreinfusionPause;
 
                 break;
@@ -294,8 +298,8 @@ void brew() {
 
             case kBrewRunning:  // brew running
                 debugPrintln("Brew started");
-                digitalWrite(PINVALVE, relayON);
-                digitalWrite(PINPUMP, relayON);
+                digitalWrite(PIN_VALVE, relayON);
+                digitalWrite(PIN_PUMP, relayON);
                 brewcounter = kWaitBrew;
 
                 break;
@@ -311,8 +315,8 @@ void brew() {
 
             case kBrewFinished:  // brew finished
                 debugPrintln("Brew stopped");
-                digitalWrite(PINVALVE, relayOFF);
-                digitalWrite(PINPUMP, relayOFF);
+                digitalWrite(PIN_VALVE, relayOFF);
+                digitalWrite(PIN_PUMP, relayOFF);
                 brewcounter = kWaitBrewOff;
                 timeBrewed = 0;
 
@@ -320,8 +324,8 @@ void brew() {
 
             case kWaitBrewOff:  // waiting for brewswitch off position
                 if (brewswitch == LOW) {
-                    digitalWrite(PINVALVE, relayOFF);
-                    digitalWrite(PINPUMP, relayOFF);
+                    digitalWrite(PIN_VALVE, relayOFF);
+                    digitalWrite(PIN_PUMP, relayOFF);
 
                     // disarmed button
                     currentMillistemp = 0;
@@ -335,6 +339,7 @@ void brew() {
     }
 }
 #endif
+
 
 #if (BREWMODE == 2)
 /**
@@ -384,8 +389,8 @@ void brew() {
 
             case 20:  // preinfusioon
                 debugPrintln("Preinfusion");
-                digitalWrite(PINVALVE, relayON);
-                digitalWrite(PINPUMP, relayON);
+                digitalWrite(PIN_VALVE, relayON);
+                digitalWrite(PIN_PUMP, relayON);
                 brewcounter = kWaitPreinfusion;
 
                 break;
@@ -399,8 +404,8 @@ void brew() {
 
             case 30:  // preinfusion pause
                 debugPrintln("preinfusion pause");
-                digitalWrite(PINVALVE, relayON);
-                digitalWrite(PINPUMP, relayOFF);
+                digitalWrite(PIN_VALVE, relayON);
+                digitalWrite(PIN_PUMP, relayOFF);
                 brewcounter = kWaitPreinfusionPause;
 
                 break;
@@ -414,8 +419,8 @@ void brew() {
 
             case 40:  // brew running
                 debugPrintln("Brew started");
-                digitalWrite(PINVALVE, relayON);
-                digitalWrite(PINPUMP, relayON);
+                digitalWrite(PIN_VALVE, relayON);
+                digitalWrite(PIN_PUMP, relayON);
                 brewcounter = kWaitBrew;
 
                 break;
@@ -433,16 +438,16 @@ void brew() {
 
             case 42:  // brew finished
                 debugPrintln("Brew stopped");
-                digitalWrite(PINVALVE, relayOFF);
-                digitalWrite(PINPUMP, relayOFF);
+                digitalWrite(PIN_VALVE, relayOFF);
+                digitalWrite(PIN_PUMP, relayOFF);
                 brewcounter = kWaitBrewOff;
 
                 break;
 
             case 43:  // waiting for brewswitch off position
                 if (brewswitch == LOW) {
-                    digitalWrite(PINVALVE, relayOFF);
-                    digitalWrite(PINPUMP, relayOFF);
+                    digitalWrite(PIN_VALVE, relayOFF);
+                    digitalWrite(PIN_PUMP, relayOFF);
 
                     // disarmed button
                     currentMillistemp = 0;
