@@ -22,7 +22,6 @@
 
 #include <WiFiManager.h>
 #include <U8g2lib.h>            // i2c display
-#include "TSIC.h"               // old library for TSIC temp sensor
 #include <ZACwire.h>            // new TSIC bus library
 #include "PID_v1.h"             // for PID calculation
 
