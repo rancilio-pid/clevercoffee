@@ -59,7 +59,7 @@ void serverSetup();
 void setEepromWriteFcn(int (*fcnPtr)(void));
 
 // editable vars are specified in main.cpp
-#define EDITABLE_VARS_LEN 28
+#define EDITABLE_VARS_LEN 30
 extern std::map<String, editable_t> editableVars;
 
 
@@ -327,10 +327,7 @@ void serverSetup() {
             writeSysParamsToMQTT();
 
         } else if (request->method() == 1) {  //WebRequestMethod enum -> HTTP_GET
-            //return all params as json
-            DynamicJsonDocument doc(JSON_ARRAY_SIZE(1) + JSON_OBJECT_SIZE(9+4) * EDITABLE_VARS_LEN);
-
-            //get parameter id from frst parameter, e.g. /parameters?param=PID_ON
+            // get parameter id from frst parameter, e.g. /parameters?param=PID_ON
             int paramCount = request->params();
             String paramId = paramCount > 0 ? request->getParam(0)->value() : "";
 

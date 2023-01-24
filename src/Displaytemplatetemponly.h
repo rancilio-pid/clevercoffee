@@ -15,7 +15,7 @@ float blinkingtempoffset = 0.3;  // offset for blinking
  * @brief Send data to display
  */
 void printScreen() {
-    if ((machineState == kBelowSetPoint || machineState == kPidNormal || machineState == kBrewDetectionTrailing) ||
+    if ((machineState == kBelowSetpoint || machineState == kPidNormal || machineState == kBrewDetectionTrailing) ||
         ((machineState == kBrew || machineState == kShotTimerAfterBrew) && SHOTTIMER == 0) ||  // shottimer == 0, auch Bezug anzeigen
         machineState == kCoolDown || ((machineState == kInit || machineState == kColdStart) && HEATINGLOGO == 0) ||
         ((machineState == kPidOffline) && OFFLINEGLOGO == 0)) {
@@ -24,8 +24,8 @@ void printScreen() {
             u8g2.clearBuffer();
 
             // draw (blinking) temp
-            if ((fabs(temperature - setPoint) < blinkingtempoffset && blinkingtemp == 0) ||
-                (fabs(temperature - setPoint) >= blinkingtempoffset && blinkingtemp == 1)) {
+            if ((fabs(temperature - setpoint) < blinkingtempoffset && blinkingtemp == 0) ||
+                (fabs(temperature - setpoint) >= blinkingtempoffset && blinkingtemp == 1)) {
                 if (isrCounter < 500) {
                     if (temperature < 99.999) {
                         u8g2.setCursor(13, 12);
