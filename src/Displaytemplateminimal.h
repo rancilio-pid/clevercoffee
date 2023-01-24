@@ -11,7 +11,7 @@
  * @brief Send data to display
  */
 void printScreen() {
-    if ((machineState == kBelowSetPoint || machineState == kPidNormal || machineState == kBrewDetectionTrailing) ||
+    if ((machineState == kBelowSetpoint || machineState == kPidNormal || machineState == kBrewDetectionTrailing) ||
         ((machineState == kBrew || machineState == kShotTimerAfterBrew) && SHOTTIMER == 0) || // shottimer == 0, auch Bezug anzeigen
         machineState == kCoolDown || ((machineState == kColdStart) && HEATINGLOGO == 0) || ((machineState == kPidOffline) && OFFLINEGLOGO == 0))
     {
@@ -34,14 +34,14 @@ void printScreen() {
                 numDecimalsInput = 0;
             }
 
-            int numDecimalsSetPoint = 1;
+            int numDecimalsSetpoint = 1;
 
-            if (setPoint > 99.999) {
-                numDecimalsSetPoint = 0;
+            if (setpoint > 99.999) {
+                numDecimalsSetpoint = 0;
             }
 
             //draw (blinking) temp
-            if (fabs(temperature - setPoint) < 0.3) {
+            if (fabs(temperature - setpoint) < 0.3) {
                 if (isrCounter < 500) {
                     // limit to 4 characters
                     u8g2.setCursor(2, 2);
@@ -51,7 +51,7 @@ void printScreen() {
                     u8g2.print(char(78));
                     u8g2.setCursor(78, 2);
                     u8g2.setFont(u8g2_font_profont22_tf);
-                    u8g2.print(setPoint, numDecimalsSetPoint);
+                    u8g2.print(setpoint, numDecimalsSetpoint);
                 }
             } else {
                 u8g2.setCursor(2, 2);
@@ -68,7 +68,7 @@ void printScreen() {
 
                 u8g2.setCursor(79, 2);
                 u8g2.setFont(u8g2_font_profont22_tf);
-                u8g2.print(setPoint, numDecimalsSetPoint);
+                u8g2.print(setpoint, numDecimalsSetpoint);
             }
 
             if (brewcounter > kBrewIdle) {

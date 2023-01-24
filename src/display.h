@@ -267,7 +267,7 @@ void Displaymachinestate() {
         u8g2.print("C");
         u8g2.setCursor(32, 34);
         u8g2.print("Soll:  ");
-        u8g2.print(setPoint, 1);
+        u8g2.print(setpoint, 1);
         u8g2.print(" ");
         u8g2.print((char)176);
         u8g2.print("C");

@@ -2,7 +2,7 @@
     <script src="https://unpkg.com/@chenfengyuan/vue-number-input@2/dist/vue-number-input.js"></script>
 
     %VAR_HEADER_PLOTLY%
-    
+
     <script type="module">
         if (window.appCreated == true) {
             vueApp.component(VueNumberInput.name, VueNumberInput);
@@ -30,9 +30,9 @@
                                 <label class="form-label me-1 col-form-label">Current Temperature</label><br/>
                                 <b><span id="varTEMP"></span> °C</b>
                             </div>
-                                    
+
                             <template v-for="param in parameters">
-                                <template v-if="param.name == 'BREW_SET_POINT'">
+                                <template v-if="param.name == 'BREW_SETPOINT'">
                                     <div class="col-md-4">
                                         <label class="form-label me-1 col-form-label" :for="'var'+param.name">{{param.displayName}}</label>
                                         <template v-if="param.hasHelpText">
@@ -55,7 +55,7 @@
                     </form>
                 </div>
             </div>
-            
+
             <div class="card card-accent-dark mb-5 pb-0 shadow-sm rounded">
                 <div class="card-body bg-light pb-1 rounded">
                     <h5 class="card-title">
@@ -105,7 +105,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="card card-accent-dark mb-5 shadow-sm rounded">
                 <div class="card-body bg-light pb-1 rounded">
                     <h5 class="card-title">
