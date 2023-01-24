@@ -59,7 +59,7 @@ void serverSetup();
 void setEepromWriteFcn(int (*fcnPtr)(void));
 
 // editable vars are specified in main.cpp
-#define EDITABLE_VARS_LEN 30
+#define EDITABLE_VARS_LEN 26
 extern std::map<String, editable_t> editableVars;
 
 
@@ -87,7 +87,7 @@ String getTempString() {
     return jsonTemps;
 }
 
-//proper modulo function (% is remainder, so will return negatives)
+// proper modulo function (% is remainder, so will return negatives)
 int mod(int a, int b) {
     int r = a % b;
     return r < 0 ? r + b : r;
@@ -141,8 +141,9 @@ void paramToJson(String name, editable_t &e, DynamicJsonDocument &doc) {
     } else if (e.type == kDouble || e.type == kDoubletime) {
         paramObj["value"] = round2(*(double *)e.ptr);
     } else if (e.type == kCString) {
-        paramObj["value"] = String((char *)e.ptr);
+        paramObj["value"] = (char *)e.ptr;
     }
+
     paramObj["min"] = e.minValue;
     paramObj["max"] = e.maxValue;
 }
@@ -276,8 +277,9 @@ void serverSetup() {
             docLength = std::min(requestParams, EDITABLE_VARS_LEN);
         }
 
-        DynamicJsonDocument doc(JSON_STRING_SIZE(262) + JSON_ARRAY_SIZE(docLength) +
-                                JSON_OBJECT_SIZE(9 + 1) * docLength);
+        DynamicJsonDocument doc(JSON_ARRAY_SIZE(EDITABLE_VARS_LEN)  // array EDITABLE_VARS_LEN with parameters
+            + JSON_OBJECT_SIZE(9) * EDITABLE_VARS_LEN               // object with 9 values per parameter
+            + JSON_STRING_SIZE(25 + 30) * EDITABLE_VARS_LEN);       // string size for templateString and displayName
 
         if (request->method() == 2) {   // method() returns values from WebRequestMethod enum -> 2 == HTTP_POST
             // returns values from WebRequestMethod enum -> 2 == HTTP_POST
@@ -326,8 +328,8 @@ void serverSetup() {
             // Write the new values to MQTT
             writeSysParamsToMQTT();
 
-        } else if (request->method() == 1) {  //WebRequestMethod enum -> HTTP_GET
-            // get parameter id from frst parameter, e.g. /parameters?param=PID_ON
+        } else if (request->method() == 1) {  // WebRequestMethod enum -> HTTP_GET
+            // get parameter id from first parameter, e.g. /parameters?param=PID_ON
             int paramCount = request->params();
             String paramId = paramCount > 0 ? request->getParam(0)->value() : "";
 
