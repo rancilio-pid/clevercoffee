@@ -1427,13 +1427,13 @@ void setup() {
     //#9
     editableVars["STEAM_KP"] = {F("Steam Kp"), true, F("Proportional gain for the steaming mode (I or D are not used)"), kDouble, sPIDSection, 9, []{ return true; }, PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, (void *)&steamKp};
     //#10
-    editableVars["STEAM_SETPOINT"] = {F("Steam Set point (°C)"), true, F("The temperature that the PID will use for steam mode"), kDouble, sTempSection, 10, []{ return true; }, STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, (void *)&steamSetpoint};
+    editableVars["TEMP"] = {F("Temperature"), false, "", kDouble, sPIDSection, 10, []{ return false; }, 0, 200, (void *)&temperature};
     //#11
-    editableVars["TEMP"] = {F("Temperature"), false, "", kDouble, sPIDSection, 11, []{ return false; }, 0, 200, (void *)&temperature};
+    editableVars["BREW_SETPOINT"] = {F("Set point (°C)"), true, F("The temperature that the PID will attempt to reach and hold"), kDouble, sTempSection, 11, []{ return true; }, BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, (void *)&brewSetpoint};
     //#12
-    editableVars["BREW_SETPOINT"] = {F("Set point (°C)"), true, F("The temperature that the PID will attempt to reach and hold"), kDouble, sTempSection, 12, []{ return true; }, BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, (void *)&brewSetpoint};
+    editableVars["BREW_TEMP_OFFSET"] = {F("Offset (°C)"), true, F("Optional offset that is added to the user-visible setpoint. Can be used to compensate sensor offsets and the average temperature loss between boiler and group so that the setpoint represents the approximate brew temperature."), kDouble, sTempSection, 12, []{ return true; }, BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, (void *)&brewTempOffset};
     //#13
-    editableVars["BREW_TEMP_OFFSET"] = {F("Offset (°C)"), true, F("Optional offset that is added to the user-visible setpoint. Can be used to compensate sensor offsets and the average temperature loss between boiler and group so that the setpoint represents the approximate brew temperature."), kDouble, sTempSection, 13, []{ return true; }, BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, (void *)&brewTempOffset};
+    editableVars["STEAM_SETPOINT"] = {F("Steam Set point (°C)"), true, F("The temperature that the PID will use for steam mode"), kDouble, sTempSection, 13, []{ return true; }, STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, (void *)&steamSetpoint};
     //#14
     editableVars["BREW_TIME"] = {F("Brew Time (s)"), true, F("Stop brew after this time"), kDouble, sTempSection, 14, []{ return true && ONLYPID == 0; }, BREW_TIME_MIN, BREW_TIME_MAX, (void *)&brewtime};
     //#15
