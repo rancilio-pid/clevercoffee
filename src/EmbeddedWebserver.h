@@ -327,8 +327,6 @@ void serverSetup() {
             writeSysParamsToMQTT();
 
         } else if (request->method() == 1) {  //WebRequestMethod enum -> HTTP_GET
-            //return all params as json
-            DynamicJsonDocument doc(JSON_ARRAY_SIZE(1) + JSON_OBJECT_SIZE(9+4) * EDITABLE_VARS_LEN);
 
             //get parameter id from frst parameter, e.g. /parameters?param=PID_ON
             int paramCount = request->params();
