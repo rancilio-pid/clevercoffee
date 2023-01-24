@@ -843,6 +843,8 @@ float filterPressureValue(float input) {
 /**
  * @brief steamON & Quickmill
  */
+if (STEAMMODE == 1) {
+
 void checkSteamON() {
     // check digital GIPO
     if (digitalRead(PIN_STEAMSWITCH) == HIGH) {
@@ -873,7 +875,7 @@ void checkSteamON() {
         setPoint = brewSetPoint;
     }
 }
-
+}
 void setEmergencyStopTemp() {
     if (machineState == kSteam || machineState == kCoolDown) {
         if (EmergencyStopTemp != 145) EmergencyStopTemp = 145;
@@ -1425,7 +1427,7 @@ void setup() {
     //#8
     editableVars["PID_I_MAX"] = {F("PID Integrator Max"), true, F("Internal integrator limit to prevent windup (in Watts). This will allow the integrator to only grow to the specified value. This should be approximally equal to the output needed to hold the temperature after the setpoint has been reached and is depending on machine type and whether the boiler is insulated or not."), kDouble, sPIDSection, 8, []{ return true; }, PID_I_MAX_REGULAR_MIN, PID_I_MAX_REGULAR_MAX, (void *)&aggIMax};
     //#9
-    editableVars["STEAM_KP"] = {F("Steam Kp"), true, F("Proportional gain for the steaming mode (I or D are not used)"), kDouble, sPIDSection, 9, []{ return true; }, PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, (void *)&steamKp};
+    editableVars["STEAM_KP"] = {F("Steam Kp"), true, F("Proportional gain for the steaming mode (I or D are not used)"), kDouble, sPIDSection, 9, []{ return true && STEAMMODE == 1; }, PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, (void *)&steamKp};
     //#10
     editableVars["TEMP"] = {F("Temperature"), false, "", kDouble, sPIDSection, 10, []{ return false; }, 0, 200, (void *)&temperature};
     //#11
@@ -1453,7 +1455,7 @@ void setup() {
     //#22
     editableVars["PID_BD_BREWSENSITIVITY"] = {F("PID BD Sensitivity"), true, F("Software brew detection sensitivity that looks at average temperature, <a href='https://manual.rancilio-pid.de/de/customization/brueherkennung.html' target='_blank'>Details</a>. Needs to be &gt;0 also for Hardware switch detection."), kDouble, sBDSection, 22, []{ return true && BREWDETECTION == 1; }, BD_THRESHOLD_MIN, BD_THRESHOLD_MAX, (void *)&brewSensitivity};
     //#23
-    editableVars["STEAM_MODE"] = {F("Steam Mode"), false, "", kUInt8, sOtherSection, 23, []{ return false; }, 0, 1, (void *)&steamON};
+    editableVars["STEAM_MODE"] = {F("Steam Mode"), false, "", kUInt8, sOtherSection, 23, []{ return false && STEAMMODE == 1;  }, 0, 1, (void *)&steamON};
     //#24
     editableVars["BACKFLUSH_ON"] = {F("Backflush"), false, "", kUInt8, sOtherSection, 24, []{ return false; }, 0, 1, (void *)&backflushON};
     //#25
@@ -1487,10 +1489,15 @@ void setup() {
     pinMode(PIN_VALVE, OUTPUT);
     pinMode(PIN_PUMP, OUTPUT);
     pinMode(PIN_HEATER, OUTPUT);
-    pinMode(PIN_STEAMSWITCH, INPUT);
     digitalWrite(PIN_VALVE, relayOFF);
     digitalWrite(PIN_PUMP, relayOFF);
     digitalWrite(PIN_HEATER, LOW);
+
+    // IF STEAMSWITCH is connected
+  if (STEAMMODE == 1) {
+    pinMode(PIN_STEAMSWITCH, INPUT);
+    pinMode(PIN_STEAMSWITCH, INPUT_PULLDOWN);
+    }
 
     // IF POWERSWITCH is connected
     if (POWERSWITCHTYPE > 0) {
@@ -1506,8 +1513,6 @@ void setup() {
     if (PIN_BREWSWITCH > 0) {
         pinMode(PIN_BREWSWITCH, INPUT_PULLDOWN);
     }
-
-    pinMode(PIN_STEAMSWITCH, INPUT_PULLDOWN);
 
     #if OLED_DISPLAY != 0
         u8g2.setI2CAddress(oled_i2c * 2);
