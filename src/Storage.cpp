@@ -56,9 +56,9 @@ typedef struct __attribute__((packed)) {
     uint8_t freeToUse14[2];
     char wifiSSID[25 + 1];
     char wifiPassword[25 + 1];
-    double weightsetpoint;
+    double weightSetpoint;
     double steamkp;
-    double steamsetpoint;
+    double steamSetpoint;
 } sto_data_t;
 
 // set item defaults
@@ -238,15 +238,15 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
             break;
 
          case STO_ITEM_WEIGHTSETPOINT:
-            addr = offsetof(sto_data_t,weightsetpoint );
-            size = STRUCT_MEMBER_SIZE(sto_data_t,weightsetpoint);
+            addr = offsetof(sto_data_t,weightSetpoint );
+            size = STRUCT_MEMBER_SIZE(sto_data_t,weightSetpoint);
             break;
 
         case STO_ITEM_STEAM_SETPOINT:
-            addr = offsetof(sto_data_t,steamsetpoint );
-            size = STRUCT_MEMBER_SIZE(sto_data_t,steamsetpoint);
+            addr = offsetof(sto_data_t,steamSetpoint );
+            size = STRUCT_MEMBER_SIZE(sto_data_t,steamSetpoint);
             break;
-            
+
         default:
             debugPrintf("%s(): invalid item ID %i!\n", __func__, itemId);
             addr = -1;
