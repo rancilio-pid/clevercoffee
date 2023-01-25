@@ -46,7 +46,7 @@ void initScale() {
     u8g2.drawStr(0, 2, "Taring scale,");
     u8g2.drawStr(0, 12, "remove any load!");
     
-    if (fabs(scaleCalibration - 1) < 0.00001) {
+    if (scaleCalibration - 1) < 0.00001) {
         u8g2.drawStr(0, 22, "Calibration coming up");
         calibration = true;
     }
@@ -79,7 +79,7 @@ void initScale() {
             LoadCell.refreshDataSet();
             float newCalibrationValue = LoadCell.getNewCalibration(scaleKnownWeight);
             LoadCell.setCalFactor(newCalibrationValue);
-            scaleCalibration = newCalibrationValue;
+            scaleCalibration = (double) newCalibrationValue;
             u8g2.clearBuffer();
             u8g2.drawStr(0, 2, "Calibration done.");
             u8g2.drawStr(0, 12, "New Calibration factor:");
@@ -89,13 +89,13 @@ void initScale() {
             delay(5000);
         }
         else {
+            LoadCell.setCalFactor((float) scaleCalibration); // set calibration factor (float)
+            LoadCell.setSamplesInUse(SCALE_SAMPLES);
             u8g2.drawStr(0, 42, "done.");
             delay(2000);
             u8g2.sendBuffer();
         }
     }
-    LoadCell.setCalFactor(scaleCalibration); // set calibration factor (float)
-    LoadCell.setSamplesInUse(SCALE_SAMPLES);
 }
 
 /**
