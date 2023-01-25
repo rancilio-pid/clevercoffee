@@ -39,7 +39,7 @@ void sendInflux() {
         previousMillisInflux = currentMillisInflux;
         influxSensor.clearFields();
         influxSensor.addField("value", temperature);
-        influxSensor.addField("setPoint", setPoint);
+        influxSensor.addField("setpoint", setpoint);
         influxSensor.addField("HeaterPower", pidOutput);
         influxSensor.addField("Kp", bPID.GetKp());
         influxSensor.addField("Ki", bPID.GetKi());

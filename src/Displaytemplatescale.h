@@ -11,7 +11,7 @@
  * @brief Send data to display
  */
 void printScreen() {
-    if ((machineState == kBelowSetPoint || machineState == kPidNormal || machineState == kBrewDetectionTrailing) ||
+    if ((machineState == kBelowSetpoint || machineState == kPidNormal || machineState == kBrewDetectionTrailing) ||
         ((machineState == kBrew || machineState == kShotTimerAfterBrew) && SHOTTIMER == 0) ||  // shottimer == 0, auch Bezug anzeigen
         machineState == kCoolDown || ((machineState == kInit || machineState == kColdStart) &&
         HEATINGLOGO == 0) || ((machineState == kPidOffline) && OFFLINEGLOGO == 0))
@@ -24,7 +24,7 @@ void printScreen() {
         u8g2.print(temperature, 1);
 
         u8g2.print("/");
-        u8g2.print(setPoint, 1);
+        u8g2.print(setpoint, 1);
 
         // Draw heat bar
         u8g2.drawLine(15, 58, 117, 58);
@@ -36,7 +36,7 @@ void printScreen() {
         u8g2.drawLine(15, 61, 117, 61);
 
         // draw current temp in icon
-        if (fabs(temperature - setPoint) < 0.3) {
+        if (fabs(temperature - setpoint) < 0.3) {
             if (isrCounter < 500) {
                 u8g2.drawLine(9, 48, 9, 58 - (temperature / 2));
                 u8g2.drawLine(10, 48, 10, 58 - (temperature / 2));
@@ -58,8 +58,8 @@ void printScreen() {
             u8g2.drawLine(13, 48, 13, 58 - (temperature / 2));
         }
 
-        // draw setPoint line
-        u8g2.drawLine(18, 58 - (setPoint / 2), 23, 58 - (setPoint / 2));
+        // draw setpoint line
+        u8g2.drawLine(18, 58 - (setpoint / 2), 23, 58 - (setpoint / 2));
 
         // Brew
         u8g2.setCursor(32, 34);

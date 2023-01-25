@@ -182,9 +182,9 @@ void writeSysParamsToMQTT(void) {
             mqtt_publish("status", (char *)"online");
 
             mqtt_publish("temperature", number2string(temperature));
-            mqtt_publish("brewSetPoint", number2string(brewSetPoint));
+            mqtt_publish("brewSetpoint", number2string(brewSetpoint));
             mqtt_publish("brewTempOffset", number2string(brewTempOffset));
-            mqtt_publish("steamSetPoint", number2string(steamSetPoint));
+            mqtt_publish("steamSetpoint", number2string(steamSetpoint));
             mqtt_publish("heaterPower", number2string(pidOutput));
             mqtt_publish("currentKp", number2string(bPID.GetKp()));
             mqtt_publish("currentKi", number2string(bPID.GetKi()));
