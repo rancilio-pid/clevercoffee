@@ -52,6 +52,11 @@ void debugPrintln(const char *message) {
     }
 }
 
+// Print to remote serial (e.g. using OTA Monitor Task ) if client is connected, otherwise use hardware serial
+void debugPrintln(const String& message) {
+    debugPrintln(message.c_str());
+}
+
 void debugPrint(const char *message) {
     char time[12];
     getCurrentTimeString(time);
@@ -62,6 +67,10 @@ void debugPrint(const char *message) {
         Serial.print(time);
         Serial.print(message);
     }
+}
+
+void debugPrint(const String& message) {
+    debugPrint(message.c_str());
 }
 
 size_t debugPrintf(const char *format, ...) {
