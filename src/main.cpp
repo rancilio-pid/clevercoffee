@@ -1503,9 +1503,7 @@ void setup() {
     if (BREWDETECTION == 3) {
         pinMode(PIN_BREWSWITCH, PINMODEVOLTAGESENSOR);
     }
-
-    // IF PINBREWSWITCH & Steam selected
-    if (PIN_BREWSWITCH > 0) {
+    else {
         pinMode(PIN_BREWSWITCH, INPUT_PULLDOWN);
     }
 
