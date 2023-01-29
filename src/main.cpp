@@ -15,6 +15,7 @@
 // Libraries
 #include <ArduinoOTA.h>
 #include <map>
+#include <LittleFS.h>
 
 #if TEMPSENSOR == 1
     #include <DallasTemperature.h>  // Library for dallas temp sensor
@@ -2003,6 +2004,10 @@ void setup() {
     setupDone = true;
 
     enableTimer1();
+
+    Serial.println("Filesystem overview:");
+    Serial.printf("- Bytes total:   %ld\n", LittleFS.totalBytes());
+    Serial.printf("- Bytes used: %ld\n\n", LittleFS.usedBytes());
 }
 
 
