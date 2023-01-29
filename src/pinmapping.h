@@ -42,8 +42,11 @@
 #define PIN_STATUSLED 26
 
 // Periphery
-#define PIN_ZEROCROSSING 18     // Dimmer circuit ZC
+#define PIN_ZC 18               // Dimmer circuit Zero Crossing
 #define PIN_PSM 19              // Dimmer circuit PSM
+#define PIN_ROTARY_DT 3         // Rotary encoder data pin
+#define PIN_ROTARY_CLK 4        // Rotary encoder clock pin
+#define PIN_ROTARY_SW 5         // Rotary encoder switch
 
 
 /**
