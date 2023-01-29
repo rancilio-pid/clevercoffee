@@ -44,7 +44,8 @@ typedef struct __attribute__((packed)) {
     double pidTvBd;
     uint8_t freeToUse9[2];
     double brewSwTimeSec;
-    uint8_t freeToUse10[2];
+    double brewPIDDelaySec; 
+    uint8_t freeToUse10;
     double brewDetectionThreshold;
     uint8_t freeToUse11;
     uint8_t useStartPonM;
@@ -63,22 +64,22 @@ typedef struct __attribute__((packed)) {
 
 // set item defaults
 static const sto_data_t itemDefaults PROGMEM = {
-    AGGKP,                    // STO_ITEM_PID_KP_REGULAR
-    {0xFF, 0xFF},             // reserved (maybe for structure version)
-    AGGTN,                    // STO_ITEM_PID_TN_REGULAR
-    0,                        // STO_ITEM_PID_ON
-    0xFF,                     // free to use
-    AGGTV,                    // STO_ITEM_PID_TV_REGULAR
-    AGGIMAX,                  // STO_ITEM_PID_I_MAX_REGULAR
-    0xFF,                     // free to use
-    SETPOINT,                 // STO_ITEM_BREW_SETPOINT
-    TEMPOFFSET,
-    0xFF,                     // free to use
-    BREW_TIME,                // STO_ITEM_BREW_TIME
-    {0xFF, 0xFF},             // free to use
-    PRE_INFUSION_TIME,        // STO_ITEM_PRE_INFUSION_TIME
-    {0xFF, 0xFF},             // free to use
-    PRE_INFUSION_PAUSE_TIME,  // STO_ITEM_PRE_INFUSION_PAUSE
+    AGGKP,                                    // STO_ITEM_PID_KP_REGULAR
+    {0xFF, 0xFF},                             // reserved (maybe for structure version)
+    AGGTN,                                    // STO_ITEM_PID_TN_REGULAR
+    0,                                        // STO_ITEM_PID_ON
+    0xFF,                                     // free to use
+    AGGTV,                                    // STO_ITEM_PID_TV_REGULAR
+    AGGIMAX,                                  // STO_ITEM_PID_I_MAX_REGULAR
+    0xFF,                                     // free to use
+    SETPOINT,                                 // STO_ITEM_BREW_SETPOINT
+    TEMPOFFSET,                               // STO_ITEM_BREW_TEMP_OFFSET
+    0xFF,                                     // free to use
+    BREW_TIME,                                // STO_ITEM_BREW_TIME
+    {0xFF, 0xFF},                             // free to use
+    PRE_INFUSION_TIME,                        // STO_ITEM_PRE_INFUSION_TIME
+    {0xFF, 0xFF},                             // free to use
+    PRE_INFUSION_PAUSE_TIME,                  // STO_ITEM_PRE_INFUSION_PAUSE
     {   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
         0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
         0xFF, 0xFF, 0xFF, 0xFF, 0xFF },       // free to use
@@ -90,21 +91,23 @@ static const sto_data_t itemDefaults PROGMEM = {
     AGGBTV,                                   // STO_ITEM_PID_TV_BD
     {0xFF, 0xFF},                             // free to use
     BREW_SW_TIME,                             // STO_ITEM_BREW_SW_TIME
-    {0xFF, 0xFF},                             // free to use
-    BREWSENSITIVITY,                          // STO_ITEM_BD_THRESHOLD
+    BREW_PID_DELAY,                           // STO_ITEM_BREW_PID_DELAY
+    0xFF,                                     // free to use
+    BD_SENSITIVITY,                           // STO_ITEM_BD_THRESHOLD
     0xFF,                                     // free to use
     0,                                        // STO_ITEM_USE_START_PON_M
     STARTKP,                                  // STO_ITEM_PID_KP_START
     {0xFF, 0xFF},                             // free to use
     0,                                        // STO_ITEM_SOFT_AP_ENABLED_CHECK
-    {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},  // free to use
-    STARTTN,       // STO_ITEM_PID_TN_START
-    {0xFF, 0xFF},  // free to use
-    "",            // STO_ITEM_WIFI_SSID
-    "",            // STO_ITEM_WIFI_PASSWORD
-    SCALE_WEIGHTSETPOINT,
-    STEAMKP,
-    STEAMSETPOINT
+    {0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0xFF, 0xFF, 0xFF, 0xFF},                  // free to use
+    STARTTN,                                  // STO_ITEM_PID_TN_START
+    {0xFF, 0xFF},                             // free to use
+    "",                                       // STO_ITEM_WIFI_SSID
+    "",                                       // STO_ITEM_WIFI_PASSWORD
+    SCALE_WEIGHTSETPOINT,                     // STO_ITEM_WEIGHTSETPOINT
+    STEAMKP,                                  // STO_ITEM_PID_KP_STEAM
+    STEAMSETPOINT                             // STO_ITEM_STEAM_SETPOINT
 };
 
 /**
@@ -167,6 +170,11 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
             size = STRUCT_MEMBER_SIZE(sto_data_t, preInfusionPauseMs);
             break;
 
+        case STO_ITEM_BREW_PID_DELAY:
+            addr = offsetof(sto_data_t, brewPIDDelaySec);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, brewPIDDelaySec);
+            break;
+
         case STO_ITEM_USE_BD_PID:
             addr = offsetof(sto_data_t, pidBdOn);
             size = STRUCT_MEMBER_SIZE(sto_data_t, pidBdOn);
@@ -191,7 +199,7 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
             addr = offsetof(sto_data_t, brewSwTimeSec);
             size = STRUCT_MEMBER_SIZE(sto_data_t, brewSwTimeSec);
             break;
-
+        
         case STO_ITEM_BD_THRESHOLD:
             addr = offsetof(sto_data_t, brewDetectionThreshold);
             size = STRUCT_MEMBER_SIZE(sto_data_t, brewDetectionThreshold);
