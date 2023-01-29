@@ -40,6 +40,11 @@ int writeSysParamsToStorage(void);
 #define PRE_INFUSION_PAUSE_TIME 5  // pre-infusion pause time in seconds
 #define SCALE_WEIGHTSETPOINT 30    // Target weight in grams
 
+// Backflush values
+#define FILLTIME 3000              // time in ms the pump is running
+#define FLUSHTIME 6000             // time in ms the 3-way valve is open -> backflush
+#define MAXFLUSHCYCLES 5           // number of cycles the backflush should run, 0 = disabled
+
 #define PID_KP_START_MIN 0
 #define PID_KP_START_MAX 350
 #define PID_TN_START_MIN 0
