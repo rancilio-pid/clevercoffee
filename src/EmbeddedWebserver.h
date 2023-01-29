@@ -159,35 +159,41 @@ String getHeader(String varName) {
     //but also make sure web server can handle this many concurrent requests (might crash)
     switch (str2int(varName.c_str())) {
         case (str2int("FONTAWESOME")):
-            #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
-                return F("<link href=\"/css/fontawesome-6.1.2.min.css\" rel=\"stylesheet\">");
+            #if NOINTERNET == 1
+                return F("<link href=\"/css/fontawesome-6.2.1.min.css\" rel=\"stylesheet\">");
             #else
-                return F("<link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css\">");
+                return F("<link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css\">");
             #endif
         case (str2int("BOOTSTRAP")):
-            #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
-                return F("<link href=\"/css/bootstrap-5.1.3.min.css\" rel=\"stylesheet\">");
+            #if NOINTERNET == 1
+                return F("<link href=\"/css/bootstrap-5.2.3.min.css\" rel=\"stylesheet\">");
             #else
-                return F("<link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css\" rel=\"stylesheet\" integrity=\"sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3\" crossorigin=\"anonymous\">");
+                return F("<link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css\" rel=\"stylesheet\" integrity=\"sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3\" crossorigin=\"anonymous\">");
             #endif
         case (str2int("BOOTSTRAP_BUNDLE")):
-            #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
-                return F("<script src=\"/js/bootstrap.bundle.5.1.3.min.js\" integrity=\"sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p\"></script>");
+            #if NOINTERNET == 1
+                return F("<script src=\"/js/bootstrap.bundle.5.2.3.min.js\" integrity=\"sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p\"></script>");
             #else
-                return F("<script src=\"https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js\" integrity=\"sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p\" crossorigin=\"anonymous\"></script>");
+                return F("<script src=\"https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js\" integrity=\"sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p\" crossorigin=\"anonymous\"></script>");
             #endif
         case (str2int("VUEJS")):
-            #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
-                return F("<script src=\"/js/vue.3.2.37.min.js\"></script>");
+            #if NOINTERNET == 1
+                return F("<script src=\"/js/vue.3.2.45.min.js\"></script>");
             #else
-                return F("<script src=\"https://cdn.jsdelivr.net/npm/vue@3.2/dist/vue.global.prod.min.js\"></script>");
+                return F("<script src=\"https://cdn.jsdelivr.net/npm/vue@3.2.45/dist/vue.global.prod.min.js\"></script>");
+            #endif
+        case (str2int("VUE_NUMBER_INPUT")):
+            #if NOINTERNET == 1
+                return F("<script src=\"/js/vue-number-input.min.js\"></script>");
+            #else
+                return F("<script src=\"https://unpkg.com/@chenfengyuan/vue-number-input@2.0.1/dist/vue-number-input.min.js\"></script>");
             #endif
         case (str2int("PLOTLY")):
-            //file is too large for flash mem on ESP8288, replace with chart.js?
-            //#if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
-            //    return F("<script src=\"/js/plotly-2.13.3.min.js\"></script>");
-            //#else
-                return F("<script src=\"https://cdn.plot.ly/plotly-basic-2.13.3.min.js\"></script>");
+            /*#if NOINTERNET == 1
+                //think about replacing this with e.g. chart.js or https://github.com/tradingview/lightweight-charts
+                return F("<script src=\"/js/plotly-basic-2.18.0.min.js\"></script>");
+            #else*/
+                return F("<script src=\"https://cdn.plot.ly/plotly-basic-2.18.0.min.js\"></script>");
             //#endif
     }
     return "";
@@ -208,7 +214,7 @@ String staticProcessor(const String& var) {
     String varLower(var);
     varLower.toLowerCase();
 
-    File file = LittleFS.open("/html_fragments/" + varLower + ".htm", "r");
+    File file = LittleFS.open("/html_fragments/" + varLower + ".html", "r");
 
     if (file) {
         if (file.size()*2 < ESP.getFreeHeap()) {
@@ -444,7 +450,8 @@ void serverSetup() {
     LittleFS.begin();
     server.serveStatic("/css", LittleFS, "/css/", "max-age=604800");  // cache for one week
     server.serveStatic("/js", LittleFS, "/js/", "max-age=604800");
-    server.serveStatic("/", LittleFS, "/html/", "max-age=604800").setTemplateProcessor(staticProcessor);
+    server.serveStatic("/webfonts", LittleFS, "/webfonts/", "max-age=604800");
+    server.serveStatic("/", LittleFS, "/html/", "max-age=604800").setDefaultFile("index.html").setTemplateProcessor(staticProcessor);
 
     server.begin();
 
