@@ -49,7 +49,7 @@ double curTemp = 0.0;
 double tTemp = 0.0;
 double hPower = 0.0;
 
-#define HISTORY_LENGTH 720    //60 mins of values
+#define HISTORY_LENGTH 1200    //60 mins of values (20 vals/min * 60 min)
 
 static float tempHistory[3][HISTORY_LENGTH] = {0};
 int historyCurrentIndex = 0;
@@ -460,6 +460,7 @@ void serverSetup() {
 
 //skip counter so we don't keep a value every second
 int skippedValues = 0;
+#define SECONDS_TO_SKIP 2
 
 void sendTempEvent(double currentTemp, double targetTemp, double heaterPower) {
     curTemp = currentTemp;
@@ -467,10 +468,10 @@ void sendTempEvent(double currentTemp, double targetTemp, double heaterPower) {
     hPower = heaterPower;
 
     // save all values in memory to show history
-    if (skippedValues > 0 && skippedValues % 4 == 0) {
+    if (skippedValues > 0 && skippedValues % SECONDS_TO_SKIP == 0) {
         // use array and int value for start index (round robin)
-        // one record (3 float values == 12 bytes) every five seconds, for half
-        // an hour -> 4.3kB of static memory
+        // one record (3 float values == 12 bytes) every three seconds, for half
+        // an hour -> 7.2kB of static memory
         tempHistory[0][historyCurrentIndex] = (float)currentTemp;
         tempHistory[1][historyCurrentIndex] = (float)targetTemp;
         tempHistory[2][historyCurrentIndex] = (float)heaterPower;
