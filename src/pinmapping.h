@@ -16,9 +16,9 @@
 #define PIN_BREWSWITCH 34
 #define PIN_STEAMSWITCH 35
 
-#define PIN_ENCODERLEFT 4       // Rotary encoder left
-#define PIN_ENCODERRIGHT 5      // Rotary encoder right
-#define PIN_ENCODERBUTTON 3     // Rotary encoder pushbutton
+#define PIN_ROTARY_DT 3         // Rotary encoder data pin
+#define PIN_ROTARY_CLK 4        // Rotary encoder clock pin
+#define PIN_ROTARY_SW 5         // Rotary encoder switch
 
 // Sensors
 #define PIN_TEMPSENSOR 16
@@ -44,9 +44,6 @@
 // Periphery
 #define PIN_ZC 18               // Dimmer circuit Zero Crossing
 #define PIN_PSM 19              // Dimmer circuit PSM
-#define PIN_ROTARY_DT 3         // Rotary encoder data pin
-#define PIN_ROTARY_CLK 4        // Rotary encoder clock pin
-#define PIN_ROTARY_SW 5         // Rotary encoder switch
 
 
 /**
