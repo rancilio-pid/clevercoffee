@@ -17,23 +17,6 @@ void checkbrewswitch() {
             // Digital GIPO
             brewswitch = digitalRead(PIN_BREWSWITCH);
         #endif
-
-        // Digital Analog
-        #if (PIN_BREWSWITCH == 0)
-            unsigned long currentMillistemp = millis();
-
-            if (currentMillistemp - previousMillistempanalogreading >= analogreadingtimeinterval) {
-                previousMillistempanalogreading = currentMillistemp;
-
-                if (filterPressureValue(analogRead(analogPin)) > 1000) {
-                    brewswitch = HIGH;
-                }
-
-                if (filterPressureValue(analogRead(analogPin)) < 1000) {
-                    brewswitch = LOW;
-                }
-            }
-        #endif
     #endif
 
     #if BREWSWITCHTYPE == 2
@@ -56,23 +39,6 @@ void checkbrewswitch() {
             }
 
             brewswitchTrigger = reading;
-        #endif
-
-        // Digital Analog
-        #if (PIN_BREWSWITCH == 0)
-            unsigned long currentMillistemp = millis();
-
-            if (currentMillistemp - previousMillistempanalogreading >= analogreadingtimeinterval) {
-                previousMillistempanalogreading = currentMillistemp;
-
-                if (filter(analogRead(analogPin)) > 1000) {
-                    brewswitchTrigger = HIGH;
-                }
-
-                if (filter(analogRead(analogPin)) < 1000) {
-                    brewswitchTrigger = LOW;
-                }
-            }
         #endif
 
         // Convert trigger signal to brew switch state

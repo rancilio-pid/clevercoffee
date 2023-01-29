@@ -41,6 +41,8 @@ enum MACHINE {
 #define BREWSWITCHDELAY 3000       // time in ms that the brew switch will be delayed (shot timer will show that much longer after switching off)
 #define VERBOSE 0                  // 1 = Show verbose output (serial connection), 0 = show less
 
+#define LANGUAGE 0                 // LANGUAGE = 0 (DE), LANGUAGE = 1 (EN), LANGUAGE = 2 (ES)
+
 // Connectivity
 #define CONNECTMODE 1              // 0 = offline 1 = WIFI-MODE
 #define HOSTNAME "silvia"
@@ -102,14 +104,5 @@ enum MACHINE {
 #define EMA_FACTOR 0.6             // Smoothing of input that is used for Tv (derivative component of PID). Smaller means less smoothing but also less delay, 0 means no filtering
 #define BREWPID_DELAY 10           // delay until enabling PID controller during brew (no heating during this time)
 
-// Backflush values
-#define FILLTIME 3000              // time in ms the pump is running
-#define FLUSHTIME 6000             // time in ms the 3-way valve is open -> backflush
-#define MAXFLUSHCYCLES 5           // number of cycles the backflush should run, 0 = disabled
-
 #define TEMPSENSOR 2               // Temp sensor type: 1 = DS18B20, 2 = TSIC306
 
-// defined compiler errors
-#if (PRESSURESENSOR == 1) && (PINPRESSURESENSOR == 0) && (PINBREWSWITCH == 0)
-  #error Change PINBREWSWITCH or PRESSURESENSOR!
-#endif
