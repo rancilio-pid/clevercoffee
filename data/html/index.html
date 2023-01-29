@@ -1,6 +1,6 @@
 %HEADER%
     %VAR_HEADER_VUE_NUMBER_INPUT%
-    %VAR_HEADER_PLOTLY%
+    %VAR_HEADER_UPLOT%    
 
     <script type="module">
         if (window.appCreated == true) {
@@ -127,10 +127,10 @@
             </div>
             <script>
                 if (window.appCreated == true) {
-                    import('/js/temp.js?v=1')
+                    import('/js/temp-uplot.js?v=1')
                 } else {
                     window.addEventListener('appCreated', () => {
-                        import('/js/temp.js?v=1')
+                        import('/js/temp-uplot.js?v=1')
                     })
                 }
             </script>

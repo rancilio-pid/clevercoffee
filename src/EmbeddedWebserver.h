@@ -188,9 +188,15 @@ String getHeader(String varName) {
             #else
                 return F("<script src=\"https://unpkg.com/@chenfengyuan/vue-number-input@2.0.1/dist/vue-number-input.min.js\"></script>");
             #endif
+        case (str2int("UPLOT")):
+            #if NOINTERNET == 1
+                return F("<script src=\"/js/uPlot.1.6.24.min.js\"></script>");
+            #else
+                return F("<script src=\"https://cdn.jsdelivr.net/npm/uplot@1.6.24/dist/uPlot.iife.min.js\"></script>");
+            #endif
         case (str2int("PLOTLY")):
             /*#if NOINTERNET == 1
-                //think about replacing this with e.g. chart.js or https://github.com/tradingview/lightweight-charts
+                //think about replacing this with e.g. uplot, chart.js or https://github.com/tradingview/lightweight-charts
                 return F("<script src=\"/js/plotly-basic-2.18.0.min.js\"></script>");
             #else*/
                 return F("<script src=\"https://cdn.plot.ly/plotly-basic-2.18.0.min.js\"></script>");
