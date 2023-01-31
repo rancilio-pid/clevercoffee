@@ -67,6 +67,9 @@ void checkMQTT() {
                 debugPrintln("Subscribe to MQTT Topics");
             }   // Try to reconnect to the server; connect() is a blocking
                 // function, watch the timeout!
+            else {
+                debugPrintf("Failed to connect to MQTT due to reason: %i\n", mqtt.state());
+            }
         }
     }
 }
