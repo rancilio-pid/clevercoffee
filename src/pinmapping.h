@@ -12,7 +12,7 @@
  */
 
 // Switches/Buttons
-#define PIN_POWERSWITCH 26
+#define PIN_POWERSWITCH 39
 #define PIN_BREWSWITCH 34
 #define PIN_STEAMSWITCH 35
 
@@ -22,9 +22,9 @@
 
 // Sensors
 #define PIN_TEMPSENSOR 16
-#define PIN_PRESSURESENSOR 0
+#define PIN_PRESSURESENSOR 23
 #define PIN_WATERSENSOR 36
-#define PIN_FLOWSENSOR 23
+#define PIN_FLOWSENSOR 1
 #define PIN_HXDAT 32            // Brew scale data pin
 #define PIN_HXCLK 33            // Brew scale clock pin
 
@@ -39,11 +39,14 @@
 #define PIN_HEATER 2
 
 // LEDs
-#define PIN_POWERLED 39
-#define PIN_STATUSLED 1
+#define PIN_STATUSLED 26
 
 // Periphery
-#define PIN_ZEROCROSSING 18     // Dimmer Circuit
+#define PIN_ZC 18               // Dimmer circuit Zero Crossing
+#define PIN_PSM 19              // Dimmer circuit PSM
+#define PIN_ROTARY_DT 3         // Rotary encoder data pin
+#define PIN_ROTARY_CLK 4        // Rotary encoder clock pin
+#define PIN_ROTARY_SW 5         // Rotary encoder switch
 
 
 /**

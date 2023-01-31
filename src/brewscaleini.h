@@ -6,11 +6,8 @@
  */
 
 #pragma once
+#include <pinmapping.h>
 
-// Analog Input
-#if PINBREWSWITCH == 0
-    const int analogPin = 0; // AI0 will be used
-#endif
 
 enum BrewState {
     kBrewIdle = 10,
@@ -54,5 +51,5 @@ unsigned long previousMillistempanalogreading;      // ms for analogreading
     bool scaleFailure = false;
     const unsigned long intervalWeight = 200;           // weight scale
     unsigned long previousMillisScale;                  // initialisation at the end of init()
-    HX711_ADC LoadCell(HXDATPIN, HXCLKPIN);
+    HX711_ADC LoadCell(PIN_HXDAT, PIN_HXCLK);
 #endif

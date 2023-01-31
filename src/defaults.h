@@ -23,7 +23,6 @@ int writeSysParamsToStorage(void);
 #define SETPOINT 95                // brew temperature setpoint
 #define TEMPOFFSET 0               // brew temperature setpoint
 #define STEAMSETPOINT 120          // steam temperature setpoint
-#define BREWSENSITIVITY 120        // brew detection sensitivity, be careful: if too low, then there is the risk of wrong brew detection and rising temperature
 #define AGGKP 62                   // PID Kp (regular phase)
 #define AGGTN 52                   // PID Tn (regular phase)
 #define AGGTV 11.5                 // PID Tv (regular phase)
@@ -36,9 +35,16 @@ int writeSysParamsToStorage(void);
 #define AGGBTV 20                  // PID Tv (brew detection phase)
 #define BREW_TIME 25               // brew time in seconds (only used if pump is being controlled)
 #define BREW_SW_TIME 25            // keep brew PID params for this many seconds after detection (only for software BD)
+#define BREW_PID_DELAY 10          // delay until enabling PID controller during brew (no heating during this time)
+#define BD_SENSITIVITY 120        // brew detection sensitivity, be careful: if too low, then there is the risk of wrong brew detection and rising temperature
 #define PRE_INFUSION_TIME 2        // pre-infusion time in seconds
 #define PRE_INFUSION_PAUSE_TIME 5  // pre-infusion pause time in seconds
 #define SCALE_WEIGHTSETPOINT 30    // Target weight in grams
+
+// Backflush values
+#define FILLTIME 3000              // time in ms the pump is running
+#define FLUSHTIME 6000             // time in ms the 3-way valve is open -> backflush
+#define MAXFLUSHCYCLES 5           // number of cycles the backflush should run, 0 = disabled
 
 #define PID_KP_START_MIN 0
 #define PID_KP_START_MAX 350
@@ -68,6 +74,8 @@ int writeSysParamsToStorage(void);
 #define BREW_TEMP_TIME_MAX 180
 #define BREW_TIME_MIN 1
 #define BREW_TIME_MAX 180
+#define BREW_PID_DELAY_MIN 0
+#define BREW_PID_DELAY_MAX 60
 #define BREW_SW_TIME_MIN 1
 #define BREW_SW_TIME_MAX 180
 #define BD_THRESHOLD_MIN 0
