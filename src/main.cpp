@@ -1912,8 +1912,7 @@ void setup() {
         pinMode(PIN_BREWSWITCH, INPUT_PULLDOWN);
     }
 
-    pinMode(PIN_STEAMSWITCH, INPUT_PULLDOWN);
-
+    // IF OLED Display is connected  
     #if OLED_DISPLAY != 0
         u8g2.setI2CAddress(oled_i2c * 2);
         u8g2.begin();
