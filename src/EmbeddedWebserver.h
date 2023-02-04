@@ -190,17 +190,10 @@ String getHeader(String varName) {
             #endif
         case (str2int("UPLOT")):
             #if NOINTERNET == 1
-                return F("<script src=\"/js/uPlot.1.6.24.min.js\"></script>");
+                return F("<script src=\"/js/uPlot.1.6.24.min.js\"></script><link rel=\"stylesheet\" href=\"/css/uPlot.min.css\">");
             #else
-                return F("<script src=\"https://cdn.jsdelivr.net/npm/uplot@1.6.24/dist/uPlot.iife.min.js\"></script>");
+                return F("<script src=\"https://cdn.jsdelivr.net/npm/uplot@1.6.24/dist/uPlot.iife.min.js\"></script><link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/uplot@1.6.24/dist/uPlot.min.css\">");
             #endif
-        case (str2int("PLOTLY")):
-            /*#if NOINTERNET == 1
-                //think about replacing this with e.g. uplot, chart.js or https://github.com/tradingview/lightweight-charts
-                return F("<script src=\"/js/plotly-basic-2.18.0.min.js\"></script>");
-            #else*/
-                return F("<script src=\"https://cdn.plot.ly/plotly-basic-2.18.0.min.js\"></script>");
-            //#endif
     }
     return "";
 }
