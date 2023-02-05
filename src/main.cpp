@@ -101,7 +101,7 @@ int BrewMode = BREWMODE;
 uint8_t oled_i2c = OLED_I2C;
 
 // WiFi
-uint8_t WifiCredentialsSaved = 0;
+uint8_t wifiCredentialsSaved = 0;
 WiFiManager wm;
 const unsigned long wifiConnectionDelay = WIFICONNECTIONDELAY;
 const unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
@@ -219,7 +219,7 @@ SysPara<uint8_t> sysParaUseBDPID(&useBDPID, 0, 1, STO_ITEM_USE_BD_PID);
 SysPara<double> sysParaBrewTime(&brewtime, BREW_TIME_MIN, BREW_TIME_MAX, STO_ITEM_BREW_TIME);
 SysPara<double> sysParaBrewSwTime(&brewtimesoftware, BREW_SW_TIME_MIN, BREW_SW_TIME_MAX, STO_ITEM_BREW_SW_TIME);
 SysPara<double> sysParaBrewThresh(&brewSensitivity, BD_THRESHOLD_MIN, BD_THRESHOLD_MAX, STO_ITEM_BD_THRESHOLD);
-SysPara<uint8_t> sysParaWifiCredentialsSaved(&WifiCredentialsSaved, WIFI_CREDENTIALS_SAVED_MIN, WIFI_CREDENTIALS_SAVED_MAX, STO_ITEM_WIFI_CREDENTIALS_SAVED);
+SysPara<uint8_t> sysParaWifiCredentialsSaved(&wifiCredentialsSaved, WIFI_CREDENTIALS_SAVED_MIN, WIFI_CREDENTIALS_SAVED_MAX, STO_ITEM_WIFI_CREDENTIALS_SAVED);
 SysPara<double> sysParaPreInfTime(&preinfusion, PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX, STO_ITEM_PRE_INFUSION_TIME);
 SysPara<double> sysParaPreInfPause(&preinfusionpause, PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, STO_ITEM_PRE_INFUSION_PAUSE);
 SysPara<double> sysParaPidKpSteam(&steamKp, PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, STO_ITEM_PID_KP_STEAM);
@@ -1353,16 +1353,16 @@ void wiFiSetup() {
     // Wifisetup fro
     sysParaWifiCredentialsSaved.getStorage();
 
-    if (WifiCredentialsSaved == 0) {
+    if (wifiCredentialsSaved == 0) {
         const char hostname[] = (STR(HOSTNAME));
-        displayLogo("Connect to Wifi: ",HOSTNAME);
-        debugPrintf("Connect to Wifi: %s \n",String(hostname));
+        displayLogo("Connect to Wifi: ", HOSTNAME);
+        debugPrintf("Connect to Wifi: %s \n", String(hostname));
     }
 
     wm.setHostname(hostname);
 
     if (wm.autoConnect(hostname, pass)) {
-        WifiCredentialsSaved = 1;
+        wifiCredentialsSaved = 1;
         sysParaWifiCredentialsSaved.setStorage();
         storageCommit();
         debugPrintf("WiFi connected - IP = %i.%i.%i.%i\n", WiFi.localIP()[0],
@@ -1883,7 +1883,7 @@ void setup() {
         u8g2.begin();
         u8g2_prepare();
         displayLogo(String("Version "), String(sysVersion));
-        delay(2000); // caused crash with wifi manager
+        delay(2000); // caused crash with wifi manager on esp8266, should be ok on esp32
     #endif
 
     // Init Scale by BREWMODE 2 or SHOTTIMER 2

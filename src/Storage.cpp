@@ -47,7 +47,7 @@ typedef struct __attribute__((packed)) {
     double brewPIDDelaySec;
     uint8_t freeToUse10;
     double brewDetectionThreshold;
-    uint8_t WifiCredentialsSaved;
+    uint8_t wifiCredentialsSaved;
     uint8_t useStartPonM;
     double pidKpStart;
     uint8_t freeToUse12[2];
@@ -94,7 +94,7 @@ static const sto_data_t itemDefaults PROGMEM = {
     BREW_PID_DELAY,                           // STO_ITEM_BREW_PID_DELAY
     0xFF,                                     // free to use
     BD_SENSITIVITY,                           // STO_ITEM_BD_THRESHOLD
-    WIFI_CREDENTIALS_SAVED,                   // STO_ITEM_WIFI_CREDENTIALS_SAVED        
+    WIFI_CREDENTIALS_SAVED,                   // STO_ITEM_WIFI_CREDENTIALS_SAVED
     0,                                        // STO_ITEM_USE_START_PON_M
     STARTKP,                                  // STO_ITEM_PID_KP_START
     {0xFF, 0xFF},                             // free to use
@@ -206,8 +206,8 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
             break;
 
         case STO_ITEM_WIFI_CREDENTIALS_SAVED:
-            addr = offsetof(sto_data_t, WifiCredentialsSaved);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, WifiCredentialsSaved);
+            addr = offsetof(sto_data_t, wifiCredentialsSaved);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, wifiCredentialsSaved);
             break;
 
         case STO_ITEM_PID_START_PONM:
