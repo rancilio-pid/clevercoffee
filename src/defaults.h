@@ -40,7 +40,7 @@ int writeSysParamsToStorage(void);
 #define PRE_INFUSION_TIME 2        // pre-infusion time in seconds
 #define PRE_INFUSION_PAUSE_TIME 5  // pre-infusion pause time in seconds
 #define SCALE_WEIGHTSETPOINT 30    // Target weight in grams
-#define WIFI_CREDENTIALS_SAVED 0   // Flag if Wifisetup is done 0: no setup, 1: setup via wifi manager
+#define WIFI_CREDENTIALS_SAVED 0   // Flag if wifi setup is done. 0: not set up, 1: credentials set up via wifi manager
 
 // Backflush values
 #define FILLTIME 3000              // time in ms the pump is running
