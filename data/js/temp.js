@@ -244,7 +244,7 @@ function makeHeaterChart(data) {
                 values: (u, vals, space) => vals.map(v => uPlot.tzDate(new Date(v * 1e3), 'Europe/Berlin').toLocaleString("de-DE", tzdateOptions)),
             },
             {
-                side: 1,
+                side: 0,
                 scale: 'W',
                 values: (u, vals, space) => vals.map(v => +v.toFixed(1) + " W"),
             },
