@@ -154,11 +154,7 @@ const tzdateOptions = {
 function makeTempChart(data) {
     const opts = {
         title: "Temperature History",
-        //id: "chart1",
-        //class: "my-chart",
         ...getSize(chartDiv),
-        //width: window.innerWidth * 0.9,
-        //height: 400,
         tzDate: ts => uPlot.tzDate(new Date(ts * 1e3), 'Europe/Berlin'),
         series: [
             {
@@ -190,22 +186,6 @@ function makeTempChart(data) {
         axes: [
             {
                 values: (u, vals, space) => vals.map(v => uPlot.tzDate(new Date(v * 1e3), 'Europe/Berlin').toLocaleString("de-DE", tzdateOptions)),
-                // [0]:   minimum num secs in found axis split (tick incr)
-                // [1]:   default tick format
-                // [2-7]: rollover tick formats
-                // [8]:   mode: 0: replace [1] -> [2-7], 1: concat [1] + [2-7]
-                /*
-                values: [
-                    // tick incr        default           year                             month    day                        hour     min             sec       mode
-                    [3600 * 24 * 365,   "{YYYY}",         null,                            null,    null,                      null,    null,           null,        1],
-                    [3600 * 24 * 28,    "{MMM}",          "\n{YYYY}",                      null,    null,                      null,    null,           null,        1],
-                    [3600 * 24,         "{M}/{D}",        "\n{YYYY}",                      null,    null,                      null,    null,           null,        1],
-                    [3600,              "{hh}",           "\n{M}/{D}/{YY}",                null,    "\n{M}/{D}",               null,    null,           null,        1],
-                    [60,                "{hh}:{mm}",      "\n{M}/{D}/{YY}",                null,    "\n{M}/{D}",               null,    null,           null,        1],
-                    [1,                 ":{ss}",          "\n{M}/{D}/{YY} {hh}:{mm}",      null,    "\n{M}/{D} {hh}:{mm}",     null,    "\n{hh}:{mm}",  null,        1],
-                    [0.001,             ":{ss}.{fff}",    "\n{M}/{D}/{YY} {hh}:{mm}",      null,    "\n{M}/{D} {hh}:{mm}",     null,    "\n{hh}:{mm}",  null,        1],
-                ],
-                */
             },
             {
                 scale: 'C',
@@ -220,11 +200,7 @@ function makeTempChart(data) {
 function makeHeaterChart(data) {
     const opts = {
         title: "Heater Power History",
-        //id: "chart1",
-        //class: "my-chart",
         ...getSize(heaterDiv),
-        //width: window.innerWidth * 0.9,
-        //height: 400,
         tzDate: ts => uPlot.tzDate(new Date(ts * 1e3), 'Europe/Berlin'),
         scales: {
             "%": {
