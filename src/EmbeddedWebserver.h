@@ -148,6 +148,9 @@ void paramToJson(String name, editable_t &e, DynamicJsonDocument &doc) {
     paramObj["max"] = e.maxValue;
 }
 
+// Use libraries for the webinterface from the internet (0) or from the local filesystem (1). 0 has slightly faster load times
+#define NOINTERNET 1
+
 //hash strings at compile time to use in switch statement
 //(from https://stackoverflow.com/questions/2111667/compile-time-string-hashing)
 constexpr unsigned int str2int(const char* str, int h = 0) {

@@ -49,7 +49,6 @@ enum MACHINE {
 #define PASS "CleverCoffee"        // default password for WiFiManager
 #define MAXWIFIRECONNECTS 5        // maximum number of reconnection attempts, use -1 to deactivate
 #define WIFICONNECTIONDELAY 10000  // delay between reconnects in ms
-#define NOINTERNET 0               // Use libraries for the webinterface from the internet (0) or from the local filesystem (1). 0 has faster load times
 
 // PID & Hardware
 #define ONLYPID 1                  // 1 = Only PID, 0 = PID and preinfusion
