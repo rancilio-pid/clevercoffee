@@ -171,6 +171,7 @@ function makeTempChart(data) {
                 show: true,
                 stroke: "#008080",
                 fill: "#00808010",
+                width: 2,
                 lineInterpolation: lineInterpolations.spline,
                 points: { show: false },
             },
@@ -180,6 +181,7 @@ function makeTempChart(data) {
                 value: (u, v) => v == null ? null : v,
                 stroke: "#9932CC",
                 fill: "#9932CC10",
+                width: 2,
                 lineInterpolation: lineInterpolations.spline,
                 show: true,
                 points: { show: false },
@@ -224,16 +226,23 @@ function makeHeaterChart(data) {
         //width: window.innerWidth * 0.9,
         //height: 400,
         tzDate: ts => uPlot.tzDate(new Date(ts * 1e3), 'Europe/Berlin'),
+        scales: {
+            "%": {
+            auto: false,
+            range: [0, 100],
+            }
+        },
         series: [
             {
                 value: "{YYYY}-{MM}-{DD} {HH}:{mm}:{ss}"
             },
             {
                 label: "Heater Power",
-                scale: "W",
-                value: (u, v) => v == null ? null : v.toFixed(1) + " W",
+                scale: "%",
+                value: (u, v) => v == null ? null : v.toFixed(0) + "%",
                 stroke: "#778899",
                 fill: "#77889910",
+                width: 2,
                 lineInterpolation: lineInterpolations.spline,
                 show: true,
                 points: { show: false },
@@ -244,9 +253,9 @@ function makeHeaterChart(data) {
                 values: (u, vals, space) => vals.map(v => uPlot.tzDate(new Date(v * 1e3), 'Europe/Berlin').toLocaleString("de-DE", tzdateOptions)),
             },
             {
-                side: 0,
-                scale: 'W',
-                values: (u, vals, space) => vals.map(v => +v.toFixed(1) + " W"),
+                side: 3,
+                scale: '%',
+                values: (u, vals, space) => vals.map(v => +v.toFixed(0) + "%"),
             },
         ],
     };

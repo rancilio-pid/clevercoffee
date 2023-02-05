@@ -1956,10 +1956,10 @@ void setup() {
         }
     } else if (connectmode == 0)
     {
-        wm.disconnect(); // no wm
-        readSysParamsFromStorage(); // get values from stroage
-        offlineMode = 1 ; //offline mode
-        pidON = 1  ; //pid on
+        wm.disconnect();              // no wm
+        readSysParamsFromStorage();   // get values from stroage
+        offlineMode = 1;              //offline mode
+        pidON = 1 ;                   //pid on
     }
 
     // Initialize PID controller
@@ -2055,7 +2055,7 @@ void looppid() {
 
     if ((millis() - lastTempEvent) > tempEventInterval) {
         //send temperatures to website endpoint
-        sendTempEvent(temperature, brewSetpoint, pidOutput);
+        sendTempEvent(temperature, brewSetpoint, pidOutput/10);       //pidOutput is promill, so /10 to get percent value
         lastTempEvent = millis();
 
         #if VERBOSE
