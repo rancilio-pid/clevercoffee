@@ -167,7 +167,7 @@ function makeTempChart(data) {
             {
                 label: "Current Temperature",
                 scale: "C",
-                value: (u, v) => v == null ? null : v,
+                value: (u, v) => v == null ? null : v + " °C",
                 show: true,
                 stroke: "#008080",
                 fill: "#00808010",
@@ -178,7 +178,7 @@ function makeTempChart(data) {
             {
                 label: "Target Temperature",
                 scale: "C",
-                value: (u, v) => v == null ? null : v,
+                value: (u, v) => v == null ? null : v + " °C",
                 stroke: "#9932CC",
                 fill: "#9932CC10",
                 width: 2,
@@ -209,7 +209,7 @@ function makeTempChart(data) {
             },
             {
                 scale: 'C',
-                values: (u, vals, space) => vals.map(v => +v + "C"),
+                values: (u, vals, space) => vals.map(v => +v + "°C"),
             }
         ],
     };
