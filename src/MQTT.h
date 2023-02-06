@@ -67,10 +67,19 @@ void checkMQTT() {
 /**
  * @brief Publish Data to MQTT
  */
+bool mqtt_publish(const char *reading, char *payload, boolean retain) {
+    char topic[120];
+    snprintf(topic, 120, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
+    return mqtt.publish(topic, payload, retain);
+}
+
+/**
+ * @brief Publish Data to MQTT
+ */
 bool mqtt_publish(const char *reading, char *payload) {
     char topic[120];
     snprintf(topic, 120, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
-    return mqtt.publish(topic, payload, true);
+    return mqtt.publish(topic, payload, false);
 }
 
 
@@ -88,14 +97,14 @@ void assignMQTTParam(char *param, double value) {
             switch (var->type) {
                 case kDouble:
                     *(double *)var->ptr = value;
-                    mqtt_publish(param, number2string(value));
+                    mqtt_publish(param, number2string(value), true);
                     break;
                 case kUInt8:
                     *(uint8_t *)var->ptr = value;
                     if (strcasecmp(param, "steamON") == 0) {
                         steamFirstON = value;
                     }
-                    mqtt_publish(param, number2string(value));
+                    mqtt_publish(param, number2string(value), true);
                     writeSysParamsToStorage();
                     break;
                 default:
@@ -165,19 +174,19 @@ void writeSysParamsToMQTT(void) {
 
                 switch (e->type) {
                     case kDouble:
-                        mqtt_publish(pair.first, number2string(*(double *) e->ptr));
+                        mqtt_publish(pair.first, number2string(*(double *) e->ptr), true);
                         break;
                     case kDoubletime:
-                        mqtt_publish(pair.first, number2string(*(double *) e->ptr));
+                        mqtt_publish(pair.first, number2string(*(double *) e->ptr), true);
                         break;
                     case kInteger:
-                        mqtt_publish(pair.first, number2string(*(int *) e->ptr));
+                        mqtt_publish(pair.first, number2string(*(int *) e->ptr), true);
                         break;
                     case kUInt8:
-                        mqtt_publish(pair.first, number2string(*(uint8_t *) e->ptr));
+                        mqtt_publish(pair.first, number2string(*(uint8_t *) e->ptr), true);
                         break;
                     case kCString:
-                        mqtt_publish(pair.first, number2string(*(char *) e->ptr));
+                        mqtt_publish(pair.first, number2string(*(char *) e->ptr), true);
                         break;
                 }
             }
