@@ -31,6 +31,7 @@ typedef enum
   STO_ITEM_BREW_SW_TIME,            // brew software time
   STO_ITEM_BREW_PID_DELAY,          // brew PID delay
   STO_ITEM_BD_THRESHOLD,            // brew detection limit
+  STO_ITEM_WIFI_CREDENTIALS_SAVED,  // flag for wifisetup
   STO_ITEM_PRE_INFUSION_TIME,       // pre-infusion time
   STO_ITEM_PRE_INFUSION_PAUSE,      // pre-infusion pause
   STO_ITEM_PID_KP_STEAM,            // PID P part at steam phase
