@@ -322,6 +322,15 @@ std::vector<mqttVars_t> mqttVars = {
     {"steamKp", tDouble, PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, (void *)&steamKp},
     {"startKp", tDouble, PID_KP_START_MIN, PID_KP_START_MAX, (void *)&startKp},
     {"startTn", tDouble, PID_TN_START_MIN, PID_TN_START_MAX, (void *)&startTn},
+
+#if BREWDETECTION == 1
+    {"brewTimer", tDouble, BREW_SW_TIME_MIN, BREW_SW_TIME_MAX, (void *)&brewtimesoftware},
+    {"brewLimit", tDouble, BD_THRESHOLD_MIN, BD_THRESHOLD_MAX, (void *)&brewSensitivity},
+#endif
+
+#if ONLYPIDSCALE == 1 || BREWMODE == 2
+    {"weightSetpoint", tDouble, WEIGHTSETPOINT_MIN, WEIGHTSETPOINT_MAX, (void *)&weightSetpoint},
+#endif
 };
 
 #include "InfluxDB.h"
