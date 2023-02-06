@@ -220,7 +220,7 @@ void writeSysParamsToMQTT(void) {
             mqtt_publish("brewLimit", number2string(brewSensitivity));
         #endif
 
-        #if BREWMODE == 2
+        #if ONLYPIDSCALE == 1 || BREWMODE == 2
             mqtt_publish("weightSetpoint", number2string(weightSetpoint));
         #endif
         }
