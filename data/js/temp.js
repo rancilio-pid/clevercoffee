@@ -163,7 +163,7 @@ function makeTempChart(data) {
             {
                 label: "Current Temperature",
                 scale: "C",
-                value: (u, v) => v == null ? null : v + " °C",
+                value: (u, v) => v == null ? null : v.toFixed(1) + " °C",
                 show: true,
                 stroke: "#008080",
                 fill: "#00808010",
@@ -174,7 +174,7 @@ function makeTempChart(data) {
             {
                 label: "Target Temperature",
                 scale: "C",
-                value: (u, v) => v == null ? null : v + " °C",
+                value: (u, v) => v == null ? null : v.toFixed(1) + " °C",
                 stroke: "#9932CC",
                 fill: "#9932CC10",
                 width: 2,
