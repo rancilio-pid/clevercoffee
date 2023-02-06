@@ -217,7 +217,7 @@ void writeSysParamsToMQTT(void) {
             //BD Parameter
         #if BREWDETECTION == 1
             mqtt_publish("brewTimer", number2string(brewtimesoftware));
-            mqtt_publish("brewLimit", number2string(bdSensitivity));
+            mqtt_publish("brewLimit", number2string(brewSensitivity));
         #endif
 
         #if BREWMODE == 2
