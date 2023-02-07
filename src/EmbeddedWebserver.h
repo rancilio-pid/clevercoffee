@@ -26,7 +26,8 @@ enum EditableKind {
     kUInt8,
     kDouble,
     kDoubletime,
-    kCString
+    kCString,
+    kFloat
 };
 
 struct editable_t {
@@ -59,7 +60,7 @@ void serverSetup();
 void setEepromWriteFcn(int (*fcnPtr)(void));
 
 // editable vars are specified in main.cpp
-#define EDITABLE_VARS_LEN 29
+#define EDITABLE_VARS_LEN 33
 extern std::map<String, editable_t> editableVars;
 
 
@@ -104,6 +105,8 @@ String getValue(String varName) {
     try {
         editable_t e = editableVars.at(varName);
         switch (e.type) {
+            case kFloat:
+                return String(*(float *)e.ptr);
             case kDouble:
                 return String(*(double *)e.ptr);
             case kDoubletime:
@@ -140,6 +143,8 @@ void paramToJson(String name, editable_t &e, DynamicJsonDocument &doc) {
         paramObj["value"] = *(uint8_t *)e.ptr;
     } else if (e.type == kDouble || e.type == kDoubletime) {
         paramObj["value"] = round2(*(double *)e.ptr);
+    } else if (e.type == kFloat) {
+        paramObj["value"] = round2(*(float *)e.ptr);
     } else if (e.type == kCString) {
         paramObj["value"] = (char *)e.ptr;
     }
@@ -263,6 +268,24 @@ void serverSetup() {
         request->redirect("/");
     });
 
+    server.on("/toggleTare", HTTP_POST, [](AsyncWebServerRequest *request) {
+        int tare = flipUintValue(tareON);
+
+        setTare(tare);
+        debugPrintf("Toggle tare mode: %i \n", tare);
+
+        request->redirect("/");
+    });
+
+    server.on("/toggleCalibration", HTTP_POST, [](AsyncWebServerRequest *request) {
+        int calibrate = flipUintValue(calibrationON);
+
+        setCalibration(calibrate);
+        debugPrintf("Toggle tare mode: %i \n", calibrate);
+
+        request->redirect("/");
+    });
+
     server.on("/parameters", HTTP_GET | HTTP_POST, [](AsyncWebServerRequest *request) {
         // Determine the size of the document to allocate based on the number
         // of parameters
@@ -305,6 +328,9 @@ void serverSetup() {
                     } else if (e.type == kDouble || e.type == kDoubletime) {
                         float newVal = atof(p->value().c_str());
                         *(double *)e.ptr = newVal;
+                    } else if (e.type == kFloat) {
+                        float newVal = atof(p->value().c_str());
+                        *(float *)e.ptr = newVal;
                     }
                     paramToJson(varName, e, doc);
                 } catch (const std::out_of_range &exc) {

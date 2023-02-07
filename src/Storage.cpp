@@ -31,9 +31,9 @@ typedef struct __attribute__((packed)) {
     double brewTempOffset;
     uint8_t freeToUse3;
     double brewTimeMs;
-    uint8_t freeToUse4[2];
+    float scaleCalibration;
     double preInfusionTimeMs;
-    uint8_t freeToUse5[2];
+    float scaleKnownWeight;
     double preInfusionPauseMs;
     uint8_t freeToUse6[21];
     uint8_t pidBdOn;
@@ -78,9 +78,9 @@ static const sto_data_t itemDefaults PROGMEM = {
     TEMPOFFSET,                               // STO_ITEM_BREW_TEMP_OFFSET
     0xFF,                                     // free to use
     BREW_TIME,                                // STO_ITEM_BREW_TIME
-    {0xFF, 0xFF},                             // free to use
+    SCALE_CALIBRATION_FACTOR,                    //STO_ITEM_SCALE_CALIBRATION_FACTOR
     PRE_INFUSION_TIME,                        // STO_ITEM_PRE_INFUSION_TIME
-    {0xFF, 0xFF},                             // free to use
+    SCALE_KNOWN_WEIGHT,                          // STO_ITEM_SCALE_KNOWN_WEIGHT
     PRE_INFUSION_PAUSE_TIME,                  // STO_ITEM_PRE_INFUSION_PAUSE
     {   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
         0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
@@ -111,7 +111,7 @@ static const sto_data_t itemDefaults PROGMEM = {
     STEAMKP,                                  // STO_ITEM_PID_KP_STEAM
     STEAMSETPOINT,                            // STO_ITEM_STEAM_SETPOINT
     STANDBY_MODE_ON,                          // STO_ITEM_STANDBY_MODE_ON
-    STANDBY_MODE_TIME                         // STO_ITEM_STANDBY_MODE_TIME 
+    STANDBY_MODE_TIME,                         // STO_ITEM_STANDBY_MODE_TIME 
 };
 
 /**
@@ -272,6 +272,16 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
         case STO_ITEM_STANDBY_MODE_TIME:
             addr = offsetof(sto_data_t, standbyModeTime);
             size = STRUCT_MEMBER_SIZE(sto_data_t,standbyModeTime);
+            break;
+
+        case STO_ITEM_SCALE_CALIBRATION_FACTOR:
+            addr = offsetof(sto_data_t,scaleCalibration );
+            size = STRUCT_MEMBER_SIZE(sto_data_t,scaleCalibration);
+            break;
+
+        case STO_ITEM_SCALE_KNOWN_WEIGHT:
+            addr = offsetof(sto_data_t,scaleKnownWeight );
+            size = STRUCT_MEMBER_SIZE(sto_data_t,scaleKnownWeight);
             break;
 
         default:
