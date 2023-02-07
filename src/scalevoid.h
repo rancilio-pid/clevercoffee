@@ -38,17 +38,16 @@ void checkWeight() {
  * @brief Initialize scale
  */
 void initScale() {
-    LoadCell.begin();
-    long stabilizingtime = 2000; // tare preciscion can be improved by adding a few seconds of stabilizing time
+    LoadCell.begin(128);
+    long stabilizingtime = 4000; // tare preciscion can be improved by adding a few seconds of stabilizing time
     boolean _tare = true; //set this to false if you don't want tare to be performed in the next step
-
     u8g2.clearBuffer();
     u8g2.drawStr(0, 2, "Taring scale,");
     u8g2.drawStr(0, 12, "remove any load!");
     u8g2.drawStr(0, 22, "....");
     delay(2000);
     u8g2.sendBuffer();
-    LoadCell.start(stabilizingtime, _tare);
+    LoadCell.startMultiple(stabilizingtime, _tare);
 
     if (LoadCell.getTareTimeoutFlag()) {
         debugPrintln("Timeout, check MCU>HX711 wiring and pin designations");
@@ -58,11 +57,26 @@ void initScale() {
         u8g2.sendBuffer();
     }
     else {
+        if (scaleCalibration -1 < 0.00001) {
+            u8g2.drawStr(0, 22, "Calibration coming up");
+            u8g2.sendBuffer();
+            LoadCell.setCalFactor(scaleCalibration);
+            u8g2.clearBuffer();
+            u8g2.drawStr(0, 2, "Calibration in progress.");
+            u8g2.drawStr(0, 12, "Place known weight on");
+            u8g2.drawStr(0, 22, "scale in next 10 seconds ");
+            u8g2.drawStr(0, 32, number2string(scaleKnownWeight));
+            u8g2.sendBuffer();
+            LoadCell.tare();
+            delay(10000);
+            LoadCell.refreshDataSet();  
+            scaleCalibration = LoadCell.getNewCalibration(scaleKnownWeight);
+        }
         u8g2.drawStr(0, 32, "done.");
         u8g2.sendBuffer();
     }
 
-    LoadCell.setCalFactor(calibrationValue); // set calibration factor (float)
+    LoadCell.setCalFactor(scaleCalibration); // set calibration factor (float)
     LoadCell.setSamplesInUse(SCALE_SAMPLES);
 }
 

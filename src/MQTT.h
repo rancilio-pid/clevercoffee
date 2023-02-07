@@ -34,6 +34,7 @@ unsigned int MQTTReCnctCount = 0;
 enum MQTTSettableType {
     tUInt8,
     tDouble,
+    tFloat,
 };
 
 struct mqttVars_t {
@@ -103,6 +104,10 @@ void assignMQTTParam(char *param, double value) {
                         break;
                     case tUInt8:
                         *(uint8_t *)m.mqttVarPtr = value;
+                        paramValid = true;
+                        break;
+                    case tFloat:
+                        *(float *)m.mqttVarPtr = value;
                         paramValid = true;
                         break;
                     default:
@@ -222,6 +227,10 @@ void writeSysParamsToMQTT(void) {
 
         #if BREWMODE == 2
             mqtt_publish("weightSetpoint", number2string(weightSetpoint));
+        #endif
+        #if (ONLYPIDSCALE == 1 || BREWMODE == 2)
+            mqtt_publish("calibrationValue", number2string(scaleCalibration));
+            mqtt_publish("knownWeight", number2string(scaleKnownWeight));
         #endif
         }
     }

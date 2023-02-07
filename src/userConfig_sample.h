@@ -64,7 +64,6 @@ enum MACHINE {
 
 // Brew Scale
 #define SCALE_SAMPLES 2                     // Load cell sample rate
-#define SCALE_CALIBRATION_FACTOR 3195.83    // Raw data is divided by this value to convert to readable data
 
 /* Pressure sensor
  *

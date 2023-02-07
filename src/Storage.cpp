@@ -60,6 +60,8 @@ typedef struct __attribute__((packed)) {
     double weightSetpoint;
     double steamkp;
     double steamSetpoint;
+    float scaleCalibration;
+    double scaleKnownWeight;
 } sto_data_t;
 
 // set item defaults
@@ -107,7 +109,9 @@ static const sto_data_t itemDefaults PROGMEM = {
     "",                                       // STO_ITEM_WIFI_PASSWORD
     SCALE_WEIGHTSETPOINT,                     // STO_ITEM_WEIGHTSETPOINT
     STEAMKP,                                  // STO_ITEM_PID_KP_STEAM
-    STEAMSETPOINT                             // STO_ITEM_STEAM_SETPOINT
+    STEAMSETPOINT,                             // STO_ITEM_STEAM_SETPOINT
+    SCALE_CALIBRATION_FACTOR,                    //STO_ITEM_SCALE_CALIBRATION_FACTOR
+    SCALE_KNOWN_WEIGHT                          // STO_ITEM_SCALE_KNOWN_WEIGHT
 };
 
 /**
@@ -258,6 +262,16 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
         case STO_ITEM_STEAM_SETPOINT:
             addr = offsetof(sto_data_t,steamSetpoint );
             size = STRUCT_MEMBER_SIZE(sto_data_t,steamSetpoint);
+            break;
+
+        case STO_ITEM_SCALE_CALIBRATION_FACTOR:
+            addr = offsetof(sto_data_t,scaleCalibration );
+            size = STRUCT_MEMBER_SIZE(sto_data_t,scaleCalibration);
+            break;
+
+        case STO_ITEM_SCALE_KNOWN_WEIGHT:
+            addr = offsetof(sto_data_t,scaleKnownWeight );
+            size = STRUCT_MEMBER_SIZE(sto_data_t,scaleKnownWeight);
             break;
 
         default:
