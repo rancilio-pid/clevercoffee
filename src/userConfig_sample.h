@@ -68,8 +68,7 @@ enum MACHINE {
 #define FEATURE_PRESSURESENSOR 0   // 0 = deactivated, 1 = activated
 
 // Brew Scale
-#define SCALE_SAMPLES 2                     // Load cell sample rate
-#define SCALE_CALIBRATION_FACTOR 3195.83    // Raw data is divided by this value to convert to readable data
+#define SCALE_SAMPLES 2                    // Load cell sample rate
 
 // Backflush values
 #define FILLTIME 5000              // time in ms the pump is running

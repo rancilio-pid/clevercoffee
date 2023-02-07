@@ -258,8 +258,8 @@ void displayShottimer(void) {
             u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
             u8g2.setFont(u8g2_font_profont22_tf);
             u8g2.setCursor(64, 15);
-            u8g2.print(lastBrewTime / 1000, 1);
-            u8g2.print("g");
+            u8g2.print(lastBrewTime/1000, 1);
+            u8g2.print("s");
             u8g2.setCursor(64, 38);
             u8g2.print(weightBrew, 0);
             u8g2.print(" g");
