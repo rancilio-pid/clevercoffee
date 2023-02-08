@@ -1831,7 +1831,7 @@ void setup() {
         .helpText = "",
         .type = kUInt8,
         .section = sOtherSection,
-        .position = 26,
+        .position = 27,
         .show = [] { return false; },
         .minValue = 0,
         .maxValue = 1,
@@ -1844,7 +1844,7 @@ void setup() {
         .helpText = "",
         .type = kUInt8,
         .section = sOtherSection,
-        .position = 26,
+        .position = 28,
         .show = [] { return false; },
         .minValue = 0,
         .maxValue = 1,
@@ -1852,15 +1852,15 @@ void setup() {
     };
 
         editableVars["SCALE_KNOWN_WEIGHT"] = {
-        .displayName = F("Known weight"),
+        .displayName = F("Known weight in g"),
         .hasHelpText = false,
         .helpText = "",
         .type = kFloat,
-        .section = sOtherSection,
-        .position = 26,
-        .show = [] { return false; },
+        .section = sTempSection,
+        .position = 29,
+        .show = [] { return true; },
         .minValue = 0,
-        .maxValue = 1,
+        .maxValue = 2000,
         .ptr = (void *)&scaleKnownWeight
     };
 
@@ -1869,11 +1869,11 @@ void setup() {
         .hasHelpText = false,
         .helpText = "",
         .type = kFloat,
-        .section = sOtherSection,
-        .position = 26,
-        .show = [] { return false; },
-        .minValue = 0,
-        .maxValue = 1,
+        .section = sTempSection,
+        .position = 30,
+        .show = [] { return true; },
+        .minValue = -100000,
+        .maxValue = 100000,
         .ptr = (void *)&scaleCalibration
     };
 
@@ -1883,7 +1883,7 @@ void setup() {
         .helpText = "",
         .type = kCString,
         .section = sOtherSection,
-        .position = 27,
+        .position = 31,
         .show = [] { return false; },
         .minValue = 0,
         .maxValue = 1,
