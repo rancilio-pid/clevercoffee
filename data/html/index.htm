@@ -100,7 +100,7 @@
                                         </template>
                                         <template v-if="param.name == 'TARE_ON'">
                                             <td><b>Toggle Tare Mode</b></td>
-                                            <td><span id="backflush_state"></span></td>
+                                            <td><span id="tare_state"></span></td>
                                             <td>
                                                 <form action="/toggleTare" method="post">
                                                     <input type="hidden" id="varTARE_ON" name="varTARE_ON" />
@@ -110,7 +110,7 @@
                                         </template>
                                         <template v-if="param.name == 'CALIBRATION_ON'">
                                             <td><b>Toggle Calibration Mode</b></td>
-                                            <td><span id="backflush_state"></span></td>
+                                            <td><span id="calibration_state"></span></td>
                                             <td>
                                                 <form action="/toggleCalibration" method="post">
                                                     <input type="hidden" id="varCALIBRATION_ON" name="varCALIBRATION_ON" />

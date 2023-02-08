@@ -147,6 +147,8 @@ bool coolingFlushDetectedQM = false;
 void setSteamMode(int steamMode);
 void setPidStatus(int pidStatus);
 void setBackflush(int backflush);
+void setTare(int tare);
+void setCalibration(int tare);
 void setNormalPIDTunings();
 void setBDPIDTunings();
 void loopcalibrate();
@@ -2243,6 +2245,14 @@ void looppid() {
 
 void setBackflush(int backflush) {
     backflushON = backflush;
+}
+
+void setCalibration(int calibration) {
+    calibrateON = calibration;
+}
+
+void setTare(int tare) {
+    tareON = tare;
 }
 
 void setSteamMode(int steamMode) {

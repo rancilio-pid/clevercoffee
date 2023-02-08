@@ -265,7 +265,7 @@ void serverSetup() {
     server.on("/toggleTare", HTTP_POST, [](AsyncWebServerRequest *request) {
         int tare = flipUintValue(tareON);
 
-        setBackflush(tare);
+        setTare(tare);
         debugPrintf("Toggle tare mode: %i \n", tare);
 
         request->redirect("/");
@@ -274,7 +274,7 @@ void serverSetup() {
     server.on("/toggleCalibration", HTTP_POST, [](AsyncWebServerRequest *request) {
         int calibrate = flipUintValue(calibrateON);
 
-        setBackflush(calibrate);
+        setCalibration(calibrate);
         debugPrintf("Toggle tare mode: %i \n", calibrate);
 
         request->redirect("/");
