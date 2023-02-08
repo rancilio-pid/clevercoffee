@@ -228,9 +228,13 @@ void writeSysParamsToMQTT(void) {
         #if BREWMODE == 2
             mqtt_publish("weightSetpoint", number2string(weightSetpoint));
         #endif
+        
         #if (ONLYPIDSCALE == 1 || BREWMODE == 2)
             mqtt_publish("calibrationValue", number2string(scaleCalibration));
             mqtt_publish("knownWeight", number2string(scaleKnownWeight));
+            mqtt_publish("calibrationON", number2string(calibrateON));
+            mqtt_publish("tareON", number2string(tareON));
+            mqtt_publish("weight", number2string(weight));
         #endif
         }
     }

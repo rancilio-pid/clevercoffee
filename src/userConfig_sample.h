@@ -63,7 +63,7 @@ enum MACHINE {
 #define PRESSURESENSOR 0           // 1 = pressure sensor connected
 
 // Brew Scale
-#define SCALE_SAMPLES 2                     // Load cell sample rate
+#define SCALE_SAMPLES 2                    // Load cell sample rate
 
 /* Pressure sensor
  *
