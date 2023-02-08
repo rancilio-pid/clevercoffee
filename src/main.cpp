@@ -175,7 +175,7 @@ double brewTempOffset = TEMPOFFSET;
 double setpoint = brewSetpoint;
 double steamSetpoint = STEAMSETPOINT;
 float scaleCalibration = SCALE_CALIBRATION_FACTOR;
-double scaleKnownWeight = SCALE_KNOWN_WEIGHT;
+float scaleKnownWeight = SCALE_KNOWN_WEIGHT;
 uint8_t usePonM = 0;               // 1 = use PonM for cold start PID, 0 = use normal PID for cold start
 double steamKp = STEAMKP;
 double startKp = STARTKP;
@@ -238,8 +238,8 @@ SysPara<double> sysParaSteamSetpoint(&steamSetpoint, STEAM_SETPOINT_MIN, STEAM_S
 SysPara<double> sysParaWeightSetpoint(&weightSetpoint, WEIGHTSETPOINT_MIN, WEIGHTSETPOINT_MAX, STO_ITEM_WEIGHTSETPOINT);
 SysPara<uint8_t> sysParaStandbyModeOn(&standbyModeOn, 0, 1, STO_ITEM_STANDBY_MODE_ON);
 SysPara<double> sysParaStandbyModeTime(&standbyModeTime, STANDBY_MODE_TIME_MIN, STANDBY_MODE_TIME_MAX, STO_ITEM_STANDBY_MODE_TIME);
-SysPara<float> sysParaScaleCalibration(&scaleCalibration, -10000, 10000, STO_ITEM_SCALE_CALIBRATION_FACTOR);
-SysPara<double> sysParaScaleKnownWeight(&scaleKnownWeight, 0, 2000, STO_ITEM_SCALE_KNOWN_WEIGHT);
+SysPara<float> sysParaScaleCalibration(&scaleCalibration, -100000, 100000, STO_ITEM_SCALE_CALIBRATION_FACTOR);
+SysPara<float> sysParaScaleKnownWeight(&scaleKnownWeight, 0, 2000, STO_ITEM_SCALE_KNOWN_WEIGHT);
 
 // Other variables
 int relayON, relayOFF;           // used for relay trigger type. Do not change!
@@ -261,7 +261,6 @@ unsigned long timeBrewDetection = 0;
 int isBrewDetected = 0;                 // flag is set if brew was detected
 bool movingAverageInitialized = false;  // flag set when average filter is initialized, also used for sensor check
 
-// Brewing, 1 = Normal Preinfusion , 2 = Scale & Shottimer = 2
 #include "brewscaleini.h"
 
 // Sensor check
@@ -611,7 +610,6 @@ void refreshTemp() {
         }
     }
 }
-
 
 #include "brewvoid.h"
 #include "powerswitchvoid.h"
@@ -2052,12 +2050,6 @@ void setup() {
         delay(2000); // caused crash with wifi manager on esp8266, should be ok on esp32
     #endif
 
-    // Init Scale by BREWMODE 2 or SHOTTIMER 2
-    #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
-        initScale();
-    #endif
-
-
     // Fallback offline
     if (connectmode == 1) {  // WiFi Mode
         wiFiSetup();
@@ -2130,6 +2122,11 @@ void setup() {
     #endif
     #if (PRESSURESENSOR == 1)
         previousMillisPressure = currentTime;
+    #endif
+
+    // Init Scale by BREWMODE 2 or SHOTTIMER 2
+    #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
+        initScale();
     #endif
 
     setupDone = true;
@@ -2479,6 +2476,8 @@ int readSysParamsFromStorage(void) {
     if (sysParaWifiCredentialsSaved.getStorage() != 0) return -1;
     if (sysParaStandbyModeOn.getStorage() != 0) return -1;
     if (sysParaStandbyModeTime.getStorage() != 0) return -1;
+    if (sysParaScaleCalibration.getStorage() != 0) return -1;
+    if (sysParaScaleKnownWeight.getStorage() != 0) return -1;
 
     return 0;
 }
@@ -2515,6 +2514,8 @@ int writeSysParamsToStorage(void) {
     if (sysParaWifiCredentialsSaved.setStorage() != 0) return -1;
     if (sysParaStandbyModeOn.setStorage() != 0) return -1;
     if (sysParaStandbyModeTime.setStorage() != 0) return -1;
+    if (sysParaScaleCalibration.setStorage() != 0) return -1;
+    if (sysParaScaleKnownWeight.setStorage() != 0) return -1;
 
     return storageCommit();
 }

@@ -31,9 +31,9 @@ typedef struct __attribute__((packed)) {
     double brewTempOffset;
     uint8_t freeToUse3;
     double brewTimeMs;
-    uint8_t freeToUse4[2];
+    float scaleCalibration;
     double preInfusionTimeMs;
-    uint8_t freeToUse5[2];
+    float scaleKnownWeight;
     double preInfusionPauseMs;
     uint8_t freeToUse6[21];
     uint8_t pidBdOn;
@@ -62,8 +62,6 @@ typedef struct __attribute__((packed)) {
     double steamSetpoint;
     uint8_t standbyModeOn;
     double standbyModeTime;
-    float scaleCalibration;
-    double scaleKnownWeight;
 } sto_data_t;
 
 // set item defaults
@@ -80,9 +78,9 @@ static const sto_data_t itemDefaults PROGMEM = {
     TEMPOFFSET,                               // STO_ITEM_BREW_TEMP_OFFSET
     0xFF,                                     // free to use
     BREW_TIME,                                // STO_ITEM_BREW_TIME
-    {0xFF, 0xFF},                             // free to use
+    SCALE_CALIBRATION_FACTOR,                    //STO_ITEM_SCALE_CALIBRATION_FACTOR
     PRE_INFUSION_TIME,                        // STO_ITEM_PRE_INFUSION_TIME
-    {0xFF, 0xFF},                             // free to use
+    SCALE_KNOWN_WEIGHT,                          // STO_ITEM_SCALE_KNOWN_WEIGHT
     PRE_INFUSION_PAUSE_TIME,                  // STO_ITEM_PRE_INFUSION_PAUSE
     {   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
         0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
@@ -114,8 +112,6 @@ static const sto_data_t itemDefaults PROGMEM = {
     STEAMSETPOINT,                            // STO_ITEM_STEAM_SETPOINT
     STANDBY_MODE_ON,                          // STO_ITEM_STANDBY_MODE_ON
     STANDBY_MODE_TIME,                         // STO_ITEM_STANDBY_MODE_TIME 
-    SCALE_CALIBRATION_FACTOR,                    //STO_ITEM_SCALE_CALIBRATION_FACTOR
-    SCALE_KNOWN_WEIGHT                          // STO_ITEM_SCALE_KNOWN_WEIGHT
 };
 
 /**

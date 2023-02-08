@@ -194,11 +194,13 @@ void brew() {
     if (OnlyPID == 0) {
         unsigned long currentMillistemp = millis();
         checkbrewswitch();
+        double brewDelay = 0;
 
         if (brewswitch == LOW && brewcounter > kBrewIdle) {
             // abort function for state machine from every state
             debugPrintln("Brew stopped manually");
             brewcounter = kWaitBrewOff;
+            brewDelay = scaleDelayValue;
         }
 
         if (brewcounter > kBrewIdle && brewcounter < kWaitBrewOff) {
@@ -284,7 +286,10 @@ void brew() {
                 digitalWrite(PIN_VALVE, relayOFF);
                 digitalWrite(PIN_PUMP, relayOFF);
                 brewcounter = kWaitBrewOff;
-                timeBrewed = 0;
+                brewDelay = timeBrewed + scaleDelayValue;
+                if (timeBrewed > brewDelay) {
+                    timeBrewed = 0;
+                }
 
                 break;
 
