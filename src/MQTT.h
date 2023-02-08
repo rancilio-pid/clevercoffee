@@ -31,20 +31,9 @@ unsigned long lastMQTTConnectionAttempt = millis();
 unsigned int MQTTReCnctFlag;
 unsigned int MQTTReCnctCount = 0;
 
-enum MQTTSettableType {
-    tUInt8,
-    tDouble,
-};
 
-struct mqttVars_t {
-    String mqttParamName;
-    MQTTSettableType type;
-    int minValue;
-    int maxValue;
-    void *mqttVarPtr;
-};
-
-extern std::vector<mqttVars_t> mqttVars;
+extern std::map<const char*, std::function<editable_t*()>, cmp_str> mqttVars;
+extern std::map<const char*, std::function<double()>, cmp_str> mqttSensors;
 
 
 /**
@@ -62,11 +51,14 @@ void checkMQTT() {
             MQTTReCnctCount++;                     // Increment reconnection Counter
             debugPrintf("Attempting MQTT reconnection: %i\n", MQTTReCnctCount);
 
-            if (mqtt.connect(hostname, mqtt_username, mqtt_password, topic_will, 0, 0, "offline") == true) {
+            if (mqtt.connect(hostname, mqtt_username, mqtt_password, topic_will, 0, true, "offline") == true) {
                 mqtt.subscribe(topic_set);
                 debugPrintln("Subscribe to MQTT Topics");
             }   // Try to reconnect to the server; connect() is a blocking
                 // function, watch the timeout!
+            else {
+                debugPrintf("Failed to connect to MQTT due to reason: %i\n", mqtt.state());
+            }
         }
     }
 }
@@ -75,10 +67,19 @@ void checkMQTT() {
 /**
  * @brief Publish Data to MQTT
  */
+bool mqtt_publish(const char *reading, char *payload, boolean retain) {
+    char topic[120];
+    snprintf(topic, 120, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
+    return mqtt.publish(topic, payload, retain);
+}
+
+/**
+ * @brief Publish Data to MQTT
+ */
 bool mqtt_publish(const char *reading, char *payload) {
     char topic[120];
     snprintf(topic, 120, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
-    return mqtt.publish(topic, payload, true);
+    return mqtt.publish(topic, payload, false);
 }
 
 
@@ -89,48 +90,35 @@ bool mqtt_publish(const char *reading, char *payload) {
  * @param value MQTT value
  */
 void assignMQTTParam(char *param, double value) {
-    String key = String(param);
-    boolean paramValid = false;
-    boolean paramInRange = false;
-
-    for (mqttVars_t m : mqttVars) {
-        if (m.mqttParamName.equals(key)) {
-            if (value >= m.minValue && value <= m.maxValue) {
-                switch (m.type) {
-                    case tDouble:
-                        *(double *)m.mqttVarPtr = value;
-                        paramValid = true;
-                        break;
-                    case tUInt8:
-                        *(uint8_t *)m.mqttVarPtr = value;
-                        paramValid = true;
-                        break;
-                    default:
-                        Serial.println(String(m.type) + " is not a recognized type for this MQTT parameter.");
-                }
-
-                paramInRange = true;
+    try
+    {
+        editable_t *var = mqttVars.at(param)();
+        if (value >= var->minValue && value <= var->maxValue) {
+            switch (var->type) {
+                case kDouble:
+                    *(double *)var->ptr = value;
+                    mqtt_publish(param, number2string(value), true);
+                    break;
+                case kUInt8:
+                    *(uint8_t *)var->ptr = value;
+                    if (strcasecmp(param, "steamON") == 0) {
+                        steamFirstON = value;
+                    }
+                    mqtt_publish(param, number2string(value), true);
+                    writeSysParamsToStorage();
+                    break;
+                default:
+                    debugPrintf("%s is not a recognized type for this MQTT parameter.\n", var->type);
             }
-            else {
-                Serial.println("Value out of range for MQTT parameter "+ key + ".");
-                paramInRange = false;
-            }
-
-            break;
+        }
+        else
+        {
+            debugPrintf("Value out of range for MQTT parameter %s\n", param);
         }
     }
-
-    if (paramValid && paramInRange) {
-
-        if (key.equals("SteamON")) {
-            steamFirstON = value;
-        }
-
-        mqtt_publish(param, number2string(value));
-        writeSysParamsToStorage();
-    }
-    else {
-        Serial.println(key + " is not a valid MQTT parameter.");
+    catch(const std::out_of_range& e)
+    {
+        debugPrintf("%s is not a valid MQTT parameter.\n", param);
     }
 }
 
@@ -151,15 +139,15 @@ void mqtt_callback(char *topic, byte *data, unsigned int length) {
     double data_double;
 
     snprintf(topic_pattern, sizeof(topic_pattern), "%s%s/%%[^\\/]/%%[^\\/]", mqtt_topic_prefix, hostname);
-    Serial.println(topic_pattern);
+    debugPrintln(topic_pattern);
 
     if ((sscanf(topic_str, topic_pattern, &configVar, &cmd) != 2) || (strcmp(cmd, "set") != 0)) {
-        Serial.println(topic_str);
+        debugPrintln(topic_str);
         return;
     }
 
-    Serial.println(topic_str);
-    Serial.println(data_str);
+    debugPrintln(topic_str);
+    debugPrintln(data_str);
 
     sscanf(data_str, "%lf", &data_double);
 
@@ -181,48 +169,31 @@ void writeSysParamsToMQTT(void) {
             // status topic (will sets it to offline)
             mqtt_publish("status", (char *)"online");
 
-            mqtt_publish("temperature", number2string(temperature));
-            mqtt_publish("brewSetpoint", number2string(brewSetpoint));
-            mqtt_publish("brewTempOffset", number2string(brewTempOffset));
-            mqtt_publish("steamSetpoint", number2string(steamSetpoint));
-            mqtt_publish("heaterPower", number2string(pidOutput));
-            mqtt_publish("currentKp", number2string(bPID.GetKp()));
-            mqtt_publish("currentKi", number2string(bPID.GetKi()));
-            mqtt_publish("currentKd", number2string(bPID.GetKd()));
-            mqtt_publish("pidON", number2string(pidON));
-            mqtt_publish("brewtime", number2string(brewtime));
-            mqtt_publish("preinfusionpause", number2string(preinfusionpause));
-            mqtt_publish("preinfusion", number2string(preinfusion));
-            mqtt_publish("steamON", number2string(steamON));
-            mqtt_publish("backflushON", number2string(backflushON));
+            for (const auto& pair : mqttVars) {
+                editable_t *e = pair.second();
 
-            // Normal PID
-            mqtt_publish("aggKp", number2string(aggKp));
-            mqtt_publish("aggTn", number2string(aggTn));
-            mqtt_publish("aggTv", number2string(aggTv));
-            mqtt_publish("aggIMax", number2string(aggIMax));
-
-            // BD PID
-            mqtt_publish("aggbKp", number2string(aggbKp));
-            mqtt_publish("aggbTn", number2string(aggbTn));
-            mqtt_publish("aggbTv", number2string(aggbTv));
-
-            // Start PI
-            mqtt_publish("startKp", number2string(startKp));
-            mqtt_publish("startTn", number2string(startTn));
-
-             // Steam P
-            mqtt_publish("steamKp", number2string(steamKp));
-
-            //BD Parameter
-        #if BREWDETECTION == 1
-            mqtt_publish("brewTimer", number2string(brewtimesoftware));
-            mqtt_publish("brewLimit", number2string(bdSensitivity));
-        #endif
-
-        #if BREWMODE == 2
-            mqtt_publish("weightSetpoint", number2string(weightSetpoint));
-        #endif
+                switch (e->type) {
+                    case kDouble:
+                        mqtt_publish(pair.first, number2string(*(double *) e->ptr), true);
+                        break;
+                    case kDoubletime:
+                        mqtt_publish(pair.first, number2string(*(double *) e->ptr), true);
+                        break;
+                    case kInteger:
+                        mqtt_publish(pair.first, number2string(*(int *) e->ptr), true);
+                        break;
+                    case kUInt8:
+                        mqtt_publish(pair.first, number2string(*(uint8_t *) e->ptr), true);
+                        break;
+                    case kCString:
+                        mqtt_publish(pair.first, number2string(*(char *) e->ptr), true);
+                        break;
+                }
+            }
+            
+            for (const auto& pair : mqttSensors) {
+                mqtt_publish(pair.first, number2string(pair.second()));
+            }
         }
     }
 }

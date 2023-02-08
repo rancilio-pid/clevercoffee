@@ -101,6 +101,7 @@ int BrewMode = BREWMODE;
 uint8_t oled_i2c = OLED_I2C;
 
 // WiFi
+uint8_t wifiCredentialsSaved = 0;
 WiFiManager wm;
 const unsigned long wifiConnectionDelay = WIFICONNECTIONDELAY;
 const unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
@@ -218,6 +219,7 @@ SysPara<uint8_t> sysParaUseBDPID(&useBDPID, 0, 1, STO_ITEM_USE_BD_PID);
 SysPara<double> sysParaBrewTime(&brewtime, BREW_TIME_MIN, BREW_TIME_MAX, STO_ITEM_BREW_TIME);
 SysPara<double> sysParaBrewSwTime(&brewtimesoftware, BREW_SW_TIME_MIN, BREW_SW_TIME_MAX, STO_ITEM_BREW_SW_TIME);
 SysPara<double> sysParaBrewThresh(&brewSensitivity, BD_THRESHOLD_MIN, BD_THRESHOLD_MAX, STO_ITEM_BD_THRESHOLD);
+SysPara<uint8_t> sysParaWifiCredentialsSaved(&wifiCredentialsSaved, WIFI_CREDENTIALS_SAVED_MIN, WIFI_CREDENTIALS_SAVED_MAX, STO_ITEM_WIFI_CREDENTIALS_SAVED);
 SysPara<double> sysParaPreInfTime(&preinfusion, PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX, STO_ITEM_PRE_INFUSION_TIME);
 SysPara<double> sysParaPreInfPause(&preinfusionpause, PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, STO_ITEM_PRE_INFUSION_PAUSE);
 SysPara<double> sysParaPidKpSteam(&steamKp, PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, STO_ITEM_PID_KP_STEAM);
@@ -297,31 +299,6 @@ PID bPID(&temperature, &pidOutput, &setpoint, aggKp, aggKi, aggKd, 1, DIRECT);
 ZACwire Sensor2(PIN_TEMPSENSOR, 306);    // set pin to receive signal from the TSic 306
 
 
-// MQTT
-#include "MQTT.h"
-
-std::vector<mqttVars_t> mqttVars = {
-    {"brewSetpoint", tDouble, BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, (void *)&brewSetpoint},
-    {"brewTempOffset", tDouble, BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, (void *)&brewTempOffset},
-    {"brewtime", tDouble, BREW_TIME_MIN, BREW_TIME_MAX, (void *)&brewtime},
-    {"preinfusion", tDouble, PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX, (void *)&preinfusion},
-    {"preinfusionpause", tDouble, PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, (void *)&preinfusionpause},
-    {"pidON", tUInt8, 0, 1, (void *)&pidON},
-    {"steamON", tUInt8, 0, 1, (void *)&steamON},
-    {"steamSetpoint", tDouble, STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, (void *)&steamSetpoint},
-    {"backflushON", tUInt8, 0, 1, (void *)&backflushON},
-    {"aggKp", tDouble, PID_KP_REGULAR_MIN, PID_KP_REGULAR_MAX, (void *)&aggKp},
-    {"aggTn", tDouble, PID_TN_REGULAR_MIN, PID_TN_REGULAR_MAX, (void *)&aggTn},
-    {"aggTv", tDouble, PID_TV_REGULAR_MIN, PID_TV_REGULAR_MAX, (void *)&aggTv},
-    {"aggIMax", tDouble, PID_I_MAX_REGULAR_MIN, PID_I_MAX_REGULAR_MAX, (void *)&aggIMax},
-    {"aggbKp", tDouble, PID_KP_BD_MIN, PID_KP_BD_MAX, (void *)&aggbKp},
-    {"aggbTn", tDouble, PID_TN_BD_MIN, PID_TN_BD_MAX, (void *)&aggbTn},
-    {"aggbTv", tDouble, PID_TV_BD_MIN, PID_TV_BD_MAX, (void *)&aggbTv},
-    {"steamKp", tDouble, PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, (void *)&steamKp},
-    {"startKp", tDouble, PID_KP_START_MIN, PID_KP_START_MAX, (void *)&startKp},
-    {"startTn", tDouble, PID_TN_START_MIN, PID_TN_START_MAX, (void *)&startTn},
-};
-
 #include "InfluxDB.h"
 
 // Embedded HTTP Server
@@ -336,6 +313,21 @@ enum SectionNames {
 };
 
 std::map<String, editable_t> editableVars = {};
+
+
+struct cmp_str
+{
+   bool operator()(char const *a, char const *b) const
+   {
+      return strcmp(a, b) < 0;
+   }
+};
+
+// MQTT
+#include "MQTT.h"
+
+std::map<const char*, std::function<editable_t*()>, cmp_str> mqttVars = {};
+std::map<const char*, std::function<double()>, cmp_str> mqttSensors = {};
 
 unsigned long lastTempEvent = 0;
 unsigned long tempEventInterval = 1000;
@@ -1347,13 +1339,24 @@ void wiFiSetup() {
     wm.setConnectTimeout(10); // Try 10 sec to connect to WLAN, 5 sec too short!
     wm.setBreakAfterConfig(true);
     wm.setConnectRetries(3);
-    //wm.setWiFiAutoReconnect(true);
+
+    // Wifisetup fro
+    sysParaWifiCredentialsSaved.getStorage();
+
+    if (wifiCredentialsSaved == 0) {
+        const char hostname[] = (STR(HOSTNAME));
+        displayLogo("Connect to Wifi: ", HOSTNAME);
+        debugPrintf("Connect to Wifi: %s \n", String(hostname));
+    }
+
     wm.setHostname(hostname);
 
     if (wm.autoConnect(hostname, pass)) {
+        wifiCredentialsSaved = 1;
+        sysParaWifiCredentialsSaved.setStorage();
+        storageCommit();
         debugPrintf("WiFi connected - IP = %i.%i.%i.%i\n", WiFi.localIP()[0],
                     WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3]);
-
         byte mac[6];
         WiFi.macAddress(mac);
         String macaddr0 = number2string(mac[0]);
@@ -1818,6 +1821,52 @@ void setup() {
     };
     // when adding parameters, set EDITABLE_VARS_LEN to max of .position
 
+    // Editable values reported to MQTT
+    mqttVars["pidON"] = []{ return &editableVars.at("PID_ON"); };
+    mqttVars["brewSetpoint"] = []{ return &editableVars.at("BREW_SETPOINT"); };
+    mqttVars["brewTempOffset"] = []{ return &editableVars.at("BREW_TEMP_OFFSET"); };
+    mqttVars["steamON"] = []{ return &editableVars.at("STEAM_MODE"); };
+    mqttVars["steamSetpoint"] = []{ return &editableVars.at("STEAM_SETPOINT"); };
+    mqttVars["brewPidDelay"] = []{ return &editableVars.at("PID_BD_DELAY"); };
+    mqttVars["backflushON"] = []{ return &editableVars.at("BACKFLUSH_ON"); };
+    mqttVars["startUsePonM"] = []{ return &editableVars.at("START_USE_PONM"); };
+    mqttVars["startKp"] = []{ return &editableVars.at("START_KP"); };
+    mqttVars["startTn"] = []{ return &editableVars.at("START_TN"); };
+    mqttVars["aggKp"] = []{ return &editableVars.at("PID_KP"); };
+    mqttVars["aggTn"] = []{ return &editableVars.at("PID_TN"); };
+    mqttVars["aggTv"] = []{ return &editableVars.at("PID_TV"); };
+    mqttVars["aggIMax"] = []{ return &editableVars.at("PID_I_MAX"); };
+    mqttVars["steamKp"] = []{ return &editableVars.at("STEAM_KP"); };
+
+    if (ONLYPID == 0) {
+        mqttVars["brewtime"] = []{ return &editableVars.at("BREW_TIME"); };
+        mqttVars["preinfusionpause"] = []{ return &editableVars.at("BREW_PREINFUSIONPAUSE"); };
+        mqttVars["preinfusion"] = []{ return &editableVars.at("BREW_PREINFUSION"); };
+    }
+
+    if (ONLYPIDSCALE == 1 || BREWMODE == 2) {
+        mqttVars["weightSetpoint"] = []{ return &editableVars.at("SCALE_WEIGHTSETPOINT"); };
+    }
+
+    if (BREWDETECTION > 0) {
+        mqttVars["pidUseBD"] = []{ return &editableVars.at("PID_BD_ON"); };
+        mqttVars["aggbKp"] = []{ return &editableVars.at("PID_BD_KP"); };
+        mqttVars["aggbTn"] = []{ return &editableVars.at("PID_BD_TN"); };
+        mqttVars["aggbTv"] = []{ return &editableVars.at("PID_BD_TV"); };
+
+        if (BREWDETECTION == 1) {
+            mqttVars["brewTimer"] = []{ return &editableVars.at("PID_BD_TIME"); };
+            mqttVars["brewLimit"] = []{ return &editableVars.at("PID_BD_SENSITIVITY"); };
+        }
+    }
+    
+    // Values reported to MQTT
+    mqttSensors["temperature"] = []{ return temperature; };
+    mqttSensors["heaterPower"] = []{ return pidOutput; };
+    mqttSensors["currentKp"] = []{ return bPID.GetKp(); };
+    mqttSensors["currentKi"] = []{ return bPID.GetKi(); };
+    mqttSensors["currentKd"] = []{ return bPID.GetKd(); };
+
     Serial.begin(115200);
 
     initTimer1();
@@ -1869,14 +1918,15 @@ void setup() {
         u8g2.setI2CAddress(oled_i2c * 2);
         u8g2.begin();
         u8g2_prepare();
-        displayLogo(String("Version ") + String(sysVersion), "");
-       // delay(2000); // caused crash with wifi manager
+        displayLogo(String("Version "), String(sysVersion));
+        delay(2000); // caused crash with wifi manager on esp8266, should be ok on esp32
     #endif
 
     // Init Scale by BREWMODE 2 or SHOTTIMER 2
     #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
         initScale();
     #endif
+
 
     // Fallback offline
     if (connectmode == 1) {  // WiFi Mode
@@ -2259,6 +2309,7 @@ int readSysParamsFromStorage(void) {
     if (sysParaPidKpSteam.getStorage() != 0) return -1;
     if (sysParaSteamSetpoint.getStorage() != 0) return -1;
     if (sysParaWeightSetpoint.getStorage() != 0) return -1;
+    if (sysParaWifiCredentialsSaved.getStorage() != 0) return -1;
 
     return 0;
 }
@@ -2292,6 +2343,7 @@ int writeSysParamsToStorage(void) {
     if (sysParaPidKpSteam.setStorage() != 0) return -1;
     if (sysParaSteamSetpoint.setStorage() != 0) return -1;
     if (sysParaWeightSetpoint.setStorage() != 0) return -1;
+    if (sysParaWifiCredentialsSaved.setStorage() != 0) return -1;
 
     return storageCommit();
 }
