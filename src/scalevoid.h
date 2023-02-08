@@ -142,7 +142,6 @@ void shottimerscale() {
             }
         }
 
-
             break;
 
         case 20:
