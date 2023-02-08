@@ -838,14 +838,18 @@ float filterPressureValue(float input) {
  * @brief steamON & Quickmill
  */
 void checkSteamON() {
-    // check digital GIPO
-    if (digitalRead(PIN_STEAMSWITCH) == HIGH) {
-        steamON = 1;
-    }
+    
+    if (STEAMSWITCHTYPE > 0){
 
-    // if activated via web interface then steamFirstON == 1, prevent override
-    if (digitalRead(PIN_STEAMSWITCH) == LOW && steamFirstON == 0) {
-        steamON = 0;
+        // check digital GIPO
+        if (digitalRead(PIN_STEAMSWITCH) == HIGH) {
+            steamON = 1;
+        }
+
+        // if activated via web interface then steamFirstON == 1, prevent override
+        if (digitalRead(PIN_STEAMSWITCH) == LOW && steamFirstON == 0) {
+            steamON = 0;
+        }
     }
 
     // monitor QuickMill thermoblock steam-mode
@@ -1894,7 +1898,6 @@ void setup() {
     pinMode(PIN_VALVE, OUTPUT);
     pinMode(PIN_PUMP, OUTPUT);
     pinMode(PIN_HEATER, OUTPUT);
-    pinMode(PIN_STEAMSWITCH, INPUT);
     digitalWrite(PIN_VALVE, relayOFF);
     digitalWrite(PIN_PUMP, relayOFF);
     digitalWrite(PIN_HEATER, LOW);
@@ -1902,6 +1905,11 @@ void setup() {
     // IF POWERSWITCH is connected
     if (POWERSWITCHTYPE > 0) {
         pinMode(PIN_POWERSWITCH, INPUT);
+    }
+
+    // IF STEAMSWITCH is connected
+    if (STEAMSWITCHTYPE > 0) {
+        pinMode(PIN_STEAMSWITCH, INPUT);
     }
 
     // IF Voltage sensor selected
