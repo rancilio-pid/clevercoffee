@@ -1926,6 +1926,58 @@ void setup() {
         .ptr = (void *)&standbyModeTime
     };
 
+    editableVars["TARE_ON"] = {
+        .displayName = F("Tare"),
+        .hasHelpText = false,
+        .helpText = "",
+        .type = kUInt8,
+        .section = sOtherSection,
+        .position = 26,
+        .show = [] { return false; },
+        .minValue = 0,
+        .maxValue = 1,
+        .ptr = (void *)&tareON
+    };
+
+    editableVars["CALIBRATION_ON"] = {
+        .displayName = F("Calibration"),
+        .hasHelpText = false,
+        .helpText = "",
+        .type = kUInt8,
+        .section = sOtherSection,
+        .position = 26,
+        .show = [] { return false; },
+        .minValue = 0,
+        .maxValue = 1,
+        .ptr = (void *)&calibrateON
+    };
+
+        editableVars["SCALE_KNOWN_WEIGHT"] = {
+        .displayName = F("Known weight"),
+        .hasHelpText = false,
+        .helpText = "",
+        .type = kFloat,
+        .section = sOtherSection,
+        .position = 26,
+        .show = [] { return false; },
+        .minValue = 0,
+        .maxValue = 1,
+        .ptr = (void *)&scaleKnownWeight
+    };
+
+        editableVars["SCALE_CALIBRATION"] = {
+        .displayName = F("Calibration factor"),
+        .hasHelpText = false,
+        .helpText = "",
+        .type = kFloat,
+        .section = sOtherSection,
+        .position = 26,
+        .show = [] { return false; },
+        .minValue = 0,
+        .maxValue = 1,
+        .ptr = (void *)&scaleCalibration
+    };
+
     editableVars["VERSION"] = {
         .displayName = F("Version"),
         .hasHelpText = false,
