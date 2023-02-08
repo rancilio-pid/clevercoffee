@@ -26,7 +26,8 @@ enum EditableKind {
     kUInt8,
     kDouble,
     kDoubletime,
-    kCString
+    kCString,
+    kFloat
 };
 
 struct editable_t {
@@ -104,6 +105,8 @@ String getValue(String varName) {
     try {
         editable_t e = editableVars.at(varName);
         switch (e.type) {
+            case kFloat:
+                return String(*(float *)e.ptr);
             case kDouble:
                 return String(*(double *)e.ptr);
             case kDoubletime:
@@ -259,6 +262,24 @@ void serverSetup() {
         request->redirect("/");
     });
 
+    server.on("/toggleTare", HTTP_POST, [](AsyncWebServerRequest *request) {
+        int tare = flipUintValue(tareON);
+
+        setBackflush(tare);
+        debugPrintf("Toggle tare mode: %i \n", tare);
+
+        request->redirect("/");
+    });
+
+    server.on("/toggleCalibration", HTTP_POST, [](AsyncWebServerRequest *request) {
+        int calibrate = flipUintValue(calibrateON);
+
+        setBackflush(calibrate);
+        debugPrintf("Toggle tare mode: %i \n", calibrate);
+
+        request->redirect("/");
+    });
+
     server.on("/parameters", HTTP_GET | HTTP_POST, [](AsyncWebServerRequest *request) {
         // stop writing to heater in ISR method (digitalWrite) as it causes
         // crashes when called at the same time as flash is read or written
@@ -305,6 +326,9 @@ void serverSetup() {
                     } else if (e.type == kDouble || e.type == kDoubletime) {
                         float newVal = atof(p->value().c_str());
                         *(double *)e.ptr = newVal;
+                    } else if (e.type == kFloat) {
+                        float newVal = atof(p->value().c_str());
+                        *(float *)e.ptr = newVal;
                     }
                     paramToJson(varName, e, doc);
                 } catch (const std::out_of_range &exc) {
