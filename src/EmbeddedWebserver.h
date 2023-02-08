@@ -60,7 +60,7 @@ void serverSetup();
 void setEepromWriteFcn(int (*fcnPtr)(void));
 
 // editable vars are specified in main.cpp
-#define EDITABLE_VARS_LEN 29
+#define EDITABLE_VARS_LEN 33
 extern std::map<String, editable_t> editableVars;
 
 
@@ -143,6 +143,8 @@ void paramToJson(String name, editable_t &e, DynamicJsonDocument &doc) {
         paramObj["value"] = *(uint8_t *)e.ptr;
     } else if (e.type == kDouble || e.type == kDoubletime) {
         paramObj["value"] = round2(*(double *)e.ptr);
+    } else if (e.type == kFloat) {
+        paramObj["value"] = round2(*(float *)e.ptr);
     } else if (e.type == kCString) {
         paramObj["value"] = (char *)e.ptr;
     }
