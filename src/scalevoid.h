@@ -9,7 +9,7 @@
 #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
 
 void calibrate() {
-    calibrateON = 0;
+    calibrationON = 0;
     LoadCell.setCalFactor(1.0);
     u8g2.clearBuffer();
     u8g2.drawStr(0, 22, "Calibration coming up");
@@ -57,7 +57,7 @@ void checkWeight() {
         }
     }
 
-    if (calibrateON) {
+    if (calibrationON) {
         while (!LoadCell.update());
         calibrate();
     }
@@ -104,7 +104,7 @@ void initScale() {
         delay(5000);
     }
     else {
-        if (calibrateON) {
+        if (calibrationON) {
             LoadCell.setCalFactor(1.0);
             while (!LoadCell.update());
             calibrate();

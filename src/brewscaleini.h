@@ -42,7 +42,7 @@ unsigned long previousMillistempanalogreading;      // ms for analogreading
 
 // Shot timer with or without scale
 #if (ONLYPIDSCALE == 1 || BREWMODE == 2)
-    boolean calibrateON = 0;
+    boolean calibrationON = 0;
     boolean tareON = 0;
     int shottimercounter = 10 ;
     float weight = 0;                                   // value from HX711

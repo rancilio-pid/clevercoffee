@@ -150,6 +150,10 @@ void assignMQTTParam(char *param, double value) {
                     *(double *)var->ptr = value;
                     mqtt_publish(param, number2string(value), true);
                     break;
+                case kFloat:
+                    *(float *)var->ptr = value;
+                    mqtt_publish(param, number2string(value), true);
+                    break;
                 case kUInt8:
                     *(uint8_t *)var->ptr = value;
                     if (strcasecmp(param, "steamON") == 0) {
