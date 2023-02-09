@@ -235,6 +235,7 @@ void writeSysParamsToMQTT(void) {
             mqtt_publish("calibrationON", number2string(calibrateON));
             mqtt_publish("tareON", number2string(tareON));
             mqtt_publish("weight", number2string(weight));
+            mqtt_publish("weightBrew", number2string(weightBrew));
         #endif
         }
     }
