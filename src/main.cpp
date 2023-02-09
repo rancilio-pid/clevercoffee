@@ -326,6 +326,7 @@ enum SectionNames {
     sTempSection,
     sBDSection,
     sPowerSection,
+    sScaleSection,
     sOtherSection
 };
 
@@ -1933,7 +1934,7 @@ void setup() {
         .hasHelpText = false,
         .helpText = "",
         .type = kUInt8,
-        .section = sOtherSection,
+        .section = sScaleSection,
         .position = 29,
         .show = [] { return false; },
         .minValue = 0,
@@ -1946,7 +1947,7 @@ void setup() {
         .hasHelpText = false,
         .helpText = "",
         .type = kUInt8,
-        .section = sOtherSection,
+        .section = sScaleSection,
         .position = 30,
         .show = [] { return false; },
         .minValue = 0,
@@ -1959,7 +1960,7 @@ void setup() {
         .hasHelpText = false,
         .helpText = "",
         .type = kFloat,
-        .section = sTempSection,
+        .section = sScaleSection,
         .position = 31,
         .show = [] { return true; },
         .minValue = 0,
@@ -1972,7 +1973,7 @@ void setup() {
         .hasHelpText = false,
         .helpText = "",
         .type = kFloat,
-        .section = sTempSection,
+        .section = sScaleSection,
         .position = 32,
         .show = [] { return true; },
         .minValue = -100000,
