@@ -99,6 +99,10 @@ void assignMQTTParam(char *param, double value) {
                     *(double *)var->ptr = value;
                     mqtt_publish(param, number2string(value), true);
                     break;
+                case kFloat:
+                    *(float *)var->ptr = value;
+                    mqtt_publish(param, number2string(value), true);
+                    break;
                 case kUInt8:
                     *(uint8_t *)var->ptr = value;
                     if (strcasecmp(param, "steamON") == 0) {
@@ -178,6 +182,9 @@ void writeSysParamsToMQTT(void) {
                         break;
                     case kDoubletime:
                         mqtt_publish(pair.first, number2string(*(double *) e->ptr), true);
+                        break;
+                    case kFloat:
+                        mqtt_publish(pair.first, number2string(*(float *) e->ptr), true);
                         break;
                     case kInteger:
                         mqtt_publish(pair.first, number2string(*(int *) e->ptr), true);

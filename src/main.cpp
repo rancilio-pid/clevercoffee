@@ -1835,7 +1835,7 @@ void setup() {
         .show = [] { return false; },
         .minValue = 0,
         .maxValue = 1,
-        .ptr = (void *)&calibrateON
+        .ptr = (void *)&calibrationON
     };
 
         editableVars["SCALE_KNOWN_WEIGHT"] = {
@@ -1903,6 +1903,10 @@ void setup() {
 
     if (ONLYPIDSCALE == 1 || BREWMODE == 2) {
         mqttVars["weightSetpoint"] = []{ return &editableVars.at("SCALE_WEIGHTSETPOINT"); };
+        mqttVars["scaleCalibration"] = []{ return &editableVars.at("SCALE_CALIBRATION"); };
+        mqttVars["scaleKnownWeight"] = []{ return &editableVars.at("SCALE_KNOWN_WEIGHT"); };
+        mqttVars["tareON"] = []{ return &editableVars.at("TARE_ON"); };
+        mqttVars["calibrationON"] = []{ return &editableVars.at("CALIBRATION_ON"); };
     }
 
     if (BREWDETECTION > 0) {
@@ -2281,7 +2285,7 @@ void setBackflush(int backflush) {
 }
 
 void setCalibration(int calibration) {
-    calibrateON = calibration;
+    calibrationON = calibration;
 }
 
 void setTare(int tare) {

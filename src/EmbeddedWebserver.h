@@ -274,7 +274,7 @@ void serverSetup() {
     });
 
     server.on("/toggleCalibration", HTTP_POST, [](AsyncWebServerRequest *request) {
-        int calibrate = flipUintValue(calibrateON);
+        int calibrate = flipUintValue(calibrationON);
 
         setCalibration(calibrate);
         debugPrintf("Toggle tare mode: %i \n", calibrate);
