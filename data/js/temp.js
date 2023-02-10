@@ -5,7 +5,8 @@ if (document.readyState === 'complete') {
     window.addEventListener('load', getTimeseries)
 }
 
-const maxRange = 3600
+const maxValues = 600            //max number of data points to keep in memory
+const updateInterval = 1000     //expected ms between updates (from event source with new values)
 
 var curTempVals = []
 var targetTempVals = []
@@ -19,7 +20,10 @@ var heaterDiv = 'chart-heater'
 let uplotTemp = null;
 let uplotHeater = null;
 
-function createTempData(jsonValue, isSingleValue=false) {
+function addTempData(jsonValue, isSingleValue=false) {
+    // add new value(s) to global data arrays and return in a
+    // format that uPlot can use
+
     if (isSingleValue) {
         const curTempKey = "currentTemp"
         const targetTempKey = "targetTemp"
@@ -61,10 +65,10 @@ function createTempData(jsonValue, isSingleValue=false) {
     }
 
     //reduce data if we have too much
-    if (tempDates.length > maxRange) {
-        tempDates.splice(0, tempDates.length - maxRange)
-        curTempVals.splice(0, curTempVals.length - maxRange)
-        targetTempVals.splice(0, targetTempVals.length - maxRange)
+    if (tempDates.length > maxValues) {
+        tempDates.splice(0, tempDates.length - maxValues)
+        curTempVals.splice(0, curTempVals.length - maxValues)
+        targetTempVals.splice(0, targetTempVals.length - maxValues)
     }
 
     //use data lists to create data array for uPlot
@@ -75,7 +79,7 @@ function createTempData(jsonValue, isSingleValue=false) {
     ];
 
     for (let i = 0; i < curTempVals.length; i++) {
-        data[0][i] = tempDates[i].getTime() / 1000
+        data[0][i] = tempDates[i].getTime() / updateInterval 
         data[1][i] = curTempVals[i]
         data[2][i] = targetTempVals[i]
     }
@@ -83,7 +87,7 @@ function createTempData(jsonValue, isSingleValue=false) {
     return data
 }
 
-function createHeaterData(jsonValue, isSingleValue=false) {
+function addHeaterData(jsonValue, isSingleValue=false) {
     if (isSingleValue) {
         const heaterPowerKey = "heaterPower"
 
@@ -111,10 +115,10 @@ function createHeaterData(jsonValue, isSingleValue=false) {
         }
     }
 
-    //reduce data if we have too much
-    if (heaterDates.length > maxRange) {
-        heaterDates.splice(0, heaterDates.length - maxRange)
-        heaterPowerVals.splice(0, heaterPowerVals.length - maxRange)
+    //reduce data if we have too many values (sliding window after that amount)
+    if (heaterDates.length > maxValues) {
+        heaterDates.splice(0, heaterDates.length - maxValues)
+        heaterPowerVals.splice(0, heaterPowerVals.length - maxValues)
     }
 
     //use data lists to create data array for uPlot
@@ -124,7 +128,7 @@ function createHeaterData(jsonValue, isSingleValue=false) {
     ];
 
     for (let i = 0; i < heaterPowerVals.length; i++) {
-        data[0][i] = heaterDates[i].getTime() / 1000
+        data[0][i] = heaterDates[i].getTime() / updateInterval 
         data[1][i] = heaterPowerVals[i]
     }
 
@@ -239,16 +243,30 @@ function makeHeaterChart(data) {
     uplotHeater = new uPlot(opts, sliceData(data, 0, data.length), document.getElementById(heaterDiv));
 }
 
-//append single plot data values
+//append single historic values
 function addPlotData(jsonValue) {    
-    let tempData = createTempData(jsonValue, true);
-    if (uplotTemp !== null) {
-        uplotTemp.setData(tempData);
+    function addData(data, u) {
+        let isTempZoomed = u.scales.x.min != u.data[0][0] || u.scales.x.max != u.data[0][u.data[0].length-1];        
+        if (isTempZoomed) {
+            let tempXScaleMinMax = [u.scales.x.min, u.scales.x.max]            
+            //add data but don't autoscale
+            u.setData(data, false);
+            // move the zoomed area one value to the right so the window stays the same
+            u.setScale('x', {min: tempXScaleMinMax[0]+1, max: tempXScaleMinMax[1]+1});
+        } else {
+            //add data and autoscale (including new data)
+            u.setData(data);
+        }        
     }
 
-    let heaterData = createHeaterData(jsonValue, true);
+    let tempData = addTempData(jsonValue, true);
+    if (uplotTemp !== null) {
+        addData(tempData, uplotTemp)
+    }
+
+    let heaterData = addHeaterData(jsonValue, true);
     if (uplotHeater !== null) {
-        uplotHeater.setData(heaterData);
+        addData(heaterData, uplotHeater)
     }
 }
 
@@ -270,15 +288,15 @@ window.addEventListener("resize", e => {
 });
 
 
-// get data from server
+// get initial history data from server
 function getTimeseries() {
     var xhr = new XMLHttpRequest()
 
     xhr.onload = (e) => {
         if (xhr.readyState === 4 && xhr.status === 200) {
             var tempHistory = JSON.parse(xhr.responseText)
-            let tempData = createTempData(tempHistory);
-            let heaterData = createHeaterData(tempHistory);
+            let tempData = addTempData(tempHistory);
+            let heaterData = addHeaterData(tempHistory);
             setTimeout(() => {
                 makeTempChart(tempData);
                 makeHeaterChart(heaterData);
