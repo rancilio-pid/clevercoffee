@@ -452,6 +452,7 @@ void serverSetup() {
     LittleFS.begin();
     server.serveStatic("/css", LittleFS, "/css/", "max-age=604800");  // cache for one week
     server.serveStatic("/js", LittleFS, "/js/", "max-age=604800");
+    server.serveStatic("/img", LittleFS, "/img/", "max-age=604800");  // cache for one week
     server.serveStatic("/webfonts", LittleFS, "/webfonts/", "max-age=604800");
     server.serveStatic("/", LittleFS, "/html/", "max-age=604800").setDefaultFile("index.html").setTemplateProcessor(staticProcessor);
 
