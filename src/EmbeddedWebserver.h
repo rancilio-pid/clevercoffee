@@ -49,7 +49,7 @@ double curTemp = 0.0;
 double tTemp = 0.0;
 double hPower = 0.0;
 
-#define HISTORY_LENGTH 1200    //60 mins of values (20 vals/min * 60 min)
+#define HISTORY_LENGTH 600    //30 mins of values (20 vals/min * 60 min) = 600 (7,2kb)
 
 static float tempHistory[3][HISTORY_LENGTH] = {0};
 int historyCurrentIndex = 0;
