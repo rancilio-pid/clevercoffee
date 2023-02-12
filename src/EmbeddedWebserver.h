@@ -181,9 +181,9 @@ String getHeader(String varName) {
             #endif
         case (str2int("VUEJS")):
             #if NOINTERNET == 1
-                return F("<script src=\"/js/vue.3.2.45.min.js\"></script>");
+                return F("<script src=\"/js/vue.3.2.47.min.js\"></script>");
             #else
-                return F("<script src=\"https://cdn.jsdelivr.net/npm/vue@3.2.45/dist/vue.global.prod.min.js\"></script>");
+                return F("<script src=\"https://cdn.jsdelivr.net/npm/vue@3.2.47/dist/vue.global.prod.min.js\"></script>");
             #endif
         case (str2int("VUE_NUMBER_INPUT")):
             #if NOINTERNET == 1

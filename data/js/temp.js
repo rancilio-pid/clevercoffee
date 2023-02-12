@@ -64,7 +64,7 @@ function addTempData(jsonValue, isSingleValue=false) {
         }
     }
 
-    //reduce data if we have too much
+    //reduce data if we have too much (sliding window after that amount)
     if (tempDates.length > maxValues) {
         tempDates.splice(0, tempDates.length - maxValues)
         curTempVals.splice(0, curTempVals.length - maxValues)
