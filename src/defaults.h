@@ -47,6 +47,18 @@ int writeSysParamsToStorage(void);
 #define FLUSHTIME 6000             // time in ms the 3-way valve is open -> backflush
 #define MAXFLUSHCYCLES 5           // number of cycles the backflush should run, 0 = disabled
 
+// INFLUXDB
+#define INFLUXDB_ENALBE 0                // 1 = INFLUX enabled, 0 = INFLUX disabled
+#define INFLUXDB_URL "http://192.168.2.170:8086"            // InfluxDB server address
+#define INFLUXDB_AUTH_TYPE 1      // 1 = API Token , 2 = User/Pass
+#define INFLUXDB_API_TOKEN "b8cVNwJf16kmSR_gKR-og891kiZ1lvLIpmJCszJSh5G6mrSB7dQusSKSVTAikvn5tGl3IUhkgpAj3RdjmLqZDQ=="
+#define INFLUXDB_ORG_NAME "coffee"
+#define INFLUXDB_USER "coffee"
+#define INFLUXDB_PASSWORD "coffee"
+#define INFLUXDB_DB_NAME "coffee"  // InfluxDB bucket name
+#define INFLUXDB_INTERVAL 5000     // Send interval in milliseconds
+
+
 #define PID_KP_START_MIN 0
 #define PID_KP_START_MAX 350
 #define PID_TN_START_MIN 0

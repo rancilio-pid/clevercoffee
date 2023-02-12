@@ -60,6 +60,8 @@ typedef struct __attribute__((packed)) {
     double weightSetpoint;
     double steamkp;
     double steamSetpoint;
+    uint8_t   influxEnable;
+    char       influxUrl;
 } sto_data_t;
 
 // set item defaults
@@ -107,7 +109,9 @@ static const sto_data_t itemDefaults PROGMEM = {
     "",                                       // STO_ITEM_WIFI_PASSWORD
     SCALE_WEIGHTSETPOINT,                     // STO_ITEM_WEIGHTSETPOINT
     STEAMKP,                                  // STO_ITEM_PID_KP_STEAM
-    STEAMSETPOINT                             // STO_ITEM_STEAM_SETPOINT
+    STEAMSETPOINT,                            // STO_ITEM_STEAM_SETPOINT
+    INFLUXDB_ENALBE ,                         // STO_ITEM_INFLUXDB_ENALBE
+    INFLUXDB_URL                              // INFLUXDB_URL
 };
 
 /**

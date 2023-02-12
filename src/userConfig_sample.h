@@ -89,7 +89,7 @@ enum MACHINE {
 #define MQTT_SERVER_PORT 1883
 
 // INFLUXDB
-#define INFLUXDB 0                 // 1 = INFLUX enabled, 0 = INFLUX disabled
+#define INFLUXDB_ENALBE 0                 // 1 = INFLUX enabled, 0 = INFLUX disabled
 #define INFLUXDB_URL ""            // InfluxDB server address
 #define INFLUXDB_AUTH_TYPE 1       // 1 = API Token , 2 = User/Pass
 #define INFLUXDB_API_TOKEN ""
