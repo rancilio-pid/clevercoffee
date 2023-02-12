@@ -299,31 +299,6 @@ PID bPID(&temperature, &pidOutput, &setpoint, aggKp, aggKi, aggKd, 1, DIRECT);
 ZACwire Sensor2(PIN_TEMPSENSOR, 306);    // set pin to receive signal from the TSic 306
 
 
-// MQTT
-#include "MQTT.h"
-
-std::vector<mqttVars_t> mqttVars = {
-    {"brewSetpoint", tDouble, BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, (void *)&brewSetpoint},
-    {"brewTempOffset", tDouble, BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, (void *)&brewTempOffset},
-    {"brewtime", tDouble, BREW_TIME_MIN, BREW_TIME_MAX, (void *)&brewtime},
-    {"preinfusion", tDouble, PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX, (void *)&preinfusion},
-    {"preinfusionpause", tDouble, PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, (void *)&preinfusionpause},
-    {"pidON", tUInt8, 0, 1, (void *)&pidON},
-    {"steamON", tUInt8, 0, 1, (void *)&steamON},
-    {"steamSetpoint", tDouble, STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, (void *)&steamSetpoint},
-    {"backflushON", tUInt8, 0, 1, (void *)&backflushON},
-    {"aggKp", tDouble, PID_KP_REGULAR_MIN, PID_KP_REGULAR_MAX, (void *)&aggKp},
-    {"aggTn", tDouble, PID_TN_REGULAR_MIN, PID_TN_REGULAR_MAX, (void *)&aggTn},
-    {"aggTv", tDouble, PID_TV_REGULAR_MIN, PID_TV_REGULAR_MAX, (void *)&aggTv},
-    {"aggIMax", tDouble, PID_I_MAX_REGULAR_MIN, PID_I_MAX_REGULAR_MAX, (void *)&aggIMax},
-    {"aggbKp", tDouble, PID_KP_BD_MIN, PID_KP_BD_MAX, (void *)&aggbKp},
-    {"aggbTn", tDouble, PID_TN_BD_MIN, PID_TN_BD_MAX, (void *)&aggbTn},
-    {"aggbTv", tDouble, PID_TV_BD_MIN, PID_TV_BD_MAX, (void *)&aggbTv},
-    {"steamKp", tDouble, PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, (void *)&steamKp},
-    {"startKp", tDouble, PID_KP_START_MIN, PID_KP_START_MAX, (void *)&startKp},
-    {"startTn", tDouble, PID_TN_START_MIN, PID_TN_START_MAX, (void *)&startTn},
-};
-
 #include "InfluxDB.h"
 
 // Embedded HTTP Server
@@ -338,6 +313,21 @@ enum SectionNames {
 };
 
 std::map<String, editable_t> editableVars = {};
+
+
+struct cmp_str
+{
+   bool operator()(char const *a, char const *b) const
+   {
+      return strcmp(a, b) < 0;
+   }
+};
+
+// MQTT
+#include "MQTT.h"
+
+std::map<const char*, std::function<editable_t*()>, cmp_str> mqttVars = {};
+std::map<const char*, std::function<double()>, cmp_str> mqttSensors = {};
 
 unsigned long lastTempEvent = 0;
 unsigned long tempEventInterval = 1000;
@@ -1830,6 +1820,52 @@ void setup() {
         .ptr = (void *)sysVersion
     };
     // when adding parameters, set EDITABLE_VARS_LEN to max of .position
+
+    // Editable values reported to MQTT
+    mqttVars["pidON"] = []{ return &editableVars.at("PID_ON"); };
+    mqttVars["brewSetpoint"] = []{ return &editableVars.at("BREW_SETPOINT"); };
+    mqttVars["brewTempOffset"] = []{ return &editableVars.at("BREW_TEMP_OFFSET"); };
+    mqttVars["steamON"] = []{ return &editableVars.at("STEAM_MODE"); };
+    mqttVars["steamSetpoint"] = []{ return &editableVars.at("STEAM_SETPOINT"); };
+    mqttVars["brewPidDelay"] = []{ return &editableVars.at("PID_BD_DELAY"); };
+    mqttVars["backflushON"] = []{ return &editableVars.at("BACKFLUSH_ON"); };
+    mqttVars["startUsePonM"] = []{ return &editableVars.at("START_USE_PONM"); };
+    mqttVars["startKp"] = []{ return &editableVars.at("START_KP"); };
+    mqttVars["startTn"] = []{ return &editableVars.at("START_TN"); };
+    mqttVars["aggKp"] = []{ return &editableVars.at("PID_KP"); };
+    mqttVars["aggTn"] = []{ return &editableVars.at("PID_TN"); };
+    mqttVars["aggTv"] = []{ return &editableVars.at("PID_TV"); };
+    mqttVars["aggIMax"] = []{ return &editableVars.at("PID_I_MAX"); };
+    mqttVars["steamKp"] = []{ return &editableVars.at("STEAM_KP"); };
+
+    if (ONLYPID == 0) {
+        mqttVars["brewtime"] = []{ return &editableVars.at("BREW_TIME"); };
+        mqttVars["preinfusionpause"] = []{ return &editableVars.at("BREW_PREINFUSIONPAUSE"); };
+        mqttVars["preinfusion"] = []{ return &editableVars.at("BREW_PREINFUSION"); };
+    }
+
+    if (ONLYPIDSCALE == 1 || BREWMODE == 2) {
+        mqttVars["weightSetpoint"] = []{ return &editableVars.at("SCALE_WEIGHTSETPOINT"); };
+    }
+
+    if (BREWDETECTION > 0) {
+        mqttVars["pidUseBD"] = []{ return &editableVars.at("PID_BD_ON"); };
+        mqttVars["aggbKp"] = []{ return &editableVars.at("PID_BD_KP"); };
+        mqttVars["aggbTn"] = []{ return &editableVars.at("PID_BD_TN"); };
+        mqttVars["aggbTv"] = []{ return &editableVars.at("PID_BD_TV"); };
+
+        if (BREWDETECTION == 1) {
+            mqttVars["brewTimer"] = []{ return &editableVars.at("PID_BD_TIME"); };
+            mqttVars["brewLimit"] = []{ return &editableVars.at("PID_BD_SENSITIVITY"); };
+        }
+    }
+    
+    // Values reported to MQTT
+    mqttSensors["temperature"] = []{ return temperature; };
+    mqttSensors["heaterPower"] = []{ return pidOutput; };
+    mqttSensors["currentKp"] = []{ return bPID.GetKp(); };
+    mqttSensors["currentKi"] = []{ return bPID.GetKi(); };
+    mqttSensors["currentKd"] = []{ return bPID.GetKd(); };
 
     Serial.begin(115200);
 
