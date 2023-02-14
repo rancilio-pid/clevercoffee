@@ -592,6 +592,7 @@ void refreshTemp() {
 
 #include "brewvoid.h"
 #include "powerswitchvoid.h"
+#include "steamswitchvoid.h"
 #include "scalevoid.h"
 
 /**
@@ -838,15 +839,6 @@ float filterPressureValue(float input) {
  * @brief steamON & Quickmill
  */
 void checkSteamON() {
-    // check digital GIPO
-    if (digitalRead(PIN_STEAMSWITCH) == HIGH) {
-        steamON = 1;
-    }
-
-    // if activated via web interface then steamFirstON == 1, prevent override
-    if (digitalRead(PIN_STEAMSWITCH) == LOW && steamFirstON == 0) {
-        steamON = 0;
-    }
 
     // monitor QuickMill thermoblock steam-mode
     if (machine == QuickMill) {
@@ -1894,7 +1886,6 @@ void setup() {
     pinMode(PIN_VALVE, OUTPUT);
     pinMode(PIN_PUMP, OUTPUT);
     pinMode(PIN_HEATER, OUTPUT);
-    pinMode(PIN_STEAMSWITCH, INPUT);
     digitalWrite(PIN_VALVE, relayOFF);
     digitalWrite(PIN_PUMP, relayOFF);
     digitalWrite(PIN_HEATER, LOW);
@@ -1904,6 +1895,11 @@ void setup() {
         pinMode(PIN_POWERSWITCH, INPUT);
     }
 
+    // IF STEAMSWITCH is connected
+    if (STEAMSWITCHTYPE > 0) {
+        pinMode(PIN_STEAMSWITCH, INPUT);
+    }
+
     // IF Voltage sensor selected
     if (BREWDETECTION == 3) {
         pinMode(PIN_BREWSWITCH, PINMODEVOLTAGESENSOR);
@@ -1911,8 +1907,6 @@ void setup() {
     else {
         pinMode(PIN_BREWSWITCH, INPUT_PULLDOWN);
     }
-
-    pinMode(PIN_STEAMSWITCH, INPUT_PULLDOWN);
 
     #if OLED_DISPLAY != 0
         u8g2.setI2CAddress(oled_i2c * 2);
@@ -2090,6 +2084,7 @@ void looppid() {
     checkSteamON();          // check for steam
     setEmergencyStopTemp();
     checkpowerswitch();
+    checksteamswitch();
     handleMachineState();      // update machineState
 
     if (INFLUXDB == 1  && offlineMode == 0 ) {
