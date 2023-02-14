@@ -185,6 +185,7 @@ double brewtime = BREW_TIME;                        // brewtime in s
 double preinfusion = PRE_INFUSION_TIME;             // preinfusion time in s
 double preinfusionpause = PRE_INFUSION_PAUSE_TIME;  // preinfusion pause time in s
 double weightSetpoint = SCALE_WEIGHTSETPOINT;
+uint8_t steamSwitchType = STEAMSWITCHTYPE; 
 
 // PID - values for offline brew detection
 uint8_t useBDPID = 0;
@@ -235,6 +236,7 @@ SysPara<double> sysParaSteamSetpoint(&steamSetpoint, STEAM_SETPOINT_MIN, STEAM_S
 SysPara<double> sysParaWeightSetpoint(&weightSetpoint, WEIGHTSETPOINT_MIN, WEIGHTSETPOINT_MAX, STO_ITEM_WEIGHTSETPOINT);
 SysPara<uint8_t> sysParaStandbyModeOn(&standbyModeOn, 0, 1, STO_ITEM_STANDBY_MODE_ON);
 SysPara<double> sysParaStandbyModeTime(&standbyModeTime, STANDBY_MODE_TIME_MIN, STANDBY_MODE_TIME_MAX, STO_ITEM_STANDBY_MODE_TIME);
+SysPara<uint8_t> sysParaSteamSwitchType(&steamSwitchType, STEAM_SWITCHTYPE_MIN, STEAM_SWITCHTYPE_MAX, STO_ITEM_STEAM_SWITCHTYPE);
 
 // Other variables
 int relayON, relayOFF;           // used for relay trigger type. Do not change!
@@ -603,6 +605,7 @@ void refreshTemp() {
 
 #include "brewvoid.h"
 #include "powerswitchvoid.h"
+#include "steamswitchvoid.h"
 #include "scalevoid.h"
 
 /**
@@ -849,14 +852,17 @@ float filterPressureValue(float input) {
  * @brief steamON & Quickmill
  */
 void checkSteamON() {
-    // check digital GIPO
-    if (digitalRead(PIN_STEAMSWITCH) == HIGH) {
-        steamON = 1;
-    }
+    // check digital GIPO   
+    if (steamSwitchType > 0){
 
-    // if activated via web interface then steamFirstON == 1, prevent override
-    if (digitalRead(PIN_STEAMSWITCH) == LOW && steamFirstON == 0) {
-        steamON = 0;
+        if (digitalRead(PIN_STEAMSWITCH) == HIGH) {
+            steamON = 1;
+        }
+
+        // if activated via web interface then steamFirstON == 1, prevent override
+        if (digitalRead(PIN_STEAMSWITCH) == LOW && steamFirstON == 0) {
+            steamON = 0;
+        }
     }
 
     // monitor QuickMill thermoblock steam-mode
@@ -1931,6 +1937,19 @@ void setup() {
         .maxValue = 1,
         .ptr = (void *)sysVersion
     };
+
+    editableVars["STEAM_SWITCHTYPE"] = {
+        .displayName = "Steam switch type",
+        .hasHelpText = true,
+        .helpText = F("0 = switch disabled; 1 = normal switch; 2 = trigger switch"),
+        .type = kUInt8,
+        .section = sTempSection,
+        .position = 28,
+        .show = [] { return true; },
+        .minValue = STEAM_SWITCHTYPE_MIN,
+        .maxValue = STEAM_SWITCHTYPE_MAX,
+        .ptr = (void*)&steamSwitchType
+    };
     // when adding parameters, set EDITABLE_VARS_LEN to max of .position
 
     // Editable values reported to MQTT
@@ -1986,6 +2005,10 @@ void setup() {
     initTimer1();
 
     storageSetup();
+   	
+    //read storage to get hardware switch type
+    sysParaSteamSwitchType.getStorage();
+    debugPrintf("SteamSwitchType.getStorage: %i ",steamSwitchType); 
 
     // Define trigger type
     if (triggerType) {
@@ -2008,7 +2031,6 @@ void setup() {
     pinMode(PIN_VALVE, OUTPUT);
     pinMode(PIN_PUMP, OUTPUT);
     pinMode(PIN_HEATER, OUTPUT);
-    pinMode(PIN_STEAMSWITCH, INPUT);
     digitalWrite(PIN_VALVE, relayOFF);
     digitalWrite(PIN_PUMP, relayOFF);
     digitalWrite(PIN_HEATER, LOW);
@@ -2018,7 +2040,12 @@ void setup() {
         pinMode(PIN_POWERSWITCH, INPUT);
     }
 
-    // IF Voltage sensor selected
+    // If steam switch is enabled
+    if (steamSwitchType > 0) {
+        pinMode(PIN_STEAMSWITCH, INPUT);
+    }
+
+    // If voltage sensor for brew detection is selected
     if (BREWDETECTION == 3) {
         pinMode(PIN_BREWSWITCH, PINMODEVOLTAGESENSOR);
     }
@@ -2026,12 +2053,7 @@ void setup() {
         pinMode(PIN_BREWSWITCH, INPUT_PULLDOWN);
     }
 
-    if (TEMP_LED) {
-        pinMode(PIN_STATUSLED, OUTPUT);
-    }
-
-    pinMode(PIN_STEAMSWITCH, INPUT_PULLDOWN);
-
+    // If OLED display is enabled  
     #if OLED_DISPLAY != 0
         u8g2.setI2CAddress(oled_i2c * 2);
         u8g2.begin();
@@ -2216,11 +2238,13 @@ void looppid() {
     checkSteamON();
     setEmergencyStopTemp();
     checkpowerswitch();
+    checksteamswitch();
     handleMachineState();
 
     if (standbyModeOn && machineState != kStandby) {
         updateStandbyTimer();
     }
+    handleMachineState();      // update machineState
 
     if (INFLUXDB == 1  && offlineMode == 0 ) {
         sendInflux();
@@ -2451,6 +2475,7 @@ int readSysParamsFromStorage(void) {
     if (sysParaWifiCredentialsSaved.getStorage() != 0) return -1;
     if (sysParaStandbyModeOn.getStorage() != 0) return -1;
     if (sysParaStandbyModeTime.getStorage() != 0) return -1;
+    if (sysParaSteamSwitchType.getStorage() != 0) return -1;
 
     return 0;
 }
@@ -2487,6 +2512,7 @@ int writeSysParamsToStorage(void) {
     if (sysParaWifiCredentialsSaved.setStorage() != 0) return -1;
     if (sysParaStandbyModeOn.setStorage() != 0) return -1;
     if (sysParaStandbyModeTime.setStorage() != 0) return -1;
+    if (sysParaSteamSwitchType.setStorage() != 0) return -1;
 
     return storageCommit();
 }

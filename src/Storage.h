@@ -44,6 +44,10 @@ typedef enum
   STO_ITEM_STANDBY_MODE_TIME,       // Time until heater is turned off
   STO_ITEM_RESERVED_30,             // reserved
   STO_ITEM_RESERVED_21,             // reserved
+  STO_ITEM_RESERVED_28,             // reserved
+  STO_ITEM_RESERVED_29,             // reserved
+  STO_ITEM_STEAM_SWITCHTYPE,        // Steam Switch off, normal switch or trigger
+
 
   /* WHEN ADDING NEW ITEMS, THE FOLLOWING HAS TO BE UPDATED:
    * - storage structure:  sto_data_t
