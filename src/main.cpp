@@ -611,6 +611,7 @@ void refreshTemp() {
 
 #include "brewvoid.h"
 #include "powerswitchvoid.h"
+#include "steamswitchvoid.h"
 #include "scalevoid.h"
 
 /**
@@ -859,15 +860,6 @@ float filterPressureValue(float input) {
  * @brief steamON & Quickmill
  */
 void checkSteamON() {
-    // check digital GIPO
-    if (digitalRead(PIN_STEAMSWITCH) == HIGH) {
-        steamON = 1;
-    }
-
-    // if activated via web interface then steamFirstON == 1, prevent override
-    if (digitalRead(PIN_STEAMSWITCH) == LOW && steamFirstON == 0) {
-        steamON = 0;
-    }
 
     // monitor QuickMill thermoblock steam-mode
     if (machine == QuickMill) {
@@ -2017,14 +2009,18 @@ void setup() {
     pinMode(PIN_VALVE, OUTPUT);
     pinMode(PIN_PUMP, OUTPUT);
     pinMode(PIN_HEATER, OUTPUT);
-    pinMode(PIN_STEAMSWITCH, INPUT);
     digitalWrite(PIN_VALVE, relayOFF);
     digitalWrite(PIN_PUMP, relayOFF);
     digitalWrite(PIN_HEATER, LOW);
 
     // IF POWERSWITCH is connected
     if (POWERSWITCHTYPE > 0) {
-        pinMode(PIN_POWERSWITCH, INPUT);
+        pinMode(PIN_POWERSWITCH, INPUT_PULLDOWN);
+    }
+
+    // IF STEAMSWITCH is connected
+    if (STEAMSWITCHTYPE > 0) {
+        pinMode(PIN_STEAMSWITCH, INPUT_PULLDOWN);
     }
 
     // IF Voltage sensor selected
@@ -2038,8 +2034,6 @@ void setup() {
     if (TEMP_LED) {
         pinMode(PIN_STATUSLED, OUTPUT);
     }
-
-    pinMode(PIN_STEAMSWITCH, INPUT_PULLDOWN);
 
     #if OLED_DISPLAY != 0
         u8g2.setI2CAddress(oled_i2c * 2);
@@ -2073,8 +2067,7 @@ void setup() {
             mqtt.setServer(mqtt_server_ip, mqtt_server_port);
             mqtt.setCallback(mqtt_callback);
             checkMQTT();
-            #if MQTT_HASSIO_SUPPORT == 1
-            // Send Home Assistant MQTT discovery messages
+            #if MQTT_HASSIO_SUPPORT == 1  // Send Home Assistant MQTT discovery messages
             sendHASSIODiscoveryMsg();
             #endif
         }
@@ -2239,12 +2232,14 @@ void looppid() {
     brew();
     checkSteamON();
     setEmergencyStopTemp();
-    checkpowerswitch();
-    handleMachineState();
+    checkPowerSwitch();
+    checkSteamSwitch();
 
     if (standbyModeOn && machineState != kStandby) {
         updateStandbyTimer();
     }
+    
+    handleMachineState(); 
 
     if (INFLUXDB == 1  && offlineMode == 0 ) {
         sendInflux();
