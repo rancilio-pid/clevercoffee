@@ -60,7 +60,7 @@ typedef struct __attribute__((packed)) {
     double weightSetpoint;
     double steamkp;
     double steamSetpoint;
-    uint8_t steamSwitchType;
+    uint8_t steamSwitchtyp;
 } sto_data_t;
 
 // set item defaults
@@ -109,7 +109,7 @@ static const sto_data_t itemDefaults PROGMEM = {
     SCALE_WEIGHTSETPOINT,                     // STO_ITEM_WEIGHTSETPOINT
     STEAMKP,                                  // STO_ITEM_PID_KP_STEAM
     STEAMSETPOINT,                            // STO_ITEM_STEAM_SETPOINT
-    STEAMSWITCHTYPE                            // STO_ITEM_STEAM_SWITCHTYPE
+    STEAMSWITCHTYP                            // STO_ITEM_STEAM_SWITCHTYP
 };
 
 /**
