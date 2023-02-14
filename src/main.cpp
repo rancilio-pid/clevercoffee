@@ -182,7 +182,7 @@ double brewtime = BREW_TIME;                        // brewtime in s
 double preinfusion = PRE_INFUSION_TIME;             // preinfusion time in s
 double preinfusionpause = PRE_INFUSION_PAUSE_TIME;  // preinfusion pause time in s
 double weightSetpoint = SCALE_WEIGHTSETPOINT;
-uint8_t steamSwitchtyp = STEAMSWITCHTYP; 
+uint8_t steamSwitchType = STEAMSWITCHTYPE; 
 
 // PID - values for offline brew detection
 uint8_t useBDPID = 0;
@@ -226,7 +226,7 @@ SysPara<double> sysParaPreInfPause(&preinfusionpause, PRE_INFUSION_PAUSE_MIN, PR
 SysPara<double> sysParaPidKpSteam(&steamKp, PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, STO_ITEM_PID_KP_STEAM);
 SysPara<double> sysParaSteamSetpoint(&steamSetpoint, STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, STO_ITEM_STEAM_SETPOINT);
 SysPara<double> sysParaWeightSetpoint(&weightSetpoint, WEIGHTSETPOINT_MIN, WEIGHTSETPOINT_MAX, STO_ITEM_WEIGHTSETPOINT);
-SysPara<uint8_t> sysParaSteamSwitchtyp(&steamSwitchtyp, 0, 1, STO_ITEM_STEAM_SWITCHTYP);
+SysPara<uint8_t> sysParaSteamSwitchType(&steamSwitchType, STEAM_SWITCHTYPE_MIN, STEAM_SWITCHTYPE_MAX, STO_ITEM_STEAM_SWITCHTYPE);
 
 // Other variables
 int relayON, relayOFF;           // used for relay trigger type. Do not change!
@@ -840,10 +840,9 @@ float filterPressureValue(float input) {
  * @brief steamON & Quickmill
  */
 void checkSteamON() {
-    
-    if (steamSwitchtyp > 0){
+    // check digital GIPO   
+    if (steamSwitchType > 0){
 
-        // check digital GIPO
         if (digitalRead(PIN_STEAMSWITCH) == HIGH) {
             steamON = 1;
         }
@@ -1826,17 +1825,17 @@ void setup() {
         .ptr = (void *)sysVersion
     };
 
-    editableVars["STEAM_SWITCHTYP"] = {
-        .displayName = "Steam switch typ",
+    editableVars["STEAM_SWITCHTYPE"] = {
+        .displayName = "Steam switch type",
         .hasHelpText = true,
         .helpText = F("0 = switch disabled; 1 = normal switch; 2 = trigger switch"),
         .type = kUInt8,
         .section = sTempSection,
         .position = 28,
         .show = [] { return true; },
-        .minValue = 0,
-        .maxValue = 1,
-        .ptr = (void*)&steamSwitchtyp
+        .minValue = STEAM_SWITCHTYPE_MIN,
+        .maxValue = STEAM_SWITCHTYPE_MAX,
+        .ptr = (void*)&steamSwitchType
     };
     // when adding parameters, set EDITABLE_VARS_LEN to max of .position
 
@@ -1922,12 +1921,12 @@ void setup() {
         pinMode(PIN_POWERSWITCH, INPUT);
     }
 
-    // IF STEAMSWITCH is connected
-    if (steamSwitchtyp > 0) {
+    // If steam switch is enabled
+    if (steamSwitchType > 0) {
         pinMode(PIN_STEAMSWITCH, INPUT);
     }
 
-    // IF Voltage sensor selected
+    // If voltage sensor for brew detection is selected
     if (BREWDETECTION == 3) {
         pinMode(PIN_BREWSWITCH, PINMODEVOLTAGESENSOR);
     }
@@ -1935,7 +1934,7 @@ void setup() {
         pinMode(PIN_BREWSWITCH, INPUT_PULLDOWN);
     }
 
-    // IF OLED Display is connected  
+    // If OLED display is enabled  
     #if OLED_DISPLAY != 0
         u8g2.setI2CAddress(oled_i2c * 2);
         u8g2.begin();
@@ -2332,7 +2331,7 @@ int readSysParamsFromStorage(void) {
     if (sysParaSteamSetpoint.getStorage() != 0) return -1;
     if (sysParaWeightSetpoint.getStorage() != 0) return -1;
     if (sysParaWifiCredentialsSaved.getStorage() != 0) return -1;
-    if (sysParaSteamSwitchtyp.getStorage() != 0) return -1;
+    if (sysParaSteamSwitchType.getStorage() != 0) return -1;
 
     return 0;
 }
@@ -2367,7 +2366,7 @@ int writeSysParamsToStorage(void) {
     if (sysParaSteamSetpoint.setStorage() != 0) return -1;
     if (sysParaWeightSetpoint.setStorage() != 0) return -1;
     if (sysParaWifiCredentialsSaved.setStorage() != 0) return -1;
-    if (sysParaSteamSwitchtyp.setStorage() != 0) return -1;
+    if (sysParaSteamSwitchType.setStorage() != 0) return -1;
 
     return storageCommit();
 }

@@ -60,7 +60,7 @@ typedef struct __attribute__((packed)) {
     double weightSetpoint;
     double steamkp;
     double steamSetpoint;
-    uint8_t steamSwitchtyp;
+    uint8_t steamSwitchType;
 } sto_data_t;
 
 // set item defaults
@@ -109,7 +109,7 @@ static const sto_data_t itemDefaults PROGMEM = {
     SCALE_WEIGHTSETPOINT,                     // STO_ITEM_WEIGHTSETPOINT
     STEAMKP,                                  // STO_ITEM_PID_KP_STEAM
     STEAMSETPOINT,                            // STO_ITEM_STEAM_SETPOINT
-    STEAMSWITCHTYP                            // STO_ITEM_STEAM_SWITCHTYP
+    STEAMSWITCHTYPE                           // STO_ITEM_STEAM_SWITCHTYPE
 };
 
 /**
@@ -262,9 +262,9 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
             size = STRUCT_MEMBER_SIZE(sto_data_t,steamSetpoint);
             break;
 
-        case STO_ITEM_STEAM_SWITCHTYP:
-            addr = offsetof(sto_data_t, steamSwitchtyp);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, steamSwitchtyp);
+        case STO_ITEM_STEAM_SWITCHTYPE:
+            addr = offsetof(sto_data_t, steamSwitchType);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, steamSwitchType);
             break;
             
         default:
