@@ -1345,8 +1345,10 @@ void wiFiSetup() {
 
     if (wifiCredentialsSaved == 0) {
         const char hostname[] = (STR(HOSTNAME));
-        displayLogo("Connect to Wifi: ", HOSTNAME);
         debugPrintf("Connect to Wifi: %s \n", String(hostname));
+        #if OLED_DISPLAY != 0
+            displayLogo("Connect to Wifi: ", HOSTNAME);
+        #endif
     }
 
     wm.setHostname(hostname);
