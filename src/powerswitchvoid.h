@@ -16,7 +16,7 @@ unsigned long debounceDelayPowerTrigger = 50;       // the debounce time; increa
 void checkpowerswitch() {
     #if POWERSWITCHTYPE == 1
         // Set pidON to 1 when powerswitch is HIGH
-        if (digitalRead(PINPOWERSWITCH) == HIGH) {
+        if (digitalRead(PIN_POWERSWITCH) == HIGH) {
             pidON = 1;
         } else {
             // Set pidON to 0 when powerswitch is not HIGH
@@ -25,7 +25,7 @@ void checkpowerswitch() {
     #endif
 
     #if POWERSWITCHTYPE == 2  // TRIGGER
-        int reading = digitalRead(PINPOWERSWITCH);
+        int reading = digitalRead(PIN_POWERSWITCH);
 
         if (reading != lastpowerswitchTrigger) {
             // reset the debouncing timer
