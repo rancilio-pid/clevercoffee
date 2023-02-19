@@ -126,7 +126,7 @@ const char *hostname = HOSTNAME;
 const char *pass = PASS;
 unsigned long lastWifiConnectionAttempt = millis();
 unsigned int wifiReconnects = 0;  // actual number of reconnects
-
+uint8_t wifiCredentialsSaved = 0; 
 // OTA
 const char *OTAhost = OTAHOST;
 const char *OTApass = OTAPASS;
@@ -244,6 +244,7 @@ SysPara<double> sysParaSteamSetPoint(&steamSetPoint, STEAM_SETPOINT_MIN, STEAM_S
 SysPara<uint8_t> sysParaPidOn(&pidON, 0, 1, STO_ITEM_PID_ON);
 SysPara<uint8_t> sysParaUsePonM(&usePonM, 0, 1, STO_ITEM_PID_START_PONM);
 SysPara<uint8_t> sysParaUseBDPID(&useBDPID, 0, 1, STO_ITEM_USE_BD_PID);
+SysPara<uint8_t> sysParaWifiCredentialsSaved(&wifiCredentialsSaved, WIFI_CREDENTIALS_SAVED_MIN, WIFI_CREDENTIALS_SAVED_MAX, STO_ITEM_WIFI_CREDENTIALS_SAVED);
 
 // Other variables
 int relayON, relayOFF;           // used for relay trigger type. Do not change!
@@ -1598,6 +1599,10 @@ void wiFiSetup() {
         debugPrintf("WiFi connected - IP = %i.%i.%i.%i\n", WiFi.localIP()[0],
                     WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3]);
 
+        // Save Wifi Setup flag to eeprom
+        wifiCredentialsSaved = 1;
+        sysParaWifiCredentialsSaved.setStorage();
+        storageCommit();
         byte mac[6];
         WiFi.macAddress(mac);
         String macaddr0 = number2string(mac[0]);
@@ -1821,10 +1826,16 @@ void setup() {
     #endif
 
     #if OLED_DISPLAY != 0
-        u8g2.setI2CAddress(oled_i2c * 2);
-        u8g2.begin();
-        u8g2_prepare();
-        displayLogo(String("Version ") + String(sysVersion), "");
+
+        sysParaWifiCredentialsSaved.getStorage();
+        // Only Setup Display if Wifi is saved
+        debugPrintf("Wifi Setup: %i /0",wifiCredentialsSaved);
+        if (wifiCredentialsSaved == 1) {
+            u8g2.setI2CAddress(oled_i2c * 2);
+            u8g2.begin();
+            u8g2_prepare();
+            displayLogo(String("Version ") + String(sysVersion), "");
+        }    
        // delay(2000); // caused crash with wifi manager
     #endif
 
@@ -2293,7 +2304,8 @@ int readSysParamsFromStorage(void) {
     if (sysParaSteamSetPoint.getStorage() != 0) return -1;
     if (sysParaUsePonM.getStorage() != 0) return -1;
     if (sysParaUseBDPID.getStorage() != 0) return -1;
-
+    if (sysParaWifiCredentialsSaved.getStorage() != 0) return -1;
+    
     return 0;
 }
 
@@ -2325,7 +2337,8 @@ int writeSysParamsToStorage(void) {
     if (sysParaPidKpBd.setStorage() != 0) return -1;
     if (sysParaPidTnBd.setStorage() != 0) return -1;
     if (sysParaPidTvBd.setStorage() != 0) return -1;
-
+    if (sysParaWifiCredentialsSaved.setStorage() != 0) return -1;
+    
     return storageCommit();
 }
 
