@@ -151,6 +151,44 @@ const lineInterpolations = {
     spline:     3,
 };
 
+const drawStyles = {
+				line:      0,
+				bars:      1,
+				points:    2,
+				barsLeft:  3,
+				barsRight: 4,
+			};
+
+const { linear, stepped, bars, spline } = uPlot.paths;
+const _linear       = linear();
+const _spline       = spline();
+
+function pathRenderer(u, seriesIdx, idx0, idx1, extendGap, buildClip) {
+    let s = u.series[seriesIdx];
+    let style = s.drawStyle;
+    let interp = s.lineInterpolation;
+
+    let renderer = null;
+    if (style == drawStyles.line) {
+        if (interp == lineInterpolations.linear) {
+            renderer = _linear
+        }
+        else if (interp == lineInterpolations.spline) {
+            renderer = _spline
+        }
+    } else if (style == drawStyles.bars) {
+        renderer =_bars60_100
+    } else if (style == drawStyles.barsLeft) {
+        renderer = _bars100Left
+    } else if (style == drawStyles.barsRight) { 
+        renderer = _bars100Right
+    } else if (style == drawStyles.points) {
+        renderer = () => null
+    } 
+
+    return renderer(u, seriesIdx, idx0, idx1, extendGap, buildClip);
+};
+
 const tzdateOptions = {
     hour: '2-digit', minute: '2-digit', second: '2-digit',
 };
@@ -164,17 +202,20 @@ function makeTempChart(data) {
             {
                 value: "{YYYY}-{MM}-{DD} {HH}:{mm}:{ss}"
             },
-            {
+            Object.assign({
                 label: "Current Temperature",
                 scale: "C",
                 value: (u, v) => v == null ? null : v.toFixed(1) + " °C",
                 show: true,
                 stroke: "#008080",
                 fill: "#00808010",
-                width: 2,
-                lineInterpolation: lineInterpolations.spline,
+                width: 2,            
                 points: { show: false },
-            },
+                drawStyle: drawStyles.line,
+				lineInterpolation: lineInterpolations.spline,
+                paths: pathRenderer,
+            }),
+            
             {
                 label: "Target Temperature",
                 scale: "C",
@@ -182,9 +223,11 @@ function makeTempChart(data) {
                 stroke: "#9932CC",
                 fill: "#9932CC10",
                 width: 2,
-                lineInterpolation: lineInterpolations.spline,
                 show: true,
                 points: { show: false },
+                drawStyle: drawStyles.line,
+                lineInterpolation: lineInterpolations.spline,
+                paths: pathRenderer,
             }
         ],
         axes: [
@@ -208,8 +251,8 @@ function makeHeaterChart(data) {
         tzDate: ts => uPlot.tzDate(new Date(ts * 1e3), 'Europe/Berlin'),
         scales: {
             "%": {
-            auto: false,
-            range: [0, 100],
+                auto: false,
+                range: [0, 100],
             }
         },
         series: [
@@ -223,9 +266,11 @@ function makeHeaterChart(data) {
                 stroke: "#778899",
                 fill: "#77889910",
                 width: 2,
-                lineInterpolation: lineInterpolations.spline,
                 show: true,
                 points: { show: false },
+                drawStyle: drawStyles.line,
+                lineInterpolation: lineInterpolations.spline,
+                paths: pathRenderer,
             }
         ],
         axes: [
