@@ -111,13 +111,11 @@ void assignMQTTParam(char *param, double value) {
                     debugPrintf("%s is not a recognized type for this MQTT parameter.\n", var->type);
             }
         }
-        else
-        {
+        else {
             debugPrintf("Value out of range for MQTT parameter %s\n", param);
         }
     }
-    catch(const std::out_of_range& e)
-    {
+    catch(const std::out_of_range& e) {
         debugPrintf("%s is not a valid MQTT parameter.\n", param);
     }
 }
@@ -139,18 +137,15 @@ void mqtt_callback(char *topic, byte *data, unsigned int length) {
     double data_double;
 
     snprintf(topic_pattern, sizeof(topic_pattern), "%s%s/%%[^\\/]/%%[^\\/]", mqtt_topic_prefix, hostname);
-    debugPrintln(topic_pattern);
 
     if ((sscanf(topic_str, topic_pattern, &configVar, &cmd) != 2) || (strcmp(cmd, "set") != 0)) {
-        debugPrintln(topic_str);
+        debugPrintf("Invalid MQTT topic/command: %s\n", topic_str);
         return;
     }
+    debugPrintf("Received MQTT command %s %s\n", topic_str, data_str);
 
-    debugPrintln(topic_str);
-    debugPrintln(data_str);
-
+    //convert received string value to double assuming it's a number
     sscanf(data_str, "%lf", &data_double);
-
     assignMQTTParam(configVar, data_double);
 }
 
@@ -166,7 +161,6 @@ void writeSysParamsToMQTT(void) {
         previousMillisMQTT = currentMillisMQTT;
 
         if (mqtt.connected() == 1) {
-            // status topic (will sets it to offline)
             mqtt_publish("status", (char *)"online");
 
             for (const auto& pair : mqttVars) {

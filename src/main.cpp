@@ -161,7 +161,6 @@ char *number2string(float in);
 char *number2string(int in);
 char *number2string(unsigned int in);
 float filterPressureValue(float input);
-bool mqtt_publish(const char *reading, char *payload);
 void writeSysParamsToMQTT(void);
 
 
@@ -1346,9 +1345,9 @@ void wiFiSetup() {
 
     if (wifiCredentialsSaved == 0) {
         const char hostname[] = (STR(HOSTNAME));
-        debugPrintf("Connect to Wifi: %s \n", String(hostname));
+        debugPrintf("Connect to WiFi: %s \n", String(hostname));
         #if OLED_DISPLAY != 0
-            displayLogo("Connect to Wifi: ", HOSTNAME);
+            displayLogo("Connect to WiFi: ", HOSTNAME);
         #endif
     }
 
@@ -1954,12 +1953,11 @@ void setup() {
         if (INFLUXDB == 1) {
            influxDbSetup();
         }
-    } else if (connectmode == 0)
-    {
+    } else if (connectmode == 0) {
         wm.disconnect();              // no wm
         readSysParamsFromStorage();   // get values from stroage
-        offlineMode = 1;              //offline mode
-        pidON = 1 ;                   //pid on
+        offlineMode = 1;              // offline mode
+        pidON = 1;                    // pid on
     }
 
     // Initialize PID controller
@@ -2008,7 +2006,7 @@ void setup() {
     enableTimer1();
 
     Serial.println("Filesystem overview:");
-    Serial.printf("- Bytes total:   %ld\n", LittleFS.totalBytes());
+    Serial.printf("- Bytes total: ld\n", LittleFS.totalBytes());
     Serial.printf("- Bytes used: %ld\n\n", LittleFS.usedBytes());
 }
 
