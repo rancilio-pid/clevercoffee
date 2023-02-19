@@ -1,7 +1,6 @@
 %HEADER%
-    <script src="https://unpkg.com/@chenfengyuan/vue-number-input@2/dist/vue-number-input.js"></script>
-
-    %VAR_HEADER_PLOTLY%
+    %VAR_HEADER_VUE_NUMBER_INPUT%
+    %VAR_HEADER_UPLOT%    
 
     <script type="module">
         if (window.appCreated == true) {
@@ -110,6 +109,9 @@
                 <div class="card-body bg-light pb-1 rounded">
                     <h5 class="card-title">
                         Temperature
+                        <a href="#" role="button" data-bs-toggle="popover" data-bs-html="true" data-bs-original-title="History of the boiler temperature. Drag to zoom, double-click to reset zoom again.">
+                            <span class="fa-solid fa-question-circle"></span>
+                        </a>
                     </h5>
                 </div>
                 <div class="card-body">
@@ -120,6 +122,9 @@
                 <div class="card-body bg-light pb-1 rounded">
                     <h5 class="card-title">
                         Heater Output
+                        <a href="#" role="button" data-bs-toggle="popover" data-bs-html="true" data-bs-original-title="History of the controlled heater power. Drag to zoom, double-click to reset zoom again.">
+                            <span class="fa-solid fa-question-circle"></span>
+                        </a>
                     </h5>
                 </div>
                 <div class="card-body">
