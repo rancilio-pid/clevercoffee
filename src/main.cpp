@@ -147,7 +147,6 @@ bool coolingFlushDetectedQM = false;
 void setSteamMode(int steamMode);
 void setPidStatus(int pidStatus);
 void setBackflush(int backflush);
-void setSteamSwitchStatus(int steamSwitchStatus);
 void setNormalPIDTunings();
 void setBDPIDTunings();
 void loopcalibrate();
@@ -2260,11 +2259,6 @@ void setSteamMode(int steamMode) {
 
 void setPidStatus(int pidStatus) {
     pidON = pidStatus;
-    writeSysParamsToStorage();
-}
-
-void setSteamSwitchStatus(int steamSwitchStatus) {
-    steamSwitchType = steamSwitchStatus;
     writeSysParamsToStorage();
 }
 

@@ -41,7 +41,7 @@ int writeSysParamsToStorage(void);
 #define PRE_INFUSION_PAUSE_TIME 5  // pre-infusion pause time in seconds
 #define SCALE_WEIGHTSETPOINT 30    // Target weight in grams
 #define WIFI_CREDENTIALS_SAVED 0   // Flag if wifi setup is done. 0: not set up, 1: credentials set up via wifi manager
-#define STEAMSWITCHTYPE 0          // Steamswitch 0 = disable, 1 = normal switch 2 = trigger
+#define STEAMSWITCHTYPE 0           // Steamswitch 0 = disable, 1 = normal switch 2 = trigger
 
 // Backflush values
 #define FILLTIME 3000              // time in ms the pump is running
