@@ -1890,6 +1890,10 @@ void setup() {
     initTimer1();
 
     storageSetup();
+   	
+    //read storage to get hardware switch type
+    sysParaSteamSwitchType.getStorage();
+    debugPrintf("SteamSwitchType.getStorage: %i ",steamSwitchType); 
 
     // Define trigger type
     if (triggerType) {
