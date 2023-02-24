@@ -15,6 +15,7 @@
 // Libraries
 #include <ArduinoOTA.h>
 #include <map>
+#include <LittleFS.h>
 
 #if TEMPSENSOR == 1
     #include <DallasTemperature.h>  // Library for dallas temp sensor
@@ -1345,8 +1346,10 @@ void wiFiSetup() {
 
     if (wifiCredentialsSaved == 0) {
         const char hostname[] = (STR(HOSTNAME));
-        displayLogo("Connect to Wifi: ", HOSTNAME);
         debugPrintf("Connect to Wifi: %s \n", String(hostname));
+        #if OLED_DISPLAY != 0
+            displayLogo("Connect to Wifi: ", HOSTNAME);
+        #endif
     }
 
     wm.setHostname(hostname);
@@ -1953,10 +1956,10 @@ void setup() {
         }
     } else if (connectmode == 0)
     {
-        wm.disconnect(); // no wm
-        readSysParamsFromStorage(); // get values from stroage
-        offlineMode = 1 ; //offline mode
-        pidON = 1  ; //pid on
+        wm.disconnect();              // no wm
+        readSysParamsFromStorage();   // get values from stroage
+        offlineMode = 1;              //offline mode
+        pidON = 1 ;                   //pid on
     }
 
     // Initialize PID controller
@@ -2003,6 +2006,10 @@ void setup() {
     setupDone = true;
 
     enableTimer1();
+
+    Serial.println("Filesystem overview:");
+    Serial.printf("- Bytes total:   %ld\n", LittleFS.totalBytes());
+    Serial.printf("- Bytes used: %ld\n\n", LittleFS.usedBytes());
 }
 
 
@@ -2048,7 +2055,7 @@ void looppid() {
 
     if ((millis() - lastTempEvent) > tempEventInterval) {
         //send temperatures to website endpoint
-        sendTempEvent(temperature, brewSetpoint, pidOutput);
+        sendTempEvent(temperature, brewSetpoint, pidOutput/10);       //pidOutput is promill, so /10 to get percent value
         lastTempEvent = millis();
 
         #if VERBOSE

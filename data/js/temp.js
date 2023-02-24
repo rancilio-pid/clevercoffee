@@ -5,254 +5,302 @@ if (document.readyState === 'complete') {
     window.addEventListener('load', getTimeseries)
 }
 
-const maxRange = 3600
+const maxValues = 600            //max number of data points to keep in memory
+const updateInterval = 1000     //expected ms between updates (from event source with new values)
 
 var curTempVals = []
 var targetTempVals = []
 var heaterPowerVals = []
-var dates = []
+var tempDates = []
+var heaterDates = []
 
 var chartDiv = 'chart-temperature'
 var heaterDiv = 'chart-heater'
 
-var curTempTrace = {
-    type: "scatter",
-    mode: "lines",
-    fill: 'tozeroy',
-    name: 'Current',
-    x: dates,
-    y: curTempVals,
-    line: {
-        color: '#008080',
-        shape: 'spline',
-        smoothing: 0.25
-    }
-}
+let uplotTemp = null;
+let uplotHeater = null;
 
-var targetTempTrace = {
-    type: "scatter",
-    mode: "lines",
-    fill: 'tonexty',
-    name: 'Setpoint',
-    x: dates,
-    y: targetTempVals,
-    line: {
-        color: '#9932CC',
-        shape: 'spline',
-        smoothing: 0.25
-    }
-}
+function addTempData(jsonValue, isSingleValue=false) {
+    // add new value(s) to global data arrays and return in a
+    // format that uPlot can use
 
-var heaterPowerTrace = {
-    type: "scatter",
-    mode: "lines",
-    fill: 'tonexty',
-    name: 'Output Power',
-    x: dates,
-    y: heaterPowerVals,
-    line: {
-        color: '#778899',
-        shape: 'spline',
-        smoothing: 0.25
-    }
-}
+    if (isSingleValue) {
+        const curTempKey = "currentTemp"
+        const targetTempKey = "targetTemp"
 
-var selectorOptions = {
-    buttons: [{
-        step: 'minute',
-        stepmode: 'backward',
-        count: 15,
-        label: '15m'
-    },
-    {
-        step: 'minute',
-        stepmode: 'backward',
-        count: 30,
-        label: '30m'
-    },
-    {
-        step: 'all',
-    }],
-}
-
-var data = [curTempTrace, targetTempTrace]
-var heaterData = [heaterPowerTrace]
-
-var tempLayout = {
-    margin: {
-        l: 25,
-        r: 5,
-        b: 20,
-        t: 20,
-        pad: 4
-    },
-    showlegend: true,
-    legend: {
-        xanchor: "center",
-        yanchor: "top",
-        y: -0.5,
-        x: 0.5
-    },
-    xaxis: {
-        rangeselector: selectorOptions,
-        rangeslider: {},
-        tickformat: '%H:%M:%S'
-    },
-    yaxis: {
-        fixedrange: false
-    }
-}
-
-var heaterLayout = {
-    margin: {
-        l: 35,
-        r: 5,
-        b: 20,
-        t: 20,
-        pad: 4
-    },
-    showlegend: true,
-    legend: {
-        xanchor: "center",
-        yanchor: "top",
-        y: -0.5,
-        x: 0.5
-    },
-    xaxis: {
-        rangeselector: selectorOptions,
-        rangeslider: {},
-        tickformat: '%H:%M:%S'
-    },
-    yaxis: {
-        fixedrange: false
-    }
-}
-
-var config = {
-    responsive: true,
-    displaylogo: false,
-    modeBarButtonsToRemove: ['toImage']
-}
-
-Plotly.newPlot(chartDiv, data, tempLayout, config)
-Plotly.newPlot(heaterDiv, heaterData, heaterLayout, config)
-
-//append single plot data values
-function addPlotData(jsonValue) {
-    var keys = Object.keys(jsonValue)
-
-    var date = new Date()
-    //console.log(date)
-    dates.push(date)
-
-    const curTempKey = keys[0]
-    const targetTempKey = keys[1]
-    const heaterPowerKey = keys[2]
-
-    var curTemp = jsonValue[curTempKey]
-    //console.log(curTemp)
-    curTempVals.push(curTemp)
-
-    var targetTemp = jsonValue[targetTempKey]
-    //console.log(targetTemp)
-    targetTempVals.push(targetTemp)
-
-    var heaterPower = jsonValue[heaterPowerKey]
-    //console.log(heaterPower)
-    heaterPowerVals.push(heaterPower)
-
-    Plotly.extendTraces(
-        chartDiv,
-        {
-            x: [[dates[dates.length - 1]], [dates[dates.length - 1]]],
-            y: [[curTempVals[curTempVals.length - 1]], [targetTempVals[targetTempVals.length - 1]]]
-        },
-        [0, 1]
-    )
-
-    Plotly.extendTraces(
-        heaterDiv,
-        {
-            x: [[dates[dates.length - 1]]],
-            y: [[heaterPowerVals[heaterPowerVals.length - 1]]]
-        },
-        [0]
-    )
-
-    if (dates.length > maxRange) {
-        dates.splice(0, dates.length - maxRange)
-        curTempVals.splice(0, curTempVals.length - maxRange)
-        targetTempVals.splice(0, targetTempVals.length - maxRange)
-        heaterPowerVals.splice(0, heaterPowerVals.length - maxRange)
-
-        // TODO Messes with range buttons
-        // var update = {
-        //   'xaxis.range': [dates[dates.length - 600], dates[dates.length - 1]]
-        // }
-
-        // Plotly.react(chartDiv, data, layout, config)
-    }
-}
-
-//set plot data from arrays
-function setPlotData(jsonValue) {
-    var keys = Object.keys(jsonValue)
-
-    const curTempKey = keys[0]
-    const targetTempKey = keys[1]
-    const heaterPowerKey = keys[2]
-
-    var curTemp = jsonValue[curTempKey]
-    //console.log(curTemp)
-    curTempVals.length = 0
-    curTempVals.push(...curTemp)
-
-    var targetTemp = jsonValue[targetTempKey]
-    //console.log(targetTemp)
-    targetTempVals.length = 0
-    targetTempVals.push(...targetTemp)
-
-    var heaterPower = jsonValue[heaterPowerKey]
-    //console.log(heaterPower)
-    heaterPowerVals.length = 0
-    heaterPowerVals.push(...heaterPower)
-
-    dates.length = 0
-    //create dates for all history values (5 seconds between each value)
-    for (let i=curTempVals.length; i>0; i--) {
+        //add new value to data lists
         var date = new Date()
-        date.setSeconds(date.getSeconds()-5*i)
-        dates.push(date)
+        //console.log(date)
+        tempDates.push(date)
+
+        var curTemp = jsonValue[curTempKey]
+        //console.log(curTemp)
+        curTempVals.push(curTemp)
+
+        var targetTemp = jsonValue[targetTempKey]
+        //console.log(targetTemp)
+        targetTempVals.push(targetTemp)
+    } else {
+        const curTempKey = "currentTemps"
+        const targetTempKey = "targetTemps"
+
+        //set data lists to values from history json
+        var curTemp = jsonValue[curTempKey]
+        //console.log(curTemp)
+        curTempVals.length = 0  //reset existing list
+        curTempVals.push(...curTemp)
+
+        var targetTemp = jsonValue[targetTempKey]
+        //console.log(targetTemp)
+        targetTempVals.length = 0
+        targetTempVals.push(...targetTemp)
+        
+        //create dates for all history values (3 seconds between each value)
+        tempDates.length = 0
+        for (let i=curTempVals.length; i>0; i--) {
+            var date = new Date()
+            date.setSeconds(date.getSeconds()-3*i)
+            tempDates.push(date)
+        }
     }
 
-    if (dates.length > maxRange) {
-        dates.splice(0, dates.length - maxRange)
-        curTempVals.splice(0, curTempVals.length - maxRange)
-        targetTempVals.splice(0, targetTempVals.length - maxRange)
-        heaterPowerVals.splice(0, heaterPowerVals.length - maxRange)
+    //reduce data if we have too much (sliding window after that amount)
+    if (tempDates.length > maxValues) {
+        tempDates.splice(0, tempDates.length - maxValues)
+        curTempVals.splice(0, curTempVals.length - maxValues)
+        targetTempVals.splice(0, targetTempVals.length - maxValues)
     }
 
-    Plotly.react(
-        chartDiv,
-        data,
-        tempLayout, config
-    )
+    //use data lists to create data array for uPlot
+    let data = [
+        Array(tempDates.length),
+        Array(curTempVals.length),
+        Array(targetTempVals.length),
+    ];
 
-    Plotly.react(
-        heaterDiv,
-        heaterData,
-        heaterLayout, config
-    )
+    for (let i = 0; i < curTempVals.length; i++) {
+        data[0][i] = tempDates[i].getTime() / updateInterval 
+        data[1][i] = curTempVals[i]
+        data[2][i] = targetTempVals[i]
+    }
+
+    return data
 }
 
+function addHeaterData(jsonValue, isSingleValue=false) {
+    if (isSingleValue) {
+        const heaterPowerKey = "heaterPower"
+
+        //add new value to data lists
+        var date = new Date()
+        heaterDates.push(date)
+
+        var heaterPower = jsonValue[heaterPowerKey]
+        heaterPowerVals.push(heaterPower)
+    } else {
+        const heaterPowerKey = "heaterPowers"
+
+        //set data lists to values from history json
+        var heaterPower = jsonValue[heaterPowerKey]
+        //console.log(heaterPower)
+        heaterPowerVals.length = 0
+        heaterPowerVals.push(...heaterPower)
+        
+        //create dates for all history values (3 seconds between each value)
+        heaterDates.length = 0
+        for (let i=heaterPowerVals.length; i>0; i--) {
+            var date = new Date()
+            date.setSeconds(date.getSeconds()-3*i)
+            heaterDates.push(date)
+        }
+    }
+
+    //reduce data if we have too many values (sliding window after that amount)
+    if (heaterDates.length > maxValues) {
+        heaterDates.splice(0, heaterDates.length - maxValues)
+        heaterPowerVals.splice(0, heaterPowerVals.length - maxValues)
+    }
+
+    //use data lists to create data array for uPlot
+    let data = [
+        Array(heaterDates.length),
+        Array(heaterPowerVals.length),
+    ];
+
+    for (let i = 0; i < heaterPowerVals.length; i++) {
+        data[0][i] = heaterDates[i].getTime() / updateInterval 
+        data[1][i] = heaterPowerVals[i]
+    }
+
+    return data
+}
+
+function sliceData(data, start, end) {
+    let d = [];
+
+    for (let i = 0; i < data.length; i++)
+        d.push(data[i].slice(start, end));
+
+    return d;
+}
+
+const lineInterpolations = {
+    linear:     0,
+    stepAfter:  1,
+    stepBefore: 2,
+    spline:     3,
+};
+
+const tzdateOptions = {
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+};
+
+function makeTempChart(data) {
+    const opts = {
+        title: "Temperature History",
+        ...getSize(chartDiv),
+        tzDate: ts => uPlot.tzDate(new Date(ts * 1e3), 'Europe/Berlin'),
+        series: [
+            {
+                value: "{YYYY}-{MM}-{DD} {HH}:{mm}:{ss}"
+            },
+            {
+                label: "Current Temperature",
+                scale: "C",
+                value: (u, v) => v == null ? null : v.toFixed(1) + " °C",
+                show: true,
+                stroke: "#008080",
+                fill: "#00808010",
+                width: 2,
+                lineInterpolation: lineInterpolations.spline,
+                points: { show: false },
+            },
+            {
+                label: "Target Temperature",
+                scale: "C",
+                value: (u, v) => v == null ? null : v.toFixed(1) + " °C",
+                stroke: "#9932CC",
+                fill: "#9932CC10",
+                width: 2,
+                lineInterpolation: lineInterpolations.spline,
+                show: true,
+                points: { show: false },
+            }
+        ],
+        axes: [
+            {
+                values: (u, vals, space) => vals.map(v => uPlot.tzDate(new Date(v * 1e3), 'Europe/Berlin').toLocaleString("de-DE", tzdateOptions)),
+            },
+            {
+                scale: 'C',
+                values: (u, vals, space) => vals.map(v => +v + "°C"),
+            }
+        ],
+    };
+    
+    uplotTemp = new uPlot(opts, sliceData(data, 0, data.length), document.getElementById(chartDiv));
+}
+
+function makeHeaterChart(data) {
+    const opts = {
+        title: "Heater Power History",
+        ...getSize(heaterDiv),
+        tzDate: ts => uPlot.tzDate(new Date(ts * 1e3), 'Europe/Berlin'),
+        scales: {
+            "%": {
+            auto: false,
+            range: [0, 100],
+            }
+        },
+        series: [
+            {
+                value: "{YYYY}-{MM}-{DD} {HH}:{mm}:{ss}"
+            },
+            {
+                label: "Heater Power",
+                scale: "%",
+                value: (u, v) => v == null ? null : v.toFixed(0) + "%",
+                stroke: "#778899",
+                fill: "#77889910",
+                width: 2,
+                lineInterpolation: lineInterpolations.spline,
+                show: true,
+                points: { show: false },
+            }
+        ],
+        axes: [
+            {
+                values: (u, vals, space) => vals.map(v => uPlot.tzDate(new Date(v * 1e3), 'Europe/Berlin').toLocaleString("de-DE", tzdateOptions)),
+            },
+            {
+                side: 3,
+                scale: '%',
+                values: (u, vals, space) => vals.map(v => +v.toFixed(0) + "%"),
+            },
+        ],
+    };
+    
+    uplotHeater = new uPlot(opts, sliceData(data, 0, data.length), document.getElementById(heaterDiv));
+}
+
+//append single historic values
+function addPlotData(jsonValue) {    
+    function addData(data, u) {
+        let isTempZoomed = u.scales.x.min != u.data[0][0] || u.scales.x.max != u.data[0][u.data[0].length-1];        
+        if (isTempZoomed) {
+            let tempXScaleMinMax = [u.scales.x.min, u.scales.x.max]            
+            //add data but don't autoscale
+            u.setData(data, false);
+            // move the zoomed area one value to the right so the window stays the same
+            u.setScale('x', {min: tempXScaleMinMax[0]+1, max: tempXScaleMinMax[1]+1});
+        } else {
+            //add data and autoscale (including new data)
+            u.setData(data);
+        }        
+    }
+
+    let tempData = addTempData(jsonValue, true);
+    if (uplotTemp !== null) {
+        addData(tempData, uplotTemp)
+    }
+
+    let heaterData = addHeaterData(jsonValue, true);
+    if (uplotHeater !== null) {
+        addData(heaterData, uplotHeater)
+    }
+}
+
+function getSize(selector) {
+    return {
+        width: document.getElementById(selector).offsetWidth,
+        height: 400 //document.getElementById(selector).offsetHeight,
+    }
+}
+
+//resize plots when window is resized
+window.addEventListener("resize", e => {
+    if (uplotTemp !== null) {
+        uplotTemp.setSize(getSize(chartDiv));
+    }
+    if (uplotHeater !== null) {
+        uplotHeater.setSize(getSize(heaterDiv));
+    }
+});
+
+
+// get initial history data from server
 function getTimeseries() {
     var xhr = new XMLHttpRequest()
 
     xhr.onload = (e) => {
         if (xhr.readyState === 4 && xhr.status === 200) {
             var tempHistory = JSON.parse(xhr.responseText)
-            //console.log(tempHistory)
-            setPlotData(tempHistory)
+            let tempData = addTempData(tempHistory);
+            let heaterData = addHeaterData(tempHistory);
+            setTimeout(() => {
+                makeTempChart(tempData);
+                makeHeaterChart(heaterData);
+            }, 0);
         }
     }
 
@@ -260,7 +308,7 @@ function getTimeseries() {
     xhr.send()
 }
 
-
+// listen to events to update data from endpoints
 if (!!window.EventSource) {
     var source = new EventSource('/events')
 
@@ -282,23 +330,17 @@ if (!!window.EventSource) {
         false
     )
 
-    /*
-    source.addEventListener(
-      'message',
-      function (e) {
-        console.log("message", e.data)
-      },
-      false)
-    */
-
     source.addEventListener(
         'new_temps',
         function (e) {
-            //console.log("new_temps", e.data)
             var myObj = JSON.parse(e.data)
+            //console.log("new_temps", e.data)
             //console.log(myObj)
+
+            // add new data to existing for plotting            
             addPlotData(myObj)
 
+            // update current temp value on index page
             document.getElementById("varTEMP").innerText = myObj["currentTemp"].toFixed(1)
         },
         false

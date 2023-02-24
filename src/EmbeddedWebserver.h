@@ -49,7 +49,7 @@ double curTemp = 0.0;
 double tTemp = 0.0;
 double hPower = 0.0;
 
-#define HISTORY_LENGTH 720    //60 mins of values
+#define HISTORY_LENGTH 600    //30 mins of values (20 vals/min * 60 min) = 600 (7,2kb)
 
 static float tempHistory[3][HISTORY_LENGTH] = {0};
 int historyCurrentIndex = 0;
@@ -148,6 +148,9 @@ void paramToJson(String name, editable_t &e, DynamicJsonDocument &doc) {
     paramObj["max"] = e.maxValue;
 }
 
+// Use libraries for the webinterface from the internet (0) or from the local filesystem (1). 0 has slightly faster load times
+#define NOINTERNET 1
+
 //hash strings at compile time to use in switch statement
 //(from https://stackoverflow.com/questions/2111667/compile-time-string-hashing)
 constexpr unsigned int str2int(const char* str, int h = 0) {
@@ -159,36 +162,41 @@ String getHeader(String varName) {
     //but also make sure web server can handle this many concurrent requests (might crash)
     switch (str2int(varName.c_str())) {
         case (str2int("FONTAWESOME")):
-            #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
-                return F("<link href=\"/css/fontawesome-6.1.2.min.css\" rel=\"stylesheet\">");
+            #if NOINTERNET == 1
+                return F("<link href=\"/css/fontawesome-6.2.1.min.css\" rel=\"stylesheet\">");
             #else
-                return F("<link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css\">");
+                return F("<link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css\">");
             #endif
         case (str2int("BOOTSTRAP")):
-            #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
-                return F("<link href=\"/css/bootstrap-5.1.3.min.css\" rel=\"stylesheet\">");
+            #if NOINTERNET == 1
+                return F("<link href=\"/css/bootstrap-5.2.3.min.css\" rel=\"stylesheet\">");
             #else
-                return F("<link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css\" rel=\"stylesheet\" integrity=\"sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3\" crossorigin=\"anonymous\">");
+                return F("<link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css\" rel=\"stylesheet\" integrity=\"sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3\" crossorigin=\"anonymous\">");
             #endif
         case (str2int("BOOTSTRAP_BUNDLE")):
-            #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
-                return F("<script src=\"/js/bootstrap.bundle.5.1.3.min.js\" integrity=\"sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p\"></script>");
+            #if NOINTERNET == 1
+                return F("<script src=\"/js/bootstrap.bundle.5.2.3.min.js\" integrity=\"sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4\"></script>");
             #else
-                return F("<script src=\"https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js\" integrity=\"sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p\" crossorigin=\"anonymous\"></script>");
+                return F("<script src=\"https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js\" integrity=\"sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4\" crossorigin=\"anonymous\"></script>");
             #endif
         case (str2int("VUEJS")):
-            #if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
-                return F("<script src=\"/js/vue.3.2.37.min.js\"></script>");
+            #if NOINTERNET == 1
+                return F("<script src=\"/js/vue.3.2.47.min.js\"></script>");
             #else
-                return F("<script src=\"https://cdn.jsdelivr.net/npm/vue@3.2/dist/vue.global.prod.min.js\"></script>");
+                return F("<script src=\"https://cdn.jsdelivr.net/npm/vue@3.2.47/dist/vue.global.prod.min.js\"></script>");
             #endif
-        case (str2int("PLOTLY")):
-            //file is too large for flash mem on ESP8288, replace with chart.js?
-            //#if defined(WEB_USE_LOCAL_LIBS) && WEB_USE_LOCAL_LIBS == 1
-            //    return F("<script src=\"/js/plotly-2.13.3.min.js\"></script>");
-            //#else
-                return F("<script src=\"https://cdn.plot.ly/plotly-basic-2.13.3.min.js\"></script>");
-            //#endif
+        case (str2int("VUE_NUMBER_INPUT")):
+            #if NOINTERNET == 1
+                return F("<script src=\"/js/vue-number-input.min.js\"></script>");
+            #else
+                return F("<script src=\"https://unpkg.com/@chenfengyuan/vue-number-input@2.0.1/dist/vue-number-input.min.js\"></script>");
+            #endif
+        case (str2int("UPLOT")):
+            #if NOINTERNET == 1
+                return F("<script src=\"/js/uPlot.1.6.24.min.js\"></script><link rel=\"stylesheet\" href=\"/css/uPlot.min.css\">");
+            #else
+                return F("<script src=\"https://cdn.jsdelivr.net/npm/uplot@1.6.24/dist/uPlot.iife.min.js\"></script><link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/uplot@1.6.24/dist/uPlot.min.css\">");
+            #endif
     }
     return "";
 }
@@ -208,7 +216,7 @@ String staticProcessor(const String& var) {
     String varLower(var);
     varLower.toLowerCase();
 
-    File file = LittleFS.open("/html_fragments/" + varLower + ".htm", "r");
+    File file = LittleFS.open("/html_fragments/" + varLower + ".html", "r");
 
     if (file) {
         if (file.size()*2 < ESP.getFreeHeap()) {
@@ -444,7 +452,9 @@ void serverSetup() {
     LittleFS.begin();
     server.serveStatic("/css", LittleFS, "/css/", "max-age=604800");  // cache for one week
     server.serveStatic("/js", LittleFS, "/js/", "max-age=604800");
-    server.serveStatic("/", LittleFS, "/html/", "max-age=604800").setTemplateProcessor(staticProcessor);
+    server.serveStatic("/img", LittleFS, "/img/", "max-age=604800");  // cache for one week
+    server.serveStatic("/webfonts", LittleFS, "/webfonts/", "max-age=604800");
+    server.serveStatic("/", LittleFS, "/html/", "max-age=604800").setDefaultFile("index.html").setTemplateProcessor(staticProcessor);
 
     server.begin();
 
@@ -453,6 +463,7 @@ void serverSetup() {
 
 //skip counter so we don't keep a value every second
 int skippedValues = 0;
+#define SECONDS_TO_SKIP 2
 
 void sendTempEvent(double currentTemp, double targetTemp, double heaterPower) {
     curTemp = currentTemp;
@@ -460,10 +471,10 @@ void sendTempEvent(double currentTemp, double targetTemp, double heaterPower) {
     hPower = heaterPower;
 
     // save all values in memory to show history
-    if (skippedValues > 0 && skippedValues % 4 == 0) {
+    if (skippedValues > 0 && skippedValues % SECONDS_TO_SKIP == 0) {
         // use array and int value for start index (round robin)
-        // one record (3 float values == 12 bytes) every five seconds, for half
-        // an hour -> 4.3kB of static memory
+        // one record (3 float values == 12 bytes) every three seconds, for half
+        // an hour -> 7.2kB of static memory
         tempHistory[0][historyCurrentIndex] = (float)currentTemp;
         tempHistory[1][historyCurrentIndex] = (float)targetTemp;
         tempHistory[2][historyCurrentIndex] = (float)heaterPower;
