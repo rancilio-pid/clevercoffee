@@ -62,6 +62,7 @@ typedef struct __attribute__((packed)) {
     double steamSetpoint;
     uint8_t standbyModeOn;
     double standbyModeTime;
+    uint8_t powerSwitchType;
     uint8_t steamSwitchType;
 } sto_data_t;
 
@@ -113,6 +114,7 @@ static const sto_data_t itemDefaults PROGMEM = {
     STEAMSETPOINT,                            // STO_ITEM_STEAM_SETPOINT
     STANDBY_MODE_ON,                          // STO_ITEM_STANDBY_MODE_ON
     STANDBY_MODE_TIME                         // STO_ITEM_STANDBY_MODE_TIME 
+    POWERSWITCHTYPE,                          // STO_ITEM_POWER_SWITCHTYPE
     STEAMSWITCHTYPE                           // STO_ITEM_STEAM_SWITCHTYPE
 };
 
@@ -276,6 +278,11 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
             size = STRUCT_MEMBER_SIZE(sto_data_t,standbyModeTime);
             break;
 
+        case STO_ITEM_POWER_SWITCHTYPE:
+            addr = offsetof(sto_data_t, powerSwitchType);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, powerSwitchType);
+            break;
+            
         case STO_ITEM_STEAM_SWITCHTYPE:
             addr = offsetof(sto_data_t, steamSwitchType);
             size = STRUCT_MEMBER_SIZE(sto_data_t, steamSwitchType);

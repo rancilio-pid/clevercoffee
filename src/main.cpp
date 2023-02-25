@@ -185,6 +185,7 @@ double brewtime = BREW_TIME;                        // brewtime in s
 double preinfusion = PRE_INFUSION_TIME;             // preinfusion time in s
 double preinfusionpause = PRE_INFUSION_PAUSE_TIME;  // preinfusion pause time in s
 double weightSetpoint = SCALE_WEIGHTSETPOINT;
+uint8_t powerSwitchType = POWERSWITCHTYPE; 
 uint8_t steamSwitchType = STEAMSWITCHTYPE; 
 
 // PID - values for offline brew detection
@@ -236,6 +237,7 @@ SysPara<double> sysParaSteamSetpoint(&steamSetpoint, STEAM_SETPOINT_MIN, STEAM_S
 SysPara<double> sysParaWeightSetpoint(&weightSetpoint, WEIGHTSETPOINT_MIN, WEIGHTSETPOINT_MAX, STO_ITEM_WEIGHTSETPOINT);
 SysPara<uint8_t> sysParaStandbyModeOn(&standbyModeOn, 0, 1, STO_ITEM_STANDBY_MODE_ON);
 SysPara<double> sysParaStandbyModeTime(&standbyModeTime, STANDBY_MODE_TIME_MIN, STANDBY_MODE_TIME_MAX, STO_ITEM_STANDBY_MODE_TIME);
+SysPara<uint8_t> sysParaPowerSwitchType(&powerSwitchType, POWER_SWITCHTYPE_MIN, POWER_SWITCHTYPE_MAX, STO_ITEM_POWER_SWITCHTYPE);
 SysPara<uint8_t> sysParaSteamSwitchType(&steamSwitchType, STEAM_SWITCHTYPE_MIN, STEAM_SWITCHTYPE_MAX, STO_ITEM_STEAM_SWITCHTYPE);
 
 // Other variables
@@ -1938,13 +1940,25 @@ void setup() {
         .ptr = (void *)sysVersion
     };
 
+    editableVars["POWER_SWITCHTYPE"] = {
+        .displayName = "Power switch type",
+        .hasHelpText = true,
+        .helpText = F("0 = switch disabled; 1 = normal switch; 2 = trigger switch"),
+        .type = kUInt8,
+        .section = sTempSection,
+        .position = 28,
+        .show = [] { return true; },
+        .minValue = POWER_SWITCHTYPE_MIN,
+        .maxValue = POWER_SWITCHTYPE_MAX,
+        .ptr = (void*)&powerSwitchType
+    };
     editableVars["STEAM_SWITCHTYPE"] = {
         .displayName = "Steam switch type",
         .hasHelpText = true,
         .helpText = F("0 = switch disabled; 1 = normal switch; 2 = trigger switch"),
         .type = kUInt8,
         .section = sTempSection,
-        .position = 28,
+        .position = 29,
         .show = [] { return true; },
         .minValue = STEAM_SWITCHTYPE_MIN,
         .maxValue = STEAM_SWITCHTYPE_MAX,
@@ -2006,8 +2020,10 @@ void setup() {
 
     storageSetup();
    	
-    //read storage to get hardware switch type
+    //read storage to get hardware switch types
+    sysParaPowerSwitchType.getStorage();
     sysParaSteamSwitchType.getStorage();
+    debugPrintf("PowerSwitchType.getStorage: %i ",powerSwitchType); 
     debugPrintf("SteamSwitchType.getStorage: %i ",steamSwitchType); 
 
     // Define trigger type
@@ -2035,8 +2051,8 @@ void setup() {
     digitalWrite(PIN_PUMP, relayOFF);
     digitalWrite(PIN_HEATER, LOW);
 
-    // IF POWERSWITCH is connected
-    if (POWERSWITCHTYPE > 0) {
+    // If power switch is enabled
+    if (powerSwitchType > 0) {
         pinMode(PIN_POWERSWITCH, INPUT);
     }
 
@@ -2475,6 +2491,7 @@ int readSysParamsFromStorage(void) {
     if (sysParaWifiCredentialsSaved.getStorage() != 0) return -1;
     if (sysParaStandbyModeOn.getStorage() != 0) return -1;
     if (sysParaStandbyModeTime.getStorage() != 0) return -1;
+    if (sysParaPowerSwitchType.getStorage() != 0) return -1;
     if (sysParaSteamSwitchType.getStorage() != 0) return -1;
 
     return 0;
@@ -2512,6 +2529,7 @@ int writeSysParamsToStorage(void) {
     if (sysParaWifiCredentialsSaved.setStorage() != 0) return -1;
     if (sysParaStandbyModeOn.setStorage() != 0) return -1;
     if (sysParaStandbyModeTime.setStorage() != 0) return -1;
+    if (sysParaPowerSwitchType.setStorage() != 0) return -1;
     if (sysParaSteamSwitchType.setStorage() != 0) return -1;
 
     return storageCommit();
