@@ -43,8 +43,9 @@ int writeSysParamsToStorage(void);
 #define WIFI_CREDENTIALS_SAVED 0   // Flag if wifi setup is done. 0: not set up, 1: credentials set up via wifi manager
 #define STANDBY_MODE_ON 0          // Standby mode off by default
 #define STANDBY_MODE_TIME 30       // Time in minutes until the heater is turned off   
-#define POWERSWITCHTYPE 0          // Steamswitch 0 = disable, 1 = normal switch 2 = trigger
-#define STEAMSWITCHTYPE 0          // Steamswitch 0 = disable, 1 = normal switch 2 = trigger
+#define POWERSWITCHTYPE 0          // Power switch 0 = disable, 1 = normal switch 2 = trigger
+#define BREWSWITCHTYPE 0           // Brew switch 0 = disable, 1 = normal switch 2 = trigger
+#define STEAMSWITCHTYPE 0          // Steam switch 0 = disable, 1 = normal switch 2 = trigger
 
 // Backflush values
 #define FILLTIME 3000              // time in ms the pump is running
@@ -75,6 +76,8 @@ int writeSysParamsToStorage(void);
 #define STEAM_SETPOINT_MAX 140
 #define POWER_SWITCHTYPE_MIN 0
 #define POWER_SWITCHTYPE_MAX 2
+#define BREW_SWITCHTYPE_MIN 0
+#define BREW_SWITCHTYPE_MAX 2
 #define STEAM_SWITCHTYPE_MIN 0
 #define STEAM_SWITCHTYPE_MAX 2
 #define BREW_TEMP_OFFSET_MIN 0

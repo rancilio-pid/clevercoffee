@@ -9,37 +9,33 @@
 
 
 /**
- * @brief Digtalswitch OR Read analog input pin for BREW SWITCH
+ * @brief Digtalswitch input pin for BREW SWITCH
  */
 void checkbrewswitch() {
-    #if BREWSWITCHTYPE == 1
-        #if (PIN_BREWSWITCH > 0)
-            // Digital GIPO
-            brewswitch = digitalRead(PIN_BREWSWITCH);
-        #endif
+    #if BREWSWITCHTYPE == 1       
+        brewswitch = digitalRead(PIN_BREWSWITCH);
     #endif
 
-    #if BREWSWITCHTYPE == 2
-        #if (PIN_BREWSWITCH > 0)
-            int reading = digitalRead(PIN_BREWSWITCH);
+    #if BREWSWITCHTYPE == 2  // TRIGGER
+        int reading = digitalRead(PIN_BREWSWITCH);
 
-            if (reading != brewswitchTrigger) {
-                // reset the debouncing timer
-                lastDebounceTimeBrewTrigger = millis();
-            }
+        if (reading != brewswitchTrigger) {
+            // reset the debouncing timer
+            lastDebounceTimeBrewTrigger = millis();
+        }
 
-            if ((millis() - lastDebounceTimeBrewTrigger) > debounceDelayBrewTrigger) {
-                // whatever the reading is at, it's been there for longer than the debounce
-                // delay, so take it as the actual current state:
+        if ((millis() - lastDebounceTimeBrewTrigger) > debounceDelayBrewTrigger) {
+            // whatever the reading is at, it's been there for longer than the debounce
+            // delay, so take it as the actual current state:
 
-                // if the button state has changed:
-                if (reading != buttonStateBrewTrigger) {
-                    buttonStateBrewTrigger = reading;
+            // if the button state has changed:
+            if (reading != buttonStateBrewTrigger) {
+                buttonStateBrewTrigger = reading;
                 }
             }
 
             brewswitchTrigger = reading;
-        #endif
+        
 
         // Convert trigger signal to brew switch state
         switch (brewswitchTriggerCase) {

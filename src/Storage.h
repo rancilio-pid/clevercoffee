@@ -47,6 +47,7 @@ typedef enum
   STO_ITEM_RESERVED_28,             // reserved
   STO_ITEM_RESERVED_29,             // reserved
   STO_ITEM_POWER_SWITCHTYPE,        // Power Switch off, normal switch or trigger
+  STO_ITEM_BREW_SWITCHTYPE,         // Brew Switch off, normal switch or trigger
   STO_ITEM_STEAM_SWITCHTYPE,        // Steam Switch off, normal switch or trigger
 
 
