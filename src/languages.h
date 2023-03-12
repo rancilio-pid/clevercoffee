@@ -27,7 +27,7 @@ static const char *langstring_waterempty = "Wasser leer";
 #endif
 
 static const char *langstring_wifirecon = "Wifi reconnect:";
-static const char *langstring_connectwifi1 = "1: Verbinde WLAN zu::";
+static const char *langstring_connectwifi1 = "1: Verbinde WLAN:";
 static const char *langstring_nowifi[] = {"Kein ", "WLAN"};
 
 static const char *langstring_error_tsensor[] = {"Fehler, Temp: ", "Temp.-Sensor ueberpruefen!"};
@@ -56,10 +56,10 @@ static const char *langstring_waterempty = "Empty water";
 #endif
 
 static const char *langstring_wifirecon = "Wifi reconnect:";
-static const char *langstring_connectwifi1 = "1: Connect Wifi to:";
+static const char *langstring_connectwifi1 = "1: Connecting Wifi:";
 static const char *langstring_nowifi[] = {"No ", "WIFI"};
 
-static const char *langstring_error_tsensor[] = {"Error, Temp: ", "Check Temp sensor!"};
+static const char *langstring_error_tsensor[] = {"Error, Temp: ", "Check Temp. sensor!"};
 // static const char *langstring_emergencyStop[] = {"HEATING", "STOPPED"};
 
 static const char *langstring_bckffinished[] = {"Backflush finished", "Please reset brew switch..."};
