@@ -13,9 +13,10 @@ This project implements a PID controller for stable and accurate temperature con
 
 Additional features include:
 
-* brew timer
+* shot timer
 * pre-infusion (reduced initial pressure using a dimmer for the pump)
 * brew by weight (using weight cells, no support for external scales yet)
+* brew by time
 * pressure monitoring
 
 The hardware has a small footprint and can easily fit into most smaller espresso machines. The original wiring of the machine (mostly) remains and is only extended. The machine can be easily reversed to the orignal state after the conversion.
@@ -34,23 +35,21 @@ Video tutorial on how to flash the firmware (a little outdated but mostly still 
 https://youtu.be/KZPjisOEcQ4
 
 ## Version
-Version 3.1.2 will be the last to support ESP8266 (the latest release is from 22.01.2023)
-
+Version 3.1.2 will be the last major version to support ESP8266, there will only be bug fixes for this platform.
+All newer releases will only target the ESP32.
 
 ## What is possible after installation into your espresso machine?
  * Control of the brew temperature with an accuracy of up to +/- 0,1°.
- * Reach the target temperature within 8 to 12 minutes after switching on (you should, however, wait a bit longer, e.g. 20 min depending on the machine to heat up the group head etc.)
- * **NEW** Control all parameters and see temperature and heater graphs on a web page hosted on the ESP controller
- * PID for steam mode with own parameters and target temperature (can be enabled in the web interface/MQTT or using the steam switch when all features are built in)
- * Control the brew time (including pre-infusion) when all features are built in.
- * Integration of a scale function, allows brewing by weight.
- * Multiple designs for the display, possibility to integrate further designs easily (including vertical template)
- * **NEW** MQTT (IoT) support to manipulate all important parameters.
- * **NEW** Transition from steam mode to normal mode optimized.
- * Brew switch detection also supported using an optocoupler when using OnlyPID ([details](https://rancilio-pid.github.io/ranciliopid-handbook/de/customization/brueherkennung.html#konfiguration-der-erkennung)).
- * Shot timer adjustable to see the reference time.
+ * Reaches the target temperature within 5 to 10 minutes after switching on (you should, however, wait a bit longer, e.g. 20 min depending on the machine to heat up the group head etc.)
+ * Set PID parameters and monitor current temperature and heater output on a web page hosted on the ESP controller
+ * Separate PID for steam mode with own parameters and target temperature (can be enabled in the web interface/MQTT or using the steam switch)
+ * Automatically brew by set time (including pre-infusion with additional dimmer for the pump).
+ * Automatically brew by weight when scale components are built in.
+ * Allows brew switch detection (e.g. for the shot timer) by using an optocoupler module when deciding not to control the pump from the ESP ([details](https://rancilio-pid.github.io/ranciliopid-handbook/de/customization/brueherkennung.html#konfiguration-der-erkennung)).
+* MQTT (IoT) support to monitor and manipulate all important parameters.
  * Extended data monitoring via Influxdb/Grafana.
- * Over-The-Air updates of the firmware are possible via WiFi
+ * Choose from multiple designs for the display (including vertical), possibility to integrate custom designs
+ * Over-The-Air updates of the firmware (WiFi)
 
 User feedback and suggestions for further development of the software are most welcome.
 You are welcome to help us in our mission to make better espresso :)
