@@ -338,7 +338,7 @@ struct cmp_str
 #include "MQTT.h"
 
 std::map<const char*, std::function<editable_t*()>, cmp_str> mqttVars = {};
-std::map<const char*, std::function<double()>, cmp_str> mqttSensors = {};
+std::map<const char*, std::function<char const*()>, cmp_str> mqttSensors = {};
 
 unsigned long lastTempEvent = 0;
 unsigned long tempEventInterval = 1000;
@@ -1950,6 +1950,7 @@ void setup() {
     mqttVars["aggIMax"] = []{ return &editableVars.at("PID_I_MAX"); };
     mqttVars["steamKp"] = []{ return &editableVars.at("STEAM_KP"); };
     mqttVars["standbyModeOn"] = []{ return &editableVars.at("STANDBY_MODE_ON"); };
+    mqttVars["standbyModeTimer"] = []{ return &editableVars.at("STANDBY_MODE_TIMER"); };
 
     if (ONLYPID == 0) {
         mqttVars["brewtime"] = []{ return &editableVars.at("BREW_TIME"); };
@@ -1974,12 +1975,14 @@ void setup() {
     }
     
     // Values reported to MQTT
-    mqttSensors["temperature"] = []{ return temperature; };
-    mqttSensors["heaterPower"] = []{ return pidOutput; };
-    mqttSensors["standbyModeTimeRemaining"] = []{ return standbyModeRemainingTimeMillis / 1000; };
-    mqttSensors["currentKp"] = []{ return bPID.GetKp(); };
-    mqttSensors["currentKi"] = []{ return bPID.GetKi(); };
-    mqttSensors["currentKd"] = []{ return bPID.GetKd(); };
+    mqttSensors["temperature"] = []{ return number2string(temperature); };
+    mqttSensors["heaterPower"] = []{ return number2string(pidOutput); };
+    mqttSensors["standbyModeTimeRemaining"] = []{ return number2string((int) (standbyModeRemainingTimeMillis / 1000)); };
+    mqttSensors["currentKp"] = []{ return number2string(bPID.GetKp()); };
+    mqttSensors["currentKi"] = []{ return number2string(bPID.GetKi()); };
+    mqttSensors["currentKd"] = []{ return number2string(bPID.GetKd()); };
+    mqttSensors["machineState"] = []{ return number2string(machineState); };
+    mqttSensors["machineStateString"] = []{ return machinestateEnumToString(machineState); };
 
     Serial.begin(115200);
 

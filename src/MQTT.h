@@ -33,7 +33,7 @@ unsigned int MQTTReCnctCount = 0;
 
 
 extern std::map<const char*, std::function<editable_t*()>, cmp_str> mqttVars;
-extern std::map<const char*, std::function<double()>, cmp_str> mqttSensors;
+extern std::map<const char*, std::function<char const*()>, cmp_str> mqttSensors;
 
 
 /**
@@ -67,19 +67,10 @@ void checkMQTT() {
 /**
  * @brief Publish Data to MQTT
  */
-bool mqtt_publish(const char *reading, char *payload, boolean retain) {
+bool mqtt_publish(const char *reading, char const *payload, boolean retain = false) {
     char topic[120];
     snprintf(topic, 120, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
     return mqtt.publish(topic, payload, retain);
-}
-
-/**
- * @brief Publish Data to MQTT
- */
-bool mqtt_publish(const char *reading, char *payload) {
-    char topic[120];
-    snprintf(topic, 120, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
-    return mqtt.publish(topic, payload, false);
 }
 
 
@@ -186,7 +177,7 @@ void writeSysParamsToMQTT(void) {
             }
             
             for (const auto& pair : mqttSensors) {
-                mqtt_publish(pair.first, number2string(pair.second()));
+                mqtt_publish(pair.first, pair.second());
             }
         }
     }
