@@ -39,6 +39,8 @@ enum MACHINE {
 #define BREWSWITCHDELAY 3000       // time in ms that the brew switch will be delayed (shot timer will show that much longer after switching off)
 #define VERBOSE 0                  // 1 = Show verbose output (serial connection), 0 = show less
 
+#define LANGUAGE 0                 // LANGUAGE = 0 (DE), LANGUAGE = 1 (EN), LANGUAGE = 2 (ES)
+
 // Connectivity
 #define CONNECTMODE 1              // 0 = offline 1 = WIFI-MODE
 #define HOSTNAME "silvia"
