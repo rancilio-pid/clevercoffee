@@ -40,24 +40,30 @@ void initScale() {
     long stabilizingtime = 2000; // tare preciscion can be improved by adding a few seconds of stabilizing time
     boolean _tare = true; //set this to false if you don't want tare to be performed in the next step
 
-    u8g2.clearBuffer();
-    u8g2.drawStr(0, 2, "Taring scale,");
-    u8g2.drawStr(0, 12, "remove any load!");
-    u8g2.drawStr(0, 22, "....");
-    delay(2000);
-    u8g2.sendBuffer();
+    #if (OLED_DISPLAY != 0)
+        u8g2.clearBuffer();
+        u8g2.drawStr(0, 2, "Taring scale,");
+        u8g2.drawStr(0, 12, "remove any load!");
+        u8g2.drawStr(0, 22, "....");
+        delay(2000);
+        u8g2.sendBuffer();
+    #endif
     LoadCell.start(stabilizingtime, _tare);
 
     if (LoadCell.getTareTimeoutFlag()) {
         debugPrintln("Timeout, check MCU>HX711 wiring and pin designations");
-        u8g2.drawStr(0, 32, "failed!");
-        u8g2.drawStr(0, 42, "Scale not working...");    // scale timeout will most likely trigger after OTA update, but will still work after boot
-        delay(5000);
-        u8g2.sendBuffer();
-    }
-    else {
+         #if (OLED_DISPLAY != 0)
+            u8g2.drawStr(0, 32, "failed!");
+            u8g2.drawStr(0, 42, "Scale not working...");    // scale timeout will most likely trigger after OTA update, but will still work after boot
+            delay(5000);
+            u8g2.sendBuffer();
+        #endif
+        
+    } else {
+        #if (OLED_DISPLAY != 0)
         u8g2.drawStr(0, 32, "done.");
         u8g2.sendBuffer();
+        #endif
     }
 
     LoadCell.setCalFactor(calibrationValue); // set calibration factor (float)
