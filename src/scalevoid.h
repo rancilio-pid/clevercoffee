@@ -60,7 +60,7 @@ void initScale() {
         #endif
         
     } else {
-         #if (OLED_DISPLAY != 0)
+        #if (OLED_DISPLAY != 0)
         u8g2.drawStr(0, 32, "done.");
         u8g2.sendBuffer();
         #endif
