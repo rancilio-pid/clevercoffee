@@ -128,9 +128,9 @@ enum MACHINE {
 #define PINVALVE 12
 #define PINPUMP 13
 #define PINHEATER 14
-#define PINVOLTAGESENSOR 99        // Input pin for voltage sensor (optocoupler to detect brew switch)
+#define PINVOLTAGESENSOR 15        // Input pin for voltage sensor (optocoupler to detect brew switch)
 #define PINETRIGGER 16             // PIN for E-Trigger relay
-#define PINBREWSWITCH 15            // 0: A0 (ESP8266) ; >0 : DIGITAL PIN ESP8266: ONLY USE PIN15 AND PIN16!
+#define PINBREWSWITCH 0            // 0: A0 (ESP8266) ; >0 : DIGITAL PIN, ESP32 OR ESP8266: ONLY USE PIN15 AND PIN16!
 #define PINSTEAMSWITCH 17
 #define LEDPIN    18               // LED PIN ON near setpoint
 #define OLED_SCL 5                 // Output pin for display clock pin
