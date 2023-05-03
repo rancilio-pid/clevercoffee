@@ -32,6 +32,7 @@
 #include "PID_v1.h"             // for PID calculation
 
 // Includes
+#include "hardware.h"           // pinmapping esp8266 or esp32
 #include "icon.h"               // user icons for display
 #include "languages.h"          // for language translation
 #include "Storage.h"
