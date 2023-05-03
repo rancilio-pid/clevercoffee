@@ -15,7 +15,6 @@
 // Sensors
 #define PINTEMPSENSOR 16
 #define PINPRESSURESENSOR 23
-#define PINVOLTAGESENSOR 34    // Input pin for voltage sensor (optocoupler to detect brew switch)
 #define HXDATPIN 32            // Brew scale data pin
 #define HXCLKPIN 33            // Brew scale clock pin
 

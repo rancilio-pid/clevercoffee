@@ -863,13 +863,13 @@ void brewDetection() {
         }
     } else if (brewDetectionMode == 3) {
         // timeBrewed counter
-        if ((digitalRead(PINVOLTAGESENSOR) == VoltageSensorON) && brewDetected == 1) {
+        if ((digitalRead(PINBREWSWITCH) == VoltageSensorON) && brewDetected == 1) {
             timeBrewed = millis() - startingTime;
             lastbrewTime = timeBrewed;
         }
 
         // OFF: reset brew
-        if ((digitalRead(PINVOLTAGESENSOR) == VoltageSensorOFF) && (brewDetected == 1 || coolingFlushDetectedQM == true)) {
+        if ((digitalRead(PINBREWSWITCH) == VoltageSensorOFF) && (brewDetected == 1 || coolingFlushDetectedQM == true)) {
             isBrewDetected = 0;  // rearm brewDetection
             brewDetected = 0;
             timePVStoON = timeBrewed;  // for QuickMill
@@ -899,7 +899,7 @@ void brewDetection() {
         switch (machine) {
             case QuickMill:
                 if (!coolingFlushDetectedQM) {
-                    int pvs = digitalRead(PINVOLTAGESENSOR);
+                    int pvs = digitalRead(PINBREWSWITCH);
                     if (pvs == VoltageSensorON && brewDetected == 0 &&
                         brewSteamDetectedQM == 0 && !steamQM_active) {
                         timeBrewDetection = millis();
@@ -942,7 +942,7 @@ void brewDetection() {
             // no Quickmill:
             default:
                 previousMillisVoltagesensorreading = millis();
-                if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorON && brewDetected == 0) {
+                if (digitalRead(PINBREWSWITCH) == VoltageSensorON && brewDetected == 0) {
                     debugPrintln("HW Brew - Voltage Sensor - Start");
                     timeBrewDetection = millis();
                     startingTime = millis();
@@ -1118,18 +1118,18 @@ void setEmergencyStopTemp() {
 
 void initSteamQM() {
     // Initialize monitoring for steam switch off for QuickMill thermoblock
-    lastTimePVSwasON = millis();  // time when pinvoltagesensor changes from ON to OFF
+    lastTimePVSwasON = millis();  // time when PINBREWSWITCH changes from ON to OFF
     steamQM_active = true;
     timePVStoON = 0;
     steamON = 1;
 }
 
 boolean checkSteamOffQM() {
-    /* Monitor pinvoltagesensor during active steam mode of QuickMill
+    /* Monitor PINBREWSWITCH during active steam mode of QuickMill
      * thermoblock. Once the pinvolagesenor remains OFF for longer than a
      * pump-pulse time peride the switch is turned off and steam mode finished.
      */
-    if (digitalRead(PINVOLTAGESENSOR) == VoltageSensorON) {
+    if (digitalRead(PINBREWSWITCH) == VoltageSensorON) {
         lastTimePVSwasON = millis();
     }
 
@@ -1790,7 +1790,7 @@ void setup() {
 
     // IF Voltage sensor selected
     if (BREWDETECTION == 3) {
-        pinMode(PINVOLTAGESENSOR, PINMODEVOLTAGESENSOR);
+        pinMode(PINBREWSWITCH, PINMODEVOLTAGESENSOR);
     }
 
     // IF PINBREWSWITCH & Steam selected
