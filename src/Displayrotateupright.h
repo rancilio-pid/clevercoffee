@@ -7,7 +7,7 @@
 
 #pragma once
 
-#if (OLED_DISPLAY == 1 || OLED_DISPLAY == 2)
+#if (DISPLAY_TYPE == 1 || DISPLAY_TYPE == 2)
 /**
  * @brief initialize display
  */

@@ -60,6 +60,8 @@ typedef struct __attribute__((packed)) {
     double weightSetpoint;
     double steamkp;
     double steamSetpoint;
+    int displaytype;
+    int displayi2c;
 } sto_data_t;
 
 // set item defaults
@@ -107,7 +109,9 @@ static const sto_data_t itemDefaults PROGMEM = {
     "",                                       // STO_ITEM_WIFI_PASSWORD
     SCALE_WEIGHTSETPOINT,                     // STO_ITEM_WEIGHTSETPOINT
     STEAMKP,                                  // STO_ITEM_PID_KP_STEAM
-    STEAMSETPOINT                             // STO_ITEM_STEAM_SETPOINT
+    STEAMSETPOINT,                            // STO_ITEM_STEAM_SETPOINT
+    DISPLAY_TYPE,                              // STO_ITEM_DISPLAY_TYPE
+    DISPLAY_I2C                               // STO_ITEM_DISPLAY_I2C
 };
 
 /**
@@ -259,6 +263,15 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
             addr = offsetof(sto_data_t,steamSetpoint );
             size = STRUCT_MEMBER_SIZE(sto_data_t,steamSetpoint);
             break;
+
+        case STO_ITEM_DISPLAY_TYPE:
+            addr = offsetof(sto_data_t,displaytype );
+            size = STRUCT_MEMBER_SIZE(sto_data_t,displaytype);
+            break;    
+        case STO_ITEM_DISPLAY_I2C:
+            addr = offsetof(sto_data_t,displayi2c );
+            size = STRUCT_MEMBER_SIZE(sto_data_t,displayi2c);
+            break;      
 
         default:
             debugPrintf("%s(): invalid item ID %i!\n", __func__, itemId);

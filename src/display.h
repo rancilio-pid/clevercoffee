@@ -6,7 +6,7 @@
 
 #pragma once
 
-#if (OLED_DISPLAY != 0)
+#if (DISPLAY_TYPE != 0)
 
 
 /**
@@ -240,15 +240,15 @@ void Displaymachinestate() {
     if (machineState == kBackflush) {
         u8g2.setFont(u8g2_font_profont11_tf);
         if (backflushState == 43) {
-            #if OLED_DISPLAY != 0
+            #if DISPLAY_TYPE != 0
                 displayMessage(langstring_bckffinished[0], langstring_bckffinished[1], "", "", "", "");
             #endif
         } else if (backflushState == 10) {
-            #if OLED_DISPLAY != 0
+            #if DISPLAY_TYPE != 0
                 displayMessage(langstring_bckfactivated[0], langstring_bckfactivated[1], "", "", "", "");
             #endif
         } else if (backflushState > 10) {
-            #if OLED_DISPLAY != 0
+            #if DISPLAY_TYPE != 0
                 displayMessage(langstring_bckfrunning[0], String(flushCycles), langstring_bckfrunning[1], String(maxflushCycles), "", "");
             #endif
         }

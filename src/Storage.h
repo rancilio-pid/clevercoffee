@@ -42,6 +42,8 @@ typedef enum
   STO_ITEM_WEIGHTSETPOINT,          // Brew weight setpoint
   STO_ITEM_RESERVED_28,             // reserved
   STO_ITEM_RESERVED_29,             // reserved
+  STO_ITEM_DISPLAY_TYPE,             // STO_ITEM_DISPLAYTYPE 
+  STO_ITEM_DISPLAY_I2C,             // STO_ITEM_DISPLAYTYPE 
 
   /* WHEN ADDING NEW ITEMS, THE FOLLOWING HAS TO BE UPDATED:
    * - storage structure:  sto_data_t

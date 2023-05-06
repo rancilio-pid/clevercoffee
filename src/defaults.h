@@ -41,6 +41,15 @@ int writeSysParamsToStorage(void);
 #define PRE_INFUSION_PAUSE_TIME 5  // pre-infusion pause time in seconds
 #define SCALE_WEIGHTSETPOINT 30    // Target weight in grams
 #define WIFI_CREDENTIALS_SAVED 0   // Flag if wifi setup is done. 0: not set up, 1: credentials set up via wifi manager
+// Display
+#define DISPLAY_TYPE 2             // 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64), 3 = SH1106_126x64_SPI
+#define DISPLAY_I2C 0x3C              // I2C address for OLED, 0x3C by default
+#define DISPLAYTEMPLATE 3          // 1 = Standard display template, 2 = Minimal template, 3 = only temperature, 4 = scale template, 20 = vertical display (see git Handbook for further information)
+#define DISPLAYROTATE U8G2_R0      // rotate display clockwise: U8G2_R0 = no rotation; U8G2_R1 = 90°; U8G2_R2 = 180°; U8G2_R3 = 270°
+#define SCREEN_WIDTH 128           // OLED display width, in pixels
+#define SCREEN_HEIGHT 64           // OLED display height, in pixels
+
+
 
 // Backflush values
 #define FILLTIME 3000              // time in ms the pump is running
@@ -91,4 +100,7 @@ int writeSysParamsToStorage(void);
 #define WEIGHTSETPOINT_MAX 500
 #define PID_KP_STEAM_MIN 0
 #define PID_KP_STEAM_MAX 500
-
+#define DISPLAY_TYPE_MIN 0
+#define DISPLAY_TYPE_MAX 3
+#define DISPLAY_I2C_MIN 0
+#define DISPLAY_I2C_MAX 99999

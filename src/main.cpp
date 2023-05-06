@@ -40,7 +40,7 @@
 hw_timer_t *timer = NULL;
 
 
-#if OLED_DISPLAY == 3
+#if DISPLAY_TYPE == 3
 #include <SPI.h>
 #endif
 
@@ -99,7 +99,8 @@ const boolean ota = OTA;
 int BrewMode = BREWMODE;
 
 // Display
-uint8_t oled_i2c = OLED_I2C;
+int displaytype = DISPLAY_TYPE;
+int displayi2c = DISPLAY_I2C;
 
 // WiFi
 uint8_t wifiCredentialsSaved = 0;
@@ -225,6 +226,12 @@ SysPara<double> sysParaPreInfPause(&preinfusionpause, PRE_INFUSION_PAUSE_MIN, PR
 SysPara<double> sysParaPidKpSteam(&steamKp, PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, STO_ITEM_PID_KP_STEAM);
 SysPara<double> sysParaSteamSetpoint(&steamSetpoint, STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, STO_ITEM_STEAM_SETPOINT);
 SysPara<double> sysParaWeightSetpoint(&weightSetpoint, WEIGHTSETPOINT_MIN, WEIGHTSETPOINT_MAX, STO_ITEM_WEIGHTSETPOINT);
+SysPara<int> sysParaDisplaytype(&displaytype, DISPLAY_TYPE_MIN, DISPLAY_TYPE_MAX, STO_ITEM_DISPLAY_TYPE);
+SysPara<int> sysParaDisplayi2c(&displayi2c, DISPLAY_TYPE_MIN, DISPLAY_I2C_MIN, STO_ITEM_DISPLAY_I2C);
+
+
+
+
 
 // Other variables
 int relayON, relayOFF;           // used for relay trigger type. Do not change!
@@ -309,6 +316,7 @@ enum SectionNames {
     sPIDSection,
     sTempSection,
     sBDSection,
+    sdisplaySection,
     sOtherSection
 };
 
@@ -360,13 +368,13 @@ void getSignalStrength() {
 }
 
 // Display define & template
-#if OLED_DISPLAY == 1
+#if DISPLAY_TYPE == 1
     U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, PIN_I2CSCL, PIN_I2CSDA);  // e.g. 1.3"
 #endif
-#if OLED_DISPLAY == 2
+#if DISPLAY_TYPE == 2
     U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, PIN_I2CSCL, PIN_I2CSDA);  // e.g. 0.96"
 #endif
-#if OLED_DISPLAY == 3
+#if DISPLAY_TYPE == 3
     #define OLED_CS             5
     #define OLED_DC             2
     U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, OLED_CS, OLED_DC, /* reset=*/U8X8_PIN_NONE); // e.g. 1.3"
@@ -377,7 +385,7 @@ unsigned long previousMillisDisplay;  // initialisation at the end of init()
 const unsigned long intervalDisplay = 500;
 
 // Horizontal or vertical display
-#if (OLED_DISPLAY != 0)
+#if (DISPLAY_TYPE != 0)
     #if (DISPLAYTEMPLATE < 20)  // horizontal templates
         #include "display.h"
     #endif
@@ -598,7 +606,7 @@ void refreshTemp() {
  * @brief Switch to offline mode if maxWifiReconnects were exceeded during boot
  */
 void initOfflineMode() {
-    #if OLED_DISPLAY != 0
+    #if DISPLAY_TYPE != 0
         displayMessage("", "", "", "", "Begin Fallback,", "No Wifi");
     #endif
 
@@ -606,7 +614,7 @@ void initOfflineMode() {
     offlineMode = 1;
 
     if (readSysParamsFromStorage() != 0) {
-        #if OLED_DISPLAY != 0
+        #if DISPLAY_TYPE != 0
             displayMessage("", "", "", "", "No eeprom,", "Values");
         #endif
 
@@ -637,7 +645,7 @@ void checkWifi() {
                 debugPrintf("Attempting WIFI reconnection: %i\n", wifiReconnects);
 
                 if (!setupDone) {
-                    #if OLED_DISPLAY != 0
+                    #if DISPLAY_TYPE != 0
                         displayMessage("", "", "", "", langstring_wifirecon, String(wifiReconnects));
                     #endif
                 }
@@ -1346,7 +1354,7 @@ void wiFiSetup() {
     if (wifiCredentialsSaved == 0) {
         const char hostname[] = (STR(HOSTNAME));
         debugPrintf("Connect to WiFi: %s \n", String(hostname));
-        #if OLED_DISPLAY != 0
+        #if DISPLAY_TYPE != 0
             displayLogo("Connect to WiFi: ", HOSTNAME);
         #endif
     }
@@ -1373,7 +1381,7 @@ void wiFiSetup() {
     } else {
         debugPrintln("WiFi connection timed out...");
 
-        #if OLED_DISPLAY != 0
+        #if DISPLAY_TYPE != 0
             displayLogo(langstring_nowifi[0], langstring_nowifi[1]);
         #endif
 
@@ -1383,7 +1391,7 @@ void wiFiSetup() {
         offlineMode = 1;
     }
 
-    #if OLED_DISPLAY != 0
+    #if DISPLAY_TYPE != 0
         displayLogo(langstring_connectwifi1, wm.getWiFiSSID(true));
     #endif
 
@@ -1400,11 +1408,11 @@ void websiteSetup() {
     readSysParamsFromStorage();
 
     /*if (readSysParamsFromStorage() != 0) {
-        #if OLED_DISPLAY != 0
+        #if DISPLAY_TYPE != 0
             displayLogo("3:", "use eeprom values..");
         #endif
     } else {
-        #if OLED_DISPLAY != 0
+        #if DISPLAY_TYPE != 0
             displayLogo("3:", "config defaults..");
         #endif
     }*/
@@ -1821,6 +1829,33 @@ void setup() {
         .maxValue = 1,
         .ptr = (void *)sysVersion
     };
+
+    editableVars["DISPLAY_TYPE"] = {
+        .displayName = F("Display type"),
+        .hasHelpText = true,
+        .helpText = "0 = deactivated, 1 = SH1106 (e.g. 1.3 128x64), 2 = SSD1306 (e.g. 0.96 128x64), 3 = SH1106_126x64_SPI",
+        .type = kInteger,
+        .section = sdisplaySection,
+        .position = 28,
+        .show = [] { return true; },
+        .minValue = 0,
+        .maxValue = 3,
+        .ptr = (void *)&displaytype
+    };
+
+    editableVars["DISPLAY_IC2"] = {
+        .displayName = F("Display I2C Adress"),
+        .hasHelpText = true,
+        .helpText = "0x3C default adress or other",
+        .type = kInteger,
+        .section = sdisplaySection,
+        .position = 29,
+        .show = [] { return true; },
+        .minValue = 0,
+        .maxValue = 99999,
+        .ptr = (void *)&displayi2c
+    };
+
     // when adding parameters, set EDITABLE_VARS_LEN to max of .position
 
     // Editable values reported to MQTT
@@ -1916,8 +1951,8 @@ void setup() {
 
     pinMode(PIN_STEAMSWITCH, INPUT_PULLDOWN);
 
-    #if OLED_DISPLAY != 0
-        u8g2.setI2CAddress(oled_i2c * 2);
+    #if DISPLAY_TYPE != 0
+        u8g2.setI2CAddress(displayi2c* 2);
         u8g2.begin();
         u8g2_prepare();
         displayLogo(String("Version "), String(sysVersion));
@@ -2106,7 +2141,7 @@ void looppid() {
     #endif
 
     // Check if PID should run or not. If not, set to manual and force output to zero
-#if OLED_DISPLAY != 0
+#if DISPLAY_TYPE != 0
     unsigned long currentMillisDisplay = millis();
     if (currentMillisDisplay - previousMillisDisplay >= 100) {
         displayShottimer();
@@ -2315,7 +2350,8 @@ int readSysParamsFromStorage(void) {
     if (sysParaSteamSetpoint.getStorage() != 0) return -1;
     if (sysParaWeightSetpoint.getStorage() != 0) return -1;
     if (sysParaWifiCredentialsSaved.getStorage() != 0) return -1;
-
+    if (sysParaDisplaytype.getStorage() != 0) return -1;
+    if (sysParaDisplayi2c.getStorage() != 0) return -1;
     return 0;
 }
 
@@ -2349,7 +2385,8 @@ int writeSysParamsToStorage(void) {
     if (sysParaSteamSetpoint.setStorage() != 0) return -1;
     if (sysParaWeightSetpoint.setStorage() != 0) return -1;
     if (sysParaWifiCredentialsSaved.setStorage() != 0) return -1;
-
+    if (sysParaDisplaytype.setStorage() != 0) return -1;
+    if (sysParaDisplayi2c.setStorage() != 0) return -1;
     return storageCommit();
 }
 
