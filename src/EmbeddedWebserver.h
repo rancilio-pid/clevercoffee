@@ -23,7 +23,7 @@
 
 enum EditableKind {
     kInteger,
-    kUInt8,
+    kBool,
     kDouble,
     kDoubletime,
     kCString
@@ -110,8 +110,8 @@ String getValue(String varName) {
                 return String(*(double *)e.ptr);
             case kInteger:
                 return String(*(int *)e.ptr);
-            case kUInt8:
-                return String(*(uint8_t *)e.ptr);
+            case kBool:
+                return String(*(bool *)e.ptr);
             case kCString:
                 return String((char *)e.ptr);
             default:
@@ -136,8 +136,8 @@ void paramToJson(String name, editable_t &e, DynamicJsonDocument &doc) {
     // set parameter value
     if (e.type == kInteger) {
         paramObj["value"] = *(int *)e.ptr;
-    } else if (e.type == kUInt8) {
-        paramObj["value"] = *(uint8_t *)e.ptr;
+    } else if (e.type == kBool) {
+        paramObj["value"] = *(bool*)e.ptr;
     } else if (e.type == kDouble || e.type == kDoubletime) {
         paramObj["value"] = round2(*(double *)e.ptr);
     } else if (e.type == kCString) {
@@ -307,9 +307,9 @@ void serverSetup() {
                     if (e.type == kInteger) {
                         int newVal = atoi(p->value().c_str());
                         *(int *)e.ptr = newVal;
-                    } else if (e.type == kUInt8) {
-                        *(uint8_t *)e.ptr =
-                            (uint8_t)atoi(p->value().c_str());
+                    } else if (e.type == kBool) {
+                        *(bool*)e.ptr =
+                            (bool)atoi(p->value().c_str());
                     } else if (e.type == kDouble || e.type == kDoubletime) {
                         float newVal = atof(p->value().c_str());
                         *(double *)e.ptr = newVal;
