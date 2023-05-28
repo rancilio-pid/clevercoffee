@@ -25,6 +25,10 @@ void influxDbSetup() {
     else if (INFLUXDB_AUTH_TYPE == 2 && (strlen(INFLUXDB_USER) > 0) && (strlen(INFLUXDB_PASSWORD) > 0)) {
         influxClient.setConnectionParamsV1(INFLUXDB_URL, INFLUXDB_DB_NAME, INFLUXDB_USER, INFLUXDB_PASSWORD);
     }
+    if (INFLUXDB_INSECURE == 1) {
+        influxClient.setInsecure();
+        debugPrintf("InfluxDB setInsecure");
+    }
 }
 
 
