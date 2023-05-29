@@ -21,9 +21,15 @@ unsigned long previousMillisInflux;  // initialisation at the end of init()
 void influxDbSetup() {
     if (INFLUXDB_AUTH_TYPE == 1) {
         influxClient.setConnectionParams(INFLUXDB_URL, INFLUXDB_ORG_NAME, INFLUXDB_DB_NAME, INFLUXDB_API_TOKEN);
+        influxClient.setHTTPOptions(HTTPOptions().httpReadTimeout(INFLUXDB_TIMEOUT));
     }
     else if (INFLUXDB_AUTH_TYPE == 2 && (strlen(INFLUXDB_USER) > 0) && (strlen(INFLUXDB_PASSWORD) > 0)) {
         influxClient.setConnectionParamsV1(INFLUXDB_URL, INFLUXDB_DB_NAME, INFLUXDB_USER, INFLUXDB_PASSWORD);
+        influxClient.setHTTPOptions(HTTPOptions().httpReadTimeout(INFLUXDB_TIMEOUT));
+    }
+    if (INFLUXDB_INSECURE == 1) {
+        influxClient.setInsecure();
+        debugPrintf("InfluxDB setInsecure");
     }
 }
 

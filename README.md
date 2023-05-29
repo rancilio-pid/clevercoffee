@@ -35,8 +35,8 @@ Video tutorial on how to flash the firmware (a little outdated but mostly still 
 https://youtu.be/KZPjisOEcQ4
 
 ## Version
-Version 3.1.2 will be the last major version to support ESP8266, there will only be bug fixes for this platform.
-All newer releases will only target the ESP32.
+Version 3.1.2 was the last major version for ESP8266, there will only be bug fix releases for this platform from there on.
+All releases with new features will only target the ESP32.
 
 ## What is possible after installation into your espresso machine?
  * Control of the brew temperature with an accuracy of up to +/- 0,1°.
