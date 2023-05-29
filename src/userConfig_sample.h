@@ -100,6 +100,7 @@ enum MACHINE {
 #define INFLUXDB_DB_NAME "coffee"  // InfluxDB bucket name
 #define INFLUXDB_INTERVAL 5000     // Send interval in milliseconds
 #define INFLUXDB_TIMEOUT 5000      // InfluxDB httpReadTimeout
+#define INFLUXDB_RETRIES 50         // Amount of retries to etablish an Influxdb Connection before disabling InfluxDB at all
 
 // PID Parameters (not yet in Web interface)
 #define EMA_FACTOR 0.6             // Smoothing of input that is used for Tv (derivative component of PID). Smaller means less smoothing but also less delay, 0 means no filtering
