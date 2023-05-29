@@ -53,7 +53,7 @@ enum MACHINE {
 // PID & Hardware
 #define ONLYPID 1                  // 1 = Only PID, 0 = PID and preinfusion
 #define ONLYPIDSCALE 0             // 0 = off , 1 = OnlyPID with Scale
-#define BREWMODE 1                 // 1 = Brew by time (with preinfusion); 2 = Brew by weight (from scale)
+#define BREWMODE 1                 // 1 = Brew by time (with preinfusion); 2 = Brew by weight (from scale); 3 = Manual Brewmode (Switch start/stop the brew)
 #define BREWDETECTION 0            // 0 = off, 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = Sensor/Hardware for Only PID
 #define BREWSWITCHTYPE 1           // 1 = normal Switch, 2 = Trigger Switch
 #define POWERSWITCHTYPE 0          // 0 = no switch connected, 1 = normal Switch, 2 = Trigger Switch
