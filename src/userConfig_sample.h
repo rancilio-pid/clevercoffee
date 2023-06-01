@@ -61,6 +61,7 @@ enum MACHINE {
 #define VOLTAGESENSORTYPE HIGH     // BREWDETECTION 3 configuration
 #define PINMODEVOLTAGESENSOR INPUT // Mode INPUT_PULLUP, INPUT or INPUT_PULLDOWN_16 (Only Pin 16)
 #define PRESSURESENSOR 0           // 1 = pressure sensor connected
+#define TEMP_LED 1                 // Blink status LED when temp is in range
 
 // Brew Scale
 #define SCALE_SAMPLES 2                     // Load cell sample rate
