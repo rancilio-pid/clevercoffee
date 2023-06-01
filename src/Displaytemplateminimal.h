@@ -40,8 +40,8 @@ void printScreen() {
                 numDecimalsSetpoint = 0;
             }
 
-            //draw (blinking) temp
-            if (fabs(temperature - setpoint) < 0.3) {
+            // Draw temp, blink if TEMP_LED is not enabled
+            if ((fabs(temperature - setpoint) < 0.3) && !TEMP_LED) {
                 if (isrCounter < 500) {
                     // limit to 4 characters
                     u8g2.setCursor(2, 2);
@@ -88,9 +88,9 @@ void printScreen() {
             u8g2.print("/");
 
             if (ONLYPID == 1) {
-                u8g2.print(brewtimesoftware, 0); // deaktivieren wenn Preinfusion ( // voransetzen )
+                u8g2.print(brewtimesoftware, 0);
             } else {
-                u8g2.print(totalBrewTime / 1000, 0); // aktivieren wenn Preinfusion
+                u8g2.print(totalBrewTime / 1000, 0);
             }
 
             if (isBrewDetected == 1 && brewcounter == kBrewIdle) {
