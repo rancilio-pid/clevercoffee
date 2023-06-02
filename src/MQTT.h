@@ -28,12 +28,36 @@ char topic_will[256];
 char topic_set[256];
 
 unsigned long lastMQTTConnectionAttempt = millis();
-unsigned int MQTTReCnctFlag;
 unsigned int MQTTReCnctCount = 0;
-
 
 extern std::map<const char*, std::function<editable_t*()>, cmp_str> mqttVars;
 extern std::map<const char*, std::function<double()>, cmp_str> mqttSensors;
+
+struct DiscoveryObject {
+  String discovery_topic;
+  String payload_json;
+};
+
+/**
+ * @brief Get the string name corresponding to a MACHINE enum value.
+ * 
+ * @param machine The MACHINE enum value.
+ * @return String The string name of the MACHINE.
+ */
+String getMachineName(MACHINE machine) {
+    switch (machine) {
+        case RancilioSilvia:
+            return "RancilioSilvia";
+        case RancilioSilviaE:
+            return "RancilioSilviaE";
+        case Gaggia:
+            return "Gaggia";
+        case QuickMill:
+            return "QuickMill";
+        default:
+            return "";  // Handle any unknown or invalid values
+    }
+}
 
 
 /**
@@ -44,16 +68,14 @@ void checkMQTT() {
     if (offlineMode == 1 || brewcounter > kBrewIdle) return;
 
     if ((millis() - lastMQTTConnectionAttempt >= wifiConnectionDelay) && (MQTTReCnctCount <= maxWifiReconnects)) {
-        int statusTemp = mqtt.connected();
-
-        if (statusTemp != 1) {
+        if (!mqtt.connected()) {
             lastMQTTConnectionAttempt = millis();  // Reconnection Timer Function
             MQTTReCnctCount++;                     // Increment reconnection Counter
             debugPrintf("Attempting MQTT reconnection: %i\n", MQTTReCnctCount);
 
-            if (mqtt.connect(hostname, mqtt_username, mqtt_password, topic_will, 0, true, "offline") == true) {
+            if (mqtt.connect(hostname, mqtt_username, mqtt_password, topic_will, 0, true, "offline")) {
                 mqtt.subscribe(topic_set);
-                debugPrintln("Subscribe to MQTT Topics");
+                debugPrintf("Subscribed to MQTT Topic: %s\n", topic_set);
             }   // Try to reconnect to the server; connect() is a blocking
                 // function, watch the timeout!
             else {
@@ -67,19 +89,48 @@ void checkMQTT() {
 /**
  * @brief Publish Data to MQTT
  */
-bool mqtt_publish(const char *reading, char *payload, boolean retain) {
+bool mqtt_publish(const char *reading, char *payload, boolean retain = false) {
     char topic[120];
     snprintf(topic, 120, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
     return mqtt.publish(topic, payload, retain);
 }
 
+
 /**
- * @brief Publish Data to MQTT
+ * @brief Publishes a large message to an MQTT topic, splitting it into smaller chunks if necessary.
+ *
+ * @param topic The MQTT topic to publish the message to.
+ * @param largeMessage The large message to be published.
+ * @return 0 if the message was successfully published, otherwise an MQTT error code.
  */
-bool mqtt_publish(const char *reading, char *payload) {
-    char topic[120];
-    snprintf(topic, 120, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
-    return mqtt.publish(topic, payload, false);
+int PublishLargeMessage(const String& topic, const String& largeMessage) {
+  const size_t splitSize = 128; // Maximum Message Size
+  const size_t messageLength = largeMessage.length();
+
+  if (messageLength > splitSize) {
+    size_t count = messageLength / splitSize;
+    mqtt.beginPublish(topic.c_str(), messageLength, true);
+
+    for (size_t i = 0; i < count; i++) {
+      size_t startIndex = i * splitSize;
+      size_t endIndex = startIndex + splitSize;
+      mqtt.print(largeMessage.substring(startIndex, endIndex));
+    }
+
+    mqtt.print(largeMessage.substring(count * splitSize));
+    int publishResult = mqtt.endPublish();
+    if (publishResult == 0) {
+      debugPrintln("[MQTT] PublishLargeMessage sent failed");
+      return 1;
+    }
+    else {
+      return 0;
+    }
+  } 
+  else {
+    boolean publishResult = mqtt.publish(topic.c_str(), largeMessage.c_str());
+    return publishResult ? 0 : -1; // Return 0 for success, -1 for failure
+  }
 }
 
 
@@ -109,6 +160,7 @@ void assignMQTTParam(char *param, double value) {
                     break;
                 default:
                     debugPrintf("%s is not a recognized type for this MQTT parameter.\n", var->type);
+                    break;
             }
         }
         else {
@@ -153,41 +205,296 @@ void mqtt_callback(char *topic, byte *data, unsigned int length) {
 /**
  * @brief Send all current system parameter values to MQTT
  *
- * @return TODO 0 = success, < 0 = failure
+ * @param continueOnError Flag to specify whether to continue publishing messages in case of an error (default: true)
+ * @return 0 = success, MQTT error code = failure
  */
-void writeSysParamsToMQTT(void) {
-    unsigned long currentMillisMQTT = millis();
-    if ((currentMillisMQTT - previousMillisMQTT >= intervalMQTT) && MQTT == 1) {
-        previousMillisMQTT = currentMillisMQTT;
+int writeSysParamsToMQTT(bool continueOnError = true) {
+  unsigned long currentMillisMQTT = millis();
+  if ((currentMillisMQTT - previousMillisMQTT >= intervalMQTT) && MQTT == 1) {
+    previousMillisMQTT = currentMillisMQTT;
 
-        if (mqtt.connected() == 1) {
-            mqtt_publish("status", (char *)"online");
+    if (mqtt.connected()) {
+      mqtt_publish("status", (char *)"online");
 
-            for (const auto& pair : mqttVars) {
-                editable_t *e = pair.second();
+      int errorState = 0; // MQTT error state
 
-                switch (e->type) {
-                    case kDouble:
-                        mqtt_publish(pair.first, number2string(*(double *) e->ptr), true);
-                        break;
-                    case kDoubletime:
-                        mqtt_publish(pair.first, number2string(*(double *) e->ptr), true);
-                        break;
-                    case kInteger:
-                        mqtt_publish(pair.first, number2string(*(int *) e->ptr), true);
-                        break;
-                    case kUInt8:
-                        mqtt_publish(pair.first, number2string(*(uint8_t *) e->ptr), true);
-                        break;
-                    case kCString:
-                        mqtt_publish(pair.first, number2string(*(char *) e->ptr), true);
-                        break;
-                }
-            }
-            
-            for (const auto& pair : mqttSensors) {
-                mqtt_publish(pair.first, number2string(pair.second()));
-            }
+      for (const auto& pair : mqttVars) {
+        editable_t *e = pair.second();
+
+        switch (e->type) {
+          case kDouble:
+            if (!mqtt_publish(pair.first, number2string(*(double *)e->ptr), true))
+              errorState = mqtt.state();
+            break;
+          case kDoubletime:
+            if (!mqtt_publish(pair.first, number2string(*(double *)e->ptr), true))
+              errorState = mqtt.state();
+            break;
+          case kInteger:
+            if (!mqtt_publish(pair.first, number2string(*(int *)e->ptr), true))
+              errorState = mqtt.state();
+            break;
+          case kUInt8:
+            if (!mqtt_publish(pair.first, number2string(*(uint8_t *)e->ptr), true))
+              errorState = mqtt.state();
+            break;
+          case kCString:
+            if (!mqtt_publish(pair.first, number2string(*(char *)e->ptr), true))
+              errorState = mqtt.state();
+            break;
         }
+
+        if (errorState != 0 && !continueOnError) {
+          // An error occurred and continueOnError is false, return the error state
+          return errorState;
+        }
+      }
+
+      for (const auto& pair : mqttSensors) {
+        if (!mqtt_publish(pair.first, number2string(pair.second())))
+          errorState = mqtt.state();
+
+        if (errorState != 0 && !continueOnError) {
+          // An error occurred and continueOnError is false, return the error state
+          return errorState;
+        }
+      }
     }
+  }
+
+  return 0; // Success
+}
+
+
+/**
+ * @brief Generate a switch device for Home Assistant MQTT discovery
+ *
+ * This function generates a switch device configuration for Home Assistant MQTT discovery. It creates a `DiscoveryObject` containing the necessary information for Home Assistant to discover and control the switch device.
+ *
+ * @param name The name of the switch (used in MQTT topics)
+ * @param displayName The display name of the switch (shown in Home Assistant)
+ * @param payload_on The payload value to turn the switch on (default: "1")
+ * @param payload_off The payload value to turn the switch off (default: "0")
+ * @return A `DiscoveryObject` containing the switch device configuration
+ */
+DiscoveryObject GenerateSwitchDevice(String name, String displayName, String payload_on = "1", String payload_off = "0") {
+  String mqtt_topic = String(mqtt_topic_prefix) + String(hostname);
+  DiscoveryObject switch_device;
+  String unique_id = "clevercoffee-" + String(hostname);
+  String SwitchDiscoveryTopic = String(MQTT_HASSIO_DISCOVERY_PREFIX) + "/switch/";
+
+  String switch_command_topic = mqtt_topic + "/"+ name +"/set";
+  String switch_state_topic = mqtt_topic + "/"+ name;
+
+  switch_device.discovery_topic = SwitchDiscoveryTopic + unique_id + "-"+ name +"" +"/config";
+  
+  DynamicJsonDocument DeviceMapDoc(1024);
+  char DeviceMapBuffer[256];
+  DeviceMapDoc["identifiers"] = String(hostname);
+  DeviceMapDoc["manufacturer"] = "CleverCoffee";
+  DeviceMapDoc["model"] = getMachineName(machine);
+  DeviceMapDoc["name"] = String(hostname);
+  
+  DynamicJsonDocument switchConfigDoc(512);
+  switchConfigDoc["name"] = displayName;
+  switchConfigDoc["command_topic"] = switch_command_topic;
+  switchConfigDoc["state_topic"] = switch_state_topic;
+  switchConfigDoc["unique_id"] = unique_id + "-"+name;
+  switchConfigDoc["payload_on"] = payload_on;
+  switchConfigDoc["payload_off"] = payload_off;
+  switchConfigDoc["payload_available"] = "online";
+  switchConfigDoc["payload_not_available"] = "offline";
+  switchConfigDoc["availability_topic"] = mqtt_topic+"/status";
+
+  JsonObject switchDeviceField = switchConfigDoc.createNestedObject("device");
+  for (JsonPair keyValue : DeviceMapDoc.as<JsonObject>()) {
+    switchDeviceField[keyValue.key()] = keyValue.value();
+  }
+
+  String switchConfigDocBuffer;
+  serializeJson(switchConfigDoc, switchConfigDocBuffer);
+
+
+  switch_device.payload_json = switchConfigDocBuffer;
+  return switch_device;
+}
+
+
+/**
+ * @brief Generate a sensor device for Home Assistant MQTT discovery
+ *
+ * This function generates a sensor device configuration for Home Assistant MQTT discovery. It creates a `DiscoveryObject` containing the necessary information for Home Assistant to discover and monitor the sensor device.
+ *
+ * @param name The name of the sensor (used in MQTT topics)
+ * @param displayName The display name of the sensor (shown in Home Assistant)
+ * @param unit_of_measurement The unit of measurement for the sensor data (default: "°C")
+ * @return A `DiscoveryObject` containing the sensor device configuration
+ */
+DiscoveryObject GenerateSensorDevice(String name, String displayName, String unit_of_measurement = "°C", String device_class = "temperature") {
+  String mqtt_topic = String(mqtt_topic_prefix) + String(hostname);
+  DiscoveryObject sensor_device;
+  String unique_id = "clevercoffee-" + String(hostname);
+  String SensorDiscoveryTopic = String(MQTT_HASSIO_DISCOVERY_PREFIX) + "/sensor/";
+
+  String sensor_state_topic = mqtt_topic + "/"+ name;
+  sensor_device.discovery_topic = SensorDiscoveryTopic + unique_id + "-"+ name +"" +"/config";
+  
+  DynamicJsonDocument DeviceMapDoc(1024);
+  char DeviceMapBuffer[256];
+  DeviceMapDoc["identifiers"] = String(hostname);
+  DeviceMapDoc["manufacturer"] = "CleverCoffee";
+  DeviceMapDoc["model"] = getMachineName(machine);
+  DeviceMapDoc["name"] = String(hostname);
+  
+  DynamicJsonDocument sensorConfigDoc(512);
+  sensorConfigDoc["name"] = displayName;
+  sensorConfigDoc["state_topic"] = sensor_state_topic;
+  sensorConfigDoc["unique_id"] = unique_id;
+  sensorConfigDoc["unit_of_measurement"] = unit_of_measurement;
+  sensorConfigDoc["device_class"] = device_class;
+  sensorConfigDoc["payload_available"] = "online";
+  sensorConfigDoc["payload_not_available"] = "offline";
+  sensorConfigDoc["availability_topic"] = mqtt_topic+"/status";
+
+  JsonObject sensorDeviceField = sensorConfigDoc.createNestedObject("device");
+  for (JsonPair keyValue : DeviceMapDoc.as<JsonObject>()) {
+    sensorDeviceField[keyValue.key()] = keyValue.value();
+  }
+
+  String sensorConfigDocBuffer;
+  serializeJson(sensorConfigDoc, sensorConfigDocBuffer);
+
+
+  sensor_device.payload_json = sensorConfigDocBuffer;
+  return sensor_device;
+}
+
+
+/**
+ * @brief Generate a number device for Home Assistant MQTT discovery
+ *
+ * This function generates a number device configuration for Home Assistant MQTT discovery. It creates a `DiscoveryObject` containing the necessary information for Home Assistant to discover and control the number device.
+ *
+ * @param name The name of the number device (used in MQTT topics)
+ * @param displayName The display name of the number device (shown in Home Assistant)
+ * @param min_value The minimum value allowed for the number device
+ * @param max_value The maximum value allowed for the number device
+ * @param steps_value The step value for incrementing/decrementing the number device value
+ * @param unit_of_measurement The unit of measurement for the number device (default: "°C")
+ * @param ui_mode Control how the number should be displayed in the UI
+ * @return A `DiscoveryObject` containing the number device configuration
+ */
+DiscoveryObject GenerateNumberDevice(String name, String displayName, int min_value, int max_value, float steps_value, String unit_of_measurement = "°C", String ui_mode = "box") {
+  String mqtt_topic = String(mqtt_topic_prefix) + String(hostname);
+  DiscoveryObject number_device;
+  String unique_id = "clevercoffee-" + String(hostname);
+
+  String NumberDiscoveryTopic = String(MQTT_HASSIO_DISCOVERY_PREFIX) + "/number/";
+  number_device.discovery_topic = NumberDiscoveryTopic + unique_id + "-"+ name +"" +"/config";
+
+  DynamicJsonDocument DeviceMapDoc(1024);
+  char DeviceMapBuffer[256];
+  DeviceMapDoc["identifiers"] = String(hostname);
+  DeviceMapDoc["manufacturer"] = "CleverCoffee";
+  DeviceMapDoc["model"] = getMachineName(machine);
+  DeviceMapDoc["name"] = String(hostname);
+
+  DynamicJsonDocument numberConfigDoc(512);
+  numberConfigDoc["name"] = displayName;
+  numberConfigDoc["command_topic"] = mqtt_topic + "/"+ name + "/set";
+  numberConfigDoc["state_topic"] = mqtt_topic + "/"+ name;
+  numberConfigDoc["unique_id"] = unique_id + "-"+name;
+  numberConfigDoc["min"] = min_value;  // Minimum value
+  numberConfigDoc["max"] = max_value;  // Maximum value
+  numberConfigDoc["step"] = String(steps_value,2);  // Steps value
+  numberConfigDoc["unit_of_measurement"] = unit_of_measurement;
+  numberConfigDoc["mode"] = ui_mode;
+  numberConfigDoc["payload_available"] = "online";
+  numberConfigDoc["payload_not_available"] = "offline";
+  numberConfigDoc["availability_topic"] = mqtt_topic+"/status";
+
+  JsonObject numberDeviceField = numberConfigDoc.createNestedObject("device");
+  for (JsonPair keyValue : DeviceMapDoc.as<JsonObject>()) {
+    numberDeviceField[keyValue.key()] = keyValue.value();
+  }
+
+  String numberConfigDocBuffer;
+  serializeJson(numberConfigDoc, numberConfigDocBuffer);
+
+
+  number_device.payload_json = numberConfigDocBuffer;
+  return number_device;
+}
+
+/**
+ * @brief Send MQTT Homeassistant Discovery Messages
+ * @return 0 if successful, MQTT connection error code if failed to send messages
+ */
+int sendHASSIODiscoveryMsg() {
+// Number Devices
+  DiscoveryObject brewSetpoint = GenerateNumberDevice("brewSetpoint", "BrewSetpoint", BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, 0.1);
+  DiscoveryObject steamSetPoint = GenerateNumberDevice("steamSetpoint", "SteamSetPoint", STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, 0.1);
+  DiscoveryObject brewTempOffset = GenerateNumberDevice("brewTempOffset", "BrewTempOffset", BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, 0.1);
+  DiscoveryObject brewPidDelay = GenerateNumberDevice("brewPidDelay", "brewPidDelay", BREW_PID_DELAY_MIN, BREW_PID_DELAY_MAX, 0.1);
+  DiscoveryObject startKp = GenerateNumberDevice("startKp", "startKp", PID_KP_START_MIN, PID_KP_START_MAX, 0.1);
+  DiscoveryObject startTn = GenerateNumberDevice("startTn", "startTn", PID_TN_START_MIN, PID_TN_START_MAX, 0.1);
+  DiscoveryObject steamKp = GenerateNumberDevice("steamKp", "steamKp", PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, 0.1);
+  DiscoveryObject aggKp = GenerateNumberDevice("aggKp", "aggKp", PID_KP_REGULAR_MIN, PID_KP_REGULAR_MAX, 0.1);
+  DiscoveryObject aggTn = GenerateNumberDevice("aggTn", "aggTn", PID_TN_REGULAR_MIN, PID_TN_REGULAR_MAX, 0.1);
+  DiscoveryObject aggTv = GenerateNumberDevice("aggTv", "aggTv", PID_TV_REGULAR_MIN, PID_TV_REGULAR_MAX, 0.1);
+  DiscoveryObject aggIMax = GenerateNumberDevice("aggIMax", "aggIMax", PID_I_MAX_REGULAR_MIN, PID_I_MAX_REGULAR_MAX, 0.1);
+// Sensor Devices
+  DiscoveryObject actual_temperature = GenerateSensorDevice("temperature", "Actual Boiler Temperature");
+  DiscoveryObject heaterPower = GenerateSensorDevice("heaterPower", "heaterPower", "W", "power");
+  DiscoveryObject brewtime = GenerateSensorDevice("brewtime", "Brewtime","sec", "duration");
+// Switch Devices
+  DiscoveryObject pidOn = GenerateSwitchDevice("pidON", "pidON Switch");
+  DiscoveryObject steamON = GenerateSwitchDevice("steamON", "steamON Switch");
+  DiscoveryObject backflushON = GenerateSwitchDevice("backflushON", "backflushON Switch");
+  DiscoveryObject startUsePonM = GenerateSwitchDevice("startUsePonM", "startUsePonM Switch");
+  
+
+// Define an array to store the DiscoveryObject instances
+  DiscoveryObject discoveryObjects[] = {
+    brewSetpoint,
+    steamSetPoint,
+    brewTempOffset,
+    brewPidDelay,
+    startKp,
+    startTn,
+    steamKp,
+    aggKp,
+    aggTn,
+    aggTv,
+    aggIMax,
+    actual_temperature,
+    heaterPower,
+    brewtime,
+    pidOn,
+    steamON,
+    backflushON,
+    startUsePonM
+  };
+
+  const int numDiscoveryObjects = sizeof(discoveryObjects) / sizeof(discoveryObjects[0]);
+
+
+  // Send the Objects to Hassio
+  if (mqtt.connected()) {
+    for (int i = 0; i < numDiscoveryObjects; i++) {
+      const DiscoveryObject& discoveryObj = discoveryObjects[i];
+      int publishResult = PublishLargeMessage(discoveryObj.discovery_topic.c_str(), discoveryObj.payload_json.c_str());
+
+      if (publishResult != 0) {
+        debugPrintf("[MQTT] Failed to publish discovery message. Error code: %d\n", publishResult);
+        return publishResult;
+      }
+    }
+    //debugPrintln("[MQTT] Hassio Discover sent");
+    return 0;
+  }
+  else {
+    debugPrintln("[MQTT] Failed to send Hassio Discover, MQTT Client is not connected");
+    return -1;
+  }
 }

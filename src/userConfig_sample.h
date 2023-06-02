@@ -85,9 +85,11 @@ enum MACHINE {
 #define MQTT 0                             // 1 = MQTT enabled, 0 = MQTT disabled
 #define MQTT_USERNAME "mymqttuser"
 #define MQTT_PASSWORD "mymqttpass"
-#define MQTT_TOPIC_PREFIX "custom/Küche."  // topic will be "<MQTT_TOPIC_PREFIX><HOSTNAME>/<READING>"
-#define MQTT_SERVER_IP "XXX.XXX.XXX.XXX"   // IP-Address of locally installed mqtt server
-#define MQTT_SERVER_PORT 1883
+#define MQTT_TOPIC_PREFIX "custom/Küche."               // topic will be "<MQTT_TOPIC_PREFIX><HOSTNAME>/<READING>"
+#define MQTT_SERVER_IP "XXX.XXX.XXX.XXX"                // IP-Address of the MQTT Server
+#define MQTT_SERVER_PORT 1883                           // Port of the specified MQTT Server
+#define MQTT_HASSIO_SUPPORT 0                           // Enables the Homeassistant Auto Discovery Feature
+#define MQTT_HASSIO_DISCOVERY_PREFIX "homeassistant"    // Homeassistant Auto Discovery Prefix
 
 // INFLUXDB
 #define INFLUXDB 0                 // 1 = INFLUX enabled, 0 = INFLUX disabled
