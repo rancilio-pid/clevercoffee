@@ -24,8 +24,8 @@ void printScreen() {
             u8g2.clearBuffer();
 
             // draw (blinking) temp
-            if ((fabs(temperature - setpoint) < blinkingtempoffset && blinkingtemp == 0) ||
-                (fabs(temperature - setpoint) >= blinkingtempoffset && blinkingtemp == 1)) {
+            if (((fabs(temperature - setpoint) < blinkingtempoffset && blinkingtemp == 0) ||
+                (fabs(temperature - setpoint) >= blinkingtempoffset && blinkingtemp == 1)) && !TEMP_LED) {
                 if (isrCounter < 500) {
                     if (temperature < 99.999) {
                         u8g2.setCursor(13, 12);

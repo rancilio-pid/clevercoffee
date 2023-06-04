@@ -61,6 +61,7 @@ enum MACHINE {
 #define VOLTAGESENSORTYPE HIGH     // BREWDETECTION 3 configuration
 #define PINMODEVOLTAGESENSOR INPUT // Mode INPUT_PULLUP, INPUT or INPUT_PULLDOWN_16 (Only Pin 16)
 #define PRESSURESENSOR 0           // 1 = pressure sensor connected
+#define TEMP_LED 1                 // Blink status LED when temp is in range
 
 // Brew Scale
 #define SCALE_SAMPLES 2                     // Load cell sample rate
@@ -91,6 +92,7 @@ enum MACHINE {
 // INFLUXDB
 #define INFLUXDB 0                 // 1 = INFLUX enabled, 0 = INFLUX disabled
 #define INFLUXDB_URL ""            // InfluxDB server address
+#define INFLUXDB_INSECURE 1        // 1 = INFLUXClient setInsecure enabled , 0 = INFLUXClient setInsecure disabled
 #define INFLUXDB_AUTH_TYPE 1       // 1 = API Token , 2 = User/Pass
 #define INFLUXDB_API_TOKEN ""
 #define INFLUXDB_ORG_NAME ""
@@ -98,6 +100,7 @@ enum MACHINE {
 #define INFLUXDB_PASSWORD ""
 #define INFLUXDB_DB_NAME "coffee"  // InfluxDB bucket name
 #define INFLUXDB_INTERVAL 5000     // Send interval in milliseconds
+#define INFLUXDB_TIMEOUT 5000      // InfluxDB httpReadTimeout
 
 // PID Parameters (not yet in Web interface)
 #define EMA_FACTOR 0.6             // Smoothing of input that is used for Tv (derivative component of PID). Smaller means less smoothing but also less delay, 0 means no filtering
