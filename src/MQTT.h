@@ -349,7 +349,7 @@ DiscoveryObject GenerateSensorDevice(String name, String displayName, String uni
   DynamicJsonDocument sensorConfigDoc(512);
   sensorConfigDoc["name"] = displayName;
   sensorConfigDoc["state_topic"] = sensor_state_topic;
-  sensorConfigDoc["unique_id"] = unique_id;
+  sensorConfigDoc["unique_id"] = unique_id + "-"+name;
   sensorConfigDoc["unit_of_measurement"] = unit_of_measurement;
   sensorConfigDoc["device_class"] = device_class;
   sensorConfigDoc["payload_available"] = "online";
@@ -432,21 +432,21 @@ DiscoveryObject GenerateNumberDevice(String name, String displayName, int min_va
  */
 int sendHASSIODiscoveryMsg() {
 // Number Devices
-  DiscoveryObject brewSetpoint = GenerateNumberDevice("brewSetpoint", "BrewSetpoint", BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, 0.1);
-  DiscoveryObject steamSetPoint = GenerateNumberDevice("steamSetpoint", "SteamSetPoint", STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, 0.1);
-  DiscoveryObject brewTempOffset = GenerateNumberDevice("brewTempOffset", "BrewTempOffset", BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, 0.1);
-  DiscoveryObject brewPidDelay = GenerateNumberDevice("brewPidDelay", "brewPidDelay", BREW_PID_DELAY_MIN, BREW_PID_DELAY_MAX, 0.1);
-  DiscoveryObject startKp = GenerateNumberDevice("startKp", "startKp", PID_KP_START_MIN, PID_KP_START_MAX, 0.1);
-  DiscoveryObject startTn = GenerateNumberDevice("startTn", "startTn", PID_TN_START_MIN, PID_TN_START_MAX, 0.1);
-  DiscoveryObject steamKp = GenerateNumberDevice("steamKp", "steamKp", PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, 0.1);
-  DiscoveryObject aggKp = GenerateNumberDevice("aggKp", "aggKp", PID_KP_REGULAR_MIN, PID_KP_REGULAR_MAX, 0.1);
-  DiscoveryObject aggTn = GenerateNumberDevice("aggTn", "aggTn", PID_TN_REGULAR_MIN, PID_TN_REGULAR_MAX, 0.1);
-  DiscoveryObject aggTv = GenerateNumberDevice("aggTv", "aggTv", PID_TV_REGULAR_MIN, PID_TV_REGULAR_MAX, 0.1);
-  DiscoveryObject aggIMax = GenerateNumberDevice("aggIMax", "aggIMax", PID_I_MAX_REGULAR_MIN, PID_I_MAX_REGULAR_MAX, 0.1);
+  DiscoveryObject brewSetpoint = GenerateNumberDevice("brewSetpoint", "BrewSetpoint", BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, 0.1, "°C");
+  DiscoveryObject steamSetPoint = GenerateNumberDevice("steamSetpoint", "SteamSetPoint", STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, 0.1, "°C");
+  DiscoveryObject brewTempOffset = GenerateNumberDevice("brewTempOffset", "BrewTempOffset", BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, 0.1, "°C");
+  DiscoveryObject brewPidDelay = GenerateNumberDevice("brewPidDelay", "brewPidDelay", BREW_PID_DELAY_MIN, BREW_PID_DELAY_MAX, 0.1, "");
+  DiscoveryObject startKp = GenerateNumberDevice("startKp", "startKp", PID_KP_START_MIN, PID_KP_START_MAX, 0.1, "");
+  DiscoveryObject startTn = GenerateNumberDevice("startTn", "startTn", PID_TN_START_MIN, PID_TN_START_MAX, 0.1, "");
+  DiscoveryObject steamKp = GenerateNumberDevice("steamKp", "steamKp", PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, 0.1, "");
+  DiscoveryObject aggKp = GenerateNumberDevice("aggKp", "aggKp", PID_KP_REGULAR_MIN, PID_KP_REGULAR_MAX, 0.1, "");
+  DiscoveryObject aggTn = GenerateNumberDevice("aggTn", "aggTn", PID_TN_REGULAR_MIN, PID_TN_REGULAR_MAX, 0.1, "");
+  DiscoveryObject aggTv = GenerateNumberDevice("aggTv", "aggTv", PID_TV_REGULAR_MIN, PID_TV_REGULAR_MAX, 0.1, "");
+  DiscoveryObject aggIMax = GenerateNumberDevice("aggIMax", "aggIMax", PID_I_MAX_REGULAR_MIN, PID_I_MAX_REGULAR_MAX, 0.1, "");
+  DiscoveryObject brewtime = GenerateNumberDevice("brewtime", "brewtime", BREW_TIME_MIN, BREW_TIME_MAX, 0.1, "s");
 // Sensor Devices
   DiscoveryObject actual_temperature = GenerateSensorDevice("temperature", "Actual Boiler Temperature");
-  DiscoveryObject heaterPower = GenerateSensorDevice("heaterPower", "heaterPower", "W", "power");
-  DiscoveryObject brewtime = GenerateSensorDevice("brewtime", "Brewtime","sec", "duration");
+  DiscoveryObject heaterPower = GenerateSensorDevice("heaterPower", "heaterPower", "%", "power_factor");
 // Switch Devices
   DiscoveryObject pidOn = GenerateSwitchDevice("pidON", "pidON Switch");
   DiscoveryObject steamON = GenerateSwitchDevice("steamON", "steamON Switch");
