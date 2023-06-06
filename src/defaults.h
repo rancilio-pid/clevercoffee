@@ -36,11 +36,13 @@ int writeSysParamsToStorage(void);
 #define BREW_TIME 25               // brew time in seconds (only used if pump is being controlled)
 #define BREW_SW_TIME 25            // keep brew PID params for this many seconds after detection (only for software BD)
 #define BREW_PID_DELAY 10          // delay until enabling PID controller during brew (no heating during this time)
-#define BD_SENSITIVITY 120        // brew detection sensitivity, be careful: if too low, then there is the risk of wrong brew detection and rising temperature
+#define BD_SENSITIVITY 120         // brew detection sensitivity, be careful: if too low, then there is the risk of wrong brew detection and rising temperature
 #define PRE_INFUSION_TIME 2        // pre-infusion time in seconds
 #define PRE_INFUSION_PAUSE_TIME 5  // pre-infusion pause time in seconds
 #define SCALE_WEIGHTSETPOINT 30    // Target weight in grams
 #define WIFI_CREDENTIALS_SAVED 0   // Flag if wifi setup is done. 0: not set up, 1: credentials set up via wifi manager
+#define STANDBY_MODE_ON 0          // Standby mode off by default
+#define STANDBY_MODE_TIME 30       // Time in minutes until the heater is turned off   
 
 // Backflush values
 #define FILLTIME 3000              // time in ms the pump is running
@@ -91,4 +93,6 @@ int writeSysParamsToStorage(void);
 #define WEIGHTSETPOINT_MAX 500
 #define PID_KP_STEAM_MIN 0
 #define PID_KP_STEAM_MAX 500
+#define STANDBY_MODE_TIME_MIN 30
+#define STANDBY_MODE_TIME_MAX 120
 
