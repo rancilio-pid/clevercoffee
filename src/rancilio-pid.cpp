@@ -3,13 +3,13 @@
  *
  * @brief Main sketch
  *
- * @version 3.1.1 Master
+ * @version 3.2.0 Master
  */
 
 // Firmware version
 #define FW_VERSION    3
-#define FW_SUBVERSION 1
-#define FW_HOTFIX     2
+#define FW_SUBVERSION 2
+#define FW_HOTFIX     0
 #define FW_BRANCH     "ESP8222-MASTER"
 
 // User Config
