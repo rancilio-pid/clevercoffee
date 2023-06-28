@@ -225,6 +225,15 @@ void Displaymachinestate() {
         u8g2.sendBuffer();
     }
 
+    if (OFFLINEGLOGO == 1 && machineState == kStandby) {
+        u8g2.clearBuffer();
+        u8g2.drawXBMP(38, 0, OFFLogo_width, OFFLogo_height, OFFLogo);
+        u8g2.setCursor(36, 55);
+        u8g2.setFont(u8g2_font_profont10_tf);
+        u8g2.print("Standby mode");
+        u8g2.sendBuffer();
+    }
+
     // Steam
     if (machineState == kSteam) {
         u8g2.clearBuffer();

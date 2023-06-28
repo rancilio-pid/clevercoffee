@@ -59,7 +59,7 @@ void serverSetup();
 void setEepromWriteFcn(int (*fcnPtr)(void));
 
 // editable vars are specified in main.cpp
-#define EDITABLE_VARS_LEN 27
+#define EDITABLE_VARS_LEN 29
 extern std::map<String, editable_t> editableVars;
 
 
