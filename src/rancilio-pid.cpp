@@ -10,6 +10,7 @@
 #define FW_VERSION    3
 #define FW_SUBVERSION 2
 #define FW_HOTFIX     0
+
 #define FW_BRANCH     "ESP8222-MASTER"
 
 // User Config
