@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include "ISR.h"
-#include "userConfig.h"
+#include "hardware.h"
 
 unsigned int isrCounter = 0;  // counter for ISR
 unsigned long windowStartTime;
