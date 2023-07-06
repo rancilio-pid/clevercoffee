@@ -10,5 +10,6 @@ src/userConfig.h
 # ignore macOS Finder configuration storage files
 **/.DS_Store
 
+platformio.ini
 platformio_extra.ini
 **/rancilio-pid.ino.cpp
