@@ -14,7 +14,7 @@
 
 // Sensors
 #define PINTEMPSENSOR 16
-#define PINPRESSURESENSOR 23
+#define PINPRESSURESENSOR 36
 #define HXDATPIN 32            // Brew scale data pin
 #define HXCLKPIN 33            // Brew scale clock pin
 
