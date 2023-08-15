@@ -269,13 +269,13 @@ void Displaymachinestate() {
         u8g2.setFont(u8g2_font_profont11_tf);
         u8g2.drawXBMP(0, 0, logo_width, logo_height, logo_bits_u8g2);  // draw temp icon
         u8g2.setCursor(32, 24);
-        u8g2.print(langstring_current_temp);
+        u8g2.print("Ist :  ");
         u8g2.print(temperature, 1);
         u8g2.print(" ");
         u8g2.print((char)176);
         u8g2.print("C");
         u8g2.setCursor(32, 34);
-        u8g2.print(langstring_set_temp);
+        u8g2.print("Soll:  ");
         u8g2.print(setpoint, 1);
         u8g2.print(" ");
         u8g2.print((char)176);

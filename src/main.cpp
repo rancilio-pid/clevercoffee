@@ -2092,6 +2092,11 @@ void setup() {
         pinMode(PIN_BREWSWITCH, INPUT);
     }
 
+    // If Temperature LED is enabled
+    if (TEMP_LED) {
+        pinMode(PIN_STATUSLED, OUTPUT);
+    }
+
     // If OLED display is enabled  
     #if OLED_DISPLAY != 0
         u8g2.setI2CAddress(oled_i2c * 2);

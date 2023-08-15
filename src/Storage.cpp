@@ -114,7 +114,7 @@ static const sto_data_t itemDefaults PROGMEM = {
     STEAMKP,                                  // STO_ITEM_PID_KP_STEAM
     STEAMSETPOINT,                            // STO_ITEM_STEAM_SETPOINT
     STANDBY_MODE_ON,                          // STO_ITEM_STANDBY_MODE_ON
-    STANDBY_MODE_TIME                         // STO_ITEM_STANDBY_MODE_TIME 
+    STANDBY_MODE_TIME,                         // STO_ITEM_STANDBY_MODE_TIME 
     POWERSWITCHTYPE,                          // STO_ITEM_POWER_SWITCHTYPE
     BREWSWITCHTYPE,                           // STO_ITEM_BREW_SWITCHTYPE
     STEAMSWITCHTYPE                           // STO_ITEM_STEAM_SWITCHTYPE
