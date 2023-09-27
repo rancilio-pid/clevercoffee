@@ -334,7 +334,7 @@ void serverSetup() {
             }
 
             // Write the new values to MQTT
-            writeSysParamsToMQTT();
+            writeSysParamsToMQTT(true); // Continue on error
 
         } else if (request->method() == 1) {  // WebRequestMethod enum -> HTTP_GET
             // get parameter id from first parameter, e.g. /parameters?param=PID_ON

@@ -163,9 +163,10 @@ char *number2string(float in);
 char *number2string(int in);
 char *number2string(unsigned int in);
 float filterPressureValue(float input);
-void writeSysParamsToMQTT(void);
+int writeSysParamsToMQTT(bool continueOnError);
 void updateStandbyTimer(void);
 void resetStandbyTimer(void);
+
 
 // system parameters
 uint8_t pidON = 0;                 // 1 = control loop in closed loop
@@ -342,6 +343,13 @@ std::map<const char*, std::function<double()>, cmp_str> mqttSensors = {};
 
 unsigned long lastTempEvent = 0;
 unsigned long tempEventInterval = 1000;
+
+#if MQTT_HASSIO_SUPPORT == 1
+static unsigned long lastHomeAssistantDiscoveryExecutionTime = 0;
+const unsigned long HomeAssistantDiscoveryExecutionInterval = 300000;  // 5 minute
+#endif
+
+bool mqtt_was_connected = false;
 
 /**
  * @brief Get Wifi signal strength and set signalBars for display
@@ -2064,6 +2072,8 @@ void setup() {
             mqtt.setServer(mqtt_server_ip, mqtt_server_port);
             mqtt.setCallback(mqtt_callback);
             checkMQTT();
+            // Send Home Assistant MQTT discovery messages
+            sendHASSIODiscoveryMsg();
         }
 
         if (INFLUXDB == 1) {
@@ -2143,10 +2153,21 @@ void looppid() {
     if (WiFi.status() == WL_CONNECTED && offlineMode == 0) {
         if (MQTT == 1) {
             checkMQTT();
-            writeSysParamsToMQTT();
-
+            writeSysParamsToMQTT(true); // Continue on error
             if (mqtt.connected() == 1) {
                 mqtt.loop();
+                #if MQTT_HASSIO_SUPPORT == 1
+                if (millis() - lastHomeAssistantDiscoveryExecutionTime >= HomeAssistantDiscoveryExecutionInterval) {
+                    sendHASSIODiscoveryMsg();
+                    lastHomeAssistantDiscoveryExecutionTime = millis();
+                }
+                #endif
+                mqtt_was_connected = true;
+            }
+            // Supress debug messages until we have a connection etablished
+            else if(mqtt_was_connected) {
+                debugPrintln("MQTT disconnected\n");
+                mqtt_was_connected = false;
             }
         }
 
