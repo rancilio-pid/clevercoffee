@@ -35,8 +35,11 @@ Video tutorial on how to flash the firmware (a little outdated but mostly still 
 https://youtu.be/KZPjisOEcQ4
 
 ## Version
-Version 3.1.2 was the last major version for ESP8266, there will only be bug fix releases for this platform from there on.
-All releases with new features will only target the ESP32.
+With Version 3.2.0 we bring the last major release with support for ESP8266 and ESP32.
+There will only be bug fix releases for ESP8266 from there on. 
+Further development, with new features, will only be done for ESP32.
+"master" branch contains the current developmet only for esp32.
+"master-esp8266" branch contains last version for ESP8266 and ESP32.
 
 ## What is possible after installation into your espresso machine?
  * Control of the brew temperature with an accuracy of up to +/- 0,1°.
@@ -52,6 +55,6 @@ All releases with new features will only target the ESP32.
  * Over-The-Air updates of the firmware (WiFi)
 
 User feedback and suggestions for further development of the software are most welcome.
-You are welcome to help us in our mission to make better espresso :)
+You are welcome to help us in our mission to make better espresso. :)
 
 Thanks to every single supporter!
