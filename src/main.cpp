@@ -2072,8 +2072,10 @@ void setup() {
             mqtt.setServer(mqtt_server_ip, mqtt_server_port);
             mqtt.setCallback(mqtt_callback);
             checkMQTT();
+            #if MQTT_HASSIO_SUPPORT == 1
             // Send Home Assistant MQTT discovery messages
             sendHASSIODiscoveryMsg();
+            #endif
         }
 
         if (INFLUXDB == 1) {
