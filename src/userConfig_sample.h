@@ -26,7 +26,7 @@ enum MACHINE {
  */
 
 // Machine
-#define MACHINEID 0                // see above list of supported machines
+#define MACHINEID RancilioSilvia   // Machine type (see enum MACHINE)
 
 // Display
 #define OLED_DISPLAY 2             // 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64), 3 = SH1106_126x64_SPI
