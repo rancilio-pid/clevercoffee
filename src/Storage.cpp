@@ -665,16 +665,10 @@ int storageSet(sto_item_id_t itemId, String& itemValue, bool commit) {
  *         <0 - failed
  */
 int storageCommit(void) {
-    debugPrintf("%s(): save all data to NV memory\n", __func__);
-
-    //While Flash memory erase/write operations no other code must be executed from
-    //Flash
-    skipHeaterISR = true;
+    debugPrintf("%s(): save all data to EEPROM memory\n", __func__);
 
     // really write data to storage...
     int returnCode = EEPROM.commit() ? 0 : -1;
-
-    skipHeaterISR = false;
 
     return returnCode;
 }
