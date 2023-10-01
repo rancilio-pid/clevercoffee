@@ -678,9 +678,11 @@ void checkWifi() {
     } while (!setupDone && wifiReconnects < maxWifiReconnects && WiFi.status() != WL_CONNECTED);
 
 
-    if (wifiReconnects >= maxWifiReconnects && !setupDone) {  // no wifi connection after boot, initiate offline mode
-        // (only directly after boot)
+    if (wifiReconnects >= maxWifiReconnects && WiFi.status() != WL_CONNECTED) { 
+        // no wifi connection after trying connection, initiate offline mode
         initOfflineMode();
+    } else { 
+        wifiReconnects = 0;
     }
 }
 
@@ -1426,19 +1428,18 @@ void debugVerboseOutput() {
  */
 void wiFiSetup() {
     wm.setCleanConnect(true);
-    wm.setConfigPortalTimeout(60); // sec Timeout for Portal
-    wm.setConnectTimeout(10); // Try 10 sec to connect to WLAN, 5 sec too short!
+    wm.setConfigPortalTimeout(60);      // sec timeout for captive portal
+    wm.setConnectTimeout(10);           // using 10s to connect to WLAN, 5s is sometimes too short!
     wm.setBreakAfterConfig(true);
     wm.setConnectRetries(3);
 
-    // Wifisetup fro
     sysParaWifiCredentialsSaved.getStorage();
 
     if (wifiCredentialsSaved == 0) {
         const char hostname[] = (STR(HOSTNAME));
-        debugPrintf("Connect to WiFi: %s \n", String(hostname));
+        debugPrintf("Connecting to WiFi: %s \n", String(hostname));
         #if OLED_DISPLAY != 0
-            displayLogo("Connect to WiFi: ", HOSTNAME);
+            displayLogo("Connecting to: ", HOSTNAME);
         #endif
     }
 
