@@ -8,12 +8,12 @@
  * @brief Digtalswitch input pin for POWER SWITCH
  */
 
-int lastpowerswitchTrigger = LOW;                   // the previous reading from the input pin
+int lastPowerSwitchTrigger = LOW;                   // the previous reading from the input pin
 int buttonStatePowerTrigger;                        // the current reading from the input pin
 unsigned long lastDebounceTimePowerTrigger = 0;     // the last time the output pin was toggled
 unsigned long debounceDelayPowerTrigger = 50;       // the debounce time; increase if the output flickers
 
-void checkpowerswitch() {
+void checkPowerSwitch() {
     #if POWERSWITCHTYPE == 1
         // Set pidON to 1 when powerswitch is HIGH
         if (digitalRead(PIN_POWERSWITCH) == HIGH) {
@@ -27,7 +27,7 @@ void checkpowerswitch() {
     #if POWERSWITCHTYPE == 2  // TRIGGER
         int reading = digitalRead(PIN_POWERSWITCH);
 
-        if (reading != lastpowerswitchTrigger) {
+        if (reading != lastPowerSwitchTrigger) {
             // reset the debouncing timer
             lastDebounceTimePowerTrigger = millis();
         }
@@ -53,7 +53,7 @@ void checkpowerswitch() {
             }
         }
 
-        lastpowerswitchTrigger = reading;
+        lastPowerSwitchTrigger = reading;
 
     #endif
 }
