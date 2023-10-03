@@ -60,7 +60,6 @@ MACHINE machine = (enum MACHINE)MACHINEID;
 #define HIGH_ACCURACY
 
 #include "PeriodicTrigger.h"
-PeriodicTrigger writeDebugTrigger(5000);  // returns true every 5000 ms
 PeriodicTrigger logbrew(500);
 
 enum MachineState {
@@ -860,6 +859,10 @@ float filterPressureValue(float input) {
  * @brief steamON & Quickmill
  */
 void checkSteamON() {
+    if (STEAMSWITCHTYPE == 0) {
+        return;
+    }
+
     // check digital GIPO
     if (digitalRead(PIN_STEAMSWITCH) == HIGH) {
         steamON = 1;
