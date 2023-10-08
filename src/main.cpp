@@ -1076,6 +1076,10 @@ void handleMachineState() {
                 (ONLYPID == 0 && brewcounter > kBrewIdle && brewcounter <= kBrewFinished))
             {
                 machineState = kBrew;
+
+                if (standbyModeOn) {
+                    resetStandbyTimer();
+                }
             }
 
             if (steamON == 1) {
