@@ -1795,7 +1795,7 @@ void setup() {
     }
 
     // IF PINBREWSWITCH & Steam selected
-    if (PINBREWSWITCH > 0) {
+    if (PINBREWSWITCH > 0 && BREWDETECTION != 3) {
         #if (defined(ESP8266) && PINBREWSWITCH == 16)
             pinMode(PINBREWSWITCH, INPUT_PULLDOWN_16);
         #endif
