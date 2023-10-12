@@ -1980,7 +1980,7 @@ void setup() {
     
     // Values reported to MQTT
     mqttSensors["temperature"] = []{ return temperature; };
-    mqttSensors["heaterPower"] = []{ return pidOutput; };
+    mqttSensors["heaterPower"] = []{ return pidOutput / 10; };
     mqttSensors["standbyModeTimeRemaining"] = []{ return standbyModeRemainingTimeMillis / 1000; };
     mqttSensors["currentKp"] = []{ return bPID.GetKp(); };
     mqttSensors["currentKi"] = []{ return bPID.GetKi(); };
