@@ -37,6 +37,16 @@ static const char *langstring_bckffinished[] = {"Backflush beendet", "Bitte Brue
 static const char *langstring_bckfactivated[] = {"Backflush aktiviert", "Bruehschalter betaetigen ..."};
 static const char *langstring_bckfrunning[] = {"Backflush aktiv:", "seit"};
 
+static const char *langstring_menu_temperature = "Temperaturen";
+static const char *langstring_menu_brewSetpoint = "Brühtemperatur";
+static const char *langstring_menu_steamSetpoint = "Dampftemperatur";
+static const char *langstring_menu_back = "Zurück";
+static const char *langstring_menu_close = "Menü schließen";
+static const char *langstring_menu_times = "Zeiten";
+static const char *langstring_menu_brewtime = "Bezugsdauer";
+static const char *langstring_menu_preinfusionTime = "Präinfusionsdauer";
+static const char *langstring_menu_preinfusionPauseTime = "Präinfusion Pause";
+
 #elif LANGUAGE == 1 // EN
 #if (DISPLAYTEMPLATE == 1) || (DISPLAYTEMPLATE == 2)
     static const char *langstring_set_temp = "Set:   ";
@@ -66,6 +76,16 @@ static const char *langstring_bckffinished[] = {"Backflush finished", "Please re
 static const char *langstring_bckfactivated[] = {"Backflush activated", "Please set brew switch..."};
 static const char *langstring_bckfrunning[] = {"Backflush running:", "from"};
 
+static const char *langstring_menu_temperature = "Temperatures";
+static const char *langstring_menu_brewSetpoint = "Brew setpoint";
+static const char *langstring_menu_steamSetpoint = "Steam setpoint";
+static const char *langstring_menu_back = "Back";
+static const char *langstring_menu_close = "Close menu";
+static const char *langstring_menu_times = "Timings";
+static const char *langstring_menu_brewtime = "Brewtime";
+static const char *langstring_menu_preinfusionTime = "Preinfusion time";
+static const char *langstring_menu_preinfusionPauseTime = "Preinfusion pause";
+
 #elif LANGUAGE == 2 // ES
 #if (DISPLAYTEMPLATE == 1) || (DISPLAYTEMPLATE == 2)
     static const char *langstring_set_temp = "Obj:  ";
@@ -94,4 +114,14 @@ static const char *langstring_error_tsensor[] = {"Error, Temp: ", "Comprueba sen
 static const char *langstring_bckffinished[] = {"Backflush terminado", "Apague el boton de cafe..."};
 static const char *langstring_bckfactivated[] = {"Backflush activado ", "Encienda boton de cafe.."};
 static const char *langstring_bckfrunning[] = {"Backflush activo: ", "desde"};
+
+static const char *langstring_menu_temperature = "Temperaturas";
+static const char *langstring_menu_brewSetpoint = "Temperatura de infusión";
+static const char *langstring_menu_steamSetpoint = "Temperatura de vapor";
+static const char *langstring_menu_back = "Back";
+static const char *langstring_menu_close = "Close menu";
+static const char *langstring_menu_times = "Timings";
+static const char *langstring_menu_brewtime = "Brewtime";
+static const char *langstring_menu_preinfusionTime = "Preinfusion time";
+static const char *langstring_menu_preinfusionPauseTime = "Preinfusion pause";
 #endif

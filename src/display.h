@@ -154,7 +154,7 @@ void displayShottimer(void) {
 }
 
 #if (ROTARY_MENU == 1) 
-void displayTempSetting(double temp, char* name) {
+void displayTempSetting(double temp, const char* name) {
     u8g2.clearBuffer();
     u8g2.setCursor(0, 0);
     u8g2.print(name);

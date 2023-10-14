@@ -460,8 +460,6 @@ const unsigned long intervalDisplay = 500;
 #endif
 
 #if (OLED_DISPLAY != 0) && (ROTARY_MENU == 1)
-    // this value have to be the same as the last menu element
-    #define _LCDML_DISP_cnt    4
 
     void displayMenu();
     void clearMenu();
@@ -471,19 +469,19 @@ const unsigned long intervalDisplay = 500;
     LCDMenuLib2 LCDML(LCDML_0, _LCDML_DISP_rows, _LCDML_DISP_cols, displayMenu, clearMenu, menuControls);
 
     double menuRotaryLast = 0;
-    double initialTemp = 0;
-    void changeTemp(uint8_t param, double temp, sto_item_id_t name, char* readableName) {
+    double initialValue = 0;
+    void changeNumericalValue(uint8_t param, double value, sto_item_id_t name, const char* readableName) {
         if(LCDML.FUNC_setup()) {
             // remmove compiler warnings when the param variable is not used:
             LCDML_UNUSED(param);
 
             menuRotaryLast = encoder.getAccumulate();
-            initialTemp = temp;
+            initialValue = value;
             char message[100];
-            snprintf(message, sizeof(message), "Initialized temp to %f.0. %d.0, %d.0", temp, brewSetpoint, steamSetpoint);
+            snprintf(message, sizeof(message), "Initialized old to %f.0.", value);
             debugPrintln(message);
 
-            displayTempSetting(initialTemp, readableName);
+            displayTempSetting(initialValue, readableName);
         }
 
         if(LCDML.FUNC_loop()) {
@@ -495,36 +493,45 @@ const unsigned long intervalDisplay = 500;
             debugPrintln(message);
 
             if (diff < 0) {
-                initialTemp = initialTemp + diff;
+                initialValue = initialValue + diff;
                 char message[100];
-                snprintf(message, sizeof(message), "DOWN. Temp old: %f.0, new: %f.0, diff: %f.0", initialTemp - diff, initialTemp, diff);
+                snprintf(message, sizeof(message), "DOWN. Old %s: %f.0, new: %f.0, diff: %f.0", readableName, initialValue - diff, initialValue, diff);
                 debugPrintln(message);
             } 
             else if (diff > 0) {
-                initialTemp = initialTemp + diff;
+                initialValue = initialValue + diff;
                 char message[100];
-                snprintf(message, sizeof(message), "UP. Temp old: %f.0, new: %f.0, diff: %f.0", initialTemp - diff, initialTemp, diff);
+                snprintf(message, sizeof(message), "UP. Old %s: %f.0, new: %f.0, diff: %f.0", readableName, initialValue - diff, initialValue, diff);
                 debugPrintln(message);
             } 
 
-            displayTempSetting(initialTemp, readableName);
+            displayTempSetting(initialValue, readableName);
             menuRotaryLast = pos;
              
             if(LCDML.BT_checkEnter()) { 
                 char message[100];
-                snprintf(message, sizeof(message), "Saving new temp: %f.0", initialTemp);
+                snprintf(message, sizeof(message), "Saving new %s: %f.0", readableName, initialValue);
                 debugPrintln(message);
-                storageSet(name, initialTemp);
+                storageSet(name, initialValue);
 
                 int saved = storageCommit();
 
                 if (saved == 0) {
                     switch (name) {
                         case STO_ITEM_BREW_SETPOINT:
-                            brewSetpoint = initialTemp;
+                            brewSetpoint = initialValue;
                             break;
                         case STO_ITEM_STEAM_SETPOINT:
-                            steamSetpoint = initialTemp;
+                            steamSetpoint = initialValue;
+                            break;
+                        case STO_ITEM_BREW_TIME:
+                            brewtime = initialValue;
+                            break;
+                        case STO_ITEM_PRE_INFUSION_TIME:
+                            preinfusion = initialValue;
+                            break;
+                        case STO_ITEM_PRE_INFUSION_PAUSE:
+                            preinfusionpause = initialValue;
                             break;
                         
                         default:
@@ -546,11 +553,23 @@ const unsigned long intervalDisplay = 500;
     }
 
     void changeBrewTemp(uint8_t param) {
-        changeTemp(param, brewSetpoint, STO_ITEM_BREW_SETPOINT, "Brew Setpoint");
+        changeNumericalValue(param, brewSetpoint, STO_ITEM_BREW_SETPOINT, langstring_menu_brewSetpoint);
     }
 
     void changeSteamTemp(uint8_t param) {
-        changeTemp(param, steamSetpoint, STO_ITEM_STEAM_SETPOINT, "Steam Setpoint");
+        changeNumericalValue(param, steamSetpoint, STO_ITEM_STEAM_SETPOINT, langstring_menu_brewSetpoint);
+    }
+
+    void changeBrewTime(uint8_t param) {
+        changeNumericalValue(param, steamSetpoint, STO_ITEM_BREW_TIME, langstring_menu_brewtime);
+    }
+
+    void changePreinfusionTime(uint8_t param) {
+        changeNumericalValue(param, steamSetpoint, STO_ITEM_PRE_INFUSION_TIME, langstring_menu_preinfusionTime);
+    }
+
+    void changePreinfusionPauseTime(uint8_t param) {
+        changeNumericalValue(param, steamSetpoint, STO_ITEM_PRE_INFUSION_PAUSE, langstring_menu_preinfusionPauseTime);
     }
 
     void menuBack(uint8_t param) {
@@ -568,43 +587,22 @@ const unsigned long intervalDisplay = 500;
         }
     }
 
-    LCDML_add(0, LCDML_0, 1, "Temperatures", NULL); 
-    LCDML_langDef(0, DE, "Temperatur");
+    LCDML_add(0, LCDML_0, 1, *langstring_menu_temperature, NULL); 
+    LCDML_add(1, LCDML_0_1, 1, *langstring_menu_brewSetpoint, changeBrewTemp); 
+    LCDML_add(2, LCDML_0_1, 2, *langstring_menu_steamSetpoint, changeSteamTemp); 
+    LCDML_add(3, LCDML_0_1, 3, *langstring_menu_back, menuBack); 
 
-    LCDML_add(1, LCDML_0_1, 1, "Brew Setpoint", changeBrewTemp); // NULL = no menu function
-    LCDML_langDef(1, DE, "Brühtemperatur");
+    LCDML_add(4, LCDML_0, 2, *langstring_menu_times, NULL); 
+    LCDML_add(5, LCDML_0_2, 1, *langstring_menu_brewtime, NULL); // NULL = no menu function
+    LCDML_add(6, LCDML_0_2, 2, *langstring_menu_preinfusionTime, NULL); // NULL = no menu function
+    LCDML_add(7, LCDML_0_2, 3, *langstring_menu_preinfusionPauseTime, NULL); 
+    LCDML_add(8, LCDML_0_2, 4, *langstring_menu_back, menuBack); 
 
-    LCDML_add(2, LCDML_0_1, 2, "Steam Setpoint", changeSteamTemp); // NULL = no menu function
-    LCDML_langDef(2, DE, "Dampftemperatur");
+    LCDML_add(9, LCDML_0, 3, *langstring_menu_close, menuClose); 
 
-    LCDML_add(3, LCDML_0_1, 3, "Back", menuBack); 
-    LCDML_langDef(3, DE, "Zurück");
-
-    LCDML_add(4, LCDML_0, 3, "Close Menu", menuClose); 
-    LCDML_langDef(4, DE, "Zurück");
-
-    // LCDML_add(5, LCDML_0, 2, "Times", NULL); // this menu function can be found on "LCDML_display_menuFunction" tab
-    // // LCDML_langDef(1, DE, "Zeit Info");
-
-    // LCDML_add(6, LCDML_0_2, 1, "Brew", NULL); // NULL = no menu function
-    // // LCDML_langDef(2, DE, "Programm");
-
-    // LCDML_add(7, LCDML_0_2, 2, "Preinfusion", NULL); // NULL = no menu function
-    // // LCDML_langDef(3, DE, "Programm 1");
-
-    // LCDML_add(8, LCDML_0_2, 3, "Preinfusion Pause", NULL); 
-    // // LCDML_langDef(3, DE, "Programm 1");
-
-    // LCDML_add(9, LCDML_0_2, 3, "Back", menuBack); 
-    // // LCDML_langDef(3, DE, "Programm 1");
-
+    // this value has to be the same as the last menu element
+    #define _LCDML_DISP_cnt    9
     LCDML_createMenu(_LCDML_DISP_cnt);
-
-    // create custom language with short name, not with the long name
-    LCDML_createCustomLang(_LCDML_DISP_cnt, DE);
-
-    // Magic global variable to select menu language
-    int g_lcdml_lang_select = LANGUAGE;
 
     // Translate encoder events to menu events
     void menuControls(void) {
