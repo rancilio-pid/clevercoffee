@@ -110,4 +110,3 @@ enum MACHINE {
 #define EMA_FACTOR 0.6             // Smoothing of input that is used for Tv (derivative component of PID). Smaller means less smoothing but also less delay, 0 means no filtering
 
 #define TEMPSENSOR 2               // Temp sensor type: 1 = DS18B20, 2 = TSIC306
-

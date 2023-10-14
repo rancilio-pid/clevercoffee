@@ -38,6 +38,14 @@
 #include <os.h>
 
 hw_timer_t *timer = NULL;
+#if (ROTARY_MENU == 1)
+    hw_timer_t *encoderTimer = NULL;
+    #include <LCDMenuLib2.h>
+    #include <ClickEncoder.h>
+    ClickEncoder encoder{PIN_ROTARY_DT, PIN_ROTARY_CLK, PIN_ROTARY_SW, ENCODER_CLICKS_PER_NOTCH, LOW};
+    int last = 0;
+    boolean menuOpen = false;
+#endif
 
 
 #if OLED_DISPLAY == 3
@@ -448,6 +456,278 @@ const unsigned long intervalDisplay = 500;
 
             debugPrintf("pressure raw / filtered: %f / %f\n", inputPressure, inputPressureFilter);
         }
+    }
+#endif
+
+#if (OLED_DISPLAY != 0) && (ROTARY_MENU == 1)
+    // this value have to be the same as the last menu element
+    #define _LCDML_DISP_cnt    4
+
+    void displayMenu();
+    void clearMenu();
+    void menuControls();
+
+    LCDMenuLib2_menu LCDML_0(255, 0, 0, NULL, NULL); // root menu element (do not change)
+    LCDMenuLib2 LCDML(LCDML_0, _LCDML_DISP_rows, _LCDML_DISP_cols, displayMenu, clearMenu, menuControls);
+
+    double menuRotaryLast = 0;
+    double initialTemp = 0;
+    void changeTemp(uint8_t param, double temp, sto_item_id_t name, char* readableName) {
+        if(LCDML.FUNC_setup()) {
+            // remmove compiler warnings when the param variable is not used:
+            LCDML_UNUSED(param);
+
+            menuRotaryLast = encoder.getAccumulate();
+            initialTemp = temp;
+            char message[100];
+            snprintf(message, sizeof(message), "Initialized temp to %f.0. %d.0, %d.0", temp, brewSetpoint, steamSetpoint);
+            debugPrintln(message);
+
+            displayTempSetting(initialTemp, readableName);
+        }
+
+        if(LCDML.FUNC_loop()) {
+            int32_t pos = encoder.getAccumulate();
+            double diff = static_cast<double>(pos - menuRotaryLast) / 10.0;
+
+            char message[100];
+            snprintf(message, sizeof(message), "Pos: %d, last: %d, diff: %f.00", pos, last, diff);
+            debugPrintln(message);
+
+            if (diff < 0) {
+                initialTemp = initialTemp + diff;
+                char message[100];
+                snprintf(message, sizeof(message), "DOWN. Temp old: %f.0, new: %f.0, diff: %f.0", initialTemp - diff, initialTemp, diff);
+                debugPrintln(message);
+            } 
+            else if (diff > 0) {
+                initialTemp = initialTemp + diff;
+                char message[100];
+                snprintf(message, sizeof(message), "UP. Temp old: %f.0, new: %f.0, diff: %f.0", initialTemp - diff, initialTemp, diff);
+                debugPrintln(message);
+            } 
+
+            displayTempSetting(initialTemp, readableName);
+            menuRotaryLast = pos;
+             
+            if(LCDML.BT_checkEnter()) { 
+                char message[100];
+                snprintf(message, sizeof(message), "Saving new temp: %f.0", initialTemp);
+                debugPrintln(message);
+                storageSet(name, initialTemp);
+
+                int saved = storageCommit();
+
+                if (saved == 0) {
+                    switch (name) {
+                        case STO_ITEM_BREW_SETPOINT:
+                            brewSetpoint = initialTemp;
+                            break;
+                        case STO_ITEM_STEAM_SETPOINT:
+                            steamSetpoint = initialTemp;
+                            break;
+                        
+                        default:
+                            // do nothing
+                            break;
+                    }
+
+                    debugPrintln("SAVED.");
+                    LCDML.FUNC_goBackToMenu();
+                } else {
+                    debugPrintln("error.");
+                }
+            }
+        }
+
+        if(LCDML.FUNC_close()) {
+            // you can here reset some global vars or do nothing
+        }
+    }
+
+    void changeBrewTemp(uint8_t param) {
+        changeTemp(param, brewSetpoint, STO_ITEM_BREW_SETPOINT, "Brew Setpoint");
+    }
+
+    void changeSteamTemp(uint8_t param) {
+        changeTemp(param, steamSetpoint, STO_ITEM_STEAM_SETPOINT, "Steam Setpoint");
+    }
+
+    void menuBack(uint8_t param) {
+        if(LCDML.FUNC_setup()) {
+            LCDML_UNUSED(param);
+            LCDML.FUNC_goBackToMenu(1);      
+        }
+    }
+
+    void menuClose(uint8_t param) {
+        if(LCDML.FUNC_setup()) {
+            LCDML_UNUSED(param);
+            LCDML.FUNC_goBackToMenu(1);      
+            menuOpen = false;
+        }
+    }
+
+    LCDML_add(0, LCDML_0, 1, "Temperatures", NULL); 
+    LCDML_langDef(0, DE, "Temperatur");
+
+    LCDML_add(1, LCDML_0_1, 1, "Brew Setpoint", changeBrewTemp); // NULL = no menu function
+    LCDML_langDef(1, DE, "Brühtemperatur");
+
+    LCDML_add(2, LCDML_0_1, 2, "Steam Setpoint", changeSteamTemp); // NULL = no menu function
+    LCDML_langDef(2, DE, "Dampftemperatur");
+
+    LCDML_add(3, LCDML_0_1, 3, "Back", menuBack); 
+    LCDML_langDef(3, DE, "Zurück");
+
+    LCDML_add(4, LCDML_0, 3, "Close Menu", menuClose); 
+    LCDML_langDef(4, DE, "Zurück");
+
+    // LCDML_add(5, LCDML_0, 2, "Times", NULL); // this menu function can be found on "LCDML_display_menuFunction" tab
+    // // LCDML_langDef(1, DE, "Zeit Info");
+
+    // LCDML_add(6, LCDML_0_2, 1, "Brew", NULL); // NULL = no menu function
+    // // LCDML_langDef(2, DE, "Programm");
+
+    // LCDML_add(7, LCDML_0_2, 2, "Preinfusion", NULL); // NULL = no menu function
+    // // LCDML_langDef(3, DE, "Programm 1");
+
+    // LCDML_add(8, LCDML_0_2, 3, "Preinfusion Pause", NULL); 
+    // // LCDML_langDef(3, DE, "Programm 1");
+
+    // LCDML_add(9, LCDML_0_2, 3, "Back", menuBack); 
+    // // LCDML_langDef(3, DE, "Programm 1");
+
+    LCDML_createMenu(_LCDML_DISP_cnt);
+
+    // create custom language with short name, not with the long name
+    LCDML_createCustomLang(_LCDML_DISP_cnt, DE);
+
+    // Magic global variable to select menu language
+    int g_lcdml_lang_select = LANGUAGE;
+
+    // Translate encoder events to menu events
+    void menuControls(void) {
+        int32_t pos = encoder.getAccumulate();
+        Button::eButtonStates buttonState = encoder.getButton();
+
+        if (pos < last) {
+            LCDML.BT_up();
+        } 
+        else if (pos > last) {
+            LCDML.BT_down();
+        } 
+        else {
+            if (buttonState == Button::Clicked) {
+                LCDML.BT_enter();
+            } else {
+                // do nothing
+            }
+        }
+
+        last = pos;
+    }
+
+
+    void clearMenu() {
+    }
+
+
+    void displayMenu() {
+    // for first test set font here
+    u8g2.setFont(_LCDML_DISP_font);
+
+    // declaration of some variables
+    // ***************
+    // content variable
+    char content_text[_LCDML_DISP_cols];  // save the content text of every menu element
+    // menu element object
+    LCDMenuLib2_menu *tmp;
+    // some limit values
+    uint8_t i = LCDML.MENU_getScroll();
+    uint8_t maxi = _LCDML_DISP_rows + i;
+    uint8_t n = 0;
+
+    // init vars
+    uint8_t n_max             = (LCDML.MENU_getChilds() >= _LCDML_DISP_rows) ? _LCDML_DISP_rows : (LCDML.MENU_getChilds());
+
+    uint8_t scrollbar_min     = 0;
+    uint8_t scrollbar_max     = LCDML.MENU_getChilds();
+    uint8_t scrollbar_cur_pos = LCDML.MENU_getCursorPosAbs();
+    uint8_t scroll_pos        = ((1.*n_max * _LCDML_DISP_rows) / (scrollbar_max - 1) * scrollbar_cur_pos);
+
+    // generate content
+    u8g2.firstPage();
+    do {
+
+
+        n = 0;
+        i = LCDML.MENU_getScroll();
+        // update content
+        // ***************
+
+        // clear menu
+        // ***************
+
+        // check if this element has children
+        if ((tmp = LCDML.MENU_getDisplayedObj()) != NULL)
+        {
+        // loop to display lines
+        do
+        {
+            // check if a menu element has a condition and if the condition be true
+            if (tmp->checkCondition())
+            {
+            // check the type off a menu element
+            if(tmp->checkType_menu() == true)
+            {
+                // display normal content
+                LCDML_getContent(content_text, tmp->getID());
+                u8g2.drawStr( _LCDML_DISP_box_x0+_LCDML_DISP_font_w + _LCDML_DISP_cur_space_behind, _LCDML_DISP_box_y0 + _LCDML_DISP_font_h * (n + 1), content_text);
+            }
+            else
+            {
+                if(tmp->checkType_dynParam()) {
+                tmp->callback(n);
+                }
+            }
+            // increment some values
+            i++;
+            n++;
+            }
+        // try to go to the next sibling and check the number of displayed rows
+        } while (((tmp = tmp->getSibling(1)) != NULL) && (i < maxi));
+        }
+
+        // set cursor
+        u8g2.drawStr( _LCDML_DISP_box_x0+_LCDML_DISP_cur_space_before, _LCDML_DISP_box_y0 + _LCDML_DISP_font_h * (LCDML.MENU_getCursorPos() + 1),  _LCDML_DISP_cursor_char);
+
+        if(_LCDML_DISP_draw_frame == 1) {
+        u8g2.drawFrame(_LCDML_DISP_box_x0, _LCDML_DISP_box_y0, (_LCDML_DISP_box_x1-_LCDML_DISP_box_x0), (_LCDML_DISP_box_y1-_LCDML_DISP_box_y0));
+        }
+
+        // display scrollbar when more content as rows available and with > 2
+        if (scrollbar_max > n_max && _LCDML_DISP_scrollbar_w > 2)
+        {
+        // set frame for scrollbar
+        u8g2.drawFrame(_LCDML_DISP_box_x1 - _LCDML_DISP_scrollbar_w, _LCDML_DISP_box_y0, _LCDML_DISP_scrollbar_w, _LCDML_DISP_box_y1-_LCDML_DISP_box_y0);
+
+        // calculate scrollbar length
+        uint8_t scrollbar_block_length = scrollbar_max - n_max;
+        scrollbar_block_length = (_LCDML_DISP_box_y1-_LCDML_DISP_box_y0) / (scrollbar_block_length + _LCDML_DISP_rows);
+
+        //set scrollbar
+        if (scrollbar_cur_pos == 0) {                                   // top position     (min)
+            u8g2.drawBox(_LCDML_DISP_box_x1 - (_LCDML_DISP_scrollbar_w-1), _LCDML_DISP_box_y0 + 1                                                     , (_LCDML_DISP_scrollbar_w-2)  , scrollbar_block_length);
+        }
+        else if (scrollbar_cur_pos == (scrollbar_max-1)) {            // bottom position  (max)
+            u8g2.drawBox(_LCDML_DISP_box_x1 - (_LCDML_DISP_scrollbar_w-1), _LCDML_DISP_box_y1 - scrollbar_block_length                                , (_LCDML_DISP_scrollbar_w-2)  , scrollbar_block_length);
+        }
+        else {                                                                // between top and bottom
+            u8g2.drawBox(_LCDML_DISP_box_x1 - (_LCDML_DISP_scrollbar_w-1), _LCDML_DISP_box_y0 + (scrollbar_block_length * scrollbar_cur_pos + 1),(_LCDML_DISP_scrollbar_w-2)  , scrollbar_block_length);
+        }
+        }
+    } while ( u8g2.nextPage() );
     }
 #endif
 
@@ -2039,6 +2319,13 @@ void setup() {
         pinMode(PIN_STATUSLED, OUTPUT);
     }
 
+    #if(ROTARY_MENU == 1)
+        pinMode(PIN_ROTARY_DT, INPUT_PULLDOWN);
+        pinMode(PIN_ROTARY_CLK, INPUT_PULLDOWN);
+        pinMode(PIN_STEAMSWITCH, INPUT_PULLDOWN);
+        LCDML_setup(_LCDML_DISP_cnt);
+    #endif
+
     #if OLED_DISPLAY != 0
         u8g2.setI2CAddress(oled_i2c * 2);
         u8g2.begin();
@@ -2127,6 +2414,12 @@ void setup() {
         previousMillisPressure = currentTime;
     #endif
 
+    #if defined(ESP32) && (OLED_DISPLAY != 0) && (ROTARY_MENU == 1)
+        encoder.setAccelerationEnabled(true);
+        encoder.setDoubleClickEnabled(false);
+        encoder.setLongPressRepeatEnabled(false);
+    #endif
+
     setupDone = true;
 
     enableTimer1();
@@ -2139,6 +2432,20 @@ void setup() {
 
 void loop() {
     looppid();
+
+    #if (OLED_DISPLAY != 0) && (ROTARY_MENU == 1)
+        if (menuOpen == false) {
+            Button::eButtonStates buttonState = encoder.getButton();
+            if (buttonState == Button::Clicked) {
+                menuOpen = true;
+                displayMenu();
+            }
+        }
+
+        if (menuOpen == true) {
+            LCDML.loop();
+        } 
+    #endif
 
     if (TEMP_LED) {
         loopLED();
@@ -2255,17 +2562,23 @@ void looppid() {
 
     // Check if PID should run or not. If not, set to manual and force output to zero
 #if OLED_DISPLAY != 0
-    unsigned long currentMillisDisplay = millis();
-    if (currentMillisDisplay - previousMillisDisplay >= 100) {
-        displayShottimer();
-    }
-    if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
-        previousMillisDisplay = currentMillisDisplay;
-    #if DISPLAYTEMPLATE < 20  // not using vertical template
-        Displaymachinestate();
+    #if defined(ESP32) && ROTARY_MENU == 1
+    if (!menuOpen) {
     #endif
-        printScreen();  // refresh display
+        unsigned long currentMillisDisplay = millis();
+        if (currentMillisDisplay - previousMillisDisplay >= 100) {
+            displayShottimer();
+        }
+        if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
+            previousMillisDisplay = currentMillisDisplay;
+        #if DISPLAYTEMPLATE < 20  // not using vertical template
+            Displaymachinestate();
+        #endif
+            printScreen();  // refresh display
+        }
+    #if defined(ESP32) && ROTARY_MENU == 1
     }
+    #endif
 #endif
 
     if (machineState == kPidOffline || machineState == kSensorError || machineState == kEmergencyStop || machineState == kEepromError || machineState == kStandby || brewPIDdisabled) {
