@@ -8,6 +8,7 @@
 #include <Arduino.h>
 #include "ISR.h"
 #include "pinmapping.h"
+#include "userConfig.h"
 
 unsigned int isrCounter = 0;  // counter for ISR
 unsigned long windowStartTime;
@@ -31,7 +32,6 @@ void IRAM_ATTR onTimer(){
     }
 }
 
-
 /**
  * @brief Initialize hardware timers
  */
@@ -41,16 +41,13 @@ void initTimer1(void) {
     timerAlarmWrite(timer, 10000, true);//m
 }
 
-
 void enableTimer1(void) {
     timerAlarmEnable(timer);
 }
 
-
 void disableTimer1(void) {
     timerAlarmDisable(timer);
 }
-
 
 bool isTimer1Enabled(void) {
     return timerAlarmEnabled(timer);

@@ -37,11 +37,23 @@
 #include "defaults.h"
 #include <os.h>
 
+
 hw_timer_t *timer = NULL;
 
 #if (FEATURE_PRESSURESENSOR == 1)
     #include "pressure.h"
     #include <Wire.h>
+#endif
+
+#if (ROTARY_MENU == 1)
+    #include <LCDMenuLib2.h>
+    #include "menu.h"
+    #include <ESP32Encoder.h> 
+    ESP32Encoder encoder;
+    #include "button.h"
+    button_event_t ev;
+    QueueHandle_t button_events = button_init(PIN_BIT(PIN_ROTARY_SW));
+    boolean menuOpen = false;
 #endif
 
 
@@ -1515,6 +1527,10 @@ void websiteSetup() {
 
 const char sysVersion[] = (STR(FW_VERSION) "." STR(FW_SUBVERSION) "." STR(FW_HOTFIX) " " FW_BRANCH " " AUTO_VERSION);
 
+void encoderService() {
+    // encoder.service();
+}
+
 void setup() {
     editableVars["PID_ON"] = {
         .displayName = "Enable PID Controller",
@@ -2076,6 +2092,28 @@ void setup() {
         #endif
     #endif
 
+    #if(ROTARY_MENU == 1)
+        pinMode(PIN_ROTARY_DT, INPUT_PULLUP);
+        pinMode(PIN_ROTARY_CLK, INPUT_PULLUP);
+        pinMode(PIN_ROTARY_SW, INPUT_PULLUP);
+
+        encoder.attachFullQuad(PIN_ROTARY_DT, PIN_ROTARY_CLK);
+        encoder.setCount(0);
+
+        setupMenu();
+    #endif
+
+    #if(ROTARY_MENU == 1)
+        pinMode(PIN_ROTARY_DT, INPUT_PULLUP);
+        pinMode(PIN_ROTARY_CLK, INPUT_PULLUP);
+        pinMode(PIN_ROTARY_SW, INPUT_PULLUP);
+
+        encoder.attachFullQuad(PIN_ROTARY_DT, PIN_ROTARY_CLK);
+        encoder.setCount(0);
+
+        setupMenu();
+    #endif
+
     #if OLED_DISPLAY != 0
         u8g2.setI2CAddress(oled_i2c * 2);
         u8g2.begin();
@@ -2161,6 +2199,10 @@ void setup() {
         previousMillisPressure = currentTime;
     #endif
 
+    #if ROTARY_MENU == 1
+        // encoder.setAccelerationEnabled(true);
+    #endif
+
     setupDone = true;
 
     enableTimer1();
@@ -2173,6 +2215,22 @@ void setup() {
 
 void loop() {
     looppid();
+
+    #if ROTARY_MENU == 1
+        if (menuOpen == false) {
+            if (xQueueReceive(button_events, &ev, 1000/portTICK_PERIOD_MS)) {
+                if (ev.event == BUTTON_DOWN) {
+                    menuOpen = true;
+                    debugPrintf("Opening Menu!\n");
+                    displayMenu();
+                }
+            }
+        }
+
+        if (menuOpen == true) {
+            LCDML.loop();
+        } 
+    #endif
 
     if (FEATURE_TEMP_LED) {
         loopLED();
@@ -2305,17 +2363,23 @@ void looppid() {
 
     // Check if PID should run or not. If not, set to manual and force output to zero
 #if OLED_DISPLAY != 0
-    unsigned long currentMillisDisplay = millis();
-    if (currentMillisDisplay - previousMillisDisplay >= 100) {
-        displayShottimer();
-    }
-    if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
-        previousMillisDisplay = currentMillisDisplay;
-    #if DISPLAYTEMPLATE < 20  // not using vertical template
-        Displaymachinestate();
+    #if defined(ESP32) && ROTARY_MENU == 1
+    if (!menuOpen) {
     #endif
-        printScreen();  // refresh display
+        unsigned long currentMillisDisplay = millis();
+        if (currentMillisDisplay - previousMillisDisplay >= 100) {
+            displayShottimer();
+        }
+        if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
+            previousMillisDisplay = currentMillisDisplay;
+        #if DISPLAYTEMPLATE < 20  // not using vertical template
+            Displaymachinestate();
+        #endif
+            printScreen();  // refresh display
+        }
+    #if defined(ESP32) && ROTARY_MENU == 1
     }
+    #endif
 #endif
 
     if (machineState == kPidOffline || machineState == kWaterEmpty || machineState == kSensorError || machineState == kEmergencyStop || machineState == kEepromError || machineState == kStandby || brewPIDDisabled) {
