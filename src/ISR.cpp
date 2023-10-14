@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "ISR.h"
 #include "hardware.h"
+#include "userConfig.h"
 
 unsigned int isrCounter = 0;  // counter for ISR
 unsigned long windowStartTime;
@@ -45,6 +46,13 @@ void IRAM_ATTR onTimer(){
 }
 #endif
 
+#if (ROTARY_MENU) == 1 && defined(ESP32)
+void IRAM_ATTR onRotaryTimer() {
+    timerAlarmWrite(encoderTimer, 1000, true); // 1ms = 1000 ticks at 1MHz
+    encoder.service();
+    // encoderTimer->update();
+}
+#endif
 
 /**
  * @brief Initialize hardware timers
@@ -63,6 +71,14 @@ void initTimer1(void) {
         timer = timerBegin(0, 80, true); //m
         timerAttachInterrupt(timer, &onTimer, true);//m
         timerAlarmWrite(timer, 10000, true);//m
+
+        #if (ROTARY_MENU == 1)
+            // Initializing another timer for encoder service
+            Serial.println("Initializing another timer for encoder service");
+            encoderTimer = timerBegin(1, 80, true);
+            timerAttachInterrupt(encoderTimer, &onRotaryTimer, true);
+            timerAlarmWrite(encoderTimer, 1000, true);
+        #endif
     #else
         #error("MCU not supported");
     #endif
@@ -73,6 +89,9 @@ void enableTimer1(void) {
         timer1_enable(TIM_DIV256, TIM_EDGE, TIM_SINGLE);
     #elif defined(ESP32)
         timerAlarmEnable(timer);
+        #if ROTARY_MENU == 1
+        timerAlarmEnable(encoderTimer);
+        #endif
     #else
         #error("MCU not supported");
     #endif
@@ -83,6 +102,9 @@ void disableTimer1(void) {
         timer1_disable();
     #elif defined(ESP32)
         timerAlarmDisable(timer);
+        #if ROTARY_MENU == 1
+        timerAlarmDisable(encoderTimer);
+        #endif
     #else
         #error("MCU not supported");
     #endif

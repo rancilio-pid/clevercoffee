@@ -150,6 +150,25 @@ void displayShottimer(void) {
     #endif
 }
 
+#if (ROTARY_MENU == 1) 
+void displayTempSetting(double temp, char* name) {
+    u8g2.clearBuffer();
+    u8g2.setCursor(0, 0);
+    u8g2.print(name);
+    u8g2.print(": ");
+    u8g2.setCursor(0, 10);
+    u8g2.print(temp, 1);
+    u8g2.print(" ");
+    u8g2.print((char)176);
+    u8g2.print("C");
+    u8g2.setCursor(0, 25);
+    u8g2.println("Press encoder to save");
+    u8g2.setCursor(0, 35);
+    u8g2.println("and return.");
+    u8g2.sendBuffer();
+}
+#endif
+
 /**
  * @brief display heating logo
  */
