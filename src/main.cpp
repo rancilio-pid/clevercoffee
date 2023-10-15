@@ -561,15 +561,24 @@ const unsigned long intervalDisplay = 500;
     }
 
     void changeBrewTime(uint8_t param) {
-        changeNumericalValue(param, steamSetpoint, STO_ITEM_BREW_TIME, langstring_menu_brewtime);
+        changeNumericalValue(param, brewtime, STO_ITEM_BREW_TIME, langstring_menu_brewtime);
     }
 
     void changePreinfusionTime(uint8_t param) {
-        changeNumericalValue(param, steamSetpoint, STO_ITEM_PRE_INFUSION_TIME, langstring_menu_preinfusionTime);
+        changeNumericalValue(param, preinfusion, STO_ITEM_PRE_INFUSION_TIME, langstring_menu_preinfusionTime);
     }
 
     void changePreinfusionPauseTime(uint8_t param) {
-        changeNumericalValue(param, steamSetpoint, STO_ITEM_PRE_INFUSION_PAUSE, langstring_menu_preinfusionPauseTime);
+        changeNumericalValue(param, preinfusionpause, STO_ITEM_PRE_INFUSION_PAUSE, langstring_menu_preinfusionPauseTime);
+    }
+
+    void switchBackflush(uint8_t param) {
+        if(LCDML.FUNC_setup()) {
+            backflushON = param;
+            displayToggleBackflushMessage(param);
+            delay(2000);
+            LCDML.FUNC_goBackToMenu(1);      
+        }
     }
 
     void menuBack(uint8_t param) {
@@ -581,7 +590,6 @@ const unsigned long intervalDisplay = 500;
 
     void menuClose(uint8_t param) {
         if(LCDML.FUNC_setup()) {
-            LCDML_UNUSED(param);
             LCDML.FUNC_goBackToMenu(1);      
             menuOpen = false;
         }
@@ -593,15 +601,22 @@ const unsigned long intervalDisplay = 500;
     LCDML_add(3, LCDML_0_1, 3, *langstring_menu_back, menuBack); 
 
     LCDML_add(4, LCDML_0, 2, *langstring_menu_times, NULL); 
-    LCDML_add(5, LCDML_0_2, 1, *langstring_menu_brewtime, NULL); // NULL = no menu function
-    LCDML_add(6, LCDML_0_2, 2, *langstring_menu_preinfusionTime, NULL); // NULL = no menu function
-    LCDML_add(7, LCDML_0_2, 3, *langstring_menu_preinfusionPauseTime, NULL); 
+    LCDML_add(5, LCDML_0_2, 1, *langstring_menu_brewtime, changeBrewTime); // NULL = no menu function
+    LCDML_add(6, LCDML_0_2, 2, *langstring_menu_preinfusionTime, changePreinfusionTime); // NULL = no menu function
+    LCDML_add(7, LCDML_0_2, 3, *langstring_menu_preinfusionPauseTime, changePreinfusionPauseTime); 
     LCDML_add(8, LCDML_0_2, 4, *langstring_menu_back, menuBack); 
 
-    LCDML_add(9, LCDML_0, 3, *langstring_menu_close, menuClose); 
+    LCDML_add(9, LCDML_0, 3, *langstring_menu_machineSettings, NULL); 
+    LCDML_add(10, LCDML_0_3, 1, *langstring_menu_backflush, NULL); 
+    LCDML_addAdvanced(11, LCDML_0_3_1, 1, NULL, *langstring_menu_on, switchBackflush, 1, _LCDML_TYPE_default); 
+    LCDML_addAdvanced(12, LCDML_0_3_1, 2, NULL, *langstring_menu_on, switchBackflush, 0, _LCDML_TYPE_default); 
+    LCDML_add(13, LCDML_0_3_1, 3, *langstring_menu_back, menuBack); 
+    LCDML_add(14, LCDML_0_3, 2, *langstring_menu_back, menuBack); 
+
+    LCDML_add(15, LCDML_0, 4, *langstring_menu_close, menuClose); 
 
     // this value has to be the same as the last menu element
-    #define _LCDML_DISP_cnt    9
+    #define _LCDML_DISP_cnt 15
     LCDML_createMenu(_LCDML_DISP_cnt);
 
     // Translate encoder events to menu events

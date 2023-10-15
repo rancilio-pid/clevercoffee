@@ -170,6 +170,25 @@ void displayTempSetting(double temp, const char* name) {
     u8g2.println("and return.");
     u8g2.sendBuffer();
 }
+
+void displayToggleBackflushMessage(uint8_t mode) {
+    u8g2.clearBuffer();
+    u8g2.setCursor(0, 0);
+    u8g2.print("Backflush: ");
+    switch (mode) {
+        case 1:
+            u8g2.print("on.");
+            break;
+        default:
+            u8g2.print("off.");
+            break;
+    }
+    u8g2.setCursor(0, 25);
+    u8g2.println("Menu will autoclose");
+    u8g2.setCursor(0, 35);
+    u8g2.println("in two seconds.");
+    u8g2.sendBuffer();
+}
 #endif
 
 /**

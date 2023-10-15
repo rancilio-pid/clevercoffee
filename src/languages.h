@@ -37,15 +37,19 @@ static const char *langstring_bckffinished[] = {"Backflush beendet", "Bitte Brue
 static const char *langstring_bckfactivated[] = {"Backflush aktiviert", "Bruehschalter betaetigen ..."};
 static const char *langstring_bckfrunning[] = {"Backflush aktiv:", "seit"};
 
-static const char *langstring_menu_temperature = "Temperaturen";
-static const char *langstring_menu_brewSetpoint = "Brühtemperatur";
-static const char *langstring_menu_steamSetpoint = "Dampftemperatur";
-static const char *langstring_menu_back = "Zurück";
-static const char *langstring_menu_close = "Menü schließen";
-static const char *langstring_menu_times = "Zeiten";
-static const char *langstring_menu_brewtime = "Bezugsdauer";
-static const char *langstring_menu_preinfusionTime = "Präinfusionsdauer";
-static const char *langstring_menu_preinfusionPauseTime = "Präinfusion Pause";
+char langstring_menu_temperature[] = "Temperaturen";
+char langstring_menu_brewSetpoint[] = "Brühtemperatur";
+char langstring_menu_steamSetpoint[] = "Dampftemperatur";
+char langstring_menu_back[] = "Zurück";
+char langstring_menu_close[] = "Menü schließen";
+char langstring_menu_times[] = "Zeiten";
+char langstring_menu_brewtime[] = "Bezugsdauer";
+char langstring_menu_preinfusionTime[] = "Präinfusionsdauer";
+char langstring_menu_preinfusionPauseTime[] = "Präinfusion Pause";
+char langstring_menu_machineSettings[] = "Maschineneinstellungen";
+char langstring_menu_backflush[] = "Backflush-Modus";
+char langstring_menu_on[] = "An";
+char langstring_menu_off[] = "Aus";
 
 #elif LANGUAGE == 1 // EN
 #if (DISPLAYTEMPLATE == 1) || (DISPLAYTEMPLATE == 2)
@@ -85,6 +89,9 @@ static const char *langstring_menu_times = "Timings";
 static const char *langstring_menu_brewtime = "Brewtime";
 static const char *langstring_menu_preinfusionTime = "Preinfusion time";
 static const char *langstring_menu_preinfusionPauseTime = "Preinfusion pause";
+static const char *langstring_menu_backflush = "Backflush mode";
+static const char *langstring_menu_on = "On";
+static const char *langstring_menu_off = "Off";
 
 #elif LANGUAGE == 2 // ES
 #if (DISPLAYTEMPLATE == 1) || (DISPLAYTEMPLATE == 2)
@@ -124,4 +131,7 @@ static const char *langstring_menu_times = "Timings";
 static const char *langstring_menu_brewtime = "Brewtime";
 static const char *langstring_menu_preinfusionTime = "Preinfusion time";
 static const char *langstring_menu_preinfusionPauseTime = "Preinfusion pause";
+static const char *langstring_menu_backflush = "Backflush mode";
+static const char *langstring_menu_on = "On";
+static const char *langstring_menu_off = "Off";
 #endif
