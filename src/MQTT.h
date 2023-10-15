@@ -470,6 +470,7 @@ int sendHASSIODiscoveryMsg() {
     aggIMax,
     actual_temperature,
     heaterPower,
+    machineStateDevice,
     brewtime,
     pidOn,
     steamON,
