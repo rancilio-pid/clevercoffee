@@ -16,9 +16,9 @@
 #define PIN_BREWSWITCH 34
 #define PIN_STEAMSWITCH 35
 
-#define PIN_ROTARY_DT 13         // Rotary encoder data pin
-#define PIN_ROTARY_CLK 14        // Rotary encoder clock pin
-#define PIN_ROTARY_SW 36         // Rotary encoder switch
+#define PIN_ROTARY_DT 3         // Rotary encoder data pin
+#define PIN_ROTARY_CLK 4        // Rotary encoder clock pin
+#define PIN_ROTARY_SW 5         // Rotary encoder switch
 
 // Sensors
 #define PIN_TEMPSENSOR 16
