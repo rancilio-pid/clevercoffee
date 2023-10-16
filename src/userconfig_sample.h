@@ -68,6 +68,9 @@ enum MACHINE {
 #define SCALE_SAMPLES 2                     // Load cell sample rate
 #define SCALE_CALIBRATION_FACTOR 3195.83    // Raw data is divided by this value to convert to readable data
 
+// Rotary Encoder Menu
+#define ROTARY_MENU 0
+
 /* Pressure sensor
  *
  * measure and verify "offset" value, should be 10% of ADC bit reading @supply volate (3.3V)
