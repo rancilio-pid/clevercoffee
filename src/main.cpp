@@ -2131,9 +2131,9 @@ void setup() {
 
     enableTimer1();
 
-    Serial.println("Filesystem overview:");
-    Serial.printf("- Bytes total: ld\n", LittleFS.totalBytes());
-    Serial.printf("- Bytes used: %ld\n\n", LittleFS.usedBytes());
+    double fsUsage = ((double)LittleFS.usedBytes() / LittleFS.totalBytes()) * 100;
+    debugPrintf("LittleFS: %d%% (used %ld bytes from %ld bytes)\n",
+        (int)ceil(fsUsage), LittleFS.usedBytes(), LittleFS.totalBytes());
 }
 
 
