@@ -37,7 +37,6 @@ void IRAM_ATTR onTimer(){
 void IRAM_ATTR onRotaryTimer() {
     timerAlarmWrite(encoderTimer, 1000, true); // 1ms = 1000 ticks at 1MHz
     encoder.service();
-    // encoderTimer->update();
 }
 #endif
 
