@@ -37,19 +37,23 @@ static const char *langstring_bckffinished[] = {"Backflush beendet", "Bitte Brue
 static const char *langstring_bckfactivated[] = {"Backflush aktiviert", "Bruehschalter betaetigen ..."};
 static const char *langstring_bckfrunning[] = {"Backflush aktiv:", "seit"};
 
-char langstring_menu_temperature[] = "Temperaturen";
-char langstring_menu_brewSetpoint[] = "Brühtemperatur";
-char langstring_menu_steamSetpoint[] = "Dampftemperatur";
-char langstring_menu_back[] = "Zurück";
-char langstring_menu_close[] = "Menü schließen";
-char langstring_menu_times[] = "Zeiten";
-char langstring_menu_brewtime[] = "Bezugsdauer";
-char langstring_menu_preinfusionTime[] = "Präinfusionsdauer";
-char langstring_menu_preinfusionPauseTime[] = "Präinfusion Pause";
-char langstring_menu_machineSettings[] = "Maschineneinstellungen";
-char langstring_menu_backflush[] = "Backflush-Modus";
-char langstring_menu_on[] = "An";
-char langstring_menu_off[] = "Aus";
+#define LANGSTRING_MENU_TEMPERATURE "Temperaturen"
+#define LANGSTRING_MENU_TEMPERATURE "Temperaturen"
+#define LANGSTRING_MENU_BREWSETPOINT "Bruehtemperatur"
+#define LANGSTRING_MENU_STEAMSETPOINT "Dampftemperatur"
+#define LANGSTRING_MENU_BACK "Zurueck"
+#define LANGSTRING_MENU_CLOSE "Menue schliessen"
+#define LANGSTRING_MENU_TIMES "Zeiten"
+#define LANGSTRING_MENU_BREWTIME "Bezugsdauer"
+#define LANGSTRING_MENU_PREINFUSIONTIME "Praeinfusionsdauer"
+#define LANGSTRING_MENU_PREINFUSIONPAUSETIME "Praeinfusion Pause"
+#define LANGSTRING_MENU_MACHINESETTINGS "Maschine"
+#define LANGSTRING_MENU_BACKFLUSH "Backflush-Modus"
+#define LANGSTRING_MENU_ON "An"
+#define LANGSTRING_MENU_OFF "Aus"
+static const char *langstring_pressToSave[] = {"Button klicken zum ", "Speichern."};
+static const char *langstring_autoclose[] = {"Menue schliesst sich in", "2 Sekunden automatisch."};
+
 
 #elif LANGUAGE == 1 // EN
 #if (DISPLAYTEMPLATE == 1) || (DISPLAYTEMPLATE == 2)
@@ -80,19 +84,21 @@ static const char *langstring_bckffinished[] = {"Backflush finished", "Please re
 static const char *langstring_bckfactivated[] = {"Backflush activated", "Please set brew switch..."};
 static const char *langstring_bckfrunning[] = {"Backflush running:", "from"};
 
-static const char *langstring_menu_temperature = "Temperatures";
-static const char *langstring_menu_brewSetpoint = "Brew setpoint";
-static const char *langstring_menu_steamSetpoint = "Steam setpoint";
-static const char *langstring_menu_back = "Back";
-static const char *langstring_menu_close = "Close menu";
-static const char *langstring_menu_times = "Timings";
-static const char *langstring_menu_brewtime = "Brewtime";
-static const char *langstring_menu_preinfusionTime = "Preinfusion time";
-static const char *langstring_menu_preinfusionPauseTime = "Preinfusion pause";
-static const char *langstring_menu_machineSettings = "Machine Settings";
-static const char *langstring_menu_backflush = "Backflush mode";
-static const char *langstring_menu_on = "On";
-static const char *langstring_menu_off = "Off";
+LANGSTRING_MENU_TEMPERATURE "Temperatures"
+LANGSTRING_MENU_BREWSETPOINT "Brew setpoint"
+LANGSTRING_MENU_STEAMSETPOINT "Steam setpoint"
+LANGSTRING_MENU_BACK "Back"
+LANGSTRING_MENU_CLOSE "Close menu"
+LANGSTRING_MENU_TIMES "Timings"
+LANGSTRING_MENU_BREWTIME "Brewtime"
+LANGSTRING_MENU_PREINFUSIONTIME "Preinfusion time"
+LANGSTRING_MENU_PREINFUSIONPAUSETIME "Preinfusion pause"
+LANGSTRING_MENU_MACHINESETTINGS "Machine Settings"
+LANGSTRING_MENU_BACKFLUSH "Backflush mode"
+LANGSTRING_MENU_ON "On"
+LANGSTRING_MENU_OFF "Off"
+static const char *langstring_pressToSave[] = {"Press encoder to save", "and return"};
+static const char *langstring_autoclose[] = {"Menu will autoclose", "in two seconds."};
 
 #elif LANGUAGE == 2 // ES
 #if (DISPLAYTEMPLATE == 1) || (DISPLAYTEMPLATE == 2)
@@ -123,18 +129,21 @@ static const char *langstring_bckffinished[] = {"Backflush terminado", "Apague e
 static const char *langstring_bckfactivated[] = {"Backflush activado ", "Encienda boton de cafe.."};
 static const char *langstring_bckfrunning[] = {"Backflush activo: ", "desde"};
 
-static const char *langstring_menu_temperature = "Temperaturas";
-static const char *langstring_menu_brewSetpoint = "Temperatura de infusión";
-static const char *langstring_menu_steamSetpoint = "Temperatura de vapor";
-static const char *langstring_menu_back = "Back";
-static const char *langstring_menu_close = "Close menu";
-static const char *langstring_menu_times = "Timings";
-static const char *langstring_menu_brewtime = "Brewtime";
-static const char *langstring_menu_preinfusionTime = "Preinfusion time";
-static const char *langstring_menu_preinfusionPauseTime = "Preinfusion pause";
-static const char *langstring_menu_machineSettings = "Machine Settings";
-static const char *langstring_menu_backflush = "Backflush mode";
-static const char *langstring_menu_backflush = "Backflush mode";
-static const char *langstring_menu_on = "On";
-static const char *langstring_menu_off = "Off";
+LANGSTRING_MENU_TEMPERATURE "Temperaturas"
+LANGSTRING_MENU_BREWSETPOINT "Temperatura de infusión"
+LANGSTRING_MENU_STEAMSETPOINT "Temperatura de vapor"
+LANGSTRING_MENU_BACK "Back"
+LANGSTRING_MENU_CLOSE "Close menu"
+LANGSTRING_MENU_TIMES "Timings"
+LANGSTRING_MENU_BREWTIME "Brewtime"
+LANGSTRING_MENU_PREINFUSIONTIME "Preinfusion time"
+LANGSTRING_MENU_PREINFUSIONPAUSETIME "Preinfusion pause"
+LANGSTRING_MENU_MACHINESETTINGS "Machine Settings"
+LANGSTRING_MENU_BACKFLUSH "Backflush mode"
+LANGSTRING_MENU_BACKFLUSH "Backflush mode"
+LANGSTRING_MENU_ON "On"
+LANGSTRING_MENU_OFF "Off"
+static const char *langstring_pressToSave[] = {"Press encoder to save", "and return"};
+static const char *langstring_autoclose[] = {"Menu will autoclose", "in two seconds."};
+
 #endif

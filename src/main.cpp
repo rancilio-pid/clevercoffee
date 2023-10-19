@@ -37,13 +37,14 @@
 #include "defaults.h"
 #include <os.h>
 
+#include "menu.h"
+
 hw_timer_t *timer = NULL;
 #if (ROTARY_MENU == 1)
     hw_timer_t *encoderTimer = NULL;
     #include <LCDMenuLib2.h>
     #include <ClickEncoder.h>
     ClickEncoder encoder{PIN_ROTARY_DT, PIN_ROTARY_CLK, PIN_ROTARY_SW, ENCODER_CLICKS_PER_NOTCH, LOW};
-    int last = 0;
     boolean menuOpen = false;
 #endif
 
@@ -461,287 +462,6 @@ const unsigned long intervalDisplay = 500;
 
 #if (OLED_DISPLAY != 0) && (ROTARY_MENU == 1)
 
-    void displayMenu();
-    void clearMenu();
-    void menuControls();
-
-    LCDMenuLib2_menu LCDML_0(255, 0, 0, NULL, NULL); // root menu element (do not change)
-    LCDMenuLib2 LCDML(LCDML_0, _LCDML_DISP_rows, _LCDML_DISP_cols, displayMenu, clearMenu, menuControls);
-
-    double menuRotaryLast = 0;
-    double initialValue = 0;
-    void changeNumericalValue(uint8_t param, double value, sto_item_id_t name, const char* readableName) {
-        if(LCDML.FUNC_setup()) {
-            // remmove compiler warnings when the param variable is not used:
-            LCDML_UNUSED(param);
-
-            menuRotaryLast = encoder.getAccumulate();
-            initialValue = value;
-            char message[100];
-            snprintf(message, sizeof(message), "Initialized old to %f.0.", value);
-            debugPrintln(message);
-
-            displayTempSetting(initialValue, readableName);
-        }
-
-        if(LCDML.FUNC_loop()) {
-            int32_t pos = encoder.getAccumulate();
-            double diff = static_cast<double>(pos - menuRotaryLast) / 10.0;
-
-            char message[100];
-            snprintf(message, sizeof(message), "Pos: %d, last: %d, diff: %f.00", pos, last, diff);
-            debugPrintln(message);
-
-            if (diff < 0) {
-                initialValue = initialValue + diff;
-                char message[100];
-                snprintf(message, sizeof(message), "DOWN. Old %s: %f.0, new: %f.0, diff: %f.0", readableName, initialValue - diff, initialValue, diff);
-                debugPrintln(message);
-            } 
-            else if (diff > 0) {
-                initialValue = initialValue + diff;
-                char message[100];
-                snprintf(message, sizeof(message), "UP. Old %s: %f.0, new: %f.0, diff: %f.0", readableName, initialValue - diff, initialValue, diff);
-                debugPrintln(message);
-            } 
-
-            displayTempSetting(initialValue, readableName);
-            menuRotaryLast = pos;
-             
-            if(LCDML.BT_checkEnter()) { 
-                char message[100];
-                snprintf(message, sizeof(message), "Saving new %s: %f.0", readableName, initialValue);
-                debugPrintln(message);
-                storageSet(name, initialValue);
-
-                int saved = storageCommit();
-
-                if (saved == 0) {
-                    switch (name) {
-                        case STO_ITEM_BREW_SETPOINT:
-                            brewSetpoint = initialValue;
-                            break;
-                        case STO_ITEM_STEAM_SETPOINT:
-                            steamSetpoint = initialValue;
-                            break;
-                        case STO_ITEM_BREW_TIME:
-                            brewtime = initialValue;
-                            break;
-                        case STO_ITEM_PRE_INFUSION_TIME:
-                            preinfusion = initialValue;
-                            break;
-                        case STO_ITEM_PRE_INFUSION_PAUSE:
-                            preinfusionpause = initialValue;
-                            break;
-                        
-                        default:
-                            // do nothing
-                            break;
-                    }
-
-                    debugPrintln("SAVED.");
-                    LCDML.FUNC_goBackToMenu();
-                } else {
-                    debugPrintln("error.");
-                }
-            }
-        }
-
-        if(LCDML.FUNC_close()) {
-            // you can here reset some global vars or do nothing
-        }
-    }
-
-    void changeBrewTemp(uint8_t param) {
-        changeNumericalValue(param, brewSetpoint, STO_ITEM_BREW_SETPOINT, langstring_menu_brewSetpoint);
-    }
-
-    void changeSteamTemp(uint8_t param) {
-        changeNumericalValue(param, steamSetpoint, STO_ITEM_STEAM_SETPOINT, langstring_menu_brewSetpoint);
-    }
-
-    void changeBrewTime(uint8_t param) {
-        changeNumericalValue(param, brewtime, STO_ITEM_BREW_TIME, langstring_menu_brewtime);
-    }
-
-    void changePreinfusionTime(uint8_t param) {
-        changeNumericalValue(param, preinfusion, STO_ITEM_PRE_INFUSION_TIME, langstring_menu_preinfusionTime);
-    }
-
-    void changePreinfusionPauseTime(uint8_t param) {
-        changeNumericalValue(param, preinfusionpause, STO_ITEM_PRE_INFUSION_PAUSE, langstring_menu_preinfusionPauseTime);
-    }
-
-    void switchBackflush(uint8_t param) {
-        if(LCDML.FUNC_setup()) {
-            backflushON = param;
-            displayToggleBackflushMessage(param);
-            delay(2000);
-            LCDML.FUNC_goBackToMenu(1);      
-        }
-    }
-
-    void menuBack(uint8_t param) {
-        if(LCDML.FUNC_setup()) {
-            LCDML_UNUSED(param);
-            LCDML.FUNC_goBackToMenu(1);      
-        }
-    }
-
-    void menuClose(uint8_t param) {
-        if(LCDML.FUNC_setup()) {
-            LCDML.FUNC_goBackToMenu(1);      
-            menuOpen = false;
-        }
-    }
-
-    LCDML_add(0, LCDML_0, 1, *langstring_menu_temperature, NULL); 
-    LCDML_add(1, LCDML_0_1, 1, *langstring_menu_brewSetpoint, changeBrewTemp); 
-    LCDML_add(2, LCDML_0_1, 2, *langstring_menu_steamSetpoint, changeSteamTemp); 
-    LCDML_add(3, LCDML_0_1, 3, *langstring_menu_back, menuBack); 
-
-    LCDML_add(4, LCDML_0, 2, *langstring_menu_times, NULL); 
-    LCDML_add(5, LCDML_0_2, 1, *langstring_menu_brewtime, changeBrewTime); // NULL = no menu function
-    LCDML_add(6, LCDML_0_2, 2, *langstring_menu_preinfusionTime, changePreinfusionTime); // NULL = no menu function
-    LCDML_add(7, LCDML_0_2, 3, *langstring_menu_preinfusionPauseTime, changePreinfusionPauseTime); 
-    LCDML_add(8, LCDML_0_2, 4, *langstring_menu_back, menuBack); 
-
-    LCDML_add(9, LCDML_0, 3, *langstring_menu_machineSettings, NULL); 
-    LCDML_add(10, LCDML_0_3, 1, *langstring_menu_backflush, NULL); 
-    LCDML_addAdvanced(11, LCDML_0_3_1, 1, NULL, *langstring_menu_on, switchBackflush, 1, _LCDML_TYPE_default); 
-    LCDML_addAdvanced(12, LCDML_0_3_1, 2, NULL, *langstring_menu_on, switchBackflush, 0, _LCDML_TYPE_default); 
-    LCDML_add(13, LCDML_0_3_1, 3, *langstring_menu_back, menuBack); 
-    LCDML_add(14, LCDML_0_3, 2, *langstring_menu_back, menuBack); 
-
-    LCDML_add(15, LCDML_0, 4, *langstring_menu_close, menuClose); 
-
-    // this value has to be the same as the last menu element
-    #define _LCDML_DISP_cnt 15
-    LCDML_createMenu(_LCDML_DISP_cnt);
-
-    // Translate encoder events to menu events
-    void menuControls(void) {
-        int32_t pos = encoder.getAccumulate();
-        Button::eButtonStates buttonState = encoder.getButton();
-
-        if (pos < last) {
-            LCDML.BT_up();
-        } 
-        else if (pos > last) {
-            LCDML.BT_down();
-        } 
-        else {
-            if (buttonState == Button::Clicked) {
-                LCDML.BT_enter();
-            } else {
-                // do nothing
-            }
-        }
-
-        last = pos;
-    }
-
-
-    void clearMenu() {
-    }
-
-
-    void displayMenu() {
-    // for first test set font here
-    u8g2.setFont(_LCDML_DISP_font);
-
-    // declaration of some variables
-    // ***************
-    // content variable
-    char content_text[_LCDML_DISP_cols];  // save the content text of every menu element
-    // menu element object
-    LCDMenuLib2_menu *tmp;
-    // some limit values
-    uint8_t i = LCDML.MENU_getScroll();
-    uint8_t maxi = _LCDML_DISP_rows + i;
-    uint8_t n = 0;
-
-    // init vars
-    uint8_t n_max             = (LCDML.MENU_getChilds() >= _LCDML_DISP_rows) ? _LCDML_DISP_rows : (LCDML.MENU_getChilds());
-
-    uint8_t scrollbar_min     = 0;
-    uint8_t scrollbar_max     = LCDML.MENU_getChilds();
-    uint8_t scrollbar_cur_pos = LCDML.MENU_getCursorPosAbs();
-    uint8_t scroll_pos        = ((1.*n_max * _LCDML_DISP_rows) / (scrollbar_max - 1) * scrollbar_cur_pos);
-
-    // generate content
-    u8g2.firstPage();
-    do {
-
-
-        n = 0;
-        i = LCDML.MENU_getScroll();
-        // update content
-        // ***************
-
-        // clear menu
-        // ***************
-
-        // check if this element has children
-        if ((tmp = LCDML.MENU_getDisplayedObj()) != NULL)
-        {
-        // loop to display lines
-        do
-        {
-            // check if a menu element has a condition and if the condition be true
-            if (tmp->checkCondition())
-            {
-            // check the type off a menu element
-            if(tmp->checkType_menu() == true)
-            {
-                // display normal content
-                LCDML_getContent(content_text, tmp->getID());
-                u8g2.drawStr( _LCDML_DISP_box_x0+_LCDML_DISP_font_w + _LCDML_DISP_cur_space_behind, _LCDML_DISP_box_y0 + _LCDML_DISP_font_h * (n + 1), content_text);
-            }
-            else
-            {
-                if(tmp->checkType_dynParam()) {
-                tmp->callback(n);
-                }
-            }
-            // increment some values
-            i++;
-            n++;
-            }
-        // try to go to the next sibling and check the number of displayed rows
-        } while (((tmp = tmp->getSibling(1)) != NULL) && (i < maxi));
-        }
-
-        // set cursor
-        u8g2.drawStr( _LCDML_DISP_box_x0+_LCDML_DISP_cur_space_before, _LCDML_DISP_box_y0 + _LCDML_DISP_font_h * (LCDML.MENU_getCursorPos() + 1),  _LCDML_DISP_cursor_char);
-
-        if(_LCDML_DISP_draw_frame == 1) {
-        u8g2.drawFrame(_LCDML_DISP_box_x0, _LCDML_DISP_box_y0, (_LCDML_DISP_box_x1-_LCDML_DISP_box_x0), (_LCDML_DISP_box_y1-_LCDML_DISP_box_y0));
-        }
-
-        // display scrollbar when more content as rows available and with > 2
-        if (scrollbar_max > n_max && _LCDML_DISP_scrollbar_w > 2)
-        {
-        // set frame for scrollbar
-        u8g2.drawFrame(_LCDML_DISP_box_x1 - _LCDML_DISP_scrollbar_w, _LCDML_DISP_box_y0, _LCDML_DISP_scrollbar_w, _LCDML_DISP_box_y1-_LCDML_DISP_box_y0);
-
-        // calculate scrollbar length
-        uint8_t scrollbar_block_length = scrollbar_max - n_max;
-        scrollbar_block_length = (_LCDML_DISP_box_y1-_LCDML_DISP_box_y0) / (scrollbar_block_length + _LCDML_DISP_rows);
-
-        //set scrollbar
-        if (scrollbar_cur_pos == 0) {                                   // top position     (min)
-            u8g2.drawBox(_LCDML_DISP_box_x1 - (_LCDML_DISP_scrollbar_w-1), _LCDML_DISP_box_y0 + 1                                                     , (_LCDML_DISP_scrollbar_w-2)  , scrollbar_block_length);
-        }
-        else if (scrollbar_cur_pos == (scrollbar_max-1)) {            // bottom position  (max)
-            u8g2.drawBox(_LCDML_DISP_box_x1 - (_LCDML_DISP_scrollbar_w-1), _LCDML_DISP_box_y1 - scrollbar_block_length                                , (_LCDML_DISP_scrollbar_w-2)  , scrollbar_block_length);
-        }
-        else {                                                                // between top and bottom
-            u8g2.drawBox(_LCDML_DISP_box_x1 - (_LCDML_DISP_scrollbar_w-1), _LCDML_DISP_box_y0 + (scrollbar_block_length * scrollbar_cur_pos + 1),(_LCDML_DISP_scrollbar_w-2)  , scrollbar_block_length);
-        }
-        }
-    } while ( u8g2.nextPage() );
-    }
 #endif
 
 // Emergency stop if temp is too high
@@ -2336,7 +2056,7 @@ void setup() {
         pinMode(PIN_ROTARY_DT, INPUT_PULLDOWN);
         pinMode(PIN_ROTARY_CLK, INPUT_PULLDOWN);
         pinMode(PIN_STEAMSWITCH, INPUT_PULLDOWN);
-        LCDML_setup(_LCDML_DISP_cnt);
+        setupMenu();
     #endif
 
     #if OLED_DISPLAY != 0
@@ -2446,7 +2166,7 @@ void setup() {
 void loop() {
     looppid();
 
-    #if (OLED_DISPLAY != 0) && (ROTARY_MENU == 1)
+    #if ROTARY_MENU == 1
         if (menuOpen == false) {
             Button::eButtonStates buttonState = encoder.getButton();
             if (buttonState == Button::Clicked) {
