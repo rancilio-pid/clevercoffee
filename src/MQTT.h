@@ -341,6 +341,56 @@ DiscoveryObject GenerateSwitchDevice(String name, String displayName, String pay
 }
 
 /**
+ * @brief Generate a button device for Home Assistant MQTT discovery
+ *
+ * This function generates a button device configuration for Home Assistant MQTT discovery. It creates a `DiscoveryObject` containing the necessary information for Home Assistant to discover and control the button device.
+ *
+ * @param name The name of the button (used in MQTT topics)
+ * @param displayName The display name of the button (shown in Home Assistant)
+ * @param payload_press The payload value to turn the button is pressed (default: "1")
+ * @return A `DiscoveryObject` containing the switch device configuration
+ */
+DiscoveryObject GenerateButtonDevice(String name, String displayName, String payload_press = "1") {
+  String mqtt_topic = String(mqtt_topic_prefix) + String(hostname);
+  DiscoveryObject button_device;
+  String unique_id = "clevercoffee-" + String(hostname);
+  String buttonDiscoveryTopic = String(MQTT_HASSIO_DISCOVERY_PREFIX) + "/button/";
+
+  String button_command_topic = mqtt_topic + "/"+ name +"/set";
+  String button_state_topic = mqtt_topic + "/"+ name;
+
+  button_device.discovery_topic = buttonDiscoveryTopic + unique_id + "-"+ name +"" +"/config";
+  
+  DynamicJsonDocument DeviceMapDoc(1024);
+  char DeviceMapBuffer[256];
+  DeviceMapDoc["identifiers"] = String(hostname);
+  DeviceMapDoc["manufacturer"] = "CleverCoffee";
+  DeviceMapDoc["model"] = getMachineName(machine);
+  DeviceMapDoc["name"] = String(hostname);
+  
+  DynamicJsonDocument buttonConfigDoc(512);
+  buttonConfigDoc["name"] = displayName;
+  buttonConfigDoc["command_topic"] = button_command_topic;
+  buttonConfigDoc["state_topic"] = button_state_topic;
+  buttonConfigDoc["unique_id"] = unique_id + "-"+name;
+  buttonConfigDoc["payload_press"] = payload_press;
+  buttonConfigDoc["payload_available"] = "online";
+  buttonConfigDoc["payload_not_available"] = "offline";
+  buttonConfigDoc["availability_topic"] = mqtt_topic+"/status";
+
+  JsonObject buttonDeviceField = buttonConfigDoc.createNestedObject("device");
+  for (JsonPair keyValue : DeviceMapDoc.as<JsonObject>()) {
+    buttonDeviceField[keyValue.key()] = keyValue.value();
+  }
+
+  String buttonConfigDocBuffer;
+  serializeJson(buttonConfigDoc, buttonConfigDocBuffer);
+  debugPrintln("Generated button device");
+  button_device.payload_json = buttonConfigDocBuffer;
+  return button_device;
+}
+
+/**
  * @brief Generate a sensor device for Home Assistant MQTT discovery
  *
  * This function generates a sensor device configuration for Home Assistant MQTT discovery. It creates a `DiscoveryObject` containing the necessary information for Home Assistant to discover and monitor the sensor device.
@@ -470,6 +520,7 @@ int sendHASSIODiscoveryMsg() {
     DiscoveryObject actual_temperature = GenerateSensorDevice("temperature", "Boiler Temperature"); 
     DiscoveryObject heaterPower = GenerateSensorDevice("heaterPower", "Heater Power", "%", "power_factor"); 
     DiscoveryObject machineStateDevice = GenerateSensorDevice("machineState", "Machine State", "null", "enum"); 
+    DiscoveryObject currentWeight = GenerateSensorDevice("currentWeight", "Weight", "g", "weight"); 
 
     #if FEATURE_PRESSURESENSOR == 1
         DiscoveryObject pressure = GenerateSensorDevice("pressure", "Pressure", "bar", "pressure");
@@ -481,8 +532,12 @@ int sendHASSIODiscoveryMsg() {
     DiscoveryObject backflushOn = GenerateSwitchDevice("backflushOn", "Backflush"); 
     DiscoveryObject startUsePonM = GenerateSwitchDevice("startUsePonM", "Use PonM");
 
-    // Define an array to store the DiscoveryObject instances
-    DiscoveryObject discoveryObjects[] = {
+    // Button Devices
+    DiscoveryObject scaleCalibrateButton = GenerateButtonDevice("calibrationON", "Calibrate Scale");
+    DiscoveryObject scaleTareButton = GenerateButtonDevice("tareON", "Tare Scale");
+
+  
+std::vector<DiscoveryObject> discoveryObjects = {
         brewSetpoint,
         steamSetPoint,
         brewTempOffset,
@@ -508,11 +563,16 @@ int sendHASSIODiscoveryMsg() {
         #endif
     };
 
-    const int numDiscoveryObjects = sizeof(discoveryObjects) / sizeof(discoveryObjects[0]);
+    #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
+        discoveryObjects.push_back(currentWeight);
+        discoveryObjects.push_back(scaleCalibrateButton);
+        discoveryObjects.push_back(scaleTareButton);
+    #endif  
+
 
     // Send the Objects to Hassio
     if (mqtt.connected()) {
-        for (int i = 0; i < numDiscoveryObjects; i++) {
+        for (int i = 0; i < discoveryObjects.size(); i++) {
             const DiscoveryObject& discoveryObj = discoveryObjects[i];
             int publishResult = PublishLargeMessage(discoveryObj.discovery_topic.c_str(), discoveryObj.payload_json.c_str());
 

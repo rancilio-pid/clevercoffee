@@ -268,6 +268,7 @@ void serverSetup() {
         request->redirect("/");
     });
 
+#if (ONLYPIDSCALE == 1 || BREWMODE == 2)
     server.on("/toggleTare", HTTP_POST, [](AsyncWebServerRequest *request) {
         int tare = flipUintValue(tareON);
 
@@ -285,6 +286,7 @@ void serverSetup() {
 
         request->redirect("/");
     });
+#endif 
 
     server.on("/parameters", HTTP_GET | HTTP_POST, [](AsyncWebServerRequest *request) {
         // Determine the size of the document to allocate based on the number
