@@ -15,9 +15,11 @@ void calibrate() {
     u8g2.drawStr(0, 22, "Calibration coming up");
     u8g2.drawStr(0, 32, "Empty the scale");
     u8g2.sendBuffer();
+    debugPrintf("Taking scale zero point\n");
     LoadCell.update();
     LoadCell.tare();
     delay(2000);
+    debugPrintf("Put load on scale\n");
     u8g2.clearBuffer();
     u8g2.drawStr(2, 2, "Calibration in progress.");
     u8g2.drawStr(2, 12, "Place known weight");
@@ -26,13 +28,19 @@ void calibrate() {
     u8g2.drawStr(2, 42, number2string(scaleKnownWeight));
     u8g2.sendBuffer();
     delay(10000);
+    debugPrintf("Taking scale load point\n");
     LoadCell.refreshDataSet();  
     scaleCalibration = LoadCell.getNewCalibration(scaleKnownWeight);
     LoadCell.setCalFactor(scaleCalibration);
+    debugPrintf("New calibration: %f\n", scaleCalibration);
     u8g2.sendBuffer();
     writeSysParamsToStorage();
-    delay(2000);
-    LoadCell.tare();
+    u8g2.clearBuffer();
+    u8g2.drawStr(2, 2, "Calibration done!");
+    u8g2.drawStr(2, 12, "New calibration:");
+    u8g2.drawStr(2, 22, number2string(scaleCalibration));
+    u8g2.sendBuffer();
+    delay(5000);
 
 }
 
