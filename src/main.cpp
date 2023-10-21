@@ -1945,6 +1945,7 @@ void setup() {
         .ptr = (void *)&standbyModeTime
     };
 
+#if (ONLYPIDSCALE == 1 || BREWMODE == 2)
     editableVars["TARE_ON"] = {
         .displayName = F("Tare"),
         .hasHelpText = false,
@@ -1996,6 +1997,7 @@ void setup() {
         .maxValue = 100000,
         .ptr = (void *)&scaleCalibration
     };
+#endif
 
     editableVars["VERSION"] = {
         .displayName = F("Version"),
@@ -2071,7 +2073,12 @@ void setup() {
     #if FEATURE_PRESSURESENSOR == 1
         mqttSensors["pressure"] = []{ return inputPressureFilter; };
     #endif
-    
+
+    #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
+        mqttSensors["currentWeight"] = []{ return weight; };
+    #endif
+
+
     Serial.begin(115200);
 
     initTimer1();
@@ -2538,6 +2545,7 @@ void setBackflush(int backflush) {
     backflushOn = backflush;
 }
 
+#if (ONLYPIDSCALE == 1 || BREWMODE == 2)
 void setCalibration(int calibration) {
     calibrationON = calibration;
 }
@@ -2545,6 +2553,7 @@ void setCalibration(int calibration) {
 void setTare(int tare) {
     tareON = tare;
 }
+#endif
 
 void setSteamMode(int steamMode) {
     steamON = steamMode;

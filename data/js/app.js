@@ -69,7 +69,7 @@ const vueApp = Vue.createApp({
                 1: 'Temperature and Preinfusion',
                 2: 'Brew Detection and Brew PID Parameters',
                 3: 'Power Settings',
-                3: 'Scale Parameters'
+                4: 'Scale Parameters'
             }
             return sectionNames[sectionId]
         }

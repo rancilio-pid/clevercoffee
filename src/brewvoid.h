@@ -244,13 +244,11 @@ void brew() {
     if (OnlyPID == 0) {
         unsigned long currentMillisTemp = millis();
         checkbrewswitch();
-        double brewDelay = 0;
 
         if (brewSwitch == LOW && brewCounter > kBrewIdle) {
             // abort function for state machine from every state
             debugPrintln("Brew stopped manually");
             brewCounter = kWaitBrewOff;
-            brewDelay = scaleDelayValue;
         }
 
         if (brewCounter > kBrewIdle && brewCounter < kWaitBrewOff) {
@@ -336,10 +334,7 @@ void brew() {
                 digitalWrite(PIN_VALVE, relayOff);
                 digitalWrite(PIN_PUMP, relayOff);
                 brewCounter = kWaitBrewOff;
-                brewDelay = timeBrewed + scaleDelayValue;
-                if (timeBrewed > brewDelay) {
-                    timeBrewed = 0;
-                }
+                timeBrewed = 0;
 
                 break;
 
@@ -446,7 +441,6 @@ void brew() {
                 break;
 
             case 41:  // waiting time brew
-                lastbrewTime = timeBrewed;
                 if (timeBrewed > totalBrewTime || (weightBrew > (weightSetpoint - scaleDelayValue))) {
                     brewCounter = kBrewFinished;
                 }
