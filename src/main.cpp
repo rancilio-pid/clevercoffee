@@ -2047,6 +2047,8 @@ void setup() {
     mqttSensors["currentKi"] = []{ return bPID.GetKi(); };
     mqttSensors["currentKd"] = []{ return bPID.GetKd(); };
     mqttSensors["machineState"] = []{ return machineState; };
+    mqttSensors["currentWeight"] = []{ return weight; };
+
 
     Serial.begin(115200);
 

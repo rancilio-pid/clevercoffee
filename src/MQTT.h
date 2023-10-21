@@ -451,7 +451,9 @@ int sendHASSIODiscoveryMsg() {
   // Sensor Devices 
   DiscoveryObject actual_temperature = GenerateSensorDevice("temperature", "Boiler Temperature"); 
   DiscoveryObject heaterPower = GenerateSensorDevice("heaterPower", "Heater Power", "ms", "power_factor"); 
-  DiscoveryObject machineStateDevice = GenerateSensorDevice("machineState", "Machine State", "null", "enum"); 
+  DiscoveryObject machineStateDevice = GenerateSensorDevice("machineState", "Machine State", "null", "enum");
+  DiscoveryObject currentWeight = GenerateSensorDevice("currentWeight", "Weight", "g", "weight"); 
+ 
   // Switch Devices 
   DiscoveryObject pidOn = GenerateSwitchDevice("pidON", "Use PID"); 
   DiscoveryObject steamON = GenerateSwitchDevice("steamON", "Steam"); 
@@ -475,6 +477,7 @@ int sendHASSIODiscoveryMsg() {
     actual_temperature,
     heaterPower,
     machineStateDevice,
+    currentWeight,
     brewtime,
     pidOn,
     steamON,
