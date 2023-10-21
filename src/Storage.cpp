@@ -111,7 +111,7 @@ static const sto_data_t itemDefaults PROGMEM = {
     STEAMKP,                                  // STO_ITEM_PID_KP_STEAM
     STEAMSETPOINT,                            // STO_ITEM_STEAM_SETPOINT
     STANDBY_MODE_ON,                          // STO_ITEM_STANDBY_MODE_ON
-    STANDBY_MODE_TIME,                         // STO_ITEM_STANDBY_MODE_TIME 
+    STANDBY_MODE_TIME                         // STO_ITEM_STANDBY_MODE_TIME 
 };
 
 /**
