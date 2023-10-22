@@ -586,7 +586,7 @@ void refreshTemp() {
             previousMillistemp = currentMillistemp;
 
             #if TEMPSENSOR == 2
-                temperature = Sensor2.getTemp();
+                temperature = Sensor2.getTemp(15);
             #endif
 
             if (machineState != kSteam) {
@@ -2105,7 +2105,7 @@ void setup() {
 
     // TSic 306 temp sensor
     #if TEMPSENSOR == 2
-        temperature = Sensor2.getTemp();
+        temperature = Sensor2.getTemp(15);
     #endif
 
     temperature -= brewTempOffset;
