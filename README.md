@@ -29,7 +29,7 @@ This software is Open Source: free of charge for you and customizable to your pe
 
 We recommend you have a look at the manual before starting a build, you can find the german one [here](https://rancilio-pid.github.io/ranciliopid-handbook/). It is currently being reworked to include all the latest features. The english one is sadly still very outdated but will also be updated soon.
 
-Our chat for collaboration and questions can be found[here](https://chat.rancilio-pid.de).
+Our chat for collaboration and questions can be found[here](https://discord.gg/Kq5RFznuU4).
 
 Video tutorial on how to flash the firmware (a little outdated but mostly still valid):<br>
 https://youtu.be/KZPjisOEcQ4
