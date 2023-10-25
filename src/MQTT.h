@@ -503,21 +503,19 @@ int sendHASSIODiscoveryMsg() {
   DiscoveryObject heaterPower = GenerateSensorDevice("heaterPower", "Heater Power", "ms", "power_factor"); 
   DiscoveryObject machineStateDevice = GenerateSensorDevice("machineState", "Machine State", "null", "enum");
   DiscoveryObject currentWeight = GenerateSensorDevice("currentWeight", "Weight", "g", "weight"); 
- 
+  
   // Switch Devices 
   DiscoveryObject pidOn = GenerateSwitchDevice("pidON", "Use PID"); 
   DiscoveryObject steamON = GenerateSwitchDevice("steamON", "Steam"); 
   DiscoveryObject backflushON = GenerateSwitchDevice("backflushON", "Backflush"); 
   DiscoveryObject startUsePonM = GenerateSwitchDevice("startUsePonM", "Use PonM");
 
-  // Button Devices
+  // Button Devives
   DiscoveryObject scaleCalibrateButton = GenerateButtonDevice("calibrationON", "Calibrate Scale");
   DiscoveryObject scaleTareButton = GenerateButtonDevice("tareON", "Tare Scale");
-  
 
-// Define an array to store the DiscoveryObject instances
-  DiscoveryObject discoveryObjects[] = {
-    brewSetpoint,
+std::vector<DiscoveryObject> discoveryObjects = {
+  brewSetpoint,
     steamSetPoint,
     brewTempOffset,
     brewPidDelay,
@@ -531,22 +529,23 @@ int sendHASSIODiscoveryMsg() {
     actual_temperature,
     heaterPower,
     machineStateDevice,
-    currentWeight,
     brewtime,
     pidOn,
     steamON,
     backflushON,
     startUsePonM,
-    scaleCalibrateButton,
-    scaleTareButton
-  };
+};
 
-  const int numDiscoveryObjects = sizeof(discoveryObjects) / sizeof(discoveryObjects[0]);
+#if (BREWMODE == 2 || ONLYPIDSCALE == 1)
+discoveryObjects.push_back(currentWeight);
+discoveryObjects.push_back(scaleCalibrateButton);
+discoveryObjects.push_back(scaleTareButton);
+#endif  
 
 
   // Send the Objects to Hassio
   if (mqtt.connected()) {
-    for (int i = 0; i < numDiscoveryObjects; i++) {
+    for (int i = 0; i < discoveryObjects.size(); i++) {
       const DiscoveryObject& discoveryObj = discoveryObjects[i];
       int publishResult = PublishLargeMessage(discoveryObj.discovery_topic.c_str(), discoveryObj.payload_json.c_str());
 
