@@ -10,7 +10,7 @@
 // firmware version (must match with definitions in the main source file)
 #define USR_FW_VERSION    3
 #define USR_FW_SUBVERSION 2
-#define USR_FW_HOTFIX     0
+#define USR_FW_HOTFIX     1
 #define USR_FW_BRANCH     "ESP8222-MASTER"
 
 // List of supported machines
@@ -55,9 +55,9 @@ enum MACHINE {
 #define ONLYPIDSCALE 0             // 0 = off , 1 = OnlyPID with Scale
 #define BREWMODE 1                 // 1 = Brew by time (with preinfusion); 2 = Brew by weight (from scale)
 #define BREWDETECTION 0            // 0 = off, 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = Sensor/Hardware for Only PID
-#define BREWSWITCHTYPE 1           // 1 = normal Switch, 2 = Trigger Switch
-#define POWERSWITCHTYPE 0          // 0 = no switch connected, 1 = normal Switch, 2 = Trigger Switch
-#define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay
+#define BREWSWITCHTYPE 0           // 0 = no switch connected, 1 = normal switch, 2 = trigger switch
+#define POWERSWITCHTYPE 0          // 0 = no switch connected, 1 = normal switch, 2 = trigger switch
+#define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay for pump & valve 
 #define VOLTAGESENSORTYPE HIGH     // BREWDETECTION 3 configuration
 #define PINMODEVOLTAGESENSOR INPUT // Mode INPUT_PULLUP, INPUT or INPUT_PULLDOWN_16 (Only Pin 16)
 #define PRESSURESENSOR 0           // 1 = pressure sensor connected to A0; PINBREWSWITCH must be set to the connected input!
