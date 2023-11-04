@@ -510,36 +510,36 @@ int sendHASSIODiscoveryMsg() {
   DiscoveryObject backflushON = GenerateSwitchDevice("backflushON", "Backflush"); 
   DiscoveryObject startUsePonM = GenerateSwitchDevice("startUsePonM", "Use PonM");
 
-  // Button Devives
+  // Button Devices
   DiscoveryObject scaleCalibrateButton = GenerateButtonDevice("calibrationON", "Calibrate Scale");
   DiscoveryObject scaleTareButton = GenerateButtonDevice("tareON", "Tare Scale");
 
-std::vector<DiscoveryObject> discoveryObjects = {
-  brewSetpoint,
-    steamSetPoint,
-    brewTempOffset,
-    brewPidDelay,
-    startKp,
-    startTn,
-    steamKp,
-    aggKp,
-    aggTn,
-    aggTv,
-    aggIMax,
-    actual_temperature,
-    heaterPower,
-    machineStateDevice,
-    brewtime,
-    pidOn,
-    steamON,
-    backflushON,
-    startUsePonM,
-};
+  std::vector<DiscoveryObject> discoveryObjects = {
+      brewSetpoint,
+      steamSetPoint,
+      brewTempOffset,
+      brewPidDelay,
+      startKp,
+      startTn,
+      steamKp,
+      aggKp,
+      aggTn,
+      aggTv,
+      aggIMax,
+      actual_temperature,
+      heaterPower,
+      machineStateDevice,
+      brewtime,
+      pidOn,
+      steamON,
+      backflushON,
+      startUsePonM,
+  };
 
 #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
-discoveryObjects.push_back(currentWeight);
-discoveryObjects.push_back(scaleCalibrateButton);
-discoveryObjects.push_back(scaleTareButton);
+  discoveryObjects.push_back(currentWeight);
+  discoveryObjects.push_back(scaleCalibrateButton);
+  discoveryObjects.push_back(scaleTareButton);
 #endif  
 
 
