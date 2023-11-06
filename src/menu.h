@@ -1,10 +1,11 @@
-// #if ROTARY_MENU == 1
 #ifndef MENU_H
 #define MENU_H
 
 #include "LCDMenuLib2.h"  // Include this if LCDMenuLib2.h is not included in the main file
 #include "Storage.h"
 #include "ClickEncoder.h"
+#include "defaults.h"
+#include "languages.h"
 
 extern LCDMenuLib2_menu LCDML_0;
 extern LCDMenuLib2 LCDML;
@@ -35,7 +36,6 @@ void menuBack(uint8_t param);
 void menuClose(uint8_t param);
 void setupMenu();
 
-#if (ROTARY_MENU == 1)
 #include "Storage.h"  
 #include "LCDMenuLib2.h"  
 #include "ClickEncoder.h"
@@ -51,14 +51,8 @@ int last = 0;
 
 void changeNumericalValue(uint8_t param, double value, sto_item_id_t name, const char* readableName, const char* unit) {
     if(LCDML.FUNC_setup()) {
-        // remmove compiler warnings when the param variable is not used:
-        LCDML_UNUSED(param);
-
         menuRotaryLast = encoder.getAccumulate();
         initialValue = value;
-        char message[100];
-        snprintf(message, sizeof(message), "Initialized old to %f.0.", value);
-        debugPrintln(message);
 
         displayNumericalMenuSettingWithUnit(initialValue, readableName, unit);
     }
@@ -66,31 +60,13 @@ void changeNumericalValue(uint8_t param, double value, sto_item_id_t name, const
     if(LCDML.FUNC_loop()) {
         int32_t pos = encoder.getAccumulate();
         double diff = static_cast<double>(pos - menuRotaryLast) / 10.0;
-
-        char message[100];
-        snprintf(message, sizeof(message), "Pos: %d, last: %d, diff: %f.00", pos, last, diff);
-        debugPrintln(message);
-
-        if (diff < 0) {
+        if (diff != 0) {
             initialValue = initialValue + diff;
-            char message[100];
-            snprintf(message, sizeof(message), "DOWN. Old %s: %f.0, new: %f.0, diff: %f.0", readableName, initialValue - diff, initialValue, diff);
-            debugPrintln(message);
-        } 
-        else if (diff > 0) {
-            initialValue = initialValue + diff;
-            char message[100];
-            snprintf(message, sizeof(message), "UP. Old %s: %f.0, new: %f.0, diff: %f.0", readableName, initialValue - diff, initialValue, diff);
-            debugPrintln(message);
-        } 
-
-        displayNumericalMenuSettingWithUnit(initialValue, readableName, unit);
-        menuRotaryLast = pos;
+            displayNumericalMenuSettingWithUnit(initialValue, readableName, unit);
+            menuRotaryLast = pos;
+        }
             
         if(LCDML.BT_checkEnter()) { 
-            char message[100];
-            snprintf(message, sizeof(message), "Saving new %s: %f.0", readableName, initialValue);
-            debugPrintln(message);
             storageSet(name, initialValue);
 
             int saved = storageCommit();
@@ -126,9 +102,9 @@ void changeNumericalValue(uint8_t param, double value, sto_item_id_t name, const
         }
     }
 
-    if(LCDML.FUNC_close()) {
-        // you can here reset some global vars or do nothing
-    }
+    // if(LCDML.FUNC_close()) {
+    //     // you can here reset some global vars or do nothing
+    // }
 }
 
 void changeBrewTemp(uint8_t param) {
@@ -170,7 +146,6 @@ void backflushOff(uint8_t param) {
 
 void menuBack(uint8_t param) {
     if(LCDML.FUNC_setup()) {
-        LCDML_UNUSED(param);
         LCDML.FUNC_goBackToMenu(1);      
     }
 }
@@ -236,8 +211,6 @@ void clearMenu() {
 void setupMenu() {
     LCDML_setup(_LCDML_DISP_cnt);
 }
-#endif
 
 
 #endif  // MENU_H
-// #endif

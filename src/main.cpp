@@ -37,13 +37,13 @@
 #include "defaults.h"
 #include <os.h>
 
-#include "menu.h"
 
 hw_timer_t *timer = NULL;
 #if (ROTARY_MENU == 1)
     hw_timer_t *encoderTimer = NULL;
     #include <LCDMenuLib2.h>
     #include <ClickEncoder.h>
+    #include "menu.h"
     ClickEncoder encoder{PIN_ROTARY_DT, PIN_ROTARY_CLK, PIN_ROTARY_SW, ENCODER_CLICKS_PER_NOTCH, LOW};
     boolean menuOpen = false;
 #endif
@@ -2053,9 +2053,9 @@ void setup() {
     }
 
     #if(ROTARY_MENU == 1)
-        pinMode(PIN_ROTARY_DT, INPUT_PULLDOWN);
-        pinMode(PIN_ROTARY_CLK, INPUT_PULLDOWN);
-        pinMode(PIN_STEAMSWITCH, INPUT_PULLDOWN);
+        pinMode(PIN_ROTARY_DT, INPUT_PULLUP);
+        pinMode(PIN_ROTARY_CLK, INPUT_PULLUP);
+        pinMode(PIN_STEAMSWITCH, INPUT_PULLUP);
         setupMenu();
     #endif
 
@@ -2147,7 +2147,7 @@ void setup() {
         previousMillisPressure = currentTime;
     #endif
 
-    #if defined(ESP32) && (OLED_DISPLAY != 0) && (ROTARY_MENU == 1)
+    #if ROTARY_MENU == 1
         encoder.setAccelerationEnabled(true);
         encoder.setDoubleClickEnabled(false);
         encoder.setLongPressRepeatEnabled(false);
