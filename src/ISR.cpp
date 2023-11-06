@@ -35,7 +35,7 @@ void IRAM_ATTR onTimer(){
 
 #if (ROTARY_MENU) == 1 
 void IRAM_ATTR onRotaryTimer() {
-    timerAlarmWrite(encoderTimer, 1000, true); // 1ms = 1000 ticks at 1MHz
+    timerAlarmWrite(encoderTimer, menuOpen ? 1000 : 10000, true); // 1ms = 1000 ticks at 1MHz
     encoder.service();
 }
 #endif

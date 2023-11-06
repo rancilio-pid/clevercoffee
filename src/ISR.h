@@ -20,6 +20,7 @@ extern hw_timer_t *timer;
 #if (ROTARY_MENU == 1)
 extern hw_timer_t *encoderTimer;
 extern ClickEncoder encoder;
+extern bool menuOpen; 
 #endif
 
 void initTimer1(void);
