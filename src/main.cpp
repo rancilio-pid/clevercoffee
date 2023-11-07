@@ -44,7 +44,8 @@ hw_timer_t *timer = NULL;
     #include <LCDMenuLib2.h>
     #include <ClickEncoder.h>
     #include "menu.h"
-    ClickEncoder encoder{PIN_ROTARY_DT, PIN_ROTARY_CLK, PIN_ROTARY_SW, ENCODER_CLICKS_PER_NOTCH, LOW};
+    Encoder encoder{PIN_ROTARY_DT, PIN_ROTARY_CLK, ENCODER_CLICKS_PER_NOTCH, LOW};
+    Button button{PIN_ROTARY_SW, LOW};
     boolean menuOpen = false;
 #endif
 
@@ -1515,6 +1516,10 @@ void websiteSetup() {
 
 const char sysVersion[] = (STR(FW_VERSION) "." STR(FW_SUBVERSION) "." STR(FW_HOTFIX) " " FW_BRANCH " " AUTO_VERSION);
 
+void encoderService() {
+    encoder.service();
+}
+
 void setup() {
     editableVars["PID_ON"] = {
         .displayName = "Enable PID Controller",
@@ -2055,7 +2060,12 @@ void setup() {
     #if(ROTARY_MENU == 1)
         pinMode(PIN_ROTARY_DT, INPUT_PULLUP);
         pinMode(PIN_ROTARY_CLK, INPUT_PULLUP);
-        pinMode(PIN_STEAMSWITCH, INPUT_PULLUP);
+        pinMode(PIN_ROTARY_SW, INPUT_PULLUP);
+
+         // Attach interrupts
+        attachInterrupt(digitalPinToInterrupt(PIN_ROTARY_DT), encoderService, CHANGE);
+        attachInterrupt(digitalPinToInterrupt(PIN_ROTARY_CLK), encoderService, CHANGE);
+
         setupMenu();
     #endif
 
@@ -2149,8 +2159,6 @@ void setup() {
 
     #if ROTARY_MENU == 1
         encoder.setAccelerationEnabled(true);
-        encoder.setDoubleClickEnabled(false);
-        encoder.setLongPressRepeatEnabled(false);
     #endif
 
     setupDone = true;
@@ -2168,7 +2176,7 @@ void loop() {
 
     #if ROTARY_MENU == 1
         if (menuOpen == false) {
-            Button::eButtonStates buttonState = encoder.getButton();
+            Button::eButtonStates buttonState = button.getButton();
             if (buttonState == Button::Clicked) {
                 menuOpen = true;
                 displayMenu();

@@ -9,7 +9,8 @@
 
 extern LCDMenuLib2_menu LCDML_0;
 extern LCDMenuLib2 LCDML;
-extern ClickEncoder encoder;
+extern Encoder encoder;
+extern Button button;
 
 extern double brewSetpoint;
 extern double steamSetpoint;
@@ -18,6 +19,7 @@ extern double preinfusion;
 extern double preinfusionpause;
 extern int backflushON;
 extern bool menuOpen;
+extern bool clicked;
 
 extern void displayNumericalMenuSettingWithUnit(double temp, const char* name, const char* unit);
 extern void displayToggleBackflushMessage(uint8_t mode);
@@ -184,7 +186,7 @@ LCDML_createMenu(_LCDML_DISP_cnt);
 // Translate encoder events to menu events
 void menuControls(void) {
     int32_t pos = encoder.getAccumulate();
-    Button::eButtonStates buttonState = encoder.getButton();
+    Button::eButtonStates buttonState = button.getButton();
 
     if (pos < last) {
         LCDML.BT_up();
