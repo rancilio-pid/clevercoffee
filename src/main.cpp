@@ -40,7 +40,6 @@
 
 hw_timer_t *timer = NULL;
 #if (ROTARY_MENU == 1)
-    hw_timer_t *encoderTimer = NULL;
     #include <LCDMenuLib2.h>
     #include <ClickEncoder.h>
     #include "menu.h"
