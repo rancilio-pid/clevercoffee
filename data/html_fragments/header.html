@@ -1,47 +1,69 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Clever Coffee PID</title>
-    <link rel="icon" href="data:image/svg+xml,%%3Csvg%%20xmlns='http://www.w3.org/2000/svg'%%20viewBox='0%%200%%2016%%2016'%%3E%%3Ctext%%20x='0'%%20y='14'%%3E☕%%3C/text%%3E%%3C/svg%%3E" type="image/svg+xml" />
+    <link rel="manifest" href="/manifest.json" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%%3Csvg%%20xmlns='http://www.w3.org/2000/svg'%%20viewBox='0%%200%%2016%%2016'%%3E%%3Ctext%%20x='0'%%20y='14'%%3E☕%%3C/text%%3E%%3C/svg%%3E"
+      type="image/svg+xml"
+    />
 
-    %VAR_HEADER_FONTAWESOME%
-    %VAR_HEADER_BOOTSTRAP%
-    %VAR_HEADER_BOOTSTRAP_BUNDLE%
-
-    %VAR_HEADER_VUEJS%
+    %VAR_HEADER_FONTAWESOME% %VAR_HEADER_BOOTSTRAP%
+    %VAR_HEADER_BOOTSTRAP_BUNDLE% %VAR_HEADER_VUEJS%
 
     <script>
-        //delay loading app js until html has been loaded (to reduce concurrent requests)
-        document.addEventListener("DOMContentLoaded", function(event) {
-            import('/js/app.js?v=1')
-        })
+      //delay loading app js until html has been loaded (to reduce concurrent requests)
+      document.addEventListener("DOMContentLoaded", function (event) {
+        import("/js/app.js?v=1");
+      });
     </script>
-</head>
+  </head>
 
-<body>
-<div id="page-container">
-    <div id="navigation">
+  <body>
+    <div id="page-container">
+      <div id="navigation">
         <nav class="navbar navbar-expand-xl navbar-dark bg-secondary">
-            <div class="container-fluid">
-                <a class="navbar-brand" href="/">
-                    <img alt="Clever Coffee"
-                        src="/img/logo.png"
-                        style="width:64px;">
-                </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#navbarToggleExternalContent" aria-controls="navbarToggleExternalContent"
-                    aria-expanded="false" aria-label="Toggle page navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarToggleExternalContent">
-                    <div class="navbar-nav">
-                        <a class="nav-item nav-link" href="/"><i class="fa-solid fa-house"></i> Home</a>
-                        <a class="nav-item nav-link" href="/parameters.html"><i class="fa-solid fa-sliders"></i> Parameters</a>
-                        <a class="nav-item nav-link" href="/about.html"><i class="fa-solid fa-desktop"></i> About</a>
-                    </div>
-                </div>
+          <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+              <img
+                alt="Clever Coffee"
+                src="/img/logo.png"
+                style="width: 64px"
+              />
+            </a>
+            <button
+              class="navbar-toggler"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#navbarToggleExternalContent"
+              aria-controls="navbarToggleExternalContent"
+              aria-expanded="false"
+              aria-label="Toggle page navigation"
+            >
+              <span class="navbar-toggler-icon"></span>
+            </button>
+            <div
+              class="collapse navbar-collapse"
+              id="navbarToggleExternalContent"
+            >
+              <div class="navbar-nav">
+                <a class="nav-item nav-link" href="/"
+                  ><i class="fa-solid fa-house"></i> Home</a
+                >
+                <a class="nav-item nav-link" href="/parameters.html"
+                  ><i class="fa-solid fa-sliders"></i> Parameters</a
+                >
+                <a class="nav-item nav-link" href="/about.html"
+                  ><i class="fa-solid fa-desktop"></i> About</a
+                >
+              </div>
             </div>
+          </div>
         </nav>
+      </div>
     </div>
+  </body>
+</html>
