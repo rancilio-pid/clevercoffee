@@ -39,6 +39,11 @@
 
 hw_timer_t *timer = NULL;
 
+#if (PRESSURESENSOR == 1)
+    #include "pressure.h"
+    #include <Wire.h>
+#endif
+
 
 #if OLED_DISPLAY == 3
 #include <SPI.h>
@@ -135,12 +140,10 @@ bool brewSteamDetectedQM = false;                           // brew/steam detect
 bool coolingFlushDetectedQM = false;
 
 // Pressure sensor
-#if (PRESSURESENSOR == 1)   // Pressure sensor connected
-    int offset = OFFSET;
-    int fullScale = FULLSCALE;
-    int maxPressure = MAXPRESSURE;
+#if (PRESSURESENSOR == 1)
     float inputPressure = 0;
-    const unsigned long intervalPressure = 200;
+    float inputPressureFilter = 0;
+    const unsigned long intervalPressure = 100;
     unsigned long previousMillisPressure;  // initialisation at the end of init()
 #endif
 
@@ -429,31 +432,6 @@ const unsigned long intervalDisplay = 500;
     #if (DISPLAYTEMPLATE == 20)
         #include "Displaytemplateupright.h"
     #endif
-#endif
-
-
-#if (PRESSURESENSOR == 1)
-    /**
-     * Pressure sensor
-     * Verify before installation: meassured analog input value (should be 3,300 V
-     * for 3,3 V supply) and respective ADC value (3,30 V = 1023)
-     */
-    void checkPressure() {
-        float inputPressureFilter = 0;
-        unsigned long currentMillisPressure = millis();
-
-        if (currentMillisPressure - previousMillisPressure >= intervalPressure) {
-            previousMillisPressure = currentMillisPressure;
-
-            inputPressure =
-                ((analogRead(PIN_PRESSURESENSOR) - offset) * maxPressure * 0.0689476) /
-                (fullScale - offset);   // pressure conversion and unit
-                                        // conversion [psi] -> [bar]
-            inputPressureFilter = filterPressureValue(inputPressure);
-
-            debugPrintf("pressure raw / filtered: %f / %f\n", inputPressure, inputPressureFilter);
-        }
-    }
 #endif
 
 // Emergency stop if temp is too high
@@ -1973,6 +1951,10 @@ void setup() {
     };
     // when adding parameters, set EDITABLE_VARS_LEN to max of .position
 
+#if (PRESSURESENSOR == 1)
+    Wire.begin();
+#endif
+
     // Editable values reported to MQTT
     mqttVars["pidON"] = []{ return &editableVars.at("PID_ON"); };
     mqttVars["brewSetpoint"] = []{ return &editableVars.at("BREW_SETPOINT"); };
@@ -2021,7 +2003,11 @@ void setup() {
     mqttSensors["currentKi"] = []{ return bPID.GetKi(); };
     mqttSensors["currentKd"] = []{ return bPID.GetKd(); };
     mqttSensors["machineState"] = []{ return machineState; };
-
+    
+    #if PRESSURESENSOR == 1
+        mqttSensors["pressure"] = []{ return inputPressureFilter; };
+    #endif
+    
     Serial.begin(115200);
 
     initTimer1();
@@ -2168,6 +2154,7 @@ void setup() {
     #if (BREWMODE == 2)
         previousMillisScale = currentTime;
     #endif
+
     #if (PRESSURESENSOR == 1)
         previousMillisPressure = currentTime;
     #endif
@@ -2278,15 +2265,20 @@ void looppid() {
         checkWeight();  // Check Weight Scale in the loop
     #endif
 
-    #if (PRESSURESENSOR == 1)
-        checkPressure();
-    #endif
-
     if(machineState != kWaterEmpty) {
         brew();
     }
 
-    checkSteamSwitch();
+    #if (PRESSURESENSOR == 1)
+        unsigned long currentMillisPressure = millis();
+        
+        if (currentMillisPressure - previousMillisPressure >= intervalPressure) {
+            previousMillisPressure = currentMillisPressure;
+            inputPressure = ABP2_measurePressure();
+            inputPressureFilter = filterPressureValue(inputPressure);
+        }
+    #endif
+
     checkPowerSwitch();
 
     // set setpoint depending on steam or brew mode

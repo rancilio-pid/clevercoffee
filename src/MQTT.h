@@ -12,7 +12,7 @@
 #include <Arduino.h>
 #include <PubSubClient.h>
 
-unsigned long previousMillisMQTT;   // initialisation at the end of init()
+unsigned long previousMillisMQTT;
 const unsigned long intervalMQTT = 5000;
 
 WiFiClient net;
@@ -65,15 +65,17 @@ String getMachineName(MACHINE machine) {
 
 /**
  * @brief Check if MQTT is connected, if not reconnect. Abort function if offline or brew is running
- *        MQTT is also using maxWifiReconnects!
+ *      MQTT is also using maxWifiReconnects!
  */
 void checkMQTT() {
-    if (offlineMode == 1 || brewCounter > kBrewIdle) return;
+    if (offlineMode == 1 || brewCounter > kBrewIdle) {
+        return;
+    }
 
     if ((millis() - lastMQTTConnectionAttempt >= wifiConnectionDelay) && (MQTTReCnctCount <= maxWifiReconnects)) {
         if (!mqtt.connected()) {
-            lastMQTTConnectionAttempt = millis();   // Reconnection Timer Function
-            MQTTReCnctCount++;                      // Increment reconnection Counter
+            lastMQTTConnectionAttempt = millis();  // Reconnection Timer Function
+            MQTTReCnctCount++;                     // Increment reconnection Counter
             debugPrintf("Attempting MQTT reconnection: %i\n", MQTTReCnctCount);
 
             if (mqtt.connect(hostname, mqtt_username, mqtt_password, topic_will, 0, true, "offline")) {
@@ -88,14 +90,12 @@ void checkMQTT() {
     }
 }
 
-
 /**
  * @brief Publish Data to MQTT
  */
 bool mqtt_publish(const char *reading, char *payload, boolean retain = false) {
     char topic[120];
     snprintf(topic, 120, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
-
     return mqtt.publish(topic, payload, retain);
 }
 
@@ -130,7 +130,7 @@ int PublishLargeMessage(const String& topic, const String& largeMessage) {
         else {
             return 0;
         }
-    }
+    } 
     else {
         boolean publishResult = mqtt.publish(topic.c_str(), largeMessage.c_str());
         return publishResult ? 0 : -1; // Return 0 for success, -1 for failure
@@ -144,8 +144,7 @@ int PublishLargeMessage(const String& topic, const String& largeMessage) {
  * @param value MQTT value
  */
 void assignMQTTParam(char *param, double value) {
-    try
-    {
+    try {
         editable_t *var = mqttVars.at(param)();
 
         if (value >= var->minValue && value <= var->maxValue) {
@@ -204,7 +203,7 @@ void mqtt_callback(char *topic, byte *data, unsigned int length) {
 
     debugPrintf("Received MQTT command %s %s\n", topic_str, data_str);
 
-    //convert received string value to double assuming it's a number
+    // convert received string value to double assuming it's a number
     sscanf(data_str, "%lf", &data_double);
     assignMQTTParam(configVar, data_double);
 }
@@ -217,42 +216,47 @@ void mqtt_callback(char *topic, byte *data, unsigned int length) {
  */
 int writeSysParamsToMQTT(bool continueOnError = true) {
     unsigned long currentMillisMQTT = millis();
-
+ 
     if ((currentMillisMQTT - previousMillisMQTT >= intervalMQTT) && MQTT == 1) {
         previousMillisMQTT = currentMillisMQTT;
 
         if (mqtt.connected()) {
             mqtt_publish("status", (char *)"online");
 
-            int errorState = 0; // MQTT error state
+            int errorState = 0;
 
             for (const auto& pair : mqttVars) {
                 editable_t *e = pair.second();
 
                 switch (e->type) {
                     case kDouble:
-                        if (!mqtt_publish(pair.first, number2string(*(double *)e->ptr), true))
-                        errorState = mqtt.state();
+                        if (!mqtt_publish(pair.first, number2string(*(double *)e->ptr), true)) {
+                            errorState = mqtt.state();
+                        }
                         break;
 
                     case kDoubletime:
-                        if (!mqtt_publish(pair.first, number2string(*(double *)e->ptr), true))
-                        errorState = mqtt.state();
+                        if (!mqtt_publish(pair.first, number2string(*(double *)e->ptr), true)) {
+                            errorState = mqtt.state();
+                        }
                         break;
 
                     case kInteger:
-                        if (!mqtt_publish(pair.first, number2string(*(int *)e->ptr), true))
-                        errorState = mqtt.state();
+                        if (!mqtt_publish(pair.first, number2string(*(int *)e->ptr), true)) {
+                            errorState = mqtt.state();
+                        }
                         break;
 
                     case kUInt8:
-                        if (!mqtt_publish(pair.first, number2string(*(uint8_t *)e->ptr), true))
-                        errorState = mqtt.state();
+                        if (!mqtt_publish(pair.first, number2string(*(uint8_t *)e->ptr), true)) {
+                            errorState = mqtt.state();
+                        }
                         break;
 
                     case kCString:
-                        if (!mqtt_publish(pair.first, number2string(*(char *)e->ptr), true))
-                        errorState = mqtt.state();
+                        if (!mqtt_publish(pair.first, number2string(*(char *)e->ptr), true)) {
+                            errorState = mqtt.state();
+                        }
                         break;
                 }
 
@@ -295,28 +299,28 @@ DiscoveryObject GenerateSwitchDevice(String name, String displayName, String pay
     String unique_id = "clevercoffee-" + String(hostname);
     String SwitchDiscoveryTopic = String(MQTT_HASSIO_DISCOVERY_PREFIX) + "/switch/";
 
-    String switch_command_topic = mqtt_topic + "/"+ name +"/set";
-    String switch_state_topic = mqtt_topic + "/"+ name;
+    String switch_command_topic = mqtt_topic + "/" + name + "/set";
+    String switch_state_topic = mqtt_topic + "/" + name;
 
-    switch_device.discovery_topic = SwitchDiscoveryTopic + unique_id + "-"+ name +"" +"/config";
-
+    switch_device.discovery_topic = SwitchDiscoveryTopic + unique_id + "-" + name + "" + "/config";
+    
     DynamicJsonDocument DeviceMapDoc(1024);
     char DeviceMapBuffer[256];
     DeviceMapDoc["identifiers"] = String(hostname);
     DeviceMapDoc["manufacturer"] = "CleverCoffee";
     DeviceMapDoc["model"] = getMachineName(machine);
     DeviceMapDoc["name"] = String(hostname);
-
+    
     DynamicJsonDocument switchConfigDoc(512);
     switchConfigDoc["name"] = displayName;
     switchConfigDoc["command_topic"] = switch_command_topic;
     switchConfigDoc["state_topic"] = switch_state_topic;
-    switchConfigDoc["unique_id"] = unique_id + "-"+name;
+    switchConfigDoc["unique_id"] = unique_id + "-" + name;
     switchConfigDoc["payload_on"] = payload_on;
     switchConfigDoc["payload_off"] = payload_off;
     switchConfigDoc["payload_available"] = "online";
     switchConfigDoc["payload_not_available"] = "offline";
-    switchConfigDoc["availability_topic"] = mqtt_topic+"/status";
+    switchConfigDoc["availability_topic"] = mqtt_topic + "/status";
 
     JsonObject switchDeviceField = switchConfigDoc.createNestedObject("device");
 
@@ -348,8 +352,8 @@ DiscoveryObject GenerateSensorDevice(String name, String displayName, String uni
     String unique_id = "clevercoffee-" + String(hostname);
     String SensorDiscoveryTopic = String(MQTT_HASSIO_DISCOVERY_PREFIX) + "/sensor/";
 
-    String sensor_state_topic = mqtt_topic + "/"+ name;
-    sensor_device.discovery_topic = SensorDiscoveryTopic + unique_id + "-"+ name +"" +"/config";
+    String sensor_state_topic = mqtt_topic + "/" + name;
+    sensor_device.discovery_topic = SensorDiscoveryTopic + unique_id + "-" + name +"" + "/config";
 
     DynamicJsonDocument DeviceMapDoc(1024);
     char DeviceMapBuffer[256];
@@ -361,12 +365,12 @@ DiscoveryObject GenerateSensorDevice(String name, String displayName, String uni
     DynamicJsonDocument sensorConfigDoc(512);
     sensorConfigDoc["name"] = displayName;
     sensorConfigDoc["state_topic"] = sensor_state_topic;
-    sensorConfigDoc["unique_id"] = unique_id + "-"+name;
+    sensorConfigDoc["unique_id"] = unique_id + "-" + name;
     sensorConfigDoc["unit_of_measurement"] = unit_of_measurement;
     sensorConfigDoc["device_class"] = device_class;
     sensorConfigDoc["payload_available"] = "online";
     sensorConfigDoc["payload_not_available"] = "offline";
-    sensorConfigDoc["availability_topic"] = mqtt_topic+"/status";
+    sensorConfigDoc["availability_topic"] = mqtt_topic + "/status";
 
     JsonObject sensorDeviceField = sensorConfigDoc.createNestedObject("device");
 
@@ -378,6 +382,7 @@ DiscoveryObject GenerateSensorDevice(String name, String displayName, String uni
     serializeJson(sensorConfigDoc, sensorConfigDocBuffer);
 
     sensor_device.payload_json = sensorConfigDocBuffer;
+
     return sensor_device;
 }
 
@@ -401,7 +406,7 @@ DiscoveryObject GenerateNumberDevice(String name, String displayName, int min_va
     String unique_id = "clevercoffee-" + String(hostname);
 
     String NumberDiscoveryTopic = String(MQTT_HASSIO_DISCOVERY_PREFIX) + "/number/";
-    number_device.discovery_topic = NumberDiscoveryTopic + unique_id + "-"+ name +"" +"/config";
+    number_device.discovery_topic = NumberDiscoveryTopic + unique_id + "-" + name + "" + "/config";
 
     DynamicJsonDocument DeviceMapDoc(1024);
     char DeviceMapBuffer[256];
@@ -412,17 +417,17 @@ DiscoveryObject GenerateNumberDevice(String name, String displayName, int min_va
 
     DynamicJsonDocument numberConfigDoc(512);
     numberConfigDoc["name"] = displayName;
-    numberConfigDoc["command_topic"] = mqtt_topic + "/"+ name + "/set";
-    numberConfigDoc["state_topic"] = mqtt_topic + "/"+ name;
-    numberConfigDoc["unique_id"] = unique_id + "-"+name;
-    numberConfigDoc["min"] = min_value;  // Minimum value
-    numberConfigDoc["max"] = max_value;  // Maximum value
-    numberConfigDoc["step"] = String(steps_value,2);  // Steps value
+    numberConfigDoc["command_topic"] = mqtt_topic + "/" + name + "/set";
+    numberConfigDoc["state_topic"] = mqtt_topic + "/" + name;
+    numberConfigDoc["unique_id"] = unique_id + "-" + name;
+    numberConfigDoc["min"] = min_value;
+    numberConfigDoc["max"] = max_value;
+    numberConfigDoc["step"] = String(steps_value,2);
     numberConfigDoc["unit_of_measurement"] = unit_of_measurement;
     numberConfigDoc["mode"] = ui_mode;
     numberConfigDoc["payload_available"] = "online";
     numberConfigDoc["payload_not_available"] = "offline";
-    numberConfigDoc["availability_topic"] = mqtt_topic+"/status";
+    numberConfigDoc["availability_topic"] = mqtt_topic + "/status";
 
     JsonObject numberDeviceField = numberConfigDoc.createNestedObject("device");
 
@@ -433,8 +438,8 @@ DiscoveryObject GenerateNumberDevice(String name, String displayName, int min_va
     String numberConfigDocBuffer;
     serializeJson(numberConfigDoc, numberConfigDocBuffer);
 
-
     number_device.payload_json = numberConfigDocBuffer;
+    
     return number_device;
 }
 
@@ -444,28 +449,32 @@ DiscoveryObject GenerateNumberDevice(String name, String displayName, int min_va
  */
 int sendHASSIODiscoveryMsg() {
     // Number Devices
-    DiscoveryObject brewSetpoint = GenerateNumberDevice("brewSetpoint", "Brew setpoint", BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, 0.1, "°C");
-    DiscoveryObject steamSetPoint = GenerateNumberDevice("steamSetpoint", "Steam setpoint", STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, 0.1, "°C");
-    DiscoveryObject brewTempOffset = GenerateNumberDevice("brewTempOffset", "Brew Temp. Offset", BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, 0.1, "°C");
-    DiscoveryObject brewPidDelay = GenerateNumberDevice("brewPidDelay", "Brew Pid Delay", BREW_PID_DELAY_MIN, BREW_PID_DELAY_MAX, 0.1, "");
-    DiscoveryObject startKp = GenerateNumberDevice("startKp", "Start kP", PID_KP_START_MIN, PID_KP_START_MAX, 0.1, "");
-    DiscoveryObject startTn = GenerateNumberDevice("startTn", "Start Tn", PID_TN_START_MIN, PID_TN_START_MAX, 0.1, "");
-    DiscoveryObject steamKp = GenerateNumberDevice("steamKp", "Start Kp", PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, 0.1, "");
-    DiscoveryObject aggKp = GenerateNumberDevice("aggKp", "aggKp", PID_KP_REGULAR_MIN, PID_KP_REGULAR_MAX, 0.1, "");
-    DiscoveryObject aggTn = GenerateNumberDevice("aggTn", "aggTn", PID_TN_REGULAR_MIN, PID_TN_REGULAR_MAX, 0.1, "");
-    DiscoveryObject aggTv = GenerateNumberDevice("aggTv", "aggTv", PID_TV_REGULAR_MIN, PID_TV_REGULAR_MAX, 0.1, "");
-    DiscoveryObject aggIMax = GenerateNumberDevice("aggIMax", "aggIMax", PID_I_MAX_REGULAR_MIN, PID_I_MAX_REGULAR_MAX, 0.1, "");
-    DiscoveryObject brewtime = GenerateNumberDevice("brewtime", "Brew time", BREW_TIME_MIN, BREW_TIME_MAX, 0.1, "s");
+    DiscoveryObject brewSetpoint = GenerateNumberDevice("brewSetpoint", "Brew setpoint", BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, 0.1, "°C"); 
+    DiscoveryObject steamSetPoint = GenerateNumberDevice("steamSetpoint", "Steam setpoint", STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, 0.1, "°C"); 
+    DiscoveryObject brewTempOffset = GenerateNumberDevice("brewTempOffset", "Brew Temp. Offset", BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, 0.1, "°C"); 
+    DiscoveryObject brewPidDelay = GenerateNumberDevice("brewPidDelay", "Brew Pid Delay", BREW_PID_DELAY_MIN, BREW_PID_DELAY_MAX, 0.1, ""); 
+    DiscoveryObject startKp = GenerateNumberDevice("startKp", "Start kP", PID_KP_START_MIN, PID_KP_START_MAX, 0.1, ""); 
+    DiscoveryObject startTn = GenerateNumberDevice("startTn", "Start Tn", PID_TN_START_MIN, PID_TN_START_MAX, 0.1, ""); 
+    DiscoveryObject steamKp = GenerateNumberDevice("steamKp", "Start Kp", PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, 0.1, ""); 
+    DiscoveryObject aggKp = GenerateNumberDevice("aggKp", "aggKp", PID_KP_REGULAR_MIN, PID_KP_REGULAR_MAX, 0.1, ""); 
+    DiscoveryObject aggTn = GenerateNumberDevice("aggTn", "aggTn", PID_TN_REGULAR_MIN, PID_TN_REGULAR_MAX, 0.1, ""); 
+    DiscoveryObject aggTv = GenerateNumberDevice("aggTv", "aggTv", PID_TV_REGULAR_MIN, PID_TV_REGULAR_MAX, 0.1, ""); 
+    DiscoveryObject aggIMax = GenerateNumberDevice("aggIMax", "aggIMax", PID_I_MAX_REGULAR_MIN, PID_I_MAX_REGULAR_MAX, 0.1, ""); 
+    DiscoveryObject brewtime = GenerateNumberDevice("brewtime", "Brew time", BREW_TIME_MIN, BREW_TIME_MAX, 0.1, "s"); 
 
     // Sensor Devices 
-    DiscoveryObject actual_temperature = GenerateSensorDevice("temperature", "Boiler Temperature");
-    DiscoveryObject heaterPower = GenerateSensorDevice("heaterPower", "Heater Power", "%", "power_factor");
-    DiscoveryObject machineStateDevice = GenerateSensorDevice("machineState", "Machine State", "null", "enum");
+    DiscoveryObject actual_temperature = GenerateSensorDevice("temperature", "Boiler Temperature"); 
+    DiscoveryObject heaterPower = GenerateSensorDevice("heaterPower", "Heater Power", "%", "power_factor"); 
+    DiscoveryObject machineStateDevice = GenerateSensorDevice("machineState", "Machine State", "null", "enum"); 
+
+    #if PRESSURESENSOR == 1
+        DiscoveryObject pressure = GenerateSensorDevice("pressure", "Pressure", "bar", "pressure");
+    #endif
 
     // Switch Devices 
-    DiscoveryObject pidOn = GenerateSwitchDevice("pidON", "Use PID");
-    DiscoveryObject steamON = GenerateSwitchDevice("steamON", "Steam");
-    DiscoveryObject backflushOn = GenerateSwitchDevice("backflushOn", "Backflush");
+    DiscoveryObject pidOn = GenerateSwitchDevice("pidON", "Use PID"); 
+    DiscoveryObject steamON = GenerateSwitchDevice("steamON", "Steam"); 
+    DiscoveryObject backflushOn = GenerateSwitchDevice("backflushOn", "Backflush"); 
     DiscoveryObject startUsePonM = GenerateSwitchDevice("startUsePonM", "Use PonM");
 
     // Define an array to store the DiscoveryObject instances
@@ -489,6 +498,11 @@ int sendHASSIODiscoveryMsg() {
         steamON,
         backflushOn,
         startUsePonM
+
+        #if PRESSURESENSOR == 1
+            ,
+            pressure
+        #endif
     };
 
     const int numDiscoveryObjects = sizeof(discoveryObjects) / sizeof(discoveryObjects[0]);
