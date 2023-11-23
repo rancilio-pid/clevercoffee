@@ -40,6 +40,7 @@ enum MACHINE {
 #define OFFLINEGLOGO 1             // 0 = deactivated, 1 = activated
 #define SHOTTIMERDISPLAYDELAY 3000 // time in ms that shot timer will be shown after brew finished
 #define VERBOSE 0                  // 1 = Show verbose output (serial connection), 0 = show less
+#define PRESSURE_VERBOSE 0         // 1 = show verbose pressure sensor output, 0 = show none
 
 #define LANGUAGE 0                 // LANGUAGE = 0 (DE), LANGUAGE = 1 (EN), LANGUAGE = 2 (ES)
 
@@ -60,7 +61,7 @@ enum MACHINE {
 #define STEAMSWITCHTYPE 0          // 0 = no switch connected, 1 = normal switch, 2 = trigger switch
 #define OPTOCOUPLERTYPE HIGH       // BREWDETECTION 3 configuration; HIGH or LOW trigger optocoupler
 #define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay for pump & valve
-#define PRESSURESENSOR 0           // 0 = no pressure sensor connected, 1 = pressure sensor connected
+#define PRESSURESENSOR 0           // 0 = no pressure sensor connected, 1 = pressure sensor connected, 2 = ABP2 pressure sensor connected
 #define TEMP_LED 1                 // Blink status LED when temp is in range
 #define WATER_SENS 0               // 0 = no water sensor, 1 = water sensor XKC-Y25-NPN connected, 2 = XKC-Y25-PNP connected
 
