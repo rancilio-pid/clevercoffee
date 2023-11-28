@@ -154,6 +154,7 @@ void setBDPIDTunings();
 void loopcalibrate();
 void looppid();
 void loopLED();
+void loopWATER();
 void printMachineState();
 char const* machinestateEnumToString(MachineState machineState);
 void initSteamQM();
@@ -249,6 +250,7 @@ boolean setupDone = false;
 int backflushON = 0;             // 1 = backflush mode active
 int flushCycles = 0;             // number of active flush cycles
 int backflushState = 10;         // counter for state machine
+boolean waterFull = true;               // current state of water reservoir, true=full, false=empty
 
 // Moving average for software brew detection
 double tempRateAverage = 0;             // average value of temp values
@@ -2040,6 +2042,10 @@ void setup() {
         pinMode(PIN_STATUSLED, OUTPUT);
     }
 
+    if (WATER_SENS) {
+        pinMode(PIN_WATERSENSOR, INPUT_PULLUP);
+    }
+
     #if OLED_DISPLAY != 0
         u8g2.setI2CAddress(oled_i2c * 2);
         u8g2.begin();
@@ -2143,6 +2149,10 @@ void loop() {
 
     if (TEMP_LED) {
         loopLED();
+    }
+
+    if (WATER_SENS) {
+        loopWATER();
     }
 
     checkForRemoteSerialClients();
@@ -2382,6 +2392,27 @@ void loopLED() {
         digitalWrite(PIN_STATUSLED, LOW);
     }
 }
+
+void loopWATER() {
+        if (digitalRead(PIN_WATERSENSOR) == HIGH) {
+            //empty
+            if (waterFull == true)
+            {
+                debugPrintf("Water empty\n");
+            }            
+            waterFull = false;
+        } else {
+            //full
+            if (waterFull == false)
+            {
+                debugPrintf("Water full\n");
+            }                     
+            waterFull = true;
+        }
+
+    }
+
+
 
 void setBackflush(int backflush) {
     backflushON = backflush;

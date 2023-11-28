@@ -213,12 +213,22 @@ void Displaymachinestate() {
         u8g2.setFont(u8g2_font_profont17_tf);
         u8g2.print(temperature, 1);
         u8g2.sendBuffer();
+
+        //Small water empty logo
+        if (waterFull == false) {
+            //small water empty logo
+            u8g2.drawXBMP(2, 2, 8, 8, water_EMPTY_u8g2);
+		}
     }
 
     // Offline logo
     if (OFFLINEGLOGO == 1 && machineState == kPidOffline) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(38, 0, OFFLogo_width, OFFLogo_height, OFFLogo);
+        if (waterFull == false) {
+            //big water empty logo, right side
+            u8g2.drawXBMP(100, 0, water_empty_big_width, water_empty_big_height, water_EMPTY_big_u8g2);
+		}
         u8g2.setCursor(0, 55);
         u8g2.setFont(u8g2_font_profont10_tf);
         u8g2.print("PID is disabled manually");
@@ -229,6 +239,10 @@ void Displaymachinestate() {
         u8g2.clearBuffer();
         u8g2.drawXBMP(38, 0, OFFLogo_width, OFFLogo_height, OFFLogo);
         u8g2.setCursor(36, 55);
+        if (waterFull == false) {
+            //big water empty logo, right side
+            u8g2.drawXBMP(100, 0, water_empty_big_width, water_empty_big_height, water_EMPTY_big_u8g2);
+		}
         u8g2.setFont(u8g2_font_profont10_tf);
         u8g2.print("Standby mode");
         u8g2.sendBuffer();
