@@ -160,6 +160,7 @@ void printScreen()
             u8g2.print(langstring_offlinemode);
         }
 
+        displayIcons();
         u8g2.sendBuffer();
     }
 }

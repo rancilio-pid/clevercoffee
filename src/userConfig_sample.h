@@ -62,6 +62,7 @@ enum MACHINE {
 #define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay for pump & valve
 #define PRESSURESENSOR 0           // 0 = no pressure sensor connected, 1 = pressure sensor connected
 #define TEMP_LED 1                 // Blink status LED when temp is in range
+#define WATER_SENS 0               // 0 = no water sensor, 1 = water sensor XKC-Y25-NPN connected, 2 = XKC-Y25-PNP connected
 
 // Brew Scale
 #define SCALE_SAMPLES 2                     // Load cell sample rate

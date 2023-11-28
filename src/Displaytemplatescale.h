@@ -136,6 +136,7 @@ void printScreen() {
             u8g2.print("Offline Mode");
         }
 
+        displayIcons();
         u8g2.sendBuffer();
     }
 }
