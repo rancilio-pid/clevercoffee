@@ -154,7 +154,7 @@ void setBDPIDTunings();
 void loopcalibrate();
 void looppid();
 void loopLED();
-void loopWATER();
+void loopWater();
 void printMachineState();
 char const* machinestateEnumToString(MachineState machineState);
 void initSteamQM();
@@ -250,7 +250,11 @@ boolean setupDone = false;
 int backflushON = 0;             // 1 = backflush mode active
 int flushCycles = 0;             // number of active flush cycles
 int backflushState = 10;         // counter for state machine
-boolean waterFull = true;               // current state of water reservoir, true=full, false=empty
+
+//Water sensor
+boolean waterFull = true;               // current state of water reservoir. If water sensor not installed, will stay always on "true"
+unsigned long lastWaterCheck;
+const unsigned long WaterCheckInterval = 100; //Check water level every .1s
 
 // Moving average for software brew detection
 double tempRateAverage = 0;             // average value of temp values
@@ -2152,7 +2156,7 @@ void loop() {
     }
 
     if (WATER_SENS) {
-        loopWATER();
+        loopWater();
     }
 
     checkForRemoteSerialClients();
@@ -2393,23 +2397,27 @@ void loopLED() {
     }
 }
 
-void loopWATER() {
-        if (digitalRead(PIN_WATERSENSOR) == HIGH) {
-            //empty
-            if (waterFull == true)
-            {
-                debugPrintf("Water empty\n");
-            }            
-            waterFull = false;
-        } else {
-            //full
-            if (waterFull == false)
-            {
-                debugPrintf("Water full\n");
-            }                     
-            waterFull = true;
-        }
+void loopWater() {
+        if ((millis() - lastWaterCheck) > WaterCheckInterval) {
+            lastWaterCheck = millis();
 
+            //check water
+            if (digitalRead(PIN_WATERSENSOR) == HIGH) {
+                //empty
+                if (waterFull == true)
+                {
+                    debugPrintf("Water empty\n");
+                }            
+                waterFull = false;
+            } else {
+                //full
+                if (waterFull == false)
+                {
+                    debugPrintf("Water full\n");
+                }                     
+                waterFull = true;
+            }
+        }
     }
 
 
