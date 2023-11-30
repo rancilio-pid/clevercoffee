@@ -446,7 +446,7 @@ int sendHASSIODiscoveryMsg() {
   DiscoveryObject brewtime = GenerateNumberDevice("brewtime", "Brew time", BREW_TIME_MIN, BREW_TIME_MAX, 0.1, "s"); 
   // Sensor Devices 
   DiscoveryObject actual_temperature = GenerateSensorDevice("temperature", "Boiler Temperature"); 
-  DiscoveryObject heaterPower = GenerateSensorDevice("heaterPower", "Heater Power", "ms", "power_factor"); 
+  DiscoveryObject heaterPower = GenerateSensorDevice("heaterPower", "Heater Power", "%", "power_factor"); 
   DiscoveryObject machineStateDevice = GenerateSensorDevice("machineState", "Machine State", "null", "enum"); 
   // Switch Devices 
   DiscoveryObject pidOn = GenerateSwitchDevice("pidON", "Use PID"); 
