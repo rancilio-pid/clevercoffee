@@ -17,7 +17,12 @@
 #include <map>
 #include <LittleFS.h>
 
-//LEDs
+//LEDs, number is configurable
+// You could position 4 LEDs like:
+// leds[0] - middle back
+// leds[1] - middle front
+// leds[2] - left back
+// leds[3] - left front
 #include <FastLED.h>
 #define NUM_LEDS 4
 CRGB leds[NUM_LEDS];
@@ -2440,10 +2445,7 @@ void loopLED() {
         //Correct temp -> Green in back of machine
         if ((machineState == kPidNormal && (fabs(temperature  - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) 
         {
-            leds[0] = CRGB::DarkGreen; //middle back
-            leds[1] = CRGB::Black; //middle front
-            leds[2] = CRGB::Black; //left back
-            leds[3] = CRGB::Black; //left front
+            leds[0] = CRGB::DarkGreen; //middle back is switched to be green
         }
 
         //Brew coffee -> Blue
@@ -2451,7 +2453,7 @@ void loopLED() {
             fill_solid(leds, NUM_LEDS, CRGB::Navy); 
         }
 
-        //After coffee is brewed -> White light to show ready coffee for ~5s
+        //After coffee is brewed -> White light to show ready coffee for ~15s
         if (BrewFinishedLEDon > 0) {
             BrewFinishedLEDon--;
             fill_solid(leds, NUM_LEDS, CRGB::White); 
@@ -2466,7 +2468,10 @@ void loopLED() {
         
         //Error message: Red heartbeat (Water empty, sensor error, etc) - overrides all other states in LED color
         if (!waterFull || machineState == kSensorError || machineState ==  kEepromError || machineState ==  kEmergencyStop) {
-            fill_solid(leds, NUM_LEDS, CHSV(0, 250, cubicwave8(cycleLED))); //Hue of 0 is red
+            //fill_solid(leds, NUM_LEDS, CHSV(0, 250, cubicwave8(cycleLED))); //Hue of 0 is red
+            for (int i = 0; i < NUM_LEDS; i++) {
+                leds[i] = CHSV(0, 255, cubicwave8((i*64 + cycleLED)%256)); /* Hue, saturation, brightness */ 
+            }
         }
         
         FastLED.show(); 
