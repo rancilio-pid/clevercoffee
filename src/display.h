@@ -195,7 +195,8 @@ void Displaymachinestate() {
                 for (int b = 0; b <= signalBars; b++) {
                     u8g2.drawVLine(45 + (b * 2), 10 - (b * 2), b * 2);
                 }
-            } else {
+            } 
+            else {
                 u8g2.drawXBMP(40, 2, 8, 8, antenna_NOK_u8g2);
                 u8g2.setCursor(88, 1);
                 u8g2.print("RC: ");
@@ -207,12 +208,14 @@ void Displaymachinestate() {
                     u8g2.setCursor(60, 1);
                     u8g2.setFont(u8g2_font_profont11_tf);
                     u8g2.print("MQTT");
-                } else {
+                } 
+                else {
                     u8g2.setCursor(60, 2);
                     u8g2.print("");
                 }
             }
-        } else {
+        } 
+        else {
             u8g2.setCursor(40, 1);
             u8g2.print(langstring_offlinemode);
         }

@@ -2182,7 +2182,7 @@ void loop() {
         loopLED();
     }
 
-    if (WATER_SENS>0) {
+    if (WATER_SENS > 0) {
         loopWater();
     }
 
@@ -2418,55 +2418,57 @@ void looppid() {
 
 void loopLED() {
 #if TEMP_LED == 1
-        //analog LED
-        if ((machineState == kPidNormal && (fabs(temperature  - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) {
-            digitalWrite(PIN_STATUSLED, HIGH);
-        }
-        else {
-            digitalWrite(PIN_STATUSLED, LOW);
-        }
+    //analog LED
+    if ((machineState == kPidNormal && (fabs(temperature  - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) {
+        digitalWrite(PIN_STATUSLED, HIGH);
+    }
+    else {
+        digitalWrite(PIN_STATUSLED, LOW);
+    }
 #endif
 
 #if TEMP_LED == 2
     unsigned long currentMillisLED = millis();
+
     if (currentMillisLED - previousMillisLED >= intervalLED) {
         previousMillisLED = currentMillisLED;
 
-        //color cycle variable
+        // Color cycle variable
         cycleLED++;
+        
         if(cycleLED>=255)
         {
             cycleLED=0;
         }
 
-        //Heating to setpoint or Standby -> Switch LEDs off, but overwrite with other states
+        // Heating to setpoint or Standby -> Switch LEDs off, but overwrite with other states
         fill_solid(leds, NUM_LEDS, CRGB::Black); 
 
-        //Correct temp -> Green in back of machine
+        // Correct temp -> Green in back of machine
         if ((machineState == kPidNormal && (fabs(temperature  - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) 
         {
             leds[0] = CRGB::DarkGreen; //middle back is switched to be green
         }
 
-        //Brew coffee -> Blue
+        // Brew coffee -> Blue
         if (machineState == kBrew || machineState == kSteam || machineState == kBackflush) {
             fill_solid(leds, NUM_LEDS, CRGB::Navy); 
         }
 
-        //After coffee is brewed -> White light to show ready coffee for ~15s
+        // After coffee is brewed -> White light to show ready coffee for ~15s
         if (BrewFinishedLEDon > 0) {
             BrewFinishedLEDon--;
             fill_solid(leds, NUM_LEDS, CRGB::White); 
         }
 
-        //Initialize & Heat up --> Rainbow
+        // Initialize & Heat up --> Rainbow
         if (machineState == kInit || machineState == kColdStart) {
             for (int i = 0; i < NUM_LEDS; i++) {
                 leds[i] = CHSV(i*32 - (cycleLED), 255, 255); /* Hue, saturation, brightness */ 
             }
         }
         
-        //Error message: Red heartbeat (Water empty, sensor error, etc) - overrides all other states in LED color
+        // Error message: Red heartbeat (Water empty, sensor error, etc) - overrides all other states in LED color
         if (!waterFull || machineState == kSensorError || machineState ==  kEepromError || machineState ==  kEmergencyStop) {
             fill_solid(leds, NUM_LEDS, CHSV(0, 250, cubicwave8(cycleLED))); //Hue of 0 is red
             //for (int i = 0; i < NUM_LEDS; i++) {
@@ -2481,38 +2483,42 @@ void loopLED() {
 }
 
 void loopWater() {
-        if ((millis() - lastWaterCheck) > WaterCheckInterval) {
-            lastWaterCheck = millis();
+    if ((millis() - lastWaterCheck) > WaterCheckInterval) {
+        lastWaterCheck = millis();
 
-            // Check water
-            bool isWaterDetected = digitalRead(PIN_WATERSENSOR) == (WATER_SENS == 1 ? LOW : HIGH);
-        
-            if (isWaterDetected) {
-                // Water is detected, increment counter if it was previously empty
-                if (!waterFull) {
-                    WaterCheckConsecutiveReads++;
-                    if (WaterCheckConsecutiveReads >= WaterCountsNeeded) {
-                        waterFull = true;
-                        debugPrintf("Water full\n");
-                        WaterCheckConsecutiveReads = 0; // Reset counter
-                    }
-                } else {
-                    WaterCheckConsecutiveReads = 0; // Reset counter if water was already full
+        // Check water
+        bool isWaterDetected = digitalRead(PIN_WATERSENSOR) == (WATER_SENS == 1 ? LOW : HIGH);
+    
+        if (isWaterDetected) {
+            // Water is detected, increment counter if it was previously empty
+            if (!waterFull) {
+                WaterCheckConsecutiveReads++;
+                if (WaterCheckConsecutiveReads >= WaterCountsNeeded) {
+                    waterFull = true;
+                    debugPrintf("Water full\n");
+                    WaterCheckConsecutiveReads = 0; // Reset counter
                 }
-            } else {
-                // No water detected, increment counter if it was previously full
-                if (waterFull) {
-                    WaterCheckConsecutiveReads++;
-                    if (WaterCheckConsecutiveReads >= WaterCountsNeeded) {
-                        waterFull = false;
-                        debugPrintf("Water empty\n");
-                        WaterCheckConsecutiveReads = 0; // Reset counter
-                    }
-                } else {
-                    WaterCheckConsecutiveReads = 0; // Reset counter if water was already empty
+            } 
+            else {
+                WaterCheckConsecutiveReads = 0; // Reset counter if water was already full
+            }
+        } 
+        else {
+            // No water detected, increment counter if it was previously full
+            if (waterFull) {
+                WaterCheckConsecutiveReads++;
+                
+                if (WaterCheckConsecutiveReads >= WaterCountsNeeded) {
+                    waterFull = false;
+                    debugPrintf("Water empty\n");
+                    WaterCheckConsecutiveReads = 0; // Reset counter
                 }
+            } 
+            else {
+                WaterCheckConsecutiveReads = 0; // Reset counter if water was already empty
             }
         }
+    }
 }
 
 
