@@ -2468,10 +2468,10 @@ void loopLED() {
         
         //Error message: Red heartbeat (Water empty, sensor error, etc) - overrides all other states in LED color
         if (!waterFull || machineState == kSensorError || machineState ==  kEepromError || machineState ==  kEmergencyStop) {
-            //fill_solid(leds, NUM_LEDS, CHSV(0, 250, cubicwave8(cycleLED))); //Hue of 0 is red
-            for (int i = 0; i < NUM_LEDS; i++) {
-                leds[i] = CHSV(0, 255, cubicwave8((i*64 + cycleLED)%256)); /* Hue, saturation, brightness */ 
-            }
+            fill_solid(leds, NUM_LEDS, CHSV(0, 250, cubicwave8(cycleLED))); //Hue of 0 is red
+            //for (int i = 0; i < NUM_LEDS; i++) {
+            //    leds[i] = CHSV(0, 255, cubicwave8((i*64 + cycleLED)%256)); /* Hue, saturation, brightness */ 
+            //}
         }
         
         FastLED.show(); 
