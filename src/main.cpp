@@ -17,6 +17,17 @@
 #include <map>
 #include <LittleFS.h>
 
+//LEDs
+#include <FastLED.h>
+#define NUM_LEDS 4
+CRGB leds[NUM_LEDS];
+//FastLED_NeoPixel_Variant strip(leds, NUM_LEDS);
+unsigned long previousMillisLED;  // initialisation at the end of init()
+const unsigned long intervalLED = 20; //to have smooth animated LED colors
+unsigned int cycleLED = 0; //counter to 255 for color cycling
+unsigned long BrewFinishedLEDon = 0; // counter to have LED on to show coffee is ready
+#define BrewFinishedLEDonDuration 800; // Time to illuminate the ready coffee cup - 800*intervalLED = 16s
+
 #if TEMPSENSOR == 1
     #include <DallasTemperature.h>  // Library for dallas temp sensor
 #endif
@@ -2045,8 +2056,11 @@ void setup() {
         pinMode(PIN_BREWSWITCH, INPUT_PULLDOWN);
     }
 
-    if (TEMP_LED) {
+    if (TEMP_LED==1) {
         pinMode(PIN_STATUSLED, OUTPUT);
+    }
+    if (TEMP_LED==2) {
+        FastLED.addLeds<WS2811, PIN_STATUSLED>(leds, NUM_LEDS);
     }
 
     if (WATER_SENS==1) {
@@ -2291,6 +2305,7 @@ void looppid() {
     }
 #endif
 
+
     if (machineState == kPidOffline || machineState == kSensorError || machineState == kEmergencyStop || machineState == kEepromError || machineState == kStandby || brewPIDdisabled) {
         if (pidMode == 1) {
             // Force PID shutdown
@@ -2397,12 +2412,71 @@ void looppid() {
 }
 
 void loopLED() {
-    if ((machineState == kPidNormal && (fabs(temperature  - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) {
-        digitalWrite(PIN_STATUSLED, HIGH);
+#if TEMP_LED == 1
+        //analog LED
+        if ((machineState == kPidNormal && (fabs(temperature  - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) {
+            digitalWrite(PIN_STATUSLED, HIGH);
+        }
+        else {
+            digitalWrite(PIN_STATUSLED, LOW);
+        }
+#endif
+
+#if TEMP_LED == 2
+    unsigned long currentMillisLED = millis();
+    if (currentMillisLED - previousMillisLED >= intervalLED) {
+        previousMillisLED = currentMillisLED;
+
+        //color cycle variable
+        cycleLED++;
+        if(cycleLED>=255)
+        {
+            cycleLED=0;
+        }
+
+        //Heating to setpoint or Standby -> Switch LEDs off, but overwrite with other states
+        for(int i = 0; i < NUM_LEDS; i++) { leds[i] = CRGB::Black; }
+
+        //Correct temp -> Green in back of machine
+        if ((machineState == kPidNormal && (fabs(temperature  - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) 
+        {
+            leds[0] = CRGB::DarkGreen; //middle back
+            leds[1] = CRGB::Black; //middle front
+            leds[2] = CRGB::Black; //left back
+            leds[3] = CRGB::Black; //left front
+        }
+
+        //Brew coffee -> Blue
+        if (machineState == kBrew || machineState == kSteam || machineState == kBackflush) {
+            for(int i = 0; i < NUM_LEDS; i++) { leds[i] = CRGB::Navy; };
+        }
+
+        //After coffee is brewed -> White light to show ready coffee for ~5s
+        if (BrewFinishedLEDon > 0) {
+            BrewFinishedLEDon--;
+            for(int i = 0; i < NUM_LEDS; i++) { leds[i] = CRGB::White; };
+        }
+
+        //Initialize & Heat up --> Rainbow
+        if (machineState == kInit || machineState == kColdStart) {
+            for (int i = 0; i < NUM_LEDS; i++) {
+                leds[i] = CHSV(i*16 - (cycleLED), 255, 255); /* Hue, saturation, brightness */ 
+            }
+        }
+        
+        //Error message: Red heartbeat (Water empty, sensor error, etc) - overrides all other states in LED color
+        if (!waterFull || machineState == kSensorError || machineState ==  kEepromError || machineState ==  kEmergencyStop) {
+            for(int i = 0; i < NUM_LEDS; i++) 
+            { 
+                leds[i] = CRGB::Red; 
+                fill_solid(leds, NUM_LEDS, CHSV(0, 250, cubicwave8(cycleLED))); //Hue of 0 is red
+            };
+        }
+        
+        FastLED.show(); 
     }
-    else {
-        digitalWrite(PIN_STATUSLED, LOW);
-    }
+#endif
+
 }
 
 void loopWater() {
