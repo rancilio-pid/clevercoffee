@@ -2435,7 +2435,7 @@ void loopLED() {
         }
 
         //Heating to setpoint or Standby -> Switch LEDs off, but overwrite with other states
-        for(int i = 0; i < NUM_LEDS; i++) { leds[i] = CRGB::Black; }
+        fill_solid(leds, NUM_LEDS, CRGB::Black); 
 
         //Correct temp -> Green in back of machine
         if ((machineState == kPidNormal && (fabs(temperature  - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) 
@@ -2448,29 +2448,25 @@ void loopLED() {
 
         //Brew coffee -> Blue
         if (machineState == kBrew || machineState == kSteam || machineState == kBackflush) {
-            for(int i = 0; i < NUM_LEDS; i++) { leds[i] = CRGB::Navy; };
+            fill_solid(leds, NUM_LEDS, CRGB::Navy); 
         }
 
         //After coffee is brewed -> White light to show ready coffee for ~5s
         if (BrewFinishedLEDon > 0) {
             BrewFinishedLEDon--;
-            for(int i = 0; i < NUM_LEDS; i++) { leds[i] = CRGB::White; };
+            fill_solid(leds, NUM_LEDS, CRGB::White); 
         }
 
         //Initialize & Heat up --> Rainbow
         if (machineState == kInit || machineState == kColdStart) {
             for (int i = 0; i < NUM_LEDS; i++) {
-                leds[i] = CHSV(i*16 - (cycleLED), 255, 255); /* Hue, saturation, brightness */ 
+                leds[i] = CHSV(i*32 - (cycleLED), 255, 255); /* Hue, saturation, brightness */ 
             }
         }
         
         //Error message: Red heartbeat (Water empty, sensor error, etc) - overrides all other states in LED color
         if (!waterFull || machineState == kSensorError || machineState ==  kEepromError || machineState ==  kEmergencyStop) {
-            for(int i = 0; i < NUM_LEDS; i++) 
-            { 
-                leds[i] = CRGB::Red; 
-                fill_solid(leds, NUM_LEDS, CHSV(0, 250, cubicwave8(cycleLED))); //Hue of 0 is red
-            };
+            fill_solid(leds, NUM_LEDS, CHSV(0, 250, cubicwave8(cycleLED))); //Hue of 0 is red
         }
         
         FastLED.show(); 
