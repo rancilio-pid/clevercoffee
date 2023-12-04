@@ -2049,14 +2049,15 @@ void setup() {
         pinMode(PIN_STATUSLED, OUTPUT);
     }
 
-    if (WATER_SENS==1) {
+    #if WATER_SENS == 1
         //NPN
         pinMode(PIN_WATERSENSOR, INPUT_PULLUP);
-    }
-    if (WATER_SENS==2) {
+    #endif
+
+    #if WATER_SENS == 2
         //PNP
         pinMode(PIN_WATERSENSOR, INPUT_PULLDOWN);
-    }
+    #endif
 
     #if OLED_DISPLAY != 0
         u8g2.setI2CAddress(oled_i2c * 2);
@@ -2443,8 +2444,6 @@ void loopWater() {
         }
     }
 }
-
-
 
 void setBackflush(int backflush) {
     backflushON = backflush;

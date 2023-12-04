@@ -240,6 +240,7 @@ void Displaymachinestate() {
         u8g2.clearBuffer();
         u8g2.drawXBMP(38, 0, OFFLogo_width, OFFLogo_height, OFFLogo);
         u8g2.setCursor(36, 55);
+        
         if (waterFull == false) {
             //big water empty logo, right side
             u8g2.drawXBMP(100, 0, water_empty_big_width, water_empty_big_height, water_EMPTY_big_u8g2);
