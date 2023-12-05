@@ -39,12 +39,7 @@
 
 hw_timer_t *timer = NULL;
 
-//LEDs
-// You could position 4 LEDs like:
-// leds[0] - middle back
-// leds[1] - middle front
-// leds[2] - left back
-// leds[3] - left front
+//LEDs, LED[0] is the main one indicating also the correct temperature
 #include <FastLED.h>
 CRGB leds[NUM_LEDS];
 unsigned long previousMillisLED;  // initialisation at the end of init()
@@ -2058,11 +2053,11 @@ void setup() {
         pinMode(PIN_BREWSWITCH, INPUT_PULLDOWN);
     }
 
-    if (LED == 1) {
+    if (STATUS_LED == 1) {
         pinMode(PIN_STATUSLED, OUTPUT);
     }
 
-    if (LED == 2) {
+    if (STATUS_LED == 2) {
         FastLED.addLeds<RGB_LED_TYPE, PIN_STATUSLED>(leds, NUM_LEDS);
     }
 
@@ -2177,7 +2172,7 @@ void setup() {
 void loop() {
     looppid();
 
-    if (LED) {
+    if (STATUS_LED) {
         loopLED();
     }
 
@@ -2416,7 +2411,7 @@ void looppid() {
 }
 
 void loopLED() {
-#if LED == 1
+#if STATUS_LED == 1
     //analog LED
     if ((machineState == kPidNormal && (fabs(temperature  - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) {
         digitalWrite(PIN_STATUSLED, HIGH);
@@ -2426,7 +2421,7 @@ void loopLED() {
     }
 #endif
 
-#if LED == 2
+#if STATUS_LED == 2
     unsigned long currentMillisLED = millis();
 
     if (currentMillisLED - previousMillisLED >= intervalLED) {
