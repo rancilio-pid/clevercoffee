@@ -37,6 +37,8 @@
 #include "defaults.h"
 #include <os.h>
 
+hw_timer_t *timer = NULL;
+
 //LEDs, LED[0] is the main one indicating also the correct temperature
 #include <FastLED.h>
 CRGB leds[NUM_LEDS];
