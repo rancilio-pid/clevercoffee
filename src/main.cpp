@@ -60,13 +60,12 @@ MACHINE machine = (enum MACHINE)MACHINEID;
 #define HIGH_ACCURACY
 
 #include "PeriodicTrigger.h"
-PeriodicTrigger writeDebugTrigger(5000);  // returns true every 5000 ms
 PeriodicTrigger logbrew(500);
 
 enum MachineState {
     kInit = 0,
     kColdStart = 10,
-    kBelowSetpoint = 19,
+    kAtSetpoint = 19,
     kPidNormal = 20,
     kBrew = 30,
     kShotTimerAfterBrew = 31,
@@ -228,7 +227,7 @@ SysPara<uint8_t> sysParaUseBDPID(&useBDPID, 0, 1, STO_ITEM_USE_BD_PID);
 SysPara<double> sysParaBrewTime(&brewtime, BREW_TIME_MIN, BREW_TIME_MAX, STO_ITEM_BREW_TIME);
 SysPara<double> sysParaBrewSwTime(&brewtimesoftware, BREW_SW_TIME_MIN, BREW_SW_TIME_MAX, STO_ITEM_BREW_SW_TIME);
 SysPara<double> sysParaBrewThresh(&brewSensitivity, BD_THRESHOLD_MIN, BD_THRESHOLD_MAX, STO_ITEM_BD_THRESHOLD);
-SysPara<uint8_t> sysParaWifiCredentialsSaved(&wifiCredentialsSaved, WIFI_CREDENTIALS_SAVED_MIN, WIFI_CREDENTIALS_SAVED_MAX, STO_ITEM_WIFI_CREDENTIALS_SAVED);
+SysPara<uint8_t> sysParaWifiCredentialsSaved(&wifiCredentialsSaved, 0, 1, STO_ITEM_WIFI_CREDENTIALS_SAVED);
 SysPara<double> sysParaPreInfTime(&preinfusion, PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX, STO_ITEM_PRE_INFUSION_TIME);
 SysPara<double> sysParaPreInfPause(&preinfusionpause, PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, STO_ITEM_PRE_INFUSION_PAUSE);
 SysPara<double> sysParaPidKpSteam(&steamKp, PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, STO_ITEM_PID_KP_STEAM);
@@ -644,8 +643,8 @@ void initOfflineMode() {
 void checkWifi() {
     if (offlineMode == 1 || brewcounter > kBrewIdle) return;
 
-    /* if coldstart ist still true when checkWifi() is called, then there was no WIFI connection
-     * at boot -> connect or offlinemode
+    /* if coldstart is still true when checkWifi() is called, then there was no WIFI connection
+     * at boot -> connect and if it does not suceed, enter offlinemode
      */
     do {
         if ((millis() - lastWifiConnectionAttempt >= wifiConnectionDelay) && (wifiReconnects <= maxWifiReconnects)) {
@@ -654,7 +653,7 @@ void checkWifi() {
             if (statusTemp != WL_CONNECTED) {  // check WiFi connection status
                 lastWifiConnectionAttempt = millis();
                 wifiReconnects++;
-                debugPrintf("Attempting WIFI reconnection: %i\n", wifiReconnects);
+                debugPrintf("Attempting WIFI (re-)connection: %i\n", wifiReconnects);
 
                 if (!setupDone) {
                     #if OLED_DISPLAY != 0
@@ -860,6 +859,19 @@ float filterPressureValue(float input) {
  * @brief steamON & Quickmill
  */
 void checkSteamON() {
+    if (STEAMSWITCHTYPE == 0) {
+        return;
+    }
+
+    // check digital GIPO
+    if (digitalRead(PIN_STEAMSWITCH) == HIGH) {
+        steamON = 1;
+    }
+
+    // if activated via web interface then steamFirstON == 1, prevent override
+    if (digitalRead(PIN_STEAMSWITCH) == LOW && steamFirstON == 0) {
+        steamON = 0;
+    }
 
     // monitor QuickMill thermoblock steam-mode
     if (machine == QuickMill) {
@@ -872,12 +884,6 @@ void checkSteamON() {
                 steamON = 1;
             }
         }
-    }
-
-    if (steamON == 1) {
-        setpoint = steamSetpoint;
-    } else if (steamON == 0) {
-        setpoint = brewSetpoint;
     }
 }
 
@@ -920,19 +926,19 @@ boolean checkSteamOffQM() {
 void handleMachineState() {
     switch (machineState) {
         case kInit:
-            // Prevent coldstart leave by temperature 222
+            // switch state to kColdStart if temperature is below BrewSetpoint or 150°
             if (temperature < (brewSetpoint - 1) || temperature < 150) {
                 machineState = kColdStart;
                 debugPrintf("%d\n", temperature);
                 debugPrintf("%d\n", machineState);
 
-                // some users have 100 % Output in kInit / KColdstart, reset PID
+                // reset PID (some users have 100% output in kInit / KColdstart)
                 pidMode = 0;
                 bPID.SetMode(pidMode);
                 pidOutput = 0;
                 digitalWrite(PIN_HEATER, LOW);  // Stop heating
 
-                // start PID
+                // start PID again
                 pidMode = 1;
                 bPID.SetMode(pidMode);
             }
@@ -947,34 +953,32 @@ void handleMachineState() {
             break;
 
         case kColdStart:
-            /* One high temperature let the state jump to 19.
-            * switch (machinestatecold) prevent it, we wait 10 sec with new state.
-            * during the 10 sec the temperature has to be temperature >= (BrewSetpoint-1),
-            * If not, reset machinestatecold
-            */
+            // Once the temperature is above BrewSetpoint for 10 seconds, the machineState is set to kAtSetpoint.
+            // if during the 10 seconds the temperature is below BrewSetpoint again,
+            // reset machinestatecold to 0
             switch (machinestatecold) {
                 case 0:
                     if (temperature >= (brewSetpoint - 1) && temperature < 150) {
                         machinestatecoldmillis = millis();  // get millis for interval calc
                         machinestatecold = 10;              // new state
                         debugPrintln(
-                            "temperature >= (BrewSetpoint-1), wait 10 sec before machineState BelowSetpoint");
+                            "temperature >= (BrewSetpoint-1), waiting 10 sec before switching to kAtSetpoint");
                     }
                     break;
 
                 case 10:
+                    // if the temperature was not above BrewSetpoint - 1 long enough, reset machinestatecold
+                    // This way, noisy temperature errors won't switch the machineState too early
                     if (temperature < (brewSetpoint - 1)) {
-                        machinestatecold = 0;  //  temperature was only one time above
-                                               //  BrewSetpoint, reset machinestatecold
-                        debugPrintln("Reset timer for machineState BelowSetpoint: temperature < (BrewSetpoint-1)");
-
+                        machinestatecold = 0;
+                        debugPrintln("Resetting timer for kAtSetpoint: temperature < (BrewSetpoint-1) again");
                         break;
                     }
 
-                    // 10 sec temperature above BrewSetpoint, no set new state
+                    // 10 sec temperature above BrewSetpoint - 1, set new state
                     if (machinestatecoldmillis + 10 * 1000 < millis()) {
-                        machineState = kBelowSetpoint;
-                        debugPrintln("5 sec temperature >= (BrewSetpoint-1) finished, switch to state BelowSetpoint");
+                        machineState = kAtSetpoint;
+                        debugPrintln("temperature >= (BrewSetpoint-1) for 10 sec, switching to kAtSetpoint");
                     }
                     break;
             }
@@ -1020,15 +1024,15 @@ void handleMachineState() {
 
             break;
 
-        // Setpoint is below current temperature
-        case kBelowSetpoint:
-            brewDetection();
-
-            if (temperature >= (brewSetpoint)) {
+        // Current temperature is just below the setpoint
+        case kAtSetpoint:
+            // when temperature has reached BrewSetpoint properly, switch to kPidNormal
+            if (temperature >= brewSetpoint) {
                 machineState = kPidNormal;
             }
 
-            if ((timeBrewed > 0 && ONLYPID == 1) ||  // timeBrewed with Only PID
+            // is a brew running? (values are set in brewDetection() above)
+            if ((timeBrewed > 0 && ONLYPID == 1) ||
                 (ONLYPID == 0 && brewcounter > kBrewIdle && brewcounter <= kBrewFinished))
             {
                 machineState = kBrew;
@@ -1070,7 +1074,7 @@ void handleMachineState() {
             break;
 
         case kPidNormal:
-            brewDetection();     // if brew detected, set BD PID values (if enabled)
+            brewDetection();
 
             if ((timeBrewed > 0 && ONLYPID == 1) ||  // timeBrewed with Only PID
                 (ONLYPID == 0 && brewcounter > kBrewIdle && brewcounter <= kBrewFinished))
@@ -1187,6 +1191,8 @@ void handleMachineState() {
             brewDetection();
 
             if (isBrewDetected == 0) {
+                //TODO: this needs to go back to kColdStart if kPidNormal was never reached before
+                //(currently no brew detection is run during cold start though)
                 machineState = kPidNormal;
             }
 
@@ -1375,8 +1381,8 @@ char const* machinestateEnumToString(MachineState machineState) {
             return "Init";
         case kColdStart:
             return "Cold Start";
-        case kBelowSetpoint:
-            return "Set Point Negative";
+        case kAtSetpoint:
+            return "Above Set Point";
         case kPidNormal:
             return "PID Normal";
         case kBrew:
@@ -2082,7 +2088,7 @@ void setup() {
         }
     } else if (connectmode == 0) {
         wm.disconnect();              // no wm
-        readSysParamsFromStorage();   // get values from stroage
+        readSysParamsFromStorage();   // get all parameters from storage
         offlineMode = 1;              // offline mode
         pidON = 1;                    // pid on
     }
@@ -2236,6 +2242,14 @@ void looppid() {
 
     brew();
     checkSteamON();
+
+    // set setpoint depending on steam or brew mode
+    if (steamON == 1) {
+        setpoint = steamSetpoint;
+    } else if (steamON == 0) {
+        setpoint = brewSetpoint;
+    }
+
     setEmergencyStopTemp();
     checkPowerSwitch();
     checkSteamSwitch();
@@ -2285,7 +2299,7 @@ void looppid() {
     }
 
     // Set PID if first start of machine detected, and no steamON
-    if ((machineState == kInit || machineState == kColdStart || machineState == kBelowSetpoint)) {
+    if ((machineState == kInit || machineState == kColdStart || machineState == kAtSetpoint)) {
         if (usePonM) {
             if (startTn != 0) {
                 startKi = startKp / startTn;

@@ -15,7 +15,7 @@ float blinkingtempoffset = 0.3;  // offset for blinking
  * @brief Send data to display
  */
 void printScreen() {
-    if ((machineState == kBelowSetpoint || machineState == kPidNormal || machineState == kBrewDetectionTrailing) ||
+    if ((machineState == kAtSetpoint || machineState == kPidNormal || machineState == kBrewDetectionTrailing) ||
         ((machineState == kBrew || machineState == kShotTimerAfterBrew) && SHOTTIMER == 0) ||  // shottimer == 0, auch Bezug anzeigen
         machineState == kCoolDown || ((machineState == kInit || machineState == kColdStart) && HEATINGLOGO == 0) ||
         ((machineState == kPidOffline) && OFFLINEGLOGO == 0)) {

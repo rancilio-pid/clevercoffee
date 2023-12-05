@@ -202,8 +202,6 @@ String getHeader(String varName) {
 }
 
 String staticProcessor(const String& var) {
-    skipHeaterISR = true;
-
     //try replacing var for variables in editableVars
     if (var.startsWith("VAR_SHOW_")) {
         return getValue(var.substring(9)); // cut off "VAR_SHOW_"
@@ -229,8 +227,6 @@ String staticProcessor(const String& var) {
     } else {
         debugPrintf("Fragment %s not found\n", varLower.c_str());
     }
-
-    skipHeaterISR = false;
 
     //didn't find a value for the var, replace var with empty string
     return String();
@@ -268,10 +264,6 @@ void serverSetup() {
     });
 
     server.on("/parameters", HTTP_GET | HTTP_POST, [](AsyncWebServerRequest *request) {
-        // stop writing to heater in ISR method (digitalWrite) as it causes
-        // crashes when called at the same time as flash is read or written
-        skipHeaterISR = true;
-
         // Determine the size of the document to allocate based on the number
         // of parameters
         // GET = either
@@ -361,7 +353,6 @@ void serverSetup() {
             request->send(404, "application/json",
                             F("{ \"code\": 404, \"message\": "
                             "\"Parameter not found\"}"));
-            skipHeaterISR = false;
             return;
         }
 
@@ -380,23 +371,18 @@ void serverSetup() {
         }
         const String& varValue = p->value();
 
-        skipHeaterISR = true;
-
         try {
             editable_t e = editableVars.at(varValue);
             doc["name"] = varValue;
             doc["helpText"] = e.helpText;
         } catch (const std::out_of_range &exc) {
             request->send(404, "application/json", "parameter not found");
-            skipHeaterISR = false;
             return;
         }
 
         String helpJson;
         serializeJson(doc, helpJson);
         request->send(200, "application/json", helpJson);
-
-        skipHeaterISR = false;
     });
 
     server.on("/temperatures", HTTP_GET, [](AsyncWebServerRequest *request) {

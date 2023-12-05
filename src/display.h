@@ -263,7 +263,7 @@ void Displaymachinestate() {
         }
     }
 
-    // PID Off Logo
+    // PID Off
     if (machineState == kEmergencyStop) {
         u8g2.clearBuffer();
         u8g2.setFont(u8g2_font_profont11_tf);

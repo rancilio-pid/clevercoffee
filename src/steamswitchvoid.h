@@ -14,7 +14,9 @@ unsigned long lastDebounceTimeSteamTrigger = 0;     // the last time the output 
 unsigned long debounceDelaySteamTrigger = 50;       // the debounce time; increase if the output flickers
 
 void checkSteamSwitch() {
-    #if STEAMSWITCHTYPE == 1
+    #if STEAMSWITCHTYPE == 0
+        return;
+    #elif STEAMSWITCHTYPE == 1
         // Set steamON to 1 when steamswitch is HIGH
         if (digitalRead(PIN_STEAMSWITCH) == HIGH) {
             steamON = 1;
@@ -24,9 +26,7 @@ void checkSteamSwitch() {
         if (digitalRead(PIN_STEAMSWITCH) == LOW && steamFirstON == 0) {
             steamON = 0;
         }
-    #endif
-
-    #if STEAMSWITCHTYPE == 2  // TRIGGER
+    #elif STEAMSWITCHTYPE == 2  // TRIGGER
         int reading = digitalRead(PIN_STEAMSWITCH);
 
         if (reading != lastSteamSwitchTrigger) {
@@ -56,6 +56,5 @@ void checkSteamSwitch() {
         }
 
         lastSteamSwitchTrigger = reading;
-
     #endif
 }
