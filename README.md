@@ -19,7 +19,7 @@ Additional features include:
 * brew by time
 * pressure monitoring
 
-The hardware has a small footprint and can easily fit into most smaller espresso machines. The original wiring of the machine (mostly) remains and is only extended. The machine can be easily reversed to the orignal state after the conversion.
+The hardware has a small footprint and can easily fit into most smaller espresso machines. The original wiring of the machine (mostly) remains and is only extended. The machine can be easily reversed to the original state after the conversion.
 
 The project has been in active development and supported for 4 years with continuous improvements. Hundreds of machines have been converted to PID control already.
 
