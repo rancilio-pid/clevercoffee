@@ -4,9 +4,6 @@
  * @brief Embedded webserver
  */
 
-#ifndef rancilioserver_h
-#define rancilioserver_h
-
 #include <Arduino.h>
 
 #ifdef ESP32
@@ -16,8 +13,8 @@
 #elif defined(ESP8266)
     #include <ESP8266WiFi.h>
     #include <ESPAsyncTCP.h>
-    #define WEBSERVER_H
 #endif
+
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
 
@@ -581,5 +578,3 @@ void sendTempEvent(double currentTemp, double targetTemp, double heaterPower) {
     events.send("ping", NULL, millis());
     events.send(getTempString().c_str(), "new_temps", millis());
 }
-
-#endif

@@ -1,28 +1,5 @@
 #include "debugSerial.h"
 
-//server for monitor connections
-WiFiServer SerialServer(23);
-WiFiClient RemoteSerial;
-
-void startRemoteSerialServer() {
-    SerialServer.begin();
-}
-
-void checkForRemoteSerialClients() {
-    if (SerialServer.hasClient()) {
-        // If we are already connected to another client,
-        // then reject the new connection. Otherwise accept
-        // the connection.
-        if (RemoteSerial.connected()) {
-            debugPrintln("Serial Server Connection rejected");
-            SerialServer.available().stop();
-        }
-        else {
-            debugPrintln("Serial Server Connection accepted");
-            RemoteSerial = SerialServer.available();
-        }
-    }
-}
 
 void getCurrentTimeString(char *output) {
     time_t rawtime;
@@ -36,25 +13,17 @@ void getCurrentTimeString(char *output) {
 void debugPrintln(const char *message) {
     char time[12];
     getCurrentTimeString(time);
-    if (RemoteSerial.connected()) {
-        RemoteSerial.print(time);
-        RemoteSerial.println(message);
-    } else {
-        Serial.print(time);
-        Serial.println(message);
-    }
+
+    Serial.print(time);
+    Serial.println(message);
 }
 
 void debugPrint(const char *message) {
     char time[12];
     getCurrentTimeString(time);
-    if (RemoteSerial.connected()) {
-        RemoteSerial.print(time);
-        RemoteSerial.print(message);
-    } else {
-        Serial.print(time);
-        Serial.print(message);
-    }
+
+    Serial.print(time);
+    Serial.print(message);
 }
 
 size_t debugPrintf(const char *format, ...) {
@@ -82,13 +51,8 @@ size_t debugPrintf(const char *format, ...) {
     char time[12];
     getCurrentTimeString(time);
 
-    if (RemoteSerial.connected()) {
-        len = RemoteSerial.print(time);        
-        len += RemoteSerial.print(buffer);
-    } else {
-        len = Serial.print(time);
-        len += Serial.print(buffer);
-    }
+    len = Serial.print(time);
+    len += Serial.print(buffer);
 
     if (buffer != temp) {
         delete[] buffer;

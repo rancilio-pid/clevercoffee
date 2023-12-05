@@ -46,7 +46,8 @@ enum MACHINE {
 // Connectivity
 #define CONNECTMODE 1              // 0 = offline 1 = WIFI-MODE
 #define HOSTNAME "silvia"
-#define PASS "CleverCoffee"        // default password for WiFiManager
+#define WIFI_SSID "yourSSID"       // SSID of your WiFi network
+#define WIFI_PASS "yourWiFiPass"   // WPA key to your WiFi network
 #define MAXWIFIRECONNECTS 5        // maximum number of reconnection attempts, use -1 to deactivate
 #define WIFICONNECTIONDELAY 10000  // delay between reconnects in ms
 

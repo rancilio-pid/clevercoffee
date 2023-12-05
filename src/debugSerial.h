@@ -1,7 +1,7 @@
 /**
  * @file debugSerial.h
  *
- * @brief Logging methods using either serial or network port
+ * @brief Debug logging
  */
 
 #ifndef debugserial_h
@@ -9,11 +9,8 @@
 
 #include <ctime>
 #include <cstdio>
+#include <Arduino.h>
 
-#include <WiFiManager.h>
-
-void startRemoteSerialServer();
-void checkForRemoteSerialClients();
 void debugPrint(const char *message);
 void debugPrintln(const char *message);
 size_t debugPrintf(const char *format, ...);
