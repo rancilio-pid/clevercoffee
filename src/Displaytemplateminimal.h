@@ -41,7 +41,7 @@ void printScreen() {
             }
 
             // Draw temp, blink if TEMP_LED is not enabled
-            if ((fabs(temperature - setpoint) < 0.3) && !TEMP_LED) {
+            if ((fabs(temperature - setpoint) < 0.3) && !STATUS_LED) {
                 if (isrCounter < 500) {
                     // limit to 4 characters
                     u8g2.setCursor(2, 2);
