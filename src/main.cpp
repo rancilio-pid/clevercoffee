@@ -17,22 +17,6 @@
 #include <map>
 #include <LittleFS.h>
 
-//LEDs, number is configurable
-// You could position 4 LEDs like:
-// leds[0] - middle back
-// leds[1] - middle front
-// leds[2] - left back
-// leds[3] - left front
-#include <FastLED.h>
-#define NUM_LEDS 4
-CRGB leds[NUM_LEDS];
-//FastLED_NeoPixel_Variant strip(leds, NUM_LEDS);
-unsigned long previousMillisLED;  // initialisation at the end of init()
-const unsigned long intervalLED = 20; //to have smooth animated LED colors
-unsigned int cycleLED = 0; //counter to 255 for color cycling
-unsigned long BrewFinishedLEDon = 0; // counter to have LED on to show coffee is ready
-#define BrewFinishedLEDonDuration 800; // Time to illuminate the ready coffee cup - 800*intervalLED = 16s
-
 #if TEMPSENSOR == 1
     #include <DallasTemperature.h>  // Library for dallas temp sensor
 #endif
@@ -55,6 +39,19 @@ unsigned long BrewFinishedLEDon = 0; // counter to have LED on to show coffee is
 
 hw_timer_t *timer = NULL;
 
+//LEDs
+// You could position 4 LEDs like:
+// leds[0] - middle back
+// leds[1] - middle front
+// leds[2] - left back
+// leds[3] - left front
+#include <FastLED.h>
+CRGB leds[NUM_LEDS];
+unsigned long previousMillisLED;  // initialisation at the end of init()
+const unsigned long intervalLED = 20; // to have smooth animated LED colors
+unsigned int cycleLED = 0; // counter to 255 for color cycling
+unsigned long BrewFinishedLEDon = 0; // counter to have LED on to show coffee is ready
+#define BrewFinishedLEDonDuration 800; // Time to illuminate the ready coffee cup - 800*intervalLED = 16s
 
 #if OLED_DISPLAY == 3
 #include <SPI.h>
@@ -2061,11 +2058,12 @@ void setup() {
         pinMode(PIN_BREWSWITCH, INPUT_PULLDOWN);
     }
 
-    if (TEMP_LED==1) {
+    if (LED == 1) {
         pinMode(PIN_STATUSLED, OUTPUT);
     }
-    if (TEMP_LED==2) {
-        FastLED.addLeds<WS2811, PIN_STATUSLED>(leds, NUM_LEDS);
+
+    if (LED == 2) {
+        FastLED.addLeds<RGB_LED_TYPE, PIN_STATUSLED>(leds, NUM_LEDS);
     }
 
     #if WATER_SENS == 1
@@ -2179,7 +2177,7 @@ void setup() {
 void loop() {
     looppid();
 
-    if (TEMP_LED) {
+    if (LED) {
         loopLED();
     }
 
@@ -2418,7 +2416,7 @@ void looppid() {
 }
 
 void loopLED() {
-#if TEMP_LED == 1
+#if LED == 1
     //analog LED
     if ((machineState == kPidNormal && (fabs(temperature  - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) {
         digitalWrite(PIN_STATUSLED, HIGH);
@@ -2428,7 +2426,7 @@ void loopLED() {
     }
 #endif
 
-#if TEMP_LED == 2
+#if LED == 2
     unsigned long currentMillisLED = millis();
 
     if (currentMillisLED - previousMillisLED >= intervalLED) {
@@ -2472,9 +2470,6 @@ void loopLED() {
         // Error message: Red heartbeat (Water empty, sensor error, etc) - overrides all other states in LED color
         if (!waterFull || machineState == kSensorError || machineState ==  kEepromError || machineState ==  kEmergencyStop) {
             fill_solid(leds, NUM_LEDS, CHSV(0, 250, cubicwave8(cycleLED))); //Hue of 0 is red
-            //for (int i = 0; i < NUM_LEDS; i++) {
-            //    leds[i] = CHSV(0, 255, cubicwave8((i*64 + cycleLED)%256)); /* Hue, saturation, brightness */ 
-            //}
         }
         
         FastLED.show(); 

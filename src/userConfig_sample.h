@@ -62,7 +62,9 @@ enum MACHINE {
 #define VOLTAGESENSORTYPE HIGH     // BREWDETECTION 3 configuration
 #define PINMODEVOLTAGESENSOR INPUT // Mode INPUT_PULLUP, INPUT or INPUT_PULLDOWN_16 (Only Pin 16)
 #define PRESSURESENSOR 0           // 0 = no pressure sensor connected, 1 = pressure sensor connected
-#define TEMP_LED 1                 // Blink status LED when temp is in range
+#define LED 2                      // Blink status LED when temp is in range, 0 = no LED, 1 = analog LED, 2 = RGB adressable LED
+#define RGB_LED_TYPE WS2811        // In case of TEMP_LED==2, state type of LED
+#define NUM_LEDS 4                 // Number of LEDs attached - not considered if TEMP_LED above is zero
 #define WATER_SENS 0               // 0 = no water sensor, 1 = water sensor XKC-Y25-NPN connected, 2 = XKC-Y25-PNP connected
 
 // Brew Scale
