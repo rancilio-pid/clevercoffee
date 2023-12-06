@@ -3,13 +3,13 @@
  *
  * @brief Main sketch
  *
- * @version 3.2.0 Master
+ * @version 3.3.0 Master
  */
 
 // Firmware version
 #define FW_VERSION    3
-#define FW_SUBVERSION 2
-#define FW_HOTFIX     1
+#define FW_SUBVERSION 3
+#define FW_HOTFIX     0
 
 #define FW_BRANCH     "ESP8222-MASTER"
 
@@ -791,6 +791,7 @@ void checkMQTT() {
             debugPrintf("Attempting MQTT reconnection: %i\n", MQTTReCnctCount);
 
             if (mqtt.connect(hostname, mqtt_username, mqtt_password, topic_will, 0, 0, "offline") == true) {
+                MQTTReCnctCount = 0;
                 mqtt.subscribe(topic_set);
                 debugPrintln("Subscribe to MQTT Topics");
             }   // Try to reconnect to the server; connect() is a blocking
