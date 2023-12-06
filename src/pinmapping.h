@@ -25,7 +25,8 @@
 #define PIN_PRESSURESENSOR 36
 #define PIN_WATERSENSOR 23
 #define PIN_FLOWSENSOR 1
-#define PIN_HXDAT 32            // Brew scale data pin
+#define PIN_HXDAT 32            // Brew scale data pin 1
+#define PIN_HXDAT2 25           // Brew scale data pin 2
 #define PIN_HXCLK 33            // Brew scale clock pin
 
 
@@ -40,6 +41,7 @@
 
 // LEDs
 #define PIN_STATUSLED 26
+#define PIN_BREWLED 36
 
 // Periphery
 #define PIN_ZC 18               // Dimmer circuit Zero Crossing
