@@ -35,7 +35,7 @@ Video tutorial on how to flash the firmware (a little outdated but mostly still 
 https://youtu.be/KZPjisOEcQ4
 
 ## Version
-With Version 3.2.0 we bring the last major release with support for ESP8266 and ESP32.
+With Version 3.3.0 we bring the last major release with support for ESP8266 and ESP32.
 There will only be bug fix releases for ESP8266 from there on. 
 Further development, with new features, will only be done for ESP32.
 "master" branch contains the current development only for esp32.
