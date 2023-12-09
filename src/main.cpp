@@ -438,6 +438,10 @@ const unsigned long intervalDisplay = 500;
         #include "Displaytemplatescale.h"
     #endif
 
+    #if (DISPLAYTEMPLATE == 5)
+        #include "Displaytemplatenew.h"
+    #endif    
+
     #if (DISPLAYTEMPLATE == 20)
         #include "Displaytemplateupright.h"
     #endif
