@@ -119,7 +119,7 @@ void printScreen() {
             }
 
             displayIcons();
-            u8g2.sendBuffer();sendBufferWithIcons();
+            u8g2.sendBuffer();
         }
     }
 }

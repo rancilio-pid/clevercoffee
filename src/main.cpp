@@ -37,8 +37,6 @@
 #include "defaults.h"
 #include <os.h>
 
-hw_timer_t *timer = NULL;
-
 //LEDs, LED[0] is the main one indicating also the correct temperature
 #include <FastLED.h>
 CRGB leds[NUM_LEDS];
@@ -47,6 +45,8 @@ const unsigned long intervalLED = 20; // to have smooth animated LED colors
 unsigned int cycleLED = 0; // counter to 255 for color cycling
 unsigned long BrewFinishedLEDon = 0; // counter to have LED on to show coffee is ready
 #define BrewFinishedLEDonDuration 800; // Time to illuminate the ready coffee cup - 800*intervalLED = 16s
+
+hw_timer_t *timer = NULL;
 
 #if OLED_DISPLAY == 3
 #include <SPI.h>
@@ -175,6 +175,7 @@ float filterPressureValue(float input);
 int writeSysParamsToMQTT(bool continueOnError);
 void updateStandbyTimer(void);
 void resetStandbyTimer(void);
+void statusLEDSetup(void);
 
 
 // system parameters
@@ -634,6 +635,7 @@ void refreshTemp() {
 #include "powerswitchvoid.h"
 #include "steamswitchvoid.h"
 #include "scalevoid.h"
+#include "StatusLEDvoid.h"
 
 /**
  * @brief Switch to offline mode if maxWifiReconnects were exceeded during boot
@@ -2121,13 +2123,7 @@ void setup() {
         pinMode(PIN_BREWSWITCH, INPUT_PULLDOWN);
     }
 
-    if (STATUS_LED == 1) {
-        pinMode(PIN_STATUSLED, OUTPUT);
-    }
-
-    if (STATUS_LED == 2) {
-        FastLED.addLeds<RGB_LED_TYPE, PIN_STATUSLED>(leds, NUM_LEDS);
-    }
+    statusLEDSetup();
 
     #if WATER_SENS == 1
         //NPN
@@ -2486,76 +2482,6 @@ void looppid() {
         bPID.SetTunings(aggbKp, aggbKi, aggbKd, 1);
     }
     // sensor error OR Emergency Stop
-}
-
-void loopLED() {
-#if STATUS_LED == 1
-    //analog LED
-    if ((machineState == kPidNormal && (fabs(temperature  - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) {
-        digitalWrite(PIN_STATUSLED, HIGH);
-    }
-    else {
-        digitalWrite(PIN_STATUSLED, LOW);
-    }
-#endif
-
-#if STATUS_LED == 2
-    unsigned long currentMillisLED = millis();
-
-    if (currentMillisLED - previousMillisLED >= intervalLED) {
-        previousMillisLED = currentMillisLED;
-
-        // Color cycle variable
-        cycleLED++;
-        
-        if(cycleLED>=255)
-        {
-            cycleLED=0;
-        }
-
-        // Heating to setpoint or Standby -> Switch LEDs off, but overwrite with other states
-        fill_solid(leds, NUM_LEDS, CRGB::Black); 
-
-        // Correct temp -> Green in back of machine
-        if ((machineState == kPidNormal && (fabs(temperature  - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) 
-        {
-            leds[0] = CRGB::DarkGreen; //middle back is switched to be green
-        }
-
-        // [For LED_BEHAVIOUR 2]: Brew coffee -> Blue
-        if (LED_BEHAVIOUR == 2 && (machineState == kBrew || machineState == kSteam || machineState == kBackflush)) {
-            fill_solid(leds, NUM_LEDS, CRGB::Navy); 
-        }
-
-        // After coffee is brewed -> White light to show ready coffee for ~15s
-        if (BrewFinishedLEDon > 0) {
-            BrewFinishedLEDon--;
-            fill_solid(leds, NUM_LEDS, CRGB::White); 
-        }
-
-        // [For LED_BEHAVIOUR 2]: Initialize & Heat up --> Rainbow
-        if (LED_BEHAVIOUR == 2 && (machineState == kInit || machineState == kColdStart) ) {
-            for (int i = 0; i < NUM_LEDS; i++) {
-                leds[i] = CHSV(i*32 - (cycleLED), 255, 255); /* Hue, saturation, brightness */ 
-            }
-        }
-        
-        // Error message: Red (Water empty, sensor error, etc) - overrides all other states in LED color
-        if (!waterFull || machineState == kSensorError || machineState ==  kEepromError || machineState ==  kEmergencyStop) {
-            if (LED_BEHAVIOUR == 2) {
-                // [For LED_BEHAVIOUR 2]: Red heartbeat
-                fill_solid(leds, NUM_LEDS, CHSV(0, 250, cubicwave8(cycleLED))); //Hue of 0 is red
-            }
-            else {
-                // [For LED_BEHAVIOUR 1]: Solid red color
-                fill_solid(leds, NUM_LEDS, CRGB::Red); 
-            }
-        }
-        
-        FastLED.show(); 
-    }
-#endif
-
 }
 
 void loopWater() {
