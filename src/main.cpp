@@ -878,39 +878,6 @@ float filterPressureValue(float input) {
     return inSum;
 }
 
-
-/**
- * @brief steamON & Quickmill
- */
-void checkSteamON() {
-    if (STEAMSWITCHTYPE == 0) {
-        return;
-    }
-
-    // check digital GIPO
-    if (digitalRead(PIN_STEAMSWITCH) == HIGH) {
-        steamON = 1;
-    }
-
-    // if activated via web interface then steamFirstON == 1, prevent override
-    if (digitalRead(PIN_STEAMSWITCH) == LOW && steamFirstON == 0) {
-        steamON = 0;
-    }
-
-    // monitor QuickMill thermoblock steam-mode
-    if (machine == QuickMill) {
-        if (steamQM_active == true) {
-            if (checkSteamOffQM() == true) {  // if true: steam-mode can be turned off
-                steamON = 0;
-                steamQM_active = false;
-                lastTimePVSwasON = 0;
-            } else {
-                steamON = 1;
-            }
-        }
-    }
-}
-
 void setEmergencyStopTemp() {
     if (machineState == kSteam || machineState == kCoolDown) {
         if (EmergencyStopTemp != 145) EmergencyStopTemp = 145;
@@ -2337,7 +2304,8 @@ void looppid() {
         brew();
     }
 
-    checkSteamON();
+    checkSteamSwitch();
+    checkPowerSwitch();
 
     // set setpoint depending on steam or brew mode
     if (steamON == 1) {
@@ -2347,8 +2315,6 @@ void looppid() {
     }
 
     setEmergencyStopTemp();
-    checkPowerSwitch();
-    checkSteamSwitch();
 
     if (standbyModeOn && machineState != kStandby) {
         updateStandbyTimer();
