@@ -308,7 +308,8 @@ void Displaymachinestate() {
         u8g2.print(temperature);
         u8g2.print("°C");
         u8g2.setFontPosTop();
-        sendBufferWithIcons();
+        displayIcons();
+        u8g2.sendBuffer();;
     }
 
     // Backflush
