@@ -81,6 +81,7 @@ enum MachineState {
     kSteam = 40,
     kCoolDown = 45,
     kBackflush = 50,
+    kWaterEmpty = 70,
     kEmergencyStop = 80,
     kPidOffline = 90,
     kStandby = 95,
@@ -968,6 +969,10 @@ void handleMachineState() {
                 machineState = kPidOffline;
             }
 
+            if (!waterFull) {
+                machineState = kWaterEmpty;
+            }
+
             if (sensorError) {
                 machineState = kSensorError;
             }
@@ -1039,6 +1044,10 @@ void handleMachineState() {
                 machineState = kPidOffline;
             }
 
+            if (!waterFull) {
+                machineState = kWaterEmpty;
+            }
+
             if (sensorError) {
                 machineState = kSensorError;
             }
@@ -1086,6 +1095,10 @@ void handleMachineState() {
 
             if (pidON == 0 && machineState != kStandby) {
                 machineState = kPidOffline;
+            }
+
+            if (!waterFull) {
+                machineState = kWaterEmpty;
             }
 
             if (sensorError) {
@@ -1136,9 +1149,14 @@ void handleMachineState() {
                 machineState = kPidOffline;
             }
 
+            if (!waterFull) {
+                machineState = kWaterEmpty;
+            }
+
             if (sensorError) {
                 machineState = kSensorError;
             }
+
             break;
 
         case kBrew:
@@ -1203,6 +1221,10 @@ void handleMachineState() {
                 machineState = kPidOffline;
             }
 
+            if (!waterFull) {
+                machineState = kWaterEmpty;
+            }
+
             if (sensorError) {
                 machineState = kSensorError;
             }
@@ -1239,6 +1261,10 @@ void handleMachineState() {
                 machineState = kPidOffline;
             }
 
+            if (!waterFull) {
+                machineState = kWaterEmpty;
+            }
+
             if (sensorError) {
                 machineState = kSensorError;
             }
@@ -1259,6 +1285,10 @@ void handleMachineState() {
 
             if (pidON == 0) {
                 machineState = kPidOffline;
+            }
+
+            if (!waterFull) {
+                machineState = kWaterEmpty;
             }
 
             if (sensorError) {
@@ -1301,6 +1331,10 @@ void handleMachineState() {
                 machineState = kPidOffline;
             }
 
+            if (!waterFull) {
+                machineState = kWaterEmpty;
+            }
+
             if (sensorError) {
                 machineState = kSensorError;
             }
@@ -1319,6 +1353,10 @@ void handleMachineState() {
                 machineState = kPidOffline;
             }
 
+            if (!waterFull) {
+                machineState = kWaterEmpty;
+            }
+
             if (sensorError) {
                 machineState = kSensorError;
             }
@@ -1326,6 +1364,20 @@ void handleMachineState() {
 
         case kEmergencyStop:
             if (!emergencyStop) {
+                machineState = kPidNormal;
+            }
+
+            if (pidON == 0) {
+                machineState = kPidOffline;
+            }
+
+            if (sensorError) {
+                machineState = kSensorError;
+            }
+            break;
+
+        case kWaterEmpty:
+            if (waterFull) {
                 machineState = kPidNormal;
             }
 
@@ -1348,6 +1400,10 @@ void handleMachineState() {
                     machineState = kColdStart;  // temperature 10C below set point, enter cold start
                     coldstart = true;
                 }
+            }
+
+            if (!waterFull) {
+                machineState = kWaterEmpty;
             }
 
             if (sensorError) {
@@ -1418,6 +1474,8 @@ char const* machinestateEnumToString(MachineState machineState) {
             return "Cool Down";
         case kBackflush:
             return "Backflush";
+        case kWaterEmpty:
+            return "Water Empty";
         case kEmergencyStop:
             return "Emergency Stop";
         case kPidOffline:
@@ -2279,7 +2337,10 @@ void looppid() {
         checkPressure();
     #endif
 
-    brew();
+    if(machineState != kWaterEmpty) {
+        brew();
+    }
+
     checkSteamON();
 
     // set setpoint depending on steam or brew mode
@@ -2322,8 +2383,7 @@ void looppid() {
     }
 #endif
 
-
-    if (machineState == kPidOffline || machineState == kSensorError || machineState == kEmergencyStop || machineState == kEepromError || machineState == kStandby || brewPIDdisabled) {
+    if (machineState == kPidOffline || machineState == kWaterEmpty || machineState == kSensorError || machineState == kEmergencyStop || machineState == kEepromError || machineState == kStandby || brewPIDdisabled) {
         if (pidMode == 1) {
             // Force PID shutdown
             pidMode = 0;

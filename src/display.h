@@ -31,18 +31,12 @@ void displayWaterIcon() {
             u8g2.drawXBMP(119, 2, 8, 8, water_EMPTY_u8g2);
 		}
 }
-void displayWaterBigIcon() {
-        if (!waterFull) {
-            //big water empty logo, right side
-            u8g2.drawXBMP(100, 0, water_empty_big_width, water_empty_big_height, water_EMPTY_big_u8g2);
-		}
-}
+
 /**
- * Modified "sendbuffer" to always show indicators along other information
+ * Collector to always show indicators along all the other information
  */
-void sendBufferWithIcons() {
+void displayIcons() {
     displayWaterIcon();
-    u8g2.sendBuffer();
 }
 
 /**
@@ -62,7 +56,8 @@ void displayMessage(String text1, String text2, String text3, String text4, Stri
     u8g2.print(text5);
     u8g2.setCursor(0, 50);
     u8g2.print(text6);
-    sendBufferWithIcons();
+    displayIcons();
+    u8g2.sendBuffer();
 }
 
 
@@ -96,7 +91,8 @@ void displayLogo(String displaymessagetext, String displaymessagetext2) {
                             startLogoQuickMill_bits);
             break;
     }
-    sendBufferWithIcons();
+    displayIcons();
+    u8g2.sendBuffer();
 }
 
 /**
@@ -110,7 +106,8 @@ void displayDistance(int display_distance) {
     u8g2.setFont(u8g2_font_fub20_tf);
     u8g2.printf("%d", display_distance);
     u8g2.print("mm");
-    sendBufferWithIcons();
+    displayIcons();
+    u8g2.sendBuffer();
 }
 
 /**
@@ -126,7 +123,8 @@ void displayShottimer(void) {
         u8g2.setCursor(64, 25);
         u8g2.print(timeBrewed / 1000, 1);
         u8g2.setFont(u8g2_font_profont11_tf);
-        sendBufferWithIcons();
+        displayIcons();
+        u8g2.sendBuffer();
     }
 
     /* if the totalBrewTime is reached automatically,
@@ -140,7 +138,8 @@ void displayShottimer(void) {
         u8g2.setCursor(64, 25);
         u8g2.print(lastbrewTime / 1000, 1);
         u8g2.setFont(u8g2_font_profont11_tf);
-        sendBufferWithIcons();
+        displayIcons();
+        u8g2.sendBuffer();;
     }
 
     #if (ONLYPIDSCALE == 1 || BREWMODE == 2)
@@ -157,7 +156,8 @@ void displayShottimer(void) {
             u8g2.print(weightBrew, 0);
             u8g2.print("g");
             u8g2.setFont(u8g2_font_profont11_tf);
-            sendBufferWithIcons();
+            displayIcons();
+            u8g2.sendBuffer();
         }
 
         if (((machineState == kShotTimerAfterBrew) && SHOTTIMER == 2)) {
@@ -171,7 +171,8 @@ void displayShottimer(void) {
             u8g2.print(weightBrew, 0);
             u8g2.print(" g");
             u8g2.setFont(u8g2_font_profont11_tf);
-            sendBufferWithIcons();
+            displayIcons();
+            u8g2.sendBuffer();;
         }
     #endif
 }
@@ -238,7 +239,8 @@ void Displaymachinestate() {
         u8g2.setCursor(92, 30);
         u8g2.setFont(u8g2_font_profont17_tf);
         u8g2.print(temperature, 1);
-        sendBufferWithIcons();
+        displayIcons();
+        u8g2.sendBuffer();;
     }
 
     // Offline logo
@@ -248,7 +250,8 @@ void Displaymachinestate() {
         u8g2.setCursor(0, 55);
         u8g2.setFont(u8g2_font_profont10_tf);
         u8g2.print("PID is disabled manually");
-        sendBufferWithIcons();
+        displayIcons();
+        u8g2.sendBuffer();
     }
 
     if (OFFLINEGLOGO == 1 && machineState == kStandby) {
@@ -257,7 +260,8 @@ void Displaymachinestate() {
         u8g2.setCursor(36, 55);
         u8g2.setFont(u8g2_font_profont10_tf);
         u8g2.print("Standby mode");
-        sendBufferWithIcons();
+        displayIcons();
+        u8g2.sendBuffer();;
     }
 
     // Steam
@@ -268,7 +272,26 @@ void Displaymachinestate() {
         u8g2.setFont(u8g2_font_profont22_tf);
         u8g2.print(temperature, 0);
         u8g2.setCursor(64, 25);
-        sendBufferWithIcons();
+        displayIcons();
+        u8g2.sendBuffer();;
+    }
+
+    // Water empty
+    if (machineState == kWaterEmpty) {
+        u8g2.clearBuffer();
+        u8g2.setFontPosBottom();
+        u8g2.setFont(u8g2_font_profont22_tr);
+        u8g2.drawStr(53, 26, "Fill");
+        u8g2.drawStr(59, 42, "water");
+        u8g2.drawXBMP( 3, 0, water_empty_big_width, water_empty_big_height, water_EMPTY_big_u8g2); 
+        u8g2.setFont(u8g2_font_profont11_tf);
+        u8g2.setCursor(80, 64);
+        u8g2.print(temperature);
+        u8g2.print((char)176);
+        u8g2.print("C");
+        u8g2.setFontPosTop();
+        displayIcons();
+        u8g2.sendBuffer();;
     }
 
     // Backflush
@@ -318,7 +341,8 @@ void Displaymachinestate() {
             u8g2.print("PID STOPPED");
         }
 
-        sendBufferWithIcons();
+        displayIcons();
+        u8g2.sendBuffer();;
     }
 
     if (machineState == kSensorError) {

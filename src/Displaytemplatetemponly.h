@@ -64,7 +64,7 @@ void printScreen() {
             u8g2.print("O");
         }
 
-        sendBufferWithIcons();
-
+        displayIcons();
+        u8g2.sendBuffer();
     }
 }
