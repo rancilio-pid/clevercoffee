@@ -45,9 +45,9 @@ static const char *langstring_backflush_finish = "zum Beenden...";
 #define LANGSTRING_MENU_TIMES "Zeiten"
 #define LANGSTRING_MENU_BREWTIME "Bezugsdauer"
 #define LANGSTRING_MENU_PREINFUSIONTIME "Praeinfusionsdauer"
-#define LANGSTRING_MENU_PREINFUSIONPAUSETIME "Praeinfusion Pause"
+#define LANGSTRING_MENU_PREINFUSIONPAUSETIME "Praeinfusionspause"
 #define LANGSTRING_MENU_MACHINESETTINGS "Maschine"
-#define LANGSTRING_MENU_BACKFLUSH "Backflush-Modus"
+#define LANGSTRING_MENU_BACKFLUSH "Rueckspuelmodus"
 #define LANGSTRING_MENU_ON "An"
 #define LANGSTRING_MENU_OFF "Aus"
 static const char *langstring_pressToSave[] = {"Button klicken zum ", "Speichern."};

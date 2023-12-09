@@ -1,7 +1,11 @@
-#ifndef MENU_H
-#define MENU_H
+/**
+ * @file menu.h
+ * 
+ * @brief Display menu for rotary encoder 
+ */
+#pragma once
 
-#include "LCDMenuLib2.h"  // Include this if LCDMenuLib2.h is not included in the main file
+#include "LCDMenuLib2.h"
 #include "Storage.h"
 #include <ESP32Encoder.h>
 #include "button.h"
@@ -59,6 +63,7 @@ void changeNumericalValue(uint8_t param, double value, sto_item_id_t name, const
     if(LCDML.FUNC_loop()) {
         int32_t pos = encoder.getCount() / 4;
         double diff = static_cast<double>(pos - menuRotaryLast) / 10.0;
+
         if (diff != 0) {
             initialValue = initialValue + diff;
             displayNumericalMenuSettingWithUnit(initialValue, readableName, unit);
@@ -95,15 +100,12 @@ void changeNumericalValue(uint8_t param, double value, sto_item_id_t name, const
 
                 debugPrintln("SAVED.");
                 LCDML.FUNC_goBackToMenu();
-            } else {
+            } 
+            else {
                 debugPrintln("error.");
             }
         }
     }
-
-    // if(LCDML.FUNC_close()) {
-    //     // you can here reset some global vars or do nothing
-    // }
 }
 
 void changeBrewTemp(uint8_t param) {
@@ -176,7 +178,7 @@ LCDML_add(14, LCDML_0_3, 2, LANGSTRING_MENU_BACK, menuBack);
 
 LCDML_add(15, LCDML_0, 4, LANGSTRING_MENU_CLOSE, menuClose); 
 
-// this value has to be the same as the last menu element
+// This value has to be the same as the last menu element
 #define _LCDML_DISP_cnt 15
 LCDML_createMenu(_LCDML_DISP_cnt);
 
@@ -205,14 +207,9 @@ void menuControls(void) {
     last = pos;
 }
 
-
 void clearMenu() {
 }
-
 
 void setupMenu() {
     LCDML_setup(_LCDML_DISP_cnt);
 }
-
-
-#endif  // MENU_H
