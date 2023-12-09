@@ -1,7 +1,7 @@
 /**
  * @file scalevoid.h
  *
- * @brief TODO
+ * @brief Implementation of scale initialization and weight measurement
  */
 
 #pragma once

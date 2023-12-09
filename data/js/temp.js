@@ -252,7 +252,7 @@ function makeHeaterChart(data) {
         scales: {
             "%": {
                 auto: false,
-                range: [0, 100],
+                range: [0, 105],
             }
         },
         series: [

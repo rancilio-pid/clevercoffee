@@ -19,7 +19,7 @@ Additional features include:
 * brew by time
 * pressure monitoring
 
-The hardware has a small footprint and can easily fit into most smaller espresso machines. The original wiring of the machine (mostly) remains and is only extended. The machine can be easily reversed to the orignal state after the conversion.
+The hardware has a small footprint and can easily fit into most smaller espresso machines. The original wiring of the machine (mostly) remains and is only extended. The machine can be easily reversed to the original state after the conversion.
 
 The project has been in active development and supported for 4 years with continuous improvements. Hundreds of machines have been converted to PID control already.
 
@@ -35,7 +35,7 @@ Video tutorial on how to flash the firmware (a little outdated but mostly still 
 https://youtu.be/KZPjisOEcQ4
 
 ## Version
-With Version 3.2.0 we bring the last major release with support for ESP8266 and ESP32.
+With Version 3.3.0 we bring the last major release with support for ESP8266 and ESP32.
 There will only be bug fix releases for ESP8266 from there on. 
 Further development, with new features, will only be done for ESP32.
 "master" branch contains the current development only for esp32.
