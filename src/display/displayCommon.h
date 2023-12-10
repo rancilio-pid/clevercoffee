@@ -8,6 +8,8 @@
 
 #if (OLED_DISPLAY != 0)
 
+unsigned long displayAnimCounter = 0;
+unsigned long dropPosition;
 
 /**
  * @brief initialize display
@@ -310,6 +312,13 @@ void displayShottimer(void) {
  * @brief display heating logo
  */
 void Displaymachinestate() {
+    displayAnimCounter++;
+    
+    if(displayAnimCounter > 255)
+    {
+        displayAnimCounter = 0;
+    }
+
     if (FEATURE_HEATINGLOGO > 0 && (machineState == kInit || machineState == kColdStart) && brewSwitchTriggerCase != 31) {
         // For status info
         u8g2.clearBuffer();
@@ -360,7 +369,27 @@ void Displaymachinestate() {
     // Water empty
     if (machineState == kWaterEmpty && brewSwitchTriggerCase != 31) {
         u8g2.clearBuffer();
-        u8g2.drawXBMP( 45, 0, Water_Empty_Logo_width, Water_Empty_Logo_height, Water_Empty_Logo); 
+
+        if (FEATURE_ANIMATIONS == 0) {
+            u8g2.drawXBMP(42, 0, Water_Empty_Logo_width, Water_Empty_Logo_height, Water_Empty_Logo); 
+            u8g2.drawXBMP(42, 33, Water_Empty_Logo_Drop_width, Water_Empty_Logo_Drop_height, Water_Empty_Logo_Drop);
+        }
+        else {
+            u8g2.setBitmapMode(1);
+
+            for (int drop = 0; drop < 2; drop++) {
+                dropPosition = pow((displayAnimCounter+drop*16)%32,2)/16+8;
+                u8g2.drawXBMP(42, dropPosition, Water_Empty_Logo_Drop_width, Water_Empty_Logo_Drop_height, Water_Empty_Logo_Drop);
+            }
+
+            // remove upper part of drop overlapping with tap
+            u8g2.setDrawColor(0);
+            u8g2.drawBox(42, 8, 15, 20);
+            // draw tap with transparent background
+            u8g2.setDrawColor(1);
+            u8g2.drawXBMP(42, 0, Water_Empty_Logo_width, Water_Empty_Logo_height, Water_Empty_Logo);
+        }
+
         u8g2.setFont(u8g2_font_profont11_tf);
         u8g2.sendBuffer();
     }

@@ -419,6 +419,8 @@ void getSignalStrength() {
 // Update for Display
 unsigned long previousMillisDisplay;  // initialisation at the end of init()
 const unsigned long intervalDisplay = 500;
+const unsigned long intervalDisplayFast = 50; //For Error states like water empty where no PID is active
+
 
 // Horizontal or vertical display
 #if (OLED_DISPLAY != 0)
@@ -2413,7 +2415,7 @@ void looppid() {
         displayShottimer();
     }
 
-    if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
+    if (currentMillisDisplay - previousMillisDisplay >= ( (machineState != kWaterEmpty) ? intervalDisplay : intervalDisplayFast) ) {
         previousMillisDisplay = currentMillisDisplay;
     #if DISPLAYTEMPLATE < 20  // not using vertical template
         Displaymachinestate();

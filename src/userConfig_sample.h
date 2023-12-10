@@ -40,6 +40,7 @@ enum MACHINE {
 #define FEATURE_HEATINGLOGO 1      // 0 = deactivated, 1 = activated
 #define FEATURE_OFFLINELOGO 1      // 0 = deactivated, 1 = activated
 #define SHOTTIMERDISPLAYDELAY 3000 // time in ms that shot timer will be shown after brew finished
+#define FEATURE_ANIMATIONS 0       // Logo animation is 0 = deactivated, 1 = activated
 #define VERBOSE 0                  // 1 = Show verbose output (serial connection), 0 = show less
 
 #define LANGUAGE 0                 // LANGUAGE = 0 (DE), LANGUAGE = 1 (EN), LANGUAGE = 2 (ES)
