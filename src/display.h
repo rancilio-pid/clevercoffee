@@ -139,7 +139,7 @@ void displayShottimer(void) {
         u8g2.print(lastbrewTime / 1000, 1);
         u8g2.setFont(u8g2_font_profont11_tf);
         displayIcons();
-        u8g2.sendBuffer();;
+        u8g2.sendBuffer();
     }
 
     #if (ONLYPIDSCALE == 1 || BREWMODE == 2)
@@ -172,7 +172,7 @@ void displayShottimer(void) {
             u8g2.print(" g");
             u8g2.setFont(u8g2_font_profont11_tf);
             displayIcons();
-            u8g2.sendBuffer();;
+            u8g2.sendBuffer();
         }
     #endif
 }
@@ -196,8 +196,7 @@ void Displaymachinestate() {
                 for (int b = 0; b <= signalBars; b++) {
                     u8g2.drawVLine(45 + (b * 2), 10 - (b * 2), b * 2);
                 }
-            } 
-            else {
+            } else {
                 u8g2.drawXBMP(40, 2, 8, 8, antenna_NOK_u8g2);
                 u8g2.setCursor(88, 1);
                 u8g2.print("RC: ");
@@ -209,14 +208,12 @@ void Displaymachinestate() {
                     u8g2.setCursor(60, 1);
                     u8g2.setFont(u8g2_font_profont11_tf);
                     u8g2.print("MQTT");
-                } 
-                else {
+                } else {
                     u8g2.setCursor(60, 2);
                     u8g2.print("");
                 }
             }
-        } 
-        else {
+        } else {
             u8g2.setCursor(40, 1);
             u8g2.print(langstring_offlinemode);
         }
@@ -240,7 +237,7 @@ void Displaymachinestate() {
         u8g2.setFont(u8g2_font_profont17_tf);
         u8g2.print(temperature, 1);
         displayIcons();
-        u8g2.sendBuffer();;
+        u8g2.sendBuffer();
     }
 
     // Offline logo
@@ -261,7 +258,7 @@ void Displaymachinestate() {
         u8g2.setFont(u8g2_font_profont10_tf);
         u8g2.print("Standby mode");
         displayIcons();
-        u8g2.sendBuffer();;
+        u8g2.sendBuffer();
     }
 
     // Steam
@@ -273,7 +270,7 @@ void Displaymachinestate() {
         u8g2.print(temperature, 0);
         u8g2.setCursor(64, 25);
         displayIcons();
-        u8g2.sendBuffer();;
+        u8g2.sendBuffer();
     }
 
     // Water empty
@@ -291,7 +288,7 @@ void Displaymachinestate() {
         u8g2.print("C");
         u8g2.setFontPosTop();
         displayIcons();
-        u8g2.sendBuffer();;
+        u8g2.sendBuffer();
     }
 
     // Backflush
@@ -342,7 +339,7 @@ void Displaymachinestate() {
         }
 
         displayIcons();
-        u8g2.sendBuffer();;
+        u8g2.sendBuffer();
     }
 
     if (machineState == kSensorError) {
