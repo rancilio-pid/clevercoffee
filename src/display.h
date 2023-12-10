@@ -279,7 +279,7 @@ void Displaymachinestate() {
     // Water empty
     if (machineState == kWaterEmpty) {
         u8g2.clearBuffer();
-        u8g2.setFontPosBottom();
+        u8g2.setFontPosBaseline();
         u8g2.setFont(u8g2_font_profont22_tr);
         u8g2.drawStr(53, 26, "Fill");
         u8g2.drawStr(59, 42, "water");
