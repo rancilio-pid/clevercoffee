@@ -251,11 +251,11 @@ int flushCycles = 0;             // number of active flush cycles
 int backflushState = 10;         // counter for state machine
 
 // Water sensor
-boolean waterFull = true;                       // Current state of water reservoir. If water sensor not installed, will stay always on "true"
+boolean waterFull = true;
 unsigned long lastWaterCheck;
-const unsigned long WaterCheckInterval = 20;    // Check water level every .1s
+const unsigned long WaterCheckInterval = 200;   // Check water level every 200 ms
 int waterCheckConsecutiveReads = 0;             // Counter for consecutive readings of water sensor
-const int waterCountsNeeded = 5;                // Number of same readings to change water sensing
+const int waterCountsNeeded = 3;                // Number of same readings to change water sensing
 
 
 // Moving average for software brew detection
@@ -2487,7 +2487,7 @@ void loopWater() {
 
                 if (waterCheckConsecutiveReads >= waterCountsNeeded) {
                     waterFull = true;
-                    debugPrintf("Water full\n");
+                    debugPrintln("Water full");
                     waterCheckConsecutiveReads = 0;
                 }
             } 
@@ -2502,7 +2502,7 @@ void loopWater() {
                 
                 if (waterCheckConsecutiveReads >= waterCountsNeeded) {
                     waterFull = false;
-                    debugPrintf("Water empty\n");
+                    debugPrintln("Water empty");
                     waterCheckConsecutiveReads = 0;
                 }
             } 
