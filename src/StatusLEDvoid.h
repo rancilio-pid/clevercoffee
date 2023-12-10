@@ -90,7 +90,11 @@ void loopLED() {
         if (!waterFull || machineState == kSensorError || machineState ==  kEepromError || machineState ==  kEmergencyStop) {
             if (LED_BEHAVIOUR == 2) {
                 // [For LED_BEHAVIOUR 2]: Red heartbeat
-                fill_solid(leds, NUM_LEDS, CHSV(0, 250, cubicwave8(cycleLED))); //Hue of 0 is red
+                fill_solid(leds, NUM_LEDS, CHSV(0, 250, cubicwave8(cycleLED*2))); //Hue of 0 is red
+
+                if (NUM_LEDS > 1) {
+                    fill_solid(leds+NUM_LEDS/2, NUM_LEDS-NUM_LEDS/2, CHSV(0, 250, cubicwave8(128+cycleLED*2))); //Hue of 0 is red
+                }
             }
             else {
                 // [For LED_BEHAVIOUR 1]: Solid red color
