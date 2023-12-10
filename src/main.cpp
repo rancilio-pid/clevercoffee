@@ -250,12 +250,12 @@ int backflushON = 0;             // 1 = backflush mode active
 int flushCycles = 0;             // number of active flush cycles
 int backflushState = 10;         // counter for state machine
 
-//Water sensor
-boolean waterFull = true;                       // current state of water reservoir. If water sensor not installed, will stay always on "true"
+// Water sensor
+boolean waterFull = true;                       // Current state of water reservoir. If water sensor not installed, will stay always on "true"
 unsigned long lastWaterCheck;
-const unsigned long WaterCheckInterval = 20;    //Check water level every .1s
-int WaterCheckConsecutiveReads = 0;             // Counter for consecutive readings of water sensor
-const int WaterCountsNeeded = 5;                // Number of same readings to change water sensing
+const unsigned long WaterCheckInterval = 20;    // Check water level every .1s
+int waterCheckConsecutiveReads = 0;             // Counter for consecutive readings of water sensor
+const int waterCountsNeeded = 5;                // Number of same readings to change water sensing
 
 
 // Moving average for software brew detection
@@ -2117,12 +2117,8 @@ void setup() {
     }
 
     #if WATER_SENS == 1
-        //NPN
         pinMode(PIN_WATERSENSOR, INPUT_PULLUP);
-    #endif
-
-    #if WATER_SENS == 2
-        //PNP
+    #elif WATER_SENS == 2
         pinMode(PIN_WATERSENSOR, INPUT_PULLDOWN);
     #endif
 
@@ -2320,6 +2316,8 @@ void looppid() {
         checkPressure();
     #endif
 
+    checkSteamON();
+
     if(machineState != kWaterEmpty) {
         brew();
     }
@@ -2480,36 +2478,36 @@ void loopWater() {
     if ((millis() - lastWaterCheck) > WaterCheckInterval) {
         lastWaterCheck = millis();
 
-        // Check water
         bool isWaterDetected = digitalRead(PIN_WATERSENSOR) == (WATER_SENS == 1 ? LOW : HIGH);
     
         if (isWaterDetected) {
             // Water is detected, increment counter if it was previously empty
             if (!waterFull) {
-                WaterCheckConsecutiveReads++;
-                if (WaterCheckConsecutiveReads >= WaterCountsNeeded) {
+                waterCheckConsecutiveReads++;
+
+                if (waterCheckConsecutiveReads >= waterCountsNeeded) {
                     waterFull = true;
                     debugPrintf("Water full\n");
-                    WaterCheckConsecutiveReads = 0; // Reset counter
+                    waterCheckConsecutiveReads = 0;
                 }
             } 
             else {
-                WaterCheckConsecutiveReads = 0; // Reset counter if water was already full
+                waterCheckConsecutiveReads = 0;
             }
         } 
         else {
             // No water detected, increment counter if it was previously full
             if (waterFull) {
-                WaterCheckConsecutiveReads++;
+                waterCheckConsecutiveReads++;
                 
-                if (WaterCheckConsecutiveReads >= WaterCountsNeeded) {
+                if (waterCheckConsecutiveReads >= waterCountsNeeded) {
                     waterFull = false;
                     debugPrintf("Water empty\n");
-                    WaterCheckConsecutiveReads = 0; // Reset counter
+                    waterCheckConsecutiveReads = 0;
                 }
             } 
             else {
-                WaterCheckConsecutiveReads = 0; // Reset counter if water was already empty
+                waterCheckConsecutiveReads = 0;
             }
         }
     }
