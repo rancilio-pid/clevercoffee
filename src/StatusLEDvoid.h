@@ -50,22 +50,36 @@ void loopLED() {
             leds[0] = CRGB::DarkGreen; //middle back is switched to be green
         }
 
-        // [For LED_BEHAVIOUR 2]: Brew coffee -> Blue
-        if (LED_BEHAVIOUR == 2 && (machineState == kBrew || machineState == kSteam || machineState == kBackflush)) {
-            fill_solid(leds, NUM_LEDS, CRGB::Navy); 
-        }
+        // [For LED_BEHAVIOUR 2]:
+        if (LED_BEHAVIOUR == 2){
+            
+            // Brew coffee -> Blue
+            if (machineState == kBrew) {
+                fill_solid(leds, NUM_LEDS, CRGB::Navy); 
+            }
+
+            // Set higher temperature for Steam -> dark yellow
+            if (machineState == kSteam) {
+                fill_solid(leds, NUM_LEDS, CHSV(45,255,100)); 
+            }
+
+            // Backflush -> White
+            if (machineState == kBackflush) {
+                fill_solid(leds, NUM_LEDS, CRGB::White); 
+            }        
+        
+            // Initialize & Heat up --> Rainbow
+            if (machineState == kInit || machineState == kColdStart) {
+                for (int i = 0; i < NUM_LEDS; i++) {
+                    leds[i] = CHSV(i*32 - (cycleLED), 255, 255); /* Hue, saturation, brightness */ 
+                }
+            }   
+         }
 
         // After coffee is brewed -> White light to show ready coffee for ~15s
         if (BrewFinishedLEDon > 0) {
             BrewFinishedLEDon--;
             fill_solid(leds, NUM_LEDS, CRGB::White); 
-        }
-
-        // [For LED_BEHAVIOUR 2]: Initialize & Heat up --> Rainbow
-        if (LED_BEHAVIOUR == 2 && (machineState == kInit || machineState == kColdStart) ) {
-            for (int i = 0; i < NUM_LEDS; i++) {
-                leds[i] = CHSV(i*32 - (cycleLED), 255, 255); /* Hue, saturation, brightness */ 
-            }
         }
         
         // Error message: Red (Water empty, sensor error, etc) - overrides all other states in LED color

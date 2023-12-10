@@ -65,7 +65,7 @@ enum MACHINE {
 #define STATUS_LED 0               // Status LED indicating optimal temperature and more, 0 = no LED, 1 = single color LED, 2 = RGB adressable LED
 #define RGB_LED_TYPE WS2811        // In case of an RGB LED so STATUS_LED==2, state type of LED (NEOPIXEL, WS2811, TM1809, ...)
 #define NUM_LEDS 4                 // Number of LEDs attached, one also OK - not considered if STATUS_LED above is zero
-#define LED_BEHAVIOUR 2            // 1 = Basic: Coffe ready - white, Error - red, Temperature OK - green; 2 = same as Basic, plus: Brewing - blue, Startup - Rainbow, Error - red heartbeat
+#define LED_BEHAVIOUR 2            // 1 = Basic: Brewed-white, Error-red, TempOK-green; 2 = same as Basic, plus: Brewing-blue, Startup-Rainbow, Steam-Yellow, Backflush-white
 #define WATER_SENS 0               // 0 = no water sensor, 1 = water sensor XKC-Y25-NPN connected, 2 = XKC-Y25-PNP connected
 
 // Brew Scale
