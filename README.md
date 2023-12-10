@@ -48,6 +48,7 @@ Further development, with new features, will only be done for ESP32.
  * Separate PID for steam mode with own parameters and target temperature (can be enabled in the web interface/MQTT or using the steam switch)
  * Automatically brew by set time (including pre-infusion with additional dimmer for the pump).
  * Automatically brew by weight when scale components are built in.
+ * Possible to change brew and steam switches to push buttons. Brew push button then has two actions: short press for brew, long press to flush.
  * Allows brew switch detection (e.g. for the shot timer) by using an optocoupler module when deciding not to control the pump from the ESP ([details](https://rancilio-pid.github.io/ranciliopid-handbook/de/customization/brueherkennung.html#konfiguration-der-erkennung)).
 * MQTT (IoT) support to monitor and manipulate all important parameters.
  * Extended data monitoring via Influxdb/Grafana.
