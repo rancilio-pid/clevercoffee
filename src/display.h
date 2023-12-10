@@ -22,19 +22,14 @@ void u8g2_prepare(void) {
 }
 
 /**
- * Icons...
- * Show water empty icon in upper right corner if water empty
+ * Show water empty icon in upper right corner if water supply is low
  */
 void displayWaterIcon() {
         if (!waterFull) {
-            //small water empty logo
             u8g2.drawXBMP(119, 2, 8, 8, water_EMPTY_u8g2);
 		}
 }
 
-/**
- * Collector to always show indicators along all the other information
- */
 void displayIcons() {
     displayWaterIcon();
 }
@@ -276,18 +271,8 @@ void Displaymachinestate() {
     // Water empty
     if (machineState == kWaterEmpty) {
         u8g2.clearBuffer();
-        u8g2.setFontPosBottom();
-        u8g2.setFont(u8g2_font_profont22_tr);
-        u8g2.drawStr(53, 26, "Fill");
-        u8g2.drawStr(59, 42, "water");
-        u8g2.drawXBMP( 3, 0, water_empty_big_width, water_empty_big_height, water_EMPTY_big_u8g2); 
+        u8g2.drawXBMP( 45, 0, water_empty_big_width, water_empty_big_height, water_EMPTY_big_u8g2); 
         u8g2.setFont(u8g2_font_profont11_tf);
-        u8g2.setCursor(80, 64);
-        u8g2.print(temperature);
-        u8g2.print((char)176);
-        u8g2.print("C");
-        u8g2.setFontPosTop();
-        displayIcons();
         u8g2.sendBuffer();
     }
 
