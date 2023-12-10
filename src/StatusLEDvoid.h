@@ -6,6 +6,8 @@
 
 #pragma once
 
+unsigned long brightnessLED;
+
 void statusLEDSetup() {
     if (STATUS_LED == 1) {
         pinMode(PIN_STATUSLED, OUTPUT);
@@ -44,23 +46,23 @@ void loopLED() {
         // Heating to setpoint or Standby -> Switch LEDs off, but overwrite with other states
         fill_solid(leds, NUM_LEDS, CRGB::Black); 
 
-        // Correct temp -> Green in back of machine
+        // Correct temp for both Brew and Steam -> Green in back of machine
         if ((machineState == kPidNormal && (fabs(temperature  - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) 
         {
             leds[0] = CRGB::DarkGreen; //middle back is switched to be green
         }
 
         // [For LED_BEHAVIOUR 2]:
-        if (LED_BEHAVIOUR == 2){
-            
+        if (LED_BEHAVIOUR == 2) {
+
             // Brew coffee -> Blue
             if (machineState == kBrew) {
                 fill_solid(leds, NUM_LEDS, CRGB::Navy); 
             }
 
-            // Set higher temperature for Steam -> dark yellow
-            if (machineState == kSteam) {
-                fill_solid(leds, NUM_LEDS, CHSV(45,255,100)); 
+            // Set higher temperature for Steam -> dark yellow (if not at correct temperature, then its green)
+            if (machineState == kSteam && !(temperature > 115 && fabs(temperature - setpoint) < 5) ) {
+                fill_solid(leds, NUM_LEDS, CHSV(45,255,100)); //45 yellow, 100 is 40% brighteness
             }
 
             // Backflush -> White
@@ -79,7 +81,9 @@ void loopLED() {
         // After coffee is brewed -> White light to show ready coffee for ~15s
         if (BrewFinishedLEDon > 0) {
             BrewFinishedLEDon--;
-            fill_solid(leds, NUM_LEDS, CRGB::White); 
+            // for the last 10% of the time, smoothly dim down white light on cup
+            brightnessLED = (BrewFinishedLEDon > (BrewFinishedLEDonDuration / 10) ? 255 : 255*BrewFinishedLEDon*10/BrewFinishedLEDonDuration);
+            fill_solid(leds, NUM_LEDS, CHSV(0, 0, brightnessLED)); 
         }
         
         // Error message: Red (Water empty, sensor error, etc) - overrides all other states in LED color

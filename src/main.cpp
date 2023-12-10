@@ -44,7 +44,7 @@ unsigned long previousMillisLED;  // initialisation at the end of init()
 const unsigned long intervalLED = 20; // to have smooth animated LED colors
 unsigned int cycleLED = 0; // counter to 255 for color cycling
 unsigned long BrewFinishedLEDon = 0; // counter to have LED on to show coffee is ready
-#define BrewFinishedLEDonDuration 800; // Time to illuminate the ready coffee cup - 800*intervalLED = 16s
+#define BrewFinishedLEDonDuration 800 // Time to illuminate the ready coffee cup - 800*intervalLED = 16s
 
 hw_timer_t *timer = NULL;
 
