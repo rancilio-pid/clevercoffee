@@ -54,13 +54,12 @@ enum MACHINE {
 #define ONLYPID 1                  // 0 = PID and preinfusion, 1 = Only PID
 #define ONLYPIDSCALE 0             // 0 = off , 1 = OnlyPID with Scale
 #define BREWMODE 1                 // 1 = Brew by time (with preinfusion); 2 = Brew by weight (from scale)
-#define BREWDETECTION 0            // 0 = off, 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = Sensor/Hardware for Only PID
+#define BREWDETECTION 0            // 0 = off, 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = optocoupler for Only PID
 #define BREWSWITCHTYPE 0           // 0 = no switch connected, 1 = normal switch, 2 = trigger switch
 #define POWERSWITCHTYPE 0          // 0 = no switch connected, 1 = normal switch, 2 = trigger switch
 #define STEAMSWITCHTYPE 0          // 0 = no switch connected, 1 = normal switch, 2 = trigger switch
+#define OPTOCOUPLERTYPE HIGH       // BREWDETECTION 3 configuration; HIGH or LOW trigger optocoupler
 #define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay for pump & valve
-#define VOLTAGESENSORTYPE HIGH     // BREWDETECTION 3 configuration (HIGH or LOW trigger optocoupler) 
-#define PINMODEVOLTAGESENSOR INPUT // Mode INPUT_PULLUP, INPUT or INPUT_PULLDOWN_16 (Only Pin 16)
 #define PRESSURESENSOR 0           // 0 = no pressure sensor connected, 1 = pressure sensor connected
 #define TEMP_LED 1                 // Blink status LED when temp is in range
 
