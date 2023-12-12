@@ -45,18 +45,6 @@ hw_timer_t *timer = NULL;
     #include <Wire.h>
 #endif
 
-#if (ROTARY_MENU == 1)
-    #include <LCDMenuLib2.h>
-    #include "menu.h"
-    #include <ESP32Encoder.h> 
-    ESP32Encoder encoder;
-    #include "button.h"
-    button_event_t ev;
-    QueueHandle_t button_events = button_init(PIN_BIT(PIN_ROTARY_SW));
-    boolean menuOpen = false;
-#endif
-
-
 #if OLED_DISPLAY == 3
 #include <SPI.h>
 #endif
@@ -261,7 +249,7 @@ float inX = 0, inY = 0, inOld = 0, inSum = 0;   // used for filterPressureValue(
 int signalBars = 0;                             // used for getSignalStrength()
 boolean brewDetected = 0;
 boolean setupDone = false;
-int backflushOn = 0;                            // 1 = backflush mode active
+uint8_t backflushOn = 0;                            // 1 = backflush mode active
 int flushCycles = 0;                            // number of active flush cycles
 
 int backflushState = 10;
@@ -444,6 +432,17 @@ const unsigned long intervalDisplay = 500;
     #if (DISPLAYTEMPLATE == 20)
         #include "Displaytemplateupright.h"
     #endif
+#endif
+
+#if (ROTARY_MENU == 1)
+    #include <LCDMenuLib2.h>
+    #include <ESP32Encoder.h> 
+    ESP32Encoder encoder;
+    #include "button.h"
+    button_event_t ev;
+    QueueHandle_t button_events = button_init(PIN_BIT(PIN_ROTARY_SW));
+    boolean menuOpen = false;
+    #include "menu.h"
 #endif
 
 // Emergency stop if temp is too high
@@ -1527,10 +1526,6 @@ void websiteSetup() {
 
 const char sysVersion[] = (STR(FW_VERSION) "." STR(FW_SUBVERSION) "." STR(FW_HOTFIX) " " FW_BRANCH " " AUTO_VERSION);
 
-void encoderService() {
-    // encoder.service();
-}
-
 void setup() {
     editableVars["PID_ON"] = {
         .displayName = "Enable PID Controller",
@@ -2199,10 +2194,6 @@ void setup() {
         previousMillisPressure = currentTime;
     #endif
 
-    #if ROTARY_MENU == 1
-        // encoder.setAccelerationEnabled(true);
-    #endif
-
     setupDone = true;
 
     enableTimer1();
@@ -2218,10 +2209,12 @@ void loop() {
 
     #if ROTARY_MENU == 1
         if (menuOpen == false) {
-            if (xQueueReceive(button_events, &ev, 1000/portTICK_PERIOD_MS)) {
-                if (ev.event == BUTTON_DOWN) {
+            if (xQueueReceive(button_events, &ev, 1/portTICK_PERIOD_MS)) {
+                if (ev.event == BUTTON_UP) {
                     menuOpen = true;
-                    debugPrintf("Opening Menu!\n");
+                    #if ROTARY_MENU_DEBUG == 1
+                        debugPrintf("Opening Menu!\n");
+                    #endif 
                     displayMenu();
                 }
             }
@@ -2363,7 +2356,7 @@ void looppid() {
 
     // Check if PID should run or not. If not, set to manual and force output to zero
 #if OLED_DISPLAY != 0
-    #if defined(ESP32) && ROTARY_MENU == 1
+    #if ROTARY_MENU == 1 // only draw the display template if the menu is not open
     if (!menuOpen) {
     #endif
         unsigned long currentMillisDisplay = millis();
@@ -2377,7 +2370,7 @@ void looppid() {
         #endif
             printScreen();  // refresh display
         }
-    #if defined(ESP32) && ROTARY_MENU == 1
+    #if ROTARY_MENU == 1
     }
     #endif
 #endif

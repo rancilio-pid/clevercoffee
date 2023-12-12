@@ -7,8 +7,6 @@
 
 #pragma once
 
-#include "userConfig.h"
-
 extern unsigned long windowStartTime;
 extern double pidOutput;
 extern unsigned int isrCounter;
