@@ -282,7 +282,7 @@ void serverSetup() {
         int calibrate = flipUintValue(calibrationON);
 
         setCalibration(calibrate);
-        debugPrintf("Toggle tare mode: %i \n", calibrate);
+        debugPrintf("Toggle calibration mode: %i \n", calibrate);
 
         request->redirect("/");
     });

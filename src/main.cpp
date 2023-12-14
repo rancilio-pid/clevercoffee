@@ -50,6 +50,12 @@ hw_timer_t *timer = NULL;
 #endif
 
 #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
+    #define HX711_ADC_config_h 
+    #define SAMPLES 					32
+    #define IGN_HIGH_SAMPLE 			1
+    #define IGN_LOW_SAMPLE 				1
+    #define SCK_DELAY					1
+    #define SCK_DISABLE_INTERRUPTS		0		
     #include <HX711_ADC.h>
 #endif
 
@@ -180,6 +186,9 @@ double brewTempOffset = TEMPOFFSET;
 double setpoint = brewSetpoint;
 double steamSetpoint = STEAMSETPOINT;
 float scaleCalibration = SCALE_CALIBRATION_FACTOR;
+#if SINGLE_HX711 == 0
+float scale2Calibration = SCALE_CALIBRATION_FACTOR;
+#endif
 float scaleKnownWeight = SCALE_KNOWN_WEIGHT;
 uint8_t usePonM = 0;               // 1 = use PonM for cold start PID, 0 = use normal PID for cold start
 double steamKp = STEAMKP;
@@ -244,6 +253,9 @@ SysPara<double> sysParaWeightSetpoint(&weightSetpoint, WEIGHTSETPOINT_MIN, WEIGH
 SysPara<uint8_t> sysParaStandbyModeOn(&standbyModeOn, 0, 1, STO_ITEM_STANDBY_MODE_ON);
 SysPara<double> sysParaStandbyModeTime(&standbyModeTime, STANDBY_MODE_TIME_MIN, STANDBY_MODE_TIME_MAX, STO_ITEM_STANDBY_MODE_TIME);
 SysPara<float> sysParaScaleCalibration(&scaleCalibration, -100000, 100000, STO_ITEM_SCALE_CALIBRATION_FACTOR);
+#if SINGLE_HX711 == 0
+SysPara<float> sysParaScale2Calibration(&scale2Calibration, -100000, 100000, STO_ITEM_SCALE2_CALIBRATION_FACTOR);
+#endif
 SysPara<float> sysParaScaleKnownWeight(&scaleKnownWeight, 0, 2000, STO_ITEM_SCALE_KNOWN_WEIGHT);
 
 // Other variables
@@ -1986,7 +1998,7 @@ void setup() {
     };
 
         editableVars["SCALE_CALIBRATION"] = {
-        .displayName = F("Calibration factor"),
+        .displayName = F("Calibration factor scale 1"),
         .hasHelpText = false,
         .helpText = "",
         .type = kFloat,
@@ -1997,6 +2009,21 @@ void setup() {
         .maxValue = 100000,
         .ptr = (void *)&scaleCalibration
     };
+
+    #if SINGLE_HX711 == 0
+        editableVars["SCALE2_CALIBRATION"] = {
+        .displayName = F("Calibration factor scale 2"),
+        .hasHelpText = false,
+        .helpText = "",
+        .type = kFloat,
+        .section = sScaleSection,
+        .position = 32,
+        .show = [] { return true; },
+        .minValue = -100000,
+        .maxValue = 100000,
+        .ptr = (void *)&scale2Calibration
+    };
+    #endif
 #endif
 
     editableVars["VERSION"] = {
@@ -2044,6 +2071,9 @@ void setup() {
     if (ONLYPIDSCALE == 1 || BREWMODE == 2) {
         mqttVars["weightSetpoint"] = []{ return &editableVars.at("SCALE_WEIGHTSETPOINT"); };
         mqttVars["scaleCalibration"] = []{ return &editableVars.at("SCALE_CALIBRATION"); };
+        #if SINGLE_HX711 == 0
+        mqttVars["scale2Calibration"] = []{ return &editableVars.at("SCALE2_CALIBRATION"); };
+        #endif 
         mqttVars["scaleKnownWeight"] = []{ return &editableVars.at("SCALE_KNOWN_WEIGHT"); };
         mqttVars["tareON"] = []{ return &editableVars.at("TARE_ON"); };
         mqttVars["calibrationON"] = []{ return &editableVars.at("CALIBRATION_ON"); };
@@ -2208,6 +2238,11 @@ void setup() {
 
     temperature -= brewTempOffset;
 
+    // Init Scale by BREWMODE 2 or SHOTTIMER 2
+    #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
+        initScale();
+    #endif
+
     // Initialisation MUST be at the very end of the init(), otherwise the
     // time comparision in loop() will have a big offset
     unsigned long currentTime = millis();
@@ -2224,11 +2259,6 @@ void setup() {
 
     #if (FEATURE_PRESSURESENSOR == 1)
         previousMillisPressure = currentTime;
-    #endif
-
-    // Init Scale by BREWMODE 2 or SHOTTIMER 2
-    #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
-        initScale();
     #endif
 
     setupDone = true;
@@ -2644,6 +2674,9 @@ int readSysParamsFromStorage(void) {
     if (sysParaStandbyModeOn.getStorage() != 0) return -1;
     if (sysParaStandbyModeTime.getStorage() != 0) return -1;
     if (sysParaScaleCalibration.getStorage() != 0) return -1;
+    #if SINGLE_HX711 == 0
+    if (sysParaScale2Calibration.getStorage() != 0) return -1;
+    #endif
     if (sysParaScaleKnownWeight.getStorage() != 0) return -1;
 
     return 0;
@@ -2682,6 +2715,9 @@ int writeSysParamsToStorage(void) {
     if (sysParaStandbyModeOn.setStorage() != 0) return -1;
     if (sysParaStandbyModeTime.setStorage() != 0) return -1;
     if (sysParaScaleCalibration.setStorage() != 0) return -1;
+    #if SINGLE_HX711 == 0
+    if (sysParaScale2Calibration.setStorage() != 0) return -1;
+    #endif 
     if (sysParaScaleKnownWeight.setStorage() != 0) return -1;
 
     return storageCommit();

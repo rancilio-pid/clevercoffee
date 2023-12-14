@@ -9,6 +9,7 @@ const vueApp = Vue.createApp({
             showPostSucceeded: false
         }
     },
+    el: '#calibrationForm',
     methods: {
         fetchParameters() {
             fetch("/parameters")
@@ -72,6 +73,11 @@ const vueApp = Vue.createApp({
                 4: 'Scale Parameters'
             }
             return sectionNames[sectionId]
+        },
+        confirmSubmission() {
+            if(confirm('Are you sure you want to toggle the calibration?')) {
+                this.$el.submit();
+            }
         }
     },
     computed: {

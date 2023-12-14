@@ -62,6 +62,9 @@ boolean brewPIDDisabled = false;                    // is PID disabled for delay
     const unsigned long intervalWeight = 200;           // weight scale
     unsigned long previousMillisScale;                  // initialisation at the end of init()
     HX711_ADC LoadCell(PIN_HXDAT, PIN_HXCLK);
+    #if SINGLE_HX711 == 0 
+        HX711_ADC LoadCell2(PIN_HXDAT2, PIN_HXCLK);
+    #endif 
 #endif
 
 /**
@@ -441,11 +444,7 @@ void brew() {
                 break;
 
             case 41:  // waiting time brew
-                if (timeBrewed > totalBrewTime || (weightBrew > (weightSetpoint - scaleDelayValue))) {
-                    brewCounter = kBrewFinished;
-                }
-
-                if (timeBrewed > totalBrewTime) {
+                if (weightBrew > (weightSetpoint - scaleDelayValue)) {
                     brewCounter = kBrewFinished;
                 }
 
