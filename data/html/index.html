@@ -113,7 +113,7 @@
                                             <td>
                                                 <form action="/toggleCalibration" method="post">
                                                     <input type="hidden" id="varCALIBRATION_ON" name="varCALIBRATION_ON" />
-                                                    <input type="submit" class="btn btn-primary" :value="param.value == 1 ? 'Off' : 'On'" id="calibration_toggle" />
+                                                    <input type="submit" class="btn btn-primary" :value="param.value == 1 ? 'Off' : 'On'" id="calibration_toggle" @click.prevent="confirmSubmission"/>
                                                 </form>
                                             </td>
                                         </template>
