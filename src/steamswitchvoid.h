@@ -11,7 +11,7 @@
 int lastSteamSwitchTrigger = LOW;                   // the previous reading from the input pin
 int buttonStateSteamTrigger;                        // the current reading from the input pin
 unsigned long lastDebounceTimeSteamTrigger = 0;     // the last time the output pin was toggled
-unsigned long debounceDelaySteamTrigger = 50;       // the debounce time; increase if the output flickers
+unsigned long debounceDelaySteamTrigger = 20;       // the debounce time; increase if the output flickers
 
 void checkSteamSwitch() {
     #if STEAMSWITCHTYPE == 0
@@ -26,6 +26,20 @@ void checkSteamSwitch() {
         if (digitalRead(PIN_STEAMSWITCH) == LOW && steamFirstON == 0) {
             steamON = 0;
         }
+
+        // monitor QuickMill thermoblock steam-mode
+        if (machine == QuickMill) {
+            if (steamQM_active == true) {
+                if (checkSteamOffQM() == true) {  // if true: steam-mode can be turned off
+                    steamON = 0;
+                    steamQM_active = false;
+                    lastTimePVSwasON = 0;
+                } else {
+                    steamON = 1;
+                }
+            }
+        }
+
     #elif STEAMSWITCHTYPE == 2  // TRIGGER
         int reading = digitalRead(PIN_STEAMSWITCH);
 
@@ -57,4 +71,5 @@ void checkSteamSwitch() {
 
         lastSteamSwitchTrigger = reading;
     #endif
+
 }

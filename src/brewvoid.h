@@ -23,22 +23,29 @@ void checkbrewswitch() {
         #if (PIN_BREWSWITCH > 0)
             int reading = digitalRead(PIN_BREWSWITCH);
 
-            if (reading != brewswitchTrigger) {
-                // reset the debouncing timer
+            if (reading != lastButtonStateBrew) {
+                // restart the debouncing timer
+                #if VERBOSE
+                    if(millis() - lastDebounceTimeBrewTrigger <= debounceDelayBrewTrigger) {
+                        debugPrintf("- No push detected, below debounce: %lu ms <= %lu ms\n", millis() - lastDebounceTimeBrewTrigger, debounceDelayBrewTrigger);
+                    }
+                #endif
                 lastDebounceTimeBrewTrigger = millis();
+                // set new button state 
             }
-
-            if ((millis() - lastDebounceTimeBrewTrigger) > debounceDelayBrewTrigger) {
+            else if ((millis() - lastDebounceTimeBrewTrigger) > debounceDelayBrewTrigger) {
                 // whatever the reading is at, it's been there for longer than the debounce
                 // delay, so take it as the actual current state:
-
-                // if the button state has changed:
-                if (reading != buttonStateBrewTrigger) {
-                    buttonStateBrewTrigger = reading;
+                
+                if (brewswitchTrigger != reading)
+                {
+                    brewswitchTrigger = reading;
+                    #if VERBOSE
+                        debugPrintf("+ Push detected, above debounce: %lu ms > %lu ms\n", millis() - lastDebounceTimeBrewTrigger, debounceDelayBrewTrigger);
+                    #endif
                 }
             }
-
-            brewswitchTrigger = reading;
+            lastButtonStateBrew = reading;
         #endif
 
         // Convert trigger signal to brew switch state
@@ -61,7 +68,7 @@ void checkbrewswitch() {
                 }
 
                 // Button more than one 1sec pushed
-                if (brewswitchTrigger == HIGH && (brewswitchTriggermillis + 1000 <= millis())) {
+                if (brewswitchTrigger == HIGH && (brewswitchTriggermillis + brewSwitchLongPress <= millis())) {
                     debugPrintln("brewswitchTriggerCase 20: Manual Trigger - brewing");
                     brewswitchTriggerCase = 31;
                     digitalWrite(PIN_VALVE, relayON);
@@ -73,7 +80,6 @@ void checkbrewswitch() {
                 if ((brewswitchTrigger == HIGH && brewswitch == HIGH) || (machineState == kShotTimerAfterBrew) ) {
                     brewswitch = LOW;
                     brewswitchTriggerCase = 40;
-                    brewswitchTriggermillis = millis();
                     debugPrintln("brewswitchTriggerCase 30: Brew Trigger LOW");
                 }
                 break;
@@ -81,7 +87,6 @@ void checkbrewswitch() {
                 // Stop Manual brewing, button goes low:
                 if (brewswitchTrigger == LOW && brewswitch == LOW) {
                     brewswitchTriggerCase = 40;
-                    brewswitchTriggermillis = millis();
                     debugPrintln("brewswitchTriggerCase 31: Manual Trigger - brewing stop");
                     digitalWrite(PIN_VALVE, relayOFF);
                     digitalWrite(PIN_PUMP, relayOFF);
@@ -89,11 +94,9 @@ void checkbrewswitch() {
             break;
 
             case 40:
-                // wait 5 Sec until next brew, detection
-                if (brewswitchTriggermillis + 5000 <= millis()) {
-                    brewswitchTriggerCase = 10;
-                    debugPrintln("brewswitchTriggerCase 40: Brew Trigger Next Loop");
-                }
+                // Go back to start and wait for brew button press
+                brewswitchTriggerCase = 10;
+                debugPrintln("brewswitchTriggerCase 40: Brew Trigger Next Loop");
                 break;
 
             case 50:
