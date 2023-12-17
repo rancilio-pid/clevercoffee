@@ -11,7 +11,7 @@
 int lastSteamSwitchTrigger = LOW;                   // the previous reading from the input pin
 int buttonStateSteamTrigger;                        // the current reading from the input pin
 unsigned long lastDebounceTimeSteamTrigger = 0;     // the last time the output pin was toggled
-unsigned long debounceDelaySteamTrigger = 20;       // the debounce time; increase if the output flickers
+unsigned long debounceDelaySteamTrigger = 50;       // the debounce time; increase if the output flickers
 
 void checkSteamSwitch() {
     #if STEAMSWITCHTYPE == 0

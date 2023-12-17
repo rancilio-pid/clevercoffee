@@ -1127,7 +1127,7 @@ void handleMachineState() {
         case kShotTimerAfterBrew:
             brewDetection();
 
-            if (millis() - lastbrewTimeMillis > SHOTTIMEDISPLAY) {
+            if (millis() - lastbrewTimeMillis > BREWSWITCHDELAY) {
                 debugPrintf("Shot time: %4.1f s\n", lastbrewTime / 1000);
                 machineState = kBrewDetectionTrailing;
                 lastbrewTime = 0;
