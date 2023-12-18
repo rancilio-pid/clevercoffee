@@ -7,93 +7,130 @@
 
 #pragma once
 
+#include <pinmapping.h>
+
+enum BrewState {
+    kBrewIdle = 10,
+    kPreinfusion = 20,
+    kWaitPreinfusion = 21,
+    kPreinfusionPause = 30,
+    kWaitPreinfusionPause = 31,
+    kBrewRunning = 40,
+    kWaitBrew = 41,
+    kBrewFinished = 42,
+    kWaitBrewOff = 43
+};
+
+// Normal Brew
+BrewState brewCounter = kBrewIdle;
+int brewSwitch = 0;
+int brewSwitchTrigger = LOW;
+int lastStateBrewTrigger;                        // the last valid reading from the input pin (debounced)
+unsigned long lastDebounceTimeBrewTrigger = 0;  // the last time the output pin was toggled
+unsigned long debounceDelayBrewTrigger = 20;    // >20ms when switches are "flicked"
+unsigned long brewSwitchTriggerMillis = 0;
+const unsigned long brewTriggerLongPress = 500;     // time in ms until brew trigger will be interpreted as manual brewing
+int brewSwitchTriggerCase = 10;
+boolean brewSwitchWasOff = false;
+double totalBrewTime = 0;                           // total brewtime set in software
+double timeBrewed = 0;                              // total brewed time
+double lastBrewTimeMillis = 0;                      // for shottimer delay after disarmed button
+double lastBrewTime = 0 ;
+unsigned long startingTime = 0;                     // start time of brew
+boolean brewPIDDisabled = false;                    // is PID disabled for delay after brew has started?
+
+// Shot timer with or without scale
+#if (ONLYPIDSCALE == 1 || BREWMODE == 2)
+    int shottimerCounter = 10 ;
+    float calibrationValue = SCALE_CALIBRATION_FACTOR;  // use calibration example to get value
+    float weight = 0;                                   // value from HX711
+    float weightPreBrew = 0;                            // value of scale before wrew started
+    float weightBrew = 0;                               // weight value of brew
+    float scaleDelayValue = 2.5;                        // value in gramm that takes still flows onto the scale after brew is stopped
+    bool scaleFailure = false;
+    const unsigned long intervalWeight = 200;           // weight scale
+    unsigned long previousMillisScale;                  // initialisation at the end of init()
+    HX711_ADC LoadCell(PIN_HXDAT, PIN_HXCLK);
+#endif
 
 /**
- * @brief Digtalswitch OR Read analog input pin for BREW SWITCH
+ * @brief Switch or trigger input for BREW SWITCH
  */
 void checkbrewswitch() {
     #if BREWSWITCHTYPE == 1
-        #if (PIN_BREWSWITCH > 0)
-            // Digital GIPO
-            brewswitch = digitalRead(PIN_BREWSWITCH);
-        #endif
+            // Digital 
+            brewSwitch = digitalRead(PIN_BREWSWITCH);
     #endif
 
     #if BREWSWITCHTYPE == 2
-        #if (PIN_BREWSWITCH > 0)
             int reading = digitalRead(PIN_BREWSWITCH);
 
-            if (reading != brewswitchTrigger) {
-                // reset the debouncing timer
+            if (reading != lastStateBrewTrigger) {
+                // restart the debouncing timer
                 lastDebounceTimeBrewTrigger = millis();
+                // set new button state 
             }
-
-            if ((millis() - lastDebounceTimeBrewTrigger) > debounceDelayBrewTrigger) {
+            else if ((millis() - lastDebounceTimeBrewTrigger) > debounceDelayBrewTrigger) {
                 // whatever the reading is at, it's been there for longer than the debounce
                 // delay, so take it as the actual current state:
-
-                // if the button state has changed:
-                if (reading != buttonStateBrewTrigger) {
-                    buttonStateBrewTrigger = reading;
+                
+                if (brewSwitchTrigger != reading) {
+                    brewSwitchTrigger = reading;
                 }
             }
-
-            brewswitchTrigger = reading;
-        #endif
+            lastStateBrewTrigger = reading;
 
         // Convert trigger signal to brew switch state
-        switch (brewswitchTriggerCase) {
+        switch (brewSwitchTriggerCase) {
             case 10:
-                if (brewswitchTrigger == HIGH) {
-                    brewswitchTriggermillis = millis();
-                    brewswitchTriggerCase = 20;
-                    debugPrintln("brewswitchTriggerCase 10: HIGH");
+                if (brewSwitchTrigger == HIGH) {
+                    brewSwitchTriggerMillis = millis();
+                    brewSwitchTriggerCase = 20;
+                    debugPrintln("brewSwitchTriggerCase 10: HIGH");
                 }
                 break;
 
             case 20:
                 // Only one push, brew
-                if (brewswitchTrigger == LOW) {
+                if (brewSwitchTrigger == LOW) {
                     // Brew trigger
-                    brewswitch = HIGH;
-                    brewswitchTriggerCase = 30;
-                    debugPrintln("brewswitchTriggerCase 20: Brew Trigger HIGH");
+                    brewSwitch = HIGH;
+                    brewSwitchTriggerCase = 30;
+                    debugPrintln("brewSwitchTriggerCase 20: Brew Trigger HIGH");
                 }
 
-                // Button more than one 1sec pushed
-                if (brewswitchTrigger == HIGH && (brewswitchTriggermillis + 1000 <= millis())) {
-                    debugPrintln("brewswitchTriggerCase 20: Manual Trigger - brewing");
-                    brewswitchTriggerCase = 31;
-                    digitalWrite(PIN_VALVE, relayON);
-                    digitalWrite(PIN_PUMP, relayON);
+                // Button more than brewTriggerLongPress pushed
+                if (brewSwitchTrigger == HIGH && (brewSwitchTriggerMillis + brewTriggerLongPress  <= millis())) {
+                    debugPrintln("brewSwitchTriggerCase 20: Manual Trigger - flushing");
+                    brewSwitchTriggerCase = 31;
+                    digitalWrite(PIN_VALVE, relayOn);
+                    digitalWrite(PIN_PUMP, relayOn);
                 }
                 break;
+
             case 30:
                 // Stop brew trigger (one push) brewswitch == HIGH
-                if ((brewswitchTrigger == HIGH && brewswitch == HIGH) || (machineState == kShotTimerAfterBrew) ) {
-                    brewswitch = LOW;
-                    brewswitchTriggerCase = 40;
-                    brewswitchTriggermillis = millis();
-                    debugPrintln("brewswitchTriggerCase 30: Brew Trigger LOW");
+                if ((brewSwitchTrigger == HIGH && brewSwitch == HIGH) || (machineState == kShotTimerAfterBrew) ) {
+                    brewSwitch = LOW;
+                    brewSwitchTriggerCase = 40;
+                    debugPrintln("brewSwitchTriggerCase 30: Brew Trigger LOW");
                 }
                 break;
+
             case 31:
                 // Stop Manual brewing, button goes low:
-                if (brewswitchTrigger == LOW && brewswitch == LOW) {
-                    brewswitchTriggerCase = 40;
-                    brewswitchTriggermillis = millis();
+                if (brewSwitchTrigger == LOW && brewSwitch == LOW) {
+                    brewSwitchTriggerCase = 40;
                     debugPrintln("brewswitchTriggerCase 31: Manual Trigger - brewing stop");
-                    digitalWrite(PIN_VALVE, relayOFF);
-                    digitalWrite(PIN_PUMP, relayOFF);
+                    digitalWrite(PIN_VALVE, relayOff);
+                    digitalWrite(PIN_PUMP, relayOff);
                 }
             break;
 
             case 40:
-                // wait 5 Sec until next brew, detection
-                if (brewswitchTriggermillis + 5000 <= millis()) {
-                    brewswitchTriggerCase = 10;
-                    debugPrintln("brewswitchTriggerCase 40: Brew Trigger Next Loop");
-                }
+                // Go back to start and wait for brew button press
+                brewSwitchTriggerCase = 10;
+                debugPrintln("brewSwitchTriggerCase 40: Brew Trigger Next Loop");
                 break;
 
             case 50:
@@ -107,9 +144,9 @@ void checkbrewswitch() {
  * @brief Backflush
  */
 void backflush() {
-    if (backflushState != 10 && backflushON == 0) {
-        backflushState = 43;  // Force reset in case backflushON is reset during backflush!
-    } else if (offlineMode == 1 || brewcounter > kBrewIdle || maxflushCycles <= 0 || backflushON == 0) {
+    if (backflushState != 10 && backflushOn == 0) {
+        backflushState = 43;  // Force reset in case backflushOn is reset during backflush!
+    } else if (offlineMode == 1 || brewCounter > kBrewIdle || maxflushCycles <= 0 || backflushOn == 0) {
         return;
     }
 
@@ -123,14 +160,14 @@ void backflush() {
 
     checkbrewswitch();
 
-    if (brewswitch == LOW && backflushState > 10) {  // Abort function for state machine from every state
+    if (brewSwitch == LOW && backflushState > 10) {  // Abort function for state machine from every state
         backflushState = 43;
     }
 
-    // State machine for brew
+    // State machine for backflush
     switch (backflushState) {
         case 10:  // waiting step for brew switch turning on
-            if (brewswitch == HIGH && backflushON) {
+            if (brewSwitch == HIGH && backflushOn) {
                 startingTime = millis();
                 backflushState = 20;
             }
@@ -139,8 +176,8 @@ void backflush() {
 
         case 20:  // portafilter filling
             debugPrintln("portafilter filling");
-            digitalWrite(PIN_VALVE, relayON);
-            digitalWrite(PIN_PUMP, relayON);
+            digitalWrite(PIN_VALVE, relayOn);
+            digitalWrite(PIN_PUMP, relayOn);
             backflushState = 21;
 
             break;
@@ -155,8 +192,8 @@ void backflush() {
 
         case 30:  // flushing
             debugPrintln("flushing");
-            digitalWrite(PIN_VALVE, relayOFF);
-            digitalWrite(PIN_PUMP, relayOFF);
+            digitalWrite(PIN_VALVE, relayOff);
+            digitalWrite(PIN_PUMP, relayOff);
             flushCycles++;
             backflushState = 31;
 
@@ -173,10 +210,10 @@ void backflush() {
             break;
 
         case 43:  // waiting for brewswitch off position
-            if (brewswitch == LOW) {
+            if (brewSwitch == LOW) {
                 debugPrintln("backflush finished");
-                digitalWrite(PIN_VALVE, relayOFF);
-                digitalWrite(PIN_PUMP, relayOFF);
+                digitalWrite(PIN_VALVE, relayOff);
+                digitalWrite(PIN_PUMP, relayOff);
                 flushCycles = 0;
                 backflushState = 10;
             }
@@ -185,44 +222,43 @@ void backflush() {
     }
 }
 
-
 #if (BREWMODE == 1)  // normal brew mode (based on time)
 /**
  * @brief PreInfusion, Brew Normal
  */
 void brew() {
     if (OnlyPID == 0) {
-        unsigned long currentMillistemp = millis();
+        unsigned long currentMillisTemp = millis();
         checkbrewswitch();
 
-        if (brewswitch == LOW && brewcounter > kBrewIdle) {
+        if (brewSwitch == LOW && brewCounter > kBrewIdle) {
             // abort function for state machine from every state
             debugPrintln("Brew stopped manually");
-            brewcounter = kWaitBrewOff;
+            brewCounter = kWaitBrewOff;
         }
 
-        if (brewcounter > kBrewIdle && brewcounter < kWaitBrewOff) {
-            timeBrewed = currentMillistemp - startingTime;
+        if (brewCounter > kBrewIdle && brewCounter < kWaitBrewOff) {
+            timeBrewed = currentMillisTemp - startingTime;
         }
 
-        if (brewswitch == LOW && movingAverageInitialized) {
+        if (brewSwitch == LOW && movingAverageInitialized) {
             // check if brewswitch was turned off at least once, last time,
-            brewswitchWasOFF = true;
+            brewSwitchWasOff = true;
         }
 
-        totalBrewTime = (preinfusion * 1000) + (preinfusionpause * 1000) +
-            (brewtime * 1000);  // running every cycle, in case changes are done during brew
+        totalBrewTime = (preinfusion * 1000) + (preinfusionPause * 1000) +
+            (brewTime * 1000);  // running every cycle, in case changes are done during brew
 
         // state machine for brew
-        switch (brewcounter) {
+        switch (brewCounter) {
             case kBrewIdle: // waiting step for brew switch turning on
-                if (brewswitch == HIGH && backflushState == 10 && backflushON == 0 && brewswitchWasOFF) {
+                if (brewSwitch == HIGH && backflushState == 10 && backflushOn == 0 && brewSwitchWasOff) {
                     startingTime = millis();
 
-                    if (preinfusionpause == 0 || preinfusion == 0) {
-                        brewcounter = kBrewRunning;
+                    if (preinfusionPause == 0 || preinfusion == 0) {
+                        brewCounter = kBrewRunning;
                     } else {
-                        brewcounter = kPreinfusion;
+                        brewCounter = kPreinfusion;
                     }
 
                     coldstart = false;  // force reset coldstart if shot is pulled
@@ -234,69 +270,69 @@ void brew() {
 
             case kPreinfusion:  // preinfusioon
                 debugPrintln("Preinfusion");
-                digitalWrite(PIN_VALVE, relayON);
-                digitalWrite(PIN_PUMP, relayON);
-                brewcounter = kWaitPreinfusion;
+                digitalWrite(PIN_VALVE, relayOn);
+                digitalWrite(PIN_PUMP, relayOn);
+                brewCounter = kWaitPreinfusion;
 
                 break;
 
             case kWaitPreinfusion:  // waiting time preinfusion
                 if (timeBrewed > (preinfusion * 1000)) {
-                    brewcounter = kPreinfusionPause;
+                    brewCounter = kPreinfusionPause;
                 }
 
                 break;
 
             case kPreinfusionPause:  // preinfusion pause
                 debugPrintln("Preinfusion pause");
-                digitalWrite(PIN_VALVE, relayON);
-                digitalWrite(PIN_PUMP, relayOFF);
-                brewcounter = kWaitPreinfusionPause;
+                digitalWrite(PIN_VALVE, relayOn);
+                digitalWrite(PIN_PUMP, relayOff);
+                brewCounter = kWaitPreinfusionPause;
 
                 break;
 
             case kWaitPreinfusionPause:  // waiting time preinfusion pause
-                if (timeBrewed > ((preinfusion * 1000) + (preinfusionpause * 1000))) {
-                    brewcounter = kBrewRunning;
+                if (timeBrewed > ((preinfusion * 1000) + (preinfusionPause * 1000))) {
+                    brewCounter = kBrewRunning;
                 }
 
                 break;
 
             case kBrewRunning:  // brew running
                 debugPrintln("Brew started");
-                digitalWrite(PIN_VALVE, relayON);
-                digitalWrite(PIN_PUMP, relayON);
-                brewcounter = kWaitBrew;
+                digitalWrite(PIN_VALVE, relayOn);
+                digitalWrite(PIN_PUMP, relayOn);
+                brewCounter = kWaitBrew;
 
                 break;
 
             case kWaitBrew:  // waiting time brew
-                lastbrewTime = timeBrewed;
+                lastBrewTime = timeBrewed;
 
                 if (timeBrewed > totalBrewTime) {
-                    brewcounter = kBrewFinished;
+                    brewCounter = kBrewFinished;
                 }
 
                 break;
 
             case kBrewFinished:  // brew finished
                 debugPrintln("Brew stopped");
-                digitalWrite(PIN_VALVE, relayOFF);
-                digitalWrite(PIN_PUMP, relayOFF);
-                brewcounter = kWaitBrewOff;
+                digitalWrite(PIN_VALVE, relayOff);
+                digitalWrite(PIN_PUMP, relayOff);
+                brewCounter = kWaitBrewOff;
                 timeBrewed = 0;
 
                 break;
 
             case kWaitBrewOff:  // waiting for brewswitch off position
-                if (brewswitch == LOW) {
-                    digitalWrite(PIN_VALVE, relayOFF);
-                    digitalWrite(PIN_PUMP, relayOFF);
+                if (brewSwitch == LOW) {
+                    digitalWrite(PIN_VALVE, relayOff);
+                    digitalWrite(PIN_PUMP, relayOff);
 
                     // disarmed button
-                    currentMillistemp = 0;
+                    currentMillisTemp = 0;
                     brewDetected = 0;  // rearm brewDetection
-                    brewcounter = kBrewIdle;
+                    brewCounter = kBrewIdle;
                     timeBrewed = 0;
                 }
 
@@ -306,7 +342,6 @@ void brew() {
 }
 #endif
 
-
 #if (BREWMODE == 2)
 /**
  * @brief Weight based brew mode
@@ -314,35 +349,35 @@ void brew() {
 void brew() {
     if (OnlyPID == 0) {
         checkbrewswitch();
-        unsigned long currentMillistemp = millis();
+        unsigned long currentMillisTemp = millis();
 
-        if (brewswitch == LOW && brewcounter > kBrewIdle) {
+        if (brewSwitch == LOW && brewCounter > kBrewIdle) {
             // abort function for state machine from every state
-            brewcounter = kWaitBrewOff;
+            brewCounter = kWaitBrewOff;
         }
 
-        if (brewcounter > kBrewIdle && brewcounter < kWaitBrewOff) {
-            timeBrewed = currentMillistemp - startingTime;
+        if (brewCounter > kBrewIdle && brewCounter < kWaitBrewOff) {
+            timeBrewed = currentMillisTemp - startingTime;
             weightBrew = weight - weightPreBrew;
         }
 
-        if (brewswitch == LOW && movingAverageInitialized) {
+        if (brewSwitch == LOW && movingAverageInitialized) {
             // check if brewswitch was turned off at least once, last time,
-            brewswitchWasOFF = true;
+            brewSwitchWasOff = true;
         }
 
-        totalBrewTime = ((preinfusion * 1000) + (preinfusionpause * 1000) +
-            (brewtime * 1000));  // running every cycle, in case changes are done during brew
+        totalBrewTime = ((preinfusion * 1000) + (preinfusionPause * 1000) +
+            (brewTime * 1000));  // running every cycle, in case changes are done during brew
 
         // state machine for brew
-        switch (brewcounter) {
+        switch (brewCounter) {
             case 10:  // waiting step for brew switch turning on
-                if (brewswitch == HIGH && backflushState == 10 && backflushON == 0 && brewswitchWasOFF) {
+                if (brewSwitch == HIGH && backflushState == 10 && backflushOn == 0 && brewSwitchWasOff) {
                     startingTime = millis();
-                    brewcounter = kPreinfusion;
+                    brewCounter = kPreinfusion;
 
-                    if (preinfusionpause == 0 || preinfusion == 0) {
-                        brewcounter = kBrewRunning;
+                    if (preinfusionPause == 0 || preinfusion == 0) {
+                        brewCounter = kBrewRunning;
                     }
 
                     coldstart = false;  // force reset coldstart if shot is pulled
@@ -355,71 +390,71 @@ void brew() {
 
             case 20:  // preinfusioon
                 debugPrintln("Preinfusion");
-                digitalWrite(PIN_VALVE, relayON);
-                digitalWrite(PIN_PUMP, relayON);
-                brewcounter = kWaitPreinfusion;
+                digitalWrite(PIN_VALVE, relayOn);
+                digitalWrite(PIN_PUMP, relayOn);
+                brewCounter = kWaitPreinfusion;
 
                 break;
 
             case 21:  // waiting time preinfusion
                 if (timeBrewed > (preinfusion * 1000)) {
-                    brewcounter = kPreinfusionPause;
+                    brewCounter = kPreinfusionPause;
                 }
 
                 break;
 
             case 30:  // preinfusion pause
                 debugPrintln("preinfusion pause");
-                digitalWrite(PIN_VALVE, relayON);
-                digitalWrite(PIN_PUMP, relayOFF);
-                brewcounter = kWaitPreinfusionPause;
+                digitalWrite(PIN_VALVE, relayOn);
+                digitalWrite(PIN_PUMP, relayOff);
+                brewCounter = kWaitPreinfusionPause;
 
                 break;
 
             case 31:  // waiting time preinfusion pause
-                if (timeBrewed > ((preinfusion * 1000) + (preinfusionpause * 1000))) {
-                    brewcounter = kBrewRunning;
+                if (timeBrewed > ((preinfusion * 1000) + (preinfusionPause * 1000))) {
+                    brewCounter = kBrewRunning;
                 }
 
                 break;
 
             case 40:  // brew running
                 debugPrintln("Brew started");
-                digitalWrite(PIN_VALVE, relayON);
-                digitalWrite(PIN_PUMP, relayON);
-                brewcounter = kWaitBrew;
+                digitalWrite(PIN_VALVE, relayOn);
+                digitalWrite(PIN_PUMP, relayOn);
+                brewCounter = kWaitBrew;
 
                 break;
 
             case 41:  // waiting time brew
                 if (timeBrewed > totalBrewTime || (weightBrew > (weightSetpoint - scaleDelayValue))) {
-                    brewcounter = kBrewFinished;
+                    brewCounter = kBrewFinished;
                 }
 
                 if (timeBrewed > totalBrewTime) {
-                    brewcounter = kBrewFinished;
+                    brewCounter = kBrewFinished;
                 }
 
                 break;
 
             case 42:  // brew finished
                 debugPrintln("Brew stopped");
-                digitalWrite(PIN_VALVE, relayOFF);
-                digitalWrite(PIN_PUMP, relayOFF);
-                brewcounter = kWaitBrewOff;
+                digitalWrite(PIN_VALVE, relayOff);
+                digitalWrite(PIN_PUMP, relayOff);
+                brewCounter = kWaitBrewOff;
 
                 break;
 
             case 43:  // waiting for brewswitch off position
-                if (brewswitch == LOW) {
-                    digitalWrite(PIN_VALVE, relayOFF);
-                    digitalWrite(PIN_PUMP, relayOFF);
+                if (brewSwitch == LOW) {
+                    digitalWrite(PIN_VALVE, relayOff);
+                    digitalWrite(PIN_PUMP, relayOff);
 
                     // disarmed button
-                    currentMillistemp = 0;
+                    currentMillisTemp = 0;
                     timeBrewed = 0;
                     brewDetected = 0;  // rearm brewDetection
-                    brewcounter = kBrewIdle;
+                    brewCounter = kBrewIdle;
                 }
 
                 weightBrew = weight - weightPreBrew;  // always calculate weight to show on display

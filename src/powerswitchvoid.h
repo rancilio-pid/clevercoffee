@@ -9,7 +9,7 @@
  */
 
 int lastPowerSwitchTrigger = LOW;                   // the previous reading from the input pin
-int buttonStatePowerTrigger;                        // the current reading from the input pin
+int lastStatePowerTrigger;                          // the current reading from the input pin
 unsigned long lastDebounceTimePowerTrigger = 0;     // the last time the output pin was toggled
 unsigned long debounceDelayPowerTrigger = 50;       // the debounce time; increase if the output flickers
 
@@ -37,11 +37,11 @@ void checkPowerSwitch() {
             // delay, so take it as the actual current state:
 
             // if the button state has changed:
-            if (reading != buttonStatePowerTrigger) {
-                buttonStatePowerTrigger = reading;
+            if (reading != lastStatePowerTrigger) {
+                lastStatePowerTrigger = reading;
 
                 // only toggle heating power if the new button state is HIGH
-                if (buttonStatePowerTrigger == HIGH) {
+                if (lastStatePowerTrigger == HIGH) {
                     if (pidON == 0) {
                         Serial.println("Turn Heating ON");
                         pidON = 1;

@@ -255,7 +255,7 @@ void serverSetup() {
     });
 
     server.on("/toggleBackflush", HTTP_POST, [](AsyncWebServerRequest *request) {
-        int backflush = flipUintValue(backflushON);
+        int backflush = flipUintValue(backflushOn);
 
         setBackflush(backflush);
         debugPrintf("Toggle backflush mode: %i \n", backflush);
