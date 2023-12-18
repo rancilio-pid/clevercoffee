@@ -25,9 +25,9 @@ enum BrewState {
 BrewState brewcounter = kBrewIdle;
 int brewswitch = 0;
 int brewswitchTrigger = LOW;
-int buttonStateBrewTrigger;                     // the current reading from the input pin
+int lastButtonStateBrewTrigger;                        // the last valid reading from the input pin (debounced)
 unsigned long lastDebounceTimeBrewTrigger = 0;  // the last time the output pin was toggled
-unsigned long debounceDelayBrewTrigger = 50;
+unsigned long debounceDelayBrewTrigger = 20;    // >20ms when switches are "flicked"
 unsigned long brewswitchTriggermillis = 0;
 int brewswitchTriggerCase = 10;
 boolean brewswitchWasOFF = false;
@@ -39,6 +39,7 @@ unsigned long startingTime = 0;                     // start time of brew
 boolean brewPIDdisabled = false;                    // is PID disabled for delay after brew has started?
 const unsigned long analogreadingtimeinterval = 10; // ms
 unsigned long previousMillistempanalogreading;      // ms for analogreading
+const unsigned long brewTriggerLongPress = 500;     // time in ms until brew trigger will be interpreted as manual brewing
 
 // Shot timer with or without scale
 #if (ONLYPIDSCALE == 1 || BREWMODE == 2)
