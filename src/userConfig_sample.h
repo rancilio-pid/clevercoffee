@@ -38,7 +38,7 @@ enum MACHINE {
 #define SHOTTIMER 1                // 0 = deactivated, 1 = activated 2 = with scale
 #define HEATINGLOGO 0              // 0 = deactivated, 1 = Rancilio, 2 = Gaggia
 #define OFFLINEGLOGO 1             // 0 = deactivated, 1 = activated
-#define BREWSWITCHDELAY 3000       // time in ms that the brew switch will be delayed (shot timer will show that much longer after switching off)
+#define SHOTTIMERDISPLAYDELAY 3000 // time in ms that shot timer will be shown after brew finished
 #define VERBOSE 0                  // 1 = Show verbose output (serial connection), 0 = show less
 
 #define LANGUAGE 0                 // LANGUAGE = 0 (DE), LANGUAGE = 1 (EN), LANGUAGE = 2 (ES)

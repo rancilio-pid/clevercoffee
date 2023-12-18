@@ -106,7 +106,7 @@ void displayShottimer(void) {
         u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
         u8g2.setFont(u8g2_font_profont22_tf);
         u8g2.setCursor(64, 25);
-        u8g2.print(lastbrewTime / 1000, 1);
+        u8g2.print(lastBrewTime / 1000, 1);
         u8g2.setFont(u8g2_font_profont11_tf);
         displayWaterIcon(119, 1);
         u8g2.sendBuffer();
@@ -135,7 +135,7 @@ void displayShottimer(void) {
             u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
             u8g2.setFont(u8g2_font_profont22_tf);
             u8g2.setCursor(64, 15);
-            u8g2.print(lastbrewTime/1000, 1);
+            u8g2.print(lastBrewTime/1000, 1);
             u8g2.print("g");
             u8g2.setCursor(64, 38);
             u8g2.print(weightBrew, 0);

@@ -65,7 +65,7 @@ String getMachineName(MACHINE machine) {
  *      MQTT is also using maxWifiReconnects!
  */
 void checkMQTT() {
-    if (offlineMode == 1 || brewcounter > kBrewIdle) return;
+    if (offlineMode == 1 || brewCounter > kBrewIdle) return;
 
     if ((millis() - lastMQTTConnectionAttempt >= wifiConnectionDelay) && (MQTTReCnctCount <= maxWifiReconnects)) {
         if (!mqtt.connected()) {
@@ -451,7 +451,7 @@ int sendHASSIODiscoveryMsg() {
   // Switch Devices 
   DiscoveryObject pidOn = GenerateSwitchDevice("pidON", "Use PID"); 
   DiscoveryObject steamON = GenerateSwitchDevice("steamON", "Steam"); 
-  DiscoveryObject backflushON = GenerateSwitchDevice("backflushON", "Backflush"); 
+  DiscoveryObject backflushOn = GenerateSwitchDevice("backflushOn", "Backflush"); 
   DiscoveryObject startUsePonM = GenerateSwitchDevice("startUsePonM", "Use PonM");
   
 
@@ -474,7 +474,7 @@ int sendHASSIODiscoveryMsg() {
     brewtime,
     pidOn,
     steamON,
-    backflushON,
+    backflushOn,
     startUsePonM
   };
 
