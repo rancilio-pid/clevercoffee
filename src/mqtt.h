@@ -68,7 +68,7 @@ String getMachineName(MACHINE machine) {
  *      MQTT is also using maxWifiReconnects!
  */
 void checkMQTT() {
-    if (offlineMode == 1 || brewCounter > kBrewIdle) {
+    if (offlineMode == 1 || currBrewState > kBrewIdle) {
         return;
     }
 
