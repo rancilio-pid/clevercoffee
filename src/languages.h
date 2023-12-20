@@ -7,7 +7,7 @@
 #include "userConfig.h"
 
 #if (LANGUAGE == 0) // DE
-#if (DISPLAYTEMPLATE <= 3)
+#if (DISPLAYTEMPLATE <= 4)
     static const char *langstring_set_temp = "Soll:  ";
     static const char *langstring_current_temp = "Ist:   ";
     static const char *langstring_brew = "Brew:  ";
@@ -36,7 +36,7 @@ static const char *langstring_bckfactivated[] = {"Backflush aktiviert", "Bruehsc
 static const char *langstring_bckfrunning[] = {"Backflush aktiv:", "seit"};
 
 #elif LANGUAGE == 1 // EN
-#if (DISPLAYTEMPLATE <= 3)
+#if (DISPLAYTEMPLATE <= 4)
     static const char *langstring_set_temp = "Set:   ";
     static const char *langstring_current_temp = "Temp:  ";
     static const char *langstring_brew = "Brew:  ";
@@ -65,7 +65,7 @@ static const char *langstring_bckfactivated[] = {"Backflush activated", "Please 
 static const char *langstring_bckfrunning[] = {"Backflush running:", "from"};
 
 #elif LANGUAGE == 2 // ES
-#if (DISPLAYTEMPLATE <= 3)
+#if (DISPLAYTEMPLATE <= 4)
     static const char *langstring_set_temp = "Obj:  ";
     static const char *langstring_current_temp = "T:    ";
     static const char *langstring_brew = "Brew:  ";
