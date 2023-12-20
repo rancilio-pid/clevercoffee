@@ -7,11 +7,11 @@
 
 #pragma once
 
-#include <Arduino.h>
-#include "hardware/pinmapping.h"
+#include "hardware/Relay.h"
 
 extern double pidOutput;
 extern hw_timer_t *timer;
+extern Relay heaterRelay;
 
 unsigned int isrCounter = 0;  // counter for ISR
 unsigned long windowStartTime;
@@ -22,10 +22,10 @@ void IRAM_ATTR onTimer(){
     timerAlarmWrite(timer, 10000, true);
 
     if (pidOutput <= isrCounter) {
-        digitalWrite(PIN_HEATER, LOW);
+        heaterRelay.off();
     }
     else {
-        digitalWrite(PIN_HEATER, HIGH);
+        heaterRelay.on();
     }
 
     isrCounter += 10; // += 10 because one tick = 10ms

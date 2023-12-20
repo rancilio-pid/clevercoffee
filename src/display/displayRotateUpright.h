@@ -90,7 +90,7 @@ void displayEmergencyStop(void) {
  */
 void displayShottimer(void) {
     if (((timeBrewed > 0 && ONLYPID == 1) ||
-        (ONLYPID == 0 && brewCounter > kBrewIdle && brewCounter <= kBrewFinished))
+        (ONLYPID == 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished))
         && FEATURE_SHOTTIMER == 1 && SHOTTIMER_TYPE == 1)
     {
         u8g2.clearBuffer();

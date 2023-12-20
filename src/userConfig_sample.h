@@ -52,20 +52,26 @@ enum MACHINE {
 #define WIFICONNECTIONDELAY 10000  // delay between reconnects in ms
 
 // PID & Hardware
-#define ONLYPID 1                  // 0 = PID and preinfusion, 1 = Only PID
-#define ONLYPIDSCALE 0             // 0 = off , 1 = OnlyPID with Scale
-#define BREWMODE 1                 // 1 = Brew by time (with preinfusion); 2 = Brew by weight (from scale)
-#define FEATURE_BREWDETECTION 1    // 0 = deactivated, 1 = activated
-#define BREWDETECTION_TYPE 1       // 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = optocoupler for Only PID
-#define BREWSWITCH_TYPE 0          // 0 = no switch connected, 1 = normal switch, 2 = trigger switch
-#define POWERSWITCH_TYPE 0         // 0 = no switch connected, 1 = normal switch, 2 = trigger switch
-#define STEAMSWITCH_TYPE 0         // 0 = no switch connected, 1 = normal switch, 2 = trigger switch
-#define OPTOCOUPLER_TYPE HIGH      // BREWDETECTION 3 configuration; HIGH or LOW trigger optocoupler
-#define TRIGGER_TYPE HIGH          // LOW = low trigger, HIGH = high trigger relay for pump & valve
-#define FEATURE_TEMP_LED 0         // Blink status LED when temp is in range, 0 = deactivated, 1 = activated
-#define FEATURE_WATER_SENS 0       // 0 = deactivated, 1 = activated
-#define WATER_SENS_TYPE 0          // 0 = water sensor XKC-Y25-NPN connected, 1 = XKC-Y25-PNP connected
-#define FEATURE_PRESSURESENSOR 0   // 0 = deactivated, 1 = activated
+#define ONLYPID 1                             // 0 = PID and preinfusion, 1 = Only PID
+#define ONLYPIDSCALE 0                        // 0 = off , 1 = OnlyPID with Scale
+#define BREWMODE 1                            // 1 = Brew by time (with preinfusion); 2 = Brew by weight (from scale)
+#define FEATURE_BREWDETECTION 1               // 0 = deactivated, 1 = activated
+#define BREWDETECTION_TYPE 1                  // 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = optocoupler for Only PID
+#define FEATURE_POWERSWITCH 0                 // 0 = deactivated, 1 = activated
+#define POWERSWITCH_TYPE SWITCHTYPE_TOGGLE    // SWITCHTYPE_TOGGLE or SWITCHTYPE_MOMENTARY (trigger)
+#define FEATURE_BREWSWITCH 0                  // 0 = deactivated, 1 = activated
+#define BREWSWITCH_TYPE SWITCHTYPE_TOGGLE     // SWITCHTYPE_TOGGLE or SWITCHTYPE_MOMENTARY (trigger)
+#define FEATURE_STEAMSWITCH 1                 // 0 = deactivated, 1 = activated
+#define STEAMSWITCH_TYPE SWITCHTYPE_TOGGLE    // SWITCHTYPE_TOGGLE or SWITCHTYPE_MOMENTARY (trigger)
+#define OPTOCOUPLER_TYPE HIGH                 // BREWDETECTION 3 configuration; HIGH or LOW trigger optocoupler
+#define HEATER_SSR_TYPE HIGH_TRIGGER          // HIGH_TRIGGER = relay switches when input is HIGH, vice versa for LOW_TRIGGER
+#define PUMP_VALVE_SSR_TYPE HIGH_TRIGGER      // HIGH_TRIGGER = relay switches when input is HIGH, vice versa for LOW_TRIGGER
+#define FEATURE_STATUS_LED 0                  // Blink status LED when temp is in range, 0 = deactivated, 1 = activated
+#define FEATURE_BREW_LED 0                    // Turn on brew LED when brew is started, 0 = deactivated, 1 = activated
+#define LED_TYPE STANDARD_LED                 // STANDARD_LED for an LED connected to a GPIO pin, WS2812 for adressable LEDs 
+#define FEATURE_WATER_SENS 0                  // 0 = deactivated, 1 = activated
+#define WATER_SENS_TYPE 0                     // 0 = water sensor XKC-Y25-NPN connected, 1 = XKC-Y25-PNP connected
+#define FEATURE_PRESSURESENSOR 0              // 0 = deactivated, 1 = activated
 
 // Brew Scale
 #define SCALE_SAMPLES 2            // Load cell sample rate

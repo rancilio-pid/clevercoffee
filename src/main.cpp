@@ -30,12 +30,19 @@
 #include "display/bitmaps.h"               // user icons for display
 #include "languages.h"          // for language translation
 #include "storage.h"
-#include "isr.h"
+
 #include "debugSerial.h"
 #include "hardware/pinmapping.h"
+
 #include "userConfig.h"         // needs to be configured by the user
 #include "defaults.h"
 #include <os.h>
+#include "hardware/GPIOPin.h"
+#include "hardware/LED.h"
+#include "hardware/StandardLED.h"
+#include "hardware/Relay.h"
+#include "hardware/Switch.h"
+#include "hardware/IOSwitch.h"
 
 hw_timer_t *timer = NULL;
 
@@ -105,7 +112,6 @@ int offlineMode = 0;
 const int OnlyPID = ONLYPID;
 const int TempSensor = TEMPSENSOR;
 const int brewDetectionMode = BREWDETECTION_TYPE;
-const int triggerType = TRIGGER_TYPE;
 const int optocouplerType = OPTOCOUPLER_TYPE;
 const boolean ota = OTA;
 int BrewMode = BREWMODE;
@@ -152,6 +158,31 @@ bool coolingFlushDetectedQM = false;
     const unsigned long intervalPressure = 100;
     unsigned long previousMillisPressure;  // initialisation at the end of init()
 #endif
+
+GPIOPin* statusLedPin;
+GPIOPin* brewLedPin;
+
+LED* statusLed;
+LED* brewLed;
+
+GPIOPin heaterRelayPin(PIN_HEATER, GPIO_OUTPUT);
+Relay heaterRelay(heaterRelayPin, HEATER_SSR_TYPE);
+
+GPIOPin pumpRelayPin(PIN_PUMP, GPIO_OUTPUT);
+Relay pumpRelay(pumpRelayPin, PUMP_VALVE_SSR_TYPE);
+
+GPIOPin valveRelayPin(PIN_VALVE, GPIO_OUTPUT);
+Relay valveRelay(valveRelayPin, PUMP_VALVE_SSR_TYPE);
+
+GPIOPin* powerSwitchPin;
+GPIOPin* brewSwitchPin;
+GPIOPin* steamSwitchPin;
+
+Switch* powerSwitch;
+Switch* brewSwitch;
+Switch* steamSwitch;
+
+#include "isr.h"
 
 // Method forward declarations
 void setSteamMode(int steamMode);
@@ -255,7 +286,6 @@ SysPara<float> sysParaScale2Calibration(&scale2Calibration, -100000, 100000, STO
 SysPara<float> sysParaScaleKnownWeight(&scaleKnownWeight, 0, 2000, STO_ITEM_SCALE_KNOWN_WEIGHT);
 
 // Other variables
-int relayOn, relayOff;                          // used for relay trigger type. Do not change!
 boolean coldstart = true;                       // true = Rancilio started for first time
 boolean emergencyStop = false;                  // Emergency stop if temperature is too high
 double EmergencyStopTemp = 120;                 // Temp EmergencyStopTemp
@@ -443,6 +473,10 @@ const unsigned long intervalDisplay = 500;
     #endif
 #endif
 
+#include "powerHandler.h"
+#include "steamHandler.h"
+#include "hardware/brewScale.h"
+
 // Emergency stop if temp is too high
 void testEmergencyStop() {
     if (temperature > EmergencyStopTemp && emergencyStop == false) {
@@ -610,10 +644,6 @@ void refreshTemp() {
     }
 }
 
-#include "hardware/powerSwitch.h"
-#include "hardware/steamSwitch.h"
-#include "hardware/brewScale.h"
-
 /**
  * @brief Switch to offline mode if maxWifiReconnects were exceeded during boot
  */
@@ -642,7 +672,7 @@ void initOfflineMode() {
  * @brief Check if Wifi is connected, if not reconnect abort function if offline, or brew is running
  */
 void checkWifi() {
-    if (offlineMode == 1 || brewCounter > kBrewIdle) return;
+    if (offlineMode == 1 || currBrewState > kBrewIdle) return;
 
     /* if coldstart is still true when checkWifi() is called, then there was no WIFI connection
      * at boot -> connect and if it does not suceed, enter offlinemode
@@ -776,7 +806,7 @@ void brewDetection() {
         }
     }
     else if (brewDetectionMode == 2) {  // HW BD
-        if (brewCounter > kBrewIdle && brewDetected == 0) {
+        if (currBrewState > kBrewIdle && brewDetected == 0) {
             debugPrintln("HW Brew detected");
             timeBrewDetection = millis();
             isBrewDetected = 1;
@@ -913,7 +943,7 @@ void handleMachineState() {
                 pidMode = 0;
                 bPID.SetMode(pidMode);
                 pidOutput = 0;
-                digitalWrite(PIN_HEATER, LOW);  // Stop heating
+                heaterRelay.off();
 
                 // start PID again
                 pidMode = 1;
@@ -965,7 +995,7 @@ void handleMachineState() {
             }
 
             if ((timeBrewed > 0 && ONLYPID == 1) ||  // timeBrewed with Only PID
-                (ONLYPID == 0 && brewCounter > kBrewIdle && brewCounter <= kBrewFinished))
+                (ONLYPID == 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished))
             {
                 machineState = kBrew;
 
@@ -1018,7 +1048,7 @@ void handleMachineState() {
 
             // is a brew running? (values are set in brewDetection() above)
             if ((timeBrewed > 0 && ONLYPID == 1) ||
-                (ONLYPID == 0 && brewCounter > kBrewIdle && brewCounter <= kBrewFinished))
+                (ONLYPID == 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished))
             {
                 machineState = kBrew;
 
@@ -1066,7 +1096,7 @@ void handleMachineState() {
             brewDetection();
 
             if ((timeBrewed > 0 && ONLYPID == 1) ||  // timeBrewed with Only PID
-                (ONLYPID == 0 && brewCounter > kBrewIdle && brewCounter <= kBrewFinished))
+                (ONLYPID == 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished))
             {
                 machineState = kBrew;
 
@@ -1123,7 +1153,7 @@ void handleMachineState() {
             }
 
             if ((timeBrewed == 0 && brewDetectionMode == 3 && ONLYPID == 1) || // OnlyPID+: Voltage sensor BD timeBrewed == 0 -> switch is off again
-                ((brewCounter == kBrewIdle || brewCounter == kWaitBrewOff) && ONLYPID == 0)) // Hardware BD
+                ((currBrewState == kBrewIdle || currBrewState == kWaitBrewOff) && ONLYPID == 0)) // Hardware BD
             {
                 // delay shot timer display for voltage sensor or hw brew toggle switch (brew counter)
                 machineState = kShotTimerAfterBrew;
@@ -1195,7 +1225,7 @@ void handleMachineState() {
             }
 
             if ((timeBrewed > 0 && ONLYPID == 1 && brewDetectionMode == 3) ||  // Allow brew directly after BD only when using OnlyPID AND hardware brew switch detection
-                (ONLYPID == 0 && brewCounter > kBrewIdle && brewCounter <= kBrewFinished))
+                (ONLYPID == 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished))
             {
                 machineState = kBrew;
             }
@@ -2116,16 +2146,6 @@ void setup() {
 
     storageSetup();
 
-    // Define trigger type
-    if (triggerType) {
-        relayOn = HIGH;
-        relayOff = LOW;
-    } 
-    else {
-        relayOn = LOW;
-        relayOff = HIGH;
-    }
-
     if (optocouplerType == HIGH) {
         optocouplerOn = HIGH;
         optocouplerOff = LOW;
@@ -2135,22 +2155,18 @@ void setup() {
         optocouplerOff = HIGH;
     }
 
-    // Initialize Pins
-    pinMode(PIN_VALVE, OUTPUT);
-    pinMode(PIN_PUMP, OUTPUT);
-    pinMode(PIN_HEATER, OUTPUT);
-    digitalWrite(PIN_VALVE, relayOff);
-    digitalWrite(PIN_PUMP, relayOff);
-    digitalWrite(PIN_HEATER, LOW);
+    heaterRelay.off();
+    valveRelay.off();
+    pumpRelay.off();
 
-    // IF POWERSWITCH is connected
-    if (POWERSWITCH_TYPE > 0) {
-        pinMode(PIN_POWERSWITCH, INPUT_PULLDOWN);
+    if (FEATURE_POWERSWITCH) {
+        powerSwitchPin = new GPIOPin(PIN_POWERSWITCH, GPIO_INPUT_HARDWARE);
+        powerSwitch = new IOSwitch(*powerSwitchPin, POWERSWITCH_TYPE);
     }
 
-    // IF STEAMSWITCH is connected
-    if (STEAMSWITCH_TYPE > 0) {
-        pinMode(PIN_STEAMSWITCH, INPUT_PULLDOWN);
+    if (FEATURE_STEAMSWITCH) {
+        steamSwitchPin = new GPIOPin(PIN_STEAMSWITCH, GPIO_INPUT_HARDWARE);
+        steamSwitch = new IOSwitch(*steamSwitchPin, STEAMSWITCH_TYPE);
     }
 
     // IF optocoupler selected
@@ -2163,11 +2179,19 @@ void setup() {
         }
     }
     else {
-        pinMode(PIN_BREWSWITCH, INPUT_PULLDOWN);
+        brewSwitchPin = new GPIOPin(PIN_BREWSWITCH, GPIO_INPUT_HARDWARE);
+        brewSwitch = new IOSwitch(*brewSwitchPin, BREWSWITCH_TYPE);
     }
 
-    if (FEATURE_TEMP_LED) {
-        pinMode(PIN_STATUSLED, OUTPUT);
+    if (LED_TYPE == STANDARD_LED) {
+        statusLedPin = new GPIOPin(PIN_STATUSLED, GPIO_OUTPUT);
+        brewLedPin = new GPIOPin(PIN_BREWLED, GPIO_OUTPUT);
+        
+        statusLed = new StandardLED(*statusLedPin);
+        brewLed = new StandardLED(*brewLedPin);
+    }
+    else {
+        // TODO Addressable LEDs
     }
 
     #if FEATURE_WATER_SENS == 1
@@ -2274,10 +2298,7 @@ void setup() {
 
 void loop() {
     looppid();
-
-    if (FEATURE_TEMP_LED) {
-        loopLED();
-    }
+    loopLED();
 
     if (FEATURE_WATER_SENS == 1) {
         loopWater();
@@ -2316,7 +2337,7 @@ void looppid() {
         // Disable interrupt if OTA is starting, otherwise it will not work
         ArduinoOTA.onStart([]() {
             disableTimer1();
-            digitalWrite(PIN_HEATER, LOW);  // Stop heating
+            heaterRelay.off();
         });
 
         ArduinoOTA.onError([](ota_error_t error) { enableTimer1(); });
@@ -2428,7 +2449,7 @@ void looppid() {
             pidMode = 0;
             bPID.SetMode(pidMode);
             pidOutput = 0;
-            digitalWrite(PIN_HEATER, LOW);  // Stop heating
+            heaterRelay.off();
         }
     }
     else {  // no sensorerror, no pid off or no Emergency Stop
@@ -2534,11 +2555,22 @@ void looppid() {
 }
 
 void loopLED() {
-    if ((machineState == kPidNormal && (fabs(temperature  - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) {
-        digitalWrite(PIN_STATUSLED, HIGH);
+    if(FEATURE_STATUS_LED) {
+        if ((machineState == kPidNormal && (fabs(temperature  - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) {
+            statusLed->turnOn();
+        }
+        else {
+            statusLed->turnOff();
+        }
     }
-    else {
-        digitalWrite(PIN_STATUSLED, LOW);
+
+    if (FEATURE_BREW_LED) {
+        if (machineState == kBrew) {
+            brewLed->turnOn();
+        }
+        else {
+            brewLed->turnOff();
+        }
     }
 }
 
