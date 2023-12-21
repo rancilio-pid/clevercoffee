@@ -29,7 +29,12 @@ This software is Open Source: free of charge for you and customizable to your pe
 
 We recommend you have a look at the manual before starting a build, you can find the german one [here](https://rancilio-pid.github.io/ranciliopid-handbook/). It is currently being reworked to include all the latest features. The english one is sadly still very outdated but will also be updated soon.
 
-Our chat for collaboration and questions can be found[here](https://discord.gg/Kq5RFznuU4).
+## Chat and Support
+You will find more information, discussions, and support on our [Discord](https://discord.gg/Kq5RFznuU4) server.
+If you want to be part of the project and help with development of hardware, software and documentation you will also find the right channels there.
+**Please keep in mind that we only can give support for our own pcbs. We will not help with any hardware solutions that are not based on our own pcbs.**
+**Please do not offer any kind of pcb derivatives of our design or own developments without contacting us before.
+This can cause a ban on our discord server.**
 
 Video tutorial on how to flash the firmware (a little outdated but mostly still valid):<br>
 https://youtu.be/KZPjisOEcQ4
