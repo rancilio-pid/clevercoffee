@@ -120,16 +120,16 @@ const unsigned long fillTime = FILLTIME;
 const unsigned long flushTime = FLUSHTIME;
 int maxflushCycles = MAXFLUSHCYCLES;
 
-// Voltage Sensor
-unsigned long previousMillisVoltagesensorreading = millis();
-const unsigned long intervalVoltagesensor = 200;
+// Optocloupler
+unsigned long previousMillisoptoCouplerreading = millis();
+const unsigned long intervaloptoCoupler = 200;
 int optoCouplerON, optoCouplerOFF;
 
 // QuickMill thermoblock steam-mode (only for BREWDETECTION = 3)
 const int maxBrewDurationForSteamModeQM_ON = 200;   // if brewtime is shorter steam-mode starts
-const int minPVSOffTimedForSteamModeQM_OFF = 1500;  // if PVS-off-time is longer steam-mode ends
-unsigned long timePVStoON = 0;      // time pinvoltagesensor switched to ON
-unsigned long lastTimePVSwasON = 0; // last time pinvoltagesensor was ON
+const int minoptoCouplerOffTimedForSteamModeQM_OFF = 1500;  // if optocoupler-off-time is longer steam-mode ends
+unsigned long timeoptoCouplerON = 0;      // time optocoupler switched to ON
+unsigned long lastTimeoptoCouplerON = 0; // last time optocoupler was ON
 bool steamQM_active = false;        // steam-mode is active
 bool brewSteamDetectedQM = false;   // brew/steam detected, not sure yet what it is
 bool coolingFlushDetectedQM = false;
@@ -755,11 +755,11 @@ void brewDetection() {
         if ((digitalRead(PIN_BREWSWITCH) == optoCouplerOFF) && (brewDetected == 1 || coolingFlushDetectedQM == true)) {
             isBrewDetected = 0;  // rearm brewDetection
             brewDetected = 0;
-            timePVStoON = timeBrewed;  // for QuickMill
+            timeoptoCouplerON = timeBrewed;  // for QuickMill
             timeBrewed = 0;
             startingTime = 0;
             coolingFlushDetectedQM = false;
-            debugPrintln("HW Brew - Voltage Sensor - End");
+            debugPrintln("HW Brew - Optocoupler - End");
         }
     }
 
@@ -787,7 +787,7 @@ void brewDetection() {
                     if (pvs == optoCouplerON && brewDetected == 0 &&
                         brewSteamDetectedQM == 0 && !steamQM_active) {
                         timeBrewDetection = millis();
-                        timePVStoON = millis();
+                        timeoptoCouplerON = millis();
                         isBrewDetected = 1;
                         brewDetected = 0;
                         lastbrewTime = 0;
@@ -797,20 +797,20 @@ void brewDetection() {
                     }
 
                     const unsigned long minBrewDurationForSteamModeQM_ON = 50;
-                    if (brewSteamDetectedQM == 1 && millis()-timePVStoON > minBrewDurationForSteamModeQM_ON) {
+                    if (brewSteamDetectedQM == 1 && millis()-timeoptoCouplerON > minBrewDurationForSteamModeQM_ON) {
                         if (pvs == optoCouplerOFF) {
                             brewSteamDetectedQM = 0;
 
-                            if (millis() - timePVStoON < maxBrewDurationForSteamModeQM_ON) {
+                            if (millis() - timeoptoCouplerON < maxBrewDurationForSteamModeQM_ON) {
                                 debugPrintln("Quick Mill: steam-mode detected");
                                 initSteamQM();
                             } else {
                                 debugPrintf("*** ERROR: QuickMill: neither brew nor steam\n");
                             }
-                        } else if (millis() - timePVStoON > maxBrewDurationForSteamModeQM_ON) {
+                        } else if (millis() - timeoptoCouplerON > maxBrewDurationForSteamModeQM_ON) {
                             if (temperature < brewSetpoint + 2) {
                                 debugPrintln("Quick Mill: brew-mode detected");
-                                startingTime = timePVStoON;
+                                startingTime = timeoptoCouplerON;
                                 brewDetected = 1;
                                 brewSteamDetectedQM = 0;
                             } else {
@@ -825,7 +825,7 @@ void brewDetection() {
 
             // no Quickmill:
             default:
-                previousMillisVoltagesensorreading = millis();
+                previousMillisoptoCouplerreading = millis();
 
                 if (digitalRead(PIN_BREWSWITCH) == optoCouplerON && brewDetected == 0) {
                     debugPrintln("HW Brew - Voltage Sensor - Start");
@@ -879,7 +879,7 @@ void checkSteamON() {
             if (checkSteamOffQM() == true) {  // if true: steam-mode can be turned off
                 steamON = 0;
                 steamQM_active = false;
-                lastTimePVSwasON = 0;
+                lastTimeoptoCouplerON = 0;
             } else {
                 steamON = 1;
             }
@@ -897,23 +897,23 @@ void setEmergencyStopTemp() {
 
 void initSteamQM() {
     // Initialize monitoring for steam switch off for QuickMill thermoblock
-    lastTimePVSwasON = millis();  // time when pinvoltagesensor changes from ON to OFF
+    lastTimeoptoCouplerON = millis();  // time when optocoupler changes from ON to OFF
     steamQM_active = true;
-    timePVStoON = 0;
+    timeoptoCouplerON = 0;
     steamON = 1;
 }
 
 boolean checkSteamOffQM() {
     /* Monitor optocoupler during active steam mode of QuickMill
-     * thermoblock. Once the pinvolagesenor remains OFF for longer than a
+     * thermoblock. Once the optocoupler remains OFF for longer than a
      * pump-pulse time peride the switch is turned off and steam mode finished.
      */
     if (digitalRead(PIN_BREWSWITCH) == optoCouplerON) {
-        lastTimePVSwasON = millis();
+        lastTimeoptoCouplerON = millis();
     }
 
-    if ((millis() - lastTimePVSwasON) > minPVSOffTimedForSteamModeQM_OFF) {
-        lastTimePVSwasON = 0;
+    if ((millis() - lastTimeoptoCouplerON) > minoptoCouplerOffTimedForSteamModeQM_OFF) {
+        lastTimeoptoCouplerON = 0;
         return true;
     }
 
@@ -2131,7 +2131,7 @@ void setup() {
     previousMillisDisplay = currentTime;
     previousMillisMQTT = currentTime;
     previousMillisInflux = currentTime;
-    previousMillisVoltagesensorreading = currentTime;
+    previousMillisoptoCouplerreading = currentTime;
     lastMQTTConnectionAttempt = currentTime;
 
     #if (BREWMODE == 2)
