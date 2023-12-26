@@ -78,7 +78,6 @@ enum MACHINE {
 
 // PlatformIO OTA
 #define OTA true                   // true = OTA activated, false = OTA deactivated
-#define OTAHOST "silvia"           // Name to be shown in Arduino IDE/PlatformIO port
 #define OTAPASS "otapass"          // Password for OTA updates
 
 // MQTT
