@@ -112,7 +112,6 @@ unsigned long lastWifiConnectionAttempt = millis();
 unsigned int wifiReconnects = 0;  // actual number of reconnects
 
 // OTA
-const char *OTAhost = OTAHOST;
 const char *OTApass = OTAPASS;
 
 // Backflush values
@@ -2074,7 +2073,7 @@ void setup() {
 
         // OTA Updates
         if (ota && WiFi.status() == WL_CONNECTED) {
-            ArduinoOTA.setHostname(OTAhost);  //  Device name for OTA
+            ArduinoOTA.setHostname(hostname);  //  Device name for OTA
             ArduinoOTA.setPassword(OTApass);  //  Password for OTA
             ArduinoOTA.begin();
         }
