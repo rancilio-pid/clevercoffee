@@ -129,7 +129,7 @@ int optocouplerON, optocouplerOFF;
 const int maxBrewDurationForSteamModeQM_ON = 200;           // if brewtime is shorter steam-mode starts
 const int minOptocouplerOFFTimedForSteamModeQM_OFF = 1500;  // if optocoupler-off-time is longer steam-mode ends
 unsigned long timeOptocouplerON = 0;                        // time optocoupler switched to ON
-unsigned long lasttimeOptocouplerON = 0;                    // last time optocoupler was ON
+unsigned long lastTimeOptocouplerON = 0;                    // last time optocoupler was ON
 bool steamQM_active = false;                                // steam-mode is active
 bool brewSteamDetectedQM = false;                           // brew/steam detected, not sure yet what it is
 bool coolingFlushDetectedQM = false;
@@ -879,7 +879,7 @@ void checkSteamON() {
             if (checkSteamOffQM() == true) {  // if true: steam-mode can be turned off
                 steamON = 0;
                 steamQM_active = false;
-                lasttimeOptocouplerON = 0;
+                lastTimeOptocouplerON = 0;
             } else {
                 steamON = 1;
             }
@@ -897,7 +897,7 @@ void setEmergencyStopTemp() {
 
 void initSteamQM() {
     // Initialize monitoring for steam switch off for QuickMill thermoblock
-    lasttimeOptocouplerON = millis();  // time when optocoupler changes from ON to OFF
+    lastTimeOptocouplerON = millis();  // time when optocoupler changes from ON to OFF
     steamQM_active = true;
     timeOptocouplerON = 0;
     steamON = 1;
@@ -909,11 +909,11 @@ boolean checkSteamOffQM() {
      * pump-pulse time peride the switch is turned off and steam mode finished.
      */
     if (digitalRead(PIN_BREWSWITCH) == optocouplerON) {
-        lasttimeOptocouplerON = millis();
+        lastTimeOptocouplerON = millis();
     }
 
-    if ((millis() - lasttimeOptocouplerON) > minOptocouplerOFFTimedForSteamModeQM_OFF) {
-        lasttimeOptocouplerON = 0;
+    if ((millis() - lastTimeOptocouplerON) > minOptocouplerOFFTimedForSteamModeQM_OFF) {
+        lastTimeOptocouplerON = 0;
         return true;
     }
 

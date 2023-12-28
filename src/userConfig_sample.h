@@ -58,7 +58,7 @@ enum MACHINE {
 #define BREWSWITCHTYPE 0           // 0 = no switch connected, 1 = normal switch, 2 = trigger switch
 #define POWERSWITCHTYPE 0          // 0 = no switch connected, 1 = normal switch, 2 = trigger switch
 #define STEAMSWITCHTYPE 0          // 0 = no switch connected, 1 = normal switch, 2 = trigger switch
-#define optocouplerType HIGH       // BREWDETECTION 3 configuration; HIGH or LOW trigger optocoupler
+#define OPTOCOUPLERTYPE HIGH       // BREWDETECTION 3 configuration; HIGH or LOW trigger optocoupler
 #define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay for pump & valve
 #define PRESSURESENSOR 0           // 0 = no pressure sensor connected, 1 = pressure sensor connected
 #define TEMP_LED 1                 // Blink status LED when temp is in range
