@@ -14,7 +14,7 @@ This project implements a PID controller for stable and accurate temperature con
 Additional features include:
 
 * shot timer
-* pre-infusion (reduced initial pressure using a dimmer for the pump)
+* pre-infusion (wip: reduced initial pressure using a dimmer for the pump)
 * brew by weight (using weight cells, no support for external scales yet)
 * brew by time
 * pressure monitoring
