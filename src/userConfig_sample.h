@@ -90,20 +90,6 @@ enum MACHINE {
 #define MQTT_HASSIO_SUPPORT 0                           // Enables the Homeassistant Auto Discovery Feature
 #define MQTT_HASSIO_DISCOVERY_PREFIX "homeassistant"    // Homeassistant Auto Discovery Prefix
 
-// INFLUXDB
-#define INFLUXDB 0                 // 1 = INFLUX enabled, 0 = INFLUX disabled
-#define INFLUXDB_URL ""            // InfluxDB server address
-#define INFLUXDB_INSECURE 1        // 1 = INFLUXClient setInsecure enabled , 0 = INFLUXClient setInsecure disabled
-#define INFLUXDB_AUTH_TYPE 1       // 1 = API Token , 2 = User/Pass
-#define INFLUXDB_API_TOKEN ""
-#define INFLUXDB_ORG_NAME ""
-#define INFLUXDB_USER ""
-#define INFLUXDB_PASSWORD ""
-#define INFLUXDB_DB_NAME "coffee"  // InfluxDB bucket name
-#define INFLUXDB_INTERVAL 5000     // Send interval in milliseconds
-#define INFLUXDB_TIMEOUT 5000      // InfluxDB httpReadTimeout
-#define INFLUXDB_RETRIES 50         // Amount of retries to etablish an Influxdb Connection before disabling InfluxDB at all
-
 // PID Parameters (not yet in Web interface)
 #define EMA_FACTOR 0.6             // Smoothing of input that is used for Tv (derivative component of PID). Smaller means less smoothing but also less delay, 0 means no filtering
 
