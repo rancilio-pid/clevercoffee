@@ -18,7 +18,8 @@ enum BrewState {
     kBrewRunning = 40,
     kWaitBrew = 41,
     kBrewFinished = 42,
-    kWaitBrewOff = 43
+    kBrewWaitTrickle = 43,
+    kWaitBrewOff = 44
 };
 
 enum BackflushState {
@@ -65,6 +66,9 @@ boolean brewPIDDisabled = false;                    // is PID disabled for delay
     #if SCALE_TYPE == 0 
         HX711_ADC LoadCell2(PIN_HXDAT2, PIN_HXCLK);
     #endif 
+
+    unsigned long timeTrickling = 0;
+    unsigned long timeTrickleStarted = 0;
 #endif
 
 /**
@@ -373,9 +377,14 @@ void brew() {
             brewCounter = kWaitBrewOff;
         }
 
-        if (brewCounter > kBrewIdle && brewCounter < kWaitBrewOff) {
+        if (brewCounter > kBrewIdle && brewCounter < kBrewWaitTrickle) {
             timeBrewed = currentMillisTemp - startingTime;
+        }
+        if (brewCounter > kBrewIdle && brewCounter < kWaitBrewOff) {
             weightBrew = weight - weightPreBrew;
+        }
+        if (brewCounter == kBrewWaitTrickle) {
+            timeTrickling = currentMillisTemp - timeTrickleStarted;
         }
 
         if (brewSwitch == LOW && movingAverageInitialized) {
@@ -388,7 +397,7 @@ void brew() {
 
         // state machine for brew
         switch (brewCounter) {
-            case 10:  // waiting step for brew switch turning on
+            case kBrewIdle:  // waiting step for brew switch turning on
                 if (brewSwitch == HIGH && backflushState == 10 && backflushOn == 0 && brewSwitchWasOff) {
                     startingTime = millis();
                     brewCounter = kPreinfusion;
@@ -405,7 +414,7 @@ void brew() {
 
                 break;
 
-            case 20:  // preinfusioon
+            case kPreinfusion:  
                 debugPrintln("Preinfusion");
                 digitalWrite(PIN_VALVE, relayOn);
                 digitalWrite(PIN_PUMP, relayOn);
@@ -413,14 +422,14 @@ void brew() {
 
                 break;
 
-            case 21:  // waiting time preinfusion
+            case kWaitPreinfusion: 
                 if (timeBrewed > (preinfusion * 1000)) {
                     brewCounter = kPreinfusionPause;
                 }
 
                 break;
 
-            case 30:  // preinfusion pause
+            case kPreinfusionPause: 
                 debugPrintln("preinfusion pause");
                 digitalWrite(PIN_VALVE, relayOn);
                 digitalWrite(PIN_PUMP, relayOff);
@@ -428,14 +437,14 @@ void brew() {
 
                 break;
 
-            case 31:  // waiting time preinfusion pause
+            case kWaitPreinfusionPause: 
                 if (timeBrewed > ((preinfusion * 1000) + (preinfusionPause * 1000))) {
                     brewCounter = kBrewRunning;
                 }
 
                 break;
 
-            case 40:  // brew running
+            case kBrewRunning: 
                 debugPrintln("Brew started");
                 digitalWrite(PIN_VALVE, relayOn);
                 digitalWrite(PIN_PUMP, relayOn);
@@ -443,22 +452,30 @@ void brew() {
 
                 break;
 
-            case 41:  // waiting time brew
+            case kWaitBrew:  // waiting time brew
                 if (weightBrew > (weightSetpoint - scaleDelayValue)) {
                     brewCounter = kBrewFinished;
                 }
 
                 break;
 
-            case 42:  // brew finished
+            case kBrewFinished:  // brew finished
                 debugPrintln("Brew stopped");
                 digitalWrite(PIN_VALVE, relayOff);
                 digitalWrite(PIN_PUMP, relayOff);
-                brewCounter = kWaitBrewOff;
+                brewCounter = kBrewWaitTrickle;
+                timeTrickleStarted = currentMillisTemp;
 
                 break;
 
-            case 43:  // waiting for brewswitch off position
+            case kBrewWaitTrickle:
+                // Wait for at most 2 seconds for trickle to reach target weight
+                if (timeTrickling > 2000) {
+                    brewCounter = kWaitBrewOff;
+                }
+                break;
+
+            case kWaitBrewOff:  // waiting for brewswitch off position
                 if (brewSwitch == LOW) {
                     digitalWrite(PIN_VALVE, relayOff);
                     digitalWrite(PIN_PUMP, relayOff);
