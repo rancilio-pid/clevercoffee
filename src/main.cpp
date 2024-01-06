@@ -2098,10 +2098,10 @@ void setup() {
         mqttSensors["pressure"] = []{ return inputPressureFilter; };
     #endif
 
-    #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
+    #if (ONLYPIDSCALE == 1 || BREWMODE == 2) 
         mqttSensors["currentWeight"] = []{ return weight; };
+        mqttSensors["flowRate"] = []{ return flowRate; };
     #endif
-
 
     Serial.begin(115200);
 

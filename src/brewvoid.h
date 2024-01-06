@@ -54,13 +54,12 @@ boolean brewPIDDisabled = false;                    // is PID disabled for delay
     boolean scaleCalibrationOn = 0;
     boolean scaleTareOn = 0;
     int shottimerCounter = 10 ;
-    float calibrationValue = SCALE_CALIBRATION_FACTOR;  // use calibration example to get value
     float weight = 0;                                   // value from HX711
     float weightPreBrew = 0;                            // value of scale before wrew started
     float weightBrew = 0;                               // weight value of brew
     float scaleDelayValue = 2.5;                        // value in gramm that takes still flows onto the scale after brew is stopped
     bool scaleFailure = false;
-    const unsigned long intervalWeight = 200;           // weight scale
+    const unsigned long intervalWeight = 50;           // weight scale
     unsigned long previousMillisScale;                  // initialisation at the end of init()
     HX711_ADC LoadCell(PIN_HXDAT, PIN_HXCLK);
     #if SCALE_TYPE == 0 
@@ -69,6 +68,12 @@ boolean brewPIDDisabled = false;                    // is PID disabled for delay
 
     unsigned long timeTrickling = 0;
     unsigned long timeTrickleStarted = 0;
+
+    // flow rate calculation
+    unsigned long prevFlowRateTime = 0;
+    float prevFlowRateWeight = 0.0;
+    float flowRate = 0.0;
+    float flowRateEmaAlpha = 0.05;
 #endif
 
 /**
@@ -382,7 +387,13 @@ void brew() {
         }
         if (brewCounter > kBrewIdle && brewCounter < kWaitBrewOff) {
             weightBrew = weight - weightPreBrew;
+
+            // Avoid ugly scale glitches below 0g at the beginning of the shot
+            if (weightBrew < 0) {
+                weightBrew = 0;
+            }
         }
+
         if (brewCounter == kBrewWaitTrickle) {
             timeTrickling = currentMillisTemp - timeTrickleStarted;
         }
@@ -408,6 +419,8 @@ void brew() {
 
                     coldstart = false;  // force reset coldstart if shot is pulled
                     weightPreBrew = weight;
+                    prevFlowRateWeight = weight;
+                    prevFlowRateTime = currentMillisTemp;
                 } else {
                     backflush();
                 }
@@ -482,6 +495,7 @@ void brew() {
 
                     // disarmed button
                     currentMillisTemp = 0;
+                    lastBrewTime = timeBrewed;
                     timeBrewed = 0;
                     brewDetected = 0;  // rearm brewDetection
                     brewCounter = kBrewIdle;
@@ -490,6 +504,31 @@ void brew() {
                 weightBrew = weight - weightPreBrew;  // always calculate weight to show on display
 
                 break;
+        }
+
+        if (brewCounter > kBrewIdle && brewCounter < kWaitBrewOff) {
+            // Calculate time and weight difference
+            unsigned long timeDelta = currentMillisTemp - prevFlowRateTime;
+            float weightDelta = weightBrew - prevFlowRateWeight;
+            // avoid flowrate flicker when scale flickers negatively
+            if (weightDelta < 0) {
+                weightDelta = 0;
+            }
+
+            // Calculate flow rate
+            // we only get a new weight measurement every intervalWeight ms, so we do not need to compute this more often!
+            if (timeDelta > intervalWeight) {
+                float currentFlowRate = weightDelta / (timeDelta / 1000.0); // Flow rate in g/s
+                flowRate = flowRateEmaAlpha * currentFlowRate + (1 - flowRateEmaAlpha) * flowRate;
+
+                // debugPrintf("Delta %i, weightDelta %.2f. Curr: %.2f, flowrate %.2f //// time: %i, weight %.2f\n", timeDelta, weightDelta, currentFlowRate, flowRate, timeBrewed, weightBrew);
+
+                prevFlowRateTime = currentMillisTemp;
+                prevFlowRateWeight = weightBrew;
+            }
+        } 
+        else {
+            flowRate = 0;
         }
     }
 }
