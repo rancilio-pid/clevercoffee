@@ -52,25 +52,22 @@ void displayLogo(String displaymessagetext, String displaymessagetext2) {
     // Rancilio startup logo
     switch (machine) {
         case RancilioSilvia:  // Rancilio
-            u8g2.drawXBMP(41, 2, startLogoRancilio_width, startLogoRancilio_height,
-                            startLogoRancilio_bits);
+            u8g2.drawXBMP(41, 2, startLogoRancilio_width, startLogoRancilio_height, startLogoRancilio_bits);
             break;
 
         case RancilioSilviaE:  // Rancilio
-            u8g2.drawXBMP(41, 2, startLogoRancilio_width, startLogoRancilio_height,
-                            startLogoRancilio_bits);
+            u8g2.drawXBMP(41, 2, startLogoRancilio_width, startLogoRancilio_height, startLogoRancilio_bits);
             break;
 
         case Gaggia:  // Gaggia
-            u8g2.drawXBMP(0, 2, startLogoGaggia_width, startLogoGaggia_height,
-                            startLogoGaggia_bits);
+            u8g2.drawXBMP(0, 2, startLogoGaggia_width, startLogoGaggia_height, startLogoGaggia_bits);
             break;
 
         case QuickMill:  // Quickmill
-            u8g2.drawXBMP(22, 0, startLogoQuickMill_width, startLogoQuickMill_height,
-                            startLogoQuickMill_bits);
+            u8g2.drawXBMP(22, 0, startLogoQuickMill_width, startLogoQuickMill_height, startLogoQuickMill_bits);
             break;
     }
+
     u8g2.sendBuffer();
 }
 
@@ -78,8 +75,7 @@ void displayLogo(String displaymessagetext, String displaymessagetext2) {
 /**
  * @brief display emergency stop
  */
-void displayEmergencyStop(void)
-{
+void displayEmergencyStop(void) {
     u8g2.clearBuffer();
     u8g2.setCursor(1, 34);
     u8g2.print(langstring_current_temp_rot_ur);
@@ -123,8 +119,8 @@ void displayShottimer(void) {
         u8g2.print(timeBrewed / 1000, 1);
         u8g2.setFont(u8g2_font_profont11_tf);
         u8g2.sendBuffer();
-
     }
+
     if (SHOTTIMER == 1 && millis() >= lastbrewTimeMillis && // directly after creating lastbrewTimeMillis (happens when turning off the brew switch, case 43 in the code) should be started
         lastbrewTimeMillis + BREWSWITCHDELAY >= millis() && // should run until millis() has caught up with BREWSWITCHDELAY, this can be used to control the display duration
         lastbrewTimeMillis < totalBrewTime) // if the totalBrewTime is reached automatically, nothing should be done, otherwise wrong time will be displayed because switch is pressed later than totalBrewTime
