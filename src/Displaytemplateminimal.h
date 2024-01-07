@@ -53,7 +53,8 @@ void printScreen() {
                     u8g2.setFont(u8g2_font_profont22_tf);
                     u8g2.print(setpoint, numDecimalsSetpoint);
                 }
-            } else {
+            }
+            else {
                 u8g2.setCursor(2, 2);
                 u8g2.setFont(u8g2_font_profont22_tf);
                 u8g2.print(temperature, numDecimalsInput);
@@ -62,7 +63,8 @@ void printScreen() {
 
                 if (pidMode == 1) {
                     u8g2.print(char(74));
-                } else {
+                }
+                else {
                     u8g2.print(char(70));
                 }
 
@@ -73,13 +75,10 @@ void printScreen() {
 
             if (brewcounter > kBrewIdle) {
                 u8g2.setFont(u8g2_font_profont17_tf);
-
-                // Brew
                 u8g2.setCursor(2, 30);
-            } else {
+            } 
+            else {
                 u8g2.setFont(u8g2_font_profont10_tf);
-
-                // Brew
                 u8g2.setCursor(36, 30);
             }
 
@@ -89,7 +88,8 @@ void printScreen() {
 
             if (ONLYPID == 1) {
                 u8g2.print(brewtimesoftware, 0);
-            } else {
+            }
+            else {
                 u8g2.print(totalBrewTime / 1000, 0);
             }
 
@@ -112,13 +112,13 @@ void printScreen() {
                     u8g2.drawFrame(116, 28, 12, 12);
                     u8g2.drawXBMP(118, 30, 8, 8, antenna_NOK_u8g2);
                 }
-            } else {
+            }
+            else {
                 u8g2.drawFrame(116, 28, 12, 12);
                 u8g2.setCursor(120, 30);
                 u8g2.print("O");
             }
 
-            displayIcons();
             u8g2.sendBuffer();
         }
     }

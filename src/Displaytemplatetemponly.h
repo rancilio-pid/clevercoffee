@@ -18,8 +18,8 @@ void printScreen() {
     if ((machineState == kAtSetpoint || machineState == kPidNormal || machineState == kBrewDetectionTrailing) ||
         ((machineState == kBrew || machineState == kShotTimerAfterBrew) && SHOTTIMER == 0) ||  // shottimer == 0, auch Bezug anzeigen
         machineState == kCoolDown || ((machineState == kInit || machineState == kColdStart) && HEATINGLOGO == 0) ||
-        ((machineState == kPidOffline) && OFFLINEGLOGO == 0)) {
-
+        ((machineState == kPidOffline) && OFFLINEGLOGO == 0))
+    {
         if (!sensorError) {
             u8g2.clearBuffer();
 
@@ -31,18 +31,21 @@ void printScreen() {
                         u8g2.setCursor(13, 12);
                         u8g2.setFont(u8g2_font_fub35_tf);
                         u8g2.print(temperature, 1);
-                    } else {
+                    }
+                    else {
                         u8g2.setCursor(-1, 12);
                         u8g2.setFont(u8g2_font_fub35_tf);
                         u8g2.print(temperature, 1);
                     }
                 }
-            } else {
+            }
+            else {
                 if (temperature < 99.999) {
                     u8g2.setCursor(13, 12);
                     u8g2.setFont(u8g2_font_fub35_tf);
                     u8g2.print(temperature, 1);
-                } else {
+                }
+                else {
                     u8g2.setCursor(-1, 12);
                     u8g2.setFont(u8g2_font_fub35_tf);
                     u8g2.print(temperature, 1);
@@ -58,13 +61,13 @@ void printScreen() {
                 u8g2.drawFrame(116, 28, 12, 12);
                 u8g2.drawXBMP(118, 30, 8, 8, antenna_NOK_u8g2);
             }
-        } else {
+        }
+        else {
             u8g2.drawFrame(116, 28, 12, 12);
             u8g2.setCursor(120, 30);
             u8g2.print("O");
         }
 
-        displayIcons();
         u8g2.sendBuffer();
     }
 }
