@@ -52,13 +52,15 @@ void printScreen()
                 u8g2.drawLine(12, 48, 12, 58 - (temperature  / 2));
                 u8g2.drawLine(13, 48, 13, 58 - (temperature  / 2));
             }
-        } else if (temperature > 106) {
+        }
+        else if (temperature > 106) {
             u8g2.drawLine(9, 48, 9, 5);
             u8g2.drawLine(10, 48, 10, 4);
             u8g2.drawLine(11, 48, 11, 3);
             u8g2.drawLine(12, 48, 12, 4);
             u8g2.drawLine(13, 48, 13, 5);
-        } else {
+        }
+        else {
             u8g2.drawLine(9, 48, 9, 58 - (temperature  / 2));
             u8g2.drawLine(10, 48, 10, 58 - (temperature  / 2));
             u8g2.drawLine(11, 48, 11, 58 - (temperature  / 2));
@@ -88,7 +90,8 @@ void printScreen()
 
         if (pidOutput < 99) {
             u8g2.print(pidOutput / 10, 1);
-        } else {
+        }
+        else {
             u8g2.print(pidOutput / 10, 0);
         }
 
@@ -110,7 +113,8 @@ void printScreen()
             else {
                 u8g2.print(totalBrewTime / 1000, 1); // Activate if pre-infusion and one decimal place or alternatively none
             }
-        } else {
+        }
+        else {
             // Show uptime of machine
             u8g2.print(langstring_uptime);
             float seconds = millis() / 1000;
@@ -138,7 +142,8 @@ void printScreen()
                 for (int b = 0; b <= signalBars; b++) {
                     u8g2.drawVLine(45 + (b * 2), 10 - (b * 2), b * 2);
                 }
-            } else {
+            }
+            else {
                 u8g2.drawXBMP(40, 2, 8, 8, antenna_NOK_u8g2);
                 u8g2.setCursor(88, 1);
                 u8g2.print("RC: ");
@@ -155,12 +160,12 @@ void printScreen()
                     u8g2.print("");
                 }
             }
-        } else {
+        } 
+        else {
             u8g2.setCursor(40, 1);
             u8g2.print(langstring_offlinemode);
         }
 
-        displayIcons();
         u8g2.sendBuffer();
     }
 }

@@ -44,13 +44,15 @@ void printScreen() {
                 u8g2.drawLine(12, 48, 12, 58 - (temperature / 2));
                 u8g2.drawLine(13, 48, 13, 58 - (temperature / 2));
             }
-        } else if (temperature > 106) {
+        }
+        else if (temperature > 106) {
             u8g2.drawLine(9, 48, 9, 5);
             u8g2.drawLine(10, 48, 10, 4);
             u8g2.drawLine(11, 48, 11, 3);
             u8g2.drawLine(12, 48, 12, 4);
             u8g2.drawLine(13, 48, 13, 5);
-        } else {
+        }
+        else {
             u8g2.drawLine(9, 48, 9, 58 - (temperature / 2));
             u8g2.drawLine(10, 48, 10, 58 - (temperature / 2));
             u8g2.drawLine(11, 48, 11, 58 - (temperature / 2));
@@ -69,7 +71,8 @@ void printScreen() {
 
         if (ONLYPID == 1) {
             u8g2.print(brewtimesoftware, 0);   // deaktivieren wenn Preinfusion ( // voransetzen )
-        } else {
+        }
+        else {
             u8g2.print(totalBrewTime / 1000, 1);    // aktivieren wenn Preinfusion und eine Nachkommastelle
                                                     // oder alternativ keine
         }
@@ -79,10 +82,12 @@ void printScreen() {
 
         if (scaleFailure) {
             u8g2.print("fault");
-        } else {
+        }
+        else {
             if (brewswitch == LOW) {
                 u8g2.print(weight, 0);
-            } else {
+            }
+            else {
                 u8g2.print(weightBrew, 0);
             }
 
@@ -114,7 +119,8 @@ void printScreen() {
                 for (int b = 0; b <= signalBars; b++) {
                     u8g2.drawVLine(45 + (b * 2), 10 - (b * 2), b * 2);
                 }
-            } else {
+            }
+            else {
                 u8g2.drawXBMP(40, 2, 8, 8, antenna_NOK_u8g2);
                 u8g2.setCursor(88, 2);
                 u8g2.print("RC: ");
@@ -126,17 +132,18 @@ void printScreen() {
                     u8g2.setCursor(60, 1);
                     u8g2.setFont(u8g2_font_profont11_tf);
                     u8g2.print("MQTT");
-                } else {
+                }
+                else {
                     u8g2.setCursor(60, 2);
                     u8g2.print("");
                 }
             }
-        } else {
+        }
+        else {
             u8g2.setCursor(40, 2);
             u8g2.print("Offline Mode");
         }
 
-        displayIcons();
         u8g2.sendBuffer();
     }
 }
