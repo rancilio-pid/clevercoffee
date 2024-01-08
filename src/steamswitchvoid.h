@@ -33,7 +33,7 @@ void checkSteamSwitch() {
                 if (checkSteamOffQM() == true) {  // if true: steam-mode can be turned off
                     steamON = 0;
                     steamQM_active = false;
-                    lastTimePVSwasON = 0;
+                    lastTimeOptocouplerOn = 0;
                 } else {
                     steamON = 1;
                 }
