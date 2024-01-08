@@ -253,7 +253,7 @@ int backflushState = 10;         // counter for state machine
 // Water sensor
 boolean waterFull = true;
 unsigned long lastWaterCheck;
-const unsigned long WaterCheckInterval = 200;   // Check water level every 200 ms
+const unsigned long waterCheckInterval = 200;   // Check water level every 200 ms
 int waterCheckConsecutiveReads = 0;             // Counter for consecutive readings of water sensor
 const int waterCountsNeeded = 3;                // Number of same readings to change water sensing
 
@@ -2474,7 +2474,7 @@ void loopLED() {
 }
 
 void loopWater() {
-    if ((millis() - lastWaterCheck) > WaterCheckInterval) {
+    if ((millis() - lastWaterCheck) > waterCheckInterval) {
         lastWaterCheck = millis();
 
         bool isWaterDetected = digitalRead(PIN_WATERSENSOR) == (WATER_SENS == 1 ? LOW : HIGH);
