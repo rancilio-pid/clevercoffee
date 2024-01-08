@@ -2322,7 +2322,6 @@ void looppid() {
         brew();
     }
 
-    setEmergencyStopTemp();
     checkSteamSwitch();
     checkPowerSwitch();
 
