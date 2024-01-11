@@ -53,7 +53,6 @@ void printScreen() {
 
             u8g2.setFont(u8g2_font_profont11_tf);
 
-            // print brewdetection
             if (isBrewDetected == 1) {
                 u8g2.setCursor(1, 75);
                 u8g2.print("BD ");
@@ -62,16 +61,16 @@ void printScreen() {
                 u8g2.print(brewtimesoftware, 0);
             }
 
-            // PID Werte ueber heatbar
+            // PID values above heater output bar
             u8g2.setCursor(1, 84);
             u8g2.print("P: ");
-            u8g2.print(bPID.GetKp(), 0); // P
+            u8g2.print(bPID.GetKp(), 0);
 
             u8g2.setCursor(1, 93);
             u8g2.print("I: ");
 
             if (bPID.GetKi() != 0) {
-                u8g2.print(bPID.GetKp() / bPID.GetKi(), 0); // I
+                u8g2.print(bPID.GetKp() / bPID.GetKi(), 0);
             }
             else {
                 u8g2.print("0");
@@ -79,7 +78,7 @@ void printScreen() {
 
             u8g2.setCursor(1, 102);
             u8g2.print("D: ");
-            u8g2.print(bPID.GetKd() / bPID.GetKp(), 0); // D
+            u8g2.print(bPID.GetKd() / bPID.GetKp(), 0);
 
             u8g2.setCursor(1, 111);
 
@@ -113,13 +112,13 @@ void printScreen() {
                 getSignalStrength();
 
                 if (WiFi.status() == WL_CONNECTED) {
-                    u8g2.drawXBMP(4, 2, 8, 8, antenna_OK_u8g2);
+                    u8g2.drawXBMP(4, 2, 8, 8, Antenna_OK_Icon);
 
                     for (int b = 0; b <= signalBars; b++) {
                         u8g2.drawVLine(13 + (b * 2), 10 - (b * 2), b * 2);
                     }
                 } else {
-                    u8g2.drawXBMP(4, 2, 8, 8, antenna_NOK_u8g2);
+                    u8g2.drawXBMP(4, 2, 8, 8, Antenna_NOK_Icon);
                     u8g2.setCursor(56, 2);
                     u8g2.print("RC: ");
                     u8g2.print(wifiReconnects);

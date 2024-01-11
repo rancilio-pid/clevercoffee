@@ -26,7 +26,7 @@ void u8g2_prepare(void) {
  */
 void displayWaterIcon(int x, int y) {
     if (!waterFull) {
-        u8g2.drawXBMP(x, y, 8, 8, water_EMPTY_u8g2);
+        u8g2.drawXBMP(x, y, 8, 8, Water_Empty_Icon);
     }
 }
 
@@ -54,14 +54,14 @@ void displayWiFiStatus(int x, int y) {
     getSignalStrength();
 
     if (WiFi.status() == WL_CONNECTED) {
-        u8g2.drawXBMP(x, y, 8, 8, antenna_OK_u8g2);
+        u8g2.drawXBMP(x, y, 8, 8, Antenna_OK_Icon);
 
         for (int b = 0; b <= signalBars; b++) {
             u8g2.drawVLine(x + 5 + (b * 2), y + 8 - (b * 2), b * 2);
         }
     } 
     else {
-        u8g2.drawXBMP(x, y, 8, 8, antenna_NOK_u8g2);
+        u8g2.drawXBMP(x, y, 8, 8, Antenna_NOK_Icon);
         u8g2.setCursor(x + 5, y + 10);
         u8g2.setFont(u8g2_font_profont11_tf);
         u8g2.print("RC: ");
@@ -127,8 +127,11 @@ void drawTemperaturebar(int x, int y, int heightRange) {
 void displayHeatbar(int x, int y, int width) {
     u8g2.drawFrame(x, y, width, 4);
     int output = map(pidOutput / 10, 0, 100, 0, width);
-    u8g2.drawLine(x + 1, y + 1, x + output - 2, y + 1);
-    u8g2.drawLine(x + 1, y + 2, x + output - 2, y + 2);
+
+    if (output - 2 > 0) {
+        u8g2.drawLine(x + 2, y + 1, x + output - 2, y + 1);
+        u8g2.drawLine(x + 2, y + 2, x + output - 2, y + 2);
+    }
 }
 
 /** 
@@ -144,7 +147,7 @@ void displayStatusbar() {
         displayMQTTStatus(38, 0);
     } 
     else {
-        u8g2.setCursor(40, 1);
+        u8g2.setCursor(4, 0);
         u8g2.setFont(u8g2_font_profont11_tf);
         u8g2.print(langstring_offlinemode);
     }
@@ -181,24 +184,7 @@ void displayLogo(String displaymessagetext, String displaymessagetext2) {
     u8g2.drawStr(0, 47, displaymessagetext.c_str());
     u8g2.drawStr(0, 55, displaymessagetext2.c_str());
 
-    // Rancilio startup logo
-    switch (machine) {
-        case RancilioSilvia:  // Rancilio
-            u8g2.drawXBMP(41, 2, startLogoRancilio_width, startLogoRancilio_height, startLogoRancilio_bits);
-            break;
-
-        case RancilioSilviaE:  // Rancilio
-            u8g2.drawXBMP(41, 2, startLogoRancilio_width, startLogoRancilio_height, startLogoRancilio_bits);
-            break;
-
-        case Gaggia:  // Gaggia
-            u8g2.drawXBMP(0, 2, startLogoGaggia_width, startLogoGaggia_height, startLogoGaggia_bits);
-            break;
-
-        case QuickMill:  // Quickmill
-            u8g2.drawXBMP(22, 0, startLogoQuickMill_width, startLogoQuickMill_height, startLogoQuickMill_bits);
-            break;
-    }
+    u8g2.drawXBMP(38, 4, CleverCoffee_Logo_width, CleverCoffee_Logo_height, CleverCoffee_Logo);
 
     u8g2.sendBuffer();
 }
@@ -211,7 +197,7 @@ void displayShottimer(void) {
         u8g2.clearBuffer();
 
         // temp icon
-        u8g2.drawXBMP(0, 0, brew_cup_logo_width, brew_cup_logo_height, brew_cup_logo);
+        u8g2.drawXBMP(0, 0, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
         u8g2.setFont(u8g2_font_profont29_tf);
         u8g2.setCursor(54, 25);
         u8g2.print(timeBrewed / 1000, 1);
@@ -226,7 +212,7 @@ void displayShottimer(void) {
      */
     if (((machineState == kShotTimerAfterBrew) && SHOTTIMER == 1)) {
         u8g2.clearBuffer();
-        u8g2.drawXBMP(0, 0, brew_cup_logo_width, brew_cup_logo_height, brew_cup_logo);
+        u8g2.drawXBMP(0, 0, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
         u8g2.setFont(u8g2_font_profont29_tf);
         u8g2.setCursor(54, 25);
         u8g2.print(lastBrewTime / 1000, 1);
@@ -240,7 +226,7 @@ void displayShottimer(void) {
             u8g2.clearBuffer();
 
             // temp icon
-            u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
+            u8g2.drawXBMP(0, 0, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
             u8g2.setFont(u8g2_font_profont22_tf);
             u8g2.setCursor(64, 15);
             u8g2.print(timeBrewed / 1000, 1);
@@ -255,7 +241,7 @@ void displayShottimer(void) {
 
         if (((machineState == kShotTimerAfterBrew) && SHOTTIMER == 2)) {
             u8g2.clearBuffer();
-            u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
+            u8g2.drawXBMP(0, 0, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
             u8g2.setFont(u8g2_font_profont22_tf);
             u8g2.setCursor(64, 15);
             u8g2.print(lastBrewTime / 1000, 1);
@@ -284,14 +270,14 @@ void Displaymachinestate() {
         // Rancilio logo
         if (HEATINGLOGO == 1) {
             u8g2.drawXBMP(-1, 15, Rancilio_Silvia_Logo_width, Rancilio_Silvia_Logo_height, Rancilio_Silvia_Logo);
-            u8g2.drawXBMP(52, 15, Heiz_Logo_width, Heiz_Logo_height, Heiz_Logo);
+            u8g2.drawXBMP(52, 15, Heating_Logo_width, Heating_Logo_height, Heating_Logo);
             u8g2.setFont(u8g2_font_profont22_tf);
         }
 
         // Gaggia Logo
         if (HEATINGLOGO == 2) {
             u8g2.drawXBMP(0, 14, Gaggia_Classic_Logo_width, Gaggia_Classic_Logo_height, Gaggia_Classic_Logo);
-            u8g2.drawXBMP(53, 14, Heiz_Logo_width, Heiz_Logo_height, Heiz_Logo);
+            u8g2.drawXBMP(53, 15, Heating_Logo_width, Heating_Logo_height, Heating_Logo);
             u8g2.setFont(u8g2_font_profont22_tf);
         }
 
@@ -305,7 +291,7 @@ void Displaymachinestate() {
     // Offline logo
     if (OFFLINEGLOGO == 1 && machineState == kPidOffline) {
         u8g2.clearBuffer();
-        u8g2.drawXBMP(38, 0, OFFLogo_width, OFFLogo_height, OFFLogo);
+        u8g2.drawXBMP(38, 0, Off_Logo_width, Off_Logo_height, Off_Logo);
         u8g2.setCursor(0, 55);
         u8g2.setFont(u8g2_font_profont10_tf);
         u8g2.print("PID is disabled manually");
@@ -315,7 +301,7 @@ void Displaymachinestate() {
 
     if (OFFLINEGLOGO == 1 && machineState == kStandby) {
         u8g2.clearBuffer();
-        u8g2.drawXBMP(38, 0, OFFLogo_width, OFFLogo_height, OFFLogo);
+        u8g2.drawXBMP(38, 0, Off_Logo_width, Off_Logo_height, Off_Logo);
         u8g2.setCursor(36, 55);
         u8g2.setFont(u8g2_font_profont10_tf);
         u8g2.print("Standby mode");
@@ -326,7 +312,7 @@ void Displaymachinestate() {
     // Steam
     if (machineState == kSteam) {
         u8g2.clearBuffer();
-        u8g2.drawXBMP(-4, 10, steamlogo_width, steamlogo_height, steamlogo);
+        u8g2.drawXBMP(-4, 10, Steam_Logo_width, Steam_Logo_height, Steam_Logo);
         
         u8g2.setFont(u8g2_font_profont29_tf);
 
@@ -348,7 +334,7 @@ void Displaymachinestate() {
     // Water empty
     if (machineState == kWaterEmpty) {
         u8g2.clearBuffer();
-        u8g2.drawXBMP( 45, 0, water_empty_big_width, water_empty_big_height, water_EMPTY_big_u8g2); 
+        u8g2.drawXBMP( 45, 0, Water_Empty_Logo_width, Water_Empty_Logo_height, Water_Empty_Logo); 
         u8g2.setFont(u8g2_font_profont11_tf);
         u8g2.sendBuffer();
     }

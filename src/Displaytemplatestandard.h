@@ -21,19 +21,19 @@ void printScreen()
         u8g2.setFont(u8g2_font_profont11_tf); // set font
         
         displayStatusbar();
-        
-        u8g2.setCursor(35, 14);
+
+        u8g2.setCursor(35, 16);
         u8g2.print(langstring_current_temp);
-        u8g2.setCursor(84, 14);
+        u8g2.setCursor(84, 16);
         u8g2.print(temperature, 1);
-        u8g2.setCursor(114, 14);
+        u8g2.setCursor(114, 16);
         u8g2.print((char)176);
         u8g2.print("C");
-        u8g2.setCursor(35, 24);
+        u8g2.setCursor(35, 26);
         u8g2.print(langstring_set_temp);
-        u8g2.setCursor(84, 24);
+        u8g2.setCursor(84, 26);
         u8g2.print(setpoint, 1);
-        u8g2.setCursor(114, 24);
+        u8g2.setCursor(114, 26);
         u8g2.print((char)176);
         u8g2.print("C");
 
@@ -47,6 +47,24 @@ void printScreen()
         }
         else {
             drawTemperaturebar(8, 50, 30);
+        }
+
+        // Brew time 
+        u8g2.setCursor(35, 36);
+
+        // Shot timer shown if machine is brewing and after the brew
+        if (machineState == kBrew || machineState == kShotTimerAfterBrew) {
+            u8g2.print(langstring_brew);
+            u8g2.setCursor(84, 36);
+            u8g2.print(timeBrewed / 1000, 0);
+            u8g2.print("/");
+
+            if (ONLYPID == 1) {
+                u8g2.print(brewtimesoftware, 0);
+            }
+            else {
+                u8g2.print(totalBrewTime / 1000, 1);
+            }
         }
 
         // PID values over heat bar
@@ -74,24 +92,6 @@ void printScreen()
         }
 
         u8g2.print("%");
-
-        // Brew time 
-        u8g2.setCursor(35, 34);
-
-        // Shot timer shown if machine is brewing and after the brew
-        if (machineState == kBrew || machineState == kShotTimerAfterBrew) {
-            u8g2.print(langstring_brew);
-            u8g2.setCursor(72, 34);
-            u8g2.print(timeBrewed / 1000, 0);
-            u8g2.print("/");
-
-            if (ONLYPID == 1) {
-                u8g2.print(brewtimesoftware, 0); // Deactivate if only pid without preinfusion
-            }
-            else {
-                u8g2.print(totalBrewTime / 1000, 1); // Activate if pre-infusion and one decimal place or alternatively none
-            }
-        }
 
         displayHeatbar(30, 60, 98);
 

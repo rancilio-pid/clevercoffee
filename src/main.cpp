@@ -27,7 +27,7 @@
 #include "PID_v1.h"             // for PID calculation
 
 // Includes
-#include "icon.h"               // user icons for display
+#include "bitmaps.h"               // user icons for display
 #include "languages.h"          // for language translation
 #include "Storage.h"
 #include "ISR.h"
