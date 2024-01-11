@@ -49,24 +49,7 @@ void displayLogo(String displaymessagetext, String displaymessagetext2) {
     u8g2.drawStr(0, 47, displaymessagetext.c_str());
     u8g2.drawStr(0, 55, displaymessagetext2.c_str());
 
-    // Rancilio startup logo
-    switch (machine) {
-        case RancilioSilvia:  // Rancilio
-            u8g2.drawXBMP(41, 2, startLogoRancilio_width, startLogoRancilio_height, startLogoRancilio_bits);
-            break;
-
-        case RancilioSilviaE:  // Rancilio
-            u8g2.drawXBMP(41, 2, startLogoRancilio_width, startLogoRancilio_height, startLogoRancilio_bits);
-            break;
-
-        case Gaggia:  // Gaggia
-            u8g2.drawXBMP(0, 2, startLogoGaggia_width, startLogoGaggia_height, startLogoGaggia_bits);
-            break;
-
-        case QuickMill:  // Quickmill
-            u8g2.drawXBMP(22, 0, startLogoQuickMill_width, startLogoQuickMill_height, startLogoQuickMill_bits);
-            break;
-    }
+    u8g2.drawXBMP(11, 4, CleverCoffee_Logo_width, CleverCoffee_Logo_height, CleverCoffee_Logo);
 
     u8g2.sendBuffer();
 }
@@ -107,13 +90,13 @@ void displayEmergencyStop(void) {
  */
 void displayShottimer(void) {
     if (((timeBrewed > 0 && ONLYPID == 1) ||
-        (ONLYPID == 0 && brewcounter > kBrewIdle && brewcounter <= kBrewFinished))
+        (ONLYPID == 0 && brewCounter > kBrewIdle && brewCounter <= kBrewFinished))
         && SHOTTIMER == 1)
     {
         u8g2.clearBuffer();
 
         // draw temp icon
-        u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
+        u8g2.drawXBMP(0, 0, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
         u8g2.setFont(u8g2_font_profont22_tf);
         u8g2.setCursor(5, 70);
         u8g2.print(timeBrewed / 1000, 1);
@@ -121,15 +104,15 @@ void displayShottimer(void) {
         u8g2.sendBuffer();
     }
 
-    if (SHOTTIMER == 1 && millis() >= lastbrewTimeMillis && // directly after creating lastbrewTimeMillis (happens when turning off the brew switch, case 43 in the code) should be started
-        lastbrewTimeMillis + BREWSWITCHDELAY >= millis() && // should run until millis() has caught up with BREWSWITCHDELAY, this can be used to control the display duration
-        lastbrewTimeMillis < totalBrewTime) // if the totalBrewTime is reached automatically, nothing should be done, otherwise wrong time will be displayed because switch is pressed later than totalBrewTime
+    if (SHOTTIMER == 1 && millis() >= lastBrewTimeMillis && // directly after creating lastbrewTimeMillis (happens when turning off the brew switch, case 43 in the code) should be started
+        lastBrewTimeMillis + SHOTTIMERDISPLAYDELAY >= millis() && // should run until millis() has caught up with SHOTTIMERDISPLAYDELAY, this can be used to control the display duration
+        lastBrewTimeMillis < totalBrewTime) // if the totalBrewTime is reached automatically, nothing should be done, otherwise wrong time will be displayed because switch is pressed later than totalBrewTime
     {
         u8g2.clearBuffer();
-        u8g2.drawXBMP(0, 0, brewlogo_width, brewlogo_height, brewlogo_bits_u8g2);
+        u8g2.drawXBMP(0, 0, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
         u8g2.setFont(u8g2_font_profont22_tf);
         u8g2.setCursor(5, 70);
-        u8g2.print((lastbrewTimeMillis - startingTime) / 1000, 1);
+        u8g2.print((lastBrewTimeMillis - startingTime) / 1000, 1);
         u8g2.setFont(u8g2_font_profont11_tf);
         u8g2.sendBuffer();
     }

@@ -17,16 +17,8 @@ void printScreen() {
         HEATINGLOGO == 0) || ((machineState == kPidOffline) && OFFLINEGLOGO == 0))
     {
         u8g2.clearBuffer();
-        u8g2.setFont(u8g2_font_profont11_tf);
 
         displayStatusbar();
-
-        u8g2.setCursor(32, 14);
-        u8g2.print("T:  ");
-        u8g2.print(temperature, 1);
-
-        u8g2.print("/");
-        u8g2.print(setpoint, 1);
 
         displayThermometerOutline(4, 62);
 
@@ -40,8 +32,21 @@ void printScreen() {
             drawTemperaturebar(8, 50, 30);
         }
 
+        u8g2.setFont(u8g2_font_profont11_tf);
+
+        u8g2.setCursor(32, 16);
+        u8g2.print("T: ");
+        u8g2.print(temperature, 1);
+
+        u8g2.print("/");
+        u8g2.print(setpoint, 1);
+
+        u8g2.setCursor(32, 26);
+        u8g2.print("W: ");
+
+
         // Brew
-        u8g2.setCursor(32, 34);
+        u8g2.setCursor(32, 36);
         u8g2.print("t: ");
         u8g2.print(timeBrewed / 1000, 0);
         u8g2.print("/");
@@ -53,29 +58,8 @@ void printScreen() {
             u8g2.print(totalBrewTime / 1000, 1);
         }
 
-        u8g2.setCursor(32, 24);
-        u8g2.print("W: ");
-
-        if (scaleFailure) {
-            u8g2.print("fault");
-        }
-        else {
-            if (brewswitch == LOW) {
-                u8g2.print(weight, 0);
-            }
-            else {
-                u8g2.print(weightBrew, 0);
-            }
-
-            u8g2.print("/");
-            u8g2.print(weightSetpoint, 0);
-            u8g2.print(" (");
-            u8g2.print(weightBrew, 1);
-            u8g2.print(")");
-        }
-
         #if (PRESSURESENSOR == 1)
-            u8g2.setCursor(32, 44);
+            u8g2.setCursor(32, 46);
             u8g2.print("P: ");
             u8g2.print(inputPressure, 1);
         #endif
