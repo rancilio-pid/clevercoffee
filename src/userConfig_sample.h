@@ -40,7 +40,6 @@ enum MACHINE {
 #define OFFLINEGLOGO 1             // 0 = deactivated, 1 = activated
 #define SHOTTIMERDISPLAYDELAY 3000 // time in ms that shot timer will be shown after brew finished
 #define VERBOSE 0                  // 1 = Show verbose output (serial connection), 0 = show less
-#define PRESSURE_VERBOSE 0         // 1 = show verbose pressure sensor output, 0 = show none
 
 #define LANGUAGE 0                 // LANGUAGE = 0 (DE), LANGUAGE = 1 (EN), LANGUAGE = 2 (ES)
 

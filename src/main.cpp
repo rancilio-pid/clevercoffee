@@ -2279,6 +2279,7 @@ void looppid() {
         }
     #endif
 
+    checkSteamSwitch();
     checkPowerSwitch();
 
     // set setpoint depending on steam or brew mode
