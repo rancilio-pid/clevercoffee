@@ -122,15 +122,15 @@ void drawTemperaturebar(int x, int y, int heightRange) {
 }
 
 /**
- * @brief Draw a bar showing the heater output in % at the given coordinates and with the given width 
+ * @brief Draw a bar visualizing the output in % at the given coordinates and with the given width
  */
-void displayHeatbar(int x, int y, int width) {
+void displayProgressbar(int value, int x, int y, int width) {
     u8g2.drawFrame(x, y, width, 4);
-    int output = map(pidOutput / 10, 0, 100, 0, width);
+    int output = map(value, 0, 100, 0, width);
 
     if (output - 2 > 0) {
-        u8g2.drawLine(x + 2, y + 1, x + output - 2, y + 1);
-        u8g2.drawLine(x + 2, y + 2, x + output - 2, y + 2);
+        u8g2.drawLine(x + 1, y + 1, x + output - 1, y + 1);
+        u8g2.drawLine(x + 1, y + 2, x + output - 1, y + 2);
     }
 }
 
@@ -181,7 +181,7 @@ void displayMessage(String text1, String text2, String text3, String text4, Stri
  */
 void displayLogo(String displaymessagetext, String displaymessagetext2) {
     u8g2.clearBuffer();
-    u8g2.drawStr(0, 47, displaymessagetext.c_str());
+    u8g2.drawStr(0, 45, displaymessagetext.c_str());
     u8g2.drawStr(0, 55, displaymessagetext2.c_str());
 
     u8g2.drawXBMP(38, 4, CleverCoffee_Logo_width, CleverCoffee_Logo_height, CleverCoffee_Logo);
@@ -281,24 +281,12 @@ void Displaymachinestate() {
 
         displayStatusbar();
 
-        // Rancilio logo
-        if (HEATINGLOGO == 1) {
-            u8g2.drawXBMP(-1, 15, Rancilio_Silvia_Logo_width, Rancilio_Silvia_Logo_height, Rancilio_Silvia_Logo);
-            u8g2.drawXBMP(52, 15, Heating_Logo_width, Heating_Logo_height, Heating_Logo);
-            u8g2.setFont(u8g2_font_profont22_tf);
-        }
-
-        // Gaggia Logo
-        if (HEATINGLOGO == 2) {
-            u8g2.drawXBMP(0, 14, Gaggia_Classic_Logo_width, Gaggia_Classic_Logo_height, Gaggia_Classic_Logo);
-            u8g2.drawXBMP(53, 15, Heating_Logo_width, Heating_Logo_height, Heating_Logo);
-            u8g2.setFont(u8g2_font_profont22_tf);
-        }
-
-        // Temperature
-        u8g2.setCursor(92, 30);
-        u8g2.setFont(u8g2_font_profont17_tf);
+        u8g2.drawXBMP(0, 20, Heating_Logo_width, Heating_Logo_height, Heating_Logo);
+        u8g2.setFont(u8g2_font_fub25_tf);
+        u8g2.setCursor(50, 30);
         u8g2.print(temperature, 1);
+        u8g2.drawCircle(122, 32, 3);
+
         u8g2.sendBuffer();
     }
 
