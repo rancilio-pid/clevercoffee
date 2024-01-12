@@ -197,9 +197,16 @@ void displayShottimer(void) {
         u8g2.clearBuffer();
 
         // temp icon
-        u8g2.drawXBMP(0, 0, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
-        u8g2.setFont(u8g2_font_profont29_tf);
-        u8g2.setCursor(54, 25);
+        u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
+        u8g2.setFont(u8g2_font_fub25_tf);
+
+        if (timeBrewed < 10000.000) {
+            u8g2.setCursor(64, 25);
+        }
+        else {
+            u8g2.setCursor(48, 25);
+        }
+
         u8g2.print(timeBrewed / 1000, 1);
         u8g2.setFont(u8g2_font_profont11_tf);
         displayWaterIcon(119, 1);
@@ -212,9 +219,16 @@ void displayShottimer(void) {
      */
     if (((machineState == kShotTimerAfterBrew) && SHOTTIMER == 1)) {
         u8g2.clearBuffer();
-        u8g2.drawXBMP(0, 0, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
-        u8g2.setFont(u8g2_font_profont29_tf);
-        u8g2.setCursor(54, 25);
+        u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
+        u8g2.setFont(u8g2_font_fub25_tf);
+
+        if (lastBrewTime < 10000.000) {
+            u8g2.setCursor(64, 25);
+        }
+        else {
+            u8g2.setCursor(48, 25);
+        }
+
         u8g2.print(lastBrewTime / 1000, 1);
         u8g2.setFont(u8g2_font_profont11_tf);
         displayWaterIcon(119, 1);
@@ -226,7 +240,7 @@ void displayShottimer(void) {
             u8g2.clearBuffer();
 
             // temp icon
-            u8g2.drawXBMP(0, 0, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
+            u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
             u8g2.setFont(u8g2_font_profont22_tf);
             u8g2.setCursor(64, 15);
             u8g2.print(timeBrewed / 1000, 1);
@@ -241,7 +255,7 @@ void displayShottimer(void) {
 
         if (((machineState == kShotTimerAfterBrew) && SHOTTIMER == 2)) {
             u8g2.clearBuffer();
-            u8g2.drawXBMP(0, 0, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
+            u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
             u8g2.setFont(u8g2_font_profont22_tf);
             u8g2.setCursor(64, 15);
             u8g2.print(lastBrewTime / 1000, 1);
@@ -312,20 +326,20 @@ void Displaymachinestate() {
     // Steam
     if (machineState == kSteam) {
         u8g2.clearBuffer();
-        u8g2.drawXBMP(-4, 10, Steam_Logo_width, Steam_Logo_height, Steam_Logo);
+        u8g2.drawXBMP(-1, 12, Steam_Logo_width, Steam_Logo_height, Steam_Logo);
         
-        u8g2.setFont(u8g2_font_profont29_tf);
+        u8g2.setFont(u8g2_font_fub30_tf);
 
         if (temperature < 99.999) {
-            u8g2.setCursor(80, 20);
+            u8g2.setCursor(68, 16);
             u8g2.print(temperature, 0);
         }
         else {
-            u8g2.setCursor(64, 20);
+            u8g2.setCursor(48, 16);
             u8g2.print(temperature, 0);
         }
         
-        u8g2.drawCircle(116, 27, 3);
+        u8g2.drawCircle(120, 20, 3);
 
         displayWaterIcon(119, 1);
         u8g2.sendBuffer();
