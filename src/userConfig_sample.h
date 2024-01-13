@@ -68,6 +68,11 @@ enum MACHINE {
 #define SCALE_SAMPLES 2                     // Load cell sample rate
 #define SCALE_CALIBRATION_FACTOR 3195.83    // Raw data is divided by this value to convert to readable data
 
+// Backflush values
+#define FILLTIME 5000              // time in ms the pump is running
+#define FLUSHTIME 10000            // time in ms the 3-way valve is open -> backflush
+#define MAXFLUSHCYCLES 5           // number of cycles the backflush should run, 0 = disabled
+
 /* Pressure sensor
  *
  * measure and verify "offset" value, should be 10% of ADC bit reading @supply volate (3.3V)

@@ -33,9 +33,9 @@ static const char *langstring_nowifi[] = {"Kein ", "WLAN"};
 static const char *langstring_error_tsensor[] = {"Fehler, Temp: ", "Temp.-Sensor ueberpruefen!"};
 // static const char *langstring_emergencyStop[] = {"HEATING", "STOPPED"};
 
-static const char *langstring_bckffinished[] = {"Backflush beendet", "Bitte Bruehschalter abschalten..."};
-static const char *langstring_bckfactivated[] = {"Backflush aktiviert", "Bruehschalter betaetigen ..."};
-static const char *langstring_bckfrunning[] = {"Backflush aktiv:", "seit"};
+static const char *langstring_backflush_press = "Bruehsch. druecken";
+static const char *langstring_backflush_start = "um zu Starten...";
+static const char *langstring_backflush_finish = "zum Beenden...";
 
 #elif LANGUAGE == 1 // EN
 #if (DISPLAYTEMPLATE <= 4)
@@ -62,9 +62,9 @@ static const char *langstring_nowifi[] = {"No ", "WIFI"};
 static const char *langstring_error_tsensor[] = {"Error, Temp: ", "Check Temp. sensor!"};
 // static const char *langstring_emergencyStop[] = {"HEATING", "STOPPED"};
 
-static const char *langstring_bckffinished[] = {"Backflush finished", "Please reset brew switch..."};
-static const char *langstring_bckfactivated[] = {"Backflush activated", "Please set brew switch..."};
-static const char *langstring_bckfrunning[] = {"Backflush running:", "from"};
+static const char *langstring_backflush_press = "Press brew switch";
+static const char *langstring_backflush_start = "to start...";
+static const char *langstring_backflush_finish = "to finish...";
 
 #elif LANGUAGE == 2 // ES
 #if (DISPLAYTEMPLATE <= 4)
@@ -91,7 +91,7 @@ static const char *langstring_nowifi[] = {"No ", "WIFI"};
 static const char *langstring_error_tsensor[] = {"Error, Temp: ", "Comprueba sensor T!"};
 // static const char *langstring_emergencyStop[] = {"CALENT.", "PARADO "};
 
-static const char *langstring_bckffinished[] = {"Backflush terminado", "Apague el boton de cafe..."};
-static const char *langstring_bckfactivated[] = {"Backflush activado ", "Encienda boton de cafe.."};
-static const char *langstring_bckfrunning[] = {"Backflush activo: ", "desde"};
+static const char *langstring_backflush_press = "Pulsa boton de cafe";
+static const char *langstring_backflush_start = "para empezar...";
+static const char *langstring_backflush_finish = "para terminar...";
 #endif

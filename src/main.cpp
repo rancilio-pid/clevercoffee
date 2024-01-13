@@ -249,7 +249,7 @@ boolean setupDone = false;
 int backflushOn = 0;                            // 1 = backflush mode active
 int flushCycles = 0;                            // number of active flush cycles
 
-int backflushState = kBackflushWaitBrewswitchOn;
+int backflushState = 10;
 
 // Water sensor
 boolean waterFull = true;
