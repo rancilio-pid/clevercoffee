@@ -184,7 +184,7 @@ void displayLogo(String displaymessagetext, String displaymessagetext2) {
     u8g2.drawStr(0, 45, displaymessagetext.c_str());
     u8g2.drawStr(0, 55, displaymessagetext2.c_str());
 
-    u8g2.drawXBMP(38, 4, CleverCoffee_Logo_width, CleverCoffee_Logo_height, CleverCoffee_Logo);
+    u8g2.drawXBMP(38, 0, CleverCoffee_Logo_width, CleverCoffee_Logo_height, CleverCoffee_Logo);
 
     u8g2.sendBuffer();
 }
@@ -343,23 +343,38 @@ void Displaymachinestate() {
 
     // Backflush
     if (machineState == kBackflush) {
-        u8g2.setFont(u8g2_font_profont11_tf);
-        
-        if (backflushState == 43) {
-            #if OLED_DISPLAY != 0
-                displayMessage(langstring_bckffinished[0], langstring_bckffinished[1], "", "", "", "");
-            #endif
-        } 
-        else if (backflushState == 10) {
-            #if OLED_DISPLAY != 0
-                displayMessage(langstring_bckfactivated[0], langstring_bckfactivated[1], "", "", "", "");
-            #endif
-        } 
-        else if (backflushState > 10) {
-            #if OLED_DISPLAY != 0
-                displayMessage(langstring_bckfrunning[0], String(flushCycles), langstring_bckfrunning[1], String(maxflushCycles), "", "");
-            #endif
+        u8g2.clearBuffer();
+        u8g2.setFont(u8g2_font_fub17_tf);
+        u8g2.setCursor(2, 10);
+        u8g2.print("Backflush");
+
+        switch (backflushState) {
+            case kBackflushWaitBrewswitchOn:
+                u8g2.setFont(u8g2_font_profont12_tf);
+                u8g2.setCursor(4, 37);
+                u8g2.print(langstring_backflush_press);
+                u8g2.setCursor(4, 50);
+                u8g2.print(langstring_backflush_start);
+                break;
+
+            case kBackflushWaitBrewswitchOff:
+                u8g2.setFont(u8g2_font_profont12_tf);
+                u8g2.setCursor(4, 37);
+                u8g2.print(langstring_backflush_press);
+                u8g2.setCursor(4, 50);
+                u8g2.print(langstring_backflush_finish);
+                break;
+
+            default:
+                u8g2.setFont(u8g2_font_fub17_tf);
+                u8g2.setCursor(42, 42);
+                u8g2.print(flushCycles + 1, 0);
+                u8g2.print("/");
+                u8g2.print(maxflushCycles, 0);
+                break;
         }
+
+        u8g2.sendBuffer();
     }
 
     // PID Off
