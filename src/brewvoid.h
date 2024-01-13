@@ -21,6 +21,15 @@ enum BrewState {
     kWaitBrewOff = 43
 };
 
+enum BackflushState {
+    kBackflushWaitBrewswitchOn = 10,
+    kBackflushFillingStart = 20,
+    kBackflushFilling = 21,
+    kBackflushFlushingStart = 30,
+    kBackflushFlushing = 31,
+    kBackflushWaitBrewswitchOff = 43
+};
+
 // Normal Brew
 BrewState brewCounter = kBrewIdle;
 int brewSwitch = 0;
@@ -139,14 +148,14 @@ void checkbrewswitch() {
     #endif
 }
 
-
 /**
  * @brief Backflush
  */
 void backflush() {
-    if (backflushState != 10 && backflushOn == 0) {
-        backflushState = 43;  // Force reset in case backflushOn is reset during backflush!
-    } else if (offlineMode == 1 || brewCounter > kBrewIdle || maxflushCycles <= 0 || backflushOn == 0) {
+    if (backflushState != kBackflushWaitBrewswitchOn && backflushOn == 0) {
+        backflushState = kBackflushWaitBrewswitchOff;  // Force reset in case backflushOn is reset during backflush!
+    }
+    else if (offlineMode == 1 || brewCounter > kBrewIdle || maxflushCycles <= 0 || backflushOn == 0) {
         return;
     }
 
@@ -160,62 +169,63 @@ void backflush() {
 
     checkbrewswitch();
 
-    if (brewSwitch == LOW && backflushState > 10) {  // Abort function for state machine from every state
-        backflushState = 43;
+    if (brewSwitch == LOW && backflushState != kBackflushWaitBrewswitchOn) {  // Abort function for state machine from every state
+        backflushState = kBackflushWaitBrewswitchOff;
     }
 
     // State machine for backflush
     switch (backflushState) {
-        case 10:  // waiting step for brew switch turning on
+        case kBackflushWaitBrewswitchOn:
             if (brewSwitch == HIGH && backflushOn) {
                 startingTime = millis();
-                backflushState = 20;
+                backflushState = kBackflushFillingStart;
             }
 
             break;
 
-        case 20:  // portafilter filling
-            debugPrintln("portafilter filling");
+        case kBackflushFillingStart:
+            debugPrintln("Backflush: Portafilter filling...");
             digitalWrite(PIN_VALVE, relayOn);
             digitalWrite(PIN_PUMP, relayOn);
-            backflushState = 21;
+            backflushState = kBackflushFilling;
 
             break;
 
-        case 21:  // waiting time for portafilter filling
+        case kBackflushFilling:
             if (millis() - startingTime > FILLTIME) {
                 startingTime = millis();
-                backflushState = 30;
+                backflushState = kBackflushFlushingStart;
             }
 
             break;
 
-        case 30:  // flushing
-            debugPrintln("flushing");
+        case kBackflushFlushingStart:
+            debugPrintln("Backflush: Flushing to drip tray...");
             digitalWrite(PIN_VALVE, relayOff);
             digitalWrite(PIN_PUMP, relayOff);
             flushCycles++;
-            backflushState = 31;
+            backflushState = kBackflushFlushing;
 
             break;
 
-        case 31:  // waiting time for flushing
+        case kBackflushFlushing:
             if (millis() - startingTime > flushTime && flushCycles < maxflushCycles) {
                 startingTime = millis();
-                backflushState = 20;
-            } else if (flushCycles >= maxflushCycles) {
-                backflushState = 43;
+                backflushState = kBackflushFillingStart;
+            }
+            else if (flushCycles >= maxflushCycles) {
+                backflushState = kBackflushWaitBrewswitchOff;
             }
 
             break;
 
-        case 43:  // waiting for brewswitch off position
+        case kBackflushWaitBrewswitchOff:
             if (brewSwitch == LOW) {
-                debugPrintln("backflush finished");
+                debugPrintln("Backflush: Finished!");
                 digitalWrite(PIN_VALVE, relayOff);
                 digitalWrite(PIN_PUMP, relayOff);
                 flushCycles = 0;
-                backflushState = 10;
+                backflushState = kBackflushWaitBrewswitchOn;
             }
 
             break;
