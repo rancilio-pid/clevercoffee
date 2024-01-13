@@ -238,17 +238,18 @@ SysPara<uint8_t> sysParaStandbyModeOn(&standbyModeOn, 0, 1, STO_ITEM_STANDBY_MOD
 SysPara<double> sysParaStandbyModeTime(&standbyModeTime, STANDBY_MODE_TIME_MIN, STANDBY_MODE_TIME_MAX, STO_ITEM_STANDBY_MODE_TIME);
 
 // Other variables
-int relayOn, relayOff;           // used for relay trigger type. Do not change!
-boolean coldstart = true;        // true = Rancilio started for first time
-boolean emergencyStop = false;   // Emergency stop if temperature is too high
-double EmergencyStopTemp = 120;  // Temp EmergencyStopTemp
-float inX = 0, inY = 0, inOld = 0, inSum = 0; // used for filterPressureValue()
-int signalBars = 0;              // used for getSignalStrength()
+int relayOn, relayOff;                          // used for relay trigger type. Do not change!
+boolean coldstart = true;                       // true = Rancilio started for first time
+boolean emergencyStop = false;                  // Emergency stop if temperature is too high
+double EmergencyStopTemp = 120;                 // Temp EmergencyStopTemp
+float inX = 0, inY = 0, inOld = 0, inSum = 0;   // used for filterPressureValue()
+int signalBars = 0;                             // used for getSignalStrength()
 boolean brewDetected = 0;
 boolean setupDone = false;
-int backflushOn = 0;             // 1 = backflush mode active
-int flushCycles = 0;             // number of active flush cycles
-int backflushState = 10;         // counter for state machine
+int backflushOn = 0;                            // 1 = backflush mode active
+int flushCycles = 0;                            // number of active flush cycles
+
+int backflushState = kBackflushWaitBrewswitchOn;
 
 // Water sensor
 boolean waterFull = true;
@@ -976,7 +977,7 @@ void handleMachineState() {
                 } 
             }
 
-            if (backflushOn || backflushState > 10) {
+            if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
                 machineState = kBackflush;
 
                 if (standbyModeOn) {
@@ -1021,7 +1022,7 @@ void handleMachineState() {
                 } 
             }
 
-            if (backflushOn || backflushState > 10) {
+            if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
                 machineState = kBackflush;
 
                 if (standbyModeOn) {
@@ -1077,7 +1078,7 @@ void handleMachineState() {
                 } 
             }
 
-            if (backflushOn || backflushState > 10) {
+            if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
                 machineState = kBackflush;
 
                 if (standbyModeOn) {
@@ -1113,8 +1114,7 @@ void handleMachineState() {
 
             // Output brew time, temp and tempRateAverage during brew (used for SW BD only)
             if (BREWDETECTION == 1 && logbrew.check()) {
-                debugPrintf("(tB,T,hra) --> %5.2f %6.2f %8.2f\n",
-                            (double)(millis() - startingTime) / 1000, temperature, tempRateAverage);
+                debugPrintf("(tB,T,hra) --> %5.2f %6.2f %8.2f\n", (double)(millis() - startingTime) / 1000, temperature, tempRateAverage);
             }
 
             if ((timeBrewed == 0 && brewDetectionMode == 3 && ONLYPID == 1) || // OnlyPID+: Voltage sensor BD timeBrewed == 0 -> switch is off again
@@ -1123,7 +1123,8 @@ void handleMachineState() {
                 // delay shot timer display for voltage sensor or hw brew toggle switch (brew counter)
                 machineState = kShotTimerAfterBrew;
                 lastBrewTimeMillis = millis();  // for delay
-            } else if (brewDetectionMode == 1 && ONLYPID == 1 && isBrewDetected == 0) {   // SW BD, kBrew was active for set time
+            } 
+            else if (brewDetectionMode == 1 && ONLYPID == 1 && isBrewDetected == 0) {   // SW BD, kBrew was active for set time
                 // when Software brew is finished, direct to PID BD
                 machineState = kBrewDetectionTrailing;
             }
@@ -1158,7 +1159,7 @@ void handleMachineState() {
                 machineState = kSteam;
             }
 
-            if (backflushOn || backflushState > 10) {
+            if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
                 machineState = kBackflush;
             }
 
@@ -1198,7 +1199,7 @@ void handleMachineState() {
                 machineState = kSteam;
             }
 
-            if (backflushOn || backflushState > 10) {
+            if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
                 machineState = kBackflush;
             }
 
@@ -1228,7 +1229,7 @@ void handleMachineState() {
                 machineState = kEmergencyStop;
             }
 
-            if (backflushOn || backflushState > 10) {
+            if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
                 machineState = kBackflush;
             }
 
@@ -1268,7 +1269,7 @@ void handleMachineState() {
                 machineState = kSteam;
             }
 
-            if (backflushOn || backflushState > 10) {
+            if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
                 machineState = kBackflush;
             }
 
@@ -1302,7 +1303,7 @@ void handleMachineState() {
                 machineState = kPidOffline;
             }
 
-            if (!waterFull) {
+            if (!waterFull && (backflushState == kBackflushWaitBrewswitchOn || backflushState == kBackflushWaitBrewswitchOff)) {
                 machineState = kWaterEmpty;
             }
 
