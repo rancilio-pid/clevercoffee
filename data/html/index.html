@@ -111,7 +111,7 @@
                                             <td><b>Toggle Calibration Mode</b></td>
                                             <td><span id="calibration_state"></span></td>
                                             <td>
-                                                <form action="/toggleCalibration" method="post">
+                                                <form>
                                                     <input type="hidden" id="varCALIBRATION_ON" name="varCALIBRATION_ON" />
                                                     <input type="submit" class="btn btn-primary" :value="param.value == 1 ? 'Off' : 'On'" id="calibration_toggle" @click.prevent="confirmSubmission"/>
                                                 </form>

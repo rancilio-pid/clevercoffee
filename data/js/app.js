@@ -9,7 +9,6 @@ const vueApp = Vue.createApp({
             showPostSucceeded: false
         }
     },
-    el: '#calibrationForm',
     methods: {
         fetchParameters() {
             fetch("/parameters")
@@ -75,8 +74,12 @@ const vueApp = Vue.createApp({
             return sectionNames[sectionId]
         },
         confirmSubmission() {
-            if(confirm('Are you sure you want to toggle the calibration?')) {
-                this.$el.submit();
+            if (confirm('Are you sure you want to toggle the calibration?')) {
+                const requestOptions = {
+                    method: "POST",
+                    cache: 'no-cache'
+                };
+                fetch("/toggleCalibration", requestOptions)
             }
         }
     },

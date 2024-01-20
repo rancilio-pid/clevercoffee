@@ -351,43 +351,45 @@ DiscoveryObject GenerateSwitchDevice(String name, String displayName, String pay
  * @return A `DiscoveryObject` containing the switch device configuration
  */
 DiscoveryObject GenerateButtonDevice(String name, String displayName, String payload_press = "1") {
-  String mqtt_topic = String(mqtt_topic_prefix) + String(hostname);
-  DiscoveryObject button_device;
-  String unique_id = "clevercoffee-" + String(hostname);
-  String buttonDiscoveryTopic = String(MQTT_HASSIO_DISCOVERY_PREFIX) + "/button/";
+    String mqtt_topic = String(mqtt_topic_prefix) + String(hostname);
+    DiscoveryObject button_device;
+    String unique_id = "clevercoffee-" + String(hostname);
+    String buttonDiscoveryTopic = String(MQTT_HASSIO_DISCOVERY_PREFIX) + "/button/";
 
-  String button_command_topic = mqtt_topic + "/"+ name +"/set";
-  String button_state_topic = mqtt_topic + "/"+ name;
+    String button_command_topic = mqtt_topic + "/"+ name +"/set";
+    String button_state_topic = mqtt_topic + "/"+ name;
 
-  button_device.discovery_topic = buttonDiscoveryTopic + unique_id + "-"+ name +"" +"/config";
-  
-  DynamicJsonDocument DeviceMapDoc(1024);
-  char DeviceMapBuffer[256];
-  DeviceMapDoc["identifiers"] = String(hostname);
-  DeviceMapDoc["manufacturer"] = "CleverCoffee";
-  DeviceMapDoc["model"] = getMachineName(machine);
-  DeviceMapDoc["name"] = String(hostname);
-  
-  DynamicJsonDocument buttonConfigDoc(512);
-  buttonConfigDoc["name"] = displayName;
-  buttonConfigDoc["command_topic"] = button_command_topic;
-  buttonConfigDoc["state_topic"] = button_state_topic;
-  buttonConfigDoc["unique_id"] = unique_id + "-"+name;
-  buttonConfigDoc["payload_press"] = payload_press;
-  buttonConfigDoc["payload_available"] = "online";
-  buttonConfigDoc["payload_not_available"] = "offline";
-  buttonConfigDoc["availability_topic"] = mqtt_topic+"/status";
+    button_device.discovery_topic = buttonDiscoveryTopic + unique_id + "-"+ name +"" +"/config";
 
-  JsonObject buttonDeviceField = buttonConfigDoc.createNestedObject("device");
-  for (JsonPair keyValue : DeviceMapDoc.as<JsonObject>()) {
-    buttonDeviceField[keyValue.key()] = keyValue.value();
-  }
+    DynamicJsonDocument DeviceMapDoc(1024);
+    char DeviceMapBuffer[256];
+    DeviceMapDoc["identifiers"] = String(hostname);
+    DeviceMapDoc["manufacturer"] = "CleverCoffee";
+    DeviceMapDoc["model"] = getMachineName(machine);
+    DeviceMapDoc["name"] = String(hostname);
 
-  String buttonConfigDocBuffer;
-  serializeJson(buttonConfigDoc, buttonConfigDocBuffer);
-  debugPrintln("Generated button device");
-  button_device.payload_json = buttonConfigDocBuffer;
-  return button_device;
+    DynamicJsonDocument buttonConfigDoc(512);
+    buttonConfigDoc["name"] = displayName;
+    buttonConfigDoc["command_topic"] = button_command_topic;
+    buttonConfigDoc["state_topic"] = button_state_topic;
+    buttonConfigDoc["unique_id"] = unique_id + "-"+name;
+    buttonConfigDoc["payload_press"] = payload_press;
+    buttonConfigDoc["payload_available"] = "online";
+    buttonConfigDoc["payload_not_available"] = "offline";
+    buttonConfigDoc["availability_topic"] = mqtt_topic+"/status";
+
+    JsonObject buttonDeviceField = buttonConfigDoc.createNestedObject("device");
+
+    for (JsonPair keyValue : DeviceMapDoc.as<JsonObject>()) {
+        buttonDeviceField[keyValue.key()] = keyValue.value();
+    }
+
+    String buttonConfigDocBuffer;
+    serializeJson(buttonConfigDoc, buttonConfigDocBuffer);
+    debugPrintln("Generated button device");
+    button_device.payload_json = buttonConfigDocBuffer;
+    
+    return button_device;
 }
 
 /**
