@@ -72,16 +72,15 @@ void checkWeight() {
             w1 = LoadCell.getData();
 
             #if SINGLE_HX711 == 0
-            w2 = LoadCell2.getData();
-            // debugPrintf("Current weight: %.2f from %.2f and %.2f\n", weight, w1, w2);
+                w2 = LoadCell2.getData();
             #endif
         }
     }
 
     #if SINGLE_HX711 == 0
-    weight = w1 + w2;
+        weight = w1 + w2;
     #else 
-    weight = w1;
+        weight = w1;
     #endif
 
     if (calibrationON) {
@@ -118,29 +117,23 @@ void initScale() {
 
     LoadCell.begin();
     #if SINGLE_HX711 == 0
-    LoadCell2.begin();
+        LoadCell2.begin();
     #endif 
-    // u8g2.clearBuffer();
-    // u8g2.drawStr(0, 2, "Taring scale"); 
-    // u8g2.drawStr(0, 12, "remove any load!");
-    // u8g2.drawStr(0, 22, "....");
-    // u8g2.sendBuffer();
-    // delay(2000);
 
     unsigned long stabilizingtime = 5000; // tare preciscion can be improved by adding a few seconds of stabilizing time
     boolean _tare = true; //set this to false if you don't want tare to be performed in the next step
 
     #if SINGLE_HX711 == 1
-    while(!LoadCell.startMultiple(stabilizingtime, _tare));
+        while(!LoadCell.startMultiple(stabilizingtime, _tare));
     #else 
-    byte loadCellReady = 0;
-    byte loadCell2Ready = 0;
-    // run startup, stabilization and tare, both modules simultaniously
-    // this parallel start seems to be the most important part to get accurate readings with two HX711s connected
-    while ((loadCellReady + loadCell2Ready) < 2) { 
-        if (!loadCellReady) loadCellReady = LoadCell.startMultiple(stabilizingtime, _tare);
-        if (!loadCell2Ready) loadCell2Ready = LoadCell2.startMultiple(stabilizingtime, _tare);
-    }
+        byte loadCellReady = 0;
+        byte loadCell2Ready = 0;
+        // run startup, stabilization and tare, both modules simultaniously
+        // this parallel start seems to be the most important part to get accurate readings with two HX711s connected
+        while ((loadCellReady + loadCell2Ready) < 2) { 
+            if (!loadCellReady) loadCellReady = LoadCell.startMultiple(stabilizingtime, _tare);
+            if (!loadCell2Ready) loadCell2Ready = LoadCell2.startMultiple(stabilizingtime, _tare);
+        }
     #endif
 
     if (LoadCell.getTareTimeoutFlag() || LoadCell.getSignalTimeoutFlag() ) {
@@ -169,8 +162,8 @@ void initScale() {
     LoadCell.setSamplesInUse(SCALE_SAMPLES);
 
     #if SINGLE_HX711 == 0
-    LoadCell2.setCalFactor(scale2Calibration); 
-    LoadCell2.setSamplesInUse(SCALE_SAMPLES);
+        LoadCell2.setCalFactor(scale2Calibration); 
+        LoadCell2.setSamplesInUse(SCALE_SAMPLES);
     #endif 
 
     calibrationON = 0;
@@ -182,17 +175,18 @@ void initScale() {
 void shottimerscale() {
     switch (shottimerCounter)  {
         case 10:    // waiting step for brew switch turning on
-        if (preinfusionPause == 0 || preinfusion == 0) {
-            if (timeBrewed > 0) {
-                weightPreBrew = weight;
-                shottimerCounter = 20;
+            if (preinfusionPause == 0 || preinfusion == 0) {
+                if (timeBrewed > 0) {
+                    weightPreBrew = weight;
+                    shottimerCounter = 20;
+                }
+            } 
+            else {
+                if (timeBrewed > preinfusion*1000) {
+                    weightPreBrew = weight;
+                    shottimerCounter = 20;
+                }
             }
-        } else {
-            if (timeBrewed > preinfusion*1000) {
-                weightPreBrew = weight;
-                shottimerCounter = 20;
-            }
-        }
 
             break;
 
