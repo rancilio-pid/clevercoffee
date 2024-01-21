@@ -137,9 +137,11 @@ void checkbrewswitch() {
             break;
 
             case 40:
-                // Go back to start and wait for brew button press
-                brewSwitchTriggerCase = 10;
-                debugPrintln("brewSwitchTriggerCase 40: Brew Trigger Next Loop");
+                // Once Toggle-Button is released, go back to start and wait for brew button press
+                if (brewSwitchTrigger == LOW) {
+                    brewSwitchTriggerCase = 10;
+                    debugPrintln("brewSwitchTriggerCase 40: Brew Trigger Next Loop");
+                }
                 break;
 
             case 50:
