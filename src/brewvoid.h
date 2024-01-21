@@ -142,6 +142,11 @@ void checkbrewswitch() {
                     brewSwitchTriggerCase = 10;
                     debugPrintln("brewSwitchTriggerCase 40: Brew Trigger Next Loop");
                 }
+                // Once Toggle-Button is released, go back to start and wait for brew button press
+                if (brewSwitchTrigger == LOW) {
+                    brewSwitchTriggerCase = 10;
+                    debugPrintln("brewSwitchTriggerCase 40: Brew Trigger Next Loop");
+                }
                 break;
 
             case 50:
@@ -172,7 +177,7 @@ void backflush() {
     checkbrewswitch();
 
     if (brewSwitch == LOW && backflushState != kBackflushWaitBrewswitchOn) {  // Abort function for state machine from every state
-        backflushState = kBackflushWaitBrewswitchOff;   
+        backflushState = kBackflushWaitBrewswitchOff;
     }
 
     // State machine for backflush
