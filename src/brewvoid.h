@@ -349,11 +349,6 @@ void brew() {
                     brewCounter = kBrewFinished;
                 }
 
-                // testPower += 1;
-                // testPower = testPower % 100;
-                pumpOn(5);
-
-
                 break;
 
             case kBrewFinished:  // brew finished

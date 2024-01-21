@@ -1,5 +1,7 @@
 #pragma once
 
+// used to debounce the interrupts
+unsigned long lastZCInterrupt = 0;
 int currentPowerLevel = 0;
 int power = 0;
 
@@ -29,6 +31,12 @@ If we have reached 100%, we turn on the pump.
 This method should provide even distribution of "on" and "off" cycles without having to implement arrays or similar to keep track of previous on/off phases. 
 */
 void handleZC() {
+    unsigned long time = millis();
+    if (time - lastZCInterrupt < 15) {
+        return;
+    }
+    lastZCInterrupt = time;
+
     // increment power level by the set power level
     currentPowerLevel += power;
 
@@ -46,5 +54,5 @@ void handleZC() {
 
 void setupDimmer() {
     pinMode(PIN_ZC, INPUT_PULLUP); 
-    attachInterrupt(digitalPinToInterrupt(PIN_ZC), handleZC, FALLING); 
+    attachInterrupt(digitalPinToInterrupt(PIN_ZC), handleZC, RISING); 
 }
