@@ -3,6 +3,9 @@
  *
  * @brief Honeywell ABP2, taken from sample code from datasheet, adapted parameters for model ABP2LANT010BG2A3XX
  */
+
+#pragma once
+
 #include <Arduino.h>
 #include <Wire.h>
 #include "userConfig.h"
@@ -23,7 +26,7 @@ double ABP2_pmax = 10.0;                      // maximum value of pressure range
 double ABP2_pmin = 0.0;                       // minimum value of pressure range [bar, psi, kPa, etc.]
 double ABP2_percentage = 0.0;                 // holds percentage of full scale data
 
-float ABP2_measurePressure() {
+float measurePressure() {
     Wire.beginTransmission(ABP2_id);
     int stat = Wire.write(ABP2_cmd, 3); // write command to the sensor
     stat |= Wire.endTransmission();
