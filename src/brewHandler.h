@@ -343,6 +343,9 @@ void brew() {
                 brewCounter = kWaitBrewOff;
                 timeBrewed = 0;
 
+                //LED illuminates coffee
+                brewFinishedLEDon = BREW_FINISHED_LEDON_DURATION;
+
                 break;
 
             case kWaitBrewOff:  // waiting for brewswitch off position
@@ -355,6 +358,12 @@ void brew() {
                     brewDetected = 0;  // rearm brewDetection
                     brewCounter = kBrewIdle;
                     timeBrewed = 0;
+
+                    //LED illuminates coffee
+                    if (brewFinishedLEDon==0) 
+                    {
+                        brewFinishedLEDon = BREW_FINISHED_LEDON_DURATION;
+                    }
                 }
 
                 break;

@@ -26,7 +26,7 @@ void printScreen() {
 
             // draw (blinking) temp
             if (((fabs(temperature - setpoint) < blinkingtempoffset && blinkingtemp == 0) ||
-                (fabs(temperature - setpoint) >= blinkingtempoffset && blinkingtemp == 1)) && !FEATURE_TEMP_LED) {
+                (fabs(temperature - setpoint) >= blinkingtempoffset && blinkingtemp == 1)) && !FEATURE_STATUS_LED) {
                 if (isrCounter < 500) {
                     if (temperature < 99.999) {
                         u8g2.setCursor(8, 22);

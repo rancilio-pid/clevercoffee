@@ -37,6 +37,15 @@
 #include "defaults.h"
 #include <os.h>
 
+//LEDs, LED[0] is the main one indicating also the correct temperature
+#include <FastLED.h>
+CRGB leds[RGB_LED_NUM];
+unsigned long previousMillisLED;  // initialisation at the end of init()
+const unsigned long intervalLED = 80; // to have slightly smooth animated LED colors
+unsigned int cycleLED = 0; // counter to 255 for color cycling
+unsigned long brewFinishedLEDon = 0; // counter to have LED on to show coffee is ready
+#define BREW_FINISHED_LEDON_DURATION 320 // Time to illuminate the ready coffee cup - 320*intervalLED = 29s
+
 hw_timer_t *timer = NULL;
 
 #if (FEATURE_PRESSURESENSOR == 1)
@@ -613,6 +622,7 @@ void refreshTemp() {
 #include "hardware/powerSwitch.h"
 #include "hardware/steamSwitch.h"
 #include "hardware/brewScale.h"
+#include "hardware/statusLED.h"
 
 /**
  * @brief Switch to offline mode if maxWifiReconnects were exceeded during boot
@@ -2166,9 +2176,7 @@ void setup() {
         pinMode(PIN_BREWSWITCH, INPUT_PULLDOWN);
     }
 
-    if (FEATURE_TEMP_LED) {
-        pinMode(PIN_STATUSLED, OUTPUT);
-    }
+    statusLEDSetup();
 
     #if FEATURE_WATER_SENS == 1
         #if WATER_SENS_TYPE == 0
@@ -2275,7 +2283,7 @@ void setup() {
 void loop() {
     looppid();
 
-    if (FEATURE_TEMP_LED) {
+    if (FEATURE_STATUS_LED) {
         loopLED();
     }
 
@@ -2531,15 +2539,6 @@ void looppid() {
         bPID.SetTunings(aggbKp, aggbKi, aggbKd, 1);
     }
     // sensor error OR Emergency Stop
-}
-
-void loopLED() {
-    if ((machineState == kPidNormal && (fabs(temperature  - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) {
-        digitalWrite(PIN_STATUSLED, HIGH);
-    }
-    else {
-        digitalWrite(PIN_STATUSLED, LOW);
-    }
 }
 
 void loopWater() {

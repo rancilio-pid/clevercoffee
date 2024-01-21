@@ -62,10 +62,17 @@ enum MACHINE {
 #define STEAMSWITCH_TYPE 0         // 0 = no switch connected, 1 = normal switch, 2 = trigger switch
 #define OPTOCOUPLER_TYPE HIGH      // BREWDETECTION 3 configuration; HIGH or LOW trigger optocoupler
 #define TRIGGER_TYPE HIGH          // LOW = low trigger, HIGH = high trigger relay for pump & valve
-#define FEATURE_TEMP_LED 0         // Blink status LED when temp is in range, 0 = deactivated, 1 = activated
 #define FEATURE_WATER_SENS 0       // 0 = deactivated, 1 = activated
 #define WATER_SENS_TYPE 0          // 0 = water sensor XKC-Y25-NPN connected, 1 = XKC-Y25-PNP connected
 #define FEATURE_PRESSURESENSOR 0   // 0 = deactivated, 1 = activated
+
+// Status LED
+#define FEATURE_STATUS_LED 0       // Status LED, 0 = deactivated, 1 = activated
+#define STATUS_LED_TYPE 0          // 0 = single color LED to blink when temp in range, 1 = RGB adressable LED with LED_BEHAVIOUR set below
+#define RGB_LED_BEHAVIOUR 2        // 1 = Basic: Brewed-white, Error-red, TempOK-green; 2 = same as Basic, plus: Brewing-blue, Startup-Rainbow, Steam-Yellow, Backflush-white
+#define RGB_LED_TYPE WS2811        // In case of an RGB LED so STATUS_LED_TYPE==2, state type of LED (NEOPIXEL, WS2811, TM1809, ...)
+#define RGB_LED_NUM 4              // Number of LEDs attached. Not considered if FEATURE_STATUS_LED above is zero
+#define RGB_LED_PIDON_BRIGHTNESS 50// Brightness from 0-255 for the cup illumination when machine is on
 
 // Brew Scale
 #define SCALE_SAMPLES 2            // Load cell sample rate
