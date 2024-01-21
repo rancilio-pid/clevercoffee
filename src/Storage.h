@@ -43,9 +43,7 @@ typedef enum
   STO_ITEM_STANDBY_MODE_ON,         // Enable tandby mode
   STO_ITEM_STANDBY_MODE_TIME,       // Time until heater is turned off
   STO_ITEM_SCALE_CALIBRATION_FACTOR, // Calibration factor for scale
-  #if SINGLE_HX711 == 0
   STO_ITEM_SCALE2_CALIBRATION_FACTOR, // Calibration factor for scale 2
-  #endif
   STO_ITEM_SCALE_KNOWN_WEIGHT,      // Calibration weight for scale
   STO_ITEM_RESERVED_30,             // reserved
   STO_ITEM_RESERVED_21,             // reserved
