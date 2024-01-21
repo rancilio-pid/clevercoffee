@@ -374,6 +374,7 @@ void Displaymachinestate() {
                 break;
         }
 
+        displayWaterIcon(119, 1);
         u8g2.sendBuffer();
     }
 
