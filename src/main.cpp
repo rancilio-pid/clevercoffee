@@ -2274,7 +2274,7 @@ void looppid() {
         
         if (currentMillisPressure - previousMillisPressure >= intervalPressure) {
             previousMillisPressure = currentMillisPressure;
-            inputPressure = ABP2_measurePressure();
+            inputPressure = measurePressure();
             inputPressureFilter = filterPressureValue(inputPressure);
         }
     #endif
