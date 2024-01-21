@@ -60,7 +60,7 @@ enum MACHINE {
 #define STEAMSWITCHTYPE 0          // 0 = no switch connected, 1 = normal switch, 2 = trigger switch
 #define OPTOCOUPLERTYPE HIGH       // BREWDETECTION 3 configuration; HIGH or LOW trigger optocoupler
 #define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay for pump & valve
-#define PRESSURESENSOR 0           // 0 = no pressure sensor connected, 1 = pressure sensor connected, 2 = ABP2 pressure sensor connected
+#define PRESSURESENSOR 0           // 0 = no pressure sensor connected, 1 = ABP2 pressure sensor connected
 #define TEMP_LED 1                 // Blink status LED when temp is in range
 #define WATER_SENS 0               // 0 = no water sensor, 1 = water sensor XKC-Y25-NPN connected, 2 = XKC-Y25-PNP connected
 
@@ -72,15 +72,6 @@ enum MACHINE {
 #define FILLTIME 5000              // time in ms the pump is running
 #define FLUSHTIME 10000            // time in ms the 3-way valve is open -> backflush
 #define MAXFLUSHCYCLES 5           // number of cycles the backflush should run, 0 = disabled
-
-/* Pressure sensor
- *
- * measure and verify "offset" value, should be 10% of ADC bit reading @supply volate (3.3V)
- * same goes for "fullScale", should be 90%
- */
-#define OFFSET      102            // 10% of ADC input @3.3V supply = 102
-#define FULLSCALE   922            // 90% of ADC input @3.3V supply = 922
-#define MAXPRESSURE 200
 
 // PlatformIO OTA
 #define OTA true                   // true = OTA activated, false = OTA deactivated
