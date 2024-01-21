@@ -171,11 +171,8 @@ void backflush() {
 
     checkbrewswitch();
 
-    if (brewSwitch == LOW && backflushState != kBackflushWaitBrewswitchOn) {
-        if(backflushState != kBackflushWaitBrewswitchOn) {  // Abort function for state machine from every state
-            backflushState = kBackflushWaitBrewswitchOff;
-            debugPrintln("Backflush: abort");
-        }
+    if (brewSwitch == LOW && backflushState != kBackflushWaitBrewswitchOn) {  // Abort function for state machine from every state
+        backflushState = kBackflushWaitBrewswitchOff;   
     }
 
     // State machine for backflush
@@ -267,7 +264,7 @@ void brew() {
         // state machine for brew
         switch (brewCounter) {
             case kBrewIdle: // waiting step for brew switch turning on
-                if (brewSwitch == HIGH && backflushState == kBackflushWaitBrewswitchOn && backflushOn == 0 && brewSwitchWasOff) {
+                if (brewSwitch == HIGH && backflushState == 10 && backflushOn == 0 && brewSwitchWasOff) {
                     startingTime = millis();
 
                     if (preinfusionPause == 0 || preinfusion == 0) {
