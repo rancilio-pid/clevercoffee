@@ -12,6 +12,7 @@ jobs:
           working-directory: ./src
           run: cp userConfig_sample.h userConfig.h
         - name: Enable features
+          working-directory: ./src
           run: header_file="userConfig.h"; sed -i -E 's/^(#define[[:space:]]+FEATURE_[A-Za-z_]+[[:space:]]+)[0-9]+/\11/' $header_file
         - name: PlatformIO Run
           uses: karniv00l/platformio-run-action@v1
