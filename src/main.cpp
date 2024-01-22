@@ -39,7 +39,7 @@
 
 hw_timer_t *timer = NULL;
 
-#if (PRESSURESENSOR == 1)
+#if (FEATURE_PRESSURESENSOR == 1)
     #include "pressure.h"
     #include <Wire.h>
 #endif
@@ -140,7 +140,7 @@ bool brewSteamDetectedQM = false;                           // brew/steam detect
 bool coolingFlushDetectedQM = false;
 
 // Pressure sensor
-#if (PRESSURESENSOR == 1)
+#if (FEATURE_PRESSURESENSOR == 1)
     float inputPressure = 0;
     float inputPressureFilter = 0;
     const unsigned long intervalPressure = 100;
@@ -1951,7 +1951,7 @@ void setup() {
     };
     // when adding parameters, set EDITABLE_VARS_LEN to max of .position
 
-#if (PRESSURESENSOR == 1)
+#if (FEATURE_PRESSURESENSOR == 1)
     Wire.begin();
 #endif
 
@@ -2004,7 +2004,7 @@ void setup() {
     mqttSensors["currentKd"] = []{ return bPID.GetKd(); };
     mqttSensors["machineState"] = []{ return machineState; };
     
-    #if PRESSURESENSOR == 1
+    #if FEATURE_PRESSURESENSOR == 1
         mqttSensors["pressure"] = []{ return inputPressureFilter; };
     #endif
     
@@ -2064,7 +2064,7 @@ void setup() {
         pinMode(PIN_BREWSWITCH, INPUT_PULLDOWN);
     }
 
-    if (TEMP_LED) {
+    if (FEATURE_TEMP_LED) {
         pinMode(PIN_STATUSLED, OUTPUT);
     }
 
@@ -2100,7 +2100,7 @@ void setup() {
             ArduinoOTA.begin();
         }
 
-        if (MQTT == 1) {
+        if (FEATURE_MQTT == 1) {
             snprintf(topic_will, sizeof(topic_will), "%s%s/%s", mqtt_topic_prefix, hostname, "status");
             snprintf(topic_set, sizeof(topic_set), "%s%s/+/%s", mqtt_topic_prefix, hostname, "set");
             mqtt.setServer(mqtt_server_ip, mqtt_server_port);
@@ -2155,7 +2155,7 @@ void setup() {
         previousMillisScale = currentTime;
     #endif
 
-    #if (PRESSURESENSOR == 1)
+    #if (FEATURE_PRESSURESENSOR == 1)
         previousMillisPressure = currentTime;
     #endif
 
@@ -2172,7 +2172,7 @@ void setup() {
 void loop() {
     looppid();
 
-    if (TEMP_LED) {
+    if (FEATURE_TEMP_LED) {
         loopLED();
     }
 
@@ -2187,7 +2187,7 @@ void loop() {
 void looppid() {
     // Only do Wifi stuff, if Wifi is connected
     if (WiFi.status() == WL_CONNECTED && offlineMode == 0) {
-        if (MQTT == 1) {
+        if (FEATURE_MQTT == 1) {
             checkMQTT();
             writeSysParamsToMQTT(true); // Continue on error
             if (mqtt.connected() == 1) {
@@ -2269,7 +2269,7 @@ void looppid() {
         brew();
     }
 
-    #if (PRESSURESENSOR == 1)
+    #if (FEATURE_PRESSURESENSOR == 1)
         unsigned long currentMillisPressure = millis();
         
         if (currentMillisPressure - previousMillisPressure >= intervalPressure) {

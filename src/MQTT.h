@@ -217,7 +217,7 @@ void mqtt_callback(char *topic, byte *data, unsigned int length) {
 int writeSysParamsToMQTT(bool continueOnError = true) {
     unsigned long currentMillisMQTT = millis();
  
-    if ((currentMillisMQTT - previousMillisMQTT >= intervalMQTT) && MQTT == 1) {
+    if ((currentMillisMQTT - previousMillisMQTT >= intervalMQTT) && FEATURE_MQTT == 1) {
         previousMillisMQTT = currentMillisMQTT;
 
         if (mqtt.connected()) {
@@ -467,7 +467,7 @@ int sendHASSIODiscoveryMsg() {
     DiscoveryObject heaterPower = GenerateSensorDevice("heaterPower", "Heater Power", "%", "power_factor"); 
     DiscoveryObject machineStateDevice = GenerateSensorDevice("machineState", "Machine State", "null", "enum"); 
 
-    #if PRESSURESENSOR == 1
+    #if FEATURE_PRESSURESENSOR == 1
         DiscoveryObject pressure = GenerateSensorDevice("pressure", "Pressure", "bar", "pressure");
     #endif
 
@@ -499,9 +499,8 @@ int sendHASSIODiscoveryMsg() {
         backflushOn,
         startUsePonM
 
-        #if PRESSURESENSOR == 1
-            ,
-            pressure
+        #if FEATURE_PRESSURESENSOR == 1
+            , pressure
         #endif
     };
 
