@@ -14,7 +14,7 @@ unsigned long lastDebounceTimePowerTrigger = 0;     // the last time the output 
 unsigned long debounceDelayPowerTrigger = 50;       // the debounce time; increase if the output flickers
 
 void checkPowerSwitch() {
-    #if POWERSWITCHTYPE == 1
+    #if POWERSWITCH_TYPE == 1
         // Set pidON to 1 when powerswitch is HIGH
         if (digitalRead(PIN_POWERSWITCH) == HIGH) {
             pidON = 1;
@@ -24,7 +24,7 @@ void checkPowerSwitch() {
         }
     #endif
 
-    #if POWERSWITCHTYPE == 2  // TRIGGER
+    #if POWERSWITCH_TYPE == 2  // TRIGGER
         int reading = digitalRead(PIN_POWERSWITCH);
 
         if (reading != lastPowerSwitchTrigger) {

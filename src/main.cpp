@@ -98,9 +98,9 @@ int connectmode = CONNECTMODE;
 int offlineMode = 0;
 const int OnlyPID = ONLYPID;
 const int TempSensor = TEMPSENSOR;
-const int brewDetectionMode = BREWDETECTION;
-const int triggerType = TRIGGERTYPE;
-const int optocouplerType = OPTOCOUPLERTYPE;
+const int brewDetectionMode = BREWDETECTION_TYPE;
+const int triggerType = TRIGGER_TYPE;
+const int optocouplerType = OPTOCOUPLER_TYPE;
 const boolean ota = OTA;
 int BrewMode = BREWMODE;
 
@@ -130,7 +130,7 @@ unsigned long previousMillisOptocouplerReading = millis();
 const unsigned long intervalOptocoupler = 200;
 int optocouplerOn, optocouplerOff;
 
-// QuickMill thermoblock steam-mode (only for BREWDETECTION = 3)
+// QuickMill thermoblock steam-mode (only for BREWDETECTION_TYPE = 3)
 const int maxBrewDurationForSteamModeQM_ON = 200;           // if brewtime is shorter steam-mode starts
 const int minOptocouplerOffTimedForSteamModeQM_Off = 1500;  // if optocoupler-off-time is longer steam-mode ends
 unsigned long timeOptocouplerOn = 0;                        // time optocoupler switched to ON
@@ -1091,7 +1091,7 @@ void handleMachineState() {
             brewDetection();
 
             // Output brew time, temp and tempRateAverage during brew (used for SW BD only)
-            if (BREWDETECTION == 1 && logbrew.check()) {
+            if (FEATURE_BREWDETECTION == 1 && BREWDETECTION_TYPE == 1 && logbrew.check()) {
                 debugPrintf("(tB,T,hra) --> %5.2f %6.2f %8.2f\n", (double)(millis() - startingTime) / 1000, temperature, tempRateAverage);
             }
 
@@ -1795,7 +1795,7 @@ void setup() {
         .type = kUInt8,
         .section = sBDSection,
         .position = 19,
-        .show = [] { return true && BREWDETECTION > 0; },
+        .show = [] { return true && FEATURE_BREWDETECTION == 1; },
         .minValue = 0,
         .maxValue = 1,
         .ptr = (void *)&useBDPID
@@ -1816,7 +1816,7 @@ void setup() {
         .type = kDouble,
         .section = sBDSection,
         .position = 20,
-        .show = [] { return true && BREWDETECTION > 0 && useBDPID; },
+        .show = [] { return true && FEATURE_BREWDETECTION == 1 && useBDPID; },
         .minValue = PID_KP_BD_MIN,
         .maxValue = PID_KP_BD_MAX,
         .ptr = (void *)&aggbKp
@@ -1830,7 +1830,7 @@ void setup() {
         .type = kDouble,
         .section = sBDSection,
         .position = 21,
-        .show = [] { return true && BREWDETECTION > 0 && useBDPID; },
+        .show = [] { return true && FEATURE_BREWDETECTION == 1 && useBDPID; },
         .minValue = PID_TN_BD_MIN,
         .maxValue = PID_TN_BD_MAX,
         .ptr = (void *)&aggbTn
@@ -1844,7 +1844,7 @@ void setup() {
         .type = kDouble,
         .section = sBDSection,
         .position = 22,
-        .show = [] { return true && BREWDETECTION > 0 && useBDPID; },
+        .show = [] { return true && FEATURE_BREWDETECTION == 1 && useBDPID; },
         .minValue = PID_TV_BD_MIN,
         .maxValue = PID_TV_BD_MAX,
         .ptr = (void *)&aggbTv
@@ -1860,8 +1860,8 @@ void setup() {
         .position = 23,
         .show =
             [] {
-              return true && BREWDETECTION > 0 &&
-                     (useBDPID || BREWDETECTION == 1);
+              return true && FEATURE_BREWDETECTION == 1 &&
+                     (useBDPID || BREWDETECTION_TYPE == 1);
             },
         .minValue = BREW_SW_TIME_MIN,
         .maxValue = BREW_SW_TIME_MAX,
@@ -1878,7 +1878,7 @@ void setup() {
         .type = kDouble,
         .section = sBDSection,
         .position = 24,
-        .show = [] { return true && BREWDETECTION == 1; },
+        .show = [] { return true && BREWDETECTION_TYPE == 1; },
         .minValue = BD_THRESHOLD_MIN,
         .maxValue = BD_THRESHOLD_MAX,
         .ptr = (void *)&brewSensitivity
@@ -1983,13 +1983,13 @@ void setup() {
         mqttVars["weightSetpoint"] = []{ return &editableVars.at("SCALE_WEIGHTSETPOINT"); };
     }
 
-    if (BREWDETECTION > 0) {
+    if (FEATURE_BREWDETECTION == 1) {
         mqttVars["pidUseBD"] = []{ return &editableVars.at("PID_BD_ON"); };
         mqttVars["aggbKp"] = []{ return &editableVars.at("PID_BD_KP"); };
         mqttVars["aggbTn"] = []{ return &editableVars.at("PID_BD_TN"); };
         mqttVars["aggbTv"] = []{ return &editableVars.at("PID_BD_TV"); };
 
-        if (BREWDETECTION == 1) {
+        if (BREWDETECTION_TYPE == 1) {
             mqttVars["brewTimer"] = []{ return &editableVars.at("PID_BD_TIME"); };
             mqttVars["brewLimit"] = []{ return &editableVars.at("PID_BD_SENSITIVITY"); };
         }
@@ -2042,17 +2042,17 @@ void setup() {
     digitalWrite(PIN_HEATER, LOW);
 
     // IF POWERSWITCH is connected
-    if (POWERSWITCHTYPE > 0) {
+    if (POWERSWITCH_TYPE > 0) {
         pinMode(PIN_POWERSWITCH, INPUT_PULLDOWN);
     }
 
     // IF STEAMSWITCH is connected
-    if (STEAMSWITCHTYPE > 0) {
+    if (STEAMSWITCH_TYPE > 0) {
         pinMode(PIN_STEAMSWITCH, INPUT_PULLDOWN);
     }
 
     // IF optocoupler selected
-    if (BREWDETECTION == 3) {
+    if (BREWDETECTION_TYPE == 3) {
         if (optocouplerType == HIGH) {
             pinMode(PIN_BREWSWITCH, INPUT_PULLDOWN);
         } 

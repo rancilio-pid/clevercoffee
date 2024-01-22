@@ -66,12 +66,12 @@ boolean brewPIDDisabled = false;                    // is PID disabled for delay
  * @brief Switch or trigger input for BREW SWITCH
  */
 void checkbrewswitch() {
-    #if BREWSWITCHTYPE == 1
+    #if BREWSWITCH_TYPE == 1
             // Digital 
             brewSwitch = digitalRead(PIN_BREWSWITCH);
     #endif
 
-    #if BREWSWITCHTYPE == 2
+    #if BREWSWITCH_TYPE == 2
             int reading = digitalRead(PIN_BREWSWITCH);
 
             if (reading != lastStateBrewTrigger) {

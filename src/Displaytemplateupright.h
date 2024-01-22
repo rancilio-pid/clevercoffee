@@ -12,7 +12,7 @@
  */
 void printScreen() {
     if ((machineState == kAtSetpoint || machineState == kPidNormal || machineState == kBrewDetectionTrailing) ||
-        ((machineState == kBrew || machineState == kShotTimerAfterBrew)  && SHOTTIMER == 0) ||// shottimer == 0, auch Bezug anzeigen
+        ((machineState == kBrew || machineState == kShotTimerAfterBrew)  && FEATURE_SHOTTIMER == 0) ||// shottimer == 0, auch Bezug anzeigen
         machineState == kCoolDown || ((machineState == kInit || machineState == kColdStart ) && FEATURE_HEATINGLOGO == 0) ||
         ((machineState == kPidOffline)  && FEATURE_OFFLINELOGO == 0))
     {
@@ -124,7 +124,7 @@ void printScreen() {
                     u8g2.print(wifiReconnects);
                 }
 
-                if (MQTT == 1) {
+                if (FEATURE_MQTT == 1) {
                     if (mqtt.connected() == 1) {
                         u8g2.setCursor(24, 2);
                         u8g2.setFont(u8g2_font_profont11_tf);

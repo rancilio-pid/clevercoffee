@@ -13,7 +13,7 @@
 void printScreen()
 {
     if  ((machineState == kAtSetpoint || machineState == kPidNormal || machineState == kBrewDetectionTrailing) ||
-        ((machineState == kBrew || machineState == kShotTimerAfterBrew) && SHOTTIMER == 0) ||  // shottimer == 0, also show brew
+        ((machineState == kBrew || machineState == kShotTimerAfterBrew) && FEATURE_SHOTTIMER == 0) ||  // shottimer == 0, also show brew
         machineState == kCoolDown || ((machineState == kInit || machineState == kColdStart ) && FEATURE_HEATINGLOGO == 0) ||
         ((machineState == kPidOffline)  && FEATURE_OFFLINELOGO == 0))
     {
