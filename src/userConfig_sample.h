@@ -28,17 +28,6 @@ enum MACHINE {
 // Machine
 #define MACHINEID RancilioSilvia   // Machine type (see enum MACHINE)
 
-/* Features
- *
- * 0 = deactivated, 1 = activated
- */
-#define FEATURE_HEATINGLOGO 1
-#define FEATURE_OFFLINELOGO 1
-#define FEATURE_TEMP_LED 0         // Blink status LED when temp is in range
-#define FEATURE_MQTT 0
-#define FEATURE_WATER_SENS 0
-#define FEATURE_PRESSURESENSOR 0
-
 // Display
 #define OLED_DISPLAY 2             // 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64), 3 = SH1106_126x64_SPI
 #define OLED_I2C 0x3C              // I2C address for OLED, 0x3C by default
@@ -46,7 +35,10 @@ enum MACHINE {
 #define DISPLAYROTATE U8G2_R0      // rotate display clockwise: U8G2_R0 = no rotation; U8G2_R1 = 90°; U8G2_R2 = 180°; U8G2_R3 = 270°
 #define SCREEN_WIDTH 128           // OLED display width, in pixels
 #define SCREEN_HEIGHT 64           // OLED display height, in pixels
-#define SHOTTIMER 1                // 0 = deactivated, 1 = activated 2 = with scale
+#define FEATURE_SHOTTIMER 1        // 0 = deactivated, 1 = activated
+#define SHOTTIMER_TYPE 1           // 1 = timer 2 = timer with scale
+#define FEATURE_HEATINGLOGO 1      // 0 = deactivated, 1 = activated
+#define FEATURE_OFFLINELOGO 1      // 0 = deactivated, 1 = activated
 #define SHOTTIMERDISPLAYDELAY 3000 // time in ms that shot timer will be shown after brew finished
 #define VERBOSE 0                  // 1 = Show verbose output (serial connection), 0 = show less
 
@@ -63,13 +55,17 @@ enum MACHINE {
 #define ONLYPID 1                  // 0 = PID and preinfusion, 1 = Only PID
 #define ONLYPIDSCALE 0             // 0 = off , 1 = OnlyPID with Scale
 #define BREWMODE 1                 // 1 = Brew by time (with preinfusion); 2 = Brew by weight (from scale)
-#define BREWDETECTION 0            // 0 = off, 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = optocoupler for Only PID
-#define BREWSWITCHTYPE 0           // 0 = no switch connected, 1 = normal switch, 2 = trigger switch
-#define POWERSWITCHTYPE 0          // 0 = no switch connected, 1 = normal switch, 2 = trigger switch
-#define STEAMSWITCHTYPE 0          // 0 = no switch connected, 1 = normal switch, 2 = trigger switch
-#define OPTOCOUPLERTYPE HIGH       // BREWDETECTION 3 configuration; HIGH or LOW trigger optocoupler
-#define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay for pump & valve
+#define FEATURE_BREWDETECTION 0    // 0 = deactivated, 1 = activated
+#define BREWDETECTION_TYPE 1       // 0 = off, 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = optocoupler for Only PID
+#define BREWSWITCH_TYPE 0          // 0 = no switch connected, 1 = normal switch, 2 = trigger switch
+#define POWERSWITCH_TYPE 0         // 0 = no switch connected, 1 = normal switch, 2 = trigger switch
+#define STEAMSWITCH_TYPE 0         // 0 = no switch connected, 1 = normal switch, 2 = trigger switch
+#define OPTOCOUPLER_TYPE HIGH      // BREWDETECTION 3 configuration; HIGH or LOW trigger optocoupler
+#define TRIGGER_TYPE HIGH          // LOW = low trigger, HIGH = high trigger relay for pump & valve
+#define FEATURE_TEMP_LED 0         // Blink status LED when temp is in range, 0 = deactivated, 1 = activated
+#define FEATURE_WATER_SENS 0       // 0 = deactivated, 1 = activated
 #define WATER_SENS_TYPE 0          // 0 = water sensor XKC-Y25-NPN connected, 1 = XKC-Y25-PNP connected
+#define FEATURE_PRESSURESENSOR 0   // 0 = deactivated, 1 = activated
 
 // Brew Scale
 #define SCALE_SAMPLES 2                     // Load cell sample rate
@@ -85,6 +81,7 @@ enum MACHINE {
 #define OTAPASS "otapass"          // Password for OTA updates
 
 // MQTT
+#define FEATURE_MQTT 0                                  // 0 = deactivated, 1 = activated
 #define MQTT_USERNAME "mymqttuser"
 #define MQTT_PASSWORD "mymqttpass"
 #define MQTT_TOPIC_PREFIX "custom/Küche."               // topic will be "<MQTT_TOPIC_PREFIX><HOSTNAME>/<READING>"

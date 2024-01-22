@@ -91,7 +91,7 @@ void displayEmergencyStop(void) {
 void displayShottimer(void) {
     if (((timeBrewed > 0 && ONLYPID == 1) ||
         (ONLYPID == 0 && brewCounter > kBrewIdle && brewCounter <= kBrewFinished))
-        && SHOTTIMER == 1)
+        && FEATURE_SHOTTIMER == 1 && SHOTTIMER_TYPE == 1)
     {
         u8g2.clearBuffer();
 
@@ -104,7 +104,7 @@ void displayShottimer(void) {
         u8g2.sendBuffer();
     }
 
-    if (SHOTTIMER == 1 && millis() >= lastBrewTimeMillis && // directly after creating lastbrewTimeMillis (happens when turning off the brew switch, case 43 in the code) should be started
+    if (FEATURE_SHOTTIMER == 1 && SHOTTIMER_TYPE == 1 && millis() >= lastBrewTimeMillis && // directly after creating lastbrewTimeMillis (happens when turning off the brew switch, case 43 in the code) should be started
         lastBrewTimeMillis + SHOTTIMERDISPLAYDELAY >= millis() && // should run until millis() has caught up with SHOTTIMERDISPLAYDELAY, this can be used to control the display duration
         lastBrewTimeMillis < totalBrewTime) // if the totalBrewTime is reached automatically, nothing should be done, otherwise wrong time will be displayed because switch is pressed later than totalBrewTime
     {
