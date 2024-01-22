@@ -28,6 +28,17 @@ enum MACHINE {
 // Machine
 #define MACHINEID RancilioSilvia   // Machine type (see enum MACHINE)
 
+/* Features
+ *
+ * 0 = deactivated, 1 = activated
+ */
+#define FEATURE_HEATINGLOGO 1
+#define FEATURE_OFFLINELOGO 1
+#define FEATURE_TEMP_LED 0         // Blink status LED when temp is in range
+#define FEATURE_MQTT 0
+#define FEATURE_WATER_SENS 0
+#define FEATURE_PRESSURESENSOR 0
+
 // Display
 #define OLED_DISPLAY 2             // 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64), 3 = SH1106_126x64_SPI
 #define OLED_I2C 0x3C              // I2C address for OLED, 0x3C by default
@@ -36,8 +47,6 @@ enum MACHINE {
 #define SCREEN_WIDTH 128           // OLED display width, in pixels
 #define SCREEN_HEIGHT 64           // OLED display height, in pixels
 #define SHOTTIMER 1                // 0 = deactivated, 1 = activated 2 = with scale
-#define FEATURE_HEATINGLOGO 0      // 0 = deactivated, 1 = activated
-#define FEATURE_OFFLINELOGO 1      // 0 = deactivated, 1 = activated
 #define SHOTTIMERDISPLAYDELAY 3000 // time in ms that shot timer will be shown after brew finished
 #define VERBOSE 0                  // 1 = Show verbose output (serial connection), 0 = show less
 
@@ -60,9 +69,7 @@ enum MACHINE {
 #define STEAMSWITCHTYPE 0          // 0 = no switch connected, 1 = normal switch, 2 = trigger switch
 #define OPTOCOUPLERTYPE HIGH       // BREWDETECTION 3 configuration; HIGH or LOW trigger optocoupler
 #define TRIGGERTYPE HIGH           // LOW = low trigger, HIGH = high trigger relay for pump & valve
-#define FEATURE_PRESSURESENSOR 0   // 0 = no pressure sensor connected, 1 = ABP2 pressure sensor connected
-#define FEATURE_TEMP_LED 0         // Blink status LED when temp is in range
-#define WATER_SENS 0               // 0 = no water sensor, 1 = water sensor XKC-Y25-NPN connected, 2 = XKC-Y25-PNP connected
+#define WATER_SENS_TYPE 0          // 0 = water sensor XKC-Y25-NPN connected, 1 = XKC-Y25-PNP connected
 
 // Brew Scale
 #define SCALE_SAMPLES 2                     // Load cell sample rate
@@ -78,7 +85,6 @@ enum MACHINE {
 #define OTAPASS "otapass"          // Password for OTA updates
 
 // MQTT
-#define FEATURE_MQTT 0                                  // 1 = MQTT enabled, 0 = MQTT disabled
 #define MQTT_USERNAME "mymqttuser"
 #define MQTT_PASSWORD "mymqttpass"
 #define MQTT_TOPIC_PREFIX "custom/Küche."               // topic will be "<MQTT_TOPIC_PREFIX><HOSTNAME>/<READING>"

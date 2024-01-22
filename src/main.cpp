@@ -2068,10 +2068,12 @@ void setup() {
         pinMode(PIN_STATUSLED, OUTPUT);
     }
 
-    #if WATER_SENS == 1
-        pinMode(PIN_WATERSENSOR, INPUT_PULLUP);
-    #elif WATER_SENS == 2
-        pinMode(PIN_WATERSENSOR, INPUT_PULLDOWN);
+    #if FEATURE_WATER_SENS == 1
+        #if WATER_SENS_TYPE == 0
+            pinMode(PIN_WATERSENSOR, INPUT_PULLUP);
+        #elif WATER_SENS_TYPE == 1
+            pinMode(PIN_WATERSENSOR, INPUT_PULLDOWN);
+        #endif
     #endif
 
     #if OLED_DISPLAY != 0
@@ -2176,7 +2178,7 @@ void loop() {
         loopLED();
     }
 
-    if (WATER_SENS > 0) {
+    if (FEATURE_WATER_SENS == 1) {
         loopWater();
     }
 
@@ -2434,7 +2436,7 @@ void loopWater() {
     if ((millis() - lastWaterCheck) > waterCheckInterval) {
         lastWaterCheck = millis();
 
-        bool isWaterDetected = digitalRead(PIN_WATERSENSOR) == (WATER_SENS == 1 ? LOW : HIGH);
+        bool isWaterDetected = digitalRead(PIN_WATERSENSOR) == (WATER_SENS_TYPE == 0 ? LOW : HIGH);
     
         if (isWaterDetected) {
             // Water is detected, increment counter if it was previously empty
