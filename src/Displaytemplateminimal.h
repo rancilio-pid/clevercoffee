@@ -13,7 +13,7 @@
 void printScreen() {
     if ((machineState == kAtSetpoint || machineState == kPidNormal || machineState == kBrewDetectionTrailing) ||
         ((machineState == kBrew || machineState == kShotTimerAfterBrew) && SHOTTIMER == 0) || // shottimer == 0, auch Bezug anzeigen
-        machineState == kCoolDown || ((machineState == kColdStart) && HEATINGLOGO == 0) || ((machineState == kPidOffline) && OFFLINEGLOGO == 0))
+        machineState == kCoolDown || ((machineState == kColdStart) && FEATURE_HEATINGLOGO == 0) || ((machineState == kPidOffline) && FEATURE_OFFLINELOGO == 0))
     {
         if (!sensorError) {
             u8g2.clearBuffer();
@@ -33,7 +33,7 @@ void printScreen() {
             }
 
             // Draw temp, blink if TEMP_LED is not enabled
-            if ((fabs(temperature - setpoint) < 0.3) && !TEMP_LED) {
+            if ((fabs(temperature - setpoint) < 0.3) && !FEATURE_TEMP_LED) {
                 if (isrCounter < 500) {
                     // limit to 4 characters
                     u8g2.setCursor(2, 20);

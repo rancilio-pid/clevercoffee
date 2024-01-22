@@ -73,7 +73,7 @@ void displayWiFiStatus(int x, int y) {
  * @brief Draw an MQTT status indicator at the given coordinates if MQTT is enabled 
  */
 void displayMQTTStatus(int x, int y) {
-    if (MQTT == 1) {
+    if (FEATURE_MQTT == 1) {
         if (mqtt.connected() == 1) {
             u8g2.setCursor(x, y);
             u8g2.setFont(u8g2_font_profont11_tf);
@@ -275,7 +275,7 @@ void displayShottimer(void) {
  * @brief display heating logo
  */
 void Displaymachinestate() {
-    if (HEATINGLOGO > 0 && (machineState == kInit || machineState == kColdStart)) {
+    if (FEATURE_HEATINGLOGO > 0 && (machineState == kInit || machineState == kColdStart)) {
         // For status info
         u8g2.clearBuffer();
 
@@ -291,7 +291,7 @@ void Displaymachinestate() {
     }
 
     // Offline logo
-    if (OFFLINEGLOGO == 1 && machineState == kPidOffline) {
+    if (FEATURE_OFFLINELOGO == 1 && machineState == kPidOffline) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(38, 0, Off_Logo_width, Off_Logo_height, Off_Logo);
         u8g2.setCursor(0, 55);
@@ -301,7 +301,7 @@ void Displaymachinestate() {
         u8g2.sendBuffer();
     }
 
-    if (OFFLINEGLOGO == 1 && machineState == kStandby) {
+    if (FEATURE_OFFLINELOGO == 1 && machineState == kStandby) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(38, 0, Off_Logo_width, Off_Logo_height, Off_Logo);
         u8g2.setCursor(36, 55);

@@ -58,7 +58,7 @@ void printScreen() {
             u8g2.print(totalBrewTime / 1000, 1);
         }
 
-        #if (PRESSURESENSOR == 1)
+        #if (FEATURE_PRESSURESENSOR == 1)
             u8g2.setCursor(32, 46);
             u8g2.print("P: ");
             u8g2.print(inputPressure, 1);
