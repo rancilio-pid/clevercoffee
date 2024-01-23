@@ -122,6 +122,51 @@ void drawTemperaturebar(int x, int y, int heightRange) {
 }
 
 /**
+ * @brief Draw the temperature in big font at given position
+ */
+void displayTemperature(int x, int y) {
+    u8g2.setFont(u8g2_font_fub30_tf);
+
+    if (temperature < 99.999) {
+        u8g2.setCursor(x+20, y);
+        u8g2.print(temperature, 0);
+    }
+    else {
+        u8g2.setCursor(x,y);
+        u8g2.print(temperature, 0);
+    }
+    
+    u8g2.drawCircle(x+72, y+4, 3);
+}
+
+/**
+ * @brief Draw the brew time at given position
+ */
+void displayBrewtime(int x, int y, double brewtime) {
+    u8g2.setFont(u8g2_font_fub25_tf);
+
+    if (brewtime < 10000.000) {
+        u8g2.setCursor(x+16, y);
+    }
+    else {
+        u8g2.setCursor(x, y);
+    }
+
+    u8g2.print(brewtime / 1000, 1);
+    u8g2.setFont(u8g2_font_profont15_tf);
+
+    if (brewtime < 10000.000) {
+        u8g2.setCursor(x+67, y+14);
+    }
+    else {
+        u8g2.setCursor(x+69, y+14);
+    }
+
+    u8g2.print("s");
+    u8g2.setFont(u8g2_font_profont11_tf);
+}
+
+/**
  * @brief Draw a bar visualizing the output in % at the given coordinates and with the given width
  */
 void displayProgressbar(int value, int x, int y, int width) {
@@ -193,44 +238,33 @@ void displayLogo(String displaymessagetext, String displaymessagetext2) {
  * @brief display shot timer
  */
 void displayShottimer(void) {
-    if ((machineState == kBrew) && FEATURE_SHOTTIMER == 1 && SHOTTIMER_TYPE == 1) {
+    if ((machineState == kBrew || brewSwitchTriggerCase == 31) && FEATURE_SHOTTIMER == 1 && SHOTTIMER_TYPE == 1) {
         u8g2.clearBuffer();
 
-        // temp icon
-        u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
-        u8g2.setFont(u8g2_font_fub25_tf);
-
-        if (timeBrewed < 10000.000) {
-            u8g2.setCursor(64, 25);
-        }
+        if (brewSwitchTriggerCase != 31) {
+            // temp icon
+            u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
+        } 
         else {
-            u8g2.setCursor(48, 25);
+            u8g2.drawXBMP( 0, 12, Manual_Flush_Logo_width, Manual_Flush_Logo_height, Manual_Flush_Logo);
         }
 
-        u8g2.print(timeBrewed / 1000, 1);
-        u8g2.setFont(u8g2_font_profont11_tf);
+        displayBrewtime(48, 25, timeBrewed);
+
         displayWaterIcon(119, 1);
         u8g2.sendBuffer();
     }
 
     /* if the totalBrewTime is reached automatically,
-     * nothing should be done, otherwise wrong time is displayed
-     * because the switch is pressed later than totalBrewTime
-     */
-    if (((machineState == kShotTimerAfterBrew) && FEATURE_SHOTTIMER == 1 && SHOTTIMER_TYPE == 1)) {
+    * nothing should be done, otherwise wrong time is displayed
+    * because the switch is pressed later than totalBrewTime
+    */
+    if (((machineState == kShotTimerAfterBrew && brewSwitchTriggerCase != 31) && FEATURE_SHOTTIMER == 1 && SHOTTIMER_TYPE == 1)) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
-        u8g2.setFont(u8g2_font_fub25_tf);
 
-        if (lastBrewTime < 10000.000) {
-            u8g2.setCursor(64, 25);
-        }
-        else {
-            u8g2.setCursor(48, 25);
-        }
+        displayBrewtime(48, 25, lastBrewTime);
 
-        u8g2.print(lastBrewTime / 1000, 1);
-        u8g2.setFont(u8g2_font_profont11_tf);
         displayWaterIcon(119, 1);
         u8g2.sendBuffer();
     }
@@ -267,7 +301,8 @@ void displayShottimer(void) {
             displayWaterIcon(119, 1);
             u8g2.sendBuffer();
         }
-    #endif
+    #endif  
+
 }
 
 
@@ -275,7 +310,7 @@ void displayShottimer(void) {
  * @brief display heating logo
  */
 void Displaymachinestate() {
-    if (FEATURE_HEATINGLOGO > 0 && (machineState == kInit || machineState == kColdStart)) {
+    if (FEATURE_HEATINGLOGO > 0 && (machineState == kInit || machineState == kColdStart) && brewSwitchTriggerCase != 31) {
         // For status info
         u8g2.clearBuffer();
 
@@ -312,22 +347,11 @@ void Displaymachinestate() {
     }
 
     // Steam
-    if (machineState == kSteam) {
+    if (machineState == kSteam && brewSwitchTriggerCase != 31) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(-1, 12, Steam_Logo_width, Steam_Logo_height, Steam_Logo);
         
-        u8g2.setFont(u8g2_font_fub30_tf);
-
-        if (temperature < 99.999) {
-            u8g2.setCursor(68, 16);
-            u8g2.print(temperature, 0);
-        }
-        else {
-            u8g2.setCursor(48, 16);
-            u8g2.print(temperature, 0);
-        }
-        
-        u8g2.drawCircle(120, 20, 3);
+        displayTemperature(48, 16);
 
         displayWaterIcon(119, 1);
         u8g2.sendBuffer();
