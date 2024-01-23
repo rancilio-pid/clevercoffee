@@ -12,10 +12,11 @@
  */
 void printScreen()
 {
-    if  ((machineState == kAtSetpoint || machineState == kPidNormal || machineState == kBrewDetectionTrailing) ||
-        ((machineState == kBrew || machineState == kShotTimerAfterBrew) && FEATURE_SHOTTIMER == 0) ||  // shottimer == 0, also show brew
-        machineState == kCoolDown || ((machineState == kInit || machineState == kColdStart ) && FEATURE_HEATINGLOGO == 0) ||
-        ((machineState == kPidOffline)  && FEATURE_OFFLINELOGO == 0))
+    if (((machineState == kAtSetpoint || machineState == kPidNormal || machineState == kBrewDetectionTrailing) ||
+        ((machineState == kBrew || machineState == kShotTimerAfterBrew) && FEATURE_SHOTTIMER == 0) ||  // shottimer == 0, auch Bezug anzeigen
+        machineState == kCoolDown || ((machineState == kInit || machineState == kColdStart) && FEATURE_HEATINGLOGO == 0) ||
+        ((machineState == kPidOffline) && FEATURE_OFFLINELOGO == 0))
+        && (brewSwitchTriggerCase != 31))
     {
         u8g2.clearBuffer();
         u8g2.setFont(u8g2_font_profont11_tf); // set font

@@ -120,6 +120,7 @@ void checkbrewswitch() {
                     brewSwitchTriggerCase = 31;
                     digitalWrite(PIN_VALVE, relayOn);
                     digitalWrite(PIN_PUMP, relayOn);
+                    startingTime = millis();
                 }
                 break;
 
@@ -255,7 +256,7 @@ void brew() {
             brewCounter = kWaitBrewOff;
         }
 
-        if (brewCounter > kBrewIdle && brewCounter < kWaitBrewOff) {
+        if (brewCounter > kBrewIdle && brewCounter < kWaitBrewOff || brewSwitchTriggerCase == 31) {
             timeBrewed = currentMillisTemp - startingTime;
         }
 
