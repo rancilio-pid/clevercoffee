@@ -69,7 +69,7 @@ enum MACHINE {
 
 // Brew Scale
 #define SCALE_SAMPLES 2                    // Load cell sample rate
-#define SINGLE_HX711 0             // 1 = Only a single HX711 with two channels, 0 = one HX711 per load cell
+#define SCALE_TYPE 0             // 1 = Only a single HX711 with two channels, 0 = one HX711 per load cell
 
 // Backflush values
 #define FILLTIME 5000              // time in ms the pump is running

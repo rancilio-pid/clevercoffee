@@ -158,6 +158,7 @@ void assignMQTTParam(char *param, double value) {
                     *(float *)var->ptr = value;
                     mqtt_publish(param, number2string(value), true);
                     break;
+
                 case kUInt8:
                     *(uint8_t *)var->ptr = value;
 
@@ -535,8 +536,8 @@ int sendHASSIODiscoveryMsg() {
     DiscoveryObject startUsePonM = GenerateSwitchDevice("startUsePonM", "Use PonM");
 
     // Button Devices
-    DiscoveryObject scaleCalibrateButton = GenerateButtonDevice("calibrationON", "Calibrate Scale");
-    DiscoveryObject scaleTareButton = GenerateButtonDevice("tareON", "Tare Scale");
+    DiscoveryObject scaleCalibrateButton = GenerateButtonDevice("scaleCalibrationOn", "Calibrate Scale");
+    DiscoveryObject scaleTareButton = GenerateButtonDevice("scaleTareOn", "Tare Scale");
 
   
 std::vector<DiscoveryObject> discoveryObjects = {

@@ -98,17 +98,17 @@
                                             </td>
                                         </template>
                                         <template v-if="param.name == 'TARE_ON'">
-                                            <td><b>Toggle Tare Mode</b></td>
+                                            <td><b>Tare Scale</b></td>
                                             <td><span id="tare_state"></span></td>
                                             <td>
-                                                <form action="/toggleTare" method="post">
+                                                <form action="/toggleTareScale" method="post">
                                                     <input type="hidden" id="varTARE_ON" name="varTARE_ON" />
                                                     <input type="submit" class="btn btn-primary" :value="param.value == 1 ? 'Off' : 'On'" id="tare_toggle" />
                                                 </form>
                                             </td>
                                         </template>
                                         <template v-if="param.name == 'CALIBRATION_ON'">
-                                            <td><b>Toggle Calibration Mode</b></td>
+                                            <td><b>Scale Calibration Mode</b></td>
                                             <td><span id="calibration_state"></span></td>
                                             <td>
                                                 <form>
