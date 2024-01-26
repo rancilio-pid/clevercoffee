@@ -292,13 +292,11 @@ void displayToggleMessage(const char* title, uint8_t mode) {
     u8g2.setCursor(0, 0);
     u8g2.print(title);
     
-    switch (mode) {
-        case 1:
-            u8g2.print(LANGSTRING_MENU_ON);
-            break;
-        default:
-            u8g2.print(LANGSTRING_MENU_OFF);
-            break;
+    if (mode == 1) {
+        u8g2.print(LANGSTRING_MENU_ON);
+    }
+    else {
+        u8g2.print(LANGSTRING_MENU_OFF);
     }
 
     u8g2.setCursor(0, 25);

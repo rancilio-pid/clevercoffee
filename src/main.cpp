@@ -2208,7 +2208,7 @@ void loop() {
     looppid();
 
     #if ROTARY_MENU == 1
-        if (menuOpen == false) {
+        if (!menuOpen) {
             if (xQueueReceive(button_events, &ev, 1/portTICK_PERIOD_MS)) {
                 if (ev.event == BUTTON_UP) {
                     menuOpen = true;
@@ -2220,7 +2220,7 @@ void loop() {
             }
         }
 
-        if (menuOpen == true) {
+        if (menuOpen) {
             LCDML.loop();
         } 
     #endif
