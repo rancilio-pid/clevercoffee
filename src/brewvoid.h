@@ -70,7 +70,7 @@ boolean brewPIDDisabled = false;                    // is PID disabled for delay
 #include "dimmer.h"
 
 void pumpOn(int power = 100) {
-    #if DIMMER == 0
+    #if FEATURE_PUMP_DIMMER == 0
         digitalWrite(PIN_PUMP, relayOn);
     #else
         setPower(power);
@@ -78,7 +78,7 @@ void pumpOn(int power = 100) {
 }
 
 void pumpOff() {
-    #if DIMMER == 0
+    #if FEATURE_PUMP_DIMMER == 0
         digitalWrite(PIN_PUMP, relayOff);
     #else
         setPower(0);
