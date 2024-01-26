@@ -68,18 +68,18 @@ const vueApp = Vue.createApp({
                 0: 'PID Parameters',
                 1: 'Temperature and Preinfusion',
                 2: 'Brew Detection and Brew PID Parameters',
-                3: 'Power Settings',
-                4: 'Scale Parameters'
+                3: 'Scale Parameters',
+                4: 'Power Settings'
             }
             return sectionNames[sectionId]
         },
         confirmSubmission() {
-            if (confirm('Are you sure you want to toggle the calibration?')) {
+            if (confirm('Are you sure you want to start the scale calibration?')) {
                 const requestOptions = {
                     method: "POST",
                     cache: 'no-cache'
                 };
-                fetch("/toggleCalibration", requestOptions)
+                fetch("/toggleScaleCalibration", requestOptions)
             }
         }
     },

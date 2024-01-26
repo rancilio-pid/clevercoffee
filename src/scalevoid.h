@@ -8,7 +8,7 @@
 
 #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
 
-void calibrate(HX711_ADC loadCell, int pin, sto_item_id_t name, float *calibration) {
+void scaleCalibrate(HX711_ADC loadCell, int pin, sto_item_id_t name, float *calibration) {
     loadCell.setCalFactor(1.0);
     u8g2.clearBuffer();
     u8g2.drawStr(0, 22, "Calibration coming up");
@@ -60,7 +60,7 @@ void checkWeight() {
 
     // check for new data/start next conversion:
     if (LoadCell.update()) newDataReady = true;
-    #if SINGLE_HX711 == 0
+    #if SCALE_TYPE == 0
         // weirdly, the library examples do not check for updates on the second cell before getting the values...
         LoadCell2.update();
     #endif
@@ -71,28 +71,28 @@ void checkWeight() {
             newDataReady = false;
             w1 = LoadCell.getData();
 
-            #if SINGLE_HX711 == 0
+            #if SCALE_TYPE == 0
                 w2 = LoadCell2.getData();
             #endif
         }
     }
 
-    #if SINGLE_HX711 == 0
+    #if SCALE_TYPE == 0
         weight = w1 + w2;
     #else 
         weight = w1;
     #endif
 
-    if (calibrationON) {
-        calibrate(LoadCell, PIN_HXDAT, STO_ITEM_SCALE_CALIBRATION_FACTOR, &scaleCalibration);
-        #if SINGLE_HX711 == 0
-        calibrate(LoadCell2, PIN_HXDAT2, STO_ITEM_SCALE2_CALIBRATION_FACTOR, &scale2Calibration);
+    if (scaleCalibrationOn) {
+        scaleCalibrate(LoadCell, PIN_HXDAT, STO_ITEM_SCALE_CALIBRATION_FACTOR, &scaleCalibration);
+        #if SCALE_TYPE == 0
+        scaleCalibrate(LoadCell2, PIN_HXDAT2, STO_ITEM_SCALE2_CALIBRATION_FACTOR, &scale2Calibration);
         #endif
-        calibrationON = 0;
+        scaleCalibrationOn = 0;
     }
 
-    if (tareON) {
-        tareON = 0;
+    if (scaleTareOn) {
+        scaleTareOn = 0;
         u8g2.clearBuffer();
         u8g2.drawStr(0, 2, "Taring scale,");
         u8g2.drawStr(0, 12, "remove any load!");
@@ -101,7 +101,7 @@ void checkWeight() {
         u8g2.sendBuffer();
         LoadCell.tare();
         LoadCell.setCalFactor(scaleCalibration);
-        #if SINGLE_HX711 == 0
+        #if SCALE_TYPE == 0
         LoadCell2.setCalFactor(scale2Calibration);
         LoadCell2.tare();
         #endif
@@ -113,17 +113,17 @@ void checkWeight() {
 }
 
 void initScale() {
-    boolean shouldCalibrate = calibrationON;
+    boolean shouldCalibrate = scaleCalibrationOn;
 
     LoadCell.begin();
-    #if SINGLE_HX711 == 0
+    #if SCALE_TYPE == 0
         LoadCell2.begin();
     #endif 
 
     unsigned long stabilizingtime = 5000; // tare preciscion can be improved by adding a few seconds of stabilizing time
     boolean _tare = true; //set this to false if you don't want tare to be performed in the next step
 
-    #if SINGLE_HX711 == 1
+    #if SCALE_TYPE == 1
         while(!LoadCell.startMultiple(stabilizingtime, _tare));
     #else 
         byte loadCellReady = 0;
@@ -146,7 +146,7 @@ void initScale() {
         return;
     }
 
-    #if SINGLE_HX711 == 0
+    #if SCALE_TYPE == 0
     if (LoadCell2.getTareTimeoutFlag() || LoadCell2.getSignalTimeoutFlag() ) {
         debugPrintf("Timeout, check MCU>HX711 wiring for scale 2");
         u8g2.drawStr(0, 32, "failed!");
@@ -161,12 +161,12 @@ void initScale() {
     LoadCell.setCalFactor(scaleCalibration); 
     LoadCell.setSamplesInUse(SCALE_SAMPLES);
 
-    #if SINGLE_HX711 == 0
+    #if SCALE_TYPE == 0
         LoadCell2.setCalFactor(scale2Calibration); 
         LoadCell2.setSamplesInUse(SCALE_SAMPLES);
     #endif 
 
-    calibrationON = 0;
+    scaleCalibrationOn = 0;
 }
 
 /**

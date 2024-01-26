@@ -269,20 +269,20 @@ void serverSetup() {
     });
 
 #if (ONLYPIDSCALE == 1 || BREWMODE == 2)
-    server.on("/toggleTare", HTTP_POST, [](AsyncWebServerRequest *request) {
-        int tare = flipUintValue(tareON);
+    server.on("/toggleTareScale", HTTP_POST, [](AsyncWebServerRequest *request) {
+        int tare = flipUintValue(scaleTareOn);
 
-        setTare(tare);
-        debugPrintf("Toggle tare mode: %i \n", tare);
+        setScaleTare(tare);
+        debugPrintf("Toggle scale tare mode: %i \n", tare);
 
         request->redirect("/");
     });
 
-    server.on("/toggleCalibration", HTTP_POST, [](AsyncWebServerRequest *request) {
-        int calibrate = flipUintValue(calibrationON);
+    server.on("/toggleScaleCalibration", HTTP_POST, [](AsyncWebServerRequest *request) {
+        int scaleCalibrate = flipUintValue(scaleCalibrationOn);
 
-        setCalibration(calibrate);
-        debugPrintf("Toggle calibration mode: %i \n", calibrate);
+        setScaleCalibration(scaleCalibrate);
+        debugPrintf("Toggle scale calibration mode: %i \n", scaleCalibrate);
 
         request->redirect("/");
     });

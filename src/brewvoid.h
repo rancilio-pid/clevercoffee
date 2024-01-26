@@ -50,8 +50,8 @@ boolean brewPIDDisabled = false;                    // is PID disabled for delay
 
 // Shot timer with or without scale
 #if (ONLYPIDSCALE == 1 || BREWMODE == 2)
-    boolean calibrationON = 0;
-    boolean tareON = 0;
+    boolean scaleCalibrationOn = 0;
+    boolean scaleTareOn = 0;
     int shottimerCounter = 10 ;
     float calibrationValue = SCALE_CALIBRATION_FACTOR;  // use calibration example to get value
     float weight = 0;                                   // value from HX711
@@ -62,7 +62,7 @@ boolean brewPIDDisabled = false;                    // is PID disabled for delay
     const unsigned long intervalWeight = 200;           // weight scale
     unsigned long previousMillisScale;                  // initialisation at the end of init()
     HX711_ADC LoadCell(PIN_HXDAT, PIN_HXCLK);
-    #if SINGLE_HX711 == 0 
+    #if SCALE_TYPE == 0 
         HX711_ADC LoadCell2(PIN_HXDAT2, PIN_HXCLK);
     #endif 
 #endif
