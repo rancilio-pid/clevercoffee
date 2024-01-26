@@ -77,7 +77,7 @@ enum MACHINE {
 #define MAXFLUSHCYCLES 5           // number of cycles the backflush should run, 0 = disabled
 
 // Rotary Encoder Menu
-#define ROTARY_MENU 0              // 0 = off, 1 = on
+#define FEATURE_ROTARY_MENU 0              // 0 = off, 1 = on
 #define ROTARY_MENU_DEBUG 0        // 0 = off, 1 = on
 
 // PlatformIO OTA

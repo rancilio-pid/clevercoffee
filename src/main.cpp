@@ -434,7 +434,7 @@ const unsigned long intervalDisplay = 500;
     #endif
 #endif
 
-#if (ROTARY_MENU == 1)
+#if (FEATURE_ROTARY_MENU == 1)
     #include <LCDMenuLib2.h>
     #include <ESP32Encoder.h> 
     ESP32Encoder encoder;
@@ -2087,7 +2087,7 @@ void setup() {
         #endif
     #endif
 
-    #if(ROTARY_MENU == 1)
+    #if(FEATURE_ROTARY_MENU == 1)
         pinMode(PIN_ROTARY_DT, INPUT_PULLUP);
         pinMode(PIN_ROTARY_CLK, INPUT_PULLUP);
         pinMode(PIN_ROTARY_SW, INPUT_PULLUP);
@@ -2098,7 +2098,7 @@ void setup() {
         setupMenu();
     #endif
 
-    #if(ROTARY_MENU == 1)
+    #if(FEATURE_ROTARY_MENU == 1)
         pinMode(PIN_ROTARY_DT, INPUT_PULLUP);
         pinMode(PIN_ROTARY_CLK, INPUT_PULLUP);
         pinMode(PIN_ROTARY_SW, INPUT_PULLUP);
@@ -2207,7 +2207,7 @@ void setup() {
 void loop() {
     looppid();
 
-    #if ROTARY_MENU == 1
+    #if FEATURE_ROTARY_MENU == 1
         if (!menuOpen) {
             if (xQueueReceive(button_events, &ev, 1/portTICK_PERIOD_MS)) {
                 if (ev.event == BUTTON_UP) {
@@ -2356,7 +2356,7 @@ void looppid() {
 
     // Check if PID should run or not. If not, set to manual and force output to zero
 #if OLED_DISPLAY != 0
-    #if ROTARY_MENU == 1 // only draw the display template if the menu is not open
+    #if FEATURE_ROTARY_MENU == 1 // only draw the display template if the menu is not open
     if (!menuOpen) {
     #endif
         unsigned long currentMillisDisplay = millis();
@@ -2370,7 +2370,7 @@ void looppid() {
         #endif
             printScreen();  // refresh display
         }
-    #if ROTARY_MENU == 1
+    #if FEATURE_ROTARY_MENU == 1
     }
     #endif
 #endif

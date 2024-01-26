@@ -89,7 +89,7 @@ int writeSysParamsToStorage(void);
 #define STANDBY_MODE_TIME_MIN 30
 #define STANDBY_MODE_TIME_MAX 120
 
-#if ROTARY_MENU == 1
+#if FEATURE_ROTARY_MENU == 1
     #define ENCODER_CLICKS_PER_NOTCH 4
 
     // Menu position and size
