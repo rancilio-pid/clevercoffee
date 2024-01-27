@@ -186,7 +186,7 @@ double brewTempOffset = TEMPOFFSET;
 double setpoint = brewSetpoint;
 double steamSetpoint = STEAMSETPOINT;
 float scaleCalibration = SCALE_CALIBRATION_FACTOR;
-float scale2Calibration = SCALE_CALIBRATION_FACTOR;
+float scale2Calibration = SCALE2_CALIBRATION_FACTOR;
 float scaleKnownWeight = SCALE_KNOWN_WEIGHT;
 uint8_t usePonM = 0;               // 1 = use PonM for cold start PID, 0 = use normal PID for cold start
 double steamKp = STEAMKP;
