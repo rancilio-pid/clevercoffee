@@ -1531,7 +1531,11 @@ void websiteSetup() {
 
 const char sysVersion[] = (STR(FW_VERSION) "." STR(FW_SUBVERSION) "." STR(FW_HOTFIX) " " FW_BRANCH " " AUTO_VERSION);
 
+#include "dimmer.h"
+
 void setup() {
+    setupDimmer();
+
     editableVars["PID_ON"] = {
         .displayName = "Enable PID Controller",
         .hasHelpText = false,
