@@ -54,7 +54,7 @@ float measurePressure() {
     // calculation of pressure value according to equation 2 of datasheet
     ABP2_pressure = ((ABP2_press_counts - ABP2_outputmin) * (ABP2_pmax - ABP2_pmin)) / (ABP2_outputmax - ABP2_outputmin) + ABP2_pmin;
     
-    #ifdef VERBOSE
+    #if VERBOSE == 1
         debugPrintf(">counts:%f, >perc:%f, >p:%f, >temp:%f\n", ABP2_press_counts, ABP2_percentage, ABP2_pressure, ABP2_temperature);
     #endif
     
