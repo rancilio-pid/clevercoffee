@@ -31,7 +31,6 @@ void IRAM_ATTR onTimer(){
     }
 }
 
-
 /**
  * @brief Initialize hardware timers
  */

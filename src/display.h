@@ -270,6 +270,43 @@ void displayShottimer(void) {
     #endif
 }
 
+#if (FEATURE_ROTARY_MENU == 1) 
+
+void displayNumericalMenuSettingWithUnit(double temp, const char* name, const char* unit) {
+    u8g2.clearBuffer();
+    u8g2.setCursor(0, 0);
+    u8g2.print(name);
+    u8g2.print(": ");
+    u8g2.setCursor(0, 10);
+    u8g2.print(temp, 1);
+    u8g2.print(unit);
+    u8g2.setCursor(0, 25);
+    u8g2.println(langstring_pressToSave[0]);
+    u8g2.setCursor(0, 35);
+    u8g2.println(langstring_pressToSave[1]);
+    u8g2.sendBuffer();
+}
+
+void displayToggleMessage(const char* title, uint8_t mode) {
+    u8g2.clearBuffer();
+    u8g2.setCursor(0, 0);
+    u8g2.print(title);
+    
+    if (mode == 1) {
+        u8g2.print(LANGSTRING_MENU_ON);
+    }
+    else {
+        u8g2.print(LANGSTRING_MENU_OFF);
+    }
+
+    u8g2.setCursor(0, 25);
+    u8g2.println(langstring_autoclose[0]);
+    u8g2.setCursor(0, 35);
+    u8g2.println(langstring_autoclose[1]);
+    u8g2.sendBuffer();
+}
+
+#endif 
 
 /**
  * @brief display heating logo
