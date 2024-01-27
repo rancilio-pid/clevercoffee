@@ -34,8 +34,8 @@ static const char *langstring_error_tsensor[] = {"Fehler, Temp: ", "Temp.-Sensor
 // static const char *langstring_emergencyStop[] = {"HEATING", "STOPPED"};
 
 static const char *langstring_backflush_press = "Bruehsch. druecken";
-static const char *langstring_backflush_start = "um zu Starten...";
-static const char *langstring_backflush_finish = "zum Beenden...";
+static const char *langstring_backflush_start = "um zu starten...";
+static const char *langstring_backflush_finish = "um zu beenden...";
 
 #elif LANGUAGE == 1 // EN
 #if (DISPLAYTEMPLATE <= 4)
