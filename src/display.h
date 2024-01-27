@@ -241,13 +241,16 @@ void displayShottimer(void) {
 
             // temp icon
             u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
-            u8g2.setFont(u8g2_font_profont22_tf);
-            u8g2.setCursor(64, 15);
+            u8g2.setFont(u8g2_font_profont17_tf);
+            u8g2.setCursor(64, 5);
             u8g2.print(timeBrewed / 1000, 1);
             u8g2.print("s");
-            u8g2.setCursor(64, 38);
+            u8g2.setCursor(64, 25);
             u8g2.print(weightBrew, 1);
             u8g2.print("g");
+            u8g2.setCursor(64, 45);
+            u8g2.print(flowRate, 1);
+            u8g2.print("g/s");
             u8g2.setFont(u8g2_font_profont11_tf);
             displayWaterIcon(119, 1);
             u8g2.sendBuffer();
@@ -256,13 +259,16 @@ void displayShottimer(void) {
         if (((machineState == kShotTimerAfterBrew) && FEATURE_SHOTTIMER == 1 && SHOTTIMER_TYPE == 2)) {
             u8g2.clearBuffer();
             u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
-            u8g2.setFont(u8g2_font_profont22_tf);
-            u8g2.setCursor(64, 15);
+            u8g2.setFont(u8g2_font_profont17_tf);
+            u8g2.setCursor(64, 5);
             u8g2.print(lastBrewTime / 1000, 1);
             u8g2.print("s");
-            u8g2.setCursor(64, 38);
+            u8g2.setCursor(64, 25);
             u8g2.print(weightBrew, 1);
             u8g2.print("g");
+            u8g2.setCursor(64, 45);
+            u8g2.print(flowRate, 1);
+            u8g2.print("g/s");
             u8g2.setFont(u8g2_font_profont11_tf);
             displayWaterIcon(119, 1);
             u8g2.sendBuffer();

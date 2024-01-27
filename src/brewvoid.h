@@ -18,7 +18,8 @@ enum BrewState {
     kBrewRunning = 40,
     kWaitBrew = 41,
     kBrewFinished = 42,
-    kWaitBrewOff = 43
+    kBrewWaitTrickle = 43,
+    kWaitBrewOff = 44
 };
 
 enum BackflushState {
@@ -53,18 +54,26 @@ boolean brewPIDDisabled = false;                    // is PID disabled for delay
     boolean scaleCalibrationOn = 0;
     boolean scaleTareOn = 0;
     int shottimerCounter = 10 ;
-    float calibrationValue = SCALE_CALIBRATION_FACTOR;  // use calibration example to get value
     float weight = 0;                                   // value from HX711
     float weightPreBrew = 0;                            // value of scale before wrew started
     float weightBrew = 0;                               // weight value of brew
     float scaleDelayValue = 2.5;                        // value in gramm that takes still flows onto the scale after brew is stopped
     bool scaleFailure = false;
-    const unsigned long intervalWeight = 200;           // weight scale
+    const unsigned long intervalWeight = 50;           // weight scale
     unsigned long previousMillisScale;                  // initialisation at the end of init()
     HX711_ADC LoadCell(PIN_HXDAT, PIN_HXCLK);
     #if SCALE_TYPE == 0 
         HX711_ADC LoadCell2(PIN_HXDAT2, PIN_HXCLK);
     #endif 
+
+    unsigned long timeTrickling = 0;
+    unsigned long timeTrickleStarted = 0;
+
+    // flow rate calculation
+    unsigned long prevFlowRateTime = 0;
+    float prevFlowRateWeight = 0.0;
+    float flowRate = 0.0;
+    float flowRateEmaAlpha = 0.05;
 #endif
 
 /**
@@ -373,9 +382,20 @@ void brew() {
             brewCounter = kWaitBrewOff;
         }
 
-        if (brewCounter > kBrewIdle && brewCounter < kWaitBrewOff) {
+        if (brewCounter > kBrewIdle && brewCounter < kBrewWaitTrickle) {
             timeBrewed = currentMillisTemp - startingTime;
+        }
+        if (brewCounter > kBrewIdle && brewCounter < kWaitBrewOff) {
             weightBrew = weight - weightPreBrew;
+
+            // Avoid ugly scale glitches below 0g at the beginning of the shot
+            if (weightBrew < 0) {
+                weightBrew = 0;
+            }
+        }
+
+        if (brewCounter == kBrewWaitTrickle) {
+            timeTrickling = currentMillisTemp - timeTrickleStarted;
         }
 
         if (brewSwitch == LOW && movingAverageInitialized) {
@@ -388,7 +408,7 @@ void brew() {
 
         // state machine for brew
         switch (brewCounter) {
-            case 10:  // waiting step for brew switch turning on
+            case kBrewIdle:  // waiting step for brew switch turning on
                 if (brewSwitch == HIGH && backflushState == 10 && backflushOn == 0 && brewSwitchWasOff) {
                     startingTime = millis();
                     brewCounter = kPreinfusion;
@@ -399,13 +419,15 @@ void brew() {
 
                     coldstart = false;  // force reset coldstart if shot is pulled
                     weightPreBrew = weight;
+                    prevFlowRateWeight = weight;
+                    prevFlowRateTime = currentMillisTemp;
                 } else {
                     backflush();
                 }
 
                 break;
 
-            case 20:  // preinfusioon
+            case kPreinfusion:  
                 debugPrintln("Preinfusion");
                 digitalWrite(PIN_VALVE, relayOn);
                 digitalWrite(PIN_PUMP, relayOn);
@@ -413,14 +435,14 @@ void brew() {
 
                 break;
 
-            case 21:  // waiting time preinfusion
+            case kWaitPreinfusion: 
                 if (timeBrewed > (preinfusion * 1000)) {
                     brewCounter = kPreinfusionPause;
                 }
 
                 break;
 
-            case 30:  // preinfusion pause
+            case kPreinfusionPause: 
                 debugPrintln("preinfusion pause");
                 digitalWrite(PIN_VALVE, relayOn);
                 digitalWrite(PIN_PUMP, relayOff);
@@ -428,14 +450,14 @@ void brew() {
 
                 break;
 
-            case 31:  // waiting time preinfusion pause
+            case kWaitPreinfusionPause: 
                 if (timeBrewed > ((preinfusion * 1000) + (preinfusionPause * 1000))) {
                     brewCounter = kBrewRunning;
                 }
 
                 break;
 
-            case 40:  // brew running
+            case kBrewRunning: 
                 debugPrintln("Brew started");
                 digitalWrite(PIN_VALVE, relayOn);
                 digitalWrite(PIN_PUMP, relayOn);
@@ -443,28 +465,37 @@ void brew() {
 
                 break;
 
-            case 41:  // waiting time brew
+            case kWaitBrew:  // waiting time brew
                 if (weightBrew > (weightSetpoint - scaleDelayValue)) {
                     brewCounter = kBrewFinished;
                 }
 
                 break;
 
-            case 42:  // brew finished
+            case kBrewFinished:  // brew finished
                 debugPrintln("Brew stopped");
                 digitalWrite(PIN_VALVE, relayOff);
                 digitalWrite(PIN_PUMP, relayOff);
-                brewCounter = kWaitBrewOff;
+                brewCounter = kBrewWaitTrickle;
+                timeTrickleStarted = currentMillisTemp;
 
                 break;
 
-            case 43:  // waiting for brewswitch off position
+            case kBrewWaitTrickle:
+                // Wait for at most 2 seconds for trickle to reach target weight
+                if (timeTrickling > 2000) {
+                    brewCounter = kWaitBrewOff;
+                }
+                break;
+
+            case kWaitBrewOff:  // waiting for brewswitch off position
                 if (brewSwitch == LOW) {
                     digitalWrite(PIN_VALVE, relayOff);
                     digitalWrite(PIN_PUMP, relayOff);
 
                     // disarmed button
                     currentMillisTemp = 0;
+                    lastBrewTime = timeBrewed;
                     timeBrewed = 0;
                     brewDetected = 0;  // rearm brewDetection
                     brewCounter = kBrewIdle;
@@ -473,6 +504,31 @@ void brew() {
                 weightBrew = weight - weightPreBrew;  // always calculate weight to show on display
 
                 break;
+        }
+
+        if (brewCounter > kBrewIdle && brewCounter < kWaitBrewOff) {
+            // Calculate time and weight difference
+            unsigned long timeDelta = currentMillisTemp - prevFlowRateTime;
+            float weightDelta = weightBrew - prevFlowRateWeight;
+            // avoid flowrate flicker when scale flickers negatively
+            if (weightDelta < 0) {
+                weightDelta = 0;
+            }
+
+            // Calculate flow rate
+            // we only get a new weight measurement every intervalWeight ms, so we do not need to compute this more often!
+            if (timeDelta > intervalWeight) {
+                float currentFlowRate = weightDelta / (timeDelta / 1000.0); // Flow rate in g/s
+                flowRate = flowRateEmaAlpha * currentFlowRate + (1 - flowRateEmaAlpha) * flowRate;
+
+                // debugPrintf("Delta %i, weightDelta %.2f. Curr: %.2f, flowrate %.2f //// time: %i, weight %.2f\n", timeDelta, weightDelta, currentFlowRate, flowRate, timeBrewed, weightBrew);
+
+                prevFlowRateTime = currentMillisTemp;
+                prevFlowRateWeight = weightBrew;
+            }
+        } 
+        else {
+            flowRate = 0;
         }
     }
 }
