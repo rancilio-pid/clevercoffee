@@ -55,8 +55,8 @@ enum MACHINE {
 #define ONLYPID 1                  // 0 = PID and preinfusion, 1 = Only PID
 #define ONLYPIDSCALE 0             // 0 = off , 1 = OnlyPID with Scale
 #define BREWMODE 1                 // 1 = Brew by time (with preinfusion); 2 = Brew by weight (from scale)
-#define FEATURE_BREWDETECTION 0    // 0 = deactivated, 1 = activated
-#define BREWDETECTION_TYPE 1       // 0 = off, 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = optocoupler for Only PID
+#define FEATURE_BREWDETECTION 1    // 0 = deactivated, 1 = activated
+#define BREWDETECTION_TYPE 1       // 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = optocoupler for Only PID
 #define BREWSWITCH_TYPE 0          // 0 = no switch connected, 1 = normal switch, 2 = trigger switch
 #define POWERSWITCH_TYPE 0         // 0 = no switch connected, 1 = normal switch, 2 = trigger switch
 #define STEAMSWITCH_TYPE 0         // 0 = no switch connected, 1 = normal switch, 2 = trigger switch
@@ -68,8 +68,8 @@ enum MACHINE {
 #define FEATURE_PRESSURESENSOR 0   // 0 = deactivated, 1 = activated
 
 // Brew Scale
-#define SCALE_SAMPLES 2                    // Load cell sample rate
-#define SCALE_TYPE 0             // 1 = Only a single HX711 with two channels, 0 = one HX711 per load cell
+#define SCALE_SAMPLES 2            // Load cell sample rate
+#define SCALE_TYPE 0               // 1 = Only a single HX711 with two channels, 0 = one HX711 per load cell
 
 // Backflush values
 #define FILLTIME 5000              // time in ms the pump is running
