@@ -18,7 +18,8 @@ bool PeriodicTrigger::check() {
     if ((millis() - m_tref) > m_triggerInterval) {
         m_tref += m_triggerInterval;
         return true;
-    } else {
+    }
+    else {
         return false;
     }
 }

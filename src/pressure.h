@@ -13,6 +13,9 @@
 
 #define ABP2_READ_DELAY_MS (10)
 
+const unsigned long intervalPressureDebug = 1000;
+unsigned long previousMillisPressureDebug = 0;
+
 uint8_t ABP2_id = 0x28;                       // i2c address
 uint8_t ABP2_data[7];                         // holds output data
 uint8_t ABP2_cmd[3] = { 0xAA, 0x00, 0x00} ;   // command to be sent
@@ -55,7 +58,12 @@ float measurePressure() {
     ABP2_pressure = ((ABP2_press_counts - ABP2_outputmin) * (ABP2_pmax - ABP2_pmin)) / (ABP2_outputmax - ABP2_outputmin) + ABP2_pmin;
     
     #if VERBOSE == 1
-        debugPrintf(">counts:%f, >perc:%f, >p:%f, >temp:%f\n", ABP2_press_counts, ABP2_percentage, ABP2_pressure, ABP2_temperature);
+        unsigned long currentMillisPressureDebug = millis();
+
+        if (currentMillisPressureDebug - previousMillisPressureDebug >= intervalPressureDebug) {
+            debugPrintf("Counts: %f, Percent: %f, Pressure: %f, Temp: %f\n", ABP2_press_counts, ABP2_percentage, ABP2_pressure, ABP2_temperature);
+            previousMillisPressureDebug = currentMillisPressureDebug;
+        }
     #endif
     
     return (float)ABP2_pressure;
