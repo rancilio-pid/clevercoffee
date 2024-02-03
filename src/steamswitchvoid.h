@@ -1,11 +1,7 @@
 /**
  * @file steamswitchvoid.h
  *
- * @brief
- */
-
-/**
- * @brief Digtalswitch input pin for STEAM SWITCH
+ * @brief Handler for digital steam switch
  */
 
 int lastSteamSwitchTrigger = LOW;                   // the previous reading from the input pin
@@ -34,7 +30,8 @@ void checkSteamSwitch() {
                     steamON = 0;
                     steamQM_active = false;
                     lastTimeOptocouplerOn = 0;
-                } else {
+                }
+                else {
                     steamON = 1;
                 }
             }
@@ -61,7 +58,8 @@ void checkSteamSwitch() {
                     if (steamON == 0) {
                         Serial.println("Turn Steam ON");
                         steamON = 1;
-                    } else {
+                    }
+                    else {
                         Serial.println("Turn Steam OFF");
                         steamON = 0;
                     }

@@ -19,7 +19,8 @@ void IRAM_ATTR onTimer(){
 
     if (pidOutput <= isrCounter) {
         digitalWrite(PIN_HEATER, LOW);
-    } else {
+    }
+    else {
         digitalWrite(PIN_HEATER, HIGH);
     }
 

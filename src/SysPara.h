@@ -39,7 +39,8 @@ class SysPara {
         SysPara(T* curPtr, T min, T max, sto_item_id_t stoItemId = STO_ITEM__LAST_ENUM) {
             if (curPtr) {
                 _data.curPtr = curPtr;
-            } else {
+            }
+            else {
                 debugPrintf("%s(): empty pointer!\n", __func__);
                 _data.curPtr = (T*)&_dummyCur;
             }
@@ -106,7 +107,8 @@ class SysPara {
                 if ((stoStatus = storageGet(_stoItemId, _dummyCur)) == 0) {
                     if ((_dummyCur >= _data.min) && (_dummyCur <= _data.max)) {  // did we read a valid value?
                         *_data.curPtr = _dummyCur;                               // yes -> set data to new value
-                    } else {
+                    }
+                    else {
                         *_data.curPtr = _data.min;                               // no -> set data to min value
                     }
                 }
@@ -144,7 +146,8 @@ class SysPara {
             if (_stoItemId < STO_ITEM__LAST_ENUM) {
                 if ((*_data.curPtr >= _data.min) && (*_data.curPtr <= _data.max)) {
                     return storageSet(_stoItemId, *_data.curPtr, commit);
-                } else {
+                }
+                else {
                     debugPrintf("%s(): value outside of allowed range! (item: %i)\n", __func__, _stoItemId);
                     return -1;
                 }

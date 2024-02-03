@@ -47,7 +47,8 @@ void printScreen() {
                 if (isrCounter < 500) {
                     u8g2.print("OK");
                 }
-            } else {
+            }
+            else {
                 u8g2.print("WAIT");
             }
 
@@ -84,7 +85,8 @@ void printScreen() {
 
             if (pidOutput < 99) {
                 u8g2.print(pidOutput / 10, 1);
-            } else {
+            }
+            else {
                 u8g2.print(pidOutput / 10, 0);
             }
 
@@ -117,7 +119,8 @@ void printScreen() {
                     for (int b = 0; b <= signalBars; b++) {
                         u8g2.drawVLine(13 + (b * 2), 10 - (b * 2), b * 2);
                     }
-                } else {
+                }
+                else {
                     u8g2.drawXBMP(4, 2, 8, 8, Antenna_NOK_Icon);
                     u8g2.setCursor(56, 2);
                     u8g2.print("RC: ");
@@ -129,12 +132,14 @@ void printScreen() {
                         u8g2.setCursor(24, 2);
                         u8g2.setFont(u8g2_font_profont11_tf);
                         u8g2.print("MQTT");
-                    } else {
+                    }
+                    else {
                         u8g2.setCursor(24, 2);
                         u8g2.print("");
                     }
                 }
-            } else {
+            }
+            else {
                 u8g2.setCursor(4, 1);
                 u8g2.print("Offline");
             }

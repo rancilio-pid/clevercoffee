@@ -384,19 +384,24 @@ void getSignalStrength() {
 
     if (WiFi.status() == WL_CONNECTED) {
         rssi = WiFi.RSSI();
-    } else {
+    }
+    else {
         rssi = -100;
     }
 
     if (rssi >= -50) {
         signalBars = 4;
-    } else if (rssi < -50 && rssi >= -65) {
+    }
+    else if (rssi < -50 && rssi >= -65) {
         signalBars = 3;
-    } else if (rssi < -65 && rssi >= -75) {
+    }
+    else if (rssi < -65 && rssi >= -75) {
         signalBars = 2;
-    } else if (rssi < -75 && rssi >= -80) {
+    }
+    else if (rssi < -75 && rssi >= -80) {
         signalBars = 1;
-    } else {
+    }
+    else {
         signalBars = 0;
     }
 }
@@ -409,8 +414,8 @@ void getSignalStrength() {
     U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, PIN_I2CSCL, PIN_I2CSDA);  // e.g. 0.96"
 #endif
 #if OLED_DISPLAY == 3
-    #define OLED_CS             5
-    #define OLED_DC             2
+    #define OLED_CS 5
+    #define OLED_DC 2
     U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, OLED_CS, OLED_DC, /* reset=*/U8X8_PIN_NONE); // e.g. 1.3"
 #endif
 
@@ -453,7 +458,8 @@ const unsigned long intervalDisplay = 500;
 void testEmergencyStop() {
     if (temperature > EmergencyStopTemp && emergencyStop == false) {
         emergencyStop = true;
-    } else if (temperature < (brewSetpoint+5) && emergencyStop == true) {
+    }
+    else if (temperature < (brewSetpoint+5) && emergencyStop == true) {
         emergencyStop = false;
     }
 }
@@ -481,17 +487,21 @@ void calculateTemperatureMovingAverage() {
     timeValues[valueIndex] = millis();
     tempValues[valueIndex] = temperature;
 
-    double tempChangeRate = 0;                     // local change rate of temperature
+    // local change rate of temperature
+    double tempChangeRate = 0;
+
     if (valueIndex == numValues - 1) {
-        tempChangeRate = (tempValues[numValues - 1] - tempValues[0]) /
-                        (timeValues[numValues - 1] - timeValues[0]) * 10000;
-    } else {
+        tempChangeRate = (tempValues[numValues - 1] - tempValues[0]) / (timeValues[numValues - 1] - timeValues[0]) * 10000;
+    }
+    else {
         tempChangeRate = (tempValues[valueIndex] - tempValues[valueIndex + 1]) /
                         (timeValues[valueIndex] - timeValues[valueIndex + 1]) * 10000;
     }
+
     tempChangeRates[valueIndex] = tempChangeRate;
 
     double totalTempChangeRateSum = 0;
+
     for (int i = 0; i < numValues; i++) {
         totalTempChangeRateSum += tempChangeRates[i];
     }
@@ -505,7 +515,8 @@ void calculateTemperatureMovingAverage() {
     if (valueIndex >= numValues - 1) {
         // ...wrap around to the beginning:
         valueIndex = 0;
-    } else {
+    }
+    else {
         valueIndex++;
     }
 }
@@ -526,7 +537,8 @@ boolean checkSensor(float tempInput) {
         debugPrintf(
             "*** WARNING: temperature sensor reading: consec_errors = %i, temp_current = %.1f, temp_prev = %.1f\n",
             error, tempInput, previousInput);
-    } else if (badCondition == false && sensorOK == false) {
+    }
+    else if (badCondition == false && sensorOK == false) {
         error = 0;
         sensorOK = true;
     }
@@ -536,7 +548,8 @@ boolean checkSensor(float tempInput) {
         debugPrintf(
             "*** ERROR: temperature sensor malfunction: temp_current = %.1f\n",
             tempInput);
-    } else if (error == 0 && sensorError) {
+    }
+    else if (error == 0 && sensorError) {
         sensorError = false;
     }
 
@@ -573,7 +586,8 @@ void refreshTemp() {
 
             if (brewDetectionMode == 1) {
                 calculateTemperatureMovingAverage();
-            } else if (!movingAverageInitialized) {
+            }
+            else if (!movingAverageInitialized) {
                 movingAverageInitialized = true;
             }
         }
@@ -599,7 +613,8 @@ void refreshTemp() {
 
             if (brewDetectionMode == 1) {
                 calculateTemperatureMovingAverage();
-            } else if (!movingAverageInitialized) {
+            }
+            else if (!movingAverageInitialized) {
                 movingAverageInitialized = true;
             }
         }
@@ -667,8 +682,7 @@ void checkWifi() {
 
                 while (WiFi.status() != WL_CONNECTED && count <= 20) {
                     delay(100); // give WIFI some time to connect
-                    count++;    // reconnect counter, maximum waiting time for
-                                // reconnect = 20*100ms
+                    count++;    // reconnect counter, maximum waiting time for reconnect = 20*100ms
                 }
             }
         }
@@ -680,7 +694,8 @@ void checkWifi() {
     if (wifiReconnects >= maxWifiReconnects && WiFi.status() != WL_CONNECTED) { 
         // no wifi connection after trying connection, initiate offline mode
         initOfflineMode();
-    } else { 
+    }
+    else {
         wifiReconnects = 0;
     }
 }
@@ -739,11 +754,13 @@ void brewDetection() {
             isBrewDetected = 0;  // rearm brewDetection
             timeBrewed = 0;
         }
-    } else if (brewDetectionMode == 2) {
+    }
+    else if (brewDetectionMode == 2) {
         if (millis() - timeBrewDetection > brewtimesoftware * 1000 && isBrewDetected == 1) {
             isBrewDetected = 0;  // rearm brewDetection
         }
-    } else if (brewDetectionMode == 3) {
+    }
+    else if (brewDetectionMode == 3) {
         // timeBrewed counter
         if ((digitalRead(PIN_BREWSWITCH) == optocouplerOn) && brewDetected == 1) {
             timeBrewed = millis() - startingTime;
@@ -770,14 +787,16 @@ void brewDetection() {
             timeBrewDetection = millis();
             isBrewDetected = 1;
         }
-    } else if (brewDetectionMode == 2) {  // HW BD
+    }
+    else if (brewDetectionMode == 2) {  // HW BD
         if (brewCounter > kBrewIdle && brewDetected == 0) {
             debugPrintln("HW Brew detected");
             timeBrewDetection = millis();
             isBrewDetected = 1;
             brewDetected = 1;
         }
-    } else if (brewDetectionMode == 3) {  // voltage sensor
+    }
+    else if (brewDetectionMode == 3) {  // voltage sensor
         switch (machine) {
             case QuickMill:
                 if (!coolingFlushDetectedQM) {
@@ -803,16 +822,19 @@ void brewDetection() {
                             if (millis() - timeOptocouplerOn < maxBrewDurationForSteamModeQM_ON) {
                                 debugPrintln("Quick Mill: steam-mode detected");
                                 initSteamQM();
-                            } else {
+                            }
+                            else {
                                 debugPrintf("*** ERROR: QuickMill: neither brew nor steam\n");
                             }
-                        } else if (millis() - timeOptocouplerOn > maxBrewDurationForSteamModeQM_ON) {
+                        }
+                        else if (millis() - timeOptocouplerOn > maxBrewDurationForSteamModeQM_ON) {
                             if (temperature < brewSetpoint + 2) {
                                 debugPrintln("Quick Mill: brew-mode detected");
                                 startingTime = timeOptocouplerOn;
                                 brewDetected = 1;
                                 brewSteamDetectedQM = 0;
-                            } else {
+                            }
+                            else {
                                 debugPrintln("Quick Mill: cooling-flush detected");
                                 coolingFlushDetectedQM = true;
                                 brewSteamDetectedQM = 0;
@@ -856,7 +878,8 @@ float filterPressureValue(float input) {
 void setEmergencyStopTemp() {
     if (machineState == kSteam || machineState == kCoolDown) {
         if (EmergencyStopTemp != 145) EmergencyStopTemp = 145;
-    } else {
+    }
+    else {
         if (EmergencyStopTemp != 120) EmergencyStopTemp = 120;
     }
 }
@@ -880,6 +903,7 @@ boolean checkSteamOffQM() {
 
     if ((millis() - lastTimeOptocouplerOn) > minOptocouplerOffTimedForSteamModeQM_Off) {
         lastTimeOptocouplerOn = 0;
+
         return true;
     }
 
@@ -1338,9 +1362,11 @@ void handleMachineState() {
             if (pidON == 1) {
                 if (coldstart) {
                     machineState = kColdStart;
-                } else if (!coldstart && (temperature > (brewSetpoint - 10))) {  // temperature higher BrewSetpoint-10, normal PID
+                }
+                else if (!coldstart && (temperature > (brewSetpoint - 10))) {  // temperature higher BrewSetpoint-10, normal PID
                     machineState = kPidNormal;
-                } else if (temperature <= (brewSetpoint - 10)) {
+                }
+                else if (temperature <= (brewSetpoint - 10)) {
                     machineState = kColdStart;  // temperature 10C below set point, enter cold start
                     coldstart = true;
                 }
@@ -1353,6 +1379,7 @@ void handleMachineState() {
             if (sensorError) {
                 machineState = kSensorError;
             }
+
             break;
         
         case kStandby:
@@ -1364,9 +1391,11 @@ void handleMachineState() {
 
                 if (steamON) {
                     machineState = kSteam;
-                } else if (isBrewDetected) {
+                }
+                else if (isBrewDetected) {
                     machineState = kBrew;
-                } else {
+                }
+                else {
                     machineState = kPidNormal;
                 }
             }
@@ -1463,6 +1492,7 @@ void wiFiSetup() {
     if (wifiCredentialsSaved == 0) {
         const char hostname[] = (STR(HOSTNAME));
         debugPrintf("Connecting to WiFi: %s \n", String(hostname));
+
         #if OLED_DISPLAY != 0
             displayLogo("Connecting to: ", HOSTNAME);
         #endif
@@ -1486,8 +1516,8 @@ void wiFiSetup() {
         String macaddr5 = number2string(mac[5]);
         String completemac = macaddr0 + macaddr1 + macaddr2 + macaddr3 + macaddr4 + macaddr5;
         debugPrintf("MAC-ADDRESS: %s\n", completemac.c_str());
-
-    } else {
+    }
+    else {
         debugPrintln("WiFi connection timed out...");
 
         #if OLED_DISPLAY != 0
@@ -1515,16 +1545,6 @@ void websiteSetup() {
     setEepromWriteFcn(writeSysParamsToStorage);
 
     readSysParamsFromStorage();
-
-    /*if (readSysParamsFromStorage() != 0) {
-        #if OLED_DISPLAY != 0
-            displayLogo("3:", "use eeprom values..");
-        #endif
-    } else {
-        #if OLED_DISPLAY != 0
-            displayLogo("3:", "config defaults..");
-        #endif
-    }*/
 
     serverSetup();
 }
@@ -2286,6 +2306,7 @@ void looppid() {
         if (FEATURE_MQTT == 1) {
             checkMQTT();
             writeSysParamsToMQTT(true); // Continue on error
+
             if (mqtt.connected() == 1) {
                 mqtt.loop();
                 #if MQTT_HASSIO_SUPPORT == 1
@@ -2317,7 +2338,8 @@ void looppid() {
         ArduinoOTA.onEnd([]() { enableTimer1(); });
 
         wifiReconnects = 0;  // reset wifi reconnects if connected
-    } else {
+    }
+    else {
         checkWifi();
     }
 
@@ -2381,7 +2403,8 @@ void looppid() {
     // set setpoint depending on steam or brew mode
     if (steamON == 1) {
         setpoint = steamSetpoint;
-    } else if (steamON == 0) {
+    }
+    else if (steamON == 0) {
         setpoint = brewSetpoint;
     }
 
@@ -2400,9 +2423,11 @@ void looppid() {
     // Check if PID should run or not. If not, set to manual and force output to zero
 #if OLED_DISPLAY != 0
     unsigned long currentMillisDisplay = millis();
+
     if (currentMillisDisplay - previousMillisDisplay >= 100) {
         displayShottimer();
     }
+
     if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
         previousMillisDisplay = currentMillisDisplay;
     #if DISPLAYTEMPLATE < 20  // not using vertical template
@@ -2420,7 +2445,8 @@ void looppid() {
             pidOutput = 0;
             digitalWrite(PIN_HEATER, LOW);  // Stop heating
         }
-    } else {  // no sensorerror, no pid off or no Emergency Stop
+    }
+    else {  // no sensorerror, no pid off or no Emergency Stop
         if (pidMode == 0) {
             pidMode = 1;
             bPID.SetMode(pidMode);
@@ -2432,7 +2458,8 @@ void looppid() {
         if (usePonM) {
             if (startTn != 0) {
                 startKi = startKp / startTn;
-            } else {
+            }
+            else {
                 startKi = 0;
             }
 
@@ -2442,7 +2469,8 @@ void looppid() {
             }
 
             bPID.SetTunings(startKp, startKi, 0, P_ON_M);
-        } else {
+        }
+        else {
             setNormalPIDTunings();
         }
     }
@@ -2461,7 +2489,8 @@ void looppid() {
                 bPID.SetMode(MANUAL);
                 debugPrintf("disabled PID, waiting for %d seconds before enabling PID again\n", brewPIDDelay);
             }
-        } else {
+        }
+        else {
             if (brewPIDDisabled) {
                 //enable PID again
                 bPID.SetMode(AUTOMATIC);
@@ -2471,7 +2500,8 @@ void looppid() {
 
             if (useBDPID) {
                 setBDPIDTunings();
-            } else {
+            }
+            else {
                 setNormalPIDTunings();
             }
         }
@@ -2500,7 +2530,8 @@ void looppid() {
                 // calc ki, kd
                 if (aggbTn != 0) {
                     aggbKi = aggbKp / aggbTn;
-                } else {
+                }
+                else {
                     aggbKi = 0;
                 }
 
@@ -2601,7 +2632,8 @@ void setNormalPIDTunings() {
     // calc ki, kd
     if (aggTn != 0) {
         aggKi = aggKp / aggTn;
-    } else {
+    }
+    else {
         aggKi = 0;
     }
 
@@ -2621,7 +2653,8 @@ void setBDPIDTunings() {
     // calc ki, kd
     if (aggbTn != 0) {
         aggbKi = aggbKp / aggbTn;
-    } else {
+    }
+    else {
         aggbKi = 0;
     }
 
@@ -2722,8 +2755,9 @@ int writeSysParamsToStorage(void) {
 int factoryReset(void) {
     int stoStatus;
 
-    if ((stoStatus = storageFactoryReset()) != 0)
+    if ((stoStatus = storageFactoryReset()) != 0) {
         return stoStatus;
+    }
 
     return readSysParamsFromStorage();
 }

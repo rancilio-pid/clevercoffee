@@ -1,11 +1,7 @@
 /**
  * @file powerswitchvoid.h
  *
- * @brief
- */
-
-/**
- * @brief Digtalswitch input pin for POWER SWITCH
+ * @brief Handler for digital power switch
  */
 
 int lastPowerSwitchTrigger = LOW;                   // the previous reading from the input pin
@@ -18,7 +14,8 @@ void checkPowerSwitch() {
         // Set pidON to 1 when powerswitch is HIGH
         if (digitalRead(PIN_POWERSWITCH) == HIGH) {
             pidON = 1;
-        } else {
+        }
+        else {
             // Set pidON to 0 when powerswitch is not HIGH
             pidON = 0;
         }
@@ -45,7 +42,8 @@ void checkPowerSwitch() {
                     if (pidON == 0) {
                         Serial.println("Turn Heating ON");
                         pidON = 1;
-                    } else {
+                    }
+                    else {
                         Serial.println("Turn Heating OFF");
                         pidON = 0;
                     }

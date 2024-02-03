@@ -121,7 +121,8 @@ String getValue(String varName) {
                 return F("Unknown type");
                 break;
         }
-    } catch (const std::out_of_range &exc) {
+    }
+    catch (const std::out_of_range &exc) {
         return "(unknown variable " + varName + ")";
     }
 }
@@ -139,13 +140,17 @@ void paramToJson(String name, editable_t &e, DynamicJsonDocument &doc) {
     // set parameter value
     if (e.type == kInteger) {
         paramObj["value"] = *(int *)e.ptr;
-    } else if (e.type == kUInt8) {
+    }
+    else if (e.type == kUInt8) {
         paramObj["value"] = *(uint8_t *)e.ptr;
-    } else if (e.type == kDouble || e.type == kDoubletime) {
+    }
+    else if (e.type == kDouble || e.type == kDoubletime) {
         paramObj["value"] = round2(*(double *)e.ptr);
-    } else if (e.type == kFloat) {
+    }
+    else if (e.type == kFloat) {
         paramObj["value"] = round2(*(float *)e.ptr);
-    } else if (e.type == kCString) {
+    }
+    else if (e.type == kCString) {
         paramObj["value"] = (char *)e.ptr;
     }
 
@@ -210,7 +215,8 @@ String staticProcessor(const String& var) {
     //try replacing var for variables in editableVars
     if (var.startsWith("VAR_SHOW_")) {
         return getValue(var.substring(9)); // cut off "VAR_SHOW_"
-    } else if (var.startsWith("VAR_HEADER_")) {
+    }
+    else if (var.startsWith("VAR_HEADER_")) {
         return getHeader(var.substring(11)); // cut off "VAR_HEADER_"
     }
 
@@ -226,10 +232,12 @@ String staticProcessor(const String& var) {
             String ret = file.readString();
             file.close();
             return ret;
-        } else {
+        }
+        else {
             debugPrintf("Can't open file %s, not enough memory available\n", file.name());
         }
-    } else {
+    }
+    else {
         debugPrintf("Fragment %s not found\n", varLower.c_str());
     }
 
@@ -294,11 +302,13 @@ void serverSetup() {
         // GET = either
         int requestParams = request->params();
         int docLength = EDITABLE_VARS_LEN;
+
         if (request->method() == 1) {
             if (requestParams > 0) {
                 docLength = std::min(requestParams, EDITABLE_VARS_LEN);
             }
-        } else if (request->method() == 2) {
+        }
+        else if (request->method() == 2) {
             docLength = std::min(requestParams, EDITABLE_VARS_LEN);
         }
 
@@ -313,29 +323,37 @@ void serverSetup() {
             for (int i = 0; i < requestParams; i++) {
                 AsyncWebParameter* p = request->getParam(i);
                 String varName;
+
                 if (p->name().startsWith("var")) {
                     varName = p->name().substring(3);
-                } else {
+                }
+                else {
                     varName = p->name();
                 }
 
                 try {
                     editable_t e = editableVars.at(varName);
+
                     if (e.type == kInteger) {
                         int newVal = atoi(p->value().c_str());
                         *(int *)e.ptr = newVal;
-                    } else if (e.type == kUInt8) {
+                    }
+                    else if (e.type == kUInt8) {
                         *(uint8_t *)e.ptr =
                             (uint8_t)atoi(p->value().c_str());
-                    } else if (e.type == kDouble || e.type == kDoubletime) {
+                    }
+                    else if (e.type == kDouble || e.type == kDoubletime) {
                         float newVal = atof(p->value().c_str());
                         *(double *)e.ptr = newVal;
-                    } else if (e.type == kFloat) {
+                    }
+                    else if (e.type == kFloat) {
                         float newVal = atof(p->value().c_str());
                         *(float *)e.ptr = newVal;
                     }
+
                     paramToJson(varName, e, doc);
-                } catch (const std::out_of_range &exc) {
+                }
+                catch (const std::out_of_range &exc) {
                     continue;
                 }
             }
@@ -348,23 +366,26 @@ void serverSetup() {
             if (writeToEeprom) {
                 if (writeToEeprom() == 0) {
                     debugPrintln("successfully wrote EEPROM");
-                } else {
+                }
+                else {
                     debugPrintln("EEPROM write failed");
                 }
             }
 
             // Write the new values to MQTT
             writeSysParamsToMQTT(true); // Continue on error
-
-        } else if (request->method() == 1) {  // WebRequestMethod enum -> HTTP_GET
+        }
+        else if (request->method() == 1) {  // WebRequestMethod enum -> HTTP_GET
             // get parameter id from first parameter, e.g. /parameters?param=PID_ON
             int paramCount = request->params();
             String paramId = paramCount > 0 ? request->getParam(0)->value() : "";
 
             std::map<String, editable_t>::iterator it;
+
             if (!paramId.isEmpty()) {
                 it = editableVars.find(paramId);
-            } else {
+            }
+            else {
                 it = editableVars.begin();
             }
 
@@ -377,6 +398,7 @@ void serverSetup() {
                 }
             }
         }
+
         if (doc.size() == 0) {
             request->send(404, "application/json",
                             F("{ \"code\": 404, \"message\": "
@@ -391,19 +413,21 @@ void serverSetup() {
 
     server.on("/parameterHelp", HTTP_GET, [](AsyncWebServerRequest *request) {
         DynamicJsonDocument doc(1024);
-
         AsyncWebParameter* p = request->getParam(0);
+
         if (p == NULL) {
             request->send(422, "text/plain", "parameter is missing");
             return;
         }
+
         const String& varValue = p->value();
 
         try {
             editable_t e = editableVars.at(varValue);
             doc["name"] = varValue;
             doc["helpText"] = e.helpText;
-        } catch (const std::out_of_range &exc) {
+        }
+        catch (const std::out_of_range &exc) {
             request->send(404, "application/json", "parameter not found");
             return;
         }
@@ -495,7 +519,8 @@ void sendTempEvent(double currentTemp, double targetTemp, double heaterPower) {
         historyCurrentIndex = (historyCurrentIndex + 1) % HISTORY_LENGTH;
         historyValueCount = min(HISTORY_LENGTH - 1, historyValueCount + 1);
         skippedValues = 0;
-    } else {
+    }
+    else {
         skippedValues++;
     }
 

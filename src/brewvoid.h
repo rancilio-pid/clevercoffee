@@ -1,7 +1,7 @@
 /**
  * @file brewvoid.h
  *
- * @brief TODO
+ * @brief Handler for brewing
  *
  */
 
@@ -62,6 +62,7 @@ boolean brewPIDDisabled = false;                    // is PID disabled for delay
     const unsigned long intervalWeight = 200;           // weight scale
     unsigned long previousMillisScale;                  // initialisation at the end of init()
     HX711_ADC LoadCell(PIN_HXDAT, PIN_HXCLK);
+
     #if SCALE_TYPE == 0 
         HX711_ADC LoadCell2(PIN_HXDAT2, PIN_HXCLK);
     #endif 
@@ -274,12 +275,14 @@ void brew() {
 
                     if (preinfusionPause == 0 || preinfusion == 0) {
                         brewCounter = kBrewRunning;
-                    } else {
+                    }
+                    else {
                         brewCounter = kPreinfusion;
                     }
 
                     coldstart = false;  // force reset coldstart if shot is pulled
-                } else {
+                }
+                else {
                     backflush();
                 }
 
