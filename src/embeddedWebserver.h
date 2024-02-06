@@ -1,5 +1,5 @@
 /**
- * @file EmbeddedWebserver.h
+ * @file embeddedWebserver.h
  *
  * @brief Embedded webserver
  *
@@ -161,15 +161,13 @@ void paramToJson(String name, editable_t &e, DynamicJsonDocument &doc) {
 // Use libraries for the webinterface from the internet (0) or from the local filesystem (1). 0 has slightly faster load times
 #define NOINTERNET 1
 
-//hash strings at compile time to use in switch statement
-//(from https://stackoverflow.com/questions/2111667/compile-time-string-hashing)
+// hash strings at compile time to use in switch statement
+// (from https://stackoverflow.com/questions/2111667/compile-time-string-hashing)
 constexpr unsigned int str2int(const char* str, int h = 0) {
     return !str[h] ? 5381 : (str2int(str, h+1) * 33) ^ str[h];
 }
 
 String getHeader(String varName) {
-    //TODO: actually put the references libs on local file system again (only when using ESP32 which has more flash mem,
-    //but also make sure web server can handle this many concurrent requests (might crash)
     switch (str2int(varName.c_str())) {
         case (str2int("FONTAWESOME")):
             #if NOINTERNET == 1
@@ -212,7 +210,7 @@ String getHeader(String varName) {
 }
 
 String staticProcessor(const String& var) {
-    //try replacing var for variables in editableVars
+    // try replacing var for variables in editableVars
     if (var.startsWith("VAR_SHOW_")) {
         return getValue(var.substring(9)); // cut off "VAR_SHOW_"
     }
@@ -220,8 +218,8 @@ String staticProcessor(const String& var) {
         return getHeader(var.substring(11)); // cut off "VAR_HEADER_"
     }
 
-    //var didn't start with above names, try opening var as fragment file and use contents if it exists
-    //TODO: this seems to consume too much heap in some cases, probably better to remove fragment loading and only use one SPA in the long term (or only support ESP32 which has more RAM)
+    // var didn't start with above names, try opening var as fragment file and use contents if it exists
+    // TODO: this seems to consume too much heap in some cases, probably better to remove fragment loading and only use one SPA in the long term (or only support ESP32 which has more RAM)
     String varLower(var);
     varLower.toLowerCase();
 
@@ -241,7 +239,7 @@ String staticProcessor(const String& var) {
         debugPrintf("Fragment %s not found\n", varLower.c_str());
     }
 
-    //didn't find a value for the var, replace var with empty string
+    // didn't find a value for the var, replace var with empty string
     return String();
 }
 

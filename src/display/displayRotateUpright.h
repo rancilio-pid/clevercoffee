@@ -1,7 +1,7 @@
 /**
- * @file Displayrotateupright.h
+ * @file displayRotateUpright.h
  *
- * @brief TODO
+ * @brief Display template based on the standard template but rotated 90 degrees
  *
  */
 

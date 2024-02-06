@@ -1,5 +1,5 @@
 /**
- * @file brewvoid.h
+ * @file brewHandler.h
  *
  * @brief Handler for brewing
  *
@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <pinmapping.h>
+#include <hardware/pinmapping.h>
 
 enum BrewState {
     kBrewIdle = 10,

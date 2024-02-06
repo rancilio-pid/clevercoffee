@@ -1,5 +1,5 @@
 /**
- * @file display.h
+ * @file displayCommon.h
  *
  * @brief Common functions for all display templates
  */

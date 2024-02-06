@@ -1,5 +1,5 @@
 /**
- * @file scalevoid.h
+ * @file brewScale.h
  *
  * @brief Implementation of scale initialization and weight measurement
  */

@@ -1,12 +1,13 @@
-//TODO: this might have a short race condition where readyState is complete but load has not yet fired
+// TODO: this might have a short race condition where readyState is complete but load has not yet fired
 if (document.readyState === 'complete') {
     getTimeseries()
-} else {
+}
+else {
     window.addEventListener('load', getTimeseries)
 }
 
-const maxValues = 600            //max number of data points to keep in memory
-const updateInterval = 1000     //expected ms between updates (from event source with new values)
+const maxValues = 600          // max number of data points to keep in memory
+const updateInterval = 1000    // expected ms between updates (from event source with new values)
 
 var curTempVals = []
 var targetTempVals = []
@@ -28,35 +29,32 @@ function addTempData(jsonValue, isSingleValue=false) {
         const curTempKey = "currentTemp"
         const targetTempKey = "targetTemp"
 
-        //add new value to data lists
+        // add new value to data lists
         var date = new Date()
-        //console.log(date)
         tempDates.push(date)
 
         var curTemp = jsonValue[curTempKey]
-        //console.log(curTemp)
         curTempVals.push(curTemp)
 
         var targetTemp = jsonValue[targetTempKey]
-        //console.log(targetTemp)
         targetTempVals.push(targetTemp)
-    } else {
+    }
+    else {
         const curTempKey = "currentTemps"
         const targetTempKey = "targetTemps"
 
-        //set data lists to values from history json
+        // set data lists to values from history json
         var curTemp = jsonValue[curTempKey]
-        //console.log(curTemp)
         curTempVals.length = 0  //reset existing list
         curTempVals.push(...curTemp)
 
         var targetTemp = jsonValue[targetTempKey]
-        //console.log(targetTemp)
         targetTempVals.length = 0
         targetTempVals.push(...targetTemp)
         
-        //create dates for all history values (3 seconds between each value)
+        // create dates for all history values (3 seconds between each value)
         tempDates.length = 0
+        
         for (let i=curTempVals.length; i>0; i--) {
             var date = new Date()
             date.setSeconds(date.getSeconds()-3*i)
@@ -64,14 +62,14 @@ function addTempData(jsonValue, isSingleValue=false) {
         }
     }
 
-    //reduce data if we have too much (sliding window after that amount)
+    // reduce data if we have too much (sliding window after that amount)
     if (tempDates.length > maxValues) {
         tempDates.splice(0, tempDates.length - maxValues)
         curTempVals.splice(0, curTempVals.length - maxValues)
         targetTempVals.splice(0, targetTempVals.length - maxValues)
     }
 
-    //use data lists to create data array for uPlot
+    // use data lists to create data array for uPlot
     let data = [
         Array(tempDates.length),
         Array(curTempVals.length),
@@ -91,23 +89,24 @@ function addHeaterData(jsonValue, isSingleValue=false) {
     if (isSingleValue) {
         const heaterPowerKey = "heaterPower"
 
-        //add new value to data lists
+        // add new value to data lists
         var date = new Date()
         heaterDates.push(date)
 
         var heaterPower = jsonValue[heaterPowerKey]
         heaterPowerVals.push(heaterPower)
-    } else {
+    }
+    else {
         const heaterPowerKey = "heaterPowers"
 
-        //set data lists to values from history json
+        // set data lists to values from history json
         var heaterPower = jsonValue[heaterPowerKey]
-        //console.log(heaterPower)
         heaterPowerVals.length = 0
         heaterPowerVals.push(...heaterPower)
         
-        //create dates for all history values (3 seconds between each value)
+        // create dates for all history values (3 seconds between each value)
         heaterDates.length = 0
+        
         for (let i=heaterPowerVals.length; i>0; i--) {
             var date = new Date()
             date.setSeconds(date.getSeconds()-3*i)
@@ -115,13 +114,13 @@ function addHeaterData(jsonValue, isSingleValue=false) {
         }
     }
 
-    //reduce data if we have too many values (sliding window after that amount)
+    // reduce data if we have too many values (sliding window after that amount)
     if (heaterDates.length > maxValues) {
         heaterDates.splice(0, heaterDates.length - maxValues)
         heaterPowerVals.splice(0, heaterPowerVals.length - maxValues)
     }
 
-    //use data lists to create data array for uPlot
+    // use data lists to create data array for uPlot
     let data = [
         Array(heaterDates.length),
         Array(heaterPowerVals.length),
@@ -152,12 +151,12 @@ const lineInterpolations = {
 };
 
 const drawStyles = {
-				line:      0,
-				bars:      1,
-				points:    2,
-				barsLeft:  3,
-				barsRight: 4,
-			};
+    line:      0,
+    bars:      1,
+    points:    2,
+    barsLeft:  3,
+    barsRight: 4,
+};
 
 const { linear, stepped, bars, spline } = uPlot.paths;
 const _linear       = linear();
@@ -169,6 +168,7 @@ function pathRenderer(u, seriesIdx, idx0, idx1, extendGap, buildClip) {
     let interp = s.lineInterpolation;
 
     let renderer = null;
+
     if (style == drawStyles.line) {
         if (interp == lineInterpolations.linear) {
             renderer = _linear
@@ -176,13 +176,17 @@ function pathRenderer(u, seriesIdx, idx0, idx1, extendGap, buildClip) {
         else if (interp == lineInterpolations.spline) {
             renderer = _spline
         }
-    } else if (style == drawStyles.bars) {
+    }
+    else if (style == drawStyles.bars) {
         renderer =_bars60_100
-    } else if (style == drawStyles.barsLeft) {
+    }
+    else if (style == drawStyles.barsLeft) {
         renderer = _bars100Left
-    } else if (style == drawStyles.barsRight) { 
+    }
+    else if (style == drawStyles.barsRight) { 
         renderer = _bars100Right
-    } else if (style == drawStyles.points) {
+    }
+    else if (style == drawStyles.points) {
         renderer = () => null
     } 
 
@@ -288,23 +292,26 @@ function makeHeaterChart(data) {
     uplotHeater = new uPlot(opts, sliceData(data, 0, data.length), document.getElementById(heaterDiv));
 }
 
-//append single historic values
+// append single historic values
 function addPlotData(jsonValue) {    
     function addData(data, u) {
-        let isTempZoomed = u.scales.x.min != u.data[0][0] || u.scales.x.max != u.data[0][u.data[0].length-1];        
+        let isTempZoomed = u.scales.x.min != u.data[0][0] || u.scales.x.max != u.data[0][u.data[0].length-1];
+
         if (isTempZoomed) {
             let tempXScaleMinMax = [u.scales.x.min, u.scales.x.max]            
-            //add data but don't autoscale
+            // add data but don't autoscale
             u.setData(data, false);
             // move the zoomed area one value to the right so the window stays the same
             u.setScale('x', {min: tempXScaleMinMax[0]+1, max: tempXScaleMinMax[1]+1});
-        } else {
-            //add data and autoscale (including new data)
+        }
+        else {
+            // add data and autoscale (including new data)
             u.setData(data);
-        }        
+        }
     }
 
     let tempData = addTempData(jsonValue, true);
+
     if (uplotTemp !== null) {
         addData(tempData, uplotTemp)
     }
@@ -318,11 +325,11 @@ function addPlotData(jsonValue) {
 function getSize(selector) {
     return {
         width: document.getElementById(selector).offsetWidth,
-        height: 400 //document.getElementById(selector).offsetHeight,
+        height: 400
     }
 }
 
-//resize plots when window is resized
+// resize plots when window is resized
 window.addEventListener("resize", e => {
     if (uplotTemp !== null) {
         uplotTemp.setSize(getSize(chartDiv));
@@ -379,9 +386,7 @@ if (!!window.EventSource) {
         'new_temps',
         function (e) {
             var myObj = JSON.parse(e.data)
-            //console.log("new_temps", e.data)
-            //console.log(myObj)
-
+            
             // add new data to existing for plotting            
             addPlotData(myObj)
 

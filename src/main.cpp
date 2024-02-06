@@ -27,12 +27,12 @@
 #include "PID_v1.h"             // for PID calculation
 
 // Includes
-#include "bitmaps.h"               // user icons for display
+#include "display/bitmaps.h"               // user icons for display
 #include "languages.h"          // for language translation
-#include "Storage.h"
-#include "ISR.h"
+#include "storage.h"
+#include "isr.h"
 #include "debugSerial.h"
-#include "pinmapping.h"
+#include "hardware/pinmapping.h"
 #include "userConfig.h"         // needs to be configured by the user
 #include "defaults.h"
 #include <os.h>
@@ -40,7 +40,7 @@
 hw_timer_t *timer = NULL;
 
 #if (FEATURE_PRESSURESENSOR == 1)
-    #include "pressure.h"
+    #include "hardware/pressureSensor.h"
     #include <Wire.h>
 #endif
 
@@ -316,9 +316,6 @@ int steamFirstON = 0;
 
 double aggKd = aggTv * aggKp;
 
-// Timer - ISR for PID calculation and heat relay output
-#include "ISR.h"
-
 PID bPID(&temperature, &pidOutput, &setpoint, aggKp, aggKi, aggKd, 1, DIRECT);
 
 // Dallas temp sensor
@@ -332,10 +329,10 @@ PID bPID(&temperature, &pidOutput, &setpoint, aggKp, aggKi, aggKd, 1, DIRECT);
 // TSIC 306 temp sensor
 ZACwire Sensor2(PIN_TEMPSENSOR, 306);    // set pin to receive signal from the TSic 306
 
-#include "brewvoid.h"
+#include "brewHandler.h"
 
 // Embedded HTTP Server
-#include "EmbeddedWebserver.h"
+#include "embeddedWebserver.h"
 
 
 enum SectionNames {
@@ -359,7 +356,7 @@ struct cmp_str
 };
 
 // MQTT
-#include "MQTT.h"
+#include "mqtt.h"
 
 std::map<const char*, std::function<editable_t*()>, cmp_str> mqttVars = {};
 std::map<const char*, std::function<double()>, cmp_str> mqttSensors = {};
@@ -426,31 +423,23 @@ const unsigned long intervalDisplay = 500;
 // Horizontal or vertical display
 #if (OLED_DISPLAY != 0)
     #if (DISPLAYTEMPLATE < 20)  // horizontal templates
-        #include "display.h"
+        #include "display/displayCommon.h"
     #endif
 
     #if (DISPLAYTEMPLATE >= 20)  // vertical templates
-        #include "Displayrotateupright.h"
+        #include "display/displayRotateUpright.h"
     #endif
-
+    
     #if (DISPLAYTEMPLATE == 1)
-        #include "Displaytemplatestandard.h"
-    #endif
-
-    #if (DISPLAYTEMPLATE == 2)
-        #include "Displaytemplateminimal.h"
-    #endif
-
-    #if (DISPLAYTEMPLATE == 3)
-        #include "Displaytemplatetemponly.h"
-    #endif
-
-    #if (DISPLAYTEMPLATE == 4)
-        #include "Displaytemplatescale.h"
-    #endif
-
-    #if (DISPLAYTEMPLATE == 20)
-        #include "Displaytemplateupright.h"
+        #include "display/displayTemplateStandard.h"
+    #elif (DISPLAYTEMPLATE == 2)
+        #include "display/displayTemplateMinimal.h"
+    #elif (DISPLAYTEMPLATE == 3)
+        #include "display/displayTemplateTempOnly.h"
+    #elif (DISPLAYTEMPLATE == 4)
+        #include "display/displayTemplateScale.h"
+    #elif (DISPLAYTEMPLATE == 20)
+        #include "display/displayTemplateUpright.h"
     #endif
 #endif
 
@@ -621,11 +610,9 @@ void refreshTemp() {
     }
 }
 
-
-#include "brewvoid.h"
-#include "powerswitchvoid.h"
-#include "steamswitchvoid.h"
-#include "scalevoid.h"
+#include "hardware/powerSwitch.h"
+#include "hardware/steamSwitch.h"
+#include "hardware/brewScale.h"
 
 /**
  * @brief Switch to offline mode if maxWifiReconnects were exceeded during boot
@@ -1202,8 +1189,8 @@ void handleMachineState() {
             brewDetection();
 
             if (isBrewDetected == 0) {
-                //TODO: this needs to go back to kColdStart if kPidNormal was never reached before
-                //(currently no brew detection is run during cold start though)
+                // TODO: this needs to go back to kColdStart if kPidNormal was never reached before
+                // (currently no brew detection is run during cold start though)
                 machineState = kPidNormal;
             }
 

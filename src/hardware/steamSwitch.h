@@ -1,5 +1,5 @@
 /**
- * @file steamswitchvoid.h
+ * @file steamSwitch.h
  *
  * @brief Handler for digital steam switch
  */
@@ -69,5 +69,5 @@ void checkSteamSwitch() {
 
         lastSteamSwitchTrigger = reading;
     #endif
-
 }
+
