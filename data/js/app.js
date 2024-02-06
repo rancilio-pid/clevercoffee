@@ -9,6 +9,7 @@ const vueApp = Vue.createApp({
             showPostSucceeded: false
         }
     },
+
     methods: {
         fetchParameters() {
             fetch("/parameters")
@@ -18,15 +19,18 @@ const vueApp = Vue.createApp({
                 })
                 .catch(err => console.log(err.messages))
         },
+
         postParameters() {
-            //post parameter array the same as if it was posted from a form (the values are already updated
-            //from the v-model bindings)
+            // post parameter array the same as if it was posted from a form (the values are already updated
+            // from the v-model bindings)
             var formBody = [];
+            
             this.parameters.forEach(param => {
                 var encodedKey = encodeURIComponent(param.name);
                 var encodedValue = encodeURIComponent(param.value);
                 formBody.push(encodedKey + "=" + encodedValue);
             });
+
             formBody = formBody.join("&");
 
             const requestOptions = {
@@ -37,16 +41,18 @@ const vueApp = Vue.createApp({
                 cache: 'no-cache',
                 body: formBody
             };
+            
             this.isPostingForm = true
+
             fetch("/parameters", requestOptions)
                 .then(response => 0)
                 .catch(err => {
                     console.log(err.messages)
-                    //TODO: show (red) error symbol
+                    // TODO: show (red) error symbol
                 })
                 .finally(() => {
                     this.isPostingForm = false
-                    //show checkmark, hide after timeout
+                    // show checkmark, hide after timeout
                     this.showPostSucceeded = true
                     setTimeout(() => {
                         this.showPostSucceeded = false
@@ -56,6 +62,7 @@ const vueApp = Vue.createApp({
                     this.fetchParameters()
                 })
         },
+
         fetchHelpText(paramName) {
             if (!(paramName in this.parametersHelpTexts)) {
                 fetch("/parameterHelp/?param="+paramName)
@@ -63,6 +70,7 @@ const vueApp = Vue.createApp({
                     .then(data => { this.parametersHelpTexts[paramName] = data['helpText'] })
             }
         },
+
         sectionName(sectionId) {
             const sectionNames = {
                 0: 'PID Parameters',
@@ -71,23 +79,28 @@ const vueApp = Vue.createApp({
                 3: 'Scale Parameters',
                 4: 'Power Settings'
             }
+            
             return sectionNames[sectionId]
         },
+
         confirmSubmission() {
             if (confirm('Are you sure you want to start the scale calibration?')) {
                 const requestOptions = {
                     method: "POST",
                     cache: 'no-cache'
                 };
+
                 fetch("/toggleScaleCalibration", requestOptions)
             }
         }
     },
+
     computed: {
         parameterSections() {
             return groupBy(this.parameters, "section")
         }
     },
+
     mounted() {
         this.fetchParameters()
     }
@@ -102,16 +115,19 @@ window.appCreated = true
 */
 function groupBy(array, key) {
     const result = {}
+
     array.forEach(item => {
         if (!result[item[key]]) {
             result[item[key]] = []
-    }
+        }
+
         result[item[key]].push(item)
     })
+
     return result
 }
 
-//Init Bootstrap Popovers
+// Init Bootstrap Popovers
 document.querySelector('body').addEventListener('click', function (e) {
     //if click was not on an opened popover (ignore those)
     if (!e.target.classList.contains("popover-header")) {
@@ -119,13 +135,16 @@ document.querySelector('body').addEventListener('click', function (e) {
         if (e.target.parentElement.getAttribute("data-bs-toggle") != "popover") {
             document.querySelectorAll('[data-bs-toggle="popover"]').forEach(function(el) {
                 var popover = bootstrap.Popover.getInstance(el);
+
                 if (popover != null) {
                     popover.hide();
                 }
             });
-        } else {
+        }
+        else {
             e.preventDefault();
-            //create new popover
+
+            // create new popover
             var popover = bootstrap.Popover.getOrCreateInstance(e.target.parentElement);
             popover.show();
         }

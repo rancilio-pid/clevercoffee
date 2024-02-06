@@ -1,5 +1,5 @@
 /**
- * @file Displaytemplatestandard.h
+ * @file displayTemplateStandard.h
  *
  * @brief Standard display template
  *

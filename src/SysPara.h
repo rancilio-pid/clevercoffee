@@ -9,11 +9,10 @@
 
 #include <Arduino.h>
 #include <stdint.h>
-#include "Storage.h"
+#include "storage.h"
 #include "debugSerial.h"
 
 
-//! system parameter data
 template <typename T> struct sys_para_data
 {
     T *curPtr;       //!< pointer to current value
@@ -21,20 +20,19 @@ template <typename T> struct sys_para_data
     T max;           //!< maximum value
 };
 
-//! system parameter class
 template <class T>
 class SysPara {
     public:
        /**
         * @brief Constructor
         *
-        * @param curPtr    - pointer to current value
-        * @param min       - minimum value
-        * @param max       - maximum value
-        * @param stoItemId - storage ID (optional, default=none)
-        *                    providing a storage ID will enable following features:
-        *                    - load initial value from storage at instantiation
-        *                    - provide functions to get/set from/to storage
+        * @param curPtr pointer to current value
+        * @param min minimum value
+        * @param max maximum value
+        * @param stoItemId storage ID (optional, default=none)
+        *       providing a storage ID will enable following features:
+        *           - load initial value from storage at instantiation
+        *           - provide functions to get/set from/to storage
         */
         SysPara(T* curPtr, T min, T max, sto_item_id_t stoItemId = STO_ITEM__LAST_ENUM) {
             if (curPtr) {

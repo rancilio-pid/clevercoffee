@@ -1,5 +1,5 @@
 /**
- * @file powerswitchvoid.h
+ * @file powerSwitch.h
  *
  * @brief Handler for digital power switch
  */
@@ -55,3 +55,4 @@ void checkPowerSwitch() {
 
     #endif
 }
+

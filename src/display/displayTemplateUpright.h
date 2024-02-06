@@ -1,5 +1,5 @@
 /**
- * @file Displaytemplateupright.h
+ * @file displayTemplateUpright.h
  *
  * @brief Vertical display template
  *

@@ -1,5 +1,5 @@
 /**
- * @file Displaytemplatetemponly.h
+ * @file displayTemplateTempOnly.h
  *
  * @brief Temp-only display template
  *

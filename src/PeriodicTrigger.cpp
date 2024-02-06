@@ -1,7 +1,7 @@
 /**
  * @file PeriodicTrigger.cpp
  *
- * @brief TODO
+ * @brief Programmable timer interval
  *
  */
 

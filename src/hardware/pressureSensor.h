@@ -1,5 +1,5 @@
 /**
- * @file pressure.h
+ * @file pressureSensor.h
  *
  * @brief Honeywell ABP2, taken from sample code from datasheet, adapted parameters for model ABP2LANT010BG2A3XX
  */

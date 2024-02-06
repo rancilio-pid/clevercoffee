@@ -1,5 +1,5 @@
 /**
- * @file Displaytemplatescale.h
+ * @file displayTemplateScale.h
  *
  * @brief Display template with brew scale
  *
