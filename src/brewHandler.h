@@ -98,7 +98,7 @@ void checkbrewswitch() {
         // Convert trigger signal to brew switch state
         switch (brewSwitchTriggerCase) {
             case 10:
-                if (brewSwitchTrigger == HIGH) {
+                if (brewSwitchTrigger == HIGH && machineState != kWaterEmpty ) {
                     brewSwitchTriggerMillis = millis();
                     brewSwitchTriggerCase = 20;
                     debugPrintln("brewSwitchTriggerCase 10: HIGH");
@@ -115,7 +115,7 @@ void checkbrewswitch() {
                 }
 
                 // Button more than brewTriggerLongPress pushed
-                if (brewSwitchTrigger == HIGH && (brewSwitchTriggerMillis + brewTriggerLongPress  <= millis())) {
+                if (brewSwitchTrigger == HIGH && (brewSwitchTriggerMillis + brewTriggerLongPress  <= millis()) && machineState != kWaterEmpty) {
                     debugPrintln("brewSwitchTriggerCase 20: Manual Trigger - flushing");
                     brewSwitchTriggerCase = 31;
                     digitalWrite(PIN_VALVE, relayOn);
@@ -271,7 +271,7 @@ void brew() {
         // state machine for brew
         switch (brewCounter) {
             case kBrewIdle: // waiting step for brew switch turning on
-                if (brewSwitch == HIGH && backflushState == 10 && backflushOn == 0 && brewSwitchWasOff) {
+                if (brewSwitch == HIGH && backflushState == 10 && backflushOn == 0 && brewSwitchWasOff && machineState != kWaterEmpty) {
                     startingTime = millis();
 
                     if (preinfusionPause == 0 || preinfusion == 0) {

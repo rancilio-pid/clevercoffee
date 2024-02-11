@@ -358,7 +358,7 @@ void Displaymachinestate() {
     }
 
     // Water empty
-    if (machineState == kWaterEmpty) {
+    if (machineState == kWaterEmpty && brewSwitchTriggerCase != 31) {
         u8g2.clearBuffer();
         u8g2.drawXBMP( 45, 0, Water_Empty_Logo_width, Water_Empty_Logo_height, Water_Empty_Logo); 
         u8g2.setFont(u8g2_font_profont11_tf);
