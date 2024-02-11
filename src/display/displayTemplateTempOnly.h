@@ -31,11 +31,13 @@ void printScreen() {
                         u8g2.setCursor(8, 22);
                         u8g2.setFont(u8g2_font_fub35_tf);
                         u8g2.print(temperature, 1);
+                        u8g2.drawCircle(116, 27, 4);
                     } 
                     else {
                         u8g2.setCursor(24, 22);
                         u8g2.setFont(u8g2_font_fub35_tf);
                         u8g2.print(temperature, 0);
+                        u8g2.drawCircle(116, 27, 4);
                     }
                 }
             }
@@ -44,16 +46,16 @@ void printScreen() {
                     u8g2.setCursor(8, 22);
                     u8g2.setFont(u8g2_font_fub35_tf);
                     u8g2.print(temperature, 1);
+                    u8g2.drawCircle(116, 27, 4);
                 }
                 else {
                     u8g2.setCursor(24, 22);
                     u8g2.setFont(u8g2_font_fub35_tf);
                     u8g2.print(temperature, 0);
+                    u8g2.drawCircle(116, 27, 4);
                 }
             }
         }
-
-        u8g2.drawCircle(116, 27, 4);
 
         displayStatusbar();
         
