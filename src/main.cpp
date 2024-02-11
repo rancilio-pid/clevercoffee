@@ -2370,9 +2370,7 @@ void looppid() {
         checkWeight();  // Check Weight Scale in the loop
     #endif
 
-    if(machineState != kWaterEmpty) {
-        brew();
-    }
+    brew();
 
     #if (FEATURE_PRESSURESENSOR == 1)
         unsigned long currentMillisPressure = millis();
