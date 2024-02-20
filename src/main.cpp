@@ -16,14 +16,8 @@
 #include <ArduinoOTA.h>
 #include <map>
 #include <LittleFS.h>
-
-#if TEMPSENSOR == 1
-    #include <DallasTemperature.h>  // Library for dallas temp sensor
-#endif
-
 #include <WiFiManager.h>
 #include <U8g2lib.h>            // i2c display
-#include <ZACwire.h>            // new TSIC bus library
 #include "PID_v1.h"             // for PID calculation
 
 // Includes
@@ -43,6 +37,9 @@
 #include "hardware/Relay.h"
 #include "hardware/Switch.h"
 #include "hardware/IOSwitch.h"
+#include "hardware/TempSensor.h"
+#include "hardware/TempSensorTSIC.h"
+#include "hardware/TempSensorDallas.h"
 
 hw_timer_t *timer = NULL;
 
@@ -58,11 +55,11 @@ hw_timer_t *timer = NULL;
 
 #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
     #define HX711_ADC_config_h 
-    #define SAMPLES 					32
-    #define IGN_HIGH_SAMPLE 			1
-    #define IGN_LOW_SAMPLE 				1
-    #define SCK_DELAY					1
-    #define SCK_DISABLE_INTERRUPTS		0		
+    #define SAMPLES 32
+    #define IGN_HIGH_SAMPLE 1
+    #define IGN_LOW_SAMPLE 1
+    #define SCK_DELAY 1
+    #define SCK_DISABLE_INTERRUPTS 0
     #include <HX711_ADC.h>
 #endif
 
@@ -110,7 +107,6 @@ int connectmode = CONNECTMODE;
 
 int offlineMode = 0;
 const int OnlyPID = ONLYPID;
-const int TempSensor = TEMPSENSOR;
 const int brewDetectionMode = BREWDETECTION_TYPE;
 const int optocouplerType = OPTOCOUPLER_TYPE;
 const boolean ota = OTA;
@@ -181,6 +177,8 @@ GPIOPin* steamSwitchPin;
 Switch* powerSwitch;
 Switch* brewSwitch;
 Switch* steamSwitch;
+
+TempSensor* tempSensor;
 
 #include "isr.h"
 
@@ -347,17 +345,6 @@ int steamFirstON = 0;
 double aggKd = aggTv * aggKp;
 
 PID bPID(&temperature, &pidOutput, &setpoint, aggKp, aggKi, aggKd, 1, DIRECT);
-
-// Dallas temp sensor
-#if TEMPSENSOR == 1
-    OneWire oneWire(PINTEMPSENSOR);         // Setup a OneWire instance to communicate with OneWire
-                                            // devices (not just Maxim/Dallas temperature ICs)
-    DallasTemperature sensors(&oneWire);
-    DeviceAddress sensorDeviceAddress;      // arrays to hold device address
-#endif
-
-// TSIC 306 temp sensor
-ZACwire Sensor2(PIN_TEMPSENSOR, 306);    // set pin to receive signal from the TSic 306
 
 #include "brewHandler.h"
 
@@ -588,58 +575,26 @@ void refreshTemp() {
     unsigned long currentMillisTemp = millis();
     previousInput = temperature;
 
-    if (TempSensor == 1) {
-        if (currentMillisTemp - previousMillistemp >= intervaltempmesds18b20) {
-            previousMillistemp = currentMillisTemp;
+    if (currentMillisTemp - previousMillistemp >= intervaltempmestsic) {
+        previousMillistemp = currentMillisTemp;
 
-        #if TEMPSENSOR == 1
-            sensors.requestTemperatures();
-            temperature = sensors.getTempCByIndex(0);
-        #endif
+        temperature = tempSensor->getTempinCelsius();
 
-            if (machineState != kSteam) {
-                temperature -= brewTempOffset;
-            }
-
-            if (!checkSensor(temperature) && movingAverageInitialized) {
-                temperature = previousInput;
-                return; // if sensor data is not valid, abort function; Sensor must
-                        // be read at least one time at system startup
-            }
-
-            if (brewDetectionMode == 1) {
-                calculateTemperatureMovingAverage();
-            }
-            else if (!movingAverageInitialized) {
-                movingAverageInitialized = true;
-            }
+        if (machineState != kSteam) {
+            temperature -= brewTempOffset;
         }
-    }
 
-    if (TempSensor == 2) {
-        if (currentMillisTemp - previousMillistemp >= intervaltempmestsic) {
-            previousMillistemp = currentMillisTemp;
+        if (!checkSensor(temperature) && movingAverageInitialized) {
+            temperature = previousInput;
+            return; // if sensor data is not valid, abort function; Sensor must
+                    // be read at least one time at system startup
+        }
 
-            #if TEMPSENSOR == 2
-                temperature = Sensor2.getTemp(15);
-            #endif
-
-            if (machineState != kSteam) {
-                temperature -= brewTempOffset;
-            }
-
-            if (!checkSensor(temperature) && movingAverageInitialized) {
-                temperature = previousInput;
-                return; // if sensor data is not valid, abort function; Sensor must
-                        // be read at least one time at system startup
-            }
-
-            if (brewDetectionMode == 1) {
-                calculateTemperatureMovingAverage();
-            }
-            else if (!movingAverageInitialized) {
-                movingAverageInitialized = true;
-            }
+        if (brewDetectionMode == 1) {
+            calculateTemperatureMovingAverage();
+        }
+        else if (!movingAverageInitialized) {
+            movingAverageInitialized = true;
         }
     }
 }
@@ -2247,19 +2202,14 @@ void setup() {
     bPID.SetSmoothingFactor(EMA_FACTOR);
     bPID.SetMode(AUTOMATIC);
 
-    // Dallas temp sensor
-    #if TEMPSENSOR == 1
-        sensors.begin();
-        sensors.getAddress(sensorDeviceAddress, 0);
-        sensors.setResolution(sensorDeviceAddress, 10);
-        sensors.requestTemperatures();
-        temperature = sensors.getTempCByIndex(0);
-    #endif
+    if (TEMP_SENSOR == 1) {
+        tempSensor = new TempSensorDallas(PIN_TEMPSENSOR);
+    }
+    else if (TEMP_SENSOR == 2) {
+        tempSensor = new TempSensorTSIC(PIN_TEMPSENSOR);
+    }
 
-    // TSic 306 temp sensor
-    #if TEMPSENSOR == 2
-        temperature = Sensor2.getTemp(15);
-    #endif
+    temperature = tempSensor->getTempinCelsius();
 
     temperature -= brewTempOffset;
 
