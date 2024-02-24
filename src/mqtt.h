@@ -522,7 +522,7 @@ int sendHASSIODiscoveryMsg() {
     // Sensor Devices 
     DiscoveryObject actual_temperature = GenerateSensorDevice("temperature", "Boiler Temperature"); 
     DiscoveryObject heaterPower = GenerateSensorDevice("heaterPower", "Heater Power", "%", "power_factor"); 
-    DiscoveryObject machineStateDevice = GenerateSensorDevice("machineState", "Machine State", "null", "enum"); 
+    DiscoveryObject machineStateDevice = GenerateSensorDevice("machineState", "Machine State", "", "enum"); 
     DiscoveryObject currentWeight = GenerateSensorDevice("currentWeight", "Weight", "g", "weight"); 
 
     #if FEATURE_PRESSURESENSOR == 1
