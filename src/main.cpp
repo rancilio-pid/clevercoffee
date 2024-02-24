@@ -318,8 +318,6 @@ int maxErrorCounter = 10;        // depends on intervaltempmes* , define max sec
 
 // PID controller
 unsigned long previousMillistemp;    // initialisation at the end of init()
-const unsigned long intervaltempmestsic = 400;
-const unsigned long intervaltempmesds18b20 = 400;
 int pidMode = 1;    // 1 = Automatic, 0 = Manual
 
 double setpointTemp;
@@ -575,7 +573,7 @@ void refreshTemp() {
     unsigned long currentMillisTemp = millis();
     previousInput = temperature;
 
-    if (currentMillisTemp - previousMillistemp >= intervaltempmestsic) {
+    if (currentMillisTemp - previousMillistemp >= tempSensor->getSamplingInterval()) {
         previousMillistemp = currentMillisTemp;
 
         temperature = tempSensor->getTempinCelsius();
