@@ -9,7 +9,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include "userConfig.h"
-#include "debugSerial.h"
+#include "Logger.h"
 
 #define ABP2_READ_DELAY_MS (10)
 
@@ -57,14 +57,14 @@ float measurePressure() {
     // calculation of pressure value according to equation 2 of datasheet
     ABP2_pressure = ((ABP2_press_counts - ABP2_outputmin) * (ABP2_pmax - ABP2_pmin)) / (ABP2_outputmax - ABP2_outputmin) + ABP2_pmin;
     
-    #if VERBOSE == 1
+    IFLOG(TRACE) {
         unsigned long currentMillisPressureDebug = millis();
 
         if (currentMillisPressureDebug - previousMillisPressureDebug >= intervalPressureDebug) {
-            debugPrintf("Counts: %f, Percent: %f, Pressure: %f, Temp: %f\n", ABP2_press_counts, ABP2_percentage, ABP2_pressure, ABP2_temperature);
+            LOGF(TRACE, "Counts: %f, Percent: %f, Pressure: %f, Temp: %f", ABP2_press_counts, ABP2_percentage, ABP2_pressure, ABP2_temperature);
             previousMillisPressureDebug = currentMillisPressureDebug;
         }
-    #endif
+    }
     
     return (float)ABP2_pressure;
 }

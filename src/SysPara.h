@@ -10,7 +10,7 @@
 #include <Arduino.h>
 #include <stdint.h>
 #include "storage.h"
-#include "debugSerial.h"
+#include "Logger.h"
 
 
 template <typename T> struct sys_para_data
@@ -39,7 +39,7 @@ class SysPara {
                 _data.curPtr = curPtr;
             }
             else {
-                debugPrintf("%s(): empty pointer!\n", __func__);
+                LOG(DEBUG, "empty pointer!");
                 _data.curPtr = (T*)&_dummyCur;
             }
             _data.min = min;
@@ -112,7 +112,7 @@ class SysPara {
                 }
                 return stoStatus;
             }
-            debugPrintf("%s(): no storage ID set!\n", __func__);
+            LOG(DEBUG, "no storage ID set!");
             return -1;
         }
 
@@ -128,7 +128,7 @@ class SysPara {
                 *_data.curPtr = value;
                 return 0;
             }
-            debugPrintf("%s(): value is outside of range!\n", __func__);
+            LOG(DEBUG, "value is outside of range!");
             return -1;
         }
 
@@ -146,11 +146,11 @@ class SysPara {
                     return storageSet(_stoItemId, *_data.curPtr, commit);
                 }
                 else {
-                    debugPrintf("%s(): value outside of allowed range! (item: %i)\n", __func__, _stoItemId);
+                    LOGF(DEBUG, "value outside of allowed range! (item: %i)", _stoItemId);
                     return -1;
                 }
             }
-            debugPrintf("%s(): no storage ID set!\n", __func__);
+            LOG(DEBUG, "no storage ID set!");
             return -1;
         }
 

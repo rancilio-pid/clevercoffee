@@ -25,7 +25,7 @@ void updateStandbyTimer(void) {
             standbyModeRemainingTimeMillis = standbyModeTimeMillis - elapsedTime;
 
             if ((currentTime % 60000) == 0) {
-                debugPrintf("Standby time remaining: %i minutes\n", standbyModeRemainingTimeMillis / 60000);
+                LOGF(INFO, "Standby time remaining: %i minutes", standbyModeRemainingTimeMillis / 60000);
             }
         }
         else {
@@ -38,5 +38,5 @@ void resetStandbyTimer(void) {
     standbyModeRemainingTimeMillis = standbyModeTime * 60 * 10000;
     standbyModeStartTimeMillis = millis();
 
-    debugPrintf("Resetting standby timer to %i minutes\n",  (int)standbyModeTime);
+    LOGF(INFO, "Resetting standby timer to %i minutes",  (int)standbyModeTime);
 }

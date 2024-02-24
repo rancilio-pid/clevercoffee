@@ -232,11 +232,11 @@ String staticProcessor(const String& var) {
             return ret;
         }
         else {
-            debugPrintf("Can't open file %s, not enough memory available\n", file.name());
+            LOGF(DEBUG, "Can't open file %s, not enough memory available", file.name());
         }
     }
     else {
-        debugPrintf("Fragment %s not found\n", varLower.c_str());
+        LOGF(DEBUG, "Fragment %s not found", varLower.c_str());
     }
 
     // didn't find a value for the var, replace var with empty string
@@ -250,17 +250,17 @@ void serverSetup() {
         int steam = flipUintValue(steamON);
 
         setSteamMode(steam);
-        debugPrintf("Toggle steam mode: %i \n", steam);
+        LOGF(DEBUG, "Toggle steam mode: %i", steam);
 
         request->redirect("/");
     });
 
     server.on("/togglePid", HTTP_POST, [](AsyncWebServerRequest *request) {
-        debugPrintf("/togglePid requested, method: %d\n", request->method());
+        LOGF(DEBUG, "/togglePid requested, method: %d", request->method());
         int status = flipUintValue(pidON);
 
         setPidStatus(status);
-        debugPrintf("Toggle PID state: %d\n", status);
+        LOGF(DEBUG, "Toggle PID state: %d\n", status);
 
         request->redirect("/");
     });
@@ -269,7 +269,7 @@ void serverSetup() {
         int backflush = flipUintValue(backflushOn);
 
         setBackflush(backflush);
-        debugPrintf("Toggle backflush mode: %i \n", backflush);
+        LOGF(DEBUG, "Toggle backflush mode: %i", backflush);
 
         request->redirect("/");
     });
@@ -279,7 +279,7 @@ void serverSetup() {
         int tare = flipUintValue(scaleTareOn);
 
         setScaleTare(tare);
-        debugPrintf("Toggle scale tare mode: %i \n", tare);
+        LOGF(DEBUG, "Toggle scale tare mode: %i", tare);
 
         request->redirect("/");
     });
@@ -288,7 +288,7 @@ void serverSetup() {
         int scaleCalibrate = flipUintValue(scaleCalibrationOn);
 
         setScaleCalibration(scaleCalibrate);
-        debugPrintf("Toggle scale calibration mode: %i \n", scaleCalibrate);
+        LOGF(DEBUG, "Toggle scale calibration mode: %i", scaleCalibrate);
 
         request->redirect("/");
     });
@@ -363,10 +363,10 @@ void serverSetup() {
             // Write to EEPROM
             if (writeToEeprom) {
                 if (writeToEeprom() == 0) {
-                    debugPrintln("successfully wrote EEPROM");
+                    LOG(DEBUG, "successfully wrote EEPROM");
                 }
                 else {
-                    debugPrintln("EEPROM write failed");
+                    LOG(ERROR, "EEPROM write failed");
                 }
             }
 
@@ -476,7 +476,7 @@ void serverSetup() {
     // set up event handler for temperature messages
     events.onConnect([](AsyncEventSourceClient *client) {
         if (client->lastId()) {
-            debugPrintf("Reconnected, last message ID was: %u\n", client->lastId());
+            LOGF(DEBUG, "Reconnected, last message ID was: %u", client->lastId());
         }
 
         client->send("hello", NULL, millis(), 10000);
@@ -494,7 +494,7 @@ void serverSetup() {
 
     server.begin();
 
-    debugPrintln(("Server started at " + WiFi.localIP().toString()).c_str());
+    LOG(DEBUG, ("Server started at " + WiFi.localIP().toString()).c_str());
 }
 
 //skip counter so we don't keep a value every second

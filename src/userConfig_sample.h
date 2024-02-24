@@ -40,7 +40,6 @@ enum MACHINE {
 #define FEATURE_HEATINGLOGO 1      // 0 = deactivated, 1 = activated
 #define FEATURE_OFFLINELOGO 1      // 0 = deactivated, 1 = activated
 #define SHOTTIMERDISPLAYDELAY 3000 // time in ms that shot timer will be shown after brew finished
-#define VERBOSE 0                  // 1 = Show verbose output (serial connection), 0 = show less
 
 #define LANGUAGE 0                 // LANGUAGE = 0 (DE), LANGUAGE = 1 (EN), LANGUAGE = 2 (ES)
 
@@ -100,4 +99,7 @@ enum MACHINE {
 #define EMA_FACTOR 0.6             // Smoothing of input that is used for Tv (derivative component of PID). Smaller means less smoothing but also less delay, 0 means no filtering
 
 #define TEMP_SENSOR 2               // Temp sensor type: 1 = DS18B20, 2 = TSIC306
+
+// Log level for serial console
+#define LOGLEVEL Logger::Level::INFO
 

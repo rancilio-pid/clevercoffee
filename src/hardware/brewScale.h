@@ -15,10 +15,10 @@ void scaleCalibrate(HX711_ADC loadCell, int pin, sto_item_id_t name, float *cali
     u8g2.drawStr(0, 32, "Empty scale ");
     u8g2.print(pin, 0);
     u8g2.sendBuffer();
-    debugPrintf("Taking scale %d to zero point\n", pin);
+    LOGF(INFO, "Taking scale %d to zero point", pin);
     loadCell.update();
     loadCell.tare();
-    debugPrintf("Put load on scale %d within the next 10 seconds\n", pin);
+    LOGF(INFO, "Put load on scale %d within the next 10 seconds", pin);
     u8g2.clearBuffer();
     u8g2.drawStr(2, 2, "Calibration in progress.");
     u8g2.drawStr(2, 12, "Place known weight");
@@ -27,13 +27,13 @@ void scaleCalibrate(HX711_ADC loadCell, int pin, sto_item_id_t name, float *cali
     u8g2.drawStr(2, 42, number2string(scaleKnownWeight));
     u8g2.sendBuffer();
     delay(10000);
-    debugPrintf("Taking scale load point\n");
+    LOG(INFO, "Taking scale load point");
     // increase scale samples temporarily to ensure a stable reading
     loadCell.setSamplesInUse(128);
     loadCell.refreshDataSet();  
     *calibration = loadCell.getNewCalibration(scaleKnownWeight);
     loadCell.setSamplesInUse(SCALE_SAMPLES);
-    debugPrintf("New calibration: %f\n", *calibration);
+    LOGF(INFO, "New calibration: %f", *calibration);
     u8g2.sendBuffer();
     storageSet(name, *calibration, true);
     u8g2.clearBuffer();
@@ -137,7 +137,7 @@ void initScale() {
     #endif
 
     if (LoadCell.getTareTimeoutFlag() || LoadCell.getSignalTimeoutFlag() ) {
-        debugPrintf("Timeout, check MCU>HX711 wiring for scale");
+        LOG(ERROR, "Timeout, check MCU>HX711 wiring for scale");
         u8g2.drawStr(0, 32, "failed!");
         u8g2.drawStr(0, 42, "Scale not working...");    // scale timeout will most likely trigger after OTA update, but will still work after boot
         u8g2.sendBuffer();
@@ -148,7 +148,7 @@ void initScale() {
 
     #if SCALE_TYPE == 0
     if (LoadCell2.getTareTimeoutFlag() || LoadCell2.getSignalTimeoutFlag() ) {
-        debugPrintf("Timeout, check MCU>HX711 wiring for scale 2");
+        LOG(ERROR, "Timeout, check MCU>HX711 wiring for scale 2");
         u8g2.drawStr(0, 32, "failed!");
         u8g2.drawStr(0, 42, "Scale not working...");    // scale timeout will most likely trigger after OTA update, but will still work after boot
         u8g2.sendBuffer();
