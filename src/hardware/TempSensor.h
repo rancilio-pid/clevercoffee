@@ -8,6 +8,7 @@
 
 class TempSensor {
     public:
-        virtual float getTempinCelsius() = 0;
+        virtual float getTempinCelsius() const = 0;
+        virtual int getSamplingInterval() const = 0;
         virtual ~TempSensor() {}
 };

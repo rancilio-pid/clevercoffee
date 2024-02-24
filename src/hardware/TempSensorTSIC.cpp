@@ -15,8 +15,6 @@ TempSensorTSIC::TempSensorTSIC(int GPIOPin) {
     tsicSensor = new ZACwire(GPIOPin, 306);    // set pin to receive signal from the TSic 306
 }
 
-float TempSensorTSIC::getTempinCelsius() {
-    float temperature = tsicSensor->getTemp(MAX_CHANGERATE);
-
-    return temperature;
+float TempSensorTSIC::getTempinCelsius() const {
+    return tsicSensor->getTemp(MAX_CHANGERATE);
 }
