@@ -6,20 +6,20 @@
 
 #include "GPIOPin.h"
 
-GPIOPin::GPIOPin(int pinNumber, PinType pinType)
+GPIOPin::GPIOPin(int pinNumber, Type pinType)
     : pin(pinNumber), pinType(pinType) {
 
-    setPinType(pinType);
+    setType(pinType);
 }
 
-void GPIOPin::write(bool value) {
-    if (pinType == GPIO_OUTPUT) {
+void GPIOPin::write(bool value) const {
+    if (pinType == OUT) {
         digitalWrite(pin, value);
     }
 }
 
-int GPIOPin::read() {
-    if (pinType == GPIO_INPUT_ANALOG) {
+int GPIOPin::read() const {
+    if (pinType == IN_ANALOG) {
             return analogRead(pin);
     }
     else {
@@ -27,30 +27,30 @@ int GPIOPin::read() {
     }
 }
 
-PinType GPIOPin::getPinType() {
+GPIOPin::Type GPIOPin::getType() const {
     return pinType;
 }
 
-void GPIOPin::setPinType(PinType pinType) {
+void GPIOPin::setType(Type pinType) {
     switch (pinType) {
-        case GPIO_OUTPUT:
+        case OUT:
             pinMode(pin, OUTPUT);
             break;
-        case GPIO_INPUT_STANDARD:
+        case IN_STANDARD:
             pinMode(pin, INPUT);
             break;
-        case GPIO_INPUT_PULLUP:
+        case IN_PULLUP:
             pinMode(pin, INPUT_PULLUP);
             digitalWrite(pin, HIGH);
             break;
-        case GPIO_INPUT_PULLDOWN:
+        case IN_PULLDOWN:
             pinMode(pin, INPUT_PULLDOWN);
             digitalWrite(pin, LOW);
             break;
-        case GPIO_INPUT_HARDWARE:
+        case IN_HARDWARE:
             pinMode(pin, INPUT);
             break;
-        case GPIO_INPUT_ANALOG:
+        case IN_ANALOG:
             pinMode(pin, INPUT);
             break;
     }

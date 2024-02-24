@@ -5,21 +5,16 @@
  */
 
 #include "TempSensorDallas.h"
-#include <DallasTemperature.h> 
-
-OneWire* oneWire;
-DallasTemperature* dallasSensor;
-DeviceAddress sensorDeviceAddress;
 
 TempSensorDallas::TempSensorDallas(int GPIOPin) {
-    oneWire = new OneWire(GPIOPin);
-    dallasSensor = new DallasTemperature(oneWire);
-    dallasSensor->begin();
-    dallasSensor->getAddress(sensorDeviceAddress, 0);
-    dallasSensor->setResolution(sensorDeviceAddress, 10);
+    oneWire_ = new OneWire(GPIOPin);
+    dallasSensor_ = new DallasTemperature(oneWire_);
+    dallasSensor_->begin();
+    dallasSensor_->getAddress(sensorDeviceAddress_, 0);
+    dallasSensor_->setResolution(sensorDeviceAddress_, 10);
 }
 
 float TempSensorDallas::getTempinCelsius() const {
-    dallasSensor->requestTemperatures();
-    return dallasSensor->getTempCByIndex(0);
+    dallasSensor_->requestTemperatures();
+    return dallasSensor_->getTempCByIndex(0);
 }

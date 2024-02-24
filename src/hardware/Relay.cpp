@@ -7,11 +7,9 @@
 #include "GPIOPin.h"
 #include "Relay.h"
 
-Relay::Relay(GPIOPin& gpioInstance, RelayTriggerType trigger) : gpio(gpioInstance), relayTrigger(trigger) {
+Relay::Relay(GPIOPin& gpioInstance, TriggerType trigger) : gpio(gpioInstance), relayTrigger(trigger) {}
 
-}
-
-void Relay::on() {
+void Relay::on() const {
     if (relayTrigger == HIGH_TRIGGER) {
         gpio.write(HIGH);
     } 
@@ -20,7 +18,7 @@ void Relay::on() {
     }
 }
 
-void Relay::off() {
+void Relay::off() const {
     if (relayTrigger == HIGH_TRIGGER) {
         gpio.write(LOW);
     } 
@@ -29,6 +27,6 @@ void Relay::off() {
     }
 }
 
-GPIOPin& Relay::getGPIOInstance() {
+GPIOPin& Relay::getGPIOInstance() const {
     return gpio;
 }

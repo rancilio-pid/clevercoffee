@@ -10,7 +10,7 @@ void checkPowerSwitch() {
     if (FEATURE_POWERSWITCH) {
         uint8_t powerSwitchReading = powerSwitch->isPressed();
 
-        if (POWERSWITCH_TYPE == SWITCHTYPE_TOGGLE) {
+        if (POWERSWITCH_TYPE == Switch::TOGGLE) {
             // Set pidON to 1 when powerswitch is HIGH
             if (powerSwitchReading == HIGH) {
                 pidON = 1;
@@ -20,7 +20,7 @@ void checkPowerSwitch() {
                 pidON = 0;
             }
         }
-        else if (POWERSWITCH_TYPE == SWITCHTYPE_MOMENTARY) {
+        else if (POWERSWITCH_TYPE == Switch::MOMENTARY) {
             // if the button state has changed:
             if (powerSwitchReading != currStatePowerSwitch) {
                 currStatePowerSwitch = powerSwitchReading;

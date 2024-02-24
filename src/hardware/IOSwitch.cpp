@@ -7,7 +7,7 @@
 #include "GPIOPin.h"
 #include "IOSwitch.h"
 
-IOSwitch::IOSwitch(GPIOPin& gpioInstance, SwitchType type)
+IOSwitch::IOSwitch(GPIOPin& gpioInstance, Type type)
     : gpio(gpioInstance),
       switchType(type),
       debounceDelay(20),
@@ -44,7 +44,7 @@ bool IOSwitch::isPressed() {
         pressStartTime = millis();
     }
 
-    if (switchType == SWITCHTYPE_MOMENTARY) {
+    if (switchType == MOMENTARY) {
         if (currentState == HIGH && (pressStartTime + longPressDuration) <= currentMillis) {            
             longPressTriggered = true;
         }
@@ -57,10 +57,10 @@ bool IOSwitch::isPressed() {
 }
 
 bool IOSwitch::longPressDetected() {
-    if (switchType == SWITCHTYPE_TOGGLE) {
+    if (switchType == TOGGLE) {
         return false;
     }
-    else if (switchType == SWITCHTYPE_MOMENTARY) {
+    else if (switchType == MOMENTARY) {
         return longPressTriggered;
     }
 
@@ -71,6 +71,6 @@ GPIOPin& IOSwitch::getGPIOInstance() {
     return gpio;
 }
 
-void IOSwitch::setType(SwitchType type) {
+void IOSwitch::setType(Type type) {
     switchType = type;
 }
