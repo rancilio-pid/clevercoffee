@@ -12,16 +12,16 @@ class GPIOPin;
 
 class IOSwitch : public Switch {
     public:
-        IOSwitch(GPIOPin& gpioInstance, SwitchType type = SWITCHTYPE_MOMENTARY);
+        IOSwitch(GPIOPin& gpioInstance, Type type = MOMENTARY);
 
-        bool isPressed();
-        bool longPressDetected();
-        void setType(SwitchType type);
+        bool isPressed() override;
+        bool longPressDetected() override;
+        void setType(Type type);
         GPIOPin& getGPIOInstance();
 
     private:
         GPIOPin& gpio;
-        SwitchType switchType;
+        Type switchType;
         uint8_t lastState;
         uint8_t currentState;
         unsigned long lastDebounceTime;

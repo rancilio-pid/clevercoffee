@@ -6,15 +6,24 @@
 
 #pragma once
 
-enum SwitchType {
-    SWITCHTYPE_MOMENTARY,
-    SWITCHTYPE_TOGGLE
-};
-
+/**
+ * @class Abstract interface class for a switch
+ */
 class Switch {
     public:
+        /**
+         * @enum Type
+         * @brief Type of switch
+         * @details Supported switches are toggle switches which remain on until toggled back, or momentary switches which
+         *          only provide a single trigger impulse.
+         */
+        enum Type {
+            MOMENTARY,
+            TOGGLE
+        };
+
         virtual bool isPressed() = 0;
         virtual bool longPressDetected() = 0;
-        virtual void setType(SwitchType type) = 0;
+        virtual void setType(Type type) = 0;
         virtual ~Switch() {}
 };

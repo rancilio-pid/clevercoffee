@@ -71,10 +71,10 @@ boolean brewPIDDisabled = false;                    // is PID disabled for delay
 void checkbrewswitch() {
     uint8_t brewSwitchReading = brewSwitch->isPressed();
 
-    if (BREWSWITCH_TYPE == SWITCHTYPE_TOGGLE) {
+    if (BREWSWITCH_TYPE == Switch::TOGGLE) {
         currStateBrewSwitch = brewSwitchReading;
     }
-    else if (BREWSWITCH_TYPE == SWITCHTYPE_MOMENTARY) {
+    else if (BREWSWITCH_TYPE == Switch::MOMENTARY) {
         if (currBrewSwitchStateMomentary != brewSwitchReading) {
             currBrewSwitchStateMomentary = brewSwitchReading;
         }

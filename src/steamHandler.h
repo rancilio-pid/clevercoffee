@@ -10,7 +10,7 @@ void checkSteamSwitch() {
     if (FEATURE_STEAMSWITCH) {
         uint8_t steamSwitchReading = steamSwitch->isPressed();
 
-        if (STEAMSWITCH_TYPE == SWITCHTYPE_TOGGLE) {
+        if (STEAMSWITCH_TYPE == Switch::TOGGLE) {
             // Set steamON to 1 when steamswitch is HIGH
             if (steamSwitchReading == HIGH) {
                 steamON = 1;
@@ -35,7 +35,7 @@ void checkSteamSwitch() {
                 }
             }
         }
-        else if (STEAMSWITCH_TYPE == SWITCHTYPE_MOMENTARY) {
+        else if (STEAMSWITCH_TYPE == Switch::MOMENTARY) {
             if (steamSwitchReading != currStateSteamSwitch) {
                 currStateSteamSwitch = steamSwitchReading;
 

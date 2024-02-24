@@ -7,14 +7,13 @@
 #pragma once
 
 #include "TempSensor.h"
-
+#include <ZACwire.h>
 
 class TempSensorTSIC : public TempSensor {
     public:
         TempSensorTSIC(int GPIOPin);
-        int getSamplingInterval() const override { return 400; }
         float getTempinCelsius() const override;
 
     private:
-
+        ZACwire* tsicSensor_;
 };

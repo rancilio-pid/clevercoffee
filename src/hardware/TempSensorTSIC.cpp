@@ -5,16 +5,16 @@
  */
 
 #include "TempSensorTSIC.h"
-#include <ZACwire.h>
 
 #define MAX_CHANGERATE 15
 
-ZACwire* tsicSensor;
-
 TempSensorTSIC::TempSensorTSIC(int GPIOPin) {
-    tsicSensor = new ZACwire(GPIOPin, 306);    // set pin to receive signal from the TSic 306
+    // Set pin to receive signal from the TSic 306
+    tsicSensor_ = new ZACwire(GPIOPin, 306);
+    // Start sampling the TSic sensor
+    tsicSensor_->begin();
 }
 
 float TempSensorTSIC::getTempinCelsius() const {
-    return tsicSensor->getTemp(MAX_CHANGERATE);
+    return tsicSensor_->getTemp(MAX_CHANGERATE);
 }

@@ -37,7 +37,7 @@
 #include "hardware/Relay.h"
 #include "hardware/Switch.h"
 #include "hardware/IOSwitch.h"
-#include "hardware/TempSensor.h"
+
 #include "hardware/TempSensorTSIC.h"
 #include "hardware/TempSensorDallas.h"
 
@@ -161,13 +161,13 @@ GPIOPin* brewLedPin;
 LED* statusLed;
 LED* brewLed;
 
-GPIOPin heaterRelayPin(PIN_HEATER, GPIO_OUTPUT);
+GPIOPin heaterRelayPin(PIN_HEATER, GPIOPin::OUT);
 Relay heaterRelay(heaterRelayPin, HEATER_SSR_TYPE);
 
-GPIOPin pumpRelayPin(PIN_PUMP, GPIO_OUTPUT);
+GPIOPin pumpRelayPin(PIN_PUMP, GPIOPin::OUT);
 Relay pumpRelay(pumpRelayPin, PUMP_VALVE_SSR_TYPE);
 
-GPIOPin valveRelayPin(PIN_VALVE, GPIO_OUTPUT);
+GPIOPin valveRelayPin(PIN_VALVE, GPIOPin::OUT);
 Relay valveRelay(valveRelayPin, PUMP_VALVE_SSR_TYPE);
 
 GPIOPin* powerSwitchPin;
@@ -2113,32 +2113,32 @@ void setup() {
     pumpRelay.off();
 
     if (FEATURE_POWERSWITCH) {
-        powerSwitchPin = new GPIOPin(PIN_POWERSWITCH, GPIO_INPUT_HARDWARE);
+        powerSwitchPin = new GPIOPin(PIN_POWERSWITCH, GPIOPin::IN_HARDWARE);
         powerSwitch = new IOSwitch(*powerSwitchPin, POWERSWITCH_TYPE);
     }
 
     if (FEATURE_STEAMSWITCH) {
-        steamSwitchPin = new GPIOPin(PIN_STEAMSWITCH, GPIO_INPUT_HARDWARE);
+        steamSwitchPin = new GPIOPin(PIN_STEAMSWITCH, GPIOPin::IN_HARDWARE);
         steamSwitch = new IOSwitch(*steamSwitchPin, STEAMSWITCH_TYPE);
     }
 
     // IF optocoupler selected
     if (BREWDETECTION_TYPE == 3) {
         if (optocouplerType == HIGH) {
-            pinMode(PIN_BREWSWITCH, INPUT_PULLDOWN);
+            pinMode(PIN_BREWSWITCH, GPIOPin::IN_PULLDOWN);
         } 
         else {
-            pinMode(PIN_BREWSWITCH, INPUT_PULLUP);
+            pinMode(PIN_BREWSWITCH, GPIOPin::IN_PULLUP);
         }
     }
     else {
-        brewSwitchPin = new GPIOPin(PIN_BREWSWITCH, GPIO_INPUT_HARDWARE);
+        brewSwitchPin = new GPIOPin(PIN_BREWSWITCH, GPIOPin::IN_HARDWARE);
         brewSwitch = new IOSwitch(*brewSwitchPin, BREWSWITCH_TYPE);
     }
 
     if (LED_TYPE == STANDARD_LED) {
-        statusLedPin = new GPIOPin(PIN_STATUSLED, GPIO_OUTPUT);
-        brewLedPin = new GPIOPin(PIN_BREWLED, GPIO_OUTPUT);
+        statusLedPin = new GPIOPin(PIN_STATUSLED, GPIOPin::OUT);
+        brewLedPin = new GPIOPin(PIN_BREWLED, GPIOPin::OUT);
         
         statusLed = new StandardLED(*statusLedPin);
         brewLed = new StandardLED(*brewLedPin);
