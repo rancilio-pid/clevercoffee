@@ -12,6 +12,8 @@
 #define FW_HOTFIX     0
 #define FW_BRANCH     "MASTER"
 
+#include "Logger.h"
+
 // Libraries
 #include <ArduinoOTA.h>
 #include <map>
@@ -25,7 +27,6 @@
 #include "languages.h"          // for language translation
 #include "storage.h"
 
-#include "debugSerial.h"
 #include "hardware/pinmapping.h"
 
 #include "userConfig.h"         // needs to be configured by the user
@@ -54,7 +55,7 @@ hw_timer_t *timer = NULL;
 #endif
 
 #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
-    #define HX711_ADC_config_h 
+    #define HX711_ADC_config_h
     #define SAMPLES 32
     #define IGN_HIGH_SAMPLE 1
     #define IGN_LOW_SAMPLE 1
@@ -444,7 +445,7 @@ const unsigned long intervalDisplay = 500;
     #if (DISPLAYTEMPLATE >= 20)  // vertical templates
         #include "display/displayRotateUpright.h"
     #endif
-    
+
     #if (DISPLAYTEMPLATE == 1)
         #include "display/displayTemplateStandard.h"
     #elif (DISPLAYTEMPLATE == 2)
@@ -542,8 +543,8 @@ boolean checkSensor(float tempInput) {
         error++;
         sensorOK = false;
 
-        debugPrintf(
-            "*** WARNING: temperature sensor reading: consec_errors = %i, temp_current = %.1f, temp_prev = %.1f\n",
+        LOGF(WARNING,
+            "temperature sensor reading: consec_errors = %i, temp_current = %.1f, temp_prev = %.1f",
             error, tempInput, previousInput);
     }
     else if (badCondition == false && sensorOK == false) {
@@ -553,8 +554,8 @@ boolean checkSensor(float tempInput) {
 
     if (error >= maxErrorCounter && !sensorError) {
         sensorError = true;
-        debugPrintf(
-            "*** ERROR: temperature sensor malfunction: temp_current = %.1f\n",
+        LOGF(ERROR,
+            "temperature sensor malfunction: temp_current = %.1f",
             tempInput);
     }
     else if (error == 0 && sensorError) {
@@ -605,7 +606,7 @@ void initOfflineMode() {
         displayMessage("", "", "", "", "Begin Fallback,", "No Wifi");
     #endif
 
-    debugPrintln("Start offline mode with eeprom values, no wifi :(");
+    LOG(DEBUG, "Start offline mode with eeprom values, no wifi :(");
     offlineMode = 1;
 
     if (readSysParamsFromStorage() != 0) {
@@ -613,7 +614,7 @@ void initOfflineMode() {
             displayMessage("", "", "", "", "No eeprom,", "Values");
         #endif
 
-        debugPrintln(
+        LOG(DEBUG,
             "No working eeprom value, I am sorry, but use default offline value "
             ":)");
 
@@ -637,7 +638,7 @@ void checkWifi() {
             if (statusTemp != WL_CONNECTED) {  // check WiFi connection status
                 lastWifiConnectionAttempt = millis();
                 wifiReconnects++;
-                debugPrintf("Attempting WIFI (re-)connection: %i\n", wifiReconnects);
+                LOGF(DEBUG, "Attempting WIFI (re-)connection: %i", wifiReconnects);
 
                 if (!setupDone) {
                     #if OLED_DISPLAY != 0
@@ -661,7 +662,7 @@ void checkWifi() {
     } while (!setupDone && wifiReconnects < maxWifiReconnects && WiFi.status() != WL_CONNECTED);
 
 
-    if (wifiReconnects >= maxWifiReconnects && WiFi.status() != WL_CONNECTED) { 
+    if (wifiReconnects >= maxWifiReconnects && WiFi.status() != WL_CONNECTED) {
         // no wifi connection after trying connection, initiate offline mode
         initOfflineMode();
     }
@@ -745,7 +746,7 @@ void brewDetection() {
             timeBrewed = 0;
             startingTime = 0;
             coolingFlushDetectedQM = false;
-            debugPrintln("HW Brew - optocoupler - End");
+            LOG(DEBUG, "HW Brew - optocoupler - End");
         }
     }
 
@@ -753,14 +754,14 @@ void brewDetection() {
     if (brewDetectionMode == 1) {  // SW BD
         // BD PID only +/- 4 °C, no detection if HW was active
         if (tempRateAverage <= -brewSensitivity && isBrewDetected == 0 && (fabs(temperature - brewSetpoint) < 5)) {
-            debugPrintln("SW Brew detected");
+            LOG(DEBUG, "SW Brew detected");
             timeBrewDetection = millis();
             isBrewDetected = 1;
         }
     }
     else if (brewDetectionMode == 2) {  // HW BD
         if (currBrewState > kBrewIdle && brewDetected == 0) {
-            debugPrintln("HW Brew detected");
+            LOG(DEBUG, "HW Brew detected");
             timeBrewDetection = millis();
             isBrewDetected = 1;
             brewDetected = 1;
@@ -780,7 +781,7 @@ void brewDetection() {
                         brewDetected = 0;
                         lastBrewTime = 0;
                         brewSteamDetectedQM = 1;
-                        debugPrintln("Quick Mill: setting brewSteamDetectedQM = 1");
+                        LOG(DEBUG, "Quick Mill: setting brewSteamDetectedQM = 1");
                         logbrew.reset();
                     }
 
@@ -790,22 +791,22 @@ void brewDetection() {
                             brewSteamDetectedQM = 0;
 
                             if (millis() - timeOptocouplerOn < maxBrewDurationForSteamModeQM_ON) {
-                                debugPrintln("Quick Mill: steam-mode detected");
+                                LOG(DEBUG, "Quick Mill: steam-mode detected");
                                 initSteamQM();
                             }
                             else {
-                                debugPrintf("*** ERROR: QuickMill: neither brew nor steam\n");
+                                LOG(ERROR, "QuickMill: neither brew nor steam");
                             }
                         }
                         else if (millis() - timeOptocouplerOn > maxBrewDurationForSteamModeQM_ON) {
                             if (temperature < brewSetpoint + 2) {
-                                debugPrintln("Quick Mill: brew-mode detected");
+                                LOG(DEBUG, "Quick Mill: brew-mode detected");
                                 startingTime = timeOptocouplerOn;
                                 brewDetected = 1;
                                 brewSteamDetectedQM = 0;
                             }
                             else {
-                                debugPrintln("Quick Mill: cooling-flush detected");
+                                LOG(DEBUG, "Quick Mill: cooling-flush detected");
                                 coolingFlushDetectedQM = true;
                                 brewSteamDetectedQM = 0;
                             }
@@ -819,7 +820,7 @@ void brewDetection() {
                 previousMillisOptocouplerReading = millis();
 
                 if (digitalRead(PIN_BREWSWITCH) == optocouplerOn && brewDetected == 0) {
-                    debugPrintln("HW Brew - Voltage Sensor - Start");
+                    LOG(DEBUG, "HW Brew - Voltage Sensor - Start");
                     timeBrewDetection = millis();
                     startingTime = millis();
                     isBrewDetected = 1;
@@ -889,8 +890,8 @@ void handleMachineState() {
             // switch state to kColdStart if temperature is below BrewSetpoint or 150°
             if (temperature < (brewSetpoint - 1) || temperature < 150) {
                 machineState = kColdStart;
-                debugPrintf("%d\n", temperature);
-                debugPrintf("%d\n", machineState);
+                LOGF(DEBUG, "%d", temperature);
+                LOGF(DEBUG, "%d", machineState);
 
                 // reset PID (some users have 100% output in kInit / KColdstart)
                 pidMode = 0;
@@ -925,7 +926,7 @@ void handleMachineState() {
                     if (temperature >= (brewSetpoint - 1) && temperature < 150) {
                         machinestatecoldmillis = millis();  // get millis for interval calc
                         machinestatecold = 10;              // new state
-                        debugPrintln(
+                        LOG(DEBUG,
                             "temperature >= (BrewSetpoint-1), waiting 10 sec before switching to kAtSetpoint");
                     }
                     break;
@@ -935,14 +936,14 @@ void handleMachineState() {
                     // This way, noisy temperature errors won't switch the machineState too early
                     if (temperature < (brewSetpoint - 1)) {
                         machinestatecold = 0;
-                        debugPrintln("Resetting timer for kAtSetpoint: temperature < (BrewSetpoint-1) again");
+                        LOG(DEBUG, "Resetting timer for kAtSetpoint: temperature < (BrewSetpoint-1) again");
                         break;
                     }
 
                     // 10 sec temperature above BrewSetpoint - 1, set new state
                     if (machinestatecoldmillis + 10 * 1000 < millis()) {
                         machineState = kAtSetpoint;
-                        debugPrintln("temperature >= (BrewSetpoint-1) for 10 sec, switching to kAtSetpoint");
+                        LOG(DEBUG, "temperature >= (BrewSetpoint-1) for 10 sec, switching to kAtSetpoint");
                     }
                     break;
             }
@@ -954,7 +955,7 @@ void handleMachineState() {
 
                 if (standbyModeOn) {
                     resetStandbyTimer();
-                } 
+                }
             }
 
             if (steamON == 1) {
@@ -962,7 +963,7 @@ void handleMachineState() {
 
                 if (standbyModeOn) {
                     resetStandbyTimer();
-                } 
+                }
             }
 
             if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
@@ -970,7 +971,7 @@ void handleMachineState() {
 
                 if (standbyModeOn) {
                     resetStandbyTimer();
-                } 
+                }
             }
 
             if (standbyModeOn && standbyModeRemainingTimeMillis == 0) {
@@ -1007,7 +1008,7 @@ void handleMachineState() {
 
                 if (standbyModeOn) {
                     resetStandbyTimer();
-                } 
+                }
             }
 
             if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
@@ -1015,7 +1016,7 @@ void handleMachineState() {
 
                 if (standbyModeOn) {
                     resetStandbyTimer();
-                } 
+                }
             }
 
             if (steamON == 1) {
@@ -1023,7 +1024,7 @@ void handleMachineState() {
 
                 if (standbyModeOn) {
                     resetStandbyTimer();
-                } 
+                }
             }
 
             if (standbyModeOn && standbyModeRemainingTimeMillis == 0) {
@@ -1063,7 +1064,7 @@ void handleMachineState() {
 
                 if (standbyModeOn) {
                     resetStandbyTimer();
-                } 
+                }
             }
 
             if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
@@ -1071,13 +1072,13 @@ void handleMachineState() {
 
                 if (standbyModeOn) {
                     resetStandbyTimer();
-                } 
+                }
             }
 
             if (emergencyStop) {
                 machineState = kEmergencyStop;
             }
-             
+
             if (standbyModeOn && standbyModeRemainingTimeMillis == 0) {
                 machineState = kStandby;
                 pidON = 0;
@@ -1102,7 +1103,7 @@ void handleMachineState() {
 
             // Output brew time, temp and tempRateAverage during brew (used for SW BD only)
             if (FEATURE_BREWDETECTION == 1 && BREWDETECTION_TYPE == 1 && logbrew.check()) {
-                debugPrintf("(tB,T,hra) --> %5.2f %6.2f %8.2f\n", (double)(millis() - startingTime) / 1000, temperature, tempRateAverage);
+                LOGF(DEBUG, "(tB,T,hra) --> %5.2f %6.2f %8.2f", (double)(millis() - startingTime) / 1000, temperature, tempRateAverage);
             }
 
             if ((timeBrewed == 0 && brewDetectionMode == 3 && ONLYPID == 1) || // OnlyPID+: Voltage sensor BD timeBrewed == 0 -> switch is off again
@@ -1111,7 +1112,7 @@ void handleMachineState() {
                 // delay shot timer display for voltage sensor or hw brew toggle switch (brew counter)
                 machineState = kShotTimerAfterBrew;
                 lastBrewTimeMillis = millis();  // for delay
-            } 
+            }
             else if (brewDetectionMode == 1 && ONLYPID == 1 && isBrewDetected == 0) {   // SW BD, kBrew was active for set time
                 // when Software brew is finished, direct to PID BD
                 machineState = kBrewDetectionTrailing;
@@ -1138,7 +1139,7 @@ void handleMachineState() {
             brewDetection();
 
             if (millis() - lastBrewTimeMillis > SHOTTIMERDISPLAYDELAY) {
-                debugPrintf("Shot time: %4.1f s\n", lastBrewTime / 1000);
+                LOGF(DEBUG, "Shot time: %4.1f s", lastBrewTime / 1000);
                 machineState = kBrewDetectionTrailing;
                 lastBrewTime = 0;
             }
@@ -1351,10 +1352,10 @@ void handleMachineState() {
             }
 
             break;
-        
+
         case kStandby:
             brewDetection();
-            
+
             if (pidON || steamON || isBrewDetected) {
                 pidON = 1;
                 resetStandbyTimer();
@@ -1369,7 +1370,7 @@ void handleMachineState() {
                     machineState = kPidNormal;
                 }
             }
-             
+
             if (sensorError) {
                 machineState = kSensorError;
             }
@@ -1391,7 +1392,7 @@ void handleMachineState() {
 }
 
 void printMachineState() {
-    debugPrintf("new machineState: %s -> %s\n",
+    LOGF(DEBUG, "new machineState: %s -> %s",
                 machinestateEnumToString(lastmachinestate), machinestateEnumToString(machineState));
 }
 
@@ -1435,22 +1436,12 @@ char const* machinestateEnumToString(MachineState machineState) {
 }
 
 
-void debugVerboseOutput() {
-    static PeriodicTrigger trigger(10000);
-
-    if (trigger.check()) {
-        debugPrintf(
-            "Tsoll=%5.1f  Tist=%5.1f Machinestate=%2i KP=%4.2f "
-            "KI=%4.2f KD=%4.2f\n",
-            setpoint, temperature, machineState, bPID.GetKp(), bPID.GetKi(), bPID.GetKd());
-    }
-}
-
-
 /**
  * @brief Set up internal WiFi hardware
  */
 void wiFiSetup() {
+    Logger::init(23);
+
     wm.setCleanConnect(true);
     wm.setConfigPortalTimeout(60);      // sec timeout for captive portal
     wm.setConnectTimeout(10);           // using 10s to connect to WLAN, 5s is sometimes too short!
@@ -1461,7 +1452,7 @@ void wiFiSetup() {
 
     if (wifiCredentialsSaved == 0) {
         const char hostname[] = (STR(HOSTNAME));
-        debugPrintf("Connecting to WiFi: %s \n", String(hostname));
+        LOGF(INFO, "Connecting to WiFi: %s", String(hostname));
 
         #if OLED_DISPLAY != 0
             displayLogo("Connecting to: ", HOSTNAME);
@@ -1474,7 +1465,7 @@ void wiFiSetup() {
         wifiCredentialsSaved = 1;
         sysParaWifiCredentialsSaved.setStorage();
         storageCommit();
-        debugPrintf("WiFi connected - IP = %i.%i.%i.%i\n", WiFi.localIP()[0],
+        LOGF(INFO, "WiFi connected - IP = %i.%i.%i.%i", WiFi.localIP()[0],
                     WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3]);
         byte mac[6];
         WiFi.macAddress(mac);
@@ -1485,10 +1476,10 @@ void wiFiSetup() {
         String macaddr4 = number2string(mac[4]);
         String macaddr5 = number2string(mac[5]);
         String completemac = macaddr0 + macaddr1 + macaddr2 + macaddr3 + macaddr4 + macaddr5;
-        debugPrintf("MAC-ADDRESS: %s\n", completemac.c_str());
+        LOGF(DEBUG, "MAC-ADDRESS: %s", completemac.c_str());
     }
     else {
-        debugPrintln("WiFi connection timed out...");
+        LOG(INFO, "WiFi connection timed out...");
 
         #if OLED_DISPLAY != 0
             displayLogo(langstring_nowifi[0], langstring_nowifi[1]);
@@ -1504,7 +1495,8 @@ void wiFiSetup() {
         displayLogo(langstring_connectwifi1, wm.getWiFiSSID(true));
     #endif
 
-    startRemoteSerialServer();
+    Logger::begin();
+    Logger::setLevel(LOGLEVEL);
 }
 
 
@@ -2057,7 +2049,7 @@ void setup() {
         mqttVars["scaleCalibration"] = []{ return &editableVars.at("SCALE_CALIBRATION"); };
         #if SCALE_TYPE == 0
         mqttVars["scale2Calibration"] = []{ return &editableVars.at("SCALE2_CALIBRATION"); };
-        #endif 
+        #endif
         mqttVars["scaleKnownWeight"] = []{ return &editableVars.at("SCALE_KNOWN_WEIGHT"); };
         mqttVars["scaleTareOn"] = []{ return &editableVars.at("TARE_ON"); };
         mqttVars["scaleCalibrationOn"] = []{ return &editableVars.at("CALIBRATION_ON"); };
@@ -2074,7 +2066,7 @@ void setup() {
             mqttVars["brewLimit"] = []{ return &editableVars.at("PID_BD_SENSITIVITY"); };
         }
     }
-    
+
     // Values reported to MQTT
     mqttSensors["temperature"] = []{ return temperature; };
     mqttSensors["heaterPower"] = []{ return pidOutput / 10; };
@@ -2083,7 +2075,7 @@ void setup() {
     mqttSensors["currentKi"] = []{ return bPID.GetKi(); };
     mqttSensors["currentKd"] = []{ return bPID.GetKd(); };
     mqttSensors["machineState"] = []{ return machineState; };
-    
+
     #if FEATURE_PRESSURESENSOR == 1
         mqttSensors["pressure"] = []{ return inputPressureFilter; };
     #endif
@@ -2102,7 +2094,7 @@ void setup() {
     if (optocouplerType == HIGH) {
         optocouplerOn = HIGH;
         optocouplerOff = LOW;
-    } 
+    }
     else {
         optocouplerOn = LOW;
         optocouplerOff = HIGH;
@@ -2126,7 +2118,7 @@ void setup() {
     if (BREWDETECTION_TYPE == 3) {
         if (optocouplerType == HIGH) {
             pinMode(PIN_BREWSWITCH, GPIOPin::IN_PULLDOWN);
-        } 
+        }
         else {
             pinMode(PIN_BREWSWITCH, GPIOPin::IN_PULLUP);
         }
@@ -2139,7 +2131,7 @@ void setup() {
     if (LED_TYPE == STANDARD_LED) {
         statusLedPin = new GPIOPin(PIN_STATUSLED, GPIOPin::OUT);
         brewLedPin = new GPIOPin(PIN_BREWLED, GPIOPin::OUT);
-        
+
         statusLed = new StandardLED(*statusLedPin);
         brewLed = new StandardLED(*brewLedPin);
     }
@@ -2239,7 +2231,7 @@ void setup() {
     enableTimer1();
 
     double fsUsage = ((double)LittleFS.usedBytes() / LittleFS.totalBytes()) * 100;
-    debugPrintf("LittleFS: %d%% (used %ld bytes from %ld bytes)\n",
+    LOGF(INFO, "LittleFS: %d%% (used %ld bytes from %ld bytes)",
         (int)ceil(fsUsage), LittleFS.usedBytes(), LittleFS.totalBytes());
 }
 
@@ -2252,7 +2244,7 @@ void loop() {
         loopWater();
     }
 
-    checkForRemoteSerialClients();
+    Logger::update();
 }
 
 
@@ -2275,7 +2267,7 @@ void looppid() {
             }
             // Supress debug messages until we have a connection etablished
             else if(mqtt_was_connected) {
-                debugPrintln("MQTT disconnected\n");
+                LOG(INFO, "MQTT disconnected");
                 mqtt_was_connected = false;
             }
         }
@@ -2308,31 +2300,29 @@ void looppid() {
         sendTempEvent(temperature, brewSetpoint, pidOutput/10);       //pidOutput is promill, so /10 to get percent value
         lastTempEvent = millis();
 
-        #if VERBOSE
         if (pidON) {
-            debugPrintf("Current PID mode: %s\n", bPID.GetPonE() ? "PonE" : "PonM");
+            LOGF(TRACE, "Current PID mode: %s", bPID.GetPonE() ? "PonE" : "PonM");
 
             //P-Part
-            debugPrintf("Current PID input error: %f\n", bPID.GetInputError());
-            debugPrintf("Current PID P part: %f\n", bPID.GetLastPPart());
-            debugPrintf("Current PID kP: %f\n", bPID.GetKp());
+            LOGF(TRACE, "Current PID input error: %f", bPID.GetInputError());
+            LOGF(TRACE, "Current PID P part: %f", bPID.GetLastPPart());
+            LOGF(TRACE, "Current PID kP: %f", bPID.GetKp());
             //I-Part
-            debugPrintf("Current PID I sum: %f\n", bPID.GetLastIPart());
-            debugPrintf("Current PID kI: %f\n", bPID.GetKi());
+            LOGF(TRACE, "Current PID I sum: %f", bPID.GetLastIPart());
+            LOGF(TRACE, "Current PID kI: %f", bPID.GetKi());
             //D-Part
-            debugPrintf("Current PID diff'd input: %f\n", bPID.GetDeltaInput());
-            debugPrintf("Current PID D part: %f\n", bPID.GetLastDPart());
-            debugPrintf("Current PID kD: %f\n", bPID.GetKd());
+            LOGF(TRACE, "Current PID diff'd input: %f", bPID.GetDeltaInput());
+            LOGF(TRACE, "Current PID D part: %f", bPID.GetLastDPart());
+            LOGF(TRACE, "Current PID kD: %f", bPID.GetKd());
 
             //Combined PID output
-            debugPrintf("Current PID Output: %f\n\n", pidOutput);
-            debugPrintf("Current Machinestate: %s\n\n", machinestateEnumToString(machineState));
-            debugPrintf("timeBrewed %f\n", timeBrewed);
-            debugPrintf("brewtimesoftware %f\n", brewtimesoftware);
-            debugPrintf("isBrewDetected %i\n", isBrewDetected);
-            debugPrintf("brewDetectionMode %i\n", brewDetectionMode);
+            LOGF(TRACE, "Current PID Output: %f", pidOutput);
+            LOGF(TRACE, "Current Machinestate: %s", machinestateEnumToString(machineState));
+            LOGF(TRACE, "timeBrewed %f", timeBrewed);
+            LOGF(TRACE, "brewtimesoftware %f", brewtimesoftware);
+            LOGF(TRACE, "isBrewDetected %i", isBrewDetected);
+            LOGF(TRACE, "brewDetectionMode %i", brewDetectionMode);
         }
-        #endif
     }
 
     #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
@@ -2343,7 +2333,7 @@ void looppid() {
 
     #if (FEATURE_PRESSURESENSOR == 1)
         unsigned long currentMillisPressure = millis();
-        
+
         if (currentMillisPressure - previousMillisPressure >= intervalPressure) {
             previousMillisPressure = currentMillisPressure;
             inputPressure = measurePressure();
@@ -2367,8 +2357,8 @@ void looppid() {
     if (standbyModeOn && machineState != kStandby) {
         updateStandbyTimer();
     }
-    
-    handleMachineState(); 
+
+    handleMachineState();
 
     #if (ONLYPIDSCALE == 1)  // only by shottimer 2, scale
         shottimerscale();
@@ -2418,7 +2408,7 @@ void looppid() {
             }
 
             if (lastmachinestatepid != machineState) {
-                debugPrintf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n", startKp, startKi, 0.0);
+                LOGF(DEBUG, "new PID-Values: P=%.1f  I=%.1f  D=%.1f", startKp, startKi, 0.0);
                 lastmachinestatepid = machineState;
             }
 
@@ -2441,7 +2431,7 @@ void looppid() {
             if (!brewPIDDisabled) {
                 brewPIDDisabled = true;
                 bPID.SetMode(MANUAL);
-                debugPrintf("disabled PID, waiting for %d seconds before enabling PID again\n", brewPIDDelay);
+                LOGF(DEBUG, "disabled PID, waiting for %d seconds before enabling PID again", brewPIDDelay);
             }
         }
         else {
@@ -2449,7 +2439,7 @@ void looppid() {
                 //enable PID again
                 bPID.SetMode(AUTOMATIC);
                 brewPIDDisabled = false;
-                debugPrintln("Enabled PID again after delay");
+                LOG(DEBUG, "Enabled PID again after delay");
             }
 
             if (useBDPID) {
@@ -2464,7 +2454,7 @@ void looppid() {
     // Steam on
     if (machineState == kSteam) {
         if (lastmachinestatepid != machineState) {
-            debugPrintf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n", 150.0, 0.0, 0.0);
+            LOGF(DEBUG, "new PID-Values: P=%.1f  I=%.1f  D=%.1f", 150.0, 0.0, 0.0);
             lastmachinestatepid = machineState;
         }
 
@@ -2493,7 +2483,7 @@ void looppid() {
         }
 
         if (lastmachinestatepid != machineState) {
-            debugPrintf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n", aggbKp, aggbKi, aggbKd);
+            LOGF(DEBUG, "new PID-Values: P=%.1f  I=%.1f  D=%.1f", aggbKp, aggbKi, aggbKd);
             lastmachinestatepid = machineState;
         }
 
@@ -2527,7 +2517,7 @@ void loopWater() {
         lastWaterCheck = millis();
 
         bool isWaterDetected = digitalRead(PIN_WATERSENSOR) == (WATER_SENS_TYPE == 0 ? LOW : HIGH);
-    
+
         if (isWaterDetected) {
             // Water is detected, increment counter if it was previously empty
             if (!waterFull) {
@@ -2535,25 +2525,25 @@ void loopWater() {
 
                 if (waterCheckConsecutiveReads >= waterCountsNeeded) {
                     waterFull = true;
-                    debugPrintln("Water full");
+                    LOG(INFO, "Water full");
                     waterCheckConsecutiveReads = 0;
                 }
-            } 
+            }
             else {
                 waterCheckConsecutiveReads = 0;
             }
-        } 
+        }
         else {
             // No water detected, increment counter if it was previously full
             if (waterFull) {
                 waterCheckConsecutiveReads++;
-                
+
                 if (waterCheckConsecutiveReads >= waterCountsNeeded) {
                     waterFull = false;
-                    debugPrintln("Water empty");
+                    LOG(WARNING, "Water empty");
                     waterCheckConsecutiveReads = 0;
                 }
-            } 
+            }
             else {
                 waterCheckConsecutiveReads = 0;
             }
@@ -2607,7 +2597,7 @@ void setNormalPIDTunings() {
     bPID.SetIntegratorLimits(0, aggIMax);
 
     if (lastmachinestatepid != machineState) {
-        debugPrintf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n", aggKp, aggKi, aggKd);
+        LOGF(DEBUG, "new PID-Values: P=%.1f  I=%.1f  D=%.1f", aggKp, aggKi, aggKd);
         lastmachinestatepid = machineState;
     }
 
@@ -2626,7 +2616,7 @@ void setBDPIDTunings() {
     aggbKd = aggbTv * aggbKp;
 
     if (lastmachinestatepid != machineState) {
-        debugPrintf("new PID-Values: P=%.1f  I=%.1f  D=%.1f\n", aggbKp, aggbKi, aggbKd);
+        LOGF(DEBUG, "new PID-Values: P=%.1f  I=%.1f  D=%.1f", aggbKp, aggbKi, aggbKd);
         lastmachinestatepid = machineState;
     }
 

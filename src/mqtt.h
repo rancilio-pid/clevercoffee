@@ -76,15 +76,15 @@ void checkMQTT() {
         if (!mqtt.connected()) {
             lastMQTTConnectionAttempt = millis();  // Reconnection Timer Function
             MQTTReCnctCount++;                     // Increment reconnection Counter
-            debugPrintf("Attempting MQTT reconnection: %i\n", MQTTReCnctCount);
+            LOGF(DEBUG, "Attempting MQTT reconnection: %i", MQTTReCnctCount);
 
             if (mqtt.connect(hostname, mqtt_username, mqtt_password, topic_will, 0, true, "offline")) {
                 mqtt.subscribe(topic_set);
-                debugPrintf("Subscribed to MQTT Topic: %s\n", topic_set);
+                LOGF(DEBUG, "Subscribed to MQTT Topic: %s", topic_set);
             }   // Try to reconnect to the server; connect() is a blocking
                 // function, watch the timeout!
             else {
-                debugPrintf("Failed to connect to MQTT due to reason: %i\n", mqtt.state());
+                LOGF(DEBUG, "Failed to connect to MQTT due to reason: %i", mqtt.state());
             }
         }
     }
@@ -124,7 +124,7 @@ int PublishLargeMessage(const String& topic, const String& largeMessage) {
         int publishResult = mqtt.endPublish();
 
         if (publishResult == 0) {
-            debugPrintln("[MQTT] PublishLargeMessage sent failed");
+            LOG(WARNING, "[MQTT] PublishLargeMessage sent failed");
             return 1;
         }
         else {
@@ -171,16 +171,16 @@ void assignMQTTParam(char *param, double value) {
                     break;
 
                 default:
-                    debugPrintf("%s is not a recognized type for this MQTT parameter.\n", var->type);
+                    LOGF(WARNING, "%s is not a recognized type for this MQTT parameter.", var->type);
                     break;
             }
         }
         else {
-            debugPrintf("Value out of range for MQTT parameter %s\n", param);
+            LOGF(WARNING, "Value out of range for MQTT parameter %s", param);
         }
     }
     catch(const std::out_of_range& e) {
-        debugPrintf("%s is not a valid MQTT parameter.\n", param);
+        LOGF(WARNING, "%s is not a valid MQTT parameter.", param);
     }
 }
 
@@ -202,11 +202,11 @@ void mqtt_callback(char *topic, byte *data, unsigned int length) {
     snprintf(topic_pattern, sizeof(topic_pattern), "%s%s/%%[^\\/]/%%[^\\/]", mqtt_topic_prefix, hostname);
 
     if ((sscanf(topic_str, topic_pattern, &configVar, &cmd) != 2) || (strcmp(cmd, "set") != 0)) {
-        debugPrintf("Invalid MQTT topic/command: %s\n", topic_str);
+        LOGF(WARNING, "Invalid MQTT topic/command: %s", topic_str);
         return;
     }
 
-    debugPrintf("Received MQTT command %s %s\n", topic_str, data_str);
+    LOGF(DEBUG, "Received MQTT command %s %s\n", topic_str, data_str);
 
     // convert received string value to double assuming it's a number
     sscanf(data_str, "%lf", &data_double);
@@ -387,7 +387,7 @@ DiscoveryObject GenerateButtonDevice(String name, String displayName, String pay
 
     String buttonConfigDocBuffer;
     serializeJson(buttonConfigDoc, buttonConfigDocBuffer);
-    debugPrintln("Generated button device");
+    LOG(DEBUG, "Generated button device");
     button_device.payload_json = buttonConfigDocBuffer;
     
     return button_device;
@@ -580,7 +580,7 @@ std::vector<DiscoveryObject> discoveryObjects = {
             int publishResult = PublishLargeMessage(discoveryObj.discovery_topic.c_str(), discoveryObj.payload_json.c_str());
 
             if (publishResult != 0) {
-                debugPrintf("[MQTT] Failed to publish discovery message. Error code: %d\n", publishResult);
+                LOGF(ERROR, "[MQTT] Failed to publish discovery message. Error code: %d\n", publishResult);
                 return publishResult;
             }
         }
@@ -588,7 +588,7 @@ std::vector<DiscoveryObject> discoveryObjects = {
         return 0;
     }
     else {
-        debugPrintln("[MQTT] Failed to send Hassio Discover, MQTT Client is not connected");
+        LOG(DEBUG, "[MQTT] Failed to send Hassio Discover, MQTT Client is not connected");
         return -1;
     }
 }
