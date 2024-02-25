@@ -89,7 +89,7 @@ typedef struct __attribute__((packed)) {
     uint8_t pidBdOn;
     double pidKpBd;
     #if SCALE_TYPE == 1
-    uint8_t freeToUse7[2];
+    float freeToUse7;
     #else
     float scale2Calibration;
     #endif
@@ -333,10 +333,12 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
             size = STRUCT_MEMBER_SIZE(sto_data_t,scaleCalibration);
             break;
 
+        #if SCALE_TYPE != 1
         case STO_ITEM_SCALE2_CALIBRATION_FACTOR:
             addr = offsetof(sto_data_t,scale2Calibration );
             size = STRUCT_MEMBER_SIZE(sto_data_t,scale2Calibration);
             break;
+        #endif
 
         case STO_ITEM_SCALE_KNOWN_WEIGHT:
             addr = offsetof(sto_data_t,scaleKnownWeight );
