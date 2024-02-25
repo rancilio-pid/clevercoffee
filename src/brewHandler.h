@@ -126,7 +126,7 @@ void checkbrewswitch() {
 
             case 30:
                 // Stop brew trigger (one push) brewswitch == HIGH
-                if ((brewSwitchTrigger == HIGH && brewSwitch == HIGH) || (machineState == kShotTimerAfterBrew) ) {
+                if ((brewSwitchTrigger == HIGH && brewSwitch == HIGH) || (machineState == kShotTimerAfterBrew) || (backflushState == kBackflushWaitBrewswitchOff)) {
                     brewSwitch = LOW;
                     brewSwitchTriggerCase = 40;
                     debugPrintln("brewSwitchTriggerCase 30: Brew Trigger LOW");
@@ -163,6 +163,7 @@ void checkbrewswitch() {
 void backflush() {
     if (backflushState != kBackflushWaitBrewswitchOn && backflushOn == 0) {
         backflushState = kBackflushWaitBrewswitchOff;  // Force reset in case backflushOn is reset during backflush!
+        debugPrintln("Backflush: Abort, disabled via Webinterface");
     }
     else if (offlineMode == 1 || brewCounter > kBrewIdle || maxflushCycles <= 0 || backflushOn == 0) {
         return;
@@ -193,7 +194,7 @@ void backflush() {
             break;
 
         case kBackflushFillingStart:
-            debugPrintln("Backflush: Portafilter filling...");
+            debugPrintf("Backflush (%i/%i): Portafilter filling...\n", flushCycles + 1, maxflushCycles);
             digitalWrite(PIN_VALVE, relayOn);
             digitalWrite(PIN_PUMP, relayOn);
             backflushState = kBackflushFilling;
