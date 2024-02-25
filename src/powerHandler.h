@@ -12,7 +12,7 @@ void checkPowerSwitch() {
 
         if (POWERSWITCH_TYPE == Switch::TOGGLE) {
             // Set pidON to 1 when powerswitch is HIGH
-            if (powerSwitchReading == HIGH) {
+            if ((powerSwitchReading == HIGH && machineState != kStandby) || (powerSwitchReading == LOW && machineState == kStandby)) {
                 pidON = 1;
             }
             else {

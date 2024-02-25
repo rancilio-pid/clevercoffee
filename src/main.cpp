@@ -156,6 +156,8 @@ bool coolingFlushDetectedQM = false;
     unsigned long previousMillisPressure;  // initialisation at the end of init()
 #endif
 
+GPIOPin* waterSensPin;
+
 GPIOPin* statusLedPin;
 GPIOPin* brewLedPin;
 
@@ -2128,7 +2130,7 @@ void setup() {
         brewSwitch = new IOSwitch(*brewSwitchPin, BREWSWITCH_TYPE);
     }
 
-    if (LED_TYPE == STANDARD_LED) {
+    if (LED_TYPE == LED::STANDARD) {
         statusLedPin = new GPIOPin(PIN_STATUSLED, GPIOPin::OUT);
         brewLedPin = new GPIOPin(PIN_BREWLED, GPIOPin::OUT);
 
@@ -2139,13 +2141,14 @@ void setup() {
         // TODO Addressable LEDs
     }
 
-    #if FEATURE_WATER_SENS == 1
-        #if WATER_SENS_TYPE == 0
-            pinMode(PIN_WATERSENSOR, INPUT_PULLUP);
-        #elif WATER_SENS_TYPE == 1
-            pinMode(PIN_WATERSENSOR, INPUT_PULLDOWN);
-        #endif
-    #endif
+    if (FEATURE_WATER_SENS == 1) {
+        if (WATER_SENS_TYPE == 0) {
+            waterSensPin = new GPIOPin(PIN_WATERSENSOR, GPIOPin::IN_PULLUP);
+        }
+        else if (WATER_SENS_TYPE == 1) {
+            waterSensPin = new GPIOPin(PIN_WATERSENSOR, GPIOPin::IN_PULLDOWN);
+        }
+    }
 
     #if OLED_DISPLAY != 0
         u8g2.setI2CAddress(oled_i2c * 2);
@@ -2513,10 +2516,12 @@ void loopLED() {
 }
 
 void loopWater() {
-    if ((millis() - lastWaterCheck) > waterCheckInterval) {
-        lastWaterCheck = millis();
+    unsigned long currentMillis = millis();
 
-        bool isWaterDetected = digitalRead(PIN_WATERSENSOR) == (WATER_SENS_TYPE == 0 ? LOW : HIGH);
+    if ((currentMillis - lastWaterCheck) > waterCheckInterval) {
+        lastWaterCheck = currentMillis;
+
+        bool isWaterDetected = waterSensPin->read() == (WATER_SENS_TYPE == 0 ? LOW : HIGH);
 
         if (isWaterDetected) {
             // Water is detected, increment counter if it was previously empty
