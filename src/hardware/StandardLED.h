@@ -14,8 +14,8 @@ class StandardLED : public LED {
     public:
         StandardLED(GPIOPin& gpioInstance);
 
-        void turnOn();
-        void turnOff();
+        void turnOn() override;
+        void turnOff() override;
         void setColor(int red, int green, int blue);
         void setBrightness(int value);
 
