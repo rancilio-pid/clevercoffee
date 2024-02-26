@@ -146,7 +146,7 @@ void checkbrewswitch() {
 void backflush() {
     if (backflushState != kBackflushWaitBrewswitchOn && backflushOn == 0) {
         backflushState = kBackflushWaitBrewswitchOff;  // Force reset in case backflushOn is reset during backflush!
-        debugPrintln("Backflush: Disabled via Webinterface");
+        LOG(INFO, "Backflush: Disabled via Webinterface");
     }
     else if (offlineMode == 1 || currBrewState > kBrewIdle || maxflushCycles <= 0 || backflushOn == 0) {
         return;
