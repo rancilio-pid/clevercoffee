@@ -14,7 +14,7 @@ class TempSensor {
          *          implemented by every child class.
          * @return Temperature in degrees Celsius
          */
-        virtual float getTempinCelsius() const = 0;
+        virtual float getTemperatureCelsius() const = 0;
 
         /**
          * @brief Returns sampling interval for the sensor

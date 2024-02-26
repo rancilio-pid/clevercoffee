@@ -121,14 +121,13 @@ void Logger::current_time(char* timestamp) {
 }
 
 String Logger::get_level_identifier(Logger::Level lvl){
-
     switch(lvl) {
-    case Level::TRACE:   return "  TRACE";
-    case Level::DEBUG:   return "  DEBUG";
-    case Level::INFO:    return "   INFO";
-    case Level::WARNING: return "WARNING";
-    case Level::ERROR:   return "  ERROR";
-    case Level::FATAL:   return "  FATAL";
-    default:             return " SILENT";
+        case Level::TRACE:   return "  TRACE";
+        case Level::DEBUG:   return "  DEBUG";
+        case Level::INFO:    return "   INFO";
+        case Level::WARNING: return "WARNING";
+        case Level::ERROR:   return "  ERROR";
+        case Level::FATAL:   return "  FATAL";
+        default:             return " SILENT";
     }
 }

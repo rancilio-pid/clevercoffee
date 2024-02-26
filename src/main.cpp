@@ -579,7 +579,7 @@ void refreshTemp() {
     if (currentMillisTemp - previousMillistemp >= tempSensor->getSamplingInterval()) {
         previousMillistemp = currentMillisTemp;
 
-        temperature = tempSensor->getTempinCelsius();
+        temperature = tempSensor->getTemperatureCelsius();
 
         if (machineState != kSteam) {
             temperature -= brewTempOffset;
@@ -2202,7 +2202,7 @@ void setup() {
         tempSensor = new TempSensorTSIC(PIN_TEMPSENSOR);
     }
 
-    temperature = tempSensor->getTempinCelsius();
+    temperature = tempSensor->getTemperatureCelsius();
 
     temperature -= brewTempOffset;
 
