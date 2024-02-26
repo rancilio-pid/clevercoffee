@@ -1,5 +1,5 @@
 /**
- * @file brewScale.h
+ * @file scaleHandler.h
  *
  * @brief Implementation of scale initialization and weight measurement
  */
