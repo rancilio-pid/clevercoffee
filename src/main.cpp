@@ -608,7 +608,7 @@ void initOfflineMode() {
         displayMessage("", "", "", "", "Begin Fallback,", "No Wifi");
     #endif
 
-    LOG(DEBUG, "Start offline mode with eeprom values, no wifi :(");
+    LOG(INFO, "Start offline mode with eeprom values, no wifi :(");
     offlineMode = 1;
 
     if (readSysParamsFromStorage() != 0) {
@@ -616,10 +616,7 @@ void initOfflineMode() {
             displayMessage("", "", "", "", "No eeprom,", "Values");
         #endif
 
-        LOG(DEBUG,
-            "No working eeprom value, I am sorry, but use default offline value "
-            ":)");
-
+        LOG(INFO, "No working eeprom value, I am sorry, but use default offline value :)");
         delay(1000);
     }
 }
@@ -640,7 +637,7 @@ void checkWifi() {
             if (statusTemp != WL_CONNECTED) {  // check WiFi connection status
                 lastWifiConnectionAttempt = millis();
                 wifiReconnects++;
-                LOGF(DEBUG, "Attempting WIFI (re-)connection: %i", wifiReconnects);
+                LOGF(INFO, "Attempting WIFI (re-)connection: %i", wifiReconnects);
 
                 if (!setupDone) {
                     #if OLED_DISPLAY != 0
@@ -1141,7 +1138,7 @@ void handleMachineState() {
             brewDetection();
 
             if (millis() - lastBrewTimeMillis > SHOTTIMERDISPLAYDELAY) {
-                LOGF(DEBUG, "Shot time: %4.1f s", lastBrewTime / 1000);
+                LOGF(INFO, "Shot time: %4.1f s", lastBrewTime / 1000);
                 machineState = kBrewDetectionTrailing;
                 lastBrewTime = 0;
             }

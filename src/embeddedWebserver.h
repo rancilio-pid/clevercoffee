@@ -494,7 +494,7 @@ void serverSetup() {
 
     server.begin();
 
-    LOG(DEBUG, ("Server started at " + WiFi.localIP().toString()).c_str());
+    LOG(INFO, ("Server started at " + WiFi.localIP().toString()).c_str());
 }
 
 //skip counter so we don't keep a value every second
