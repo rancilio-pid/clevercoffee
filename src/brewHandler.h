@@ -35,7 +35,7 @@ BrewState currBrewState = kBrewIdle;
 
 uint8_t currStateBrewSwitch = LOW;
 uint8_t currBrewSwitchStateMomentary = LOW;
-int brewSwitchCase = 10;
+int brewSwitchState = 10;
 boolean brewSwitchWasOff = false;
 
 double totalBrewTime = 0;                           // total brewtime set in software
@@ -80,11 +80,11 @@ void checkbrewswitch() {
         }
         
         // Convert trigger signal to brew switch state
-        switch (brewSwitchCase) {
+        switch (brewSwitchState) {
             case 10:
                 if (currBrewSwitchStateMomentary == HIGH && machineState != kWaterEmpty ) {
-                    brewSwitchCase = 20;
-                    LOG(DEBUG, "brewSwitchCase 10: HIGH");
+                    brewSwitchState = 20;
+                    LOG(DEBUG, "brewSwitchState 10: HIGH");
                 }
                 break;
 
@@ -93,17 +93,17 @@ void checkbrewswitch() {
                 if (currBrewSwitchStateMomentary == LOW) {
                     // Brew trigger
                     currStateBrewSwitch = HIGH;
-                    brewSwitchCase = 30;
-                    LOG(DEBUG, "brewSwitchCase 20: Brew Trigger HIGH");
+                    brewSwitchState = 30;
+                    LOG(DEBUG, "brewSwitchState 20: Brew Trigger HIGH");
                 }
 
                 // Button more than brewSwitchMomentaryLongPress pushed
                 if (currBrewSwitchStateMomentary == HIGH && brewSwitch->longPressDetected() && machineState != kWaterEmpty) {
-                    brewSwitchCase = 31;
+                    brewSwitchState = 31;
                     valveRelay.on();
                     pumpRelay.on();
                     startingTime = millis();
-                    LOG(DEBUG, "brewSwitchCase 20: Manual Trigger - flushing");
+                    LOG(DEBUG, "brewSwitchState 20: Manual Trigger - flushing");
                 }
                 break;
 
@@ -111,15 +111,15 @@ void checkbrewswitch() {
                 // Stop brew trigger (one push) brewswitch == HIGH
                 if ((currBrewSwitchStateMomentary == HIGH && currStateBrewSwitch == HIGH) || (machineState == kShotTimerAfterBrew) || (backflushState == kBackflushWaitBrewswitchOff)) {
                     currStateBrewSwitch = LOW;
-                    brewSwitchCase = 40;
-                    LOG(DEBUG, "brewSwitchCase 30: Brew Trigger LOW");
+                    brewSwitchState = 40;
+                    LOG(DEBUG, "brewSwitchState 30: Brew Trigger LOW");
                 }
                 break;
 
             case 31:
                 // Stop Manual brewing, button goes low:
                 if (currBrewSwitchStateMomentary == LOW && currStateBrewSwitch == LOW) {
-                    brewSwitchCase = 40;
+                    brewSwitchState = 40;
                     LOG(DEBUG, "brewswitchTriggerCase 31: Manual Trigger - brewing stop");
                     valveRelay.off();
                     pumpRelay.off();
@@ -129,8 +129,8 @@ void checkbrewswitch() {
             case 40:
                 // Once Toggle-Button is released, go back to start and wait for brew button press
                 if (currBrewSwitchStateMomentary == LOW) {
-                    brewSwitchCase = 10;
-                    LOG(DEBUG, "brewSwitchCase 40: Brew Trigger Next Loop");
+                    brewSwitchState = 10;
+                    LOG(DEBUG, "brewSwitchState 40: Brew Trigger Next Loop");
                 }
                 break;
 
@@ -240,7 +240,7 @@ void brew() {
             currBrewState = kWaitBrewOff;
         }
 
-        if (currBrewState > kBrewIdle && currBrewState < kWaitBrewOff || brewSwitchCase == 31) {
+        if (currBrewState > kBrewIdle && currBrewState < kWaitBrewOff || brewSwitchState == 31) {
             timeBrewed = currentMillisTemp - startingTime;
         }
 

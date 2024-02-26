@@ -463,7 +463,7 @@ const unsigned long intervalDisplay = 500;
 
 #include "powerHandler.h"
 #include "steamHandler.h"
-#include "hardware/brewScale.h"
+#include "scaleHandler.h"
 
 // Emergency stop if temp is too high
 void testEmergencyStop() {

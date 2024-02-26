@@ -238,10 +238,10 @@ void displayLogo(String displaymessagetext, String displaymessagetext2) {
  * @brief display shot timer
  */
 void displayShottimer(void) {
-    if ((machineState == kBrew || brewSwitchCase == 31) && FEATURE_SHOTTIMER == 1 && SHOTTIMER_TYPE == 1) {
+    if ((machineState == kBrew || brewSwitchState == 31) && FEATURE_SHOTTIMER == 1 && SHOTTIMER_TYPE == 1) {
         u8g2.clearBuffer();
 
-        if (brewSwitchCase != 31) {
+        if (brewSwitchState != 31) {
             // temp icon
             u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
         } 
@@ -259,7 +259,7 @@ void displayShottimer(void) {
     * nothing should be done, otherwise wrong time is displayed
     * because the switch is pressed later than totalBrewTime
     */
-    if (((machineState == kShotTimerAfterBrew && brewSwitchCase != 31) && FEATURE_SHOTTIMER == 1 && SHOTTIMER_TYPE == 1)) {
+    if (((machineState == kShotTimerAfterBrew && brewSwitchState != 31) && FEATURE_SHOTTIMER == 1 && SHOTTIMER_TYPE == 1)) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
 
@@ -310,7 +310,7 @@ void displayShottimer(void) {
  * @brief display heating logo
  */
 void Displaymachinestate() {
-    if (FEATURE_HEATINGLOGO > 0 && (machineState == kInit || machineState == kColdStart) && brewSwitchCase != 31) {
+    if (FEATURE_HEATINGLOGO > 0 && (machineState == kInit || machineState == kColdStart) && brewSwitchState != 31) {
         // For status info
         u8g2.clearBuffer();
 
@@ -347,7 +347,7 @@ void Displaymachinestate() {
     }
 
     // Steam
-    if (machineState == kSteam && brewSwitchCase != 31) {
+    if (machineState == kSteam && brewSwitchState != 31) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(-1, 12, Steam_Logo_width, Steam_Logo_height, Steam_Logo);
         
@@ -358,7 +358,7 @@ void Displaymachinestate() {
     }
 
     // Water empty
-    if (machineState == kWaterEmpty && brewSwitchCase != 31) {
+    if (machineState == kWaterEmpty && brewSwitchState != 31) {
         u8g2.clearBuffer();
         u8g2.drawXBMP( 45, 0, Water_Empty_Logo_width, Water_Empty_Logo_height, Water_Empty_Logo); 
         u8g2.setFont(u8g2_font_profont11_tf);
