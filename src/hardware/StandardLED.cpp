@@ -7,9 +7,7 @@
 #include "GPIOPin.h"
 #include "StandardLED.h"
 
-StandardLED::StandardLED(GPIOPin& gpioInstance) : gpio(gpioInstance) {
-
-}
+StandardLED::StandardLED(GPIOPin& gpioInstance) : gpio(gpioInstance) {}
 
 void StandardLED::turnOn() {
     gpio.write(HIGH);

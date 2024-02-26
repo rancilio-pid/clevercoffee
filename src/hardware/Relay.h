@@ -14,7 +14,6 @@ class GPIOPin;
  */
 class Relay {
     public:
-
         /**
          * @enum TriggerType
          * @brief Type of trigger for this relay

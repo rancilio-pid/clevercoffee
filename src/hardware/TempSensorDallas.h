@@ -12,7 +12,7 @@
 class TempSensorDallas : public TempSensor {
     public:
         TempSensorDallas(int GPIOPin);
-        float getTempinCelsius() const override;
+        float getTemperatureCelsius() const override;
 
     private:
         OneWire* oneWire_;

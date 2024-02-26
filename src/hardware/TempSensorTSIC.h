@@ -12,7 +12,7 @@
 class TempSensorTSIC : public TempSensor {
     public:
         TempSensorTSIC(int GPIOPin);
-        float getTempinCelsius() const override;
+        float getTemperatureCelsius() const override;
 
     private:
         ZACwire* tsicSensor_;
