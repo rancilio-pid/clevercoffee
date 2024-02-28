@@ -60,7 +60,7 @@ enum MACHINE {
 #define POWERSWITCH_TYPE Switch::TOGGLE          // Switch::TOGGLE or Switch::MOMENTARY (trigger)
 #define FEATURE_BREWSWITCH 0                     // 0 = deactivated, 1 = activated
 #define BREWSWITCH_TYPE Switch::TOGGLE           // Switch::TOGGLE or Switch::MOMENTARY (trigger)
-#define FEATURE_STEAMSWITCH 1                    // 0 = deactivated, 1 = activated
+#define FEATURE_STEAMSWITCH 0                    // 0 = deactivated, 1 = activated
 #define STEAMSWITCH_TYPE Switch::TOGGLE          // Switch::TOGGLE or Switch::MOMENTARY (trigger)
 #define OPTOCOUPLER_TYPE HIGH                    // BREWDETECTION 3 configuration; HIGH or LOW trigger optocoupler
 #define HEATER_SSR_TYPE Relay::HIGH_TRIGGER      // HIGH_TRIGGER = relay switches when input is HIGH, vice versa for LOW_TRIGGER
