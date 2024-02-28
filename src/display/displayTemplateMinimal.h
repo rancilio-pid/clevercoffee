@@ -34,7 +34,7 @@ void printScreen() {
                 numDecimalsSetpoint = 0;
             }
 
-            // Draw temp, blink if TEMP_LED is not enabled
+            // Draw temp, blink if feature STATUS_LED is not enabled
             if ((fabs(temperature - setpoint) < 0.3) && !FEATURE_STATUS_LED) {
                 if (isrCounter < 500) {
                     // limit to 4 characters
