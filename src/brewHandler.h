@@ -125,7 +125,7 @@ void checkbrewswitch() {
                 break;
 
             case kBrewSwitchFlushOff:
-                // Brew switch got releaased - stop flushing
+                // Brew switch got released - stop flushing
                 if (currBrewSwitchStateMomentary == LOW && currStateBrewSwitch == LOW) {
                     brewSwitchState = kBrewSwitchReset;
                     LOG(DEBUG, "brewswitchTriggerCase = kBrewSwitchFlushOff: brew switch long press released - stop flushing");
