@@ -15,7 +15,7 @@ void printScreen() {
         ((machineState == kBrew || machineState == kShotTimerAfterBrew) && FEATURE_SHOTTIMER == 0) ||  // shottimer == 0, auch Bezug anzeigen
         machineState == kCoolDown || ((machineState == kInit || machineState == kColdStart) && FEATURE_HEATINGLOGO == 0) ||
         ((machineState == kPidOffline) && FEATURE_OFFLINELOGO == 0))
-        && (brewSwitchState != 31))
+        && (brewSwitchState != kBrewSwitchFlushOff))
     {
         if (!sensorError) {
             u8g2.clearBuffer();
