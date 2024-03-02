@@ -45,6 +45,23 @@ void printScreen() {
         u8g2.setCursor(32, 26);
         u8g2.print("W: ");
 
+        if (scaleFailure) {
+            u8g2.print("fault");
+        }
+        else {
+            if (brewswitch == LOW) {
+                u8g2.print(weight, 0);
+            }
+            else {
+                u8g2.print(weightBrew, 0);
+            }
+
+            u8g2.print("/");
+            u8g2.print(weightSetpoint, 0);
+            u8g2.print(" (");
+            u8g2.print(weightBrew, 1);
+            u8g2.print(")");
+        }
 
         // Brew
         u8g2.setCursor(32, 36);
