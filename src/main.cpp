@@ -1446,7 +1446,6 @@ char const* machinestateEnumToString(MachineState machineState) {
  * @brief Set up internal WiFi hardware
  */
 void wiFiSetup() {
-    Logger::init(23);
 
     wm.setCleanConnect(true);
     wm.setConfigPortalTimeout(60);      // sec timeout for captive portal
@@ -1500,9 +1499,6 @@ void wiFiSetup() {
     #if OLED_DISPLAY != 0
         displayLogo(langstring_connectwifi1, wm.getWiFiSSID(true));
     #endif
-
-    Logger::begin();
-    Logger::setLevel(LOGLEVEL);
 }
 
 
@@ -1520,6 +1516,12 @@ void websiteSetup() {
 const char sysVersion[] = (STR(FW_VERSION) "." STR(FW_SUBVERSION) "." STR(FW_HOTFIX) " " FW_BRANCH " " AUTO_VERSION);
 
 void setup() {
+    // Start serial console
+    Serial.begin(115200);
+
+    // Initialize the logger
+    Logger::init(23);
+
     editableVars["PID_ON"] = {
         .displayName = "Enable PID Controller",
         .hasHelpText = false,
@@ -2090,9 +2092,6 @@ void setup() {
         mqttSensors["currentWeight"] = []{ return weight; };
     #endif
 
-
-    Serial.begin(115200);
-
     initTimer1();
 
     storageSetup();
@@ -2236,6 +2235,10 @@ void setup() {
     setupDone = true;
 
     enableTimer1();
+
+    // Start the logger
+    Logger::begin();
+    Logger::setLevel(LOGLEVEL);
 
     double fsUsage = ((double)LittleFS.usedBytes() / LittleFS.totalBytes()) * 100;
     LOGF(INFO, "LittleFS: %d%% (used %ld bytes from %ld bytes)",

@@ -1,4 +1,5 @@
 #include <utility>
+#include <WiFi.h>
 
 #include "Logger.h"
 
@@ -14,7 +15,14 @@ void Logger::init(const uint16_t port) {
 }
 
 bool Logger::begin() {
-    Logger::getInstance().server_.begin();
+    if(WiFi.status() == WL_CONNECTED) {
+        Logger::getInstance().server_.begin();
+    }
+
+    // If the serial interface has not been started, start it now:
+    if (!Serial) {
+        Serial.begin(115200);
+    }
     return true;
 }
 
@@ -45,7 +53,7 @@ void Logger::log(const Level level,
     char time[12];
     current_time(time);
 
-    if (client_.connected()) {
+    if (WiFi.status() == WL_CONNECTED && client_.connected()) {
         client_.print(time);
         client_.print(get_level_identifier(level).c_str());
         client_.print(" ");
