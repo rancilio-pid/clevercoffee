@@ -1355,11 +1355,16 @@ void handleMachineState() {
             break;
 
         case kStandby:
+            if (standbyModeRemainingTimeDisplayOffMillis == 0) {
+                u8g2.setPowerSave(1);
+            }
+
             brewDetection();
 
             if (pidON || steamON || isBrewDetected) {
                 pidON = 1;
                 resetStandbyTimer();
+                u8g2.setPowerSave(0);
 
                 if (steamON) {
                     machineState = kSteam;
@@ -2356,9 +2361,7 @@ void looppid() {
 
     setEmergencyStopTemp();
 
-    if (standbyModeOn && machineState != kStandby) {
-        updateStandbyTimer();
-    }
+    updateStandbyTimer();
 
     handleMachineState();
 
