@@ -1,5 +1,5 @@
 /**
- * @file LED.h
+ * @file Switch.h
  * 
  * @brief Interface that switches have to implement
  */

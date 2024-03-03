@@ -20,6 +20,7 @@
 #include <LittleFS.h>
 #include <WiFiManager.h>
 #include <U8g2lib.h>            // i2c display
+#include <FastLED.h>
 #include "PID_v1.h"             // for PID calculation
 
 // Includes
@@ -35,6 +36,9 @@
 #include "hardware/GPIOPin.h"
 #include "hardware/LED.h"
 #include "hardware/StandardLED.h"
+#include "hardware/RGBLEDstrip.h"
+#include "hardware/RgbSingleLED.h"
+#include "hardware/RgbMultipleLED.h"
 #include "hardware/Relay.h"
 #include "hardware/Switch.h"
 #include "hardware/IOSwitch.h"
@@ -77,6 +81,14 @@ MACHINE machine = (enum MACHINE)MACHINEID;
 
 #include "PeriodicTrigger.h"
 PeriodicTrigger logbrew(500);
+
+// Context LED settings
+unsigned int cycleLED = 0; // counter to 255 for color cycling
+unsigned int fadeLED = 0; // counter for shottimedisplay fade out
+unsigned long brewLEDon = 0; // counter to have LED on to show coffee is ready
+#define BREW_FINISHED_LEDON_DURATION 320 // Time to illuminate the ready coffee cup - 320*intervalLED = 26s
+const unsigned long intervalLED = 80; // to have slightly smooth animated LED colors
+PeriodicTrigger LEDupdate(intervalLED);
 
 enum MachineState {
     kInit = 0,
@@ -161,8 +173,10 @@ GPIOPin* waterSensPin;
 GPIOPin* statusLedPin;
 GPIOPin* brewLedPin;
 
+RGBLEDstrip* rgbLeds;
 LED* statusLed;
 LED* brewLed;
+RgbMultipleLED* contextLeds;
 
 GPIOPin heaterRelayPin(PIN_HEATER, GPIOPin::OUT);
 Relay heaterRelay(heaterRelayPin, HEATER_SSR_TYPE);
@@ -1100,6 +1114,9 @@ void handleMachineState() {
             break;
 
         case kBrew:
+            //White illumination 
+            brewLEDon = BREW_FINISHED_LEDON_DURATION;
+
             brewDetection();
 
             // Output brew time, temp and tempRateAverage during brew (used for SW BD only)
@@ -2141,7 +2158,22 @@ void setup() {
         brewLed = new StandardLED(*brewLedPin);
     }
     else {
-        // TODO Addressable LEDs
+        rgbLeds = new RGBLEDstrip(RGB_LED_NUM, LED_TYPE);
+
+        if(FEATURE_STATUS_LED == 1) {
+            statusLed = new RgbSingleLED(* rgbLeds);
+        }
+
+        if(FEATURE_BREW_LED == 1) {
+            brewLed = new RgbSingleLED(* rgbLeds);
+        }
+
+        if(FEATURE_CONTEXT_LED == 1) {
+            contextLeds = new RgbMultipleLED(* rgbLeds);
+        }
+
+        LEDupdate.reset(); // reset timer
+
     }
 
     if (FEATURE_WATER_SENS == 1) {
@@ -2501,21 +2533,83 @@ void looppid() {
 }
 
 void loopLED() {
-    if(FEATURE_STATUS_LED) {
-        if ((machineState == kPidNormal && (fabs(temperature  - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) {
-            statusLed->turnOn();
-        }
-        else {
-            statusLed->turnOff();
-        }
-    }
+    if (LEDupdate.check()) {
 
-    if (FEATURE_BREW_LED) {
-        if (machineState == kBrew) {
-            brewLed->turnOn();
+        if(FEATURE_STATUS_LED) {
+            if ((machineState == kPidNormal && (fabs(temperature  - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) {
+                statusLed->turnOn();
+            }
+            else {
+                statusLed->turnOff();
+            }
         }
-        else {
-            brewLed->turnOff();
+
+        if (FEATURE_BREW_LED) {
+            if (machineState == kBrew) {
+                brewLed->turnOn();
+            }
+            else {
+                brewLed->turnOff();
+            }
+        }
+
+        if (FEATURE_CONTEXT_LED) {
+
+            // Color cycle variable
+            cycleLED++;
+            if (cycleLED >= 255) {
+                cycleLED = 0;
+            }
+
+            if (machineState == kSensorError || machineState == kEepromError || 
+                machineState == kEmergencyStop || machineState == kWaterEmpty || !waterFull) {
+                //error states override all other states, show red pulse
+                contextLeds->setColorTwoValues(0, 255, cubicwave8(cycleLED * 4), cubicwave8(128 + cycleLED * 4));
+            }
+            else if (brewLEDon > 0) {
+                // After coffee is brewed -> White light to show ready coffee, and for the last 10% of time, smoothly dim down white light
+                brewLEDon--;
+                int brightnessLED = (brewLEDon > (BREW_FINISHED_LEDON_DURATION / 10) ? 200 : 150 * brewLEDon * 10 / BREW_FINISHED_LEDON_DURATION + CONTEXT_LED_PIDON_BRIGHTNESS);
+                contextLeds->setBrightness(brightnessLED);
+            }
+            else {
+                switch (machineState) {
+                    case kPidNormal:
+                    case kAtSetpoint:
+                        if ((fabs(temperature  - setpoint) < 0.3) || (temperature > 115 && fabs(temperature - setpoint) < 5)) { 
+                            // Correct temp for both Brew and Steam -> Green in back of machine
+                            contextLeds->setColor(96,255,70); // Dark green
+                        }
+                        else {
+                            // PID heating (no standby) - white low brightness as set in userconfig
+                            contextLeds->setBrightness(CONTEXT_LED_PIDON_BRIGHTNESS);
+                        }   
+                        break;
+                    case kBackflush:                
+                        contextLeds->turnOn();
+                        break;
+                    case kSteam:
+                        if ( !(temperature > 115 && fabs(temperature - setpoint) < 5) ) {
+                            // Set higher temperature for Steam -> dark yellow (if not at correct temperature)
+                            contextLeds->setColor(45, 255, 100); // 45 is yellow, 100 is 40% brighteness
+                        }
+                        else {
+                            contextLeds->setColor(96,200,200); // Bright green
+                        }
+                        break;
+                    case kInit:
+                    case kColdStart:
+                        // Initialize & Heat up --> Rainbow
+                        contextLeds->setRainbow( (cycleLED * 2) % 256, 32);
+                        break;
+                    case kCoolDown:
+                        contextLeds->setColor(0,255,64); // Dark red
+                        break;
+                    default:
+                        contextLeds->turnOff();
+                        break;
+                }
+            }
         }
     }
 }

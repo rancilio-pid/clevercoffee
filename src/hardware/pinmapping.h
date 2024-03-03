@@ -39,7 +39,7 @@
 #define PIN_HEATER 2
 
 // LEDs
-#define PIN_STATUSLED 26
+#define PIN_STATUSLED 26 // also default pin for RGB leds
 #define PIN_BREWLED 19
 #define PIN_STEAMLED 1
 

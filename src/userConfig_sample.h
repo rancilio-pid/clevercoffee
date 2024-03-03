@@ -67,7 +67,10 @@ enum MACHINE {
 #define PUMP_VALVE_SSR_TYPE Relay::HIGH_TRIGGER  // HIGH_TRIGGER = relay switches when input is HIGH, vice versa for LOW_TRIGGER
 #define FEATURE_STATUS_LED 0                     // Blink status LED when temp is in range, 0 = deactivated, 1 = activated
 #define FEATURE_BREW_LED 0                       // Turn on brew LED when brew is started, 0 = deactivated, 1 = activated
-#define LED_TYPE LED::STANDARD                   // STANDARD_LED for an LED connected to a GPIO pin, WS2812 for adressable LEDs
+#define FEATURE_CONTEXT_LED 0                    // Context: BrewReady-white, Error-red, TempOK-green, Startup-Rainbow, Steam-Yellow, Backflush-white, 0 = deactivated, 1 = activated
+#define CONTEXT_LED_PIDON_BRIGHTNESS 40          // Brightness from 0-255 for the cup illumination when machine is on
+#define LED_TYPE LED::STANDARD                   // STANDARD for an LED connected to a GPIO pin, WS2811, WS2812, WS2812B for adressable LEDs
+#define RGB_LED_NUM 4                            // Number of adressable LEDs attached. Not considered if FEATURE_STATUS_LED above is zero
 #define FEATURE_WATER_SENS 0                     // 0 = deactivated, 1 = activated
 #define WATER_SENS_TYPE 0                        // 0 = water sensor XKC-Y25-NPN connected, 1 = XKC-Y25-PNP connected
 #define FEATURE_PRESSURESENSOR 0                 // 0 = deactivated, 1 = activated

@@ -125,6 +125,8 @@ void checkbrewswitch() {
                 break;
 
             case kBrewSwitchFlushOff:
+                // Set white LED on, keep on even after manual brew and fade out
+                brewLEDon = BREW_FINISHED_LEDON_DURATION;
                 // Brew switch got released - stop flushing
                 if (currBrewSwitchStateMomentary == LOW && currStateBrewSwitch == LOW) {
                     brewSwitchState = kBrewSwitchReset;
@@ -344,6 +346,12 @@ void brew() {
                     brewDetected = 0;  // rearm brewDetection
                     currBrewState = kBrewIdle;
                     timeBrewed = 0;
+
+                    //LED illuminates coffee for BREW_FINISHED_LEDON_DURATION duration
+                    if (brewLEDon==0) 
+                    {
+                        brewLEDon = BREW_FINISHED_LEDON_DURATION;
+                    }
                 }
 
                 break;

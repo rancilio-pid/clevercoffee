@@ -17,7 +17,7 @@ void StandardLED::turnOff() {
     gpio.write(LOW);
 }
 
-void StandardLED::setColor(int red, int green, int blue) {
+void StandardLED::setColor(int hue, int saturation, int value) {
     // Not applicable for standard LEDs
 }
 
