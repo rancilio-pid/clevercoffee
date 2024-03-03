@@ -29,7 +29,7 @@ class Logger {
          *
          * @param port Port on which the logger should listen for client connections
          */
-        static void init(const uint16_t port = 23);
+        static void init(const uint16_t port);
 
         Logger(Logger const&) = delete;
         void operator=(Logger const&) = delete;
@@ -97,7 +97,7 @@ class Logger {
 
     private:
 
-        static Logger& getInstanceImpl(const uint16_t port = 0);
+        static Logger& getInstanceImpl(const uint16_t port = 23);
 
         /**
          * @brief Constructor for a logger
@@ -105,7 +105,7 @@ class Logger {
          *
          * @param port Port on which the logger should listen for client connections
          */
-        Logger(const uint16_t port = 0);
+        Logger(const uint16_t port = 23);
 
         void current_time(char* timestamp);
 
