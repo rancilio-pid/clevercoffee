@@ -238,7 +238,6 @@ void displayLogo(String displaymessagetext, String displaymessagetext2) {
  * @brief display shot timer
  */
 void displayShottimer(void) {
-
     if (FEATURE_SHOTTIMER == 0) {
         return;
     }
