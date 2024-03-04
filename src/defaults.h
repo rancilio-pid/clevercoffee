@@ -48,11 +48,11 @@ int writeSysParamsToStorage(void);
 #define STANDBY_MODE_TIME 30       // Time in minutes until the heater is turned off   
 
 #define PID_KP_START_MIN 0
-#define PID_KP_START_MAX 350
+#define PID_KP_START_MAX 999
 #define PID_TN_START_MIN 0
 #define PID_TN_START_MAX 999
 #define PID_KP_REGULAR_MIN 0
-#define PID_KP_REGULAR_MAX 200
+#define PID_KP_REGULAR_MAX 999
 #define PID_TN_REGULAR_MIN 0
 #define PID_TN_REGULAR_MAX 999
 #define PID_TV_REGULAR_MIN 0
@@ -60,7 +60,7 @@ int writeSysParamsToStorage(void);
 #define PID_I_MAX_REGULAR_MIN 0
 #define PID_I_MAX_REGULAR_MAX 999
 #define PID_KP_BD_MIN 0
-#define PID_KP_BD_MAX 200
+#define PID_KP_BD_MAX 999
 #define PID_TN_BD_MIN 0
 #define PID_TN_BD_MAX 999
 #define PID_TV_BD_MIN 0
