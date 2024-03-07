@@ -51,11 +51,10 @@ enum MACHINE {
 #define WIFICONNECTIONDELAY 10000  // delay between reconnects in ms
 
 // PID & Hardware
-#define ONLYPID 1                                // 0 = PID and preinfusion, 1 = Only PID
-#define ONLYPIDSCALE 0                           // 0 = off , 1 = OnlyPID with Scale
-#define BREWMODE 1                               // 1 = Brew by time (with preinfusion); 2 = Brew by weight (from scale)
+#define ONLYPIDSCALE 0                           // 0 = off, 1 = BREWMODE 0 with Scale
+#define BREWMODE 0                               // 0 = off (no brewing controll), 1 = Brew by time (with preinfusion), 2 = Brew by weight (from scale)
 #define FEATURE_BREWDETECTION 1                  // 0 = deactivated, 1 = activated
-#define BREWDETECTION_TYPE 1                     // 1 = Software (Onlypid 1), 2 = Hardware (Onlypid 0), 3 = optocoupler for Only PID
+#define BREWDETECTION_TYPE 1                     // 1 = Software (BREWMODE 0), 2 = Hardware (BREWMODE > 0), 3 = optocoupler for Only PID
 #define FEATURE_POWERSWITCH 0                    // 0 = deactivated, 1 = activated
 #define POWERSWITCH_TYPE Switch::TOGGLE          // Switch::TOGGLE or Switch::MOMENTARY (trigger)
 #define POWERSWITCH_MODE Switch::NORMALLY_OPEN   // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
