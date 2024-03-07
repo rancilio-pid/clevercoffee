@@ -69,7 +69,7 @@ void printScreen() {
         u8g2.print(timeBrewed / 1000, 0);
         u8g2.print("/");
 
-        if (ONLYPID == 1) {
+        if (BREWMODE == 0) {
             u8g2.print(brewtimesoftware, 0);
         }
         else {
