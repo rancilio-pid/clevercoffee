@@ -2,21 +2,28 @@
 Language:        Cpp
 # BasedOnStyle:  LLVM
 AccessModifierOffset: -4
+AlignAfterOpenBracket: Align
 AlignEscapedNewlines: Right
 AlignOperands:   Align
+AllowShortBlocksOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: true
 AllowShortEnumsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: true
+AlwaysBreakTemplateDeclarations: Yes
+BinPackParameters: false
 BraceWrapping:
   BeforeElse:      true
 BreakBeforeBraces: Custom
 BreakConstructorInitializers: BeforeColon
-ColumnLimit:     125
+ColumnLimit:     225
 CommentPragmas:  '^ IWYU pragma:'
-QualifierAlignment: Leave
 CompactNamespaces: true
+ConstructorInitializerAllOnOneLineOrOnePerLine: false
 ConstructorInitializerIndentWidth: 4
 ContinuationIndentWidth: 4
 Cpp11BracedListStyle: true
+IndentAccessModifiers: true
 IndentCaseLabels: true
 IndentCaseBlocks: true
 IndentRequires:  false
@@ -24,6 +31,8 @@ IndentPPDirectives: BeforeHash
 IndentWidth:     4
 PackConstructorInitializers: NextLineOnly
 PointerAlignment: Left
+QualifierAlignment: Leave
+ReflowComments: true
 SpaceBeforeParens: ControlStatements
 SpaceBeforeParensOptions:
   AfterControlStatements: true
