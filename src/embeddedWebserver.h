@@ -274,7 +274,7 @@ void serverSetup() {
         request->redirect("/");
     });
 
-#if (ONLYPIDSCALE == 1 || BREWMODE == 2)
+#if FEATURE_SCALE == 1
     server.on("/toggleTareScale", HTTP_POST, [](AsyncWebServerRequest *request) {
         int tare = flipUintValue(scaleTareOn);
 

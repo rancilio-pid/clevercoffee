@@ -6,7 +6,7 @@
 
 #pragma once
 
-#if (BREWMODE == 2 || ONLYPIDSCALE == 1)
+#if FEATURE_SCALE == 1
 
 void scaleCalibrate(HX711_ADC loadCell, int pin, sto_item_id_t name, float *calibration) {
     loadCell.setCalFactor(1.0);

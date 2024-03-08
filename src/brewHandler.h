@@ -54,7 +54,7 @@ unsigned long startingTime = 0;                     // start time of brew
 boolean brewPIDDisabled = false;                    // is PID disabled for delay after brew has started?
 
 // Shot timer with or without scale
-#if (ONLYPIDSCALE == 1 || BREWMODE == 2)
+#if FEATURE_SCALE == 1
     boolean scaleCalibrationOn = 0;
     boolean scaleTareOn = 0;
     int shottimerCounter = 10 ;

@@ -566,7 +566,7 @@ std::vector<DiscoveryObject> discoveryObjects = {
         #endif
     };
 
-    #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
+    #if FEATURE_SCALE == 1
         discoveryObjects.push_back(currentWeight);
         discoveryObjects.push_back(scaleCalibrateButton);
         discoveryObjects.push_back(scaleTareButton);
