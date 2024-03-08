@@ -54,7 +54,7 @@ hw_timer_t *timer = NULL;
 #include <SPI.h>
 #endif
 
-#if (BREWMODE == 2 || ONLYPIDSCALE == 1)
+#if FEATURE_SCALE == 1
     #define HX711_ADC_config_h
     #define SAMPLES 32
     #define IGN_HIGH_SAMPLE 1
@@ -1770,7 +1770,7 @@ void setup() {
         .type = kDouble,
         .section = sTempSection,
         .position = 17,
-        .show = [] { return true && (ONLYPIDSCALE == 1 || BREWMODE == 2); },
+        .show = [] { return true && FEATURE_SCALE == 1; },
         .minValue = WEIGHTSETPOINT_MIN,
         .maxValue = WEIGHTSETPOINT_MAX,
         .ptr = (void *)&weightSetpoint
@@ -1942,7 +1942,7 @@ void setup() {
         .ptr = (void *)&standbyModeTime
     };
 
-#if (ONLYPIDSCALE == 1 || BREWMODE == 2)
+#if FEATURE_SCALE == 1
     editableVars["TARE_ON"] = {
         .displayName = F("Tare"),
         .hasHelpText = false,
@@ -2051,7 +2051,7 @@ void setup() {
         mqttVars["preinfusion"] = []{ return &editableVars.at("BREW_PREINFUSION"); };
     }
 
-    if (ONLYPIDSCALE == 1 || BREWMODE == 2) {
+    if (FEATURE_SCALE == 1) {
         mqttVars["weightSetpoint"] = []{ return &editableVars.at("SCALE_WEIGHTSETPOINT"); };
         mqttVars["scaleCalibration"] = []{ return &editableVars.at("SCALE_CALIBRATION"); };
         #if SCALE_TYPE == 0
@@ -2087,7 +2087,7 @@ void setup() {
         mqttSensors["pressure"] = []{ return inputPressureFilter; };
     #endif
 
-    #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
+    #if FEATURE_SCALE == 1
         mqttSensors["currentWeight"] = []{ return weight; };
     #endif
 
@@ -2208,8 +2208,8 @@ void setup() {
 
     temperature -= brewTempOffset;
 
-    // Init Scale by BREWMODE 2 or SHOTTIMER 2
-    #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
+    // Init Scale 
+    #if FEATURE_SCALE == 1
         initScale();
     #endif
 
@@ -2223,7 +2223,7 @@ void setup() {
     previousMillisOptocouplerReading = currentTime;
     lastMQTTConnectionAttempt = currentTime;
 
-    #if (BREWMODE == 2)
+    #if FEATURE_SCALE == 1
         previousMillisScale = currentTime;
     #endif
 
@@ -2334,7 +2334,7 @@ void looppid() {
         }
     }
 
-    #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
+    #if FEATURE_SCALE == 1
         checkWeight();  // Check Weight Scale in the loop
     #endif
 
@@ -2369,7 +2369,7 @@ void looppid() {
 
     handleMachineState();
 
-    #if (ONLYPIDSCALE == 1)  // only by shottimer 2, scale
+    #if (FEATURE_SCALE == 1 && BREWMODE == 0)  // SHOTTIMER with scale
         shottimerscale();
     #endif
 
@@ -2566,14 +2566,14 @@ void setBackflush(int backflush) {
     backflushOn = backflush;
 }
 
-#if (ONLYPIDSCALE == 1 || BREWMODE == 2)
-void setScaleCalibration(int calibration) {
-    scaleCalibrationOn = calibration;
-}
+#if FEATURE_SCALE == 1
+    void setScaleCalibration(int calibration) {
+        scaleCalibrationOn = calibration;
+    }
 
-void setScaleTare(int tare) {
-    scaleTareOn = tare;
-}
+    void setScaleTare(int tare) {
+        scaleTareOn = tare;
+    }
 #endif
 
 void setSteamMode(int steamMode) {

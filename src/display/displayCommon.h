@@ -272,7 +272,7 @@ void displayShottimer(void) {
         u8g2.sendBuffer();
     }
 
-    #if (ONLYPIDSCALE == 1 || BREWMODE == 2)
+    #if FEATURE_SCALE == 1
         if ((machineState == kBrew) && SHOTTIMER_TYPE == 2) {
             u8g2.clearBuffer();
 
