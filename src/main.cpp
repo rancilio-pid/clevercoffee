@@ -110,7 +110,7 @@ int offlineMode = 0;
 const int brewDetectionMode = BREWDETECTION_TYPE;
 const int optocouplerType = OPTOCOUPLER_TYPE;
 const boolean ota = OTA;
-int BrewMode = BREWMODE;
+int brewControlType = BREWCONTROL_TYPE;
 
 // Display
 uint8_t oled_i2c = OLED_I2C;
@@ -946,8 +946,8 @@ void handleMachineState() {
                     break;
             }
 
-            if ((timeBrewed > 0 && BREWMODE == 0) ||  // timeBrewed without controlling brew
-                (BREWMODE > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished))
+            if ((timeBrewed > 0 && BREWCONTROL_TYPE == 0) ||  // timeBrewed without controlling brew
+                (BREWCONTROL_TYPE > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished))
             {
                 machineState = kBrew;
 
@@ -1001,8 +1001,8 @@ void handleMachineState() {
             }
 
             // is a brew running? (values are set in brewDetection() above)
-            if ((timeBrewed > 0 && BREWMODE == 0) ||
-                (BREWMODE > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished))
+            if ((timeBrewed > 0 && BREWCONTROL_TYPE == 0) ||
+                (BREWCONTROL_TYPE > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished))
             {
                 machineState = kBrew;
 
@@ -1049,8 +1049,8 @@ void handleMachineState() {
         case kPidNormal:
             brewDetection();
 
-            if ((timeBrewed > 0 && BREWMODE == 0) ||  // timeBrewed with Only PID
-                (BREWMODE > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished))
+            if ((timeBrewed > 0 && BREWCONTROL_TYPE == 0) ||
+                (BREWCONTROL_TYPE > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished))
             {
                 machineState = kBrew;
 
@@ -1106,14 +1106,14 @@ void handleMachineState() {
                 LOGF(DEBUG, "(tB,T,hra) --> %5.2f %6.2f %8.2f", (double)(millis() - startingTime) / 1000, temperature, tempRateAverage);
             }
 
-            if ((timeBrewed == 0 && brewDetectionMode == 3 && BREWMODE == 0) || // PID + optocoupler: optocoupler BD timeBrewed == 0 -> switch is off again
-                ((currBrewState == kBrewIdle || currBrewState == kWaitBrewOff) && BREWMODE > 0)) // Hardware BD
+            if ((timeBrewed == 0 && brewDetectionMode == 3 && BREWCONTROL_TYPE == 0) || // PID + optocoupler: optocoupler BD timeBrewed == 0 -> switch is off again
+                ((currBrewState == kBrewIdle || currBrewState == kWaitBrewOff) && BREWCONTROL_TYPE > 0)) // Hardware BD
             {
                 // delay shot timer display for voltage sensor or hw brew toggle switch (brew counter)
                 machineState = kShotTimerAfterBrew;
                 lastBrewTimeMillis = millis();  // for delay
             }
-            else if (brewDetectionMode == 1 && BREWMODE == 0 && isBrewDetected == 0) {   // SW BD, kBrew was active for set time
+            else if (brewDetectionMode == 1 && BREWCONTROL_TYPE == 0 && isBrewDetected == 0) {   // SW BD, kBrew was active for set time
                 // when Software brew is finished, direct to PID BD
                 machineState = kBrewDetectionTrailing;
             }
@@ -1178,8 +1178,8 @@ void handleMachineState() {
                 machineState = kPidNormal;
             }
 
-            if ((timeBrewed > 0 && BREWMODE == 0 && brewDetectionMode == 3) ||  // Allow brew directly after BD only when using only PID AND hardware brew switch detection
-                (BREWMODE > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished))
+            if ((timeBrewed > 0 && BREWCONTROL_TYPE == 0 && brewDetectionMode == 3) ||  // Allow brew directly after BD only when using BREWCONTROL_TYPE 0 AND hardware brew switch detection
+                (BREWCONTROL_TYPE > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished))
             {
                 machineState = kBrew;
             }
@@ -1243,7 +1243,7 @@ void handleMachineState() {
                 brewDetection();
             }
 
-            if (brewDetectionMode == 1 && BREWMODE == 0) {
+            if (brewDetectionMode == 1 && BREWCONTROL_TYPE == 0) {
                 // if machine cooled down to 2°C above setpoint, enabled PID again
                 if (tempRateAverage > 0 && temperature < brewSetpoint + 2) {
                     machineState = kPidNormal;
@@ -1731,7 +1731,7 @@ void setup() {
         .type = kDouble,
         .section = sTempSection,
         .position = 14,
-        .show = [] { return true && BREWMODE > 0; },
+        .show = [] { return true && BREWCONTROL_TYPE > 0; },
         .minValue = BREW_TIME_MIN,
         .maxValue = BREW_TIME_MAX,
         .ptr = (void *)&brewTime
@@ -1744,7 +1744,7 @@ void setup() {
         .type = kDouble,
         .section = sTempSection,
         .position = 15,
-        .show = [] { return true && BREWMODE > 0; },
+        .show = [] { return true && BREWCONTROL_TYPE > 0; },
         .minValue = PRE_INFUSION_PAUSE_MIN,
         .maxValue = PRE_INFUSION_PAUSE_MAX,
         .ptr = (void *)&preinfusionPause
@@ -1757,7 +1757,7 @@ void setup() {
         .type = kDouble,
         .section = sTempSection,
         .position = 16,
-        .show = [] { return true && BREWMODE > 0; },
+        .show = [] { return true && BREWCONTROL_TYPE > 0; },
         .minValue = PRE_INFUSION_TIME_MIN,
         .maxValue = PRE_INFUSION_TIME_MAX,
         .ptr = (void *)&preinfusion
@@ -2045,7 +2045,7 @@ void setup() {
     mqttVars["steamKp"] = []{ return &editableVars.at("STEAM_KP"); };
     mqttVars["standbyModeOn"] = []{ return &editableVars.at("STANDBY_MODE_ON"); };
 
-    if (BREWMODE > 0) {
+    if (BREWCONTROL_TYPE > 0) {
         mqttVars["brewtime"] = []{ return &editableVars.at("BREW_TIME"); };
         mqttVars["preinfusionpause"] = []{ return &editableVars.at("BREW_PREINFUSIONPAUSE"); };
         mqttVars["preinfusion"] = []{ return &editableVars.at("BREW_PREINFUSION"); };
@@ -2338,7 +2338,7 @@ void looppid() {
         checkWeight();  // Check Weight Scale in the loop
     #endif
 
-    #if (BREWMODE > 0)
+    #if (BREWCONTROL_TYPE > 0)
         brew();
     #endif
 
@@ -2369,7 +2369,7 @@ void looppid() {
 
     handleMachineState();
 
-    #if (FEATURE_SCALE == 1 && BREWMODE == 0)  // SHOTTIMER with scale
+    #if (FEATURE_SCALE == 1 && BREWCONTROL_TYPE == 0)  // SHOTTIMER with scale
         shottimerscale();
     #endif
 

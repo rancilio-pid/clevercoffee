@@ -230,7 +230,7 @@ void backflush() {
     }
 }
 
-#if (BREWMODE == 1)  
+#if (BREWCONTROL_TYPE == 1)  
 /**
  * @brief Time base brew mode
  */
@@ -350,7 +350,7 @@ void brew() {
 }
 #endif
 
-#if (BREWMODE == 2)
+#if (BREWCONTROL_TYPE == 2)
 /**
  * @brief Weight based brew mode
  */
