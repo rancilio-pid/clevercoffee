@@ -1,0 +1,19 @@
+name: Format
+
+on: [push, pull_request]
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: PlatformIO Run
+        uses: karniv00l/platformio-run-action@v1
+        with:
+          environments: "esp32_usb"
+          targets: "check-format"
+          silent: false
+          verbose: true
+          disable-auto-clean: false
