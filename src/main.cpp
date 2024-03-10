@@ -2111,12 +2111,12 @@ void setup() {
 
     if (FEATURE_POWERSWITCH) {
         powerSwitchPin = new GPIOPin(PIN_POWERSWITCH, GPIOPin::IN_HARDWARE);
-        powerSwitch = new IOSwitch(*powerSwitchPin, POWERSWITCH_TYPE);
+        powerSwitch = new IOSwitch(*powerSwitchPin, POWERSWITCH_TYPE, POWERSWITCH_MODE);
     }
 
     if (FEATURE_STEAMSWITCH) {
         steamSwitchPin = new GPIOPin(PIN_STEAMSWITCH, GPIOPin::IN_HARDWARE);
-        steamSwitch = new IOSwitch(*steamSwitchPin, STEAMSWITCH_TYPE);
+        steamSwitch = new IOSwitch(*steamSwitchPin, STEAMSWITCH_TYPE, STEAMSWITCH_MODE);
     }
 
     // IF optocoupler selected
@@ -2128,9 +2128,9 @@ void setup() {
             pinMode(PIN_BREWSWITCH, INPUT_PULLUP);
         }
     }
-    else {
+    else if (FEATURE_BREWSWITCH) {
         brewSwitchPin = new GPIOPin(PIN_BREWSWITCH, GPIOPin::IN_HARDWARE);
-        brewSwitch = new IOSwitch(*brewSwitchPin, BREWSWITCH_TYPE);
+        brewSwitch = new IOSwitch(*brewSwitchPin, BREWSWITCH_TYPE, BREWSWITCH_MODE);
     }
 
     if (LED_TYPE == LED::STANDARD) {

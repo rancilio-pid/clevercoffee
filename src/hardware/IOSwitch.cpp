@@ -7,9 +7,10 @@
 #include "GPIOPin.h"
 #include "IOSwitch.h"
 
-IOSwitch::IOSwitch(GPIOPin& gpioInstance, Type type)
+IOSwitch::IOSwitch(GPIOPin& gpioInstance, Type type, Mode mode)
     : gpio(gpioInstance),
       switchType(type),
+      switchMode(mode),
       debounceDelay(20),
       longPressDuration(500),
       lastState(LOW),
@@ -29,8 +30,8 @@ bool IOSwitch::isPressed() {
     }
 
     if ((currentMillis - lastDebounceTime) > debounceDelay) {
-        if (reading != currentState) {
-            currentState = reading;
+        if ((reading ^ switchMode) != currentState) {
+            currentState = reading ^ switchMode;
 
             if (currentState == LOW) {
                 lastStateChangeTime = currentMillis;
@@ -73,4 +74,8 @@ GPIOPin& IOSwitch::getGPIOInstance() {
 
 void IOSwitch::setType(Type type) {
     switchType = type;
+}
+
+void IOSwitch::setMode(Mode mode) {
+    switchMode = mode;
 }
