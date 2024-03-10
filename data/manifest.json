@@ -1,0 +1,16 @@
+{
+    "short_name": "Clever Coffee",
+    "name": "Clever Coffee PID",
+    "icons": [
+      {
+        "src": "/img/logo.png",
+        "type": "image/png",
+        "sizes": "180x160"
+      }
+    ],
+    "id": "/",
+    "start_url": "/",
+    "display": "standalone",
+    "scope": "/",
+    "theme_color": "#6C757D"
+}
