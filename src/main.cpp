@@ -475,63 +475,6 @@ void testEmergencyStop() {
 }
 
 /**
- * @brief FIR moving average filter for software brew detection
- */
-void calculateTemperatureMovingAverage() {
-    const int numValues = 15;                      // moving average filter length
-    static double tempValues[numValues];           // array of temp values
-    static unsigned long timeValues[numValues];    // array of time values
-    static double tempChangeRates[numValues];
-    static int valueIndex = 1;                     // the index of the current value
-
-    if (brewDetectionMode == 1 && !movingAverageInitialized) {
-        for (int index = 0; index < numValues; index++) {
-            tempValues[index] = temperature;
-            timeValues[index] = 0;
-            tempChangeRates[index] = 0;
-        }
-
-        movingAverageInitialized = true;
-    }
-
-    timeValues[valueIndex] = millis();
-    tempValues[valueIndex] = temperature;
-
-    // local change rate of temperature
-    double tempChangeRate = 0;
-
-    if (valueIndex == numValues - 1) {
-        tempChangeRate = (tempValues[numValues - 1] - tempValues[0]) / (timeValues[numValues - 1] - timeValues[0]) * 10000;
-    }
-    else {
-        tempChangeRate = (tempValues[valueIndex] - tempValues[valueIndex + 1]) /
-                        (timeValues[valueIndex] - timeValues[valueIndex + 1]) * 10000;
-    }
-
-    tempChangeRates[valueIndex] = tempChangeRate;
-
-    double totalTempChangeRateSum = 0;
-
-    for (int i = 0; i < numValues; i++) {
-        totalTempChangeRateSum += tempChangeRates[i];
-    }
-
-    tempRateAverage = totalTempChangeRateSum / numValues * 100;
-
-    if (tempRateAverage < tempChangeRateAverageMin) {
-        tempChangeRateAverageMin = tempRateAverage;
-    }
-
-    if (valueIndex >= numValues - 1) {
-        // ...wrap around to the beginning:
-        valueIndex = 0;
-    }
-    else {
-        valueIndex++;
-    }
-}
-
-/**
  * @brief check sensor value.
  * @return If < 0 or difference between old and new >25, then increase error.
  *      If error is equal to maxErrorCounter, then set sensorError
@@ -590,10 +533,7 @@ void refreshTemp() {
                     // be read at least one time at system startup
         }
 
-        if (brewDetectionMode == 1) {
-            calculateTemperatureMovingAverage();
-        }
-        else if (!movingAverageInitialized) {
+        if (!movingAverageInitialized) {
             movingAverageInitialized = true;
         }
     }
@@ -710,21 +650,10 @@ char *number2string(unsigned int in) {
  * @brief detect if a brew is running
  */
 void brewDetection() {
-    if (brewDetectionMode == 1 && brewSensitivity == 0) return;  // abort brewdetection if deactivated
+    if (brewDetectionMode == 0) 
+    return;  
 
-    // Brew detection: 1 = software solution, 2 = hardware, 3 = voltage sensor
-    if (brewDetectionMode == 1) {
-        if (isBrewDetected == 1) {
-            timeBrewed = millis() - timeBrewDetection;
-        }
-
-        // deactivate brewtimer after end of brewdetection pid
-        if (millis() - timeBrewDetection > brewtimesoftware * 1000 && isBrewDetected == 1) {
-            isBrewDetected = 0;  // rearm brewDetection
-            timeBrewed = 0;
-        }
-    }
-    else if (brewDetectionMode == 2) {
+    if (brewDetectionMode == 2) {
         if (millis() - timeBrewDetection > brewtimesoftware * 1000 && isBrewDetected == 1) {
             isBrewDetected = 0;  // rearm brewDetection
         }
@@ -749,15 +678,8 @@ void brewDetection() {
     }
 
     // Activate brew detection
-    if (brewDetectionMode == 1) {  // SW BD
-        // BD PID only +/- 4 °C, no detection if HW was active
-        if (tempRateAverage <= -brewSensitivity && isBrewDetected == 0 && (fabs(temperature - brewSetpoint) < 5)) {
-            LOG(DEBUG, "SW Brew detected");
-            timeBrewDetection = millis();
-            isBrewDetected = 1;
-        }
-    }
-    else if (brewDetectionMode == 2) {  // HW BD
+
+ if (brewDetectionMode == 2) {  // Hardware Switch
         if (currBrewState > kBrewIdle && brewDetected == 0) {
             LOG(DEBUG, "HW Brew detected");
             timeBrewDetection = millis();
@@ -765,7 +687,7 @@ void brewDetection() {
             brewDetected = 1;
         }
     }
-    else if (brewDetectionMode == 3) {  // voltage sensor
+    else if (brewDetectionMode == 3) {  // optocoupler
         switch (machine) {
             case QuickMill:
                 if (!coolingFlushDetectedQM) {
@@ -1101,21 +1023,12 @@ void handleMachineState() {
         case kBrew:
             brewDetection();
 
-            // Output brew time, temp and tempRateAverage during brew (used for SW BD only)
-            if (FEATURE_BREWDETECTION == 1 && BREWDETECTION_TYPE == 1 && logbrew.check()) {
-                LOGF(DEBUG, "(tB,T,hra) --> %5.2f %6.2f %8.2f", (double)(millis() - startingTime) / 1000, temperature, tempRateAverage);
-            }
-
             if ((timeBrewed == 0 && brewDetectionMode == 3 && BREWCONTROL_TYPE == 0) || // PID + optocoupler: optocoupler BD timeBrewed == 0 -> switch is off again
                 ((currBrewState == kBrewIdle || currBrewState == kWaitBrewOff) && BREWCONTROL_TYPE > 0)) // Hardware BD
             {
-                // delay shot timer display for voltage sensor or hw brew toggle switch (brew counter)
+                // delay shot timer display for optocoupler or hw brew toggle switch 
                 machineState = kShotTimerAfterBrew;
                 lastBrewTimeMillis = millis();  // for delay
-            }
-            else if (brewDetectionMode == 1 && BREWCONTROL_TYPE == 0 && isBrewDetected == 0) {   // SW BD, kBrew was active for set time
-                // when Software brew is finished, direct to PID BD
-                machineState = kBrewDetectionTrailing;
             }
 
             if (steamON == 1) {
@@ -1241,13 +1154,6 @@ void handleMachineState() {
                  * brewDetection() detects new steam request
                  */
                 brewDetection();
-            }
-
-            if (brewDetectionMode == 1 && BREWCONTROL_TYPE == 0) {
-                // if machine cooled down to 2°C above setpoint, enabled PID again
-                if (tempRateAverage > 0 && temperature < brewSetpoint + 2) {
-                    machineState = kPidNormal;
-                }
             }
 
             if ((brewDetectionMode == 3 || brewDetectionMode == 2) && temperature < brewSetpoint + 2) {
@@ -1871,22 +1777,6 @@ void setup() {
         .minValue = BREW_SW_TIME_MIN,
         .maxValue = BREW_SW_TIME_MAX,
         .ptr = (void *)&brewtimesoftware
-    };
-
-    editableVars["PID_BD_SENSITIVITY"] = {
-        .displayName = F("PID BD Sensitivity"),
-        .hasHelpText = true,
-        .helpText = F("Software brew detection sensitivity that looks at "
-                      "average temperature, <a href='https://manual.rancilio-pid.de/de/customization/"
-                      "brueherkennung.html' target='_blank'>Details</a>. "
-                      "Needs to be &gt;0 also for Hardware switch detection."),
-        .type = kDouble,
-        .section = sBDSection,
-        .position = 24,
-        .show = [] { return true && BREWDETECTION_TYPE == 1; },
-        .minValue = BD_THRESHOLD_MIN,
-        .maxValue = BD_THRESHOLD_MAX,
-        .ptr = (void *)&brewSensitivity
     };
 
     editableVars["STEAM_MODE"] = {
