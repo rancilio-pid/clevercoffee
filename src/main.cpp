@@ -2122,10 +2122,10 @@ void setup() {
     // IF optocoupler selected
     if (BREWDETECTION_TYPE == 3) {
         if (optocouplerType == HIGH) {
-            pinMode(PIN_BREWSWITCH, GPIOPin::IN_PULLDOWN);
+            pinMode(PIN_BREWSWITCH, INPUT_PULLDOWN);
         }
         else {
-            pinMode(PIN_BREWSWITCH, GPIOPin::IN_PULLUP);
+            pinMode(PIN_BREWSWITCH, INPUT_PULLUP);
         }
     }
     else {
