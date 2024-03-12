@@ -1,10 +1,41 @@
 # Contributing to CleverCoffee
 
-Thank you for considering contributing to the project. To ensure consistency and maintainability, please follow these style guidelines when submitting code changes.
+Thank you for considering contributing to the project. To ensure consistency and maintainability, please follow these style
+guidelines when submitting code changes.
 
 ## Code Style Guidelines
 
+This repository uses `clang-format` to keep a unified style across all files and to avoid changing indentation and other style
+features back and forth between different contributors. The style is enforced by the CI (the pipeline will fail if the
+submitted code does not adhere to the chosen standard) but local tools are available to ensure proper formatting before
+committing.
+
+### Running Code Formatting Automatically
+
+The recommended way of dealing with code formatting is [`pre-commit`](https://pre-commit.com/). It is a tool which registers
+as `git` hook and automatically runs whenever `git commit` is called. It will run checks against the code to be committed and
+correct any leftover formatting issues.
+
+`pre-commit` needs to be installed and activated once:
+
+```bash
+$ pip install pre-commit
+$ pre-commit install
+```
+
+### Running Code Formatting Manually
+
+The code formatting tool `clang-format` can also be invoked manually via the `platformio` build system. Two targets are
+available:
+
+* `pio run -t check-format`: This target only *checks* if the formatting adheres to the rules but does not apply any changes
+  This target is used in the CI pipeline to check proper code formatting.
+* `pio run -t format`: This target adjusts the code formatting to the coding standard.
+
 ### Coding Standards
+
+In the following, the chosen coding standards are briefly summarized. The corresponding rule set can be found in the
+`.clang-format` file of the repository.
 
 - **Indentation**: Use 4 spaces for indentation.
 - **Curly Braces**: Place opening curly braces on the same line as the statement.
