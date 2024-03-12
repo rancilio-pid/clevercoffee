@@ -653,11 +653,15 @@ void brewDetection() {
     if (brewDetectionMode == 0) 
     return;  
 
-    if (brewDetectionMode == 1) {  // Hardware Switch
-        if (millis() - timeBrewDetection > brewtimesoftware * 1000 && isBrewDetected == 1) {
-            isBrewDetected = 0;  // rearm brewDetection
+     if (brewDetectionMode == 1) {  // Hardware Switch
+        if (currBrewState > kBrewIdle && brewDetected == 0) {
+            LOG(DEBUG, "HW Brew detected");
+            timeBrewDetection = millis();
+            isBrewDetected = 1;
+            brewDetected = 1;
         }
     }
+
     else if (brewDetectionMode == 2) { // optocoupler
         // timeBrewed counter
         if ((digitalRead(PIN_BREWSWITCH) == optocouplerOn) && brewDetected == 1) {
@@ -677,16 +681,6 @@ void brewDetection() {
         }
     }
 
-    // Activate brew detection
-
- if (brewDetectionMode == 1) {  // Hardware Switch
-        if (currBrewState > kBrewIdle && brewDetected == 0) {
-            LOG(DEBUG, "HW Brew detected");
-            timeBrewDetection = millis();
-            isBrewDetected = 1;
-            brewDetected = 1;
-        }
-    }
     else if (brewDetectionMode == 2) {  // optocoupler
         switch (machine) {
             case QuickMill:
