@@ -108,7 +108,6 @@ int connectmode = CONNECTMODE;
 
 int offlineMode = 0;
 const int brewDetectionMode = BREWDETECTION_TYPE;
-const int optocouplerType = OPTOCOUPLER_TYPE;
 const boolean ota = OTA;
 int brewControlType = BREWCONTROL_TYPE;
 
@@ -136,7 +135,6 @@ int maxflushCycles = MAXFLUSHCYCLES;
 // Optocoupler
 unsigned long previousMillisOptocouplerReading = millis();
 const unsigned long intervalOptocoupler = 200;
-int optocouplerOn, optocouplerOff;
 
 // QuickMill thermoblock steam-mode (only for BREWDETECTION_TYPE = 2)
 const int maxBrewDurationForSteamModeQM_ON = 200;           // if brewtime is shorter steam-mode starts
@@ -650,12 +648,13 @@ char *number2string(unsigned int in) {
  * @brief detect if a brew is running
  */
 void brewDetection() {
-    if (brewDetectionMode == 0) 
-    return;  
+    if (brewDetectionMode == 0) {
+        return;
+    }  
 
-     if (brewDetectionMode == 1) {  // Hardware Switch
+    if (brewDetectionMode == 1) {  // Hardware Switch
         if (currBrewState > kBrewIdle && brewDetected == 0) {
-            LOG(DEBUG, "HW Brew detected");
+            LOG(DEBUG, "BREWCONTROL > 0 Switch Brew detected");
             timeBrewDetection = millis();
             isBrewDetected = 1;
             brewDetected = 1;
@@ -664,31 +663,29 @@ void brewDetection() {
 
     else if (brewDetectionMode == 2) { // optocoupler
         // timeBrewed counter
-        if ((digitalRead(PIN_BREWSWITCH) == optocouplerOn) && brewDetected == 1) {
+        if ((brewSwitch->isPressed() == HIGH) && brewDetected == 1) {
             timeBrewed = millis() - startingTime;
             lastBrewTime = timeBrewed;
         }
 
         // OFF: reset brew
-        if ((digitalRead(PIN_BREWSWITCH) == optocouplerOff) && (brewDetected == 1 || coolingFlushDetectedQM == true)) {
+        if ((brewSwitch->isPressed() == LOW) && (brewDetected == 1 || coolingFlushDetectedQM == true)) {
             isBrewDetected = 0;  // rearm brewDetection
             brewDetected = 0;
             timeOptocouplerOn = timeBrewed;  // for QuickMill
             timeBrewed = 0;
             startingTime = 0;
             coolingFlushDetectedQM = false;
-            LOG(DEBUG, "HW Brew - optocoupler - End");
+            LOG(DEBUG, "BREWCONTROL = 0 Optocoupler Brew - End");
         }
-    }
 
-    else if (brewDetectionMode == 2) {  // optocoupler
         switch (machine) {
             case QuickMill:
                 if (!coolingFlushDetectedQM) {
-                    int pvs = digitalRead(PIN_BREWSWITCH);
+                    const unsigned long minBrewDurationForSteamModeQM_ON = 50;
+                    int pvs = brewSwitch->isPressed();
 
-                    if (pvs == optocouplerOn && brewDetected == 0 &&
-                        brewSteamDetectedQM == 0 && !steamQM_active) {
+                    if (pvs == HIGH && brewDetected == 0 && brewSteamDetectedQM == 0 && !steamQM_active) {
                         timeBrewDetection = millis();
                         timeOptocouplerOn = millis();
                         isBrewDetected = 1;
@@ -699,9 +696,8 @@ void brewDetection() {
                         logbrew.reset();
                     }
 
-                    const unsigned long minBrewDurationForSteamModeQM_ON = 50;
                     if (brewSteamDetectedQM == 1 && millis()-timeOptocouplerOn > minBrewDurationForSteamModeQM_ON) {
-                        if (pvs == optocouplerOff) {
+                        if (pvs == 0) {
                             brewSteamDetectedQM = 0;
 
                             if (millis() - timeOptocouplerOn < maxBrewDurationForSteamModeQM_ON) {
@@ -712,19 +708,19 @@ void brewDetection() {
                                 LOG(ERROR, "QuickMill: neither brew nor steam");
                             }
                         }
-                        else if (millis() - timeOptocouplerOn > maxBrewDurationForSteamModeQM_ON) {
-                            if (temperature < brewSetpoint + 2) {
-                                LOG(DEBUG, "Quick Mill: brew-mode detected");
-                                startingTime = timeOptocouplerOn;
-                                brewDetected = 1;
-                                brewSteamDetectedQM = 0;
-                            }
-                            else {
-                                LOG(DEBUG, "Quick Mill: cooling-flush detected");
-                                coolingFlushDetectedQM = true;
-                                brewSteamDetectedQM = 0;
-                            }
+                    else if (millis() - timeOptocouplerOn > maxBrewDurationForSteamModeQM_ON) {
+                        if (temperature < brewSetpoint + 2) {
+                            LOG(DEBUG, "Quick Mill: brew-mode detected");
+                            startingTime = timeOptocouplerOn;
+                            brewDetected = 1;
+                            brewSteamDetectedQM = 0;
                         }
+                        else {
+                            LOG(DEBUG, "Quick Mill: cooling-flush detected");
+                            coolingFlushDetectedQM = true;
+                            brewSteamDetectedQM = 0;
+                        }
+                    }
                     }
                 }
                 break;
@@ -733,8 +729,8 @@ void brewDetection() {
             default:
                 previousMillisOptocouplerReading = millis();
 
-                if (digitalRead(PIN_BREWSWITCH) == optocouplerOn && brewDetected == 0) {
-                    LOG(DEBUG, "HW Brew - Voltage Sensor - Start");
+                if ((brewSwitch->isPressed() == HIGH) && brewDetected == 0) {
+                    LOG(DEBUG, "BREWCONTROL = 0 Optocoupler Brew - Start");
                     timeBrewDetection = millis();
                     startingTime = millis();
                     isBrewDetected = 1;
@@ -742,7 +738,7 @@ void brewDetection() {
                     lastBrewTime = 0;
                 }
         }
-    }
+    }    
 }
 
 
@@ -782,7 +778,7 @@ boolean checkSteamOffQM() {
      * thermoblock. Once the optocoupler remains OFF for longer than a
      * pump-pulse time peride the switch is turned off and steam mode finished.
      */
-    if (digitalRead(PIN_BREWSWITCH) == optocouplerOn) {
+    if (brewSwitch->isPressed() == HIGH) {  
         lastTimeOptocouplerOn = millis();
     }
 
@@ -1972,18 +1968,14 @@ void setup() {
 
     storageSetup();
 
-    if (optocouplerType == HIGH) {
-        optocouplerOn = HIGH;
-        optocouplerOff = LOW;
-    }
-    else {
-        optocouplerOn = LOW;
-        optocouplerOff = HIGH;
-    }
-
     heaterRelay.off();
     valveRelay.off();
     pumpRelay.off();
+
+    if (FEATURE_BREWSWITCH) {
+        brewSwitchPin = new GPIOPin(PIN_BREWSWITCH, GPIOPin::IN_HARDWARE);
+        brewSwitch = new IOSwitch(*brewSwitchPin, BREWSWITCH_TYPE, BREWSWITCH_MODE);
+    }
 
     if (FEATURE_POWERSWITCH) {
         powerSwitchPin = new GPIOPin(PIN_POWERSWITCH, GPIOPin::IN_HARDWARE);
@@ -1993,20 +1985,6 @@ void setup() {
     if (FEATURE_STEAMSWITCH) {
         steamSwitchPin = new GPIOPin(PIN_STEAMSWITCH, GPIOPin::IN_HARDWARE);
         steamSwitch = new IOSwitch(*steamSwitchPin, STEAMSWITCH_TYPE, STEAMSWITCH_MODE);
-    }
-
-    // IF optocoupler selected
-    if (BREWDETECTION_TYPE == 2) {
-        if (optocouplerType == HIGH) {
-            pinMode(PIN_BREWSWITCH, INPUT_PULLDOWN);
-        }
-        else {
-            pinMode(PIN_BREWSWITCH, INPUT_PULLUP);
-        }
-    }
-    else if (FEATURE_BREWSWITCH) {
-        brewSwitchPin = new GPIOPin(PIN_BREWSWITCH, GPIOPin::IN_HARDWARE);
-        brewSwitch = new IOSwitch(*brewSwitchPin, BREWSWITCH_TYPE, BREWSWITCH_MODE);
     }
 
     if (LED_TYPE == LED::STANDARD) {

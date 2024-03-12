@@ -52,8 +52,8 @@ enum MACHINE {
 
 // PID & Hardware
 #define BREWCONTROL_TYPE 0                       // 0 = off (no brewing control), 1 = Brew by time (with preinfusion), 2 = Brew by weight (from scale)
-#define FEATURE_BREWDETECTION 1                  // 0 = deactivated, 1 = activated
-#define BREWDETECTION_TYPE 1                     // 1 = Software (BREWCONTROL_TYPE 0), 2 = Hardware BREWCONTROL_TYPE 1 or 2, 3 = optocoupler for BREWCONTROL_TYPE 0 
+#define FEATURE_BREWDETECTION 0                  // 0 = deactivated, 1 = activated
+#define BREWDETECTION_TYPE 1                     // 1 = Hardware BREWCONTROL_TYPE 1 or 2, 2 = optocoupler for BREWCONTROL_TYPE 0 
 #define FEATURE_POWERSWITCH 0                    // 0 = deactivated, 1 = activated
 #define POWERSWITCH_TYPE Switch::TOGGLE          // Switch::TOGGLE or Switch::MOMENTARY (trigger)
 #define POWERSWITCH_MODE Switch::NORMALLY_OPEN   // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
@@ -62,7 +62,6 @@ enum MACHINE {
 #define BREWSWITCH_MODE Switch::NORMALLY_OPEN    // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
 #define FEATURE_STEAMSWITCH 0                    // 0 = deactivated, 1 = activated
 #define STEAMSWITCH_TYPE Switch::TOGGLE          // Switch::TOGGLE or Switch::MOMENTARY (trigger)
-#define OPTOCOUPLER_TYPE HIGH                    // BREWDETECTION 3 configuration; HIGH or LOW trigger optocoupler
 #define STEAMSWITCH_MODE Switch::NORMALLY_OPEN   // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
 #define HEATER_SSR_TYPE Relay::HIGH_TRIGGER      // HIGH_TRIGGER = relay switches when input is HIGH, vice versa for LOW_TRIGGER
 #define PUMP_VALVE_SSR_TYPE Relay::HIGH_TRIGGER  // HIGH_TRIGGER = relay switches when input is HIGH, vice versa for LOW_TRIGGER
