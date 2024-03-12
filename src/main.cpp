@@ -138,7 +138,7 @@ unsigned long previousMillisOptocouplerReading = millis();
 const unsigned long intervalOptocoupler = 200;
 int optocouplerOn, optocouplerOff;
 
-// QuickMill thermoblock steam-mode (only for BREWDETECTION_TYPE = 3)
+// QuickMill thermoblock steam-mode (only for BREWDETECTION_TYPE = 2)
 const int maxBrewDurationForSteamModeQM_ON = 200;           // if brewtime is shorter steam-mode starts
 const int minOptocouplerOffTimedForSteamModeQM_Off = 1500;  // if optocoupler-off-time is longer steam-mode ends
 unsigned long timeOptocouplerOn = 0;                        // time optocoupler switched to ON
@@ -653,12 +653,12 @@ void brewDetection() {
     if (brewDetectionMode == 0) 
     return;  
 
-    if (brewDetectionMode == 2) {
+    if (brewDetectionMode == 1) {  // Hardware Switch
         if (millis() - timeBrewDetection > brewtimesoftware * 1000 && isBrewDetected == 1) {
             isBrewDetected = 0;  // rearm brewDetection
         }
     }
-    else if (brewDetectionMode == 3) {
+    else if (brewDetectionMode == 2) { // optocoupler
         // timeBrewed counter
         if ((digitalRead(PIN_BREWSWITCH) == optocouplerOn) && brewDetected == 1) {
             timeBrewed = millis() - startingTime;
@@ -679,7 +679,7 @@ void brewDetection() {
 
     // Activate brew detection
 
- if (brewDetectionMode == 2) {  // Hardware Switch
+ if (brewDetectionMode == 1) {  // Hardware Switch
         if (currBrewState > kBrewIdle && brewDetected == 0) {
             LOG(DEBUG, "HW Brew detected");
             timeBrewDetection = millis();
@@ -687,7 +687,7 @@ void brewDetection() {
             brewDetected = 1;
         }
     }
-    else if (brewDetectionMode == 3) {  // optocoupler
+    else if (brewDetectionMode == 2) {  // optocoupler
         switch (machine) {
             case QuickMill:
                 if (!coolingFlushDetectedQM) {
@@ -1023,7 +1023,7 @@ void handleMachineState() {
         case kBrew:
             brewDetection();
 
-            if ((timeBrewed == 0 && brewDetectionMode == 3 && BREWCONTROL_TYPE == 0) || // PID + optocoupler: optocoupler BD timeBrewed == 0 -> switch is off again
+            if ((timeBrewed == 0 && brewDetectionMode == 2 && BREWCONTROL_TYPE == 0) || // PID + optocoupler: optocoupler BD timeBrewed == 0 -> switch is off again
                 ((currBrewState == kBrewIdle || currBrewState == kWaitBrewOff) && BREWCONTROL_TYPE > 0)) // Hardware BD
             {
                 // delay shot timer display for optocoupler or hw brew toggle switch 
@@ -1091,7 +1091,7 @@ void handleMachineState() {
                 machineState = kPidNormal;
             }
 
-            if ((timeBrewed > 0 && BREWCONTROL_TYPE == 0 && brewDetectionMode == 3) ||  // Allow brew directly after BD only when using BREWCONTROL_TYPE 0 AND hardware brew switch detection
+            if ((timeBrewed > 0 && BREWCONTROL_TYPE == 0 && brewDetectionMode == 2) ||  // Allow brew directly after BD only when using BREWCONTROL_TYPE 0 AND hardware brew switch detection
                 (BREWCONTROL_TYPE > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished))
             {
                 machineState = kBrew;
@@ -1149,14 +1149,14 @@ void handleMachineState() {
             break;
 
         case kCoolDown:
-            if (brewDetectionMode == 2 || brewDetectionMode == 3) {
+            if (brewDetectionMode == 1 || brewDetectionMode == 2) {
                 /* For quickmill: steam detection only via switch, calling
                  * brewDetection() detects new steam request
                  */
                 brewDetection();
             }
 
-            if ((brewDetectionMode == 3 || brewDetectionMode == 2) && temperature < brewSetpoint + 2) {
+            if ((brewDetectionMode == 1 || brewDetectionMode == 2) && temperature < brewSetpoint + 2) {
                 machineState = kPidNormal;
             }
 
@@ -1769,11 +1769,7 @@ void setup() {
         .type = kDouble,
         .section = sBDSection,
         .position = 23,
-        .show =
-            [] {
-              return true && FEATURE_BREWDETECTION == 1 &&
-                     (useBDPID || BREWDETECTION_TYPE == 1);
-            },
+        .show = [] { return true && FEATURE_BREWDETECTION == 1 && useBDPID; },
         .minValue = BREW_SW_TIME_MIN,
         .maxValue = BREW_SW_TIME_MAX,
         .ptr = (void *)&brewtimesoftware
@@ -1957,11 +1953,8 @@ void setup() {
         mqttVars["aggbKp"] = []{ return &editableVars.at("PID_BD_KP"); };
         mqttVars["aggbTn"] = []{ return &editableVars.at("PID_BD_TN"); };
         mqttVars["aggbTv"] = []{ return &editableVars.at("PID_BD_TV"); };
-
-        if (BREWDETECTION_TYPE == 1) {
-            mqttVars["brewTimer"] = []{ return &editableVars.at("PID_BD_TIME"); };
-            mqttVars["brewLimit"] = []{ return &editableVars.at("PID_BD_SENSITIVITY"); };
-        }
+        mqttVars["brewTimer"] = []{ return &editableVars.at("PID_BD_TIME"); };
+        mqttVars["brewLimit"] = []{ return &editableVars.at("PID_BD_SENSITIVITY"); };
     }
 
     // Values reported to MQTT
@@ -2009,7 +2002,7 @@ void setup() {
     }
 
     // IF optocoupler selected
-    if (BREWDETECTION_TYPE == 3) {
+    if (BREWDETECTION_TYPE == 2) {
         if (optocouplerType == HIGH) {
             pinMode(PIN_BREWSWITCH, INPUT_PULLDOWN);
         }
