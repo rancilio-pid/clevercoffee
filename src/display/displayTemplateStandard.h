@@ -12,7 +12,7 @@
  */
 void printScreen()
 {
-    if (((machineState == kAtSetpoint || machineState == kPidNormal || machineState == kBrewDetectionTrailing) ||
+    if (((machineState == kAtSetpoint || machineState == kPidNormal) ||
         ((machineState == kBrew || machineState == kShotTimerAfterBrew) && FEATURE_SHOTTIMER == 0) ||  // shottimer == 0, auch Bezug anzeigen
         machineState == kCoolDown || ((machineState == kInit || machineState == kColdStart) && FEATURE_HEATINGLOGO == 0) ||
         ((machineState == kPidOffline) && FEATURE_OFFLINELOGO == 0))
@@ -59,13 +59,8 @@ void printScreen()
             u8g2.setCursor(84, 36);
             u8g2.print(timeBrewed / 1000, 0);
             u8g2.print("/");
-
-            if (BREWCONTROL_TYPE == 0) {
-                u8g2.print(brewtimesoftware, 0);
-            }
-            else {
-                u8g2.print(totalBrewTime / 1000, 1);
-            }
+            u8g2.print(totalBrewTime / 1000, 1);
+            
         }
 
         // PID values over heat bar

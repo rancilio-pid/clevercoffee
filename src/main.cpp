@@ -85,7 +85,6 @@ enum MachineState {
     kPidNormal = 20,
     kBrew = 30,
     kShotTimerAfterBrew = 31,
-    kBrewDetectionTrailing = 35,
     kSteam = 40,
     kCoolDown = 45,
     kBackflush = 50,
@@ -107,7 +106,6 @@ int lastmachinestatepid = -1;
 int connectmode = CONNECTMODE;
 
 int offlineMode = 0;
-const int brewDetectionMode = BREWDETECTION_TYPE;
 const boolean ota = OTA;
 int brewControlType = BREWCONTROL_TYPE;
 
@@ -132,17 +130,6 @@ const unsigned long fillTime = FILLTIME;
 const unsigned long flushTime = FLUSHTIME;
 int maxflushCycles = MAXFLUSHCYCLES;
 
-// Optocoupler
-unsigned long previousMillisOptocouplerReading = millis();
-const unsigned long intervalOptocoupler = 200;
-
-// QuickMill thermoblock steam-mode (only for BREWDETECTION_TYPE = 2)
-const int maxBrewDurationForSteamModeQM_ON = 200;           // if brewtime is shorter steam-mode starts
-const int minOptocouplerOffTimedForSteamModeQM_Off = 1500;  // if optocoupler-off-time is longer steam-mode ends
-unsigned long timeOptocouplerOn = 0;                        // time optocoupler switched to ON
-unsigned long lastTimeOptocouplerOn = 0;                    // last time optocoupler was ON
-bool steamQM_active = false;                                // steam-mode is active
-bool brewSteamDetectedQM = false;                           // brew/steam detected, not sure yet what it is
 bool coolingFlushDetectedQM = false;
 
 // Pressure sensor
@@ -196,8 +183,6 @@ void loopLED();
 void loopWater();
 void printMachineState();
 char const* machinestateEnumToString(MachineState machineState);
-void initSteamQM();
-boolean checkSteamOffQM();
 char *number2string(double in);
 char *number2string(float in);
 char *number2string(int in);
@@ -243,8 +228,6 @@ double aggbTv = AGGBTV;
 #endif
 
 double aggbKd = aggbTv * aggbKp;
-double brewtimesoftware = BREW_SW_TIME;  // use userConfig time until disabling BD PID
-double brewSensitivity = BD_SENSITIVITY;  // use userConfig brew detection sensitivity
 double brewPIDDelay = BREW_PID_DELAY;      // use userConfig brew detection PID delay
 
 uint8_t standbyModeOn = 0;
@@ -269,8 +252,6 @@ SysPara<double> sysParaTempOffset(&brewTempOffset, BREW_TEMP_OFFSET_MIN, BREW_TE
 SysPara<double> sysParaBrewPIDDelay(&brewPIDDelay, BREW_PID_DELAY_MIN, BREW_PID_DELAY_MAX, STO_ITEM_BREW_PID_DELAY);
 SysPara<uint8_t> sysParaUseBDPID(&useBDPID, 0, 1, STO_ITEM_USE_BD_PID);
 SysPara<double> sysParaBrewTime(&brewTime, BREW_TIME_MIN, BREW_TIME_MAX, STO_ITEM_BREW_TIME);
-SysPara<double> sysParaBrewSwTime(&brewtimesoftware, BREW_SW_TIME_MIN, BREW_SW_TIME_MAX, STO_ITEM_BREW_SW_TIME);
-SysPara<double> sysParaBrewThresh(&brewSensitivity, BD_THRESHOLD_MIN, BD_THRESHOLD_MAX, STO_ITEM_BD_THRESHOLD);
 SysPara<uint8_t> sysParaWifiCredentialsSaved(&wifiCredentialsSaved, 0, 1, STO_ITEM_WIFI_CREDENTIALS_SAVED);
 SysPara<double> sysParaPreInfTime(&preinfusion, PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX, STO_ITEM_PRE_INFUSION_TIME);
 SysPara<double> sysParaPreInfPause(&preinfusionPause, PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, STO_ITEM_PRE_INFUSION_PAUSE);
@@ -289,7 +270,6 @@ boolean emergencyStop = false;                  // Emergency stop if temperature
 double EmergencyStopTemp = 120;                 // Temp EmergencyStopTemp
 float inX = 0, inY = 0, inOld = 0, inSum = 0;   // used for filterPressureValue()
 int signalBars = 0;                             // used for getSignalStrength()
-boolean brewDetected = 0;
 boolean setupDone = false;
 int backflushOn = 0;                            // 1 = backflush mode active
 int flushCycles = 0;                            // number of active flush cycles
@@ -303,18 +283,11 @@ const unsigned long waterCheckInterval = 200;   // Check water level every 200 m
 int waterCheckConsecutiveReads = 0;             // Counter for consecutive readings of water sensor
 const int waterCountsNeeded = 3;                // Number of same readings to change water sensing
 
-
-// Moving average for software brew detection
-double tempRateAverage = 0;             // average value of temp values
-double tempChangeRateAverageMin = 0;
-unsigned long timeBrewDetection = 0;
-int isBrewDetected = 0;                 // flag is set if brew was detected
-bool movingAverageInitialized = false;  // flag set when average filter is initialized, also used for sensor check
-
 // Sensor check
 boolean sensorError = false;
 int error = 0;
 int maxErrorCounter = 10;        // depends on intervaltempmes* , define max seconds for invalid data
+bool movingAverageInitialized = false;  // flag set when average filter is initialized
 
 // PID controller
 unsigned long previousMillistemp;    // initialisation at the end of init()
@@ -643,105 +616,6 @@ char *number2string(unsigned int in) {
     return number2string_uint;
 }
 
-
-/**
- * @brief detect if a brew is running
- */
-void brewDetection() {
-    if (brewDetectionMode == 0) {
-        return;
-    }  
-
-    if (brewDetectionMode == 1) {  // Hardware Switch
-        if (currBrewState > kBrewIdle && brewDetected == 0) {
-            LOG(DEBUG, "BREWCONTROL > 0 Switch Brew detected");
-            timeBrewDetection = millis();
-            isBrewDetected = 1;
-            brewDetected = 1;
-        }
-    }
-
-    else if (brewDetectionMode == 2) { // optocoupler
-        // timeBrewed counter
-        if ((brewSwitch->isPressed() == HIGH) && brewDetected == 1) {
-            timeBrewed = millis() - startingTime;
-            lastBrewTime = timeBrewed;
-        }
-
-        // OFF: reset brew
-        if ((brewSwitch->isPressed() == LOW) && (brewDetected == 1 || coolingFlushDetectedQM == true)) {
-            isBrewDetected = 0;  // rearm brewDetection
-            brewDetected = 0;
-            timeOptocouplerOn = timeBrewed;  // for QuickMill
-            timeBrewed = 0;
-            startingTime = 0;
-            coolingFlushDetectedQM = false;
-            LOG(DEBUG, "BREWCONTROL = 0 Optocoupler Brew - End");
-        }
-
-        switch (machine) {
-            case QuickMill:
-                if (!coolingFlushDetectedQM) {
-                    const unsigned long minBrewDurationForSteamModeQM_ON = 50;
-                    int pvs = brewSwitch->isPressed();
-
-                    if (pvs == HIGH && brewDetected == 0 && brewSteamDetectedQM == 0 && !steamQM_active) {
-                        timeBrewDetection = millis();
-                        timeOptocouplerOn = millis();
-                        isBrewDetected = 1;
-                        brewDetected = 0;
-                        lastBrewTime = 0;
-                        brewSteamDetectedQM = 1;
-                        LOG(DEBUG, "Quick Mill: setting brewSteamDetectedQM = 1");
-                        logbrew.reset();
-                    }
-
-                    if (brewSteamDetectedQM == 1 && millis()-timeOptocouplerOn > minBrewDurationForSteamModeQM_ON) {
-                        if (pvs == 0) {
-                            brewSteamDetectedQM = 0;
-
-                            if (millis() - timeOptocouplerOn < maxBrewDurationForSteamModeQM_ON) {
-                                LOG(DEBUG, "Quick Mill: steam-mode detected");
-                                initSteamQM();
-                            }
-                            else {
-                                LOG(ERROR, "QuickMill: neither brew nor steam");
-                            }
-                        }
-                    else if (millis() - timeOptocouplerOn > maxBrewDurationForSteamModeQM_ON) {
-                        if (temperature < brewSetpoint + 2) {
-                            LOG(DEBUG, "Quick Mill: brew-mode detected");
-                            startingTime = timeOptocouplerOn;
-                            brewDetected = 1;
-                            brewSteamDetectedQM = 0;
-                        }
-                        else {
-                            LOG(DEBUG, "Quick Mill: cooling-flush detected");
-                            coolingFlushDetectedQM = true;
-                            brewSteamDetectedQM = 0;
-                        }
-                    }
-                    }
-                }
-                break;
-
-            // no Quickmill:
-            default:
-                previousMillisOptocouplerReading = millis();
-
-                if ((brewSwitch->isPressed() == HIGH) && brewDetected == 0) {
-                    LOG(DEBUG, "BREWCONTROL = 0 Optocoupler Brew - Start");
-                    timeBrewDetection = millis();
-                    startingTime = millis();
-                    isBrewDetected = 1;
-                    brewDetected = 1;
-                    lastBrewTime = 0;
-                }
-        }
-    }    
-}
-
-
 /**
  * @brief Filter input value using exponential moving average filter (using fixed coefficients)
  *      After ~28 cycles the input is set to 99,66% if the real input value sum of inX and inY
@@ -763,32 +637,6 @@ void setEmergencyStopTemp() {
     else {
         if (EmergencyStopTemp != 120) EmergencyStopTemp = 120;
     }
-}
-
-void initSteamQM() {
-    // Initialize monitoring for steam switch off for QuickMill thermoblock
-    lastTimeOptocouplerOn = millis();  // time when optocoupler changes from ON to OFF
-    steamQM_active = true;
-    timeOptocouplerOn = 0;
-    steamON = 1;
-}
-
-boolean checkSteamOffQM() {
-    /* Monitor optocoupler during active steam mode of QuickMill
-     * thermoblock. Once the optocoupler remains OFF for longer than a
-     * pump-pulse time peride the switch is turned off and steam mode finished.
-     */
-    if (brewSwitch->isPressed() == HIGH) {  
-        lastTimeOptocouplerOn = millis();
-    }
-
-    if ((millis() - lastTimeOptocouplerOn) > minOptocouplerOffTimedForSteamModeQM_Off) {
-        lastTimeOptocouplerOn = 0;
-
-        return true;
-    }
-
-    return false;
 }
 
 /**
@@ -905,7 +753,6 @@ void handleMachineState() {
 
         // Current temperature is just below the setpoint
         case kAtSetpoint:
-            brewDetection();
 
             // when temperature has reached BrewSetpoint properly, switch to kPidNormal
             if (temperature >= brewSetpoint) {
@@ -959,7 +806,6 @@ void handleMachineState() {
             break;
 
         case kPidNormal:
-            brewDetection();
 
             if ((timeBrewed > 0 && BREWCONTROL_TYPE == 0) ||
                 (BREWCONTROL_TYPE > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished))
@@ -1011,12 +857,10 @@ void handleMachineState() {
             break;
 
         case kBrew:
-            brewDetection();
 
-            if ((timeBrewed == 0 && brewDetectionMode == 2 && BREWCONTROL_TYPE == 0) || // PID + optocoupler: optocoupler BD timeBrewed == 0 -> switch is off again
-                ((currBrewState == kBrewIdle || currBrewState == kWaitBrewOff) && BREWCONTROL_TYPE > 0)) // Hardware BD
+            if ((currBrewState == kBrewIdle || currBrewState == kWaitBrewOff) && BREWCONTROL_TYPE > 0) // Hardware BD
             {
-                // delay shot timer display for optocoupler or hw brew toggle switch 
+                // delay shot timer display for hw brew toggle switch 
                 machineState = kShotTimerAfterBrew;
                 lastBrewTimeMillis = millis();  // for delay
             }
@@ -1039,52 +883,11 @@ void handleMachineState() {
             break;
 
         case kShotTimerAfterBrew:
-            brewDetection();
 
             if (millis() - lastBrewTimeMillis > SHOTTIMERDISPLAYDELAY) {
                 LOGF(INFO, "Shot time: %4.1f s", lastBrewTime / 1000);
-                machineState = kBrewDetectionTrailing;
-                lastBrewTime = 0;
-            }
-
-            if (steamON == 1) {
-                machineState = kSteam;
-            }
-
-            if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
-                machineState = kBackflush;
-            }
-
-            if (emergencyStop) {
-                machineState = kEmergencyStop;
-            }
-
-            if (pidON == 0) {
-                machineState = kPidOffline;
-            }
-
-            if (!waterFull) {
-                machineState = kWaterEmpty;
-            }
-
-            if (sensorError) {
-                machineState = kSensorError;
-            }
-            break;
-
-        case kBrewDetectionTrailing:
-            brewDetection();
-
-            if (isBrewDetected == 0) {
-                // TODO: this needs to go back to kColdStart if kPidNormal was never reached before
-                // (currently no brew detection is run during cold start though)
                 machineState = kPidNormal;
-            }
-
-            if ((timeBrewed > 0 && BREWCONTROL_TYPE == 0 && brewDetectionMode == 2) ||  // Allow brew directly after BD only when using BREWCONTROL_TYPE 0 AND hardware brew switch detection
-                (BREWCONTROL_TYPE > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished))
-            {
-                machineState = kBrew;
+                lastBrewTime = 0;
             }
 
             if (steamON == 1) {
@@ -1139,14 +942,8 @@ void handleMachineState() {
             break;
 
         case kCoolDown:
-            if (brewDetectionMode == 1 || brewDetectionMode == 2) {
-                /* For quickmill: steam detection only via switch, calling
-                 * brewDetection() detects new steam request
-                 */
-                brewDetection();
-            }
 
-            if ((brewDetectionMode == 1 || brewDetectionMode == 2) && temperature < brewSetpoint + 2) {
+            if (temperature < brewSetpoint + 2) {
                 machineState = kPidNormal;
             }
 
@@ -1254,9 +1051,7 @@ void handleMachineState() {
                 u8g2.setPowerSave(1);
             }
 
-            brewDetection();
-
-            if (pidON || steamON || isBrewDetected) {
+            if (pidON || steamON || kBrewSwitchBrew) { //TODO Check Brew switch
                 pidON = 1;
                 resetStandbyTimer();
                 u8g2.setPowerSave(0);
@@ -1264,7 +1059,7 @@ void handleMachineState() {
                 if (steamON) {
                     machineState = kSteam;
                 }
-                else if (isBrewDetected) {
+                else if (kBrewSwitchBrew) {
                     machineState = kBrew;
                 }
                 else {
@@ -1311,8 +1106,6 @@ char const* machinestateEnumToString(MachineState machineState) {
             return "Brew";
         case kShotTimerAfterBrew:
             return "Shot Timer After Brew";
-        case kBrewDetectionTrailing:
-            return "Brew Detection Trailing";
         case kSteam:
             return "Steam";
         case kCoolDown:
@@ -1696,7 +1489,7 @@ void setup() {
         .type = kUInt8,
         .section = sBDSection,
         .position = 19,
-        .show = [] { return true && FEATURE_BREWDETECTION == 1; },
+        .show = [] { return true && FEATURE_BREWSWITCH == 1; },
         .minValue = 0,
         .maxValue = 1,
         .ptr = (void *)&useBDPID
@@ -1717,7 +1510,7 @@ void setup() {
         .type = kDouble,
         .section = sBDSection,
         .position = 20,
-        .show = [] { return true && FEATURE_BREWDETECTION == 1 && useBDPID; },
+        .show = [] { return true && useBDPID; },
         .minValue = PID_KP_BD_MIN,
         .maxValue = PID_KP_BD_MAX,
         .ptr = (void *)&aggbKp
@@ -1731,7 +1524,7 @@ void setup() {
         .type = kDouble,
         .section = sBDSection,
         .position = 21,
-        .show = [] { return true && FEATURE_BREWDETECTION == 1 && useBDPID; },
+        .show = [] { return true && useBDPID; },
         .minValue = PID_TN_BD_MIN,
         .maxValue = PID_TN_BD_MAX,
         .ptr = (void *)&aggbTn
@@ -1745,24 +1538,10 @@ void setup() {
         .type = kDouble,
         .section = sBDSection,
         .position = 22,
-        .show = [] { return true && FEATURE_BREWDETECTION == 1 && useBDPID; },
+        .show = [] { return true && useBDPID; },
         .minValue = PID_TV_BD_MIN,
         .maxValue = PID_TV_BD_MAX,
         .ptr = (void *)&aggbTv
-    };
-
-    editableVars["PID_BD_TIME"] = {
-        .displayName = F("PID BD Time (s)"),
-        .hasHelpText = true,
-        .helpText = F("Fixed time in seconds for which the BD PID will stay "
-                      "enabled (also after Brew switch is inactive again)."),
-        .type = kDouble,
-        .section = sBDSection,
-        .position = 23,
-        .show = [] { return true && FEATURE_BREWDETECTION == 1 && useBDPID; },
-        .minValue = BREW_SW_TIME_MIN,
-        .maxValue = BREW_SW_TIME_MAX,
-        .ptr = (void *)&brewtimesoftware
     };
 
     editableVars["STEAM_MODE"] = {
@@ -1938,13 +1717,12 @@ void setup() {
         mqttVars["scaleCalibrationOn"] = []{ return &editableVars.at("CALIBRATION_ON"); };
     }
 
-    if (FEATURE_BREWDETECTION == 1) {
+    if (FEATURE_BREWSWITCH == 1) {
         mqttVars["pidUseBD"] = []{ return &editableVars.at("PID_BD_ON"); };
         mqttVars["aggbKp"] = []{ return &editableVars.at("PID_BD_KP"); };
         mqttVars["aggbTn"] = []{ return &editableVars.at("PID_BD_TN"); };
         mqttVars["aggbTv"] = []{ return &editableVars.at("PID_BD_TV"); };
         mqttVars["brewTimer"] = []{ return &editableVars.at("PID_BD_TIME"); };
-        mqttVars["brewLimit"] = []{ return &editableVars.at("PID_BD_SENSITIVITY"); };
     }
 
     // Values reported to MQTT
@@ -2075,7 +1853,6 @@ void setup() {
     windowStartTime = currentTime;
     previousMillisDisplay = currentTime;
     previousMillisMQTT = currentTime;
-    previousMillisOptocouplerReading = currentTime;
     lastMQTTConnectionAttempt = currentTime;
 
     #if FEATURE_SCALE == 1
@@ -2183,14 +1960,15 @@ void looppid() {
             LOGF(TRACE, "Current PID Output: %f", pidOutput);
             LOGF(TRACE, "Current Machinestate: %s", machinestateEnumToString(machineState));
             LOGF(TRACE, "timeBrewed %f", timeBrewed);
-            LOGF(TRACE, "brewtimesoftware %f", brewtimesoftware);
-            LOGF(TRACE, "isBrewDetected %i", isBrewDetected);
-            LOGF(TRACE, "brewDetectionMode %i", brewDetectionMode);
         }
     }
 
     #if FEATURE_SCALE == 1
         checkWeight();  // Check Weight Scale in the loop
+    #endif
+
+    #if (FEATURE_BREWSWITCH > 0)
+        checkbrewswitch();
     #endif
 
     #if (BREWCONTROL_TYPE > 0)
@@ -2289,7 +2067,7 @@ void looppid() {
     }
 
     // BD PID
-    if (machineState >= kBrew && machineState <= kBrewDetectionTrailing) {
+    if (machineState >= kBrew && machineState <= kShotTimerAfterBrew) {
         if (brewPIDDelay > 0 && timeBrewed > 0 && timeBrewed < brewPIDDelay*1000) {
             //disable PID for brewPIDDelay seconds, enable PID again with new tunings after that
             if (!brewPIDDisabled) {
@@ -2511,8 +2289,6 @@ int readSysParamsFromStorage(void) {
     if (sysParaPidTnBd.getStorage() != 0) return -1;
     if (sysParaPidTvBd.getStorage() != 0) return -1;
     if (sysParaBrewTime.getStorage() != 0) return -1;
-    if (sysParaBrewSwTime.getStorage() != 0) return -1;
-    if (sysParaBrewThresh.getStorage() != 0) return -1;
     if (sysParaPreInfTime.getStorage() != 0) return -1;
     if (sysParaPreInfPause.getStorage() != 0) return -1;
     if (sysParaPidKpSteam.getStorage() != 0) return -1;
@@ -2550,8 +2326,6 @@ int writeSysParamsToStorage(void) {
     if (sysParaPidTnBd.setStorage() != 0) return -1;
     if (sysParaPidTvBd.setStorage() != 0) return -1;
     if (sysParaBrewTime.setStorage() != 0) return -1;
-    if (sysParaBrewSwTime.setStorage() != 0) return -1;
-    if (sysParaBrewThresh.setStorage() != 0) return -1;
     if (sysParaPreInfTime.setStorage() != 0) return -1;
     if (sysParaPreInfPause.setStorage() != 0) return -1;
     if (sysParaPidKpSteam.setStorage() != 0) return -1;

@@ -340,7 +340,6 @@ void brew() {
 
                 // disarmed button
                 currentMillisTemp = 0;
-                brewDetected = 0;  // rearm brewDetection
                 currBrewState = kBrewIdle;
                 timeBrewed = 0;
             }
