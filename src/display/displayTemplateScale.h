@@ -49,11 +49,11 @@ void printScreen() {
             u8g2.print("fault");
         }
         else {
-            if (brewswitch == LOW) {
-                u8g2.print(weight, 0);
+            if (machineState == kBrew) {
+                u8g2.print(weightBrew, 0);
             }
             else {
-                u8g2.print(weightBrew, 0);
+                u8g2.print(weight, 0);
             }
 
             u8g2.print("/");
