@@ -12,35 +12,37 @@
 #define FW_HOTFIX     0
 #define FW_BRANCH     "MASTER"
 
-#include "Logger.h"
-
-// Libraries
-#include <ArduinoOTA.h>
+// STL includes
 #include <map>
+
+// Libraries & Dependencies
+#include <ArduinoOTA.h>
 #include <LittleFS.h>
-#include <WiFiManager.h>
+#include "Logger.h"
+#include <os.h>
+#include <PID_v1.h>             // for PID calculation
 #include <U8g2lib.h>            // i2c display
-#include "PID_v1.h"             // for PID calculation
+#include <WiFiManager.h>
 
 // Includes
 #include "display/bitmaps.h"               // user icons for display
 #include "languages.h"          // for language translation
 #include "storage.h"
 
+// Hardware classes
+#include "hardware/GPIOPin.h"
+#include "hardware/IOSwitch.h"
+#include "hardware/LED.h"
 #include "hardware/pinmapping.h"
+#include "hardware/Relay.h"
+#include "hardware/StandardLED.h"
+#include "hardware/Switch.h"
+#include "hardware/TempSensorDallas.h"
+#include "hardware/TempSensorTSIC.h"
 
+// User configuration & defaults
 #include "userConfig.h"         // needs to be configured by the user
 #include "defaults.h"
-#include <os.h>
-#include "hardware/GPIOPin.h"
-#include "hardware/LED.h"
-#include "hardware/StandardLED.h"
-#include "hardware/Relay.h"
-#include "hardware/Switch.h"
-#include "hardware/IOSwitch.h"
-
-#include "hardware/TempSensorTSIC.h"
-#include "hardware/TempSensorDallas.h"
 
 hw_timer_t *timer = NULL;
 

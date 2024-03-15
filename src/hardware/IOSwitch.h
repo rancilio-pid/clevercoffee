@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "Switch.h"
 
 class GPIOPin;
