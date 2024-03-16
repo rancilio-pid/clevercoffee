@@ -1,6 +1,6 @@
 /**
  * @file TempSensorDallas.cpp
- * 
+ *
  * @brief Handler for Dallas DS18B20 temperature sensor
  */
 

@@ -1,6 +1,6 @@
 /**
  * @file StandardLED.h
- * 
+ *
  * @brief An LED connected to a GPIO pin
  */
 

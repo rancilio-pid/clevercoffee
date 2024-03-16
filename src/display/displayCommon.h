@@ -8,7 +8,6 @@
 
 #if (OLED_DISPLAY != 0)
 
-
 /**
  * @brief initialize display
  */
@@ -33,14 +32,14 @@ void displayWaterIcon(int x, int y) {
 /**
  * @brief Draw the system uptime at the given coordinates
  */
-void displayUptime(int x, int y, const char * format) {
+void displayUptime(int x, int y, const char* format) {
     // Show uptime of machine
     unsigned long seconds = millis() / 1000;
     unsigned long hours = seconds / 3600;
     unsigned long minutes = (seconds % 3600) / 60;
     seconds = seconds % 60;
 
-    char uptimeString[9]; 
+    char uptimeString[9];
     snprintf(uptimeString, sizeof(uptimeString), format, hours, minutes, seconds);
 
     u8g2.setFont(u8g2_font_profont11_tf);
@@ -48,7 +47,7 @@ void displayUptime(int x, int y, const char * format) {
 }
 
 /**
- * @brief Draw a WiFi signal strength indicator at the given coordinates 
+ * @brief Draw a WiFi signal strength indicator at the given coordinates
  */
 void displayWiFiStatus(int x, int y) {
     getSignalStrength();
@@ -59,7 +58,7 @@ void displayWiFiStatus(int x, int y) {
         for (int b = 0; b <= signalBars; b++) {
             u8g2.drawVLine(x + 5 + (b * 2), y + 8 - (b * 2), b * 2);
         }
-    } 
+    }
     else {
         u8g2.drawXBMP(x, y, 8, 8, Antenna_NOK_Icon);
         u8g2.setCursor(x + 5, y + 10);
@@ -70,7 +69,7 @@ void displayWiFiStatus(int x, int y) {
 }
 
 /**
- * @brief Draw an MQTT status indicator at the given coordinates if MQTT is enabled 
+ * @brief Draw an MQTT status indicator at the given coordinates if MQTT is enabled
  */
 void displayMQTTStatus(int x, int y) {
     if (FEATURE_MQTT == 1) {
@@ -78,7 +77,7 @@ void displayMQTTStatus(int x, int y) {
             u8g2.setCursor(x, y);
             u8g2.setFont(u8g2_font_profont11_tf);
             u8g2.print("MQTT");
-        } 
+        }
         else {
             u8g2.setCursor(x, y);
             u8g2.print("");
@@ -103,7 +102,7 @@ void displayThermometerOutline(int x, int y) {
 }
 
 /**
- * @brief Draw temperature bar, e.g. inside the thermometer outline. 
+ * @brief Draw temperature bar, e.g. inside the thermometer outline.
  *        Add 4 pixels to the x-coordinate and subtract 12 pixels from the y-coordinate of the thermometer.
  */
 void drawTemperaturebar(int x, int y, int heightRange) {
@@ -128,15 +127,15 @@ void displayTemperature(int x, int y) {
     u8g2.setFont(u8g2_font_fub30_tf);
 
     if (temperature < 99.999) {
-        u8g2.setCursor(x+20, y);
+        u8g2.setCursor(x + 20, y);
         u8g2.print(temperature, 0);
     }
     else {
-        u8g2.setCursor(x,y);
+        u8g2.setCursor(x, y);
         u8g2.print(temperature, 0);
     }
-    
-    u8g2.drawCircle(x+72, y+4, 3);
+
+    u8g2.drawCircle(x + 72, y + 4, 3);
 }
 
 /**
@@ -146,7 +145,7 @@ void displayBrewtime(int x, int y, double brewtime) {
     u8g2.setFont(u8g2_font_fub25_tf);
 
     if (brewtime < 10000.000) {
-        u8g2.setCursor(x+16, y);
+        u8g2.setCursor(x + 16, y);
     }
     else {
         u8g2.setCursor(x, y);
@@ -156,10 +155,10 @@ void displayBrewtime(int x, int y, double brewtime) {
     u8g2.setFont(u8g2_font_profont15_tf);
 
     if (brewtime < 10000.000) {
-        u8g2.setCursor(x+67, y+14);
+        u8g2.setCursor(x + 67, y + 14);
     }
     else {
-        u8g2.setCursor(x+69, y+14);
+        u8g2.setCursor(x + 69, y + 14);
     }
 
     u8g2.print("s");
@@ -179,8 +178,8 @@ void displayProgressbar(int value, int x, int y, int width) {
     }
 }
 
-/** 
- * @brief Draw a status bar at the top of the screen with icons for WiFi, MQTT, 
+/**
+ * @brief Draw a status bar at the top of the screen with icons for WiFi, MQTT,
  *        the system uptime and a separator line underneath
  */
 void displayStatusbar() {
@@ -190,7 +189,7 @@ void displayStatusbar() {
     if (offlineMode == 0) {
         displayWiFiStatus(4, 1);
         displayMQTTStatus(38, 0);
-    } 
+    }
     else {
         u8g2.setCursor(4, 0);
         u8g2.setFont(u8g2_font_profont11_tf);
@@ -247,9 +246,9 @@ void displayShottimer(void) {
 
         if (brewSwitchState != kBrewSwitchFlushOff) {
             u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
-        } 
+        }
         else {
-            u8g2.drawXBMP( 0, 12, Manual_Flush_Logo_width, Manual_Flush_Logo_height, Manual_Flush_Logo);
+            u8g2.drawXBMP(0, 12, Manual_Flush_Logo_width, Manual_Flush_Logo_height, Manual_Flush_Logo);
         }
 
         displayBrewtime(48, 25, timeBrewed);
@@ -273,40 +272,39 @@ void displayShottimer(void) {
     }
 
     #if FEATURE_SCALE == 1
-        if ((machineState == kBrew) && SHOTTIMER_TYPE == 2) {
-            u8g2.clearBuffer();
+    if ((machineState == kBrew) && SHOTTIMER_TYPE == 2) {
+        u8g2.clearBuffer();
 
-            // temp icon
-            u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
-            u8g2.setFont(u8g2_font_profont22_tf);
-            u8g2.setCursor(64, 15);
-            u8g2.print(timeBrewed / 1000, 1);
-            u8g2.print("s");
-            u8g2.setCursor(64, 38);
-            u8g2.print(weightBrew, 1);
-            u8g2.print("g");
-            u8g2.setFont(u8g2_font_profont11_tf);
-            displayWaterIcon(119, 1);
-            u8g2.sendBuffer();
-        }
+        // temp icon
+        u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
+        u8g2.setFont(u8g2_font_profont22_tf);
+        u8g2.setCursor(64, 15);
+        u8g2.print(timeBrewed / 1000, 1);
+        u8g2.print("s");
+        u8g2.setCursor(64, 38);
+        u8g2.print(weightBrew, 1);
+        u8g2.print("g");
+        u8g2.setFont(u8g2_font_profont11_tf);
+        displayWaterIcon(119, 1);
+        u8g2.sendBuffer();
+    }
 
-        if (((machineState == kShotTimerAfterBrew) && SHOTTIMER_TYPE == 2)) {
-            u8g2.clearBuffer();
-            u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
-            u8g2.setFont(u8g2_font_profont22_tf);
-            u8g2.setCursor(64, 15);
-            u8g2.print(lastBrewTime / 1000, 1);
-            u8g2.print("s");
-            u8g2.setCursor(64, 38);
-            u8g2.print(weightBrew, 1);
-            u8g2.print("g");
-            u8g2.setFont(u8g2_font_profont11_tf);
-            displayWaterIcon(119, 1);
-            u8g2.sendBuffer();
-        }
-    #endif  
+    if (((machineState == kShotTimerAfterBrew) && SHOTTIMER_TYPE == 2)) {
+        u8g2.clearBuffer();
+        u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
+        u8g2.setFont(u8g2_font_profont22_tf);
+        u8g2.setCursor(64, 15);
+        u8g2.print(lastBrewTime / 1000, 1);
+        u8g2.print("s");
+        u8g2.setCursor(64, 38);
+        u8g2.print(weightBrew, 1);
+        u8g2.print("g");
+        u8g2.setFont(u8g2_font_profont11_tf);
+        displayWaterIcon(119, 1);
+        u8g2.sendBuffer();
+    }
+    #endif
 }
-
 
 /**
  * @brief display heating logo
@@ -352,7 +350,7 @@ void displayMachineState() {
     if (machineState == kSteam && brewSwitchState != kBrewSwitchFlushOff) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(-1, 12, Steam_Logo_width, Steam_Logo_height, Steam_Logo);
-        
+
         displayTemperature(48, 16);
 
         displayWaterIcon(119, 1);
@@ -362,7 +360,7 @@ void displayMachineState() {
     // Water empty
     if (machineState == kWaterEmpty && brewSwitchState != kBrewSwitchFlushOff) {
         u8g2.clearBuffer();
-        u8g2.drawXBMP( 45, 0, Water_Empty_Logo_width, Water_Empty_Logo_height, Water_Empty_Logo); 
+        u8g2.drawXBMP(45, 0, Water_Empty_Logo_width, Water_Empty_Logo_height, Water_Empty_Logo);
         u8g2.setFont(u8g2_font_profont11_tf);
         u8g2.sendBuffer();
     }

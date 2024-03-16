@@ -1,6 +1,6 @@
 /**
  * @file TempSensor.h
- * 
+ *
  * @brief Interface that all temperature sensors have to implement
  */
 

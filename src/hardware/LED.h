@@ -1,6 +1,6 @@
 /**
  * @file LED.h
- * 
+ *
  * @brief Interface for handling LEDs
  */
 
@@ -14,7 +14,7 @@ class LED {
         /**
          * @enum Type
          * @brief Type of LED
-         * @details Supported types are standard LEDs which are directly connected to a GPIO pin and addressable 
+         * @details Supported types are standard LEDs which are directly connected to a GPIO pin and addressable
          *          WS2812 LEDs (NeoPixel) connected to the Status LED pin
          */
         enum Type {

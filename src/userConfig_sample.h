@@ -8,17 +8,17 @@
 #pragma once
 
 // firmware version (must match with definitions in the main source file)
-#define USR_FW_VERSION    4
+#define USR_FW_VERSION 4
 #define USR_FW_SUBVERSION 0
-#define USR_FW_HOTFIX     0
-#define USR_FW_BRANCH     "MASTER"
+#define USR_FW_HOTFIX 0
+#define USR_FW_BRANCH "MASTER"
 
 // List of supported machines
 enum MACHINE {
-    RancilioSilvia,   // MACHINEID 0
-    RancilioSilviaE,  // MACHINEID 1
-    Gaggia,           // MACHINEID 2
-    QuickMill         // MACHINEID 3
+    RancilioSilvia,  // MACHINEID 0
+    RancilioSilviaE, // MACHINEID 1
+    Gaggia,          // MACHINEID 2
+    QuickMill        // MACHINEID 3
 };
 
 /**
@@ -26,7 +26,7 @@ enum MACHINE {
  */
 
 // Machine
-#define MACHINEID RancilioSilvia   // Machine type (see enum MACHINE)
+#define MACHINEID RancilioSilvia // Machine type (see enum MACHINE)
 
 // Display
 #define OLED_DISPLAY 2             // 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64), 3 = SH1106_126x64_SPI
@@ -41,68 +41,67 @@ enum MACHINE {
 #define FEATURE_OFFLINELOGO 1      // 0 = deactivated, 1 = activated
 #define SHOTTIMERDISPLAYDELAY 3000 // time in ms that shot timer will be shown after brew finished
 
-#define LANGUAGE 0                 // LANGUAGE = 0 (DE), LANGUAGE = 1 (EN), LANGUAGE = 2 (ES)
+#define LANGUAGE 0 // LANGUAGE = 0 (DE), LANGUAGE = 1 (EN), LANGUAGE = 2 (ES)
 
 // Connectivity
-#define CONNECTMODE 1              // 0 = offline 1 = WIFI-MODE
+#define CONNECTMODE 1 // 0 = offline 1 = WIFI-MODE
 #define HOSTNAME "silvia"
-#define PASS "CleverCoffee"        // default password for WiFiManager
-#define MAXWIFIRECONNECTS 5        // maximum number of reconnection attempts, use -1 to deactivate
-#define WIFICONNECTIONDELAY 10000  // delay between reconnects in ms
+#define PASS "CleverCoffee"       // default password for WiFiManager
+#define MAXWIFIRECONNECTS 5       // maximum number of reconnection attempts, use -1 to deactivate
+#define WIFICONNECTIONDELAY 10000 // delay between reconnects in ms
 
 // PID & Hardware
-#define BREWCONTROL_TYPE 0                       // 0 = off (no brewing control), 1 = Brew by time (with preinfusion), 2 = Brew by weight (from scale)
-#define FEATURE_BREWDETECTION 1                  // 0 = deactivated, 1 = activated
-#define BREWDETECTION_TYPE 1                     // 1 = Software (BREWCONTROL_TYPE 0), 2 = Hardware BREWCONTROL_TYPE 1 or 2, 3 = optocoupler for BREWCONTROL_TYPE 0 
-#define FEATURE_POWERSWITCH 0                    // 0 = deactivated, 1 = activated
-#define POWERSWITCH_TYPE Switch::TOGGLE          // Switch::TOGGLE or Switch::MOMENTARY (trigger)
-#define POWERSWITCH_MODE Switch::NORMALLY_OPEN   // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
-#define FEATURE_BREWSWITCH 0                     // 0 = deactivated, 1 = activated
-#define BREWSWITCH_TYPE Switch::TOGGLE           // Switch::TOGGLE or Switch::MOMENTARY (trigger)
-#define BREWSWITCH_MODE Switch::NORMALLY_OPEN    // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
-#define FEATURE_STEAMSWITCH 0                    // 0 = deactivated, 1 = activated
-#define STEAMSWITCH_TYPE Switch::TOGGLE          // Switch::TOGGLE or Switch::MOMENTARY (trigger)
-#define OPTOCOUPLER_TYPE HIGH                    // BREWDETECTION 3 configuration; HIGH or LOW trigger optocoupler
-#define STEAMSWITCH_MODE Switch::NORMALLY_OPEN   // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
-#define HEATER_SSR_TYPE Relay::HIGH_TRIGGER      // HIGH_TRIGGER = relay switches when input is HIGH, vice versa for LOW_TRIGGER
-#define PUMP_VALVE_SSR_TYPE Relay::HIGH_TRIGGER  // HIGH_TRIGGER = relay switches when input is HIGH, vice versa for LOW_TRIGGER
-#define FEATURE_STATUS_LED 0                     // Blink status LED when temp is in range, 0 = deactivated, 1 = activated
-#define FEATURE_BREW_LED 0                       // Turn on brew LED when brew is started, 0 = deactivated, 1 = activated
-#define LED_TYPE LED::STANDARD                   // STANDARD_LED for an LED connected to a GPIO pin, WS2812 for adressable LEDs
-#define FEATURE_WATER_SENS 0                     // 0 = deactivated, 1 = activated
-#define WATER_SENS_TYPE 0                        // 0 = water sensor XKC-Y25-NPN connected, 1 = XKC-Y25-PNP connected
-#define FEATURE_PRESSURESENSOR 0                 // 0 = deactivated, 1 = activated
+#define BREWCONTROL_TYPE 0                      // 0 = off (no brewing control), 1 = Brew by time (with preinfusion), 2 = Brew by weight (from scale)
+#define FEATURE_BREWDETECTION 1                 // 0 = deactivated, 1 = activated
+#define BREWDETECTION_TYPE 1                    // 1 = Software (BREWCONTROL_TYPE 0), 2 = Hardware BREWCONTROL_TYPE 1 or 2, 3 = optocoupler for BREWCONTROL_TYPE 0
+#define FEATURE_POWERSWITCH 0                   // 0 = deactivated, 1 = activated
+#define POWERSWITCH_TYPE Switch::TOGGLE         // Switch::TOGGLE or Switch::MOMENTARY (trigger)
+#define POWERSWITCH_MODE Switch::NORMALLY_OPEN  // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
+#define FEATURE_BREWSWITCH 0                    // 0 = deactivated, 1 = activated
+#define BREWSWITCH_TYPE Switch::TOGGLE          // Switch::TOGGLE or Switch::MOMENTARY (trigger)
+#define BREWSWITCH_MODE Switch::NORMALLY_OPEN   // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
+#define FEATURE_STEAMSWITCH 0                   // 0 = deactivated, 1 = activated
+#define STEAMSWITCH_TYPE Switch::TOGGLE         // Switch::TOGGLE or Switch::MOMENTARY (trigger)
+#define OPTOCOUPLER_TYPE HIGH                   // BREWDETECTION 3 configuration; HIGH or LOW trigger optocoupler
+#define STEAMSWITCH_MODE Switch::NORMALLY_OPEN  // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
+#define HEATER_SSR_TYPE Relay::HIGH_TRIGGER     // HIGH_TRIGGER = relay switches when input is HIGH, vice versa for LOW_TRIGGER
+#define PUMP_VALVE_SSR_TYPE Relay::HIGH_TRIGGER // HIGH_TRIGGER = relay switches when input is HIGH, vice versa for LOW_TRIGGER
+#define FEATURE_STATUS_LED 0                    // Blink status LED when temp is in range, 0 = deactivated, 1 = activated
+#define FEATURE_BREW_LED 0                      // Turn on brew LED when brew is started, 0 = deactivated, 1 = activated
+#define LED_TYPE LED::STANDARD                  // STANDARD_LED for an LED connected to a GPIO pin, WS2812 for adressable LEDs
+#define FEATURE_WATER_SENS 0                    // 0 = deactivated, 1 = activated
+#define WATER_SENS_TYPE 0                       // 0 = water sensor XKC-Y25-NPN connected, 1 = XKC-Y25-PNP connected
+#define FEATURE_PRESSURESENSOR 0                // 0 = deactivated, 1 = activated
 
 // Brew Scale
-#define FEATURE_SCALE 0                          // 0 = deactivated, 1 = activated
-#define SCALE_TYPE 0                             // 0 = one HX711 per load cell, 1 = Only a single HX711 with two channels
-#define SCALE_SAMPLES 2                          // Load cell sample rate
+#define FEATURE_SCALE 0 // 0 = deactivated, 1 = activated
+#define SCALE_TYPE 0    // 0 = one HX711 per load cell, 1 = Only a single HX711 with two channels
+#define SCALE_SAMPLES 2 // Load cell sample rate
 
 // Backflush values
-#define FILLTIME 5000              // time in ms the pump is running
-#define FLUSHTIME 10000            // time in ms the 3-way valve is open -> backflush
-#define MAXFLUSHCYCLES 5           // number of cycles the backflush should run, 0 = disabled
+#define FILLTIME 5000    // time in ms the pump is running
+#define FLUSHTIME 10000  // time in ms the 3-way valve is open -> backflush
+#define MAXFLUSHCYCLES 5 // number of cycles the backflush should run, 0 = disabled
 
 // PlatformIO OTA
-#define OTA true                   // true = OTA activated, false = OTA deactivated
-#define OTAPASS "otapass"          // Password for OTA updates
+#define OTA true          // true = OTA activated, false = OTA deactivated
+#define OTAPASS "otapass" // Password for OTA updates
 
 // MQTT
-#define FEATURE_MQTT 0                                  // 0 = deactivated, 1 = activated
+#define FEATURE_MQTT 0 // 0 = deactivated, 1 = activated
 #define MQTT_USERNAME "mymqttuser"
 #define MQTT_PASSWORD "mymqttpass"
-#define MQTT_TOPIC_PREFIX "custom/Küche."               // topic will be "<MQTT_TOPIC_PREFIX><HOSTNAME>/<READING>"
-#define MQTT_SERVER_IP "XXX.XXX.XXX.XXX"                // IP-Address of the MQTT Server
-#define MQTT_SERVER_PORT 1883                           // Port of the specified MQTT Server
-#define MQTT_HASSIO_SUPPORT 0                           // Enables the Homeassistant Auto Discovery Feature
-#define MQTT_HASSIO_DISCOVERY_PREFIX "homeassistant"    // Homeassistant Auto Discovery Prefix
+#define MQTT_TOPIC_PREFIX "custom/Küche."            // topic will be "<MQTT_TOPIC_PREFIX><HOSTNAME>/<READING>"
+#define MQTT_SERVER_IP "XXX.XXX.XXX.XXX"             // IP-Address of the MQTT Server
+#define MQTT_SERVER_PORT 1883                        // Port of the specified MQTT Server
+#define MQTT_HASSIO_SUPPORT 0                        // Enables the Homeassistant Auto Discovery Feature
+#define MQTT_HASSIO_DISCOVERY_PREFIX "homeassistant" // Homeassistant Auto Discovery Prefix
 
 // PID Parameters (not yet in Web interface)
-#define EMA_FACTOR 0.6             // Smoothing of input that is used for Tv (derivative component of PID). Smaller means less smoothing but also less delay, 0 means no filtering
+#define EMA_FACTOR 0.6 // Smoothing of input that is used for Tv (derivative component of PID). Smaller means less smoothing but also less delay, 0 means no filtering
 
-#define TEMP_SENSOR 2               // Temp sensor type: 1 = DS18B20, 2 = TSIC306
+#define TEMP_SENSOR 2 // Temp sensor type: 1 = DS18B20, 2 = TSIC306
 
 // Log level for serial console, valid options (all with Logger::Level:: prefix) are:
 // TRACE, DEBUG, INFO, WARNING, ERROR, FATAL
 #define LOGLEVEL Logger::Level::INFO
-

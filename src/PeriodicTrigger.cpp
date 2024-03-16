@@ -24,9 +24,7 @@ bool PeriodicTrigger::check() {
     }
 }
 
-void PeriodicTrigger::reset() {
-    m_tref = millis();
-}
+void PeriodicTrigger::reset() { m_tref = millis(); }
 
 void PeriodicTrigger::reset(unsigned long ms) {
     m_triggerInterval = ms;

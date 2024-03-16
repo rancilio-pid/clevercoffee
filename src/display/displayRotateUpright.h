@@ -54,7 +54,7 @@ void displayLogo(String displaymessagetext, String displaymessagetext2) {
     u8g2.sendBuffer();
 }
 
-#if 0 //not used a.t.m.
+#if 0 // not used a.t.m.
 /**
  * @brief display emergency stop
  */
@@ -84,15 +84,11 @@ void displayEmergencyStop(void) {
 }
 #endif
 
-
 /**
  * @brief display shot timer
  */
 void displayShottimer(void) {
-    if (((timeBrewed > 0 && BREWCONTROL_TYPE == 0) ||
-        (BREWCONTROL_TYPE > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished))
-        && FEATURE_SHOTTIMER == 1 && SHOTTIMER_TYPE == 1)
-    {
+    if (((timeBrewed > 0 && BREWCONTROL_TYPE == 0) || (BREWCONTROL_TYPE > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished)) && FEATURE_SHOTTIMER == 1 && SHOTTIMER_TYPE == 1) {
         u8g2.clearBuffer();
 
         // draw temp icon
@@ -105,7 +101,7 @@ void displayShottimer(void) {
     }
 
     if (FEATURE_SHOTTIMER == 1 && SHOTTIMER_TYPE == 1 && millis() >= lastBrewTimeMillis && // directly after creating lastbrewTimeMillis (happens when turning off the brew switch, case 43 in the code) should be started
-        lastBrewTimeMillis + SHOTTIMERDISPLAYDELAY >= millis() && // should run until millis() has caught up with SHOTTIMERDISPLAYDELAY, this can be used to control the display duration
+        lastBrewTimeMillis + SHOTTIMERDISPLAYDELAY >= millis() &&                          // should run until millis() has caught up with SHOTTIMERDISPLAYDELAY, this can be used to control the display duration
         lastBrewTimeMillis < totalBrewTime) // if the totalBrewTime is reached automatically, nothing should be done, otherwise wrong time will be displayed because switch is pressed later than totalBrewTime
     {
         u8g2.clearBuffer();

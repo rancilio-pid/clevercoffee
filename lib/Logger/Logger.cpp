@@ -1,21 +1,20 @@
-#include <utility>
 #include <WiFi.h>
+#include <utility>
 
 #include "Logger.h"
 
-Logger::Logger(const uint16_t port) : port_(port), server_(port) {}
+Logger::Logger(const uint16_t port)
+    : port_(port), server_(port) {}
 
 Logger& Logger::getInstanceImpl(const uint16_t port) {
-    static Logger instance{ port };
+    static Logger instance{port};
     return instance;
 }
 
-void Logger::init(const uint16_t port) {
-    getInstanceImpl(port);
-}
+void Logger::init(const uint16_t port) { getInstanceImpl(port); }
 
 bool Logger::begin() {
-    if(WiFi.status() == WL_CONNECTED) {
+    if (WiFi.status() == WL_CONNECTED) {
         Logger::getInstance().server_.begin();
     }
 
@@ -41,15 +40,9 @@ bool Logger::update() {
     return true;
 }
 
-uint16_t Logger::getPort() {
-    return Logger::getInstance().getPort();
-}
+uint16_t Logger::getPort() { return Logger::getInstance().getPort(); }
 
-void Logger::log(const Level level,
-                    const String& file,
-                    const __FlashStringHelper* function,
-                    uint32_t line,
-                    const char* logmsg) {
+void Logger::log(const Level level, const String& file, const __FlashStringHelper* function, uint32_t line, const char* logmsg) {
     char time[12];
     current_time(time);
 
@@ -57,7 +50,7 @@ void Logger::log(const Level level,
         client_.print(time);
         client_.print(get_level_identifier(level).c_str());
         client_.print(" ");
-        if(level < Level::DEBUG) {
+        if (level < Level::DEBUG) {
             client_.print(file.c_str());
             client_.print(":");
             client_.print(line);
@@ -72,7 +65,7 @@ void Logger::log(const Level level,
         Serial.print(time);
         Serial.print(get_level_identifier(level).c_str());
         Serial.print(" ");
-        if(level < Level::DEBUG) {
+        if (level < Level::DEBUG) {
             Serial.print(file.c_str());
             Serial.print(":");
             Serial.print(line);
@@ -85,17 +78,13 @@ void Logger::log(const Level level,
     }
 }
 
-void Logger::logf(const Level level,
-                     const String& file,
-                     const __FlashStringHelper* function,
-                     uint32_t line,
-                     const char* format, ...) {
+void Logger::logf(const Level level, const String& file, const __FlashStringHelper* function, uint32_t line, const char* format, ...) {
     // reimplement printf method so that we can take dynamic list of parameters as printf does
     // (we can't simply pass these on to existing printf methods it seems)
 
     va_list arg;
     va_start(arg, format);
-    char temp[64];  // allocate a temp buffer
+    char temp[64]; // allocate a temp buffer
     char* buffer = temp;
     size_t len = vsnprintf(temp, sizeof(temp), format, arg);
     va_end(arg);
@@ -122,20 +111,20 @@ void Logger::logf(const Level level,
 
 void Logger::current_time(char* timestamp) {
     time_t rawtime;
-    struct tm *timeinfo;
+    struct tm* timeinfo;
     time(&rawtime);
     timeinfo = localtime(&rawtime);
     snprintf(timestamp, 12, "[%02d:%02d:%02d] ", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
 }
 
-String Logger::get_level_identifier(Logger::Level lvl){
-    switch(lvl) {
-        case Level::TRACE:   return "  TRACE";
-        case Level::DEBUG:   return "  DEBUG";
-        case Level::INFO:    return "   INFO";
+String Logger::get_level_identifier(Logger::Level lvl) {
+    switch (lvl) {
+        case Level::TRACE: return "  TRACE";
+        case Level::DEBUG: return "  DEBUG";
+        case Level::INFO: return "   INFO";
         case Level::WARNING: return "WARNING";
-        case Level::ERROR:   return "  ERROR";
-        case Level::FATAL:   return "  FATAL";
-        default:             return " SILENT";
+        case Level::ERROR: return "  ERROR";
+        case Level::FATAL: return "  FATAL";
+        default: return " SILENT";
     }
 }

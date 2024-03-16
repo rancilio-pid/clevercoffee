@@ -1,6 +1,6 @@
 /**
  * @file LED.h
- * 
+ *
  * @brief Interface that switches have to implement
  */
 

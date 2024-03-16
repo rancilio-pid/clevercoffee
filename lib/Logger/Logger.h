@@ -20,9 +20,7 @@ class Logger {
          * @brief Return singleton instance of the logger
          * @return Logger instance
          */
-        static Logger& getInstance() {
-            return getInstanceImpl();
-        }
+        static Logger& getInstance() { return getInstanceImpl(); }
 
         /**
          * @brief Initialize the singleton logger instance
@@ -68,11 +66,7 @@ class Logger {
          * @param line The line number of the log message
          * @param logmsg Log message to be sent as payload
          */
-        void log(const Level level,
-                 const String& file,
-                 const __FlashStringHelper* function,
-                 uint32_t line,
-                 const char* logmsg);
+        void log(const Level level, const String& file, const __FlashStringHelper* function, uint32_t line, const char* logmsg);
 
         /**
          * @brief Send a log message either via serial or serial-over-wifi
@@ -86,17 +80,12 @@ class Logger {
          * @param format Format string akin to printf
          * @param ... Parameter list
          */
-        void logf(const Level level,
-                 const String& file,
-                 const __FlashStringHelper* function,
-                 uint32_t line,
-                 const char* format, ...);
+        void logf(const Level level, const String& file, const __FlashStringHelper* function, uint32_t line, const char* format, ...);
 
         static void setLevel(Level level) { getInstance().level_ = level; }
         static Level getCurrentLevel() { return getInstance().level_; }
 
     private:
-
         static Logger& getInstanceImpl(const uint16_t port = 23);
 
         /**
@@ -123,25 +112,23 @@ class Logger {
 };
 
 #ifndef __FILE_NAME__
-/**
- *  @brief Base name of the file without the directory
- */
-#define __FILE_NAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+    /**
+     *  @brief Base name of the file without the directory
+     */
+    #define __FILE_NAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 #endif
 
 /**
  * @brief Execute a block only if the reporting level is high enough
  * @param level The minimum log level
  */
-#define IFLOG(level) if(Logger::Level::level >= Logger::getCurrentLevel())
+#define IFLOG(level) if (Logger::Level::level >= Logger::getCurrentLevel())
 
-#define LOG(level, ...)                                                                                                     \
-    if(Logger::Level::level >= Logger::getCurrentLevel())                                                             \
-    Logger::getInstance().log(Logger::Level::level, __FILE_NAME__, FPSTR(__func__), __LINE__, __VA_ARGS__)
+#define LOG(level, ...)                                                                                                                                                                                                         \
+    if (Logger::Level::level >= Logger::getCurrentLevel()) Logger::getInstance().log(Logger::Level::level, __FILE_NAME__, FPSTR(__func__), __LINE__, __VA_ARGS__)
 
-#define LOGF(level, ...)                                                                                                     \
-    if(Logger::Level::level >= Logger::getCurrentLevel())                                                             \
-    Logger::getInstance().logf(Logger::Level::level, __FILE_NAME__, FPSTR(__func__), __LINE__, __VA_ARGS__)
+#define LOGF(level, ...)                                                                                                                                                                                                        \
+    if (Logger::Level::level >= Logger::getCurrentLevel()) Logger::getInstance().logf(Logger::Level::level, __FILE_NAME__, FPSTR(__func__), __LINE__, __VA_ARGS__)
 
 // Some comment on __func__: this resides on flash storage, so we need to access it using FPSTR(). Copying it to string is
 // cumbersome, so passing through the pointer and creating the final object directly from the __FlashStringHelper pointer.

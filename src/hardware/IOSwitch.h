@@ -1,7 +1,7 @@
 /**
  * @file GPIOPin.h
- * 
- * @brief A physical switch connected to a GPIO Pin  
+ *
+ * @brief A physical switch connected to a GPIO Pin
  */
 
 #pragma once
