@@ -26,6 +26,8 @@
 #define Manual_Flush_Logo_width 40
 #define Manual_Flush_Logo_height 40
 
+// clang-format off
+
 static const unsigned char Antenna_OK_Icon[] U8X8_PROGMEM = {
     B00011111,
     B00010101,
@@ -222,3 +224,5 @@ static const unsigned char Manual_Flush_Logo[] U8X8_PROGMEM = {
     0xff,0x00,0x00,0x00,0x00,0xff,0x00,0x00,0x00,0x00,0x7e,0x00,0x00,0x00,
     0x00,0x3c,0x00,0x00
 };
+
+// clang-format on
