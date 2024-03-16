@@ -7,53 +7,52 @@
  */
 
 // Firmware version
-#define FW_VERSION    4
+#define FW_VERSION 4
 #define FW_SUBVERSION 0
-#define FW_HOTFIX     0
-#define FW_BRANCH     "MASTER"
+#define FW_HOTFIX 0
+#define FW_BRANCH "MASTER"
 
 // STL includes
 #include <map>
 
 // Libraries & Dependencies
+#include "Logger.h"
 #include <ArduinoOTA.h>
 #include <LittleFS.h>
-#include "Logger.h"
-#include <os.h>
-#include <PID_v1.h>             // for PID calculation
-#include <U8g2lib.h>            // i2c display
+#include <PID_v1.h>  // for PID calculation
+#include <U8g2lib.h> // i2c display
 #include <WiFiManager.h>
+#include <os.h>
 
 // Includes
-#include "display/bitmaps.h"               // user icons for display
-#include "languages.h"          // for language translation
+#include "display/bitmaps.h" // user icons for display
+#include "languages.h"       // for language translation
 #include "storage.h"
 
 // Hardware classes
 #include "hardware/GPIOPin.h"
 #include "hardware/IOSwitch.h"
 #include "hardware/LED.h"
-#include "hardware/pinmapping.h"
 #include "hardware/Relay.h"
 #include "hardware/StandardLED.h"
 #include "hardware/Switch.h"
 #include "hardware/TempSensorDallas.h"
 #include "hardware/TempSensorTSIC.h"
+#include "hardware/pinmapping.h"
 
 // User configuration & defaults
-#include "userConfig.h"         // needs to be configured by the user
 #include "defaults.h"
+#include "userConfig.h" // needs to be configured by the user
 
-hw_timer_t *timer = NULL;
+hw_timer_t* timer = NULL;
 
 #if (FEATURE_PRESSURESENSOR == 1)
     #include "hardware/pressureSensor.h"
     #include <Wire.h>
 #endif
 
-
 #if OLED_DISPLAY == 3
-#include <SPI.h>
+    #include <SPI.h>
 #endif
 
 #if FEATURE_SCALE == 1
@@ -67,9 +66,7 @@ hw_timer_t *timer = NULL;
 #endif
 
 // Version of userConfig need to match, checked by preprocessor
-#if (FW_VERSION != USR_FW_VERSION) || \
-    (FW_SUBVERSION != USR_FW_SUBVERSION) || \
-    (FW_HOTFIX != USR_FW_HOTFIX)
+#if (FW_VERSION != USR_FW_VERSION) || (FW_SUBVERSION != USR_FW_SUBVERSION) || (FW_HOTFIX != USR_FW_HOTFIX)
     #error Version of userConfig file and main.cpp need to match!
 #endif
 
@@ -122,13 +119,13 @@ uint8_t wifiCredentialsSaved = 0;
 WiFiManager wm;
 const unsigned long wifiConnectionDelay = WIFICONNECTIONDELAY;
 const unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
-const char *hostname = HOSTNAME;
-const char *pass = PASS;
+const char* hostname = HOSTNAME;
+const char* pass = PASS;
 unsigned long lastWifiConnectionAttempt = millis();
-unsigned int wifiReconnects = 0;  // actual number of reconnects
+unsigned int wifiReconnects = 0; // actual number of reconnects
 
 // OTA
-const char *OTApass = OTAPASS;
+const char* OTApass = OTAPASS;
 
 // Backflush values
 const unsigned long fillTime = FILLTIME;
@@ -141,20 +138,20 @@ const unsigned long intervalOptocoupler = 200;
 int optocouplerOn, optocouplerOff;
 
 // QuickMill thermoblock steam-mode (only for BREWDETECTION_TYPE = 3)
-const int maxBrewDurationForSteamModeQM_ON = 200;           // if brewtime is shorter steam-mode starts
-const int minOptocouplerOffTimedForSteamModeQM_Off = 1500;  // if optocoupler-off-time is longer steam-mode ends
-unsigned long timeOptocouplerOn = 0;                        // time optocoupler switched to ON
-unsigned long lastTimeOptocouplerOn = 0;                    // last time optocoupler was ON
-bool steamQM_active = false;                                // steam-mode is active
-bool brewSteamDetectedQM = false;                           // brew/steam detected, not sure yet what it is
+const int maxBrewDurationForSteamModeQM_ON = 200;          // if brewtime is shorter steam-mode starts
+const int minOptocouplerOffTimedForSteamModeQM_Off = 1500; // if optocoupler-off-time is longer steam-mode ends
+unsigned long timeOptocouplerOn = 0;                       // time optocoupler switched to ON
+unsigned long lastTimeOptocouplerOn = 0;                   // last time optocoupler was ON
+bool steamQM_active = false;                               // steam-mode is active
+bool brewSteamDetectedQM = false;                          // brew/steam detected, not sure yet what it is
 bool coolingFlushDetectedQM = false;
 
 // Pressure sensor
 #if (FEATURE_PRESSURESENSOR == 1)
-    float inputPressure = 0;
-    float inputPressureFilter = 0;
-    const unsigned long intervalPressure = 100;
-    unsigned long previousMillisPressure;  // initialisation at the end of init()
+float inputPressure = 0;
+float inputPressureFilter = 0;
+const unsigned long intervalPressure = 100;
+unsigned long previousMillisPressure; // initialisation at the end of init()
 #endif
 
 GPIOPin* waterSensPin;
@@ -202,18 +199,17 @@ void printMachineState();
 char const* machinestateEnumToString(MachineState machineState);
 void initSteamQM();
 boolean checkSteamOffQM();
-char *number2string(double in);
-char *number2string(float in);
-char *number2string(int in);
-char *number2string(unsigned int in);
+char* number2string(double in);
+char* number2string(float in);
+char* number2string(int in);
+char* number2string(unsigned int in);
 float filterPressureValue(float input);
 int writeSysParamsToMQTT(bool continueOnError);
 void updateStandbyTimer(void);
 void resetStandbyTimer(void);
 
-
 // system parameters
-uint8_t pidON = 0;                 // 1 = control loop in closed loop
+uint8_t pidON = 0; // 1 = control loop in closed loop
 double brewSetpoint = SETPOINT;
 double brewTempOffset = TEMPOFFSET;
 double setpoint = brewSetpoint;
@@ -221,7 +217,7 @@ double steamSetpoint = STEAMSETPOINT;
 float scaleCalibration = SCALE_CALIBRATION_FACTOR;
 float scale2Calibration = SCALE_CALIBRATION_FACTOR;
 float scaleKnownWeight = SCALE_KNOWN_WEIGHT;
-uint8_t usePonM = 0;               // 1 = use PonM for cold start PID, 0 = use normal PID for cold start
+uint8_t usePonM = 0; // 1 = use PonM for cold start PID, 0 = use normal PID for cold start
 double steamKp = STEAMKP;
 double startKp = STARTKP;
 double startTn = STARTTN;
@@ -229,9 +225,9 @@ double aggKp = AGGKP;
 double aggTn = AGGTN;
 double aggTv = AGGTV;
 double aggIMax = AGGIMAX;
-double brewTime = BREW_TIME;                        // brewtime in s
-double preinfusion = PRE_INFUSION_TIME;             // preinfusion time in s
-double preinfusionPause = PRE_INFUSION_PAUSE_TIME;  // preinfusion pause time in s
+double brewTime = BREW_TIME;                       // brewtime in s
+double preinfusion = PRE_INFUSION_TIME;            // preinfusion time in s
+double preinfusionPause = PRE_INFUSION_PAUSE_TIME; // preinfusion pause time in s
 double weightSetpoint = SCALE_WEIGHTSETPOINT;
 
 // PID - values for offline brew detection
@@ -241,15 +237,15 @@ double aggbTn = AGGBTN;
 double aggbTv = AGGBTV;
 
 #if aggbTn == 0
-    double aggbKi = 0;
+double aggbKi = 0;
 #else
-    double aggbKi = aggbKp / aggbTn;
+double aggbKi = aggbKp / aggbTn;
 #endif
 
 double aggbKd = aggbTv * aggbKp;
 double brewtimesoftware = BREW_SW_TIME;  // use userConfig time until disabling BD PID
-double brewSensitivity = BD_SENSITIVITY;  // use userConfig brew detection sensitivity
-double brewPIDDelay = BREW_PID_DELAY;      // use userConfig brew detection PID delay
+double brewSensitivity = BD_SENSITIVITY; // use userConfig brew detection sensitivity
+double brewPIDDelay = BREW_PID_DELAY;    // use userConfig brew detection PID delay
 
 uint8_t standbyModeOn = 0;
 double standbyModeTime = STANDBY_MODE_TIME;
@@ -288,41 +284,40 @@ SysPara<float> sysParaScale2Calibration(&scale2Calibration, -100000, 100000, STO
 SysPara<float> sysParaScaleKnownWeight(&scaleKnownWeight, 0, 2000, STO_ITEM_SCALE_KNOWN_WEIGHT);
 
 // Other variables
-boolean coldstart = true;                       // true = Rancilio started for first time
-boolean emergencyStop = false;                  // Emergency stop if temperature is too high
-double EmergencyStopTemp = 120;                 // Temp EmergencyStopTemp
-float inX = 0, inY = 0, inOld = 0, inSum = 0;   // used for filterPressureValue()
-int signalBars = 0;                             // used for getSignalStrength()
+boolean coldstart = true;                     // true = Rancilio started for first time
+boolean emergencyStop = false;                // Emergency stop if temperature is too high
+double EmergencyStopTemp = 120;               // Temp EmergencyStopTemp
+float inX = 0, inY = 0, inOld = 0, inSum = 0; // used for filterPressureValue()
+int signalBars = 0;                           // used for getSignalStrength()
 boolean brewDetected = 0;
 boolean setupDone = false;
-int backflushOn = 0;                            // 1 = backflush mode active
-int flushCycles = 0;                            // number of active flush cycles
+int backflushOn = 0; // 1 = backflush mode active
+int flushCycles = 0; // number of active flush cycles
 
 int backflushState = 10;
 
 // Water sensor
 boolean waterFull = true;
 unsigned long lastWaterCheck;
-const unsigned long waterCheckInterval = 200;   // Check water level every 200 ms
-int waterCheckConsecutiveReads = 0;             // Counter for consecutive readings of water sensor
-const int waterCountsNeeded = 3;                // Number of same readings to change water sensing
-
+const unsigned long waterCheckInterval = 200; // Check water level every 200 ms
+int waterCheckConsecutiveReads = 0;           // Counter for consecutive readings of water sensor
+const int waterCountsNeeded = 3;              // Number of same readings to change water sensing
 
 // Moving average for software brew detection
-double tempRateAverage = 0;             // average value of temp values
+double tempRateAverage = 0; // average value of temp values
 double tempChangeRateAverageMin = 0;
 unsigned long timeBrewDetection = 0;
-int isBrewDetected = 0;                 // flag is set if brew was detected
-bool movingAverageInitialized = false;  // flag set when average filter is initialized, also used for sensor check
+int isBrewDetected = 0;                // flag is set if brew was detected
+bool movingAverageInitialized = false; // flag set when average filter is initialized, also used for sensor check
 
 // Sensor check
 boolean sensorError = false;
 int error = 0;
-int maxErrorCounter = 10;        // depends on intervaltempmes* , define max seconds for invalid data
+int maxErrorCounter = 10; // depends on intervaltempmes* , define max seconds for invalid data
 
 // PID controller
-unsigned long previousMillistemp;    // initialisation at the end of init()
-int pidMode = 1;    // 1 = Automatic, 0 = Manual
+unsigned long previousMillistemp; // initialisation at the end of init()
+int pidMode = 1;                  // 1 = Automatic, 0 = Manual
 
 double setpointTemp;
 double previousInput = 0;
@@ -333,15 +328,15 @@ int steamON = 0;
 int steamFirstON = 0;
 
 #if startTn == 0
-    double startKi = 0;
+double startKi = 0;
 #else
-    double startKi = startKp / startTn;
+double startKi = startKp / startTn;
 #endif
 
 #if aggTn == 0
-    double aggKi = 0;
+double aggKi = 0;
 #else
-    double aggKi = aggKp / aggTn;
+double aggKi = aggKp / aggTn;
 #endif
 
 double aggKd = aggTv * aggKp;
@@ -352,7 +347,6 @@ PID bPID(&temperature, &pidOutput, &setpoint, aggKp, aggKi, aggKd, 1, DIRECT);
 
 // Embedded HTTP Server
 #include "embeddedWebserver.h"
-
 
 enum SectionNames {
     sPIDSection,
@@ -365,13 +359,8 @@ enum SectionNames {
 
 std::map<String, editable_t> editableVars = {};
 
-
-struct cmp_str
-{
-   bool operator()(char const *a, char const *b) const
-   {
-      return strcmp(a, b) < 0;
-   }
+struct cmp_str {
+        bool operator()(char const* a, char const* b) const { return strcmp(a, b) < 0; }
 };
 
 // MQTT
@@ -385,7 +374,7 @@ unsigned long tempEventInterval = 1000;
 
 #if MQTT_HASSIO_SUPPORT == 1
 static unsigned long lastHomeAssistantDiscoveryExecutionTime = 0;
-const unsigned long HomeAssistantDiscoveryExecutionInterval = 300000;  // 5 minute
+const unsigned long HomeAssistantDiscoveryExecutionInterval = 300000; // 5 minute
 #endif
 
 bool mqtt_was_connected = false;
@@ -424,28 +413,28 @@ void getSignalStrength() {
 
 // Display define & template
 #if OLED_DISPLAY == 1
-    U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, PIN_I2CSCL, PIN_I2CSDA);  // e.g. 1.3"
+U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, PIN_I2CSCL, PIN_I2CSDA); // e.g. 1.3"
 #endif
 #if OLED_DISPLAY == 2
-    U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, PIN_I2CSCL, PIN_I2CSDA);  // e.g. 0.96"
+U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, PIN_I2CSCL, PIN_I2CSDA); // e.g. 0.96"
 #endif
 #if OLED_DISPLAY == 3
     #define OLED_CS 5
     #define OLED_DC 2
-    U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, OLED_CS, OLED_DC, /* reset=*/U8X8_PIN_NONE); // e.g. 1.3"
+U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, OLED_CS, OLED_DC, /* reset=*/U8X8_PIN_NONE); // e.g. 1.3"
 #endif
 
 // Update for Display
-unsigned long previousMillisDisplay;  // initialisation at the end of init()
+unsigned long previousMillisDisplay; // initialisation at the end of init()
 const unsigned long intervalDisplay = 500;
 
 // Horizontal or vertical display
 #if (OLED_DISPLAY != 0)
-    #if (DISPLAYTEMPLATE < 20)  // horizontal templates
+    #if (DISPLAYTEMPLATE < 20) // horizontal templates
         #include "display/displayCommon.h"
     #endif
 
-    #if (DISPLAYTEMPLATE >= 20)  // vertical templates
+    #if (DISPLAYTEMPLATE >= 20) // vertical templates
         #include "display/displayRotateUpright.h"
     #endif
 
@@ -463,15 +452,15 @@ const unsigned long intervalDisplay = 500;
 #endif
 
 #include "powerHandler.h"
-#include "steamHandler.h"
 #include "scaleHandler.h"
+#include "steamHandler.h"
 
 // Emergency stop if temp is too high
 void testEmergencyStop() {
     if (temperature > EmergencyStopTemp && emergencyStop == false) {
         emergencyStop = true;
     }
-    else if (temperature < (brewSetpoint+5) && emergencyStop == true) {
+    else if (temperature < (brewSetpoint + 5) && emergencyStop == true) {
         emergencyStop = false;
     }
 }
@@ -480,11 +469,11 @@ void testEmergencyStop() {
  * @brief FIR moving average filter for software brew detection
  */
 void calculateTemperatureMovingAverage() {
-    const int numValues = 15;                      // moving average filter length
-    static double tempValues[numValues];           // array of temp values
-    static unsigned long timeValues[numValues];    // array of time values
+    const int numValues = 15;                   // moving average filter length
+    static double tempValues[numValues];        // array of temp values
+    static unsigned long timeValues[numValues]; // array of time values
     static double tempChangeRates[numValues];
-    static int valueIndex = 1;                     // the index of the current value
+    static int valueIndex = 1; // the index of the current value
 
     if (brewDetectionMode == 1 && !movingAverageInitialized) {
         for (int index = 0; index < numValues; index++) {
@@ -506,8 +495,7 @@ void calculateTemperatureMovingAverage() {
         tempChangeRate = (tempValues[numValues - 1] - tempValues[0]) / (timeValues[numValues - 1] - timeValues[0]) * 10000;
     }
     else {
-        tempChangeRate = (tempValues[valueIndex] - tempValues[valueIndex + 1]) /
-                        (timeValues[valueIndex] - timeValues[valueIndex + 1]) * 10000;
+        tempChangeRate = (tempValues[valueIndex] - tempValues[valueIndex + 1]) / (timeValues[valueIndex] - timeValues[valueIndex + 1]) * 10000;
     }
 
     tempChangeRates[valueIndex] = tempChangeRate;
@@ -540,15 +528,13 @@ void calculateTemperatureMovingAverage() {
  */
 boolean checkSensor(float tempInput) {
     boolean sensorOK = false;
-    boolean badCondition = (tempInput < 0 || tempInput > 150 || fabs(tempInput - previousInput) > (5+brewTempOffset));
+    boolean badCondition = (tempInput < 0 || tempInput > 150 || fabs(tempInput - previousInput) > (5 + brewTempOffset));
 
     if (badCondition && !sensorError) {
         error++;
         sensorOK = false;
 
-        LOGF(WARNING,
-            "temperature sensor reading: consec_errors = %i, temp_current = %.1f, temp_prev = %.1f",
-            error, tempInput, previousInput);
+        LOGF(WARNING, "temperature sensor reading: consec_errors = %i, temp_current = %.1f, temp_prev = %.1f", error, tempInput, previousInput);
     }
     else if (badCondition == false && sensorOK == false) {
         error = 0;
@@ -557,9 +543,7 @@ boolean checkSensor(float tempInput) {
 
     if (error >= maxErrorCounter && !sensorError) {
         sensorError = true;
-        LOGF(ERROR,
-            "temperature sensor malfunction: temp_current = %.1f",
-            tempInput);
+        LOGF(ERROR, "temperature sensor malfunction: temp_current = %.1f", tempInput);
     }
     else if (error == 0 && sensorError) {
         sensorError = false;
@@ -605,17 +589,17 @@ void refreshTemp() {
  * @brief Switch to offline mode if maxWifiReconnects were exceeded during boot
  */
 void initOfflineMode() {
-    #if OLED_DISPLAY != 0
-        displayMessage("", "", "", "", "Begin Fallback,", "No Wifi");
-    #endif
+#if OLED_DISPLAY != 0
+    displayMessage("", "", "", "", "Begin Fallback,", "No Wifi");
+#endif
 
     LOG(INFO, "Start offline mode with eeprom values, no wifi :(");
     offlineMode = 1;
 
     if (readSysParamsFromStorage() != 0) {
-        #if OLED_DISPLAY != 0
-            displayMessage("", "", "", "", "No eeprom,", "Values");
-        #endif
+#if OLED_DISPLAY != 0
+        displayMessage("", "", "", "", "No eeprom,", "Values");
+#endif
 
         LOG(INFO, "No working eeprom value, I am sorry, but use default offline value :)");
         delay(1000);
@@ -635,15 +619,15 @@ void checkWifi() {
         if ((millis() - lastWifiConnectionAttempt >= wifiConnectionDelay) && (wifiReconnects <= maxWifiReconnects)) {
             int statusTemp = WiFi.status();
 
-            if (statusTemp != WL_CONNECTED) {  // check WiFi connection status
+            if (statusTemp != WL_CONNECTED) { // check WiFi connection status
                 lastWifiConnectionAttempt = millis();
                 wifiReconnects++;
                 LOGF(INFO, "Attempting WIFI (re-)connection: %i", wifiReconnects);
 
                 if (!setupDone) {
-                    #if OLED_DISPLAY != 0
-                        displayMessage("", "", "", "", langstring_wifirecon, String(wifiReconnects));
-                    #endif
+#if OLED_DISPLAY != 0
+                    displayMessage("", "", "", "", langstring_wifirecon, String(wifiReconnects));
+#endif
                 }
 
                 wm.disconnect();
@@ -658,9 +642,8 @@ void checkWifi() {
             }
         }
 
-        yield();  // Prevent WDT trigger
+        yield(); // Prevent WDT trigger
     } while (!setupDone && wifiReconnects < maxWifiReconnects && WiFi.status() != WL_CONNECTED);
-
 
     if (wifiReconnects >= maxWifiReconnects && WiFi.status() != WL_CONNECTED) {
         // no wifi connection after trying connection, initiate offline mode
@@ -671,48 +654,43 @@ void checkWifi() {
     }
 }
 
-
 char number2string_double[22];
 
-char *number2string(double in) {
+char* number2string(double in) {
     snprintf(number2string_double, sizeof(number2string_double), "%0.2f", in);
 
     return number2string_double;
 }
 
-
 char number2string_float[22];
 
-char *number2string(float in) {
+char* number2string(float in) {
     snprintf(number2string_float, sizeof(number2string_float), "%0.2f", in);
 
     return number2string_float;
 }
 
-
 char number2string_int[22];
 
-char *number2string(int in) {
+char* number2string(int in) {
     snprintf(number2string_int, sizeof(number2string_int), "%d", in);
 
     return number2string_int;
 }
 
-
 char number2string_uint[22];
 
-char *number2string(unsigned int in) {
+char* number2string(unsigned int in) {
     snprintf(number2string_uint, sizeof(number2string_uint), "%u", in);
 
     return number2string_uint;
 }
 
-
 /**
  * @brief detect if a brew is running
  */
 void brewDetection() {
-    if (brewDetectionMode == 1 && brewSensitivity == 0) return;  // abort brewdetection if deactivated
+    if (brewDetectionMode == 1 && brewSensitivity == 0) return; // abort brewdetection if deactivated
 
     // Brew detection: 1 = software solution, 2 = hardware, 3 = voltage sensor
     if (brewDetectionMode == 1) {
@@ -722,13 +700,13 @@ void brewDetection() {
 
         // deactivate brewtimer after end of brewdetection pid
         if (millis() - timeBrewDetection > brewtimesoftware * 1000 && isBrewDetected == 1) {
-            isBrewDetected = 0;  // rearm brewDetection
+            isBrewDetected = 0; // rearm brewDetection
             timeBrewed = 0;
         }
     }
     else if (brewDetectionMode == 2) {
         if (millis() - timeBrewDetection > brewtimesoftware * 1000 && isBrewDetected == 1) {
-            isBrewDetected = 0;  // rearm brewDetection
+            isBrewDetected = 0; // rearm brewDetection
         }
     }
     else if (brewDetectionMode == 3) {
@@ -740,9 +718,9 @@ void brewDetection() {
 
         // OFF: reset brew
         if ((digitalRead(PIN_BREWSWITCH) == optocouplerOff) && (brewDetected == 1 || coolingFlushDetectedQM == true)) {
-            isBrewDetected = 0;  // rearm brewDetection
+            isBrewDetected = 0; // rearm brewDetection
             brewDetected = 0;
-            timeOptocouplerOn = timeBrewed;  // for QuickMill
+            timeOptocouplerOn = timeBrewed; // for QuickMill
             timeBrewed = 0;
             startingTime = 0;
             coolingFlushDetectedQM = false;
@@ -751,7 +729,7 @@ void brewDetection() {
     }
 
     // Activate brew detection
-    if (brewDetectionMode == 1) {  // SW BD
+    if (brewDetectionMode == 1) { // SW BD
         // BD PID only +/- 4 °C, no detection if HW was active
         if (tempRateAverage <= -brewSensitivity && isBrewDetected == 0 && (fabs(temperature - brewSetpoint) < 5)) {
             LOG(DEBUG, "SW Brew detected");
@@ -759,7 +737,7 @@ void brewDetection() {
             isBrewDetected = 1;
         }
     }
-    else if (brewDetectionMode == 2) {  // HW BD
+    else if (brewDetectionMode == 2) { // HW BD
         if (currBrewState > kBrewIdle && brewDetected == 0) {
             LOG(DEBUG, "HW Brew detected");
             timeBrewDetection = millis();
@@ -767,14 +745,13 @@ void brewDetection() {
             brewDetected = 1;
         }
     }
-    else if (brewDetectionMode == 3) {  // voltage sensor
+    else if (brewDetectionMode == 3) { // voltage sensor
         switch (machine) {
             case QuickMill:
                 if (!coolingFlushDetectedQM) {
                     int pvs = digitalRead(PIN_BREWSWITCH);
 
-                    if (pvs == optocouplerOn && brewDetected == 0 &&
-                        brewSteamDetectedQM == 0 && !steamQM_active) {
+                    if (pvs == optocouplerOn && brewDetected == 0 && brewSteamDetectedQM == 0 && !steamQM_active) {
                         timeBrewDetection = millis();
                         timeOptocouplerOn = millis();
                         isBrewDetected = 1;
@@ -786,7 +763,7 @@ void brewDetection() {
                     }
 
                     const unsigned long minBrewDurationForSteamModeQM_ON = 50;
-                    if (brewSteamDetectedQM == 1 && millis()-timeOptocouplerOn > minBrewDurationForSteamModeQM_ON) {
+                    if (brewSteamDetectedQM == 1 && millis() - timeOptocouplerOn > minBrewDurationForSteamModeQM_ON) {
                         if (pvs == optocouplerOff) {
                             brewSteamDetectedQM = 0;
 
@@ -831,7 +808,6 @@ void brewDetection() {
     }
 }
 
-
 /**
  * @brief Filter input value using exponential moving average filter (using fixed coefficients)
  *      After ~28 cycles the input is set to 99,66% if the real input value sum of inX and inY
@@ -857,7 +833,7 @@ void setEmergencyStopTemp() {
 
 void initSteamQM() {
     // Initialize monitoring for steam switch off for QuickMill thermoblock
-    lastTimeOptocouplerOn = millis();  // time when optocoupler changes from ON to OFF
+    lastTimeOptocouplerOn = millis(); // time when optocoupler changes from ON to OFF
     steamQM_active = true;
     timeOptocouplerOn = 0;
     steamON = 1;
@@ -924,10 +900,9 @@ void handleMachineState() {
             switch (machinestatecold) {
                 case 0:
                     if (temperature >= (brewSetpoint - 1) && temperature < 150) {
-                        machinestatecoldmillis = millis();  // get millis for interval calc
-                        machinestatecold = 10;              // new state
-                        LOG(DEBUG,
-                            "temperature >= (BrewSetpoint-1), waiting 10 sec before switching to kAtSetpoint");
+                        machinestatecoldmillis = millis(); // get millis for interval calc
+                        machinestatecold = 10;             // new state
+                        LOG(DEBUG, "temperature >= (BrewSetpoint-1), waiting 10 sec before switching to kAtSetpoint");
                     }
                     break;
 
@@ -948,9 +923,8 @@ void handleMachineState() {
                     break;
             }
 
-            if ((timeBrewed > 0 && BREWCONTROL_TYPE == 0) ||  // timeBrewed without controlling brew
-                (BREWCONTROL_TYPE > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished))
-            {
+            if ((timeBrewed > 0 && BREWCONTROL_TYPE == 0) || // timeBrewed without controlling brew
+                (BREWCONTROL_TYPE > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished)) {
                 machineState = kBrew;
 
                 if (standbyModeOn) {
@@ -1003,9 +977,7 @@ void handleMachineState() {
             }
 
             // is a brew running? (values are set in brewDetection() above)
-            if ((timeBrewed > 0 && BREWCONTROL_TYPE == 0) ||
-                (BREWCONTROL_TYPE > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished))
-            {
+            if ((timeBrewed > 0 && BREWCONTROL_TYPE == 0) || (BREWCONTROL_TYPE > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished)) {
                 machineState = kBrew;
 
                 if (standbyModeOn) {
@@ -1051,9 +1023,7 @@ void handleMachineState() {
         case kPidNormal:
             brewDetection();
 
-            if ((timeBrewed > 0 && BREWCONTROL_TYPE == 0) ||
-                (BREWCONTROL_TYPE > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished))
-            {
+            if ((timeBrewed > 0 && BREWCONTROL_TYPE == 0) || (BREWCONTROL_TYPE > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished)) {
                 machineState = kBrew;
 
                 if (standbyModeOn) {
@@ -1108,14 +1078,14 @@ void handleMachineState() {
                 LOGF(DEBUG, "(tB,T,hra) --> %5.2f %6.2f %8.2f", (double)(millis() - startingTime) / 1000, temperature, tempRateAverage);
             }
 
-            if ((timeBrewed == 0 && brewDetectionMode == 3 && BREWCONTROL_TYPE == 0) || // PID + optocoupler: optocoupler BD timeBrewed == 0 -> switch is off again
+            if ((timeBrewed == 0 && brewDetectionMode == 3 && BREWCONTROL_TYPE == 0) ||                  // PID + optocoupler: optocoupler BD timeBrewed == 0 -> switch is off again
                 ((currBrewState == kBrewIdle || currBrewState == kWaitBrewOff) && BREWCONTROL_TYPE > 0)) // Hardware BD
             {
                 // delay shot timer display for voltage sensor or hw brew toggle switch (brew counter)
                 machineState = kShotTimerAfterBrew;
-                lastBrewTimeMillis = millis();  // for delay
+                lastBrewTimeMillis = millis(); // for delay
             }
-            else if (brewDetectionMode == 1 && BREWCONTROL_TYPE == 0 && isBrewDetected == 0) {   // SW BD, kBrew was active for set time
+            else if (brewDetectionMode == 1 && BREWCONTROL_TYPE == 0 && isBrewDetected == 0) { // SW BD, kBrew was active for set time
                 // when Software brew is finished, direct to PID BD
                 machineState = kBrewDetectionTrailing;
             }
@@ -1180,9 +1150,8 @@ void handleMachineState() {
                 machineState = kPidNormal;
             }
 
-            if ((timeBrewed > 0 && BREWCONTROL_TYPE == 0 && brewDetectionMode == 3) ||  // Allow brew directly after BD only when using BREWCONTROL_TYPE 0 AND hardware brew switch detection
-                (BREWCONTROL_TYPE > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished))
-            {
+            if ((timeBrewed > 0 && BREWCONTROL_TYPE == 0 && brewDetectionMode == 3) || // Allow brew directly after BD only when using BREWCONTROL_TYPE 0 AND hardware brew switch detection
+                (BREWCONTROL_TYPE > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished)) {
                 machineState = kBrew;
             }
 
@@ -1336,11 +1305,11 @@ void handleMachineState() {
                 if (coldstart) {
                     machineState = kColdStart;
                 }
-                else if (!coldstart && (temperature > (brewSetpoint - 10))) {  // temperature higher BrewSetpoint-10, normal PID
+                else if (!coldstart && (temperature > (brewSetpoint - 10))) { // temperature higher BrewSetpoint-10, normal PID
                     machineState = kPidNormal;
                 }
                 else if (temperature <= (brewSetpoint - 10)) {
-                    machineState = kColdStart;  // temperature 10C below set point, enter cold start
+                    machineState = kColdStart; // temperature 10C below set point, enter cold start
                     coldstart = true;
                 }
             }
@@ -1383,13 +1352,9 @@ void handleMachineState() {
             }
             break;
 
-        case kSensorError:
-            machineState = kSensorError;
-            break;
+        case kSensorError: machineState = kSensorError; break;
 
-        case kEepromError:
-            machineState = kEepromError;
-            break;
+        case kEepromError: machineState = kEepromError; break;
     }
 
     if (machineState != lastmachinestate) {
@@ -1398,50 +1363,30 @@ void handleMachineState() {
     }
 }
 
-void printMachineState() {
-    LOGF(DEBUG, "new machineState: %s -> %s",
-                machinestateEnumToString(lastmachinestate), machinestateEnumToString(machineState));
-}
+void printMachineState() { LOGF(DEBUG, "new machineState: %s -> %s", machinestateEnumToString(lastmachinestate), machinestateEnumToString(machineState)); }
 
 char const* machinestateEnumToString(MachineState machineState) {
     switch (machineState) {
-        case kInit:
-            return "Init";
-        case kColdStart:
-            return "Cold Start";
-        case kAtSetpoint:
-            return "Above Set Point";
-        case kPidNormal:
-            return "PID Normal";
-        case kBrew:
-            return "Brew";
-        case kShotTimerAfterBrew:
-            return "Shot Timer After Brew";
-        case kBrewDetectionTrailing:
-            return "Brew Detection Trailing";
-        case kSteam:
-            return "Steam";
-        case kCoolDown:
-            return "Cool Down";
-        case kBackflush:
-            return "Backflush";
-        case kWaterEmpty:
-            return "Water Empty";
-        case kEmergencyStop:
-            return "Emergency Stop";
-        case kPidOffline:
-            return "PID Offline";
-        case kStandby:
-            return "Standby Mode";
-        case kSensorError:
-            return "Sensor Error";
-        case kEepromError:
-            return "EEPROM Error";
+        case kInit: return "Init";
+        case kColdStart: return "Cold Start";
+        case kAtSetpoint: return "Above Set Point";
+        case kPidNormal: return "PID Normal";
+        case kBrew: return "Brew";
+        case kShotTimerAfterBrew: return "Shot Timer After Brew";
+        case kBrewDetectionTrailing: return "Brew Detection Trailing";
+        case kSteam: return "Steam";
+        case kCoolDown: return "Cool Down";
+        case kBackflush: return "Backflush";
+        case kWaterEmpty: return "Water Empty";
+        case kEmergencyStop: return "Emergency Stop";
+        case kPidOffline: return "PID Offline";
+        case kStandby: return "Standby Mode";
+        case kSensorError: return "Sensor Error";
+        case kEepromError: return "EEPROM Error";
     }
 
     return "Unknown";
 }
-
 
 /**
  * @brief Set up internal WiFi hardware
@@ -1449,8 +1394,8 @@ char const* machinestateEnumToString(MachineState machineState) {
 void wiFiSetup() {
 
     wm.setCleanConnect(true);
-    wm.setConfigPortalTimeout(60);      // sec timeout for captive portal
-    wm.setConnectTimeout(10);           // using 10s to connect to WLAN, 5s is sometimes too short!
+    wm.setConfigPortalTimeout(60); // sec timeout for captive portal
+    wm.setConnectTimeout(10);      // using 10s to connect to WLAN, 5s is sometimes too short!
     wm.setBreakAfterConfig(true);
     wm.setConnectRetries(3);
 
@@ -1460,9 +1405,9 @@ void wiFiSetup() {
         const char hostname[] = (STR(HOSTNAME));
         LOGF(INFO, "Connecting to WiFi: %s", String(hostname));
 
-        #if OLED_DISPLAY != 0
-            displayLogo("Connecting to: ", HOSTNAME);
-        #endif
+#if OLED_DISPLAY != 0
+        displayLogo("Connecting to: ", HOSTNAME);
+#endif
     }
 
     wm.setHostname(hostname);
@@ -1471,8 +1416,7 @@ void wiFiSetup() {
         wifiCredentialsSaved = 1;
         sysParaWifiCredentialsSaved.setStorage();
         storageCommit();
-        LOGF(INFO, "WiFi connected - IP = %i.%i.%i.%i", WiFi.localIP()[0],
-                    WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3]);
+        LOGF(INFO, "WiFi connected - IP = %i.%i.%i.%i", WiFi.localIP()[0], WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3]);
         byte mac[6];
         WiFi.macAddress(mac);
         String macaddr0 = number2string(mac[0]);
@@ -1487,9 +1431,9 @@ void wiFiSetup() {
     else {
         LOG(INFO, "WiFi connection timed out...");
 
-        #if OLED_DISPLAY != 0
-            displayLogo(langstring_nowifi[0], langstring_nowifi[1]);
-        #endif
+#if OLED_DISPLAY != 0
+        displayLogo(langstring_nowifi[0], langstring_nowifi[1]);
+#endif
 
         wm.disconnect();
         delay(1000);
@@ -1497,11 +1441,10 @@ void wiFiSetup() {
         offlineMode = 1;
     }
 
-    #if OLED_DISPLAY != 0
-        displayLogo(langstring_connectwifi1, wm.getWiFiSSID(true));
-    #endif
+#if OLED_DISPLAY != 0
+    displayLogo(langstring_connectwifi1, wm.getWiFiSSID(true));
+#endif
 }
-
 
 /**
  * @brief Set up embedded Website
@@ -1524,505 +1467,383 @@ void setup() {
     Logger::init(23);
 
     editableVars["PID_ON"] = {
-        .displayName = "Enable PID Controller",
-        .hasHelpText = false,
-        .helpText = "",
-        .type = kUInt8,
-        .section = sPIDSection,
-        .position = 1,
-        .show = [] { return true; },
-        .minValue = 0,
-        .maxValue = 1,
-        .ptr = (void*)&pidON
-    };
+        .displayName = "Enable PID Controller", .hasHelpText = false, .helpText = "", .type = kUInt8, .section = sPIDSection, .position = 1, .show = [] { return true; }, .minValue = 0, .maxValue = 1, .ptr = (void*)&pidON};
 
-    editableVars["START_USE_PONM"] = {
-        .displayName = F("Enable PonM"),
-        .hasHelpText = true,
-        .helpText =
-            F("Use PonM mode (<a href='http://brettbeauregard.com/blog/2017/06/"
-              "introducing-proportional-on-measurement/' "
-              "target='_blank'>details</a>) while heating up the machine. "
-              "Otherwise, just use the same PID values that are used later"),
-        .type = kUInt8,
-        .section = sPIDSection,
-        .position = 2,
-        .show = [] { return true; },
-        .minValue = 0,
-        .maxValue = 1,
-        .ptr = (void*)&usePonM
-    };
+    editableVars["START_USE_PONM"] = {.displayName = F("Enable PonM"),
+                                      .hasHelpText = true,
+                                      .helpText = F("Use PonM mode (<a href='http://brettbeauregard.com/blog/2017/06/"
+                                                    "introducing-proportional-on-measurement/' "
+                                                    "target='_blank'>details</a>) while heating up the machine. "
+                                                    "Otherwise, just use the same PID values that are used later"),
+                                      .type = kUInt8,
+                                      .section = sPIDSection,
+                                      .position = 2,
+                                      .show = [] { return true; },
+                                      .minValue = 0,
+                                      .maxValue = 1,
+                                      .ptr = (void*)&usePonM};
 
-    editableVars["START_KP"] = {
-        .displayName = F("Start Kp"),
-        .hasHelpText = true,
-        .helpText = F(
-            "Proportional gain for cold start controller. This value is not "
-            "used with the the error as usual but the absolute value of the "
-            "temperature and counteracts the integral part as the temperature "
-            "rises. Ideally, both parameters are set so that they balance each "
-            "other out when the target temperature is reached."),
-        .type = kDouble,
-        .section = sPIDSection,
-        .position = 3,
-        .show = [] { return true && usePonM; },
-        .minValue = PID_KP_START_MIN,
-        .maxValue = PID_KP_START_MAX,
-        .ptr = (void*)&startKp
-    };
+    editableVars["START_KP"] = {.displayName = F("Start Kp"),
+                                .hasHelpText = true,
+                                .helpText = F("Proportional gain for cold start controller. This value is not "
+                                              "used with the the error as usual but the absolute value of the "
+                                              "temperature and counteracts the integral part as the temperature "
+                                              "rises. Ideally, both parameters are set so that they balance each "
+                                              "other out when the target temperature is reached."),
+                                .type = kDouble,
+                                .section = sPIDSection,
+                                .position = 3,
+                                .show = [] { return true && usePonM; },
+                                .minValue = PID_KP_START_MIN,
+                                .maxValue = PID_KP_START_MAX,
+                                .ptr = (void*)&startKp};
 
-    editableVars["START_TN"] = {
-        .displayName = F("Start Tn"),
-        .hasHelpText = true,
-        .helpText = F("Integral gain for cold start controller (PonM mode, <a "
-                      "href='http://brettbeauregard.com/blog/2017/06/"
-                      "introducing-proportional-on-measurement/' target='_blank'>details</a>)"),
-        .type = kDouble,
-        .section = sPIDSection,
-        .position = 4,
-        .show = [] { return true && usePonM; },
-        .minValue = PID_TN_START_MIN,
-        .maxValue = PID_TN_START_MAX,
-        .ptr = (void*)&startTn
-    };
+    editableVars["START_TN"] = {.displayName = F("Start Tn"),
+                                .hasHelpText = true,
+                                .helpText = F("Integral gain for cold start controller (PonM mode, <a "
+                                              "href='http://brettbeauregard.com/blog/2017/06/"
+                                              "introducing-proportional-on-measurement/' target='_blank'>details</a>)"),
+                                .type = kDouble,
+                                .section = sPIDSection,
+                                .position = 4,
+                                .show = [] { return true && usePonM; },
+                                .minValue = PID_TN_START_MIN,
+                                .maxValue = PID_TN_START_MAX,
+                                .ptr = (void*)&startTn};
 
-    editableVars["PID_KP"] = {
-        .displayName = F("PID Kp"),
-        .hasHelpText = true,
-        .helpText =
-            F("Proportional gain (in Watts/C°) for the main PID controller (in "
-              "P-Tn-Tv form, <a href='http://testcon.info/EN_BspPID-Regler.html#strukturen' "
-              "target='_blank'>Details<a>). The higher this value is, the "
-              "higher is the output of the heater for a given temperature "
-              "difference. E.g. 5°C difference will result in P*5 Watts of heater output."),
-        .type = kDouble,
-        .section = sPIDSection,
-        .position = 5,
-        .show = [] { return true; },
-        .minValue = PID_KP_REGULAR_MIN,
-        .maxValue = PID_KP_REGULAR_MAX,
-        .ptr = (void*)&aggKp
-    };
+    editableVars["PID_KP"] = {.displayName = F("PID Kp"),
+                              .hasHelpText = true,
+                              .helpText = F("Proportional gain (in Watts/C°) for the main PID controller (in "
+                                            "P-Tn-Tv form, <a href='http://testcon.info/EN_BspPID-Regler.html#strukturen' "
+                                            "target='_blank'>Details<a>). The higher this value is, the "
+                                            "higher is the output of the heater for a given temperature "
+                                            "difference. E.g. 5°C difference will result in P*5 Watts of heater output."),
+                              .type = kDouble,
+                              .section = sPIDSection,
+                              .position = 5,
+                              .show = [] { return true; },
+                              .minValue = PID_KP_REGULAR_MIN,
+                              .maxValue = PID_KP_REGULAR_MAX,
+                              .ptr = (void*)&aggKp};
 
-    editableVars["PID_TN"] = {
-        .displayName = F("PID Tn (=Kp/Ki)"),
-        .hasHelpText = true,
-        .helpText =
-            F("Integral time constant (in seconds) for the main PID controller "
-              "(in P-Tn-Tv form, <a href='http://testcon.info/EN_BspPID-Regler.html#strukturen' "
-              "target='_blank'>Details<a>). The larger this value is, the slower the "
-              "integral part of the PID will increase (or decrease) if the "
-              "process value remains above (or below) the setpoint in spite of "
-              "proportional action. The smaller this value, the faster the integral term changes."),
-        .type = kDouble,
-        .section = sPIDSection,
-        .position = 6,
-        .show = [] { return true; },
-        .minValue = PID_TN_REGULAR_MIN,
-        .maxValue = PID_TN_REGULAR_MAX,
-        .ptr = (void*)&aggTn
-    };
+    editableVars["PID_TN"] = {.displayName = F("PID Tn (=Kp/Ki)"),
+                              .hasHelpText = true,
+                              .helpText = F("Integral time constant (in seconds) for the main PID controller "
+                                            "(in P-Tn-Tv form, <a href='http://testcon.info/EN_BspPID-Regler.html#strukturen' "
+                                            "target='_blank'>Details<a>). The larger this value is, the slower the "
+                                            "integral part of the PID will increase (or decrease) if the "
+                                            "process value remains above (or below) the setpoint in spite of "
+                                            "proportional action. The smaller this value, the faster the integral term changes."),
+                              .type = kDouble,
+                              .section = sPIDSection,
+                              .position = 6,
+                              .show = [] { return true; },
+                              .minValue = PID_TN_REGULAR_MIN,
+                              .maxValue = PID_TN_REGULAR_MAX,
+                              .ptr = (void*)&aggTn};
 
-    editableVars["PID_TV"] = {
-        .displayName = F("PID Tv (=Kd/Kp)"),
-        .hasHelpText = true,
-        .helpText = F(
-            "Differential time constant (in seconds) for the main PID controller (in P-Tn-Tv form, <a "
-            "href='http://testcon.info/EN_BspPID-Regler.html#strukturen' target='_blank'>Details<a>). "
-            "This value determines how far the PID equation projects the current trend into the future. "
-            "The higher the value, the greater the dampening. Select it carefully, it can cause oscillations "
-            "if it is set too high or too low."),
-        .type = kDouble,
-        .section = sPIDSection,
-        .position = 7,
-        .show = [] { return true; },
-        .minValue = PID_TV_REGULAR_MIN,
-        .maxValue = PID_TV_REGULAR_MAX,
-        .ptr = (void *)&aggTv
-    };
+    editableVars["PID_TV"] = {.displayName = F("PID Tv (=Kd/Kp)"),
+                              .hasHelpText = true,
+                              .helpText = F("Differential time constant (in seconds) for the main PID controller (in P-Tn-Tv form, <a "
+                                            "href='http://testcon.info/EN_BspPID-Regler.html#strukturen' target='_blank'>Details<a>). "
+                                            "This value determines how far the PID equation projects the current trend into the future. "
+                                            "The higher the value, the greater the dampening. Select it carefully, it can cause oscillations "
+                                            "if it is set too high or too low."),
+                              .type = kDouble,
+                              .section = sPIDSection,
+                              .position = 7,
+                              .show = [] { return true; },
+                              .minValue = PID_TV_REGULAR_MIN,
+                              .maxValue = PID_TV_REGULAR_MAX,
+                              .ptr = (void*)&aggTv};
 
-    editableVars["PID_I_MAX"] = {
-        .displayName = F("PID Integrator Max"),
-        .hasHelpText = true,
-        .helpText = F(
-            "Internal integrator limit to prevent windup (in Watts). This will allow the integrator to only grow to "
-            "the specified value. This should be approximally equal to the output needed to hold the temperature after the "
-            "setpoint has been reached and is depending on machine type and whether the boiler is insulated or not."),
-        .type = kDouble,
-        .section = sPIDSection,
-        .position = 8,
-        .show = [] { return true; },
-        .minValue = PID_I_MAX_REGULAR_MIN,
-        .maxValue = PID_I_MAX_REGULAR_MAX,
-        .ptr = (void *)&aggIMax
-    };
+    editableVars["PID_I_MAX"] = {.displayName = F("PID Integrator Max"),
+                                 .hasHelpText = true,
+                                 .helpText = F("Internal integrator limit to prevent windup (in Watts). This will allow the integrator to only grow to "
+                                               "the specified value. This should be approximally equal to the output needed to hold the temperature after the "
+                                               "setpoint has been reached and is depending on machine type and whether the boiler is insulated or not."),
+                                 .type = kDouble,
+                                 .section = sPIDSection,
+                                 .position = 8,
+                                 .show = [] { return true; },
+                                 .minValue = PID_I_MAX_REGULAR_MIN,
+                                 .maxValue = PID_I_MAX_REGULAR_MAX,
+                                 .ptr = (void*)&aggIMax};
 
-    editableVars["STEAM_KP"] = {
-        .displayName = F("Steam Kp"),
-        .hasHelpText = true,
-        .helpText = F("Proportional gain for the steaming mode (I or D are not used)"),
-        .type = kDouble,
-        .section = sPIDSection,
-        .position = 9,
-        .show = [] { return true; },
-        .minValue = PID_KP_STEAM_MIN,
-        .maxValue = PID_KP_STEAM_MAX,
-        .ptr = (void *)&steamKp
-    };
+    editableVars["STEAM_KP"] = {.displayName = F("Steam Kp"),
+                                .hasHelpText = true,
+                                .helpText = F("Proportional gain for the steaming mode (I or D are not used)"),
+                                .type = kDouble,
+                                .section = sPIDSection,
+                                .position = 9,
+                                .show = [] { return true; },
+                                .minValue = PID_KP_STEAM_MIN,
+                                .maxValue = PID_KP_STEAM_MAX,
+                                .ptr = (void*)&steamKp};
 
-    editableVars["TEMP"] = {
-        .displayName = F("Temperature"),
-        .hasHelpText = false,
-        .helpText = "",
-        .type = kDouble,
-        .section = sPIDSection,
-        .position = 10,
-        .show = [] { return false; },
-        .minValue = 0,
-        .maxValue = 200,
-        .ptr = (void*)&temperature
-    };
+    editableVars["TEMP"] = {.displayName = F("Temperature"),
+                            .hasHelpText = false,
+                            .helpText = "",
+                            .type = kDouble,
+                            .section = sPIDSection,
+                            .position = 10,
+                            .show = [] { return false; },
+                            .minValue = 0,
+                            .maxValue = 200,
+                            .ptr = (void*)&temperature};
 
-    editableVars["BREW_SETPOINT"] = {
-        .displayName = F("Set point (°C)"),
-        .hasHelpText = true,
-        .helpText =
-            F("The temperature that the PID will attempt to reach and hold"),
-        .type = kDouble,
-        .section = sTempSection,
-        .position = 11,
-        .show = [] { return true; },
-        .minValue = BREW_SETPOINT_MIN,
-        .maxValue = BREW_SETPOINT_MAX,
-        .ptr = (void*)&brewSetpoint
-    };
+    editableVars["BREW_SETPOINT"] = {.displayName = F("Set point (°C)"),
+                                     .hasHelpText = true,
+                                     .helpText = F("The temperature that the PID will attempt to reach and hold"),
+                                     .type = kDouble,
+                                     .section = sTempSection,
+                                     .position = 11,
+                                     .show = [] { return true; },
+                                     .minValue = BREW_SETPOINT_MIN,
+                                     .maxValue = BREW_SETPOINT_MAX,
+                                     .ptr = (void*)&brewSetpoint};
 
-    editableVars["BREW_TEMP_OFFSET"] = {
-        .displayName = F("Offset (°C)"),
-        .hasHelpText = true,
-        .helpText = F("Optional offset that is added to the user-visible "
-                      "setpoint. Can be used to compensate sensor offsets and "
-                      "the average temperature loss between boiler and group "
-                      "so that the setpoint represents the approximate brew temperature."),
-        .type = kDouble,
-        .section = sTempSection,
-        .position = 12,
-        .show = [] { return true; },
-        .minValue = BREW_TEMP_OFFSET_MIN,
-        .maxValue = BREW_TEMP_OFFSET_MAX,
-        .ptr = (void*)&brewTempOffset
-    };
+    editableVars["BREW_TEMP_OFFSET"] = {.displayName = F("Offset (°C)"),
+                                        .hasHelpText = true,
+                                        .helpText = F("Optional offset that is added to the user-visible "
+                                                      "setpoint. Can be used to compensate sensor offsets and "
+                                                      "the average temperature loss between boiler and group "
+                                                      "so that the setpoint represents the approximate brew temperature."),
+                                        .type = kDouble,
+                                        .section = sTempSection,
+                                        .position = 12,
+                                        .show = [] { return true; },
+                                        .minValue = BREW_TEMP_OFFSET_MIN,
+                                        .maxValue = BREW_TEMP_OFFSET_MAX,
+                                        .ptr = (void*)&brewTempOffset};
 
-    editableVars["STEAM_SETPOINT"] = {
-        .displayName = F("Steam Set point (°C)"),
-        .hasHelpText = true,
-        .helpText = F("The temperature that the PID will use for steam mode"),
-        .type = kDouble,
-        .section = sTempSection,
-        .position = 13,
-        .show = [] { return true; },
-        .minValue = STEAM_SETPOINT_MIN,
-        .maxValue = STEAM_SETPOINT_MAX,
-        .ptr = (void*)&steamSetpoint
-    };
+    editableVars["STEAM_SETPOINT"] = {.displayName = F("Steam Set point (°C)"),
+                                      .hasHelpText = true,
+                                      .helpText = F("The temperature that the PID will use for steam mode"),
+                                      .type = kDouble,
+                                      .section = sTempSection,
+                                      .position = 13,
+                                      .show = [] { return true; },
+                                      .minValue = STEAM_SETPOINT_MIN,
+                                      .maxValue = STEAM_SETPOINT_MAX,
+                                      .ptr = (void*)&steamSetpoint};
 
-    editableVars["BREW_TIME"] = {
-        .displayName = F("Brew Time (s)"),
-        .hasHelpText = true,
-        .helpText = F("Stop brew after this time"),
-        .type = kDouble,
-        .section = sTempSection,
-        .position = 14,
-        .show = [] { return true && BREWCONTROL_TYPE > 0; },
-        .minValue = BREW_TIME_MIN,
-        .maxValue = BREW_TIME_MAX,
-        .ptr = (void *)&brewTime
-    };
+    editableVars["BREW_TIME"] = {.displayName = F("Brew Time (s)"),
+                                 .hasHelpText = true,
+                                 .helpText = F("Stop brew after this time"),
+                                 .type = kDouble,
+                                 .section = sTempSection,
+                                 .position = 14,
+                                 .show = [] { return true && BREWCONTROL_TYPE > 0; },
+                                 .minValue = BREW_TIME_MIN,
+                                 .maxValue = BREW_TIME_MAX,
+                                 .ptr = (void*)&brewTime};
 
-    editableVars["BREW_PREINFUSIONPAUSE"] = {
-        .displayName = F("Preinfusion Pause Time (s)"),
-        .hasHelpText = false,
-        .helpText = "",
-        .type = kDouble,
-        .section = sTempSection,
-        .position = 15,
-        .show = [] { return true && BREWCONTROL_TYPE > 0; },
-        .minValue = PRE_INFUSION_PAUSE_MIN,
-        .maxValue = PRE_INFUSION_PAUSE_MAX,
-        .ptr = (void *)&preinfusionPause
-    };
+    editableVars["BREW_PREINFUSIONPAUSE"] = {.displayName = F("Preinfusion Pause Time (s)"),
+                                             .hasHelpText = false,
+                                             .helpText = "",
+                                             .type = kDouble,
+                                             .section = sTempSection,
+                                             .position = 15,
+                                             .show = [] { return true && BREWCONTROL_TYPE > 0; },
+                                             .minValue = PRE_INFUSION_PAUSE_MIN,
+                                             .maxValue = PRE_INFUSION_PAUSE_MAX,
+                                             .ptr = (void*)&preinfusionPause};
 
-    editableVars["BREW_PREINFUSION"] = {
-        .displayName = F("Preinfusion Time (s)"),
-        .hasHelpText = false,
-        .helpText = "",
-        .type = kDouble,
-        .section = sTempSection,
-        .position = 16,
-        .show = [] { return true && BREWCONTROL_TYPE > 0; },
-        .minValue = PRE_INFUSION_TIME_MIN,
-        .maxValue = PRE_INFUSION_TIME_MAX,
-        .ptr = (void *)&preinfusion
-    };
+    editableVars["BREW_PREINFUSION"] = {.displayName = F("Preinfusion Time (s)"),
+                                        .hasHelpText = false,
+                                        .helpText = "",
+                                        .type = kDouble,
+                                        .section = sTempSection,
+                                        .position = 16,
+                                        .show = [] { return true && BREWCONTROL_TYPE > 0; },
+                                        .minValue = PRE_INFUSION_TIME_MIN,
+                                        .maxValue = PRE_INFUSION_TIME_MAX,
+                                        .ptr = (void*)&preinfusion};
 
-    editableVars["SCALE_WEIGHTSETPOINT"] = {
-        .displayName = F("Brew weight setpoint (g)"),
-        .hasHelpText = true,
-        .helpText = F("Brew until this weight has been measured."),
-        .type = kDouble,
-        .section = sTempSection,
-        .position = 17,
-        .show = [] { return true && FEATURE_SCALE == 1; },
-        .minValue = WEIGHTSETPOINT_MIN,
-        .maxValue = WEIGHTSETPOINT_MAX,
-        .ptr = (void *)&weightSetpoint
-    };
+    editableVars["SCALE_WEIGHTSETPOINT"] = {.displayName = F("Brew weight setpoint (g)"),
+                                            .hasHelpText = true,
+                                            .helpText = F("Brew until this weight has been measured."),
+                                            .type = kDouble,
+                                            .section = sTempSection,
+                                            .position = 17,
+                                            .show = [] { return true && FEATURE_SCALE == 1; },
+                                            .minValue = WEIGHTSETPOINT_MIN,
+                                            .maxValue = WEIGHTSETPOINT_MAX,
+                                            .ptr = (void*)&weightSetpoint};
 
-    editableVars["PID_BD_DELAY"] = {
-        .displayName = F("Brew PID Delay (s)"),
-        .hasHelpText = true,
-        .helpText = F("Delay time in seconds during which the PID will be "
-                      "disabled once a brew is detected. This prevents too "
-                      "high brew temperatures with boiler machines like Rancilio "
-                      "Silvia. Set to 0 for thermoblock machines."),
-        .type = kDouble,
-        .section = sBDSection,
-        .position = 18,
-        .show =
-            [] { return true; },
-        .minValue = BREW_PID_DELAY_MIN,
-        .maxValue = BREW_PID_DELAY_MAX,
-        .ptr = (void *)&brewPIDDelay
-    };
+    editableVars["PID_BD_DELAY"] = {.displayName = F("Brew PID Delay (s)"),
+                                    .hasHelpText = true,
+                                    .helpText = F("Delay time in seconds during which the PID will be "
+                                                  "disabled once a brew is detected. This prevents too "
+                                                  "high brew temperatures with boiler machines like Rancilio "
+                                                  "Silvia. Set to 0 for thermoblock machines."),
+                                    .type = kDouble,
+                                    .section = sBDSection,
+                                    .position = 18,
+                                    .show = [] { return true; },
+                                    .minValue = BREW_PID_DELAY_MIN,
+                                    .maxValue = BREW_PID_DELAY_MAX,
+                                    .ptr = (void*)&brewPIDDelay};
 
-    editableVars["PID_BD_ON"] = {
-        .displayName = F("Enable Brew PID"),
-        .hasHelpText = true,
-        .helpText = F("Use separate PID parameters while brew is running"),
-        .type = kUInt8,
-        .section = sBDSection,
-        .position = 19,
-        .show = [] { return true && FEATURE_BREWDETECTION == 1; },
-        .minValue = 0,
-        .maxValue = 1,
-        .ptr = (void *)&useBDPID
-    };
+    editableVars["PID_BD_ON"] = {.displayName = F("Enable Brew PID"),
+                                 .hasHelpText = true,
+                                 .helpText = F("Use separate PID parameters while brew is running"),
+                                 .type = kUInt8,
+                                 .section = sBDSection,
+                                 .position = 19,
+                                 .show = [] { return true && FEATURE_BREWDETECTION == 1; },
+                                 .minValue = 0,
+                                 .maxValue = 1,
+                                 .ptr = (void*)&useBDPID};
 
-    editableVars["PID_BD_KP"] = {
-        .displayName = F("BD Kp"),
-        .hasHelpText = true,
-        .helpText = F(
-            "Proportional gain (in Watts/°C) for the PID when brewing has been "
-            "detected. Use this controller to either increase heating during the "
-            "brew to counter temperature drop from fresh cold water in the boiler. "
-            "Some machines, e.g. Rancilio Silvia, actually need to heat less or not "
-            "at all during the brew because of high temperature stability "
-            "(<a href='https://www.kaffee-netz.de/threads/"
-            "installation-eines-temperatursensors-in-silvia-bruehgruppe.111093/"
-            "#post-1453641' target='_blank'>Details<a>)"),
-        .type = kDouble,
-        .section = sBDSection,
-        .position = 20,
-        .show = [] { return true && FEATURE_BREWDETECTION == 1 && useBDPID; },
-        .minValue = PID_KP_BD_MIN,
-        .maxValue = PID_KP_BD_MAX,
-        .ptr = (void *)&aggbKp
-    };
+    editableVars["PID_BD_KP"] = {.displayName = F("BD Kp"),
+                                 .hasHelpText = true,
+                                 .helpText = F("Proportional gain (in Watts/°C) for the PID when brewing has been "
+                                               "detected. Use this controller to either increase heating during the "
+                                               "brew to counter temperature drop from fresh cold water in the boiler. "
+                                               "Some machines, e.g. Rancilio Silvia, actually need to heat less or not "
+                                               "at all during the brew because of high temperature stability "
+                                               "(<a href='https://www.kaffee-netz.de/threads/"
+                                               "installation-eines-temperatursensors-in-silvia-bruehgruppe.111093/"
+                                               "#post-1453641' target='_blank'>Details<a>)"),
+                                 .type = kDouble,
+                                 .section = sBDSection,
+                                 .position = 20,
+                                 .show = [] { return true && FEATURE_BREWDETECTION == 1 && useBDPID; },
+                                 .minValue = PID_KP_BD_MIN,
+                                 .maxValue = PID_KP_BD_MAX,
+                                 .ptr = (void*)&aggbKp};
 
-    editableVars["PID_BD_TN"] = {
-        .displayName = F("BD Tn (=Kp/Ki)"),
-        .hasHelpText = true,
-        .helpText = F("Integral time constant (in seconds) for the PID when "
-                      "brewing has been detected."),
-        .type = kDouble,
-        .section = sBDSection,
-        .position = 21,
-        .show = [] { return true && FEATURE_BREWDETECTION == 1 && useBDPID; },
-        .minValue = PID_TN_BD_MIN,
-        .maxValue = PID_TN_BD_MAX,
-        .ptr = (void *)&aggbTn
-    };
+    editableVars["PID_BD_TN"] = {.displayName = F("BD Tn (=Kp/Ki)"),
+                                 .hasHelpText = true,
+                                 .helpText = F("Integral time constant (in seconds) for the PID when "
+                                               "brewing has been detected."),
+                                 .type = kDouble,
+                                 .section = sBDSection,
+                                 .position = 21,
+                                 .show = [] { return true && FEATURE_BREWDETECTION == 1 && useBDPID; },
+                                 .minValue = PID_TN_BD_MIN,
+                                 .maxValue = PID_TN_BD_MAX,
+                                 .ptr = (void*)&aggbTn};
 
-    editableVars["PID_BD_TV"] = {
-        .displayName = F("BD Tv (=Kd/Kp)"),
-        .hasHelpText = true,
-        .helpText = F("Differential time constant (in seconds) for the PID "
-                      "when brewing has been detected."),
-        .type = kDouble,
-        .section = sBDSection,
-        .position = 22,
-        .show = [] { return true && FEATURE_BREWDETECTION == 1 && useBDPID; },
-        .minValue = PID_TV_BD_MIN,
-        .maxValue = PID_TV_BD_MAX,
-        .ptr = (void *)&aggbTv
-    };
+    editableVars["PID_BD_TV"] = {.displayName = F("BD Tv (=Kd/Kp)"),
+                                 .hasHelpText = true,
+                                 .helpText = F("Differential time constant (in seconds) for the PID "
+                                               "when brewing has been detected."),
+                                 .type = kDouble,
+                                 .section = sBDSection,
+                                 .position = 22,
+                                 .show = [] { return true && FEATURE_BREWDETECTION == 1 && useBDPID; },
+                                 .minValue = PID_TV_BD_MIN,
+                                 .maxValue = PID_TV_BD_MAX,
+                                 .ptr = (void*)&aggbTv};
 
-    editableVars["PID_BD_TIME"] = {
-        .displayName = F("PID BD Time (s)"),
-        .hasHelpText = true,
-        .helpText = F("Fixed time in seconds for which the BD PID will stay "
-                      "enabled (also after Brew switch is inactive again)."),
-        .type = kDouble,
-        .section = sBDSection,
-        .position = 23,
-        .show =
-            [] {
-              return true && FEATURE_BREWDETECTION == 1 &&
-                     (useBDPID || BREWDETECTION_TYPE == 1);
-            },
-        .minValue = BREW_SW_TIME_MIN,
-        .maxValue = BREW_SW_TIME_MAX,
-        .ptr = (void *)&brewtimesoftware
-    };
+    editableVars["PID_BD_TIME"] = {.displayName = F("PID BD Time (s)"),
+                                   .hasHelpText = true,
+                                   .helpText = F("Fixed time in seconds for which the BD PID will stay "
+                                                 "enabled (also after Brew switch is inactive again)."),
+                                   .type = kDouble,
+                                   .section = sBDSection,
+                                   .position = 23,
+                                   .show = [] { return true && FEATURE_BREWDETECTION == 1 && (useBDPID || BREWDETECTION_TYPE == 1); },
+                                   .minValue = BREW_SW_TIME_MIN,
+                                   .maxValue = BREW_SW_TIME_MAX,
+                                   .ptr = (void*)&brewtimesoftware};
 
-    editableVars["PID_BD_SENSITIVITY"] = {
-        .displayName = F("PID BD Sensitivity"),
-        .hasHelpText = true,
-        .helpText = F("Software brew detection sensitivity that looks at "
-                      "average temperature, <a href='https://manual.rancilio-pid.de/de/customization/"
-                      "brueherkennung.html' target='_blank'>Details</a>. "
-                      "Needs to be &gt;0 also for Hardware switch detection."),
-        .type = kDouble,
-        .section = sBDSection,
-        .position = 24,
-        .show = [] { return true && BREWDETECTION_TYPE == 1; },
-        .minValue = BD_THRESHOLD_MIN,
-        .maxValue = BD_THRESHOLD_MAX,
-        .ptr = (void *)&brewSensitivity
-    };
+    editableVars["PID_BD_SENSITIVITY"] = {.displayName = F("PID BD Sensitivity"),
+                                          .hasHelpText = true,
+                                          .helpText = F("Software brew detection sensitivity that looks at "
+                                                        "average temperature, <a href='https://manual.rancilio-pid.de/de/customization/"
+                                                        "brueherkennung.html' target='_blank'>Details</a>. "
+                                                        "Needs to be &gt;0 also for Hardware switch detection."),
+                                          .type = kDouble,
+                                          .section = sBDSection,
+                                          .position = 24,
+                                          .show = [] { return true && BREWDETECTION_TYPE == 1; },
+                                          .minValue = BD_THRESHOLD_MIN,
+                                          .maxValue = BD_THRESHOLD_MAX,
+                                          .ptr = (void*)&brewSensitivity};
 
     editableVars["STEAM_MODE"] = {
-        .displayName = F("Steam Mode"),
-        .hasHelpText = false,
-        .helpText = "",
-        .type = kUInt8,
-        .section = sOtherSection,
-        .position = 25,
-        .show = [] { return false; },
-        .minValue = 0,
-        .maxValue = 1,
-        .ptr = (void *)&steamON
-    };
+        .displayName = F("Steam Mode"), .hasHelpText = false, .helpText = "", .type = kUInt8, .section = sOtherSection, .position = 25, .show = [] { return false; }, .minValue = 0, .maxValue = 1, .ptr = (void*)&steamON};
 
     editableVars["BACKFLUSH_ON"] = {
-        .displayName = F("Backflush"),
-        .hasHelpText = false,
-        .helpText = "",
-        .type = kUInt8,
-        .section = sOtherSection,
-        .position = 26,
-        .show = [] { return false; },
-        .minValue = 0,
-        .maxValue = 1,
-        .ptr = (void *)&backflushOn
-    };
+        .displayName = F("Backflush"), .hasHelpText = false, .helpText = "", .type = kUInt8, .section = sOtherSection, .position = 26, .show = [] { return false; }, .minValue = 0, .maxValue = 1, .ptr = (void*)&backflushOn};
 
-    editableVars["STANDBY_MODE_ON"] = {
-        .displayName = F("Enable Standby Timer"),
-        .hasHelpText = true,
-        .helpText = F("Turn heater off after standby time has elapsed."),
-        .type = kUInt8,
-        .section = sPowerSection,
-        .position = 27,
-        .show = [] { return true; },
-        .minValue = 0,
-        .maxValue = 1,
-        .ptr = (void *)&standbyModeOn
-    };
+    editableVars["STANDBY_MODE_ON"] = {.displayName = F("Enable Standby Timer"),
+                                       .hasHelpText = true,
+                                       .helpText = F("Turn heater off after standby time has elapsed."),
+                                       .type = kUInt8,
+                                       .section = sPowerSection,
+                                       .position = 27,
+                                       .show = [] { return true; },
+                                       .minValue = 0,
+                                       .maxValue = 1,
+                                       .ptr = (void*)&standbyModeOn};
 
-    editableVars["STANDBY_MODE_TIMER"] = {
-        .displayName = F("Standby Time"),
-        .hasHelpText = true,
-        .helpText = F(
-            "Time in minutes until the heater is turned off. Timer is reset by brew detection."),
-        .type = kDouble,
-        .section = sPowerSection,
-        .position = 28,
-        .show = [] { return true; },
-        .minValue = STANDBY_MODE_TIME_MIN,
-        .maxValue = STANDBY_MODE_TIME_MAX,
-        .ptr = (void *)&standbyModeTime
-    };
+    editableVars["STANDBY_MODE_TIMER"] = {.displayName = F("Standby Time"),
+                                          .hasHelpText = true,
+                                          .helpText = F("Time in minutes until the heater is turned off. Timer is reset by brew detection."),
+                                          .type = kDouble,
+                                          .section = sPowerSection,
+                                          .position = 28,
+                                          .show = [] { return true; },
+                                          .minValue = STANDBY_MODE_TIME_MIN,
+                                          .maxValue = STANDBY_MODE_TIME_MAX,
+                                          .ptr = (void*)&standbyModeTime};
 
 #if FEATURE_SCALE == 1
     editableVars["TARE_ON"] = {
-        .displayName = F("Tare"),
-        .hasHelpText = false,
-        .helpText = "",
-        .type = kUInt8,
-        .section = sScaleSection,
-        .position = 29,
-        .show = [] { return false; },
-        .minValue = 0,
-        .maxValue = 1,
-        .ptr = (void *)&scaleTareOn
-    };
+        .displayName = F("Tare"), .hasHelpText = false, .helpText = "", .type = kUInt8, .section = sScaleSection, .position = 29, .show = [] { return false; }, .minValue = 0, .maxValue = 1, .ptr = (void*)&scaleTareOn};
 
-    editableVars["CALIBRATION_ON"] = {
-        .displayName = F("Calibration"),
-        .hasHelpText = false,
-        .helpText = "",
-        .type = kUInt8,
-        .section = sScaleSection,
-        .position = 30,
-        .show = [] { return false; },
-        .minValue = 0,
-        .maxValue = 1,
-        .ptr = (void *)&scaleCalibrationOn
-    };
+    editableVars["CALIBRATION_ON"] = {.displayName = F("Calibration"),
+                                      .hasHelpText = false,
+                                      .helpText = "",
+                                      .type = kUInt8,
+                                      .section = sScaleSection,
+                                      .position = 30,
+                                      .show = [] { return false; },
+                                      .minValue = 0,
+                                      .maxValue = 1,
+                                      .ptr = (void*)&scaleCalibrationOn};
 
-        editableVars["SCALE_KNOWN_WEIGHT"] = {
-        .displayName = F("Known weight in g"),
-        .hasHelpText = false,
-        .helpText = "",
-        .type = kFloat,
-        .section = sScaleSection,
-        .position = 31,
-        .show = [] { return true; },
-        .minValue = 0,
-        .maxValue = 2000,
-        .ptr = (void *)&scaleKnownWeight
-    };
+    editableVars["SCALE_KNOWN_WEIGHT"] = {.displayName = F("Known weight in g"),
+                                          .hasHelpText = false,
+                                          .helpText = "",
+                                          .type = kFloat,
+                                          .section = sScaleSection,
+                                          .position = 31,
+                                          .show = [] { return true; },
+                                          .minValue = 0,
+                                          .maxValue = 2000,
+                                          .ptr = (void*)&scaleKnownWeight};
 
-        editableVars["SCALE_CALIBRATION"] = {
-        .displayName = F("Calibration factor scale 1"),
-        .hasHelpText = false,
-        .helpText = "",
-        .type = kFloat,
-        .section = sScaleSection,
-        .position = 32,
-        .show = [] { return true; },
-        .minValue = -100000,
-        .maxValue = 100000,
-        .ptr = (void *)&scaleCalibration
-    };
+    editableVars["SCALE_CALIBRATION"] = {.displayName = F("Calibration factor scale 1"),
+                                         .hasHelpText = false,
+                                         .helpText = "",
+                                         .type = kFloat,
+                                         .section = sScaleSection,
+                                         .position = 32,
+                                         .show = [] { return true; },
+                                         .minValue = -100000,
+                                         .maxValue = 100000,
+                                         .ptr = (void*)&scaleCalibration};
 
-        editableVars["SCALE2_CALIBRATION"] = {
-        .displayName = F("Calibration factor scale 2"),
-        .hasHelpText = false,
-        .helpText = "",
-        .type = kFloat,
-        .section = sScaleSection,
-        .position = 32,
-        .show = [] { return SCALE_TYPE == 0; },
-        .minValue = -100000,
-        .maxValue = 100000,
-        .ptr = (void *)&scale2Calibration
-    };
+    editableVars["SCALE2_CALIBRATION"] = {.displayName = F("Calibration factor scale 2"),
+                                          .hasHelpText = false,
+                                          .helpText = "",
+                                          .type = kFloat,
+                                          .section = sScaleSection,
+                                          .position = 32,
+                                          .show = [] { return SCALE_TYPE == 0; },
+                                          .minValue = -100000,
+                                          .maxValue = 100000,
+                                          .ptr = (void*)&scale2Calibration};
 #endif
 
     editableVars["VERSION"] = {
-        .displayName = F("Version"),
-        .hasHelpText = false,
-        .helpText = "",
-        .type = kCString,
-        .section = sOtherSection,
-        .position = 33,
-        .show = [] { return false; },
-        .minValue = 0,
-        .maxValue = 1,
-        .ptr = (void *)sysVersion
-    };
+        .displayName = F("Version"), .hasHelpText = false, .helpText = "", .type = kCString, .section = sOtherSection, .position = 33, .show = [] { return false; }, .minValue = 0, .maxValue = 1, .ptr = (void*)sysVersion};
     // when adding parameters, set EDITABLE_VARS_LEN to max of .position
 
 #if (FEATURE_PRESSURESENSOR == 1)
@@ -2030,68 +1851,68 @@ void setup() {
 #endif
 
     // Editable values reported to MQTT
-    mqttVars["pidON"] = []{ return &editableVars.at("PID_ON"); };
-    mqttVars["brewSetpoint"] = []{ return &editableVars.at("BREW_SETPOINT"); };
-    mqttVars["brewTempOffset"] = []{ return &editableVars.at("BREW_TEMP_OFFSET"); };
-    mqttVars["steamON"] = []{ return &editableVars.at("STEAM_MODE"); };
-    mqttVars["steamSetpoint"] = []{ return &editableVars.at("STEAM_SETPOINT"); };
-    mqttVars["brewPidDelay"] = []{ return &editableVars.at("PID_BD_DELAY"); };
-    mqttVars["backflushOn"] = []{ return &editableVars.at("BACKFLUSH_ON"); };
-    mqttVars["startUsePonM"] = []{ return &editableVars.at("START_USE_PONM"); };
-    mqttVars["startKp"] = []{ return &editableVars.at("START_KP"); };
-    mqttVars["startTn"] = []{ return &editableVars.at("START_TN"); };
-    mqttVars["aggKp"] = []{ return &editableVars.at("PID_KP"); };
-    mqttVars["aggTn"] = []{ return &editableVars.at("PID_TN"); };
-    mqttVars["aggTv"] = []{ return &editableVars.at("PID_TV"); };
-    mqttVars["aggIMax"] = []{ return &editableVars.at("PID_I_MAX"); };
-    mqttVars["steamKp"] = []{ return &editableVars.at("STEAM_KP"); };
-    mqttVars["standbyModeOn"] = []{ return &editableVars.at("STANDBY_MODE_ON"); };
+    mqttVars["pidON"] = [] { return &editableVars.at("PID_ON"); };
+    mqttVars["brewSetpoint"] = [] { return &editableVars.at("BREW_SETPOINT"); };
+    mqttVars["brewTempOffset"] = [] { return &editableVars.at("BREW_TEMP_OFFSET"); };
+    mqttVars["steamON"] = [] { return &editableVars.at("STEAM_MODE"); };
+    mqttVars["steamSetpoint"] = [] { return &editableVars.at("STEAM_SETPOINT"); };
+    mqttVars["brewPidDelay"] = [] { return &editableVars.at("PID_BD_DELAY"); };
+    mqttVars["backflushOn"] = [] { return &editableVars.at("BACKFLUSH_ON"); };
+    mqttVars["startUsePonM"] = [] { return &editableVars.at("START_USE_PONM"); };
+    mqttVars["startKp"] = [] { return &editableVars.at("START_KP"); };
+    mqttVars["startTn"] = [] { return &editableVars.at("START_TN"); };
+    mqttVars["aggKp"] = [] { return &editableVars.at("PID_KP"); };
+    mqttVars["aggTn"] = [] { return &editableVars.at("PID_TN"); };
+    mqttVars["aggTv"] = [] { return &editableVars.at("PID_TV"); };
+    mqttVars["aggIMax"] = [] { return &editableVars.at("PID_I_MAX"); };
+    mqttVars["steamKp"] = [] { return &editableVars.at("STEAM_KP"); };
+    mqttVars["standbyModeOn"] = [] { return &editableVars.at("STANDBY_MODE_ON"); };
 
     if (BREWCONTROL_TYPE > 0) {
-        mqttVars["brewtime"] = []{ return &editableVars.at("BREW_TIME"); };
-        mqttVars["preinfusionpause"] = []{ return &editableVars.at("BREW_PREINFUSIONPAUSE"); };
-        mqttVars["preinfusion"] = []{ return &editableVars.at("BREW_PREINFUSION"); };
+        mqttVars["brewtime"] = [] { return &editableVars.at("BREW_TIME"); };
+        mqttVars["preinfusionpause"] = [] { return &editableVars.at("BREW_PREINFUSIONPAUSE"); };
+        mqttVars["preinfusion"] = [] { return &editableVars.at("BREW_PREINFUSION"); };
     }
 
     if (FEATURE_SCALE == 1) {
-        mqttVars["weightSetpoint"] = []{ return &editableVars.at("SCALE_WEIGHTSETPOINT"); };
-        mqttVars["scaleCalibration"] = []{ return &editableVars.at("SCALE_CALIBRATION"); };
-        #if SCALE_TYPE == 0
-        mqttVars["scale2Calibration"] = []{ return &editableVars.at("SCALE2_CALIBRATION"); };
-        #endif
-        mqttVars["scaleKnownWeight"] = []{ return &editableVars.at("SCALE_KNOWN_WEIGHT"); };
-        mqttVars["scaleTareOn"] = []{ return &editableVars.at("TARE_ON"); };
-        mqttVars["scaleCalibrationOn"] = []{ return &editableVars.at("CALIBRATION_ON"); };
+        mqttVars["weightSetpoint"] = [] { return &editableVars.at("SCALE_WEIGHTSETPOINT"); };
+        mqttVars["scaleCalibration"] = [] { return &editableVars.at("SCALE_CALIBRATION"); };
+#if SCALE_TYPE == 0
+        mqttVars["scale2Calibration"] = [] { return &editableVars.at("SCALE2_CALIBRATION"); };
+#endif
+        mqttVars["scaleKnownWeight"] = [] { return &editableVars.at("SCALE_KNOWN_WEIGHT"); };
+        mqttVars["scaleTareOn"] = [] { return &editableVars.at("TARE_ON"); };
+        mqttVars["scaleCalibrationOn"] = [] { return &editableVars.at("CALIBRATION_ON"); };
     }
 
     if (FEATURE_BREWDETECTION == 1) {
-        mqttVars["pidUseBD"] = []{ return &editableVars.at("PID_BD_ON"); };
-        mqttVars["aggbKp"] = []{ return &editableVars.at("PID_BD_KP"); };
-        mqttVars["aggbTn"] = []{ return &editableVars.at("PID_BD_TN"); };
-        mqttVars["aggbTv"] = []{ return &editableVars.at("PID_BD_TV"); };
+        mqttVars["pidUseBD"] = [] { return &editableVars.at("PID_BD_ON"); };
+        mqttVars["aggbKp"] = [] { return &editableVars.at("PID_BD_KP"); };
+        mqttVars["aggbTn"] = [] { return &editableVars.at("PID_BD_TN"); };
+        mqttVars["aggbTv"] = [] { return &editableVars.at("PID_BD_TV"); };
 
         if (BREWDETECTION_TYPE == 1) {
-            mqttVars["brewTimer"] = []{ return &editableVars.at("PID_BD_TIME"); };
-            mqttVars["brewLimit"] = []{ return &editableVars.at("PID_BD_SENSITIVITY"); };
+            mqttVars["brewTimer"] = [] { return &editableVars.at("PID_BD_TIME"); };
+            mqttVars["brewLimit"] = [] { return &editableVars.at("PID_BD_SENSITIVITY"); };
         }
     }
 
     // Values reported to MQTT
-    mqttSensors["temperature"] = []{ return temperature; };
-    mqttSensors["heaterPower"] = []{ return pidOutput / 10; };
-    mqttSensors["standbyModeTimeRemaining"] = []{ return standbyModeRemainingTimeMillis / 1000; };
-    mqttSensors["currentKp"] = []{ return bPID.GetKp(); };
-    mqttSensors["currentKi"] = []{ return bPID.GetKi(); };
-    mqttSensors["currentKd"] = []{ return bPID.GetKd(); };
-    mqttSensors["machineState"] = []{ return machineState; };
+    mqttSensors["temperature"] = [] { return temperature; };
+    mqttSensors["heaterPower"] = [] { return pidOutput / 10; };
+    mqttSensors["standbyModeTimeRemaining"] = [] { return standbyModeRemainingTimeMillis / 1000; };
+    mqttSensors["currentKp"] = [] { return bPID.GetKp(); };
+    mqttSensors["currentKi"] = [] { return bPID.GetKi(); };
+    mqttSensors["currentKd"] = [] { return bPID.GetKd(); };
+    mqttSensors["machineState"] = [] { return machineState; };
 
-    #if FEATURE_PRESSURESENSOR == 1
-        mqttSensors["pressure"] = []{ return inputPressureFilter; };
-    #endif
+#if FEATURE_PRESSURESENSOR == 1
+    mqttSensors["pressure"] = [] { return inputPressureFilter; };
+#endif
 
-    #if FEATURE_SCALE == 1
-        mqttSensors["currentWeight"] = []{ return weight; };
-    #endif
+#if FEATURE_SCALE == 1
+    mqttSensors["currentWeight"] = [] { return weight; };
+#endif
 
     initTimer1();
 
@@ -2154,22 +1975,22 @@ void setup() {
         }
     }
 
-    #if OLED_DISPLAY != 0
-        u8g2.setI2CAddress(oled_i2c * 2);
-        u8g2.begin();
-        u8g2_prepare();
-        displayLogo(String("Version "), String(sysVersion));
-        delay(2000); // caused crash with wifi manager on esp8266, should be ok on esp32
-    #endif
+#if OLED_DISPLAY != 0
+    u8g2.setI2CAddress(oled_i2c * 2);
+    u8g2.begin();
+    u8g2_prepare();
+    displayLogo(String("Version "), String(sysVersion));
+    delay(2000); // caused crash with wifi manager on esp8266, should be ok on esp32
+#endif
 
     // Fallback offline
-    if (connectmode == 1) {  // WiFi Mode
+    if (connectmode == 1) { // WiFi Mode
         wiFiSetup();
         websiteSetup();
 
         // OTA Updates
         if (ota && WiFi.status() == WL_CONNECTED) {
-            ArduinoOTA.setHostname(hostname);  //  Device name for OTA
+            ArduinoOTA.setHostname(hostname); //  Device name for OTA
             ArduinoOTA.setPassword(OTApass);  //  Password for OTA
             ArduinoOTA.begin();
         }
@@ -2180,16 +2001,16 @@ void setup() {
             mqtt.setServer(mqtt_server_ip, mqtt_server_port);
             mqtt.setCallback(mqtt_callback);
             checkMQTT();
-            #if MQTT_HASSIO_SUPPORT == 1  // Send Home Assistant MQTT discovery messages
+#if MQTT_HASSIO_SUPPORT == 1 // Send Home Assistant MQTT discovery messages
             sendHASSIODiscoveryMsg();
-            #endif
+#endif
         }
     }
     else if (connectmode == 0) {
-        wm.disconnect();              // no wm
-        readSysParamsFromStorage();   // get all parameters from storage
-        offlineMode = 1;              // offline mode
-        pidON = 1;                    // pid on
+        wm.disconnect();            // no wm
+        readSysParamsFromStorage(); // get all parameters from storage
+        offlineMode = 1;            // offline mode
+        pidON = 1;                  // pid on
     }
 
     // Initialize PID controller
@@ -2210,10 +2031,10 @@ void setup() {
 
     temperature -= brewTempOffset;
 
-    // Init Scale 
-    #if FEATURE_SCALE == 1
-        initScale();
-    #endif
+// Init Scale
+#if FEATURE_SCALE == 1
+    initScale();
+#endif
 
     // Initialisation MUST be at the very end of the init(), otherwise the
     // time comparision in loop() will have a big offset
@@ -2225,13 +2046,13 @@ void setup() {
     previousMillisOptocouplerReading = currentTime;
     lastMQTTConnectionAttempt = currentTime;
 
-    #if FEATURE_SCALE == 1
-        previousMillisScale = currentTime;
-    #endif
+#if FEATURE_SCALE == 1
+    previousMillisScale = currentTime;
+#endif
 
-    #if (FEATURE_PRESSURESENSOR == 1)
-        previousMillisPressure = currentTime;
-    #endif
+#if (FEATURE_PRESSURESENSOR == 1)
+    previousMillisPressure = currentTime;
+#endif
 
     setupDone = true;
 
@@ -2242,10 +2063,8 @@ void setup() {
     Logger::setLevel(LOGLEVEL);
 
     double fsUsage = ((double)LittleFS.usedBytes() / LittleFS.totalBytes()) * 100;
-    LOGF(INFO, "LittleFS: %d%% (used %ld bytes from %ld bytes)",
-        (int)ceil(fsUsage), LittleFS.usedBytes(), LittleFS.totalBytes());
+    LOGF(INFO, "LittleFS: %d%% (used %ld bytes from %ld bytes)", (int)ceil(fsUsage), LittleFS.usedBytes(), LittleFS.totalBytes());
 }
-
 
 void loop() {
     looppid();
@@ -2258,7 +2077,6 @@ void loop() {
     Logger::update();
 }
 
-
 void looppid() {
     // Only do Wifi stuff, if Wifi is connected
     if (WiFi.status() == WL_CONNECTED && offlineMode == 0) {
@@ -2268,22 +2086,22 @@ void looppid() {
 
             if (mqtt.connected() == 1) {
                 mqtt.loop();
-                #if MQTT_HASSIO_SUPPORT == 1
+#if MQTT_HASSIO_SUPPORT == 1
                 if (millis() - lastHomeAssistantDiscoveryExecutionTime >= HomeAssistantDiscoveryExecutionInterval) {
                     sendHASSIODiscoveryMsg();
                     lastHomeAssistantDiscoveryExecutionTime = millis();
                 }
-                #endif
+#endif
                 mqtt_was_connected = true;
             }
             // Supress debug messages until we have a connection etablished
-            else if(mqtt_was_connected) {
+            else if (mqtt_was_connected) {
                 LOG(INFO, "MQTT disconnected");
                 mqtt_was_connected = false;
             }
         }
 
-        ArduinoOTA.handle();  // For OTA
+        ArduinoOTA.handle(); // For OTA
 
         // Disable interrupt if OTA is starting, otherwise it will not work
         ArduinoOTA.onStart([]() {
@@ -2296,37 +2114,37 @@ void looppid() {
         // Enable interrupts if OTA is finished
         ArduinoOTA.onEnd([]() { enableTimer1(); });
 
-        wifiReconnects = 0;  // reset wifi reconnects if connected
+        wifiReconnects = 0; // reset wifi reconnects if connected
     }
     else {
         checkWifi();
     }
 
-    refreshTemp();        // update temperature values
-    testEmergencyStop();  // test if temp is too high
-    bPID.Compute();       // the variable pidOutput now has new values from PID (will be written to heater pin in ISR.cpp)
+    refreshTemp();       // update temperature values
+    testEmergencyStop(); // test if temp is too high
+    bPID.Compute();      // the variable pidOutput now has new values from PID (will be written to heater pin in ISR.cpp)
 
     if ((millis() - lastTempEvent) > tempEventInterval) {
-        //send temperatures to website endpoint
-        sendTempEvent(temperature, brewSetpoint, pidOutput/10);       //pidOutput is promill, so /10 to get percent value
+        // send temperatures to website endpoint
+        sendTempEvent(temperature, brewSetpoint, pidOutput / 10); // pidOutput is promill, so /10 to get percent value
         lastTempEvent = millis();
 
         if (pidON) {
             LOGF(TRACE, "Current PID mode: %s", bPID.GetPonE() ? "PonE" : "PonM");
 
-            //P-Part
+            // P-Part
             LOGF(TRACE, "Current PID input error: %f", bPID.GetInputError());
             LOGF(TRACE, "Current PID P part: %f", bPID.GetLastPPart());
             LOGF(TRACE, "Current PID kP: %f", bPID.GetKp());
-            //I-Part
+            // I-Part
             LOGF(TRACE, "Current PID I sum: %f", bPID.GetLastIPart());
             LOGF(TRACE, "Current PID kI: %f", bPID.GetKi());
-            //D-Part
+            // D-Part
             LOGF(TRACE, "Current PID diff'd input: %f", bPID.GetDeltaInput());
             LOGF(TRACE, "Current PID D part: %f", bPID.GetLastDPart());
             LOGF(TRACE, "Current PID kD: %f", bPID.GetKd());
 
-            //Combined PID output
+            // Combined PID output
             LOGF(TRACE, "Current PID Output: %f", pidOutput);
             LOGF(TRACE, "Current Machinestate: %s", machinestateEnumToString(machineState));
             LOGF(TRACE, "timeBrewed %f", timeBrewed);
@@ -2336,23 +2154,23 @@ void looppid() {
         }
     }
 
-    #if FEATURE_SCALE == 1
-        checkWeight();  // Check Weight Scale in the loop
-    #endif
+#if FEATURE_SCALE == 1
+    checkWeight(); // Check Weight Scale in the loop
+#endif
 
-    #if (BREWCONTROL_TYPE > 0)
-        brew();
-    #endif
+#if (BREWCONTROL_TYPE > 0)
+    brew();
+#endif
 
-    #if (FEATURE_PRESSURESENSOR == 1)
-        unsigned long currentMillisPressure = millis();
+#if (FEATURE_PRESSURESENSOR == 1)
+    unsigned long currentMillisPressure = millis();
 
-        if (currentMillisPressure - previousMillisPressure >= intervalPressure) {
-            previousMillisPressure = currentMillisPressure;
-            inputPressure = measurePressure();
-            inputPressureFilter = filterPressureValue(inputPressure);
-        }
-    #endif
+    if (currentMillisPressure - previousMillisPressure >= intervalPressure) {
+        previousMillisPressure = currentMillisPressure;
+        inputPressure = measurePressure();
+        inputPressureFilter = filterPressureValue(inputPressure);
+    }
+#endif
 
     checkSteamSwitch();
     checkPowerSwitch();
@@ -2371,9 +2189,9 @@ void looppid() {
 
     handleMachineState();
 
-    #if (FEATURE_SCALE == 1 && BREWCONTROL_TYPE == 0)  // SHOTTIMER with scale
-        shottimerscale();
-    #endif
+#if (FEATURE_SCALE == 1 && BREWCONTROL_TYPE == 0) // SHOTTIMER with scale
+    shottimerscale();
+#endif
 
     // Check if PID should run or not. If not, set to manual and force output to zero
 #if OLED_DISPLAY != 0
@@ -2385,10 +2203,10 @@ void looppid() {
 
     if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
         previousMillisDisplay = currentMillisDisplay;
-    #if DISPLAYTEMPLATE < 20  // not using vertical template
+    #if DISPLAYTEMPLATE < 20 // not using vertical template
         displayMachineState();
     #endif
-        printScreen();  // refresh display
+        printScreen(); // refresh display
     }
 #endif
 
@@ -2401,7 +2219,7 @@ void looppid() {
             heaterRelay.off();
         }
     }
-    else {  // no sensorerror, no pid off or no Emergency Stop
+    else { // no sensorerror, no pid off or no Emergency Stop
         if (pidMode == 0) {
             pidMode = 1;
             bPID.SetMode(pidMode);
@@ -2437,8 +2255,8 @@ void looppid() {
 
     // BD PID
     if (machineState >= kBrew && machineState <= kBrewDetectionTrailing) {
-        if (brewPIDDelay > 0 && timeBrewed > 0 && timeBrewed < brewPIDDelay*1000) {
-            //disable PID for brewPIDDelay seconds, enable PID again with new tunings after that
+        if (brewPIDDelay > 0 && timeBrewed > 0 && timeBrewed < brewPIDDelay * 1000) {
+            // disable PID for brewPIDDelay seconds, enable PID again with new tunings after that
             if (!brewPIDDisabled) {
                 brewPIDDisabled = true;
                 bPID.SetMode(MANUAL);
@@ -2447,7 +2265,7 @@ void looppid() {
         }
         else {
             if (brewPIDDisabled) {
-                //enable PID again
+                // enable PID again
                 bPID.SetMode(AUTOMATIC);
                 brewPIDDisabled = false;
                 LOG(DEBUG, "Enabled PID again after delay");
@@ -2504,8 +2322,8 @@ void looppid() {
 }
 
 void loopLED() {
-    if(FEATURE_STATUS_LED) {
-        if ((machineState == kPidNormal && (fabs(temperature  - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) {
+    if (FEATURE_STATUS_LED) {
+        if ((machineState == kPidNormal && (fabs(temperature - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) {
             statusLed->turnOn();
         }
         else {
@@ -2564,18 +2382,12 @@ void loopWater() {
     }
 }
 
-void setBackflush(int backflush) {
-    backflushOn = backflush;
-}
+void setBackflush(int backflush) { backflushOn = backflush; }
 
 #if FEATURE_SCALE == 1
-    void setScaleCalibration(int calibration) {
-        scaleCalibrationOn = calibration;
-    }
+void setScaleCalibration(int calibration) { scaleCalibrationOn = calibration; }
 
-    void setScaleTare(int tare) {
-        scaleTareOn = tare;
-    }
+void setScaleTare(int tare) { scaleTareOn = tare; }
 #endif
 
 void setSteamMode(int steamMode) {
@@ -2713,7 +2525,6 @@ int writeSysParamsToStorage(void) {
 
     return storageCommit();
 }
-
 
 /**
  * @brief Performs a factory reset.

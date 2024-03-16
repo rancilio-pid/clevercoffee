@@ -14,8 +14,8 @@ void checkSteamSwitch() {
             // Set steamON to 1 when steamswitch is HIGH
             if (steamSwitchReading == HIGH) {
                 steamON = 1;
-            } 
-            
+            }
+
             // if activated via web interface then steamFirstON == 1, prevent override
             if (steamSwitchReading == LOW && !steamFirstON) {
                 steamON = 0;
@@ -24,7 +24,7 @@ void checkSteamSwitch() {
             // monitor QuickMill thermoblock steam-mode
             if (machine == QuickMill) {
                 if (steamQM_active == true) {
-                    if (checkSteamOffQM() == true) {  // if true: steam-mode can be turned off
+                    if (checkSteamOffQM() == true) { // if true: steam-mode can be turned off
                         steamON = 0;
                         steamQM_active = false;
                         lastTimeOptocouplerOn = 0;
@@ -52,4 +52,3 @@ void checkSteamSwitch() {
         }
     }
 }
-

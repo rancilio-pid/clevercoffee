@@ -1,8 +1,8 @@
 /**
  * @file standby.h
- * 
+ *
  * @brief Standby mode
-*/
+ */
 
 #pragma once
 
@@ -15,7 +15,7 @@ unsigned long lastStandbyTimeMillis = standbyModeStartTimeMillis;
 unsigned long timeSinceStandbyMillis = 0;
 
 /**
- * @brief Decrements the remaining standby time every second, counting down from the configured duration 
+ * @brief Decrements the remaining standby time every second, counting down from the configured duration
  */
 void updateStandbyTimer(void) {
     unsigned long currentTime = millis();
@@ -61,5 +61,5 @@ void resetStandbyTimer(void) {
     standbyModeRemainingTimeDisplayOffMillis = TIME_TO_DISPLAY_OFF * 60 * 1000;
     standbyModeStartTimeMillis = millis();
 
-    LOGF(INFO, "Resetting standby timer to %i minutes",  (int)standbyModeTime);
+    LOGF(INFO, "Resetting standby timer to %i minutes", (int)standbyModeTime);
 }

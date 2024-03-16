@@ -12,11 +12,9 @@
  */
 void printScreen() {
     if (((machineState == kAtSetpoint || machineState == kPidNormal || machineState == kBrewDetectionTrailing) ||
-        ((machineState == kBrew || machineState == kShotTimerAfterBrew) && FEATURE_SHOTTIMER == 0) ||  // shottimer == 0, auch Bezug anzeigen
-        machineState == kCoolDown || ((machineState == kInit || machineState == kColdStart) && FEATURE_HEATINGLOGO == 0) ||
-        ((machineState == kPidOffline) && FEATURE_OFFLINELOGO == 0))
-        && (brewSwitchState != kBrewSwitchFlushOff))
-    {
+         ((machineState == kBrew || machineState == kShotTimerAfterBrew) && FEATURE_SHOTTIMER == 0) || // shottimer == 0, auch Bezug anzeigen
+         machineState == kCoolDown || ((machineState == kInit || machineState == kColdStart) && FEATURE_HEATINGLOGO == 0) || ((machineState == kPidOffline) && FEATURE_OFFLINELOGO == 0)) &&
+        (brewSwitchState != kBrewSwitchFlushOff)) {
         if (!sensorError) {
             u8g2.clearBuffer();
             u8g2.setCursor(1, 14);
@@ -44,7 +42,7 @@ void printScreen() {
             u8g2.setCursor(1, 50);
             u8g2.setFont(u8g2_font_profont22_tf);
 
-            if (fabs(temperature  - setpoint) < 0.3) {
+            if (fabs(temperature - setpoint) < 0.3) {
                 if (isrCounter < 500) {
                     u8g2.print("OK");
                 }
@@ -100,10 +98,10 @@ void printScreen() {
             u8g2.print("/");
 
             if (BREWCONTROL_TYPE == 0) {
-                u8g2.print(brewtimesoftware, 0);// deaktivieren wenn Preinfusion ( // voransetzen )
+                u8g2.print(brewtimesoftware, 0); // deaktivieren wenn Preinfusion ( // voransetzen )
             }
             else {
-                u8g2.print(totalBrewTime / 1000, 0);            // aktivieren wenn Preinfusion
+                u8g2.print(totalBrewTime / 1000, 0); // aktivieren wenn Preinfusion
             }
 
             u8g2.print(" s");

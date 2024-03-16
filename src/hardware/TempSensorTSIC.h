@@ -1,6 +1,6 @@
 /**
  * @file TempSensorTSIC.h
- * 
+ *
  * @brief Handler for TSIC 306 temperature sensor
  */
 

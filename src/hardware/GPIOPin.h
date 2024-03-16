@@ -1,7 +1,7 @@
 /**
  * @file GPIOPin.h
- * 
- * @brief Abstraction of a GPIO pin 
+ *
+ * @brief Abstraction of a GPIO pin
  */
 
 #pragma once
@@ -16,7 +16,6 @@
  */
 class GPIOPin {
     public:
-
         /**
          * @enum Type
          * @brief Type of GPIO pin
@@ -24,9 +23,9 @@ class GPIOPin {
         enum Type {
             OUT,
             IN_STANDARD,
-            IN_PULLUP,      // Internal pull-up resistor
-            IN_PULLDOWN,    // Internal pull-down resistor
-            IN_HARDWARE,    // External pull-up/pull-down resistor
+            IN_PULLUP,   // Internal pull-up resistor
+            IN_PULLDOWN, // Internal pull-down resistor
+            IN_HARDWARE, // External pull-up/pull-down resistor
             IN_ANALOG
         };
 
@@ -71,4 +70,3 @@ class GPIOPin {
         int pin;
         Type pinType;
 };
-

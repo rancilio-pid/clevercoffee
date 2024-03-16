@@ -1,6 +1,6 @@
 /**
  * @file Relay.h
- * 
+ *
  * @brief A relay connected to a GPIO pin
  */
 #pragma once

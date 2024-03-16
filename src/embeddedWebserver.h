@@ -9,17 +9,15 @@
 
 #include <Arduino.h>
 
-
-#include <WiFi.h>
-#include <AsyncTCP.h>
 #include "FS.h"
+#include <AsyncTCP.h>
+#include <WiFi.h>
 
-#include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
+#include <ESPAsyncWebServer.h>
 
 #include "LittleFS.h"
 #include <functional>
-
 
 enum EditableKind {
     kInteger,
@@ -31,16 +29,16 @@ enum EditableKind {
 };
 
 struct editable_t {
-    String displayName;
-    boolean hasHelpText;
-    String helpText;
-    EditableKind type;
-    int section;                   // parameter section number
-    int position;
-    std::function<bool()> show;    // method that determines if we show this parameter (in the web interface)
-    int minValue;
-    int maxValue;
-    void *ptr;                     // TODO: there must be a tidier way to do this? could we use c++ templates?
+        String displayName;
+        boolean hasHelpText;
+        String helpText;
+        EditableKind type;
+        int section; // parameter section number
+        int position;
+        std::function<bool()> show; // method that determines if we show this parameter (in the web interface)
+        int minValue;
+        int maxValue;
+        void* ptr; // TODO: there must be a tidier way to do this? could we use c++ templates?
 };
 
 AsyncWebServer server(80);
@@ -50,7 +48,7 @@ double curTemp = 0.0;
 double tTemp = 0.0;
 double hPower = 0.0;
 
-#define HISTORY_LENGTH 600    //30 mins of values (20 vals/min * 60 min) = 600 (7,2kb)
+#define HISTORY_LENGTH 600 // 30 mins of values (20 vals/min * 60 min) = 600 (7,2kb)
 
 static float tempHistory[3][HISTORY_LENGTH] = {0};
 int historyCurrentIndex = 0;
@@ -63,17 +61,12 @@ void setEepromWriteFcn(int (*fcnPtr)(void));
 #define EDITABLE_VARS_LEN 33
 extern std::map<String, editable_t> editableVars;
 
-
 // EEPROM
 int (*writeToEeprom)(void) = NULL;
 
-void setEepromWriteFcn(int (*fcnPtr)(void)) {
-    writeToEeprom = fcnPtr;
-}
+void setEepromWriteFcn(int (*fcnPtr)(void)) { writeToEeprom = fcnPtr; }
 
-uint8_t flipUintValue(uint8_t value) {
-    return (value + 3) % 2;
-}
+uint8_t flipUintValue(uint8_t value) { return (value + 3) % 2; }
 
 String getTempString() {
     StaticJsonDocument<96> doc;
@@ -97,37 +90,26 @@ int mod(int a, int b) {
 // rounds a number to 2 decimal places
 // example: round(3.14159) -> 3.14
 // (less characters when serialized to json)
-double round2(double value) {
-   return (int)(value * 100 + 0.5) / 100.0;
-}
+double round2(double value) { return (int)(value * 100 + 0.5) / 100.0; }
 
 String getValue(String varName) {
     try {
         editable_t e = editableVars.at(varName);
         switch (e.type) {
-            case kFloat:
-                return String(*(float *)e.ptr);
-            case kDouble:
-                return String(*(double *)e.ptr);
-            case kDoubletime:
-                return String(*(double *)e.ptr);
-            case kInteger:
-                return String(*(int *)e.ptr);
-            case kUInt8:
-                return String(*(uint8_t *)e.ptr);
-            case kCString:
-                return String((char *)e.ptr);
-            default:
-                return F("Unknown type");
-                break;
+            case kFloat: return String(*(float*)e.ptr);
+            case kDouble: return String(*(double*)e.ptr);
+            case kDoubletime: return String(*(double*)e.ptr);
+            case kInteger: return String(*(int*)e.ptr);
+            case kUInt8: return String(*(uint8_t*)e.ptr);
+            case kCString: return String((char*)e.ptr);
+            default: return F("Unknown type"); break;
         }
-    }
-    catch (const std::out_of_range &exc) {
+    } catch (const std::out_of_range& exc) {
         return "(unknown variable " + varName + ")";
     }
 }
 
-void paramToJson(String name, editable_t &e, DynamicJsonDocument &doc) {
+void paramToJson(String name, editable_t& e, DynamicJsonDocument& doc) {
     JsonObject paramObj = doc.createNestedObject();
     paramObj["type"] = e.type;
     paramObj["name"] = name;
@@ -139,19 +121,19 @@ void paramToJson(String name, editable_t &e, DynamicJsonDocument &doc) {
 
     // set parameter value
     if (e.type == kInteger) {
-        paramObj["value"] = *(int *)e.ptr;
+        paramObj["value"] = *(int*)e.ptr;
     }
     else if (e.type == kUInt8) {
-        paramObj["value"] = *(uint8_t *)e.ptr;
+        paramObj["value"] = *(uint8_t*)e.ptr;
     }
     else if (e.type == kDouble || e.type == kDoubletime) {
-        paramObj["value"] = round2(*(double *)e.ptr);
+        paramObj["value"] = round2(*(double*)e.ptr);
     }
     else if (e.type == kFloat) {
-        paramObj["value"] = round2(*(float *)e.ptr);
+        paramObj["value"] = round2(*(float*)e.ptr);
     }
     else if (e.type == kCString) {
-        paramObj["value"] = (char *)e.ptr;
+        paramObj["value"] = (char*)e.ptr;
     }
 
     paramObj["min"] = e.minValue;
@@ -163,48 +145,48 @@ void paramToJson(String name, editable_t &e, DynamicJsonDocument &doc) {
 
 // hash strings at compile time to use in switch statement
 // (from https://stackoverflow.com/questions/2111667/compile-time-string-hashing)
-constexpr unsigned int str2int(const char* str, int h = 0) {
-    return !str[h] ? 5381 : (str2int(str, h+1) * 33) ^ str[h];
-}
+constexpr unsigned int str2int(const char* str, int h = 0) { return !str[h] ? 5381 : (str2int(str, h + 1) * 33) ^ str[h]; }
 
 String getHeader(String varName) {
     switch (str2int(varName.c_str())) {
         case (str2int("FONTAWESOME")):
-            #if NOINTERNET == 1
-                return F("<link href=\"/css/fontawesome-6.2.1.min.css\" rel=\"stylesheet\">");
-            #else
-                return F("<link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css\">");
-            #endif
+#if NOINTERNET == 1
+            return F("<link href=\"/css/fontawesome-6.2.1.min.css\" rel=\"stylesheet\">");
+#else
+            return F("<link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css\">");
+#endif
         case (str2int("BOOTSTRAP")):
-            #if NOINTERNET == 1
-                return F("<link href=\"/css/bootstrap-5.2.3.min.css\" rel=\"stylesheet\">");
-            #else
-                return F("<link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css\" rel=\"stylesheet\" integrity=\"sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65\" crossorigin=\"anonymous\">");
-            #endif
+#if NOINTERNET == 1
+            return F("<link href=\"/css/bootstrap-5.2.3.min.css\" rel=\"stylesheet\">");
+#else
+            return F("<link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css\" rel=\"stylesheet\" integrity=\"sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65\" "
+                     "crossorigin=\"anonymous\">");
+#endif
         case (str2int("BOOTSTRAP_BUNDLE")):
-            #if NOINTERNET == 1
-                return F("<script src=\"/js/bootstrap.bundle.5.2.3.min.js\"></script>");
-            #else
-                return F("<script src=\"https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js\" integrity=\"sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4\" crossorigin=\"anonymous\"></script>");
-            #endif
+#if NOINTERNET == 1
+            return F("<script src=\"/js/bootstrap.bundle.5.2.3.min.js\"></script>");
+#else
+            return F("<script src=\"https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js\" integrity=\"sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4\" "
+                     "crossorigin=\"anonymous\"></script>");
+#endif
         case (str2int("VUEJS")):
-            #if NOINTERNET == 1
-                return F("<script src=\"/js/vue.3.2.47.min.js\"></script>");
-            #else
-                return F("<script src=\"https://cdn.jsdelivr.net/npm/vue@3.2.47/dist/vue.global.prod.min.js\"></script>");
-            #endif
+#if NOINTERNET == 1
+            return F("<script src=\"/js/vue.3.2.47.min.js\"></script>");
+#else
+            return F("<script src=\"https://cdn.jsdelivr.net/npm/vue@3.2.47/dist/vue.global.prod.min.js\"></script>");
+#endif
         case (str2int("VUE_NUMBER_INPUT")):
-            #if NOINTERNET == 1
-                return F("<script src=\"/js/vue-number-input.min.js\"></script>");
-            #else
-                return F("<script src=\"https://unpkg.com/@chenfengyuan/vue-number-input@2.0.1/dist/vue-number-input.min.js\"></script>");
-            #endif
+#if NOINTERNET == 1
+            return F("<script src=\"/js/vue-number-input.min.js\"></script>");
+#else
+            return F("<script src=\"https://unpkg.com/@chenfengyuan/vue-number-input@2.0.1/dist/vue-number-input.min.js\"></script>");
+#endif
         case (str2int("UPLOT")):
-            #if NOINTERNET == 1
-                return F("<script src=\"/js/uPlot.1.6.28.min.js\"></script><link rel=\"stylesheet\" href=\"/css/uPlot.min.css\">");
-            #else
-                return F("<script src=\"https://cdn.jsdelivr.net/npm/uplot@1.6.28/dist/uPlot.iife.min.js\"></script><link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/uplot@1.6.24/dist/uPlot.min.css\">");
-            #endif
+#if NOINTERNET == 1
+            return F("<script src=\"/js/uPlot.1.6.28.min.js\"></script><link rel=\"stylesheet\" href=\"/css/uPlot.min.css\">");
+#else
+            return F("<script src=\"https://cdn.jsdelivr.net/npm/uplot@1.6.28/dist/uPlot.iife.min.js\"></script><link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/uplot@1.6.24/dist/uPlot.min.css\">");
+#endif
     }
     return "";
 }
@@ -226,7 +208,7 @@ String staticProcessor(const String& var) {
     File file = LittleFS.open("/html_fragments/" + varLower + ".html", "r");
 
     if (file) {
-        if (file.size()*2 < ESP.getFreeHeap()) {
+        if (file.size() * 2 < ESP.getFreeHeap()) {
             String ret = file.readString();
             file.close();
             return ret;
@@ -246,7 +228,7 @@ String staticProcessor(const String& var) {
 void serverSetup() {
     // set up dynamic routes (endpoints)
 
-    server.on("/toggleSteam", HTTP_POST, [](AsyncWebServerRequest *request) {
+    server.on("/toggleSteam", HTTP_POST, [](AsyncWebServerRequest* request) {
         int steam = flipUintValue(steamON);
 
         setSteamMode(steam);
@@ -255,7 +237,7 @@ void serverSetup() {
         request->redirect("/");
     });
 
-    server.on("/togglePid", HTTP_POST, [](AsyncWebServerRequest *request) {
+    server.on("/togglePid", HTTP_POST, [](AsyncWebServerRequest* request) {
         LOGF(DEBUG, "/togglePid requested, method: %d", request->method());
         int status = flipUintValue(pidON);
 
@@ -265,7 +247,7 @@ void serverSetup() {
         request->redirect("/");
     });
 
-    server.on("/toggleBackflush", HTTP_POST, [](AsyncWebServerRequest *request) {
+    server.on("/toggleBackflush", HTTP_POST, [](AsyncWebServerRequest* request) {
         int backflush = flipUintValue(backflushOn);
 
         setBackflush(backflush);
@@ -275,7 +257,7 @@ void serverSetup() {
     });
 
 #if FEATURE_SCALE == 1
-    server.on("/toggleTareScale", HTTP_POST, [](AsyncWebServerRequest *request) {
+    server.on("/toggleTareScale", HTTP_POST, [](AsyncWebServerRequest* request) {
         int tare = flipUintValue(scaleTareOn);
 
         setScaleTare(tare);
@@ -284,7 +266,7 @@ void serverSetup() {
         request->redirect("/");
     });
 
-    server.on("/toggleScaleCalibration", HTTP_POST, [](AsyncWebServerRequest *request) {
+    server.on("/toggleScaleCalibration", HTTP_POST, [](AsyncWebServerRequest* request) {
         int scaleCalibrate = flipUintValue(scaleCalibrationOn);
 
         setScaleCalibration(scaleCalibrate);
@@ -292,9 +274,9 @@ void serverSetup() {
 
         request->redirect("/");
     });
-#endif 
+#endif
 
-    server.on("/parameters", HTTP_GET | HTTP_POST, [](AsyncWebServerRequest *request) {
+    server.on("/parameters", HTTP_GET | HTTP_POST, [](AsyncWebServerRequest* request) {
         // Determine the size of the document to allocate based on the number
         // of parameters
         // GET = either
@@ -310,11 +292,11 @@ void serverSetup() {
             docLength = std::min(requestParams, EDITABLE_VARS_LEN);
         }
 
-        DynamicJsonDocument doc(JSON_ARRAY_SIZE(EDITABLE_VARS_LEN)  // array EDITABLE_VARS_LEN with parameters
-            + JSON_OBJECT_SIZE(9) * EDITABLE_VARS_LEN               // object with 9 values per parameter
-            + JSON_STRING_SIZE(25 + 30) * EDITABLE_VARS_LEN);       // string size for templateString and displayName
+        DynamicJsonDocument doc(JSON_ARRAY_SIZE(EDITABLE_VARS_LEN)                // array EDITABLE_VARS_LEN with parameters
+                                + JSON_OBJECT_SIZE(9) * EDITABLE_VARS_LEN         // object with 9 values per parameter
+                                + JSON_STRING_SIZE(25 + 30) * EDITABLE_VARS_LEN); // string size for templateString and displayName
 
-        if (request->method() == 2) {   // method() returns values from WebRequestMethod enum -> 2 == HTTP_POST
+        if (request->method() == 2) { // method() returns values from WebRequestMethod enum -> 2 == HTTP_POST
             // returns values from WebRequestMethod enum -> 2 == HTTP_POST
             // update all given params and match var name in editableVars
 
@@ -334,24 +316,22 @@ void serverSetup() {
 
                     if (e.type == kInteger) {
                         int newVal = atoi(p->value().c_str());
-                        *(int *)e.ptr = newVal;
+                        *(int*)e.ptr = newVal;
                     }
                     else if (e.type == kUInt8) {
-                        *(uint8_t *)e.ptr =
-                            (uint8_t)atoi(p->value().c_str());
+                        *(uint8_t*)e.ptr = (uint8_t)atoi(p->value().c_str());
                     }
                     else if (e.type == kDouble || e.type == kDoubletime) {
                         float newVal = atof(p->value().c_str());
-                        *(double *)e.ptr = newVal;
+                        *(double*)e.ptr = newVal;
                     }
                     else if (e.type == kFloat) {
                         float newVal = atof(p->value().c_str());
-                        *(float *)e.ptr = newVal;
+                        *(float*)e.ptr = newVal;
                     }
 
                     paramToJson(varName, e, doc);
-                }
-                catch (const std::out_of_range &exc) {
+                } catch (const std::out_of_range& exc) {
                     continue;
                 }
             }
@@ -373,7 +353,7 @@ void serverSetup() {
             // Write the new values to MQTT
             writeSysParamsToMQTT(true); // Continue on error
         }
-        else if (request->method() == 1) {  // WebRequestMethod enum -> HTTP_GET
+        else if (request->method() == 1) { // WebRequestMethod enum -> HTTP_GET
             // get parameter id from first parameter, e.g. /parameters?param=PID_ON
             int paramCount = request->params();
             String paramId = paramCount > 0 ? request->getParam(0)->value() : "";
@@ -399,7 +379,7 @@ void serverSetup() {
 
         if (doc.size() == 0) {
             request->send(404, "application/json",
-                            F("{ \"code\": 404, \"message\": "
+                          F("{ \"code\": 404, \"message\": "
                             "\"Parameter not found\"}"));
             return;
         }
@@ -409,7 +389,7 @@ void serverSetup() {
         request->send(200, "application/json", paramsJson);
     });
 
-    server.on("/parameterHelp", HTTP_GET, [](AsyncWebServerRequest *request) {
+    server.on("/parameterHelp", HTTP_GET, [](AsyncWebServerRequest* request) {
         DynamicJsonDocument doc(1024);
         AsyncWebParameter* p = request->getParam(0);
 
@@ -424,8 +404,7 @@ void serverSetup() {
             editable_t e = editableVars.at(varValue);
             doc["name"] = varValue;
             doc["helpText"] = e.helpText;
-        }
-        catch (const std::out_of_range &exc) {
+        } catch (const std::out_of_range& exc) {
             request->send(404, "application/json", "parameter not found");
             return;
         }
@@ -435,7 +414,7 @@ void serverSetup() {
         request->send(200, "application/json", helpJson);
     });
 
-    server.on("/temperatures", HTTP_GET, [](AsyncWebServerRequest *request) {
+    server.on("/temperatures", HTTP_GET, [](AsyncWebServerRequest* request) {
         String json = getTempString();
         request->send(200, "application/json", json);
     });
@@ -443,8 +422,8 @@ void serverSetup() {
     // TODO: could send values also chunked and without json (but needs three
     // endpoints then?)
     // https://stackoverflow.com/questions/61559745/espasyncwebserver-serve-large-array-from-ram
-    server.on("/timeseries", HTTP_GET, [](AsyncWebServerRequest *request) {
-        AsyncResponseStream *response = request->beginResponseStream("application/json");
+    server.on("/timeseries", HTTP_GET, [](AsyncWebServerRequest* request) {
+        AsyncResponseStream* response = request->beginResponseStream("application/json");
 
         // set capacity of json doc for history structure
         DynamicJsonDocument doc(JSON_ARRAY_SIZE(2) + JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(HISTORY_LENGTH) * 3);
@@ -456,10 +435,7 @@ void serverSetup() {
 
         // go through history values backwards starting from currentIndex and
         // wrap around beginning to include valueCount many values
-        for (int i = mod(historyCurrentIndex - historyValueCount, HISTORY_LENGTH);
-            i != mod(historyCurrentIndex, HISTORY_LENGTH);
-            i = mod(i + 1, HISTORY_LENGTH))
-        {
+        for (int i = mod(historyCurrentIndex - historyValueCount, HISTORY_LENGTH); i != mod(historyCurrentIndex, HISTORY_LENGTH); i = mod(i + 1, HISTORY_LENGTH)) {
             currentTemps.add(round2(tempHistory[0][i]));
             targetTemps.add(round2(tempHistory[1][i]));
             heaterPowers.add(round2(tempHistory[2][i]));
@@ -469,12 +445,10 @@ void serverSetup() {
         request->send(response);
     });
 
-    server.onNotFound([](AsyncWebServerRequest *request) {
-        request->send(404, "text/plain", "Not found");
-    });
+    server.onNotFound([](AsyncWebServerRequest* request) { request->send(404, "text/plain", "Not found"); });
 
     // set up event handler for temperature messages
-    events.onConnect([](AsyncEventSourceClient *client) {
+    events.onConnect([](AsyncEventSourceClient* client) {
         if (client->lastId()) {
             LOGF(DEBUG, "Reconnected, last message ID was: %u", client->lastId());
         }
@@ -486,9 +460,9 @@ void serverSetup() {
 
     // serve static files
     LittleFS.begin();
-    server.serveStatic("/css", LittleFS, "/css/", "max-age=604800");  // cache for one week
+    server.serveStatic("/css", LittleFS, "/css/", "max-age=604800"); // cache for one week
     server.serveStatic("/js", LittleFS, "/js/", "max-age=604800");
-    server.serveStatic("/img", LittleFS, "/img/", "max-age=604800");  // cache for one week
+    server.serveStatic("/img", LittleFS, "/img/", "max-age=604800"); // cache for one week
     server.serveStatic("/webfonts", LittleFS, "/webfonts/", "max-age=604800");
     server.serveStatic("/manifest.json", LittleFS, "/manifest.json", "max-age=604800");
     server.serveStatic("/", LittleFS, "/html/", "max-age=604800").setDefaultFile("index.html").setTemplateProcessor(staticProcessor);
@@ -498,7 +472,7 @@ void serverSetup() {
     LOG(INFO, ("Server started at " + WiFi.localIP().toString()).c_str());
 }
 
-//skip counter so we don't keep a value every second
+// skip counter so we don't keep a value every second
 int skippedValues = 0;
 #define SECONDS_TO_SKIP 2
 

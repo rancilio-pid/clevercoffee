@@ -11,12 +11,9 @@
  * @brief Send data to display
  */
 void printScreen() {
-    if (((machineState == kAtSetpoint || machineState == kPidNormal || machineState == kBrewDetectionTrailing) ||
-        ((machineState == kBrew || machineState == kShotTimerAfterBrew) && FEATURE_SHOTTIMER == 0) ||
-        machineState == kCoolDown || ((machineState == kColdStart) && FEATURE_HEATINGLOGO == 0) || 
-        ((machineState == kPidOffline) && FEATURE_OFFLINELOGO == 0))
-        && (brewSwitchState != kBrewSwitchFlushOff))
-    {
+    if (((machineState == kAtSetpoint || machineState == kPidNormal || machineState == kBrewDetectionTrailing) || ((machineState == kBrew || machineState == kShotTimerAfterBrew) && FEATURE_SHOTTIMER == 0) ||
+         machineState == kCoolDown || ((machineState == kColdStart) && FEATURE_HEATINGLOGO == 0) || ((machineState == kPidOffline) && FEATURE_OFFLINELOGO == 0)) &&
+        (brewSwitchState != kBrewSwitchFlushOff)) {
         if (!sensorError) {
             u8g2.clearBuffer();
 
@@ -47,7 +44,7 @@ void printScreen() {
                     u8g2.setFont(u8g2_font_profont22_tf);
                     u8g2.print(setpoint, numDecimalsSetpoint);
                 }
-            } 
+            }
             else {
                 u8g2.setCursor(2, 20);
                 u8g2.setFont(u8g2_font_profont22_tf);
@@ -57,7 +54,8 @@ void printScreen() {
 
                 if (pidMode == 1) {
                     u8g2.print(char(74));
-                } else {
+                }
+                else {
                     u8g2.print(char(70));
                 }
 
@@ -83,7 +81,7 @@ void printScreen() {
 
                 if (BREWCONTROL_TYPE == 0) {
                     u8g2.print(brewtimesoftware, 0);
-                } 
+                }
                 else {
                     u8g2.print(totalBrewTime / 1000, 0);
                 }

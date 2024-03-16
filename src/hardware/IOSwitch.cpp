@@ -1,11 +1,11 @@
 /**
  * @file IOSwitch.h
- * 
- * @brief A physical switch connected to a GPIO Pin  
+ *
+ * @brief A physical switch connected to a GPIO Pin
  */
 
-#include "GPIOPin.h"
 #include "IOSwitch.h"
+#include "GPIOPin.h"
 
 IOSwitch::IOSwitch(GPIOPin& gpioInstance, Type type, Mode mode)
     : gpio(gpioInstance),
@@ -18,8 +18,7 @@ IOSwitch::IOSwitch(GPIOPin& gpioInstance, Type type, Mode mode)
       lastDebounceTime(0),
       lastStateChangeTime(0),
       pressStartTime(0),
-      longPressTriggered(false) { 
-}
+      longPressTriggered(false) {}
 
 bool IOSwitch::isPressed() {
     uint8_t reading = gpio.read();
@@ -46,7 +45,7 @@ bool IOSwitch::isPressed() {
     }
 
     if (switchType == MOMENTARY) {
-        if (currentState == HIGH && (pressStartTime + longPressDuration) <= currentMillis) {            
+        if (currentState == HIGH && (pressStartTime + longPressDuration) <= currentMillis) {
             longPressTriggered = true;
         }
         else if (currentState == LOW && lastStateChangeTime == currentMillis) {
@@ -68,14 +67,8 @@ bool IOSwitch::longPressDetected() {
     return false;
 }
 
-GPIOPin& IOSwitch::getGPIOInstance() {
-    return gpio;
-}
+GPIOPin& IOSwitch::getGPIOInstance() { return gpio; }
 
-void IOSwitch::setType(Type type) {
-    switchType = type;
-}
+void IOSwitch::setType(Type type) { switchType = type; }
 
-void IOSwitch::setMode(Mode mode) {
-    switchMode = mode;
-}
+void IOSwitch::setMode(Mode mode) { switchMode = mode; }

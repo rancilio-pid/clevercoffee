@@ -46,31 +46,31 @@ uint8_t currBrewSwitchStateMomentary = LOW;
 int brewSwitchState = kBrewSwitchIdle;
 boolean brewSwitchWasOff = false;
 
-double totalBrewTime = 0;                           // total brewtime set in software
-double timeBrewed = 0;                              // total brewed time
-double lastBrewTimeMillis = 0;                      // for shottimer delay after disarmed button
-double lastBrewTime = 0 ;
-unsigned long startingTime = 0;                     // start time of brew
-boolean brewPIDDisabled = false;                    // is PID disabled for delay after brew has started?
+double totalBrewTime = 0;      // total brewtime set in software
+double timeBrewed = 0;         // total brewed time
+double lastBrewTimeMillis = 0; // for shottimer delay after disarmed button
+double lastBrewTime = 0;
+unsigned long startingTime = 0;  // start time of brew
+boolean brewPIDDisabled = false; // is PID disabled for delay after brew has started?
 
 // Shot timer with or without scale
 #if FEATURE_SCALE == 1
-    boolean scaleCalibrationOn = 0;
-    boolean scaleTareOn = 0;
-    int shottimerCounter = 10 ;
-    float calibrationValue = SCALE_CALIBRATION_FACTOR;  // use calibration example to get value
-    float weight = 0;                                   // value from HX711
-    float weightPreBrew = 0;                            // value of scale before wrew started
-    float weightBrew = 0;                               // weight value of brew
-    float scaleDelayValue = 2.5;                        // value in gramm that takes still flows onto the scale after brew is stopped
-    bool scaleFailure = false;
-    const unsigned long intervalWeight = 200;           // weight scale
-    unsigned long previousMillisScale;                  // initialisation at the end of init()
-    HX711_ADC LoadCell(PIN_HXDAT, PIN_HXCLK);
+boolean scaleCalibrationOn = 0;
+boolean scaleTareOn = 0;
+int shottimerCounter = 10;
+float calibrationValue = SCALE_CALIBRATION_FACTOR; // use calibration example to get value
+float weight = 0;                                  // value from HX711
+float weightPreBrew = 0;                           // value of scale before wrew started
+float weightBrew = 0;                              // weight value of brew
+float scaleDelayValue = 2.5;                       // value in gramm that takes still flows onto the scale after brew is stopped
+bool scaleFailure = false;
+const unsigned long intervalWeight = 200; // weight scale
+unsigned long previousMillisScale;        // initialisation at the end of init()
+HX711_ADC LoadCell(PIN_HXDAT, PIN_HXCLK);
 
-    #if SCALE_TYPE == 0 
-        HX711_ADC LoadCell2(PIN_HXDAT2, PIN_HXCLK);
-    #endif 
+    #if SCALE_TYPE == 0
+HX711_ADC LoadCell2(PIN_HXDAT2, PIN_HXCLK);
+    #endif
 #endif
 
 /**
@@ -86,11 +86,11 @@ void checkbrewswitch() {
         if (currBrewSwitchStateMomentary != brewSwitchReading) {
             currBrewSwitchStateMomentary = brewSwitchReading;
         }
-        
+
         // Convert momentary brew switch input to brew switch state
         switch (brewSwitchState) {
             case kBrewSwitchIdle:
-                if (currBrewSwitchStateMomentary == HIGH && machineState != kWaterEmpty ) {
+                if (currBrewSwitchStateMomentary == HIGH && machineState != kWaterEmpty) {
                     brewSwitchState = kBrewSwitchBrew;
                     LOG(DEBUG, "brewSwitchState = kBrewSwitchIdle; waiting for brew switch input");
                 }
@@ -116,7 +116,7 @@ void checkbrewswitch() {
                 break;
 
             case kBrewSwitchBrewAbort:
-                // Brew switch got short pressed while brew is running - abort brew 
+                // Brew switch got short pressed while brew is running - abort brew
                 if ((currBrewSwitchStateMomentary == HIGH && currStateBrewSwitch == HIGH) || (machineState == kShotTimerAfterBrew) || (backflushState == kBackflushWaitBrewswitchOff)) {
                     currStateBrewSwitch = LOW;
                     brewSwitchState = kBrewSwitchReset;
@@ -132,7 +132,7 @@ void checkbrewswitch() {
                     valveRelay.off();
                     pumpRelay.off();
                 }
-            break;
+                break;
 
             case kBrewSwitchReset:
                 // Brew switch is released - go back to start and wait for next brew switch input
@@ -150,24 +150,24 @@ void checkbrewswitch() {
  */
 void backflush() {
     if (backflushState != kBackflushWaitBrewswitchOn && backflushOn == 0) {
-        backflushState = kBackflushWaitBrewswitchOff;  // Force reset in case backflushOn is reset during backflush!
+        backflushState = kBackflushWaitBrewswitchOff; // Force reset in case backflushOn is reset during backflush!
         LOG(INFO, "Backflush: Disabled via Webinterface");
     }
     else if (offlineMode == 1 || currBrewState > kBrewIdle || maxflushCycles <= 0 || backflushOn == 0) {
         return;
     }
 
-    if (pidMode == 1) {  // Deactivate PID
+    if (pidMode == 1) { // Deactivate PID
         pidMode = 0;
         bPID.SetMode(pidMode);
         pidOutput = 0;
     }
 
-    heaterRelay.off();  // Stop heating
+    heaterRelay.off(); // Stop heating
 
     checkbrewswitch();
 
-    if (currStateBrewSwitch == LOW && backflushState != kBackflushWaitBrewswitchOn) {  // Abort function for state machine from every state
+    if (currStateBrewSwitch == LOW && backflushState != kBackflushWaitBrewswitchOn) { // Abort function for state machine from every state
         backflushState = kBackflushWaitBrewswitchOff;
     }
 
@@ -230,7 +230,7 @@ void backflush() {
     }
 }
 
-#if (BREWCONTROL_TYPE == 1)  
+#if (BREWCONTROL_TYPE == 1)
 /**
  * @brief Time base brew mode
  */
@@ -253,8 +253,7 @@ void brew() {
         brewSwitchWasOff = true;
     }
 
-    totalBrewTime = (preinfusion * 1000) + (preinfusionPause * 1000) +
-        (brewTime * 1000);  // running every cycle, in case changes are done during brew
+    totalBrewTime = (preinfusion * 1000) + (preinfusionPause * 1000) + (brewTime * 1000); // running every cycle, in case changes are done during brew
 
     // state machine for brew
     switch (currBrewState) {
@@ -269,7 +268,7 @@ void brew() {
                     currBrewState = kPreinfusion;
                 }
 
-                coldstart = false;  // force reset coldstart if shot is pulled
+                coldstart = false; // force reset coldstart if shot is pulled
             }
             else {
                 backflush();
@@ -277,7 +276,7 @@ void brew() {
 
             break;
 
-        case kPreinfusion:  // preinfusioon
+        case kPreinfusion: // preinfusioon
             LOG(INFO, "Preinfusion");
             valveRelay.on();
             pumpRelay.on();
@@ -285,14 +284,14 @@ void brew() {
 
             break;
 
-        case kWaitPreinfusion:  // waiting time preinfusion
+        case kWaitPreinfusion: // waiting time preinfusion
             if (timeBrewed > (preinfusion * 1000)) {
                 currBrewState = kPreinfusionPause;
             }
 
             break;
 
-        case kPreinfusionPause:  // preinfusion pause
+        case kPreinfusionPause: // preinfusion pause
             LOG(INFO, "Preinfusion pause");
             valveRelay.on();
             pumpRelay.off();
@@ -300,14 +299,14 @@ void brew() {
 
             break;
 
-        case kWaitPreinfusionPause:  // waiting time preinfusion pause
+        case kWaitPreinfusionPause: // waiting time preinfusion pause
             if (timeBrewed > ((preinfusion * 1000) + (preinfusionPause * 1000))) {
                 currBrewState = kBrewRunning;
             }
 
             break;
 
-        case kBrewRunning:  // brew running
+        case kBrewRunning: // brew running
             LOG(INFO, "Brew started");
             valveRelay.on();
             pumpRelay.on();
@@ -315,7 +314,7 @@ void brew() {
 
             break;
 
-        case kWaitBrew:  // waiting time brew
+        case kWaitBrew: // waiting time brew
             lastBrewTime = timeBrewed;
 
             if (timeBrewed > totalBrewTime) {
@@ -324,7 +323,7 @@ void brew() {
 
             break;
 
-        case kBrewFinished:  // brew finished
+        case kBrewFinished: // brew finished
             LOG(INFO, "Brew stopped");
             valveRelay.off();
             pumpRelay.off();
@@ -333,14 +332,14 @@ void brew() {
 
             break;
 
-        case kWaitBrewOff:  // waiting for brewswitch off position
+        case kWaitBrewOff: // waiting for brewswitch off position
             if (currStateBrewSwitch == LOW) {
                 valveRelay.off();
                 pumpRelay.off();
 
                 // disarmed button
                 currentMillisTemp = 0;
-                brewDetected = 0;  // rearm brewDetection
+                brewDetected = 0; // rearm brewDetection
                 currBrewState = kBrewIdle;
                 timeBrewed = 0;
             }
@@ -373,12 +372,11 @@ void brew() {
         brewSwitchWasOff = true;
     }
 
-    totalBrewTime = ((preinfusion * 1000) + (preinfusionPause * 1000) +
-        (brewTime * 1000));  // running every cycle, in case changes are done during brew
+    totalBrewTime = ((preinfusion * 1000) + (preinfusionPause * 1000) + (brewTime * 1000)); // running every cycle, in case changes are done during brew
 
     // state machine for brew
     switch (currBrewState) {
-        case 10:  // waiting step for brew switch turning on
+        case 10: // waiting step for brew switch turning on
             if (currStateBrewSwitch == HIGH && backflushState == 10 && backflushOn == 0 && brewSwitchWasOff) {
                 startingTime = millis();
                 currBrewState = kPreinfusion;
@@ -387,15 +385,16 @@ void brew() {
                     currBrewState = kBrewRunning;
                 }
 
-                coldstart = false;  // force reset coldstart if shot is pulled
+                coldstart = false; // force reset coldstart if shot is pulled
                 weightPreBrew = weight;
-            } else {
+            }
+            else {
                 backflush();
             }
 
             break;
 
-        case 20:  // preinfusioon
+        case 20: // preinfusioon
             LOG(INFO, "Preinfusion");
             valveRelay.on();
             pumpRelay.on();
@@ -403,14 +402,14 @@ void brew() {
 
             break;
 
-        case 21:  // waiting time preinfusion
+        case 21: // waiting time preinfusion
             if (timeBrewed > (preinfusion * 1000)) {
                 currBrewState = kPreinfusionPause;
             }
 
             break;
 
-        case 30:  // preinfusion pause
+        case 30: // preinfusion pause
             LOG(INFO, "preinfusion pause");
             valveRelay.on();
             pumpRelay.off();
@@ -418,14 +417,14 @@ void brew() {
 
             break;
 
-        case 31:  // waiting time preinfusion pause
+        case 31: // waiting time preinfusion pause
             if (timeBrewed > ((preinfusion * 1000) + (preinfusionPause * 1000))) {
                 currBrewState = kBrewRunning;
             }
 
             break;
 
-        case 40:  // brew running
+        case 40: // brew running
             LOG(INFO, "Brew started");
             valveRelay.on();
             pumpRelay.on();
@@ -433,14 +432,14 @@ void brew() {
 
             break;
 
-        case 41:  // waiting time brew
+        case 41: // waiting time brew
             if (weightBrew > (weightSetpoint - scaleDelayValue)) {
                 currBrewState = kBrewFinished;
             }
 
             break;
 
-        case 42:  // brew finished
+        case 42: // brew finished
             LOG(INFO, "Brew stopped");
             valveRelay.off();
             pumpRelay.off();
@@ -448,7 +447,7 @@ void brew() {
 
             break;
 
-        case 43:  // waiting for brewswitch off position
+        case 43: // waiting for brewswitch off position
             if (brewSwitch == LOW) {
                 valveRelay.off();
                 pumpRelay.off();
@@ -456,11 +455,11 @@ void brew() {
                 // disarmed button
                 currentMillisTemp = 0;
                 timeBrewed = 0;
-                brewDetected = 0;  // rearm brewDetection
+                brewDetected = 0; // rearm brewDetection
                 currBrewState = kBrewIdle;
             }
 
-            weightBrew = weight - weightPreBrew;  // always calculate weight to show on display
+            weightBrew = weight - weightPreBrew; // always calculate weight to show on display
 
             break;
     }

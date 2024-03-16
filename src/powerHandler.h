@@ -4,7 +4,7 @@
  * @brief Handler for digital power switch
  */
 
-uint8_t currStatePowerSwitch;                      // the current reading from the input pin
+uint8_t currStatePowerSwitch; // the current reading from the input pin
 
 void checkPowerSwitch() {
     if (FEATURE_POWERSWITCH) {
@@ -38,4 +38,3 @@ void checkPowerSwitch() {
         }
     }
 }
-

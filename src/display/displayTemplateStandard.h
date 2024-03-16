@@ -10,17 +10,14 @@
 /**
  * @brief Send data to display
  */
-void printScreen()
-{
+void printScreen() {
     if (((machineState == kAtSetpoint || machineState == kPidNormal || machineState == kBrewDetectionTrailing) ||
-        ((machineState == kBrew || machineState == kShotTimerAfterBrew) && FEATURE_SHOTTIMER == 0) ||  // shottimer == 0, auch Bezug anzeigen
-        machineState == kCoolDown || ((machineState == kInit || machineState == kColdStart) && FEATURE_HEATINGLOGO == 0) ||
-        ((machineState == kPidOffline) && FEATURE_OFFLINELOGO == 0))
-        && (brewSwitchState != kBrewSwitchFlushOff))
-    {
+         ((machineState == kBrew || machineState == kShotTimerAfterBrew) && FEATURE_SHOTTIMER == 0) || // shottimer == 0, auch Bezug anzeigen
+         machineState == kCoolDown || ((machineState == kInit || machineState == kColdStart) && FEATURE_HEATINGLOGO == 0) || ((machineState == kPidOffline) && FEATURE_OFFLINELOGO == 0)) &&
+        (brewSwitchState != kBrewSwitchFlushOff)) {
         u8g2.clearBuffer();
         u8g2.setFont(u8g2_font_profont11_tf); // set font
-        
+
         displayStatusbar();
 
         u8g2.setCursor(35, 16);
@@ -41,7 +38,7 @@ void printScreen()
         displayThermometerOutline(4, 62);
 
         // Draw current temp in thermometer
-        if (fabs(temperature  - setpoint) < 0.3) {
+        if (fabs(temperature - setpoint) < 0.3) {
             if (isrCounter < 500) {
                 drawTemperaturebar(8, 50, 30);
             }
@@ -50,7 +47,7 @@ void printScreen()
             drawTemperaturebar(8, 50, 30);
         }
 
-        // Brew time 
+        // Brew time
         u8g2.setCursor(35, 36);
 
         // Shot timer shown if machine is brewing and after the brew
@@ -75,7 +72,8 @@ void printScreen()
         u8g2.print("|");
 
         if (bPID.GetKi() != 0) {
-            u8g2.print(bPID.GetKp() / bPID.GetKi(), 0);;
+            u8g2.print(bPID.GetKp() / bPID.GetKi(), 0);
+            ;
         }
         else {
             u8g2.print("0");
