@@ -3,15 +3,18 @@
 
 #include "Logger.h"
 
-Logger::Logger(const uint16_t port)
-    : port_(port), server_(port) {}
+Logger::Logger(const uint16_t port) :
+    port_(port), server_(port) {
+}
 
 Logger& Logger::getInstanceImpl(const uint16_t port) {
     static Logger instance{port};
     return instance;
 }
 
-void Logger::init(const uint16_t port) { getInstanceImpl(port); }
+void Logger::init(const uint16_t port) {
+    getInstanceImpl(port);
+}
 
 bool Logger::begin() {
     if (WiFi.status() == WL_CONNECTED) {
@@ -40,7 +43,9 @@ bool Logger::update() {
     return true;
 }
 
-uint16_t Logger::getPort() { return Logger::getInstance().getPort(); }
+uint16_t Logger::getPort() {
+    return Logger::getInstance().getPort();
+}
 
 void Logger::log(const Level level, const String& file, const __FlashStringHelper* function, uint32_t line, const char* logmsg) {
     char time[12];
@@ -119,12 +124,19 @@ void Logger::current_time(char* timestamp) {
 
 String Logger::get_level_identifier(Logger::Level lvl) {
     switch (lvl) {
-        case Level::TRACE: return "  TRACE";
-        case Level::DEBUG: return "  DEBUG";
-        case Level::INFO: return "   INFO";
-        case Level::WARNING: return "WARNING";
-        case Level::ERROR: return "  ERROR";
-        case Level::FATAL: return "  FATAL";
-        default: return " SILENT";
+        case Level::TRACE:
+            return "  TRACE";
+        case Level::DEBUG:
+            return "  DEBUG";
+        case Level::INFO:
+            return "   INFO";
+        case Level::WARNING:
+            return "WARNING";
+        case Level::ERROR:
+            return "  ERROR";
+        case Level::FATAL:
+            return "  FATAL";
+        default:
+            return " SILENT";
     }
 }

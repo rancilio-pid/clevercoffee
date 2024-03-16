@@ -30,5 +30,6 @@ class Switch {
         virtual bool isPressed() = 0;
         virtual bool longPressDetected() = 0;
         virtual void setType(Type type) = 0;
-        virtual ~Switch() {}
+        virtual ~Switch() {
+        }
 };

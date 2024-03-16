@@ -23,10 +23,13 @@ class TempSensor {
          *          available.
          * @return Sampling interval in milliseconds
          */
-        virtual int getSamplingInterval() const { return 400; };
+        virtual int getSamplingInterval() const {
+            return 400;
+        };
 
         /**
          * @brief Default destructor
          */
-        virtual ~TempSensor() {}
+        virtual ~TempSensor() {
+        }
 };

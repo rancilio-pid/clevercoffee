@@ -46,15 +46,20 @@ struct DiscoveryObject {
  */
 String getMachineName(MACHINE machine) {
     switch (machine) {
-        case RancilioSilvia: return "RancilioSilvia";
+        case RancilioSilvia:
+            return "RancilioSilvia";
 
-        case RancilioSilviaE: return "RancilioSilviaE";
+        case RancilioSilviaE:
+            return "RancilioSilviaE";
 
-        case Gaggia: return "Gaggia";
+        case Gaggia:
+            return "Gaggia";
 
-        case QuickMill: return "QuickMill";
+        case QuickMill:
+            return "QuickMill";
 
-        default: return ""; // Handle any unknown or invalid values
+        default:
+            return ""; // Handle any unknown or invalid values
     }
 }
 
@@ -165,7 +170,9 @@ void assignMQTTParam(char* param, double value) {
                     writeSysParamsToStorage();
                     break;
 
-                default: LOGF(WARNING, "%s is not a recognized type for this MQTT parameter.", var->type); break;
+                default:
+                    LOGF(WARNING, "%s is not a recognized type for this MQTT parameter.", var->type);
+                    break;
             }
         }
         else {

@@ -15,4 +15,6 @@ TempSensorTSIC::TempSensorTSIC(int GPIOPin) {
     tsicSensor_->begin();
 }
 
-float TempSensorTSIC::getTemperatureCelsius() const { return tsicSensor_->getTemp(MAX_CHANGERATE); }
+float TempSensorTSIC::getTemperatureCelsius() const {
+    return tsicSensor_->getTemp(MAX_CHANGERATE);
+}

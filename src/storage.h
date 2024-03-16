@@ -461,7 +461,7 @@ static inline int getNumber(sto_item_id_t itemId, T& itemValue) {
 
     EEPROM.get(itemAddr, itemValue);
 
-    if (isEmpty(&itemValue, sizeof(itemValue))) { // item storage empty?
+    if (isEmpty(&itemValue, sizeof(itemValue))) {                                 // item storage empty?
         LOG(INFO, "storage empty -> returning default");
 
         memcpy_P(&itemValue, (PGM_P)&itemDefaults + itemAddr, sizeof(itemValue)); // set default value
@@ -729,7 +729,9 @@ int storageSet(sto_item_id_t itemId, const char* itemValue, bool commit) {
     return 0;
 }
 
-int storageSet(sto_item_id_t itemId, String& itemValue, bool commit) { return storageSet(itemId, itemValue.c_str(), commit); }
+int storageSet(sto_item_id_t itemId, String& itemValue, bool commit) {
+    return storageSet(itemId, itemValue.c_str(), commit);
+}
 
 /**
  * @brief Resets all storage data.
