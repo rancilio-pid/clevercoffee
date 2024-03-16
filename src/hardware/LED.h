@@ -26,5 +26,6 @@ class LED {
         virtual void turnOff() = 0;
         virtual void setColor(int red, int green, int blue) = 0;
         virtual void setBrightness(int value) = 0;
-        virtual ~LED() {}
+        virtual ~LED() {
+        }
 };

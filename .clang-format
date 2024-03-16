@@ -3,19 +3,23 @@ Language:        Cpp
 # BasedOnStyle:  LLVM
 AccessModifierOffset: -4
 AlignAfterOpenBracket: Align
+AlignConsecutiveMacros: Consecutive
 AlignEscapedNewlines: Right
 AlignOperands:   Align
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 2
 AllowShortBlocksOnASingleLine: Empty
-AllowShortCaseLabelsOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: false
 AllowShortEnumsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: false
 AllowShortIfStatementsOnASingleLine: true
 AlwaysBreakTemplateDeclarations: Yes
 BinPackParameters: false
 BraceWrapping:
   BeforeElse:      true
 BreakBeforeBraces: Custom
-BreakConstructorInitializers: BeforeColon
+BreakConstructorInitializers: AfterColon
 ColumnLimit:     225
 CommentPragmas:  '^ IWYU pragma:'
 CompactNamespaces: true
@@ -27,7 +31,6 @@ IndentAccessModifiers: true
 IndentCaseLabels: true
 IndentCaseBlocks: true
 IndentRequires:  false
-IndentPPDirectives: BeforeHash
 IndentWidth:     4
 PackConstructorInitializers: NextLineOnly
 PointerAlignment: Left

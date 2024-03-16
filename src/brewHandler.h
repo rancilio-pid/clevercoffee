@@ -46,9 +46,9 @@ uint8_t currBrewSwitchStateMomentary = LOW;
 int brewSwitchState = kBrewSwitchIdle;
 boolean brewSwitchWasOff = false;
 
-double totalBrewTime = 0;      // total brewtime set in software
-double timeBrewed = 0;         // total brewed time
-double lastBrewTimeMillis = 0; // for shottimer delay after disarmed button
+double totalBrewTime = 0;        // total brewtime set in software
+double timeBrewed = 0;           // total brewed time
+double lastBrewTimeMillis = 0;   // for shottimer delay after disarmed button
 double lastBrewTime = 0;
 unsigned long startingTime = 0;  // start time of brew
 boolean brewPIDDisabled = false; // is PID disabled for delay after brew has started?
@@ -64,13 +64,13 @@ float weightPreBrew = 0;                           // value of scale before wrew
 float weightBrew = 0;                              // weight value of brew
 float scaleDelayValue = 2.5;                       // value in gramm that takes still flows onto the scale after brew is stopped
 bool scaleFailure = false;
-const unsigned long intervalWeight = 200; // weight scale
-unsigned long previousMillisScale;        // initialisation at the end of init()
+const unsigned long intervalWeight = 200;          // weight scale
+unsigned long previousMillisScale;                 // initialisation at the end of init()
 HX711_ADC LoadCell(PIN_HXDAT, PIN_HXCLK);
 
-    #if SCALE_TYPE == 0
+#if SCALE_TYPE == 0
 HX711_ADC LoadCell2(PIN_HXDAT2, PIN_HXCLK);
-    #endif
+#endif
 #endif
 
 /**

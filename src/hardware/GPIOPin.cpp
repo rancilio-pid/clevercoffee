@@ -6,8 +6,8 @@
 
 #include "GPIOPin.h"
 
-GPIOPin::GPIOPin(int pinNumber, Type pinType)
-    : pin(pinNumber), pinType(pinType) {
+GPIOPin::GPIOPin(int pinNumber, Type pinType) :
+    pin(pinNumber), pinType(pinType) {
 
     setType(pinType);
 }
@@ -27,12 +27,18 @@ int GPIOPin::read() const {
     }
 }
 
-GPIOPin::Type GPIOPin::getType() const { return pinType; }
+GPIOPin::Type GPIOPin::getType() const {
+    return pinType;
+}
 
 void GPIOPin::setType(Type pinType) {
     switch (pinType) {
-        case OUT: pinMode(pin, OUTPUT); break;
-        case IN_STANDARD: pinMode(pin, INPUT); break;
+        case OUT:
+            pinMode(pin, OUTPUT);
+            break;
+        case IN_STANDARD:
+            pinMode(pin, INPUT);
+            break;
         case IN_PULLUP:
             pinMode(pin, INPUT_PULLUP);
             digitalWrite(pin, HIGH);
@@ -41,7 +47,11 @@ void GPIOPin::setType(Type pinType) {
             pinMode(pin, INPUT_PULLDOWN);
             digitalWrite(pin, LOW);
             break;
-        case IN_HARDWARE: pinMode(pin, INPUT); break;
-        case IN_ANALOG: pinMode(pin, INPUT); break;
+        case IN_HARDWARE:
+            pinMode(pin, INPUT);
+            break;
+        case IN_ANALOG:
+            pinMode(pin, INPUT);
+            break;
     }
 }

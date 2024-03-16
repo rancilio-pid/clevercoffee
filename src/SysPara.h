@@ -52,40 +52,52 @@ class SysPara {
          *
          * @param sysPara - system parameter object
          */
-        explicit SysPara(T& sysPara) { this = sysPara; }
+        explicit SysPara(T& sysPara) {
+            this = sysPara;
+        }
 
         /**
          * @brief Constructor used for extern declarations
          */
-        explicit SysPara() { _stoItemId = STO_ITEM__LAST_ENUM; }
+        explicit SysPara() {
+            _stoItemId = STO_ITEM__LAST_ENUM;
+        }
 
         /**
          * @brief Returns the storage ID.
          *
          * @return storage ID (if exist) or STO_ITEM__LAST_ENUM
          */
-        sto_item_id_t getStorageId(void) { return _stoItemId; }
+        sto_item_id_t getStorageId(void) {
+            return _stoItemId;
+        }
 
         /**
          * @brief Returns the current value.
          *
          * @return current parameter value
          */
-        T get(void) { return *_data.curPtr; }
+        T get(void) {
+            return *_data.curPtr;
+        }
 
         /**
          * @brief Returns the minimum value.
          *
          * @return minimum parameter value
          */
-        T getMin(void) { return _data.min; }
+        T getMin(void) {
+            return _data.min;
+        }
 
         /**
          * @brief Returns the maximum value.
          *
          * @return maximum parameter value
          */
-        T getMax(void) { return _data.max; }
+        T getMax(void) {
+            return _data.max;
+        }
 
         /**
          * @brief Reads the storage value into current value, if a valid storage ID
@@ -102,7 +114,7 @@ class SysPara {
                         *_data.curPtr = _dummyCur;                              // yes -> set data to new value
                     }
                     else {
-                        *_data.curPtr = _data.min; // no -> set data to min value
+                        *_data.curPtr = _data.min;                              // no -> set data to min value
                     }
                 }
                 return stoStatus;

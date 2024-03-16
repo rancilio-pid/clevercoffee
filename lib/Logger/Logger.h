@@ -20,7 +20,9 @@ class Logger {
          * @brief Return singleton instance of the logger
          * @return Logger instance
          */
-        static Logger& getInstance() { return getInstanceImpl(); }
+        static Logger& getInstance() {
+            return getInstanceImpl();
+        }
 
         /**
          * @brief Initialize the singleton logger instance
@@ -82,8 +84,12 @@ class Logger {
          */
         void logf(const Level level, const String& file, const __FlashStringHelper* function, uint32_t line, const char* format, ...);
 
-        static void setLevel(Level level) { getInstance().level_ = level; }
-        static Level getCurrentLevel() { return getInstance().level_; }
+        static void setLevel(Level level) {
+            getInstance().level_ = level;
+        }
+        static Level getCurrentLevel() {
+            return getInstance().level_;
+        }
 
     private:
         static Logger& getInstanceImpl(const uint16_t port = 23);
@@ -112,10 +118,10 @@ class Logger {
 };
 
 #ifndef __FILE_NAME__
-    /**
-     *  @brief Base name of the file without the directory
-     */
-    #define __FILE_NAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+/**
+ *  @brief Base name of the file without the directory
+ */
+#define __FILE_NAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 #endif
 
 /**

@@ -44,8 +44,14 @@ void initTimer1(void) {
     timerAlarmWrite(timer, 10000, true);
 }
 
-void enableTimer1(void) { timerAlarmEnable(timer); }
+void enableTimer1(void) {
+    timerAlarmEnable(timer);
+}
 
-void disableTimer1(void) { timerAlarmDisable(timer); }
+void disableTimer1(void) {
+    timerAlarmDisable(timer);
+}
 
-bool isTimer1Enabled(void) { return timerAlarmEnabled(timer); }
+bool isTimer1Enabled(void) {
+    return timerAlarmEnabled(timer);
+}

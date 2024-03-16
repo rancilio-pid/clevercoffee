@@ -271,7 +271,7 @@ void displayShottimer(void) {
         u8g2.sendBuffer();
     }
 
-    #if FEATURE_SCALE == 1
+#if FEATURE_SCALE == 1
     if ((machineState == kBrew) && SHOTTIMER_TYPE == 2) {
         u8g2.clearBuffer();
 
@@ -303,7 +303,7 @@ void displayShottimer(void) {
         displayWaterIcon(119, 1);
         u8g2.sendBuffer();
     }
-    #endif
+#endif
 }
 
 /**

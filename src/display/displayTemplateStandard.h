@@ -73,7 +73,6 @@ void printScreen() {
 
         if (bPID.GetKi() != 0) {
             u8g2.print(bPID.GetKp() / bPID.GetKi(), 0);
-            ;
         }
         else {
             u8g2.print("0");

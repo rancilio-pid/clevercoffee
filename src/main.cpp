@@ -7,10 +7,10 @@
  */
 
 // Firmware version
-#define FW_VERSION 4
+#define FW_VERSION    4
 #define FW_SUBVERSION 0
-#define FW_HOTFIX 0
-#define FW_BRANCH "MASTER"
+#define FW_HOTFIX     0
+#define FW_BRANCH     "MASTER"
 
 // STL includes
 #include <map>
@@ -47,27 +47,27 @@
 hw_timer_t* timer = NULL;
 
 #if (FEATURE_PRESSURESENSOR == 1)
-    #include "hardware/pressureSensor.h"
-    #include <Wire.h>
+#include "hardware/pressureSensor.h"
+#include <Wire.h>
 #endif
 
 #if OLED_DISPLAY == 3
-    #include <SPI.h>
+#include <SPI.h>
 #endif
 
 #if FEATURE_SCALE == 1
-    #define HX711_ADC_config_h
-    #define SAMPLES 32
-    #define IGN_HIGH_SAMPLE 1
-    #define IGN_LOW_SAMPLE 1
-    #define SCK_DELAY 1
-    #define SCK_DISABLE_INTERRUPTS 0
-    #include <HX711_ADC.h>
+#define HX711_ADC_config_h
+#define SAMPLES                32
+#define IGN_HIGH_SAMPLE        1
+#define IGN_LOW_SAMPLE         1
+#define SCK_DELAY              1
+#define SCK_DISABLE_INTERRUPTS 0
+#include <HX711_ADC.h>
 #endif
 
 // Version of userConfig need to match, checked by preprocessor
 #if (FW_VERSION != USR_FW_VERSION) || (FW_SUBVERSION != USR_FW_SUBVERSION) || (FW_HOTFIX != USR_FW_HOTFIX)
-    #error Version of userConfig file and main.cpp need to match!
+#error Version of userConfig file and main.cpp need to match!
 #endif
 
 MACHINE machine = (enum MACHINE)MACHINEID;
@@ -291,8 +291,8 @@ float inX = 0, inY = 0, inOld = 0, inSum = 0; // used for filterPressureValue()
 int signalBars = 0;                           // used for getSignalStrength()
 boolean brewDetected = 0;
 boolean setupDone = false;
-int backflushOn = 0; // 1 = backflush mode active
-int flushCycles = 0; // number of active flush cycles
+int backflushOn = 0;                          // 1 = backflush mode active
+int flushCycles = 0;                          // number of active flush cycles
 
 int backflushState = 10;
 
@@ -304,7 +304,7 @@ int waterCheckConsecutiveReads = 0;           // Counter for consecutive reading
 const int waterCountsNeeded = 3;              // Number of same readings to change water sensing
 
 // Moving average for software brew detection
-double tempRateAverage = 0; // average value of temp values
+double tempRateAverage = 0;            // average value of temp values
 double tempChangeRateAverageMin = 0;
 unsigned long timeBrewDetection = 0;
 int isBrewDetected = 0;                // flag is set if brew was detected
@@ -360,7 +360,9 @@ enum SectionNames {
 std::map<String, editable_t> editableVars = {};
 
 struct cmp_str {
-        bool operator()(char const* a, char const* b) const { return strcmp(a, b) < 0; }
+        bool operator()(char const* a, char const* b) const {
+            return strcmp(a, b) < 0;
+        }
 };
 
 // MQTT
@@ -413,14 +415,14 @@ void getSignalStrength() {
 
 // Display define & template
 #if OLED_DISPLAY == 1
-U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, PIN_I2CSCL, PIN_I2CSDA); // e.g. 1.3"
+U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, PIN_I2CSCL, PIN_I2CSDA);  // e.g. 1.3"
 #endif
 #if OLED_DISPLAY == 2
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, PIN_I2CSCL, PIN_I2CSDA); // e.g. 0.96"
 #endif
 #if OLED_DISPLAY == 3
-    #define OLED_CS 5
-    #define OLED_DC 2
+#define OLED_CS 5
+#define OLED_DC 2
 U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, OLED_CS, OLED_DC, /* reset=*/U8X8_PIN_NONE); // e.g. 1.3"
 #endif
 
@@ -430,25 +432,25 @@ const unsigned long intervalDisplay = 500;
 
 // Horizontal or vertical display
 #if (OLED_DISPLAY != 0)
-    #if (DISPLAYTEMPLATE < 20) // horizontal templates
-        #include "display/displayCommon.h"
-    #endif
+#if (DISPLAYTEMPLATE < 20) // horizontal templates
+#include "display/displayCommon.h"
+#endif
 
-    #if (DISPLAYTEMPLATE >= 20) // vertical templates
-        #include "display/displayRotateUpright.h"
-    #endif
+#if (DISPLAYTEMPLATE >= 20) // vertical templates
+#include "display/displayRotateUpright.h"
+#endif
 
-    #if (DISPLAYTEMPLATE == 1)
-        #include "display/displayTemplateStandard.h"
-    #elif (DISPLAYTEMPLATE == 2)
-        #include "display/displayTemplateMinimal.h"
-    #elif (DISPLAYTEMPLATE == 3)
-        #include "display/displayTemplateTempOnly.h"
-    #elif (DISPLAYTEMPLATE == 4)
-        #include "display/displayTemplateScale.h"
-    #elif (DISPLAYTEMPLATE == 20)
-        #include "display/displayTemplateUpright.h"
-    #endif
+#if (DISPLAYTEMPLATE == 1)
+#include "display/displayTemplateStandard.h"
+#elif (DISPLAYTEMPLATE == 2)
+#include "display/displayTemplateMinimal.h"
+#elif (DISPLAYTEMPLATE == 3)
+#include "display/displayTemplateTempOnly.h"
+#elif (DISPLAYTEMPLATE == 4)
+#include "display/displayTemplateScale.h"
+#elif (DISPLAYTEMPLATE == 20)
+#include "display/displayTemplateUpright.h"
+#endif
 #endif
 
 #include "powerHandler.h"
@@ -473,7 +475,7 @@ void calculateTemperatureMovingAverage() {
     static double tempValues[numValues];        // array of temp values
     static unsigned long timeValues[numValues]; // array of time values
     static double tempChangeRates[numValues];
-    static int valueIndex = 1; // the index of the current value
+    static int valueIndex = 1;                  // the index of the current value
 
     if (brewDetectionMode == 1 && !movingAverageInitialized) {
         for (int index = 0; index < numValues; index++) {
@@ -718,7 +720,7 @@ void brewDetection() {
 
         // OFF: reset brew
         if ((digitalRead(PIN_BREWSWITCH) == optocouplerOff) && (brewDetected == 1 || coolingFlushDetectedQM == true)) {
-            isBrewDetected = 0; // rearm brewDetection
+            isBrewDetected = 0;             // rearm brewDetection
             brewDetected = 0;
             timeOptocouplerOn = timeBrewed; // for QuickMill
             timeBrewed = 0;
@@ -1083,7 +1085,7 @@ void handleMachineState() {
             {
                 // delay shot timer display for voltage sensor or hw brew toggle switch (brew counter)
                 machineState = kShotTimerAfterBrew;
-                lastBrewTimeMillis = millis(); // for delay
+                lastBrewTimeMillis = millis();                                                 // for delay
             }
             else if (brewDetectionMode == 1 && BREWCONTROL_TYPE == 0 && isBrewDetected == 0) { // SW BD, kBrew was active for set time
                 // when Software brew is finished, direct to PID BD
@@ -1352,9 +1354,13 @@ void handleMachineState() {
             }
             break;
 
-        case kSensorError: machineState = kSensorError; break;
+        case kSensorError:
+            machineState = kSensorError;
+            break;
 
-        case kEepromError: machineState = kEepromError; break;
+        case kEepromError:
+            machineState = kEepromError;
+            break;
     }
 
     if (machineState != lastmachinestate) {
@@ -1363,26 +1369,44 @@ void handleMachineState() {
     }
 }
 
-void printMachineState() { LOGF(DEBUG, "new machineState: %s -> %s", machinestateEnumToString(lastmachinestate), machinestateEnumToString(machineState)); }
+void printMachineState() {
+    LOGF(DEBUG, "new machineState: %s -> %s", machinestateEnumToString(lastmachinestate), machinestateEnumToString(machineState));
+}
 
 char const* machinestateEnumToString(MachineState machineState) {
     switch (machineState) {
-        case kInit: return "Init";
-        case kColdStart: return "Cold Start";
-        case kAtSetpoint: return "Above Set Point";
-        case kPidNormal: return "PID Normal";
-        case kBrew: return "Brew";
-        case kShotTimerAfterBrew: return "Shot Timer After Brew";
-        case kBrewDetectionTrailing: return "Brew Detection Trailing";
-        case kSteam: return "Steam";
-        case kCoolDown: return "Cool Down";
-        case kBackflush: return "Backflush";
-        case kWaterEmpty: return "Water Empty";
-        case kEmergencyStop: return "Emergency Stop";
-        case kPidOffline: return "PID Offline";
-        case kStandby: return "Standby Mode";
-        case kSensorError: return "Sensor Error";
-        case kEepromError: return "EEPROM Error";
+        case kInit:
+            return "Init";
+        case kColdStart:
+            return "Cold Start";
+        case kAtSetpoint:
+            return "Above Set Point";
+        case kPidNormal:
+            return "PID Normal";
+        case kBrew:
+            return "Brew";
+        case kShotTimerAfterBrew:
+            return "Shot Timer After Brew";
+        case kBrewDetectionTrailing:
+            return "Brew Detection Trailing";
+        case kSteam:
+            return "Steam";
+        case kCoolDown:
+            return "Cool Down";
+        case kBackflush:
+            return "Backflush";
+        case kWaterEmpty:
+            return "Water Empty";
+        case kEmergencyStop:
+            return "Emergency Stop";
+        case kPidOffline:
+            return "PID Offline";
+        case kStandby:
+            return "Standby Mode";
+        case kSensorError:
+            return "Sensor Error";
+        case kEepromError:
+            return "EEPROM Error";
     }
 
     return "Unknown";
@@ -2203,10 +2227,10 @@ void looppid() {
 
     if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
         previousMillisDisplay = currentMillisDisplay;
-    #if DISPLAYTEMPLATE < 20 // not using vertical template
+#if DISPLAYTEMPLATE < 20 // not using vertical template
         displayMachineState();
-    #endif
-        printScreen(); // refresh display
+#endif
+        printScreen();   // refresh display
     }
 #endif
 
@@ -2382,12 +2406,18 @@ void loopWater() {
     }
 }
 
-void setBackflush(int backflush) { backflushOn = backflush; }
+void setBackflush(int backflush) {
+    backflushOn = backflush;
+}
 
 #if FEATURE_SCALE == 1
-void setScaleCalibration(int calibration) { scaleCalibrationOn = calibration; }
+void setScaleCalibration(int calibration) {
+    scaleCalibrationOn = calibration;
+}
 
-void setScaleTare(int tare) { scaleTareOn = tare; }
+void setScaleTare(int tare) {
+    scaleTareOn = tare;
+}
 #endif
 
 void setSteamMode(int steamMode) {

@@ -33,12 +33,12 @@ struct editable_t {
         boolean hasHelpText;
         String helpText;
         EditableKind type;
-        int section; // parameter section number
+        int section;                // parameter section number
         int position;
         std::function<bool()> show; // method that determines if we show this parameter (in the web interface)
         int minValue;
         int maxValue;
-        void* ptr; // TODO: there must be a tidier way to do this? could we use c++ templates?
+        void* ptr;                  // TODO: there must be a tidier way to do this? could we use c++ templates?
 };
 
 AsyncWebServer server(80);
@@ -64,9 +64,13 @@ extern std::map<String, editable_t> editableVars;
 // EEPROM
 int (*writeToEeprom)(void) = NULL;
 
-void setEepromWriteFcn(int (*fcnPtr)(void)) { writeToEeprom = fcnPtr; }
+void setEepromWriteFcn(int (*fcnPtr)(void)) {
+    writeToEeprom = fcnPtr;
+}
 
-uint8_t flipUintValue(uint8_t value) { return (value + 3) % 2; }
+uint8_t flipUintValue(uint8_t value) {
+    return (value + 3) % 2;
+}
 
 String getTempString() {
     StaticJsonDocument<96> doc;
@@ -90,19 +94,29 @@ int mod(int a, int b) {
 // rounds a number to 2 decimal places
 // example: round(3.14159) -> 3.14
 // (less characters when serialized to json)
-double round2(double value) { return (int)(value * 100 + 0.5) / 100.0; }
+double round2(double value) {
+    return (int)(value * 100 + 0.5) / 100.0;
+}
 
 String getValue(String varName) {
     try {
         editable_t e = editableVars.at(varName);
         switch (e.type) {
-            case kFloat: return String(*(float*)e.ptr);
-            case kDouble: return String(*(double*)e.ptr);
-            case kDoubletime: return String(*(double*)e.ptr);
-            case kInteger: return String(*(int*)e.ptr);
-            case kUInt8: return String(*(uint8_t*)e.ptr);
-            case kCString: return String((char*)e.ptr);
-            default: return F("Unknown type"); break;
+            case kFloat:
+                return String(*(float*)e.ptr);
+            case kDouble:
+                return String(*(double*)e.ptr);
+            case kDoubletime:
+                return String(*(double*)e.ptr);
+            case kInteger:
+                return String(*(int*)e.ptr);
+            case kUInt8:
+                return String(*(uint8_t*)e.ptr);
+            case kCString:
+                return String((char*)e.ptr);
+            default:
+                return F("Unknown type");
+                break;
         }
     } catch (const std::out_of_range& exc) {
         return "(unknown variable " + varName + ")";
@@ -145,7 +159,9 @@ void paramToJson(String name, editable_t& e, DynamicJsonDocument& doc) {
 
 // hash strings at compile time to use in switch statement
 // (from https://stackoverflow.com/questions/2111667/compile-time-string-hashing)
-constexpr unsigned int str2int(const char* str, int h = 0) { return !str[h] ? 5381 : (str2int(str, h + 1) * 33) ^ str[h]; }
+constexpr unsigned int str2int(const char* str, int h = 0) {
+    return !str[h] ? 5381 : (str2int(str, h + 1) * 33) ^ str[h];
+}
 
 String getHeader(String varName) {
     switch (str2int(varName.c_str())) {
@@ -194,7 +210,7 @@ String getHeader(String varName) {
 String staticProcessor(const String& var) {
     // try replacing var for variables in editableVars
     if (var.startsWith("VAR_SHOW_")) {
-        return getValue(var.substring(9)); // cut off "VAR_SHOW_"
+        return getValue(var.substring(9));   // cut off "VAR_SHOW_"
     }
     else if (var.startsWith("VAR_HEADER_")) {
         return getHeader(var.substring(11)); // cut off "VAR_HEADER_"
@@ -296,7 +312,7 @@ void serverSetup() {
                                 + JSON_OBJECT_SIZE(9) * EDITABLE_VARS_LEN         // object with 9 values per parameter
                                 + JSON_STRING_SIZE(25 + 30) * EDITABLE_VARS_LEN); // string size for templateString and displayName
 
-        if (request->method() == 2) { // method() returns values from WebRequestMethod enum -> 2 == HTTP_POST
+        if (request->method() == 2) {                                             // method() returns values from WebRequestMethod enum -> 2 == HTTP_POST
             // returns values from WebRequestMethod enum -> 2 == HTTP_POST
             // update all given params and match var name in editableVars
 
@@ -351,7 +367,7 @@ void serverSetup() {
             }
 
             // Write the new values to MQTT
-            writeSysParamsToMQTT(true); // Continue on error
+            writeSysParamsToMQTT(true);    // Continue on error
         }
         else if (request->method() == 1) { // WebRequestMethod enum -> HTTP_GET
             // get parameter id from first parameter, e.g. /parameters?param=PID_ON
