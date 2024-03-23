@@ -21,6 +21,11 @@
 #define PIN_ROTARY_CLK 3 // Rotary encoder clock pin
 #define PIN_ROTARY_SW  5 // Rotary encoder switch
 
+// Menu Input
+#define PIN_MENU_OUT_A 4         // Menu Input - Rotary encoder Output A / Data pin or down button
+#define PIN_MENU_OUT_B 3         // Menu Input - Rotary encoder Output B / CLK pin or up button
+#define PIN_MENU_ENTER 5         // Menu Input - Rotary encoder switch or enter button
+
 // Sensors
 #define PIN_TEMPSENSOR  16
 #define PIN_WATERSENSOR 23

@@ -59,6 +59,12 @@ class GPIOPin {
          */
         Type getType() const;
 
+        /**
+         * @brief Returns pin number of this GPIO pin
+         * @return Pin number of this pin
+         */
+        int getPinNumber() const;
+
     private:
         /**
          * @brief Set the type of the GPIO pin

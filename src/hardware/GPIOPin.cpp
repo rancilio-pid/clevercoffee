@@ -55,3 +55,7 @@ void GPIOPin::setType(Type pinType) {
             break;
     }
 }
+
+int GPIOPin::getPinNumber() const {
+    return pin;
+}
