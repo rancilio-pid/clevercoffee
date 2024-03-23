@@ -348,6 +348,8 @@ PID bPID(&temperature, &pidOutput, &setpoint, aggKp, aggKi, aggKd, 1, DIRECT);
 // Embedded HTTP Server
 #include "embeddedWebserver.h"
 
+#include "menuHandler.h"
+
 enum SectionNames {
     sPIDSection,
     sTempSection,
@@ -2005,6 +2007,9 @@ void setup() {
     u8g2_prepare();
     displayLogo(String("Version "), String(sysVersion));
     delay(2000); // caused crash with wifi manager on esp8266, should be ok on esp32
+
+    initMenu(u8g2);
+
 #endif
 
     // Fallback offline
@@ -2219,18 +2224,26 @@ void looppid() {
 
     // Check if PID should run or not. If not, set to manual and force output to zero
 #if OLED_DISPLAY != 0
-    unsigned long currentMillisDisplay = millis();
 
-    if (currentMillisDisplay - previousMillisDisplay >= 100) {
-        displayShottimer();
+    if (menu != nullptr) {
+        menu->EventHandler();
+        menu->Loop();
     }
 
-    if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
-        previousMillisDisplay = currentMillisDisplay;
-#if DISPLAYTEMPLATE < 20 // not using vertical template
-        displayMachineState();
+    if (menu == nullptr || !menu->IsOpen()) {
+        unsigned long currentMillisDisplay = millis();
+
+        if (currentMillisDisplay - previousMillisDisplay >= 100) {
+            displayShottimer();
+        }
+
+        if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
+            previousMillisDisplay = currentMillisDisplay;
+#if DISPLAYTEMPLATE < 20   // not using vertical template
+            displayMachineState();
 #endif
-        printScreen();   // refresh display
+            printScreen(); // refresh display
+        }
     }
 #endif
 
