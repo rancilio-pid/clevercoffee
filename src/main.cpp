@@ -2351,13 +2351,24 @@ void loopLED() {
             statusLed->turnOn();
         }
         else {
-            statusLed->turnOff();
+            if(FEATURE_STATUS_LED == 2) { //selected to let the LED blink while getting ready
+                statusLed->blink(millis());
+            }
+            else { //otherwise keep the led turned off
+                statusLed->turnOff();
+            }
+                
         }
     }
 
     if (FEATURE_BREW_LED) {
         if (machineState == kBrew) {
-            brewLed->turnOn();
+            if (FEATURE_BREW_LED == 2){
+                brewLed->blink(millis());
+            } 
+            else {
+                brewLed->turnOn();
+            }
         }
         else {
             brewLed->turnOff();

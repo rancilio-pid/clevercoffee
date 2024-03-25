@@ -24,8 +24,14 @@ class LED {
 
         virtual void turnOn() = 0;
         virtual void turnOff() = 0;
+        virtual void blink( unsigned long currentTime ) = 0;
         virtual void setColor(int red, int green, int blue) = 0;
         virtual void setBrightness(int value) = 0;
         virtual ~LED() {
         }
+
+    protected:
+        int current_state = 0;
+        unsigned long lastTimeBlink = 0;
+        unsigned int blinkingTime = 0;
 };
