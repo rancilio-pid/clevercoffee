@@ -1855,7 +1855,7 @@ void looppid() {
 
     handleMachineState();
 
-#if (FEATURE_SCALE == 1 && BREWCONTROL_TYPE == 0) // SHOTTIMER with scale
+#if (FEATURE_SCALE == 1 && BREWCONTROL_TYPE < 2) // SHOTTIMER with scale
     shottimerscale();
 #endif
 
