@@ -33,5 +33,5 @@ class LED {
     protected:
         int current_state = 0;
         unsigned long lastTimeBlink = 0;
-        unsigned int blinkingTime = 0;
+        unsigned int blinkDuration = 0;
 };

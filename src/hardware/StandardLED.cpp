@@ -7,9 +7,9 @@
 #include "StandardLED.h"
 #include "GPIOPin.h"
 
-StandardLED::StandardLED(GPIOPin& gpioInstance, unsigned int blinking_time ) :
+StandardLED::StandardLED(GPIOPin& gpioInstance, unsigned int blinkDuration ) :
     gpio(gpioInstance) {
-        this->blinkingTime = blinking_time;
+        this->blinkDuration = blinkDuration;
 }
 
 void StandardLED::turnOn() {
@@ -31,7 +31,7 @@ void StandardLED::setBrightness(int value) {
 }
 
 void StandardLED::blink( unsigned long currentTime ) {
-    if( currentTime > this->lastTimeBlink + this->blinkingTime) {
+    if( currentTime > this->lastTimeBlink + this->blinkDuration) {
         //sufficient time has passed, let's toggle the LED
         switch (this->current_state)
         {

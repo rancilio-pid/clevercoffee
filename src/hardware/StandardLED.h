@@ -12,7 +12,7 @@ class GPIOPin;
 
 class StandardLED : public LED {
     public:
-        StandardLED(GPIOPin& gpioInstance, unsigned int blinking_time = 750);
+        StandardLED(GPIOPin& gpioInstance, unsigned int blinkDuration = 750);
 
         void turnOn() override;
         void turnOff() override;
