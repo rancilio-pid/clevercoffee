@@ -20,7 +20,7 @@ void StandardLED::turnOff() {
 }
 
 void StandardLED::toggle() {
-    gpio.write( gpio.read() ^ 1 );
+    gpio.write(gpio.read() ^ 1);
 }
 
 void StandardLED::setColor(int red, int green, int blue) {

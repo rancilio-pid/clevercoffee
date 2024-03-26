@@ -2358,12 +2358,12 @@ void loopLED() {
         }
         else {
 
-            if( FEATURE_STATUS_LED_TYPE == 2 ) { //blink LED
-                if( statusLedTrigger->check() ) {
+            if (FEATURE_STATUS_LED_TYPE == 2) { // blink LED
+                if (statusLedTrigger->check()) {
                     statusLed->toggle();
                     statusLedTrigger->reset();
                 }
-            } 
+            }
             else {
                 statusLed->turnOff();
             }
@@ -2372,12 +2372,12 @@ void loopLED() {
 
     if (FEATURE_BREW_LED) {
         if (machineState == kBrew) {
-            if( FEATURE_BREW_LED_TYPE == 2 ) { //blink LED
-                if( brewLedTrigger->check() ) {
+            if (FEATURE_BREW_LED_TYPE == 2) { // blink LED
+                if (brewLedTrigger->check()) {
                     brewLed->toggle();
                     brewLedTrigger->reset();
                 }
-            } 
+            }
             else {
                 brewLed->turnOn();
             }

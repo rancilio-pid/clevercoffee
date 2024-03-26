@@ -51,29 +51,30 @@ enum MACHINE {
 #define WIFICONNECTIONDELAY 10000          // delay between reconnects in ms
 
 // PID & Hardware
-#define BREWCONTROL_TYPE       0                     // 0 = off (no brewing control), 1 = Brew by time (with preinfusion), 2 = Brew by weight (from scale)
-#define FEATURE_BREWDETECTION  1                     // 0 = deactivated, 1 = activated
-#define BREWDETECTION_TYPE     1                     // 1 = Software (BREWCONTROL_TYPE 0), 2 = Hardware BREWCONTROL_TYPE 1 or 2, 3 = optocoupler for BREWCONTROL_TYPE 0
-#define FEATURE_POWERSWITCH    0                     // 0 = deactivated, 1 = activated
-#define POWERSWITCH_TYPE       Switch::TOGGLE        // Switch::TOGGLE or Switch::MOMENTARY (trigger)
-#define POWERSWITCH_MODE       Switch::NORMALLY_OPEN // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
-#define FEATURE_BREWSWITCH     0                     // 0 = deactivated, 1 = activated
-#define BREWSWITCH_TYPE        Switch::TOGGLE        // Switch::TOGGLE or Switch::MOMENTARY (trigger)
-#define BREWSWITCH_MODE        Switch::NORMALLY_OPEN // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
-#define FEATURE_STEAMSWITCH    0                     // 0 = deactivated, 1 = activated
-#define STEAMSWITCH_TYPE       Switch::TOGGLE        // Switch::TOGGLE or Switch::MOMENTARY (trigger)
-#define OPTOCOUPLER_TYPE       HIGH                  // BREWDETECTION 3 configuration; HIGH or LOW trigger optocoupler
-#define STEAMSWITCH_MODE       Switch::NORMALLY_OPEN // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
-#define HEATER_SSR_TYPE        Relay::HIGH_TRIGGER   // HIGH_TRIGGER = relay switches when input is HIGH, vice versa for LOW_TRIGGER
-#define PUMP_VALVE_SSR_TYPE    Relay::HIGH_TRIGGER   // HIGH_TRIGGER = relay switches when input is HIGH, vice versa for LOW_TRIGGER
-#define FEATURE_STATUS_LED     0                     // 0 = deactivated, 1 = activated
-#define FEATURE_STATUS_LED_TYPE 1                    // 1 = Turn on status LED when temp is in range - otherwise off, 2 = Turn on status LED when temp is in range - otherwise blinking
-#define FEATURE_BREW_LED       0                     // Turn on brew LED when brew is started, 0 = deactivated, 1 = activated, 2 = blink
-#define FEATURE_BREW_LED_TYPE  1                     // 1 = Turn on brew LED when brew is started, 2 = Blink brew LED when brew is started#define LED_TYPE               LED::STANDARD         // STANDARD_LED for an LED connected to a GPIO pin, WS2812 for adressable LEDs
-#define LED_TYPE               LED::STANDARD         // STANDARD_LED for an LED connected to a GPIO pin, WS2812 for adressable LEDs
-#define FEATURE_WATER_SENS     0                     // 0 = deactivated, 1 = activated
-#define WATER_SENS_TYPE        0                     // 0 = water sensor XKC-Y25-NPN connected, 1 = XKC-Y25-PNP connected
-#define FEATURE_PRESSURESENSOR 0                     // 0 = deactivated, 1 = activated
+#define BREWCONTROL_TYPE        0                     // 0 = off (no brewing control), 1 = Brew by time (with preinfusion), 2 = Brew by weight (from scale)
+#define FEATURE_BREWDETECTION   1                     // 0 = deactivated, 1 = activated
+#define BREWDETECTION_TYPE      1                     // 1 = Software (BREWCONTROL_TYPE 0), 2 = Hardware BREWCONTROL_TYPE 1 or 2, 3 = optocoupler for BREWCONTROL_TYPE 0
+#define FEATURE_POWERSWITCH     0                     // 0 = deactivated, 1 = activated
+#define POWERSWITCH_TYPE        Switch::TOGGLE        // Switch::TOGGLE or Switch::MOMENTARY (trigger)
+#define POWERSWITCH_MODE        Switch::NORMALLY_OPEN // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
+#define FEATURE_BREWSWITCH      0                     // 0 = deactivated, 1 = activated
+#define BREWSWITCH_TYPE         Switch::TOGGLE        // Switch::TOGGLE or Switch::MOMENTARY (trigger)
+#define BREWSWITCH_MODE         Switch::NORMALLY_OPEN // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
+#define FEATURE_STEAMSWITCH     0                     // 0 = deactivated, 1 = activated
+#define STEAMSWITCH_TYPE        Switch::TOGGLE        // Switch::TOGGLE or Switch::MOMENTARY (trigger)
+#define OPTOCOUPLER_TYPE        HIGH                  // BREWDETECTION 3 configuration; HIGH or LOW trigger optocoupler
+#define STEAMSWITCH_MODE        Switch::NORMALLY_OPEN // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
+#define HEATER_SSR_TYPE         Relay::HIGH_TRIGGER   // HIGH_TRIGGER = relay switches when input is HIGH, vice versa for LOW_TRIGGER
+#define PUMP_VALVE_SSR_TYPE     Relay::HIGH_TRIGGER   // HIGH_TRIGGER = relay switches when input is HIGH, vice versa for LOW_TRIGGER
+#define FEATURE_STATUS_LED      0                     // 0 = deactivated, 1 = activated
+#define FEATURE_STATUS_LED_TYPE 1                     // 1 = Turn on status LED when temp is in range - otherwise off, 2 = Turn on status LED when temp is in range - otherwise blinking
+#define FEATURE_BREW_LED        0                     // Turn on brew LED when brew is started, 0 = deactivated, 1 = activated, 2 = blink
+#define FEATURE_BREW_LED_TYPE                                                                                                                                                                                                   \
+    1 // 1 = Turn on brew LED when brew is started, 2 = Blink brew LED when brew is started#define LED_TYPE               LED::STANDARD         // STANDARD_LED for an LED connected to a GPIO pin, WS2812 for adressable LEDs
+#define LED_TYPE               LED::STANDARD // STANDARD_LED for an LED connected to a GPIO pin, WS2812 for adressable LEDs
+#define FEATURE_WATER_SENS     0             // 0 = deactivated, 1 = activated
+#define WATER_SENS_TYPE        0             // 0 = water sensor XKC-Y25-NPN connected, 1 = XKC-Y25-PNP connected
+#define FEATURE_PRESSURESENSOR 0             // 0 = deactivated, 1 = activated
 
 // Brew Scale
 #define FEATURE_SCALE 0 // 0 = deactivated, 1 = activated
