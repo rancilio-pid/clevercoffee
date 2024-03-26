@@ -162,6 +162,9 @@ GPIOPin* brewLedPin;
 LED* statusLed;
 LED* brewLed;
 
+PeriodicTrigger* statusLedTrigger;
+PeriodicTrigger* brewLedTrigger;
+
 GPIOPin heaterRelayPin(PIN_HEATER, GPIOPin::OUT);
 Relay heaterRelay(heaterRelayPin, HEATER_SSR_TYPE);
 
@@ -1985,6 +1988,9 @@ void setup() {
 
         statusLed = new StandardLED(*statusLedPin);
         brewLed = new StandardLED(*brewLedPin);
+
+        statusLedTrigger = new PeriodicTrigger(750);
+        brewLedTrigger = new PeriodicTrigger(750);
     }
     else {
         // TODO Addressable LEDs
@@ -2351,13 +2357,30 @@ void loopLED() {
             statusLed->turnOn();
         }
         else {
-            statusLed->turnOff();
+
+            if( FEATURE_STATUS_LED_TYPE == 2 ) { //blink LED
+                if( statusLedTrigger->check() ) {
+                    statusLed->toggle();
+                    statusLedTrigger->reset();
+                }
+            } 
+            else {
+                statusLed->turnOff();
+            }
         }
     }
 
     if (FEATURE_BREW_LED) {
         if (machineState == kBrew) {
-            brewLed->turnOn();
+            if( FEATURE_BREW_LED_TYPE == 2 ) { //blink LED
+                if( brewLedTrigger->check() ) {
+                    brewLed->toggle();
+                    brewLedTrigger->reset();
+                }
+            } 
+            else {
+                brewLed->turnOn();
+            }
         }
         else {
             brewLed->turnOff();

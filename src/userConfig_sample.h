@@ -66,8 +66,10 @@ enum MACHINE {
 #define STEAMSWITCH_MODE       Switch::NORMALLY_OPEN // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
 #define HEATER_SSR_TYPE        Relay::HIGH_TRIGGER   // HIGH_TRIGGER = relay switches when input is HIGH, vice versa for LOW_TRIGGER
 #define PUMP_VALVE_SSR_TYPE    Relay::HIGH_TRIGGER   // HIGH_TRIGGER = relay switches when input is HIGH, vice versa for LOW_TRIGGER
-#define FEATURE_STATUS_LED     0                     // Blink status LED when temp is in range, 0 = deactivated, 1 = activated
-#define FEATURE_BREW_LED       0                     // Turn on brew LED when brew is started, 0 = deactivated, 1 = activated
+#define FEATURE_STATUS_LED     0                     // 0 = deactivated, 1 = activated
+#define FEATURE_STATUS_LED_TYPE 1                    // 1 = Turn on status LED when temp is in range - otherwise off, 2 = Turn on status LED when temp is in range - otherwise blinking
+#define FEATURE_BREW_LED       0                     // Turn on brew LED when brew is started, 0 = deactivated, 1 = activated, 2 = blink
+#define FEATURE_BREW_LED_TYPE  1                     // 1 = Turn on brew LED when brew is started, 2 = Blink brew LED when brew is started#define LED_TYPE               LED::STANDARD         // STANDARD_LED for an LED connected to a GPIO pin, WS2812 for adressable LEDs
 #define LED_TYPE               LED::STANDARD         // STANDARD_LED for an LED connected to a GPIO pin, WS2812 for adressable LEDs
 #define FEATURE_WATER_SENS     0                     // 0 = deactivated, 1 = activated
 #define WATER_SENS_TYPE        0                     // 0 = water sensor XKC-Y25-NPN connected, 1 = XKC-Y25-PNP connected
