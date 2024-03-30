@@ -79,8 +79,6 @@ PeriodicTrigger logbrew(500);
 
 enum MachineState {
     kInit = 0,
-    kColdStart = 10,
-    kAtSetpoint = 19,
     kPidNormal = 20,
     kBrew = 30,
     kShotTimerAfterBrew = 31,
@@ -284,7 +282,6 @@ SysPara<float> sysParaScale2Calibration(&scale2Calibration, -100000, 100000, STO
 SysPara<float> sysParaScaleKnownWeight(&scaleKnownWeight, 0, 2000, STO_ITEM_SCALE_KNOWN_WEIGHT);
 
 // Other variables
-boolean coldstart = true;                     // true = Rancilio started for first time
 boolean emergencyStop = false;                // Emergency stop if temperature is too high
 double EmergencyStopTemp = 120;               // Temp EmergencyStopTemp
 float inX = 0, inY = 0, inOld = 0, inSum = 0; // used for filterPressureValue()
@@ -865,159 +862,19 @@ boolean checkSteamOffQM() {
 void handleMachineState() {
     switch (machineState) {
         case kInit:
-            // switch state to kColdStart if temperature is below BrewSetpoint or 150°
-            if (temperature < (brewSetpoint - 1) || temperature < 150) {
-                machineState = kColdStart;
-                LOGF(DEBUG, "%d", temperature);
-                LOGF(DEBUG, "%d", machineState);
+            if (!waterFull) {
+                machineState = kWaterEmpty;
+            }
 
-                // reset PID (some users have 100% output in kInit / KColdstart)
-                pidMode = 0;
-                bPID.SetMode(pidMode);
-                pidOutput = 0;
-                heaterRelay.off();
-
-                // start PID again
-                pidMode = 1;
-                bPID.SetMode(pidMode);
+            if (sensorError) {
+                machineState = kSensorError;
             }
 
             if (pidON == 0) {
                 machineState = kPidOffline;
             }
-
-            if (!waterFull) {
-                machineState = kWaterEmpty;
-            }
-
-            if (sensorError) {
-                machineState = kSensorError;
-            }
-            break;
-
-        case kColdStart:
-            // Once the temperature is above BrewSetpoint for 10 seconds, the machineState is set to kAtSetpoint.
-            // if during the 10 seconds the temperature is below BrewSetpoint again,
-            // reset machinestatecold to 0
-            switch (machinestatecold) {
-                case 0:
-                    if (temperature >= (brewSetpoint - 1) && temperature < 150) {
-                        machinestatecoldmillis = millis(); // get millis for interval calc
-                        machinestatecold = 10;             // new state
-                        LOG(DEBUG, "temperature >= (BrewSetpoint-1), waiting 10 sec before switching to kAtSetpoint");
-                    }
-                    break;
-
-                case 10:
-                    // if the temperature was not above BrewSetpoint - 1 long enough, reset machinestatecold
-                    // This way, noisy temperature errors won't switch the machineState too early
-                    if (temperature < (brewSetpoint - 1)) {
-                        machinestatecold = 0;
-                        LOG(DEBUG, "Resetting timer for kAtSetpoint: temperature < (BrewSetpoint-1) again");
-                        break;
-                    }
-
-                    // 10 sec temperature above BrewSetpoint - 1, set new state
-                    if (machinestatecoldmillis + 10 * 1000 < millis()) {
-                        machineState = kAtSetpoint;
-                        LOG(DEBUG, "temperature >= (BrewSetpoint-1) for 10 sec, switching to kAtSetpoint");
-                    }
-                    break;
-            }
-
-            if ((timeBrewed > 0 && BREWCONTROL_TYPE == 0) || // timeBrewed without controlling brew
-                (BREWCONTROL_TYPE > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished)) {
-                machineState = kBrew;
-
-                if (standbyModeOn) {
-                    resetStandbyTimer();
-                }
-            }
-
-            if (steamON == 1) {
-                machineState = kSteam;
-
-                if (standbyModeOn) {
-                    resetStandbyTimer();
-                }
-            }
-
-            if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
-                machineState = kBackflush;
-
-                if (standbyModeOn) {
-                    resetStandbyTimer();
-                }
-            }
-
-            if (standbyModeOn && standbyModeRemainingTimeMillis == 0) {
-                machineState = kStandby;
-                pidON = 0;
-            }
-
-            if (pidON == 0 && machineState != kStandby) {
-                machineState = kPidOffline;
-            }
-
-            if (!waterFull) {
-                machineState = kWaterEmpty;
-            }
-
-            if (sensorError) {
-                machineState = kSensorError;
-            }
-
-            break;
-
-        // Current temperature is just below the setpoint
-        case kAtSetpoint:
-            brewDetection();
-
-            // when temperature has reached BrewSetpoint properly, switch to kPidNormal
-            if (temperature >= brewSetpoint) {
-                machineState = kPidNormal;
-            }
-
-            // is a brew running? (values are set in brewDetection() above)
-            if ((timeBrewed > 0 && BREWCONTROL_TYPE == 0) || (BREWCONTROL_TYPE > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished)) {
-                machineState = kBrew;
-
-                if (standbyModeOn) {
-                    resetStandbyTimer();
-                }
-            }
-
-            if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
-                machineState = kBackflush;
-
-                if (standbyModeOn) {
-                    resetStandbyTimer();
-                }
-            }
-
-            if (steamON == 1) {
-                machineState = kSteam;
-
-                if (standbyModeOn) {
-                    resetStandbyTimer();
-                }
-            }
-
-            if (standbyModeOn && standbyModeRemainingTimeMillis == 0) {
-                machineState = kStandby;
-                pidON = 0;
-            }
-
-            if (pidON == 0 && machineState != kStandby) {
-                machineState = kPidOffline;
-            }
-
-            if (!waterFull) {
-                machineState = kWaterEmpty;
-            }
-
-            if (sensorError) {
-                machineState = kSensorError;
+            else {
+                machineState = kPidNormal
             }
 
             break;
@@ -1147,8 +1004,6 @@ void handleMachineState() {
             brewDetection();
 
             if (isBrewDetected == 0) {
-                // TODO: this needs to go back to kColdStart if kPidNormal was never reached before
-                // (currently no brew detection is run during cold start though)
                 machineState = kPidNormal;
             }
 
@@ -1304,16 +1159,8 @@ void handleMachineState() {
 
         case kPidOffline:
             if (pidON == 1) {
-                if (coldstart) {
-                    machineState = kColdStart;
-                }
-                else if (!coldstart && (temperature > (brewSetpoint - 10))) { // temperature higher BrewSetpoint-10, normal PID
-                    machineState = kPidNormal;
-                }
-                else if (temperature <= (brewSetpoint - 10)) {
-                    machineState = kColdStart; // temperature 10C below set point, enter cold start
-                    coldstart = true;
-                }
+                // Enter regular PID operations
+                machineState = kPidNormal;
             }
 
             if (!waterFull) {
@@ -1377,10 +1224,6 @@ char const* machinestateEnumToString(MachineState machineState) {
     switch (machineState) {
         case kInit:
             return "Init";
-        case kColdStart:
-            return "Cold Start";
-        case kAtSetpoint:
-            return "Above Set Point";
         case kPidNormal:
             return "PID Normal";
         case kBrew:
@@ -2250,8 +2093,8 @@ void looppid() {
         }
     }
 
-    // Set PID if first start of machine detected, and no steamON
-    if ((machineState == kInit || machineState == kColdStart || machineState == kAtSetpoint)) {
+    // Regular PID operation
+    if (machineState == kPidNormal) {
         if (usePonM) {
             if (startTn != 0) {
                 startKi = startKp / startTn;
@@ -2270,11 +2113,6 @@ void looppid() {
         else {
             setNormalPIDTunings();
         }
-    }
-
-    if (machineState == kPidNormal) {
-        setNormalPIDTunings();
-        coldstart = false;
     }
 
     // BD PID
