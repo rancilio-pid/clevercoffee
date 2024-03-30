@@ -874,7 +874,7 @@ void handleMachineState() {
                 machineState = kPidOffline;
             }
             else {
-                machineState = kPidNormal
+                machineState = kPidNormal;
             }
 
             break;

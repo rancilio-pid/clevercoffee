@@ -310,7 +310,8 @@ void displayShottimer(void) {
  * @brief display heating logo
  */
 void displayMachineState() {
-    if (FEATURE_HEATINGLOGO > 0 && (machineState == kInit || machineState == kColdStart) && brewSwitchState != kBrewSwitchFlushOff) {
+    // Show the heating logo when we are in regular PID mode and more than 5degC below the set point
+    if (FEATURE_HEATINGLOGO > 0 && machineState == kPidNormal && (setpoint - temperature) > 5. && brewSwitchState != kBrewSwitchFlushOff) {
         // For status info
         u8g2.clearBuffer();
 
