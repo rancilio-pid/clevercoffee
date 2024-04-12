@@ -19,7 +19,7 @@ void printScreen() {
 
     // If no specific machine state was printed, print default:
     if (((machineState == kPidNormal || machineState == kBrewDetectionTrailing) || ((machineState == kBrew || machineState == kShotTimerAfterBrew) && FEATURE_SHOTTIMER == 0) || // shottimer == 0, auch Bezug anzeigen
-         machineState == kCoolDown || (machineState == kPidNormal && (setpoint - temperature) > 5. && FEATURE_HEATINGLOGO == 0) || ((machineState == kPidDisabled) && FEATURE_PIDOFF_LOGO == 0)) &&
+         (machineState == kPidNormal && (setpoint - temperature) > 5. && FEATURE_HEATINGLOGO == 0) || ((machineState == kPidDisabled) && FEATURE_PIDOFF_LOGO == 0)) &&
         (brewSwitchState != kBrewSwitchFlushOff)) {
         if (!sensorError) {
             u8g2.clearBuffer();
