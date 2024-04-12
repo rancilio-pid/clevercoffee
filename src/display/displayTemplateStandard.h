@@ -12,7 +12,7 @@
  */
 void printScreen() {
     if (((machineState == kPidNormal || machineState == kBrewDetectionTrailing) || ((machineState == kBrew || machineState == kShotTimerAfterBrew) && FEATURE_SHOTTIMER == 0) || // shottimer == 0, auch Bezug anzeigen
-         machineState == kCoolDown || (machineState == kPidNormal && (setpoint - temperature) > 5. && FEATURE_HEATINGLOGO == 0) || ((machineState == kPidOffline) && FEATURE_OFFLINELOGO == 0)) &&
+         machineState == kCoolDown || (machineState == kPidNormal && (setpoint - temperature) > 5. && FEATURE_HEATINGLOGO == 0) || ((machineState == kPidDisabled) && FEATURE_PIDOFF_LOGO == 0)) &&
         (brewSwitchState != kBrewSwitchFlushOff)) {
         u8g2.clearBuffer();
         u8g2.setFont(u8g2_font_profont11_tf); // set font

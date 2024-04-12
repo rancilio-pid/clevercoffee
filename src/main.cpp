@@ -88,7 +88,7 @@ enum MachineState {
     kBackflush = 50,
     kWaterEmpty = 70,
     kEmergencyStop = 80,
-    kPidOffline = 90,
+    kPidDisabled = 90,
     kStandby = 95,
     kSensorError = 100,
     kEepromError = 110,
@@ -871,7 +871,7 @@ void handleMachineState() {
             }
 
             if (pidON == 0) {
-                machineState = kPidOffline;
+                machineState = kPidDisabled;
             }
             else {
                 machineState = kPidNormal;
@@ -916,7 +916,7 @@ void handleMachineState() {
             }
 
             if (pidON == 0 && machineState != kStandby) {
-                machineState = kPidOffline;
+                machineState = kPidDisabled;
             }
 
             if (!waterFull) {
@@ -958,7 +958,7 @@ void handleMachineState() {
             }
 
             if (pidON == 0) {
-                machineState = kPidOffline;
+                machineState = kPidDisabled;
             }
 
             if (sensorError) {
@@ -988,7 +988,7 @@ void handleMachineState() {
             }
 
             if (pidON == 0) {
-                machineState = kPidOffline;
+                machineState = kPidDisabled;
             }
 
             if (!waterFull) {
@@ -1025,7 +1025,7 @@ void handleMachineState() {
             }
 
             if (pidON == 0) {
-                machineState = kPidOffline;
+                machineState = kPidDisabled;
             }
 
             if (!waterFull) {
@@ -1051,7 +1051,7 @@ void handleMachineState() {
             }
 
             if (pidON == 0) {
-                machineState = kPidOffline;
+                machineState = kPidDisabled;
             }
 
             if (!waterFull) {
@@ -1095,7 +1095,7 @@ void handleMachineState() {
             }
 
             if (pidON == 0) {
-                machineState = kPidOffline;
+                machineState = kPidDisabled;
             }
 
             if (!waterFull) {
@@ -1117,7 +1117,7 @@ void handleMachineState() {
             }
 
             if (pidON == 0) {
-                machineState = kPidOffline;
+                machineState = kPidDisabled;
             }
 
             if (!waterFull && (backflushState == kBackflushWaitBrewswitchOn || backflushState == kBackflushWaitBrewswitchOff)) {
@@ -1135,7 +1135,7 @@ void handleMachineState() {
             }
 
             if (pidON == 0) {
-                machineState = kPidOffline;
+                machineState = kPidDisabled;
             }
 
             if (sensorError) {
@@ -1149,7 +1149,7 @@ void handleMachineState() {
             }
 
             if (pidON == 0) {
-                machineState = kPidOffline;
+                machineState = kPidDisabled;
             }
 
             if (sensorError) {
@@ -1157,7 +1157,7 @@ void handleMachineState() {
             }
             break;
 
-        case kPidOffline:
+        case kPidDisabled:
             if (pidON == 1) {
                 // Enter regular PID operations
                 machineState = kPidNormal;
@@ -1242,8 +1242,8 @@ char const* machinestateEnumToString(MachineState machineState) {
             return "Water Empty";
         case kEmergencyStop:
             return "Emergency Stop";
-        case kPidOffline:
-            return "PID Offline";
+        case kPidDisabled:
+            return "PID Disabled";
         case kStandby:
             return "Standby Mode";
         case kSensorError:
@@ -2077,7 +2077,7 @@ void looppid() {
     }
 #endif
 
-    if (machineState == kPidOffline || machineState == kWaterEmpty || machineState == kSensorError || machineState == kEmergencyStop || machineState == kEepromError || machineState == kStandby || brewPIDDisabled) {
+    if (machineState == kPidDisabled || machineState == kWaterEmpty || machineState == kSensorError || machineState == kEmergencyStop || machineState == kEepromError || machineState == kStandby || brewPIDDisabled) {
         if (pidMode == 1) {
             // Force PID shutdown
             pidMode = 0;

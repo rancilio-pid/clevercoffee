@@ -327,7 +327,7 @@ void displayMachineState() {
     }
 
     // Offline logo
-    if (FEATURE_OFFLINELOGO == 1 && machineState == kPidOffline) {
+    if (FEATURE_PIDOFF_LOGO == 1 && machineState == kPidDisabled) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(38, 0, Off_Logo_width, Off_Logo_height, Off_Logo);
         u8g2.setCursor(0, 55);
@@ -337,7 +337,7 @@ void displayMachineState() {
         u8g2.sendBuffer();
     }
 
-    if (FEATURE_OFFLINELOGO == 1 && machineState == kStandby) {
+    if (FEATURE_PIDOFF_LOGO == 1 && machineState == kStandby) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(38, 0, Off_Logo_width, Off_Logo_height, Off_Logo);
         u8g2.setCursor(36, 55);
