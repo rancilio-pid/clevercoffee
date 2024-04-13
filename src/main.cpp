@@ -285,7 +285,6 @@ SysPara<float> sysParaScaleKnownWeight(&scaleKnownWeight, 0, 2000, STO_ITEM_SCAL
 boolean emergencyStop = false;                // Emergency stop if temperature is too high
 double EmergencyStopTemp = 120;               // Temp EmergencyStopTemp
 float inX = 0, inY = 0, inOld = 0, inSum = 0; // used for filterPressureValue()
-int signalBars = 0;                           // used for getSignalStrength()
 boolean brewDetected = 0;
 boolean setupDone = false;
 int backflushOn = 0;                          // 1 = backflush mode active
@@ -380,8 +379,8 @@ bool mqtt_was_connected = false;
 /**
  * @brief Get Wifi signal strength and set signalBars for display
  */
-void getSignalStrength() {
-    if (offlineMode == 1) return;
+int getSignalStrength() {
+    if (offlineMode == 1) return 0;
 
     long rssi;
 
@@ -393,19 +392,19 @@ void getSignalStrength() {
     }
 
     if (rssi >= -50) {
-        signalBars = 4;
+        return 4;
     }
     else if (rssi < -50 && rssi >= -65) {
-        signalBars = 3;
+        return 3;
     }
     else if (rssi < -65 && rssi >= -75) {
-        signalBars = 2;
+        return 2;
     }
     else if (rssi < -75 && rssi >= -80) {
-        signalBars = 1;
+        return 1;
     }
     else {
-        signalBars = 0;
+        return 0;
     }
 }
 
