@@ -18,14 +18,10 @@ class IOSwitch : public Switch {
 
         bool isPressed() override;
         bool longPressDetected() override;
-        void setType(Type type);
-        void setMode(Mode mode);
         GPIOPin& getGPIOInstance();
 
     private:
         GPIOPin& gpio;
-        Type switchType;
-        Mode switchMode;
         uint8_t lastState;
         uint8_t currentState;
         unsigned long lastDebounceTime;
