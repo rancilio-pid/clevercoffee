@@ -95,8 +95,6 @@ enum MachineState {
 };
 
 MachineState machineState = kInit;
-int machinestatecold = 0;
-unsigned long machinestatecoldmillis = 0;
 MachineState lastmachinestate = kInit;
 int lastmachinestatepid = -1;
 
