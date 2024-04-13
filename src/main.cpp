@@ -77,7 +77,7 @@ MACHINE machine = (enum MACHINE)MACHINEID;
 
 #define HIGH_ACCURACY
 
-#include "PeriodicTrigger.h"
+#include "utils/PeriodicTrigger.h"
 PeriodicTrigger logbrew(500);
 
 enum MachineState {
