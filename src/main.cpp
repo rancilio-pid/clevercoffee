@@ -98,8 +98,6 @@ enum MachineState {
 };
 
 MachineState machineState = kInit;
-int machinestatecold = 0;
-unsigned long machinestatecoldmillis = 0;
 MachineState lastmachinestate = kInit;
 int lastmachinestatepid = -1;
 
@@ -288,7 +286,6 @@ SysPara<float> sysParaScaleKnownWeight(&scaleKnownWeight, 0, 2000, STO_ITEM_SCAL
 boolean emergencyStop = false;                // Emergency stop if temperature is too high
 double EmergencyStopTemp = 120;               // Temp EmergencyStopTemp
 float inX = 0, inY = 0, inOld = 0, inSum = 0; // used for filterPressureValue()
-int signalBars = 0;                           // used for getSignalStrength()
 boolean brewDetected = 0;
 boolean setupDone = false;
 int backflushOn = 0;                          // 1 = backflush mode active
@@ -316,7 +313,6 @@ int maxErrorCounter = 10; // depends on intervaltempmes* , define max seconds fo
 
 // PID controller
 unsigned long previousMillistemp; // initialisation at the end of init()
-int pidMode = 1;                  // 1 = Automatic, 0 = Manual
 
 double setpointTemp;
 double previousInput = 0;
@@ -383,8 +379,8 @@ bool mqtt_was_connected = false;
 /**
  * @brief Get Wifi signal strength and set signalBars for display
  */
-void getSignalStrength() {
-    if (offlineMode == 1) return;
+int getSignalStrength() {
+    if (offlineMode == 1) return 0;
 
     long rssi;
 
@@ -396,19 +392,19 @@ void getSignalStrength() {
     }
 
     if (rssi >= -50) {
-        signalBars = 4;
+        return 4;
     }
     else if (rssi < -50 && rssi >= -65) {
-        signalBars = 3;
+        return 3;
     }
     else if (rssi < -65 && rssi >= -75) {
-        signalBars = 2;
+        return 2;
     }
     else if (rssi < -75 && rssi >= -80) {
-        signalBars = 1;
+        return 1;
     }
     else {
-        signalBars = 0;
+        return 0;
     }
 }
 
@@ -2078,18 +2074,16 @@ void looppid() {
 #endif
 
     if (machineState == kPidDisabled || machineState == kWaterEmpty || machineState == kSensorError || machineState == kEmergencyStop || machineState == kEepromError || machineState == kStandby || brewPIDDisabled) {
-        if (pidMode == 1) {
+        if (bPID.GetMode() == 1) {
             // Force PID shutdown
-            pidMode = 0;
-            bPID.SetMode(pidMode);
+            bPID.SetMode(0);
             pidOutput = 0;
             heaterRelay.off();
         }
     }
     else { // no sensorerror, no pid off or no Emergency Stop
-        if (pidMode == 0) {
-            pidMode = 1;
-            bPID.SetMode(pidMode);
+        if (bPID.GetMode() == 0) {
+            bPID.SetMode(0);
         }
     }
 

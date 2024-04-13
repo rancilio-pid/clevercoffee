@@ -55,7 +55,7 @@ void displayWiFiStatus(int x, int y) {
     if (WiFi.status() == WL_CONNECTED) {
         u8g2.drawXBMP(x, y, 8, 8, Antenna_OK_Icon);
 
-        for (int b = 0; b <= signalBars; b++) {
+        for (int b = 0; b <= getSignalStrength(); b++) {
             u8g2.drawVLine(x + 5 + (b * 2), y + 8 - (b * 2), b * 2);
         }
     }
