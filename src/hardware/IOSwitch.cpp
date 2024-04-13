@@ -7,8 +7,8 @@
 #include "IOSwitch.h"
 #include "GPIOPin.h"
 
-IOSwitch::IOSwitch(GPIOPin& gpioInstance, Type type, Mode mode) :
-    Switch(type, mode), gpio(gpioInstance), debounceDelay(20), longPressDuration(500), lastState(LOW), currentState(LOW), lastDebounceTime(0), lastStateChangeTime(0), pressStartTime(0), longPressTriggered(false) {
+IOSwitch::IOSwitch(int pinNumber, GPIOPin::Type pinType, Type switchType, Mode mode) :
+    Switch(switchType, mode), gpio(pinNumber, pinType) {
 }
 
 bool IOSwitch::isPressed() {
@@ -56,8 +56,4 @@ bool IOSwitch::longPressDetected() {
     }
 
     return false;
-}
-
-GPIOPin& IOSwitch::getGPIOInstance() {
-    return gpio;
 }
