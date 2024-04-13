@@ -153,7 +153,7 @@ const unsigned long intervalPressure = 100;
 unsigned long previousMillisPressure; // initialisation at the end of init()
 #endif
 
-GPIOPin* waterSensPin;
+Switch* waterSensor;
 
 GPIOPin* statusLedPin;
 GPIOPin* brewLedPin;
@@ -1823,12 +1823,7 @@ void setup() {
     }
 
     if (FEATURE_WATER_SENS == 1) {
-        if (WATER_SENS_TYPE == 0) {
-            waterSensPin = new GPIOPin(PIN_WATERSENSOR, GPIOPin::IN_PULLUP);
-        }
-        else if (WATER_SENS_TYPE == 1) {
-            waterSensPin = new GPIOPin(PIN_WATERSENSOR, GPIOPin::IN_PULLDOWN);
-        }
+        waterSensor = new IOSwitch(PIN_WATERSENSOR, (WATER_SENS_TYPE == Switch::NORMALLY_OPEN ? GPIOPin::IN_PULLDOWN : GPIOPin::IN_PULLUP), Switch::TOGGLE, WATER_SENS_TYPE);
     }
 
 #if OLED_DISPLAY != 0
@@ -2193,37 +2188,15 @@ void checkWater() {
         return;
     }
 
-    bool isWaterDetected = waterSensPin->read() == (WATER_SENS_TYPE == 0 ? LOW : HIGH);
+    bool isWaterDetected = waterSensor->isPressed();
 
-    if (isWaterDetected) {
-        // Water is detected, increment counter if it was previously empty
-        if (!waterFull) {
-            waterCheckConsecutiveReads++;
-
-            if (waterCheckConsecutiveReads >= waterCountsNeeded) {
-                waterFull = true;
-                LOG(INFO, "Water full");
-                waterCheckConsecutiveReads = 0;
-            }
-        }
-        else {
-            waterCheckConsecutiveReads = 0;
-        }
+    if (isWaterDetected && !waterFull) {
+        waterFull = true;
+        LOG(INFO, "Water full");
     }
-    else {
-        // No water detected, increment counter if it was previously full
-        if (waterFull) {
-            waterCheckConsecutiveReads++;
-
-            if (waterCheckConsecutiveReads >= waterCountsNeeded) {
-                waterFull = false;
-                LOG(WARNING, "Water empty");
-                waterCheckConsecutiveReads = 0;
-            }
-        }
-        else {
-            waterCheckConsecutiveReads = 0;
-        }
+    else if (!isWaterDetected && waterFull) {
+        waterFull = false;
+        LOG(WARNING, "Water empty");
     }
 }
 
