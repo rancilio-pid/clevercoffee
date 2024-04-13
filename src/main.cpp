@@ -29,6 +29,9 @@
 #include "languages.h"       // for language translation
 #include "storage.h"
 
+// Utilities:
+#include "utils/Timer.h"
+
 // Hardware classes
 #include "hardware/GPIOPin.h"
 #include "hardware/IOSwitch.h"
@@ -192,7 +195,7 @@ void setBDPIDTunings();
 void loopcalibrate();
 void looppid();
 void loopLED();
-void loopWater();
+void checkWater();
 void printMachineState();
 char const* machinestateEnumToString(MachineState machineState);
 void initSteamQM();
@@ -295,10 +298,9 @@ int backflushState = 10;
 
 // Water sensor
 boolean waterFull = true;
-unsigned long lastWaterCheck;
-const unsigned long waterCheckInterval = 200; // Check water level every 200 ms
-int waterCheckConsecutiveReads = 0;           // Counter for consecutive readings of water sensor
-const int waterCountsNeeded = 3;              // Number of same readings to change water sensing
+Timer loopWater(&checkWater, 200);  // Check water level every 200 ms
+int waterCheckConsecutiveReads = 0; // Counter for consecutive readings of water sensor
+const int waterCountsNeeded = 3;    // Number of same readings to change water sensing
 
 // Moving average for software brew detection
 double tempRateAverage = 0;            // average value of temp values
@@ -1937,9 +1939,7 @@ void loop() {
     looppid();
     loopLED();
 
-    if (FEATURE_WATER_SENS == 1) {
-        loopWater();
-    }
+    loopWater();
 
     Logger::update();
 }
@@ -2203,43 +2203,41 @@ void loopLED() {
     }
 }
 
-void loopWater() {
-    unsigned long currentMillis = millis();
+void checkWater() {
+    if (FEATURE_WATER_SENS != 1) {
+        return;
+    }
 
-    if ((currentMillis - lastWaterCheck) > waterCheckInterval) {
-        lastWaterCheck = currentMillis;
+    bool isWaterDetected = waterSensPin->read() == (WATER_SENS_TYPE == 0 ? LOW : HIGH);
 
-        bool isWaterDetected = waterSensPin->read() == (WATER_SENS_TYPE == 0 ? LOW : HIGH);
+    if (isWaterDetected) {
+        // Water is detected, increment counter if it was previously empty
+        if (!waterFull) {
+            waterCheckConsecutiveReads++;
 
-        if (isWaterDetected) {
-            // Water is detected, increment counter if it was previously empty
-            if (!waterFull) {
-                waterCheckConsecutiveReads++;
-
-                if (waterCheckConsecutiveReads >= waterCountsNeeded) {
-                    waterFull = true;
-                    LOG(INFO, "Water full");
-                    waterCheckConsecutiveReads = 0;
-                }
-            }
-            else {
+            if (waterCheckConsecutiveReads >= waterCountsNeeded) {
+                waterFull = true;
+                LOG(INFO, "Water full");
                 waterCheckConsecutiveReads = 0;
             }
         }
         else {
-            // No water detected, increment counter if it was previously full
-            if (waterFull) {
-                waterCheckConsecutiveReads++;
+            waterCheckConsecutiveReads = 0;
+        }
+    }
+    else {
+        // No water detected, increment counter if it was previously full
+        if (waterFull) {
+            waterCheckConsecutiveReads++;
 
-                if (waterCheckConsecutiveReads >= waterCountsNeeded) {
-                    waterFull = false;
-                    LOG(WARNING, "Water empty");
-                    waterCheckConsecutiveReads = 0;
-                }
-            }
-            else {
+            if (waterCheckConsecutiveReads >= waterCountsNeeded) {
+                waterFull = false;
+                LOG(WARNING, "Water empty");
                 waterCheckConsecutiveReads = 0;
             }
+        }
+        else {
+            waterCheckConsecutiveReads = 0;
         }
     }
 }
