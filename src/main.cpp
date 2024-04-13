@@ -314,7 +314,6 @@ int maxErrorCounter = 10; // depends on intervaltempmes* , define max seconds fo
 
 // PID controller
 unsigned long previousMillistemp; // initialisation at the end of init()
-int pidMode = 1;                  // 1 = Automatic, 0 = Manual
 
 double setpointTemp;
 double previousInput = 0;
@@ -2078,18 +2077,16 @@ void looppid() {
 #endif
 
     if (machineState == kPidDisabled || machineState == kWaterEmpty || machineState == kSensorError || machineState == kEmergencyStop || machineState == kEepromError || machineState == kStandby || brewPIDDisabled) {
-        if (pidMode == 1) {
+        if (bPID.GetMode() == 1) {
             // Force PID shutdown
-            pidMode = 0;
-            bPID.SetMode(pidMode);
+            bPID.SetMode(0);
             pidOutput = 0;
             heaterRelay.off();
         }
     }
     else { // no sensorerror, no pid off or no Emergency Stop
-        if (pidMode == 0) {
-            pidMode = 1;
-            bPID.SetMode(pidMode);
+        if (bPID.GetMode() == 0) {
+            bPID.SetMode(0);
         }
     }
 
