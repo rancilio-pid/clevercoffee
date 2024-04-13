@@ -2052,10 +2052,7 @@ void looppid() {
 
     if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
         previousMillisDisplay = currentMillisDisplay;
-#if DISPLAYTEMPLATE < 20 // not using vertical template
-        displayMachineState();
-#endif
-        printScreen();   // refresh display
+        printScreen(); // refresh display
     }
 #endif
 

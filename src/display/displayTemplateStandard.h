@@ -5,15 +5,19 @@
  *
  */
 
-#pragma once
+#include "displayCommon.h"
 
 /**
  * @brief Send data to display
  */
 void printScreen() {
-    if (((machineState == kPidNormal || machineState == kBrewDetectionTrailing) || ((machineState == kBrew || machineState == kShotTimerAfterBrew) && FEATURE_SHOTTIMER == 0) || // shottimer == 0, auch Bezug anzeigen
-         machineState == kCoolDown || (machineState == kPidNormal && (setpoint - temperature) > 5. && FEATURE_HEATINGLOGO == 0) || ((machineState == kPidDisabled) && FEATURE_PIDOFF_LOGO == 0)) &&
-        (brewSwitchState != kBrewSwitchFlushOff)) {
+
+    // Print the machine state
+    auto display_updated = displayMachineState();
+
+    // If no specific machine state was printed, print default:
+    if (!display_updated) {
+
         u8g2.clearBuffer();
         u8g2.setFont(u8g2_font_profont11_tf); // set font
 
