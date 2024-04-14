@@ -605,9 +605,7 @@ void initOfflineMode() {
 void checkWifi() {
     if (offlineMode == 1 || currBrewState > kBrewIdle) return;
 
-    /* if coldstart is still true when checkWifi() is called, then there was no WIFI connection
-     * at boot -> connect and if it does not suceed, enter offlinemode
-     */
+    // There was no WIFI connection at boot -> connect and if it does not succeed, enter offline mode
     do {
         if ((millis() - lastWifiConnectionAttempt >= wifiConnectionDelay) && (wifiReconnects <= maxWifiReconnects)) {
             int statusTemp = WiFi.status();
