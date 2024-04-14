@@ -266,8 +266,6 @@ void brew() {
                 else {
                     currBrewState = kPreinfusion;
                 }
-
-                coldstart = false; // force reset coldstart if shot is pulled
             }
             else {
                 backflush();
@@ -383,8 +381,6 @@ void brew() {
                 if (preinfusionPause == 0 || preinfusion == 0) {
                     currBrewState = kBrewRunning;
                 }
-
-                coldstart = false; // force reset coldstart if shot is pulled
                 weightPreBrew = weight;
             }
             else {
