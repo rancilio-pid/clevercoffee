@@ -11,6 +11,13 @@
  * @brief Send data to display
  */
 void printScreen() {
+    // Show shot timer:
+    if (displayShottimer()) {
+        // Display was updated, end here
+        return;
+    }
+
+    // If no specific machine state was printed, print default:
     if (((machineState == kPidNormal || machineState == kBrewDetectionTrailing) || ((machineState == kBrew || machineState == kShotTimerAfterBrew) && FEATURE_SHOTTIMER == 0) || // shottimer == 0, auch Bezug anzeigen
          machineState == kCoolDown || (machineState == kPidNormal && (setpoint - temperature) > 5. && FEATURE_HEATINGLOGO == 0) || ((machineState == kPidDisabled) && FEATURE_PIDOFF_LOGO == 0)) &&
         (brewSwitchState != kBrewSwitchFlushOff)) {

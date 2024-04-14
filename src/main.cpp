@@ -419,7 +419,7 @@ U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, OLED_CS, OLED_DC, /* reset=*
 
 // Update for Display
 unsigned long previousMillisDisplay; // initialisation at the end of init()
-const unsigned long intervalDisplay = 500;
+const unsigned long intervalDisplay = 100;
 
 // Horizontal or vertical display
 #if (OLED_DISPLAY != 0)
@@ -2045,10 +2045,6 @@ void looppid() {
     // Check if PID should run or not. If not, set to manual and force output to zero
 #if OLED_DISPLAY != 0
     unsigned long currentMillisDisplay = millis();
-
-    if (currentMillisDisplay - previousMillisDisplay >= 100) {
-        displayShottimer();
-    }
 
     if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
         previousMillisDisplay = currentMillisDisplay;

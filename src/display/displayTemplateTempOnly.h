@@ -18,31 +18,24 @@ float blinkingtempoffset = 0.3; // offset for blinking
  */
 void printScreen() {
 
+    // Show shot timer:
+    if (displayShottimer()) {
+        // Display was updated, end here
+        return;
+    }
+
     // Print the machine state
-    auto display_updated = displayMachineState();
+    if (displayMachineState()) {
+        // Display was updated, end here
+        return;
+    }
 
     // If no specific machine state was printed, print default:
-    if (!display_updated) {
-        u8g2.clearBuffer();
+    u8g2.clearBuffer();
 
-        // draw (blinking) temp
-        if (((fabs(temperature - setpoint) < blinkingtempoffset && blinkingtemp == 0) || (fabs(temperature - setpoint) >= blinkingtempoffset && blinkingtemp == 1)) && !FEATURE_STATUS_LED) {
-            if (isrCounter < 500) {
-                if (temperature < 99.999) {
-                    u8g2.setCursor(8, 22);
-                    u8g2.setFont(u8g2_font_fub35_tf);
-                    u8g2.print(temperature, 1);
-                    u8g2.drawCircle(116, 27, 4);
-                }
-                else {
-                    u8g2.setCursor(24, 22);
-                    u8g2.setFont(u8g2_font_fub35_tf);
-                    u8g2.print(temperature, 0);
-                    u8g2.drawCircle(116, 27, 4);
-                }
-            }
-        }
-        else {
+    // draw (blinking) temp
+    if (((fabs(temperature - setpoint) < blinkingtempoffset && blinkingtemp == 0) || (fabs(temperature - setpoint) >= blinkingtempoffset && blinkingtemp == 1)) && !FEATURE_STATUS_LED) {
+        if (isrCounter < 500) {
             if (temperature < 99.999) {
                 u8g2.setCursor(8, 22);
                 u8g2.setFont(u8g2_font_fub35_tf);
@@ -56,9 +49,23 @@ void printScreen() {
                 u8g2.drawCircle(116, 27, 4);
             }
         }
-
-        displayStatusbar();
-
-        u8g2.sendBuffer();
     }
+    else {
+        if (temperature < 99.999) {
+            u8g2.setCursor(8, 22);
+            u8g2.setFont(u8g2_font_fub35_tf);
+            u8g2.print(temperature, 1);
+            u8g2.drawCircle(116, 27, 4);
+        }
+        else {
+            u8g2.setCursor(24, 22);
+            u8g2.setFont(u8g2_font_fub35_tf);
+            u8g2.print(temperature, 0);
+            u8g2.drawCircle(116, 27, 4);
+        }
+    }
+
+    displayStatusbar();
+
+    u8g2.sendBuffer();
 }
