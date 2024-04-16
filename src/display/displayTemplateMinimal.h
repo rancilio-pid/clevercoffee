@@ -52,7 +52,7 @@ void printScreen() {
                 u8g2.setFont(u8g2_font_open_iconic_arrow_2x_t);
                 u8g2.setCursor(56, 24);
 
-                if (pidMode == 1) {
+                if (bPID.GetMode() == 1) {
                     u8g2.print(char(74));
                 }
                 else {
