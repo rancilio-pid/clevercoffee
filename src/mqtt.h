@@ -233,12 +233,16 @@ int writeSysParamsToMQTT(bool continueOnError = true) {
                 editable_t* e = pair.second();
 
                 switch (e->type) {
+                    case kFloat:
+                        if (!mqtt_publish(pair.first, number2string(*(float*)e->ptr), true)) {
+                            errorState = mqtt.state();
+                        }
+                        break;
                     case kDouble:
                         if (!mqtt_publish(pair.first, number2string(*(double*)e->ptr), true)) {
                             errorState = mqtt.state();
                         }
                         break;
-
                     case kDoubletime:
                         if (!mqtt_publish(pair.first, number2string(*(double*)e->ptr), true)) {
                             errorState = mqtt.state();
@@ -309,7 +313,6 @@ DiscoveryObject GenerateSwitchDevice(String name, String displayName, String pay
     switch_device.discovery_topic = SwitchDiscoveryTopic + unique_id + "-" + name + "" + "/config";
 
     DynamicJsonDocument DeviceMapDoc(1024);
-    char DeviceMapBuffer[256];
     DeviceMapDoc["identifiers"] = String(hostname);
     DeviceMapDoc["manufacturer"] = "CleverCoffee";
     DeviceMapDoc["model"] = getMachineName(machine);
@@ -362,7 +365,6 @@ DiscoveryObject GenerateButtonDevice(String name, String displayName, String pay
     button_device.discovery_topic = buttonDiscoveryTopic + unique_id + "-" + name + "" + "/config";
 
     DynamicJsonDocument DeviceMapDoc(1024);
-    char DeviceMapBuffer[256];
     DeviceMapDoc["identifiers"] = String(hostname);
     DeviceMapDoc["manufacturer"] = "CleverCoffee";
     DeviceMapDoc["model"] = getMachineName(machine);
@@ -412,7 +414,6 @@ DiscoveryObject GenerateSensorDevice(String name, String displayName, String uni
     sensor_device.discovery_topic = SensorDiscoveryTopic + unique_id + "-" + name + "" + "/config";
 
     DynamicJsonDocument DeviceMapDoc(1024);
-    char DeviceMapBuffer[256];
     DeviceMapDoc["identifiers"] = String(hostname);
     DeviceMapDoc["manufacturer"] = "CleverCoffee";
     DeviceMapDoc["model"] = getMachineName(machine);
@@ -465,7 +466,6 @@ DiscoveryObject GenerateNumberDevice(String name, String displayName, int min_va
     number_device.discovery_topic = NumberDiscoveryTopic + unique_id + "-" + name + "" + "/config";
 
     DynamicJsonDocument DeviceMapDoc(1024);
-    char DeviceMapBuffer[256];
     DeviceMapDoc["identifiers"] = String(hostname);
     DeviceMapDoc["manufacturer"] = "CleverCoffee";
     DeviceMapDoc["model"] = getMachineName(machine);

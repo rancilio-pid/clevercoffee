@@ -55,7 +55,7 @@ void displayWiFiStatus(int x, int y) {
     if (WiFi.status() == WL_CONNECTED) {
         u8g2.drawXBMP(x, y, 8, 8, Antenna_OK_Icon);
 
-        for (int b = 0; b <= signalBars; b++) {
+        for (int b = 0; b <= getSignalStrength(); b++) {
             u8g2.drawVLine(x + 5 + (b * 2), y + 8 - (b * 2), b * 2);
         }
     }
@@ -236,9 +236,9 @@ void displayLogo(String displaymessagetext, String displaymessagetext2) {
 /**
  * @brief display shot timer
  */
-void displayShottimer(void) {
+bool displayShottimer() {
     if (FEATURE_SHOTTIMER == 0) {
-        return;
+        return false;
     }
 
     if ((machineState == kBrew || brewSwitchState == kBrewSwitchFlushOff) && SHOTTIMER_TYPE == 1) {
@@ -255,13 +255,14 @@ void displayShottimer(void) {
 
         displayWaterIcon(119, 1);
         u8g2.sendBuffer();
+        return true;
     }
 
     /* if the totalBrewTime is reached automatically,
      * nothing should be done, otherwise wrong time is displayed
      * because the switch is pressed later than totalBrewTime
      */
-    if ((machineState == kShotTimerAfterBrew && brewSwitchState != kBrewSwitchFlushOff) && SHOTTIMER_TYPE == 1) {
+    else if ((machineState == kShotTimerAfterBrew && brewSwitchState != kBrewSwitchFlushOff) && SHOTTIMER_TYPE == 1) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
 
@@ -269,10 +270,11 @@ void displayShottimer(void) {
 
         displayWaterIcon(119, 1);
         u8g2.sendBuffer();
+        return true;
     }
 
 #if FEATURE_SCALE == 1
-    if ((machineState == kBrew) && SHOTTIMER_TYPE == 2) {
+    else if ((machineState == kBrew) && SHOTTIMER_TYPE == 2) {
         u8g2.clearBuffer();
 
         // temp icon
@@ -287,9 +289,10 @@ void displayShottimer(void) {
         u8g2.setFont(u8g2_font_profont11_tf);
         displayWaterIcon(119, 1);
         u8g2.sendBuffer();
+        return true;
     }
 
-    if (((machineState == kShotTimerAfterBrew) && SHOTTIMER_TYPE == 2)) {
+    else if (((machineState == kShotTimerAfterBrew) && SHOTTIMER_TYPE == 2)) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
         u8g2.setFont(u8g2_font_profont22_tf);
@@ -302,15 +305,18 @@ void displayShottimer(void) {
         u8g2.setFont(u8g2_font_profont11_tf);
         displayWaterIcon(119, 1);
         u8g2.sendBuffer();
+        return true;
     }
 #endif
+    return false;
 }
 
 /**
  * @brief display heating logo
  */
-void displayMachineState() {
-    if (FEATURE_HEATINGLOGO > 0 && (machineState == kInit || machineState == kColdStart) && brewSwitchState != kBrewSwitchFlushOff) {
+bool displayMachineState() {
+    // Show the heating logo when we are in regular PID mode and more than 5degC below the set point
+    if (FEATURE_HEATINGLOGO > 0 && machineState == kPidNormal && (setpoint - temperature) > 5. && brewSwitchState != kBrewSwitchFlushOff) {
         // For status info
         u8g2.clearBuffer();
 
@@ -323,10 +329,10 @@ void displayMachineState() {
         u8g2.drawCircle(122, 32, 3);
 
         u8g2.sendBuffer();
+        return true;
     }
-
     // Offline logo
-    if (FEATURE_OFFLINELOGO == 1 && machineState == kPidOffline) {
+    else if (FEATURE_PIDOFF_LOGO == 1 && machineState == kPidDisabled) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(38, 0, Off_Logo_width, Off_Logo_height, Off_Logo);
         u8g2.setCursor(0, 55);
@@ -334,9 +340,9 @@ void displayMachineState() {
         u8g2.print("PID is disabled manually");
         displayWaterIcon(119, 1);
         u8g2.sendBuffer();
+        return true;
     }
-
-    if (FEATURE_OFFLINELOGO == 1 && machineState == kStandby) {
+    else if (FEATURE_PIDOFF_LOGO == 1 && machineState == kStandby) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(38, 0, Off_Logo_width, Off_Logo_height, Off_Logo);
         u8g2.setCursor(36, 55);
@@ -344,10 +350,10 @@ void displayMachineState() {
         u8g2.print("Standby mode");
         displayWaterIcon(119, 1);
         u8g2.sendBuffer();
+        return true;
     }
-
     // Steam
-    if (machineState == kSteam && brewSwitchState != kBrewSwitchFlushOff) {
+    else if (machineState == kSteam && brewSwitchState != kBrewSwitchFlushOff) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(-1, 12, Steam_Logo_width, Steam_Logo_height, Steam_Logo);
 
@@ -355,18 +361,18 @@ void displayMachineState() {
 
         displayWaterIcon(119, 1);
         u8g2.sendBuffer();
+        return true;
     }
-
     // Water empty
-    if (machineState == kWaterEmpty && brewSwitchState != kBrewSwitchFlushOff) {
+    else if (machineState == kWaterEmpty && brewSwitchState != kBrewSwitchFlushOff) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(45, 0, Water_Empty_Logo_width, Water_Empty_Logo_height, Water_Empty_Logo);
         u8g2.setFont(u8g2_font_profont11_tf);
         u8g2.sendBuffer();
+        return true;
     }
-
     // Backflush
-    if (machineState == kBackflush) {
+    else if (machineState == kBackflush) {
         u8g2.clearBuffer();
         u8g2.setFont(u8g2_font_fub17_tf);
         u8g2.setCursor(2, 10);
@@ -400,10 +406,10 @@ void displayMachineState() {
 
         displayWaterIcon(119, 1);
         u8g2.sendBuffer();
+        return true;
     }
-
     // PID Off
-    if (machineState == kEmergencyStop) {
+    else if (machineState == kEmergencyStop) {
         u8g2.clearBuffer();
         u8g2.setFont(u8g2_font_profont11_tf);
         u8g2.setCursor(32, 24);
@@ -431,18 +437,21 @@ void displayMachineState() {
         displayWaterIcon(119, 1);
 
         u8g2.sendBuffer();
+        return true;
     }
-
-    if (machineState == kSensorError) {
+    else if (machineState == kSensorError) {
         u8g2.clearBuffer();
         u8g2.setFont(u8g2_font_profont11_tf);
         displayMessage(langstring_error_tsensor[0], String(temperature), langstring_error_tsensor[1], "", "", "");
+        return true;
     }
-
-    if (machineState == kEepromError) {
+    else if (machineState == kEepromError) {
         u8g2.clearBuffer();
         u8g2.setFont(u8g2_font_profont11_tf);
         displayMessage("EEPROM Error, please set Values", "", "", "", "", "");
+        return true;
     }
+
+    return false;
 }
 #endif

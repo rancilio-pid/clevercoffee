@@ -7,18 +7,8 @@
 #include "IOSwitch.h"
 #include "GPIOPin.h"
 
-IOSwitch::IOSwitch(GPIOPin& gpioInstance, Type type, Mode mode) :
-    gpio(gpioInstance),
-    switchType(type),
-    switchMode(mode),
-    debounceDelay(20),
-    longPressDuration(500),
-    lastState(LOW),
-    currentState(LOW),
-    lastDebounceTime(0),
-    lastStateChangeTime(0),
-    pressStartTime(0),
-    longPressTriggered(false) {
+IOSwitch::IOSwitch(int pinNumber, GPIOPin::Type pinType, Type switchType, Mode mode) :
+    Switch(switchType, mode), gpio(pinNumber, pinType) {
 }
 
 bool IOSwitch::isPressed() {
@@ -30,8 +20,8 @@ bool IOSwitch::isPressed() {
     }
 
     if ((currentMillis - lastDebounceTime) > debounceDelay) {
-        if ((reading ^ switchMode) != currentState) {
-            currentState = reading ^ switchMode;
+        if ((reading ^ mode_) != currentState) {
+            currentState = reading ^ mode_;
 
             if (currentState == LOW) {
                 lastStateChangeTime = currentMillis;
@@ -45,7 +35,7 @@ bool IOSwitch::isPressed() {
         pressStartTime = millis();
     }
 
-    if (switchType == MOMENTARY) {
+    if (type_ == MOMENTARY) {
         if (currentState == HIGH && (pressStartTime + longPressDuration) <= currentMillis) {
             longPressTriggered = true;
         }
@@ -58,24 +48,12 @@ bool IOSwitch::isPressed() {
 }
 
 bool IOSwitch::longPressDetected() {
-    if (switchType == TOGGLE) {
+    if (type_ == TOGGLE) {
         return false;
     }
-    else if (switchType == MOMENTARY) {
+    else if (type_ == MOMENTARY) {
         return longPressTriggered;
     }
 
     return false;
-}
-
-GPIOPin& IOSwitch::getGPIOInstance() {
-    return gpio;
-}
-
-void IOSwitch::setType(Type type) {
-    switchType = type;
-}
-
-void IOSwitch::setMode(Mode mode) {
-    switchMode = mode;
 }

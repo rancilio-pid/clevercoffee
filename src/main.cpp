@@ -29,6 +29,9 @@
 #include "languages.h"       // for language translation
 #include "storage.h"
 
+// Utilities:
+#include "utils/Timer.h"
+
 // Hardware classes
 #include "hardware/GPIOPin.h"
 #include "hardware/IOSwitch.h"
@@ -74,13 +77,11 @@ MACHINE machine = (enum MACHINE)MACHINEID;
 
 #define HIGH_ACCURACY
 
-#include "PeriodicTrigger.h"
+#include "utils/PeriodicTrigger.h"
 PeriodicTrigger logbrew(500);
 
 enum MachineState {
     kInit = 0,
-    kColdStart = 10,
-    kAtSetpoint = 19,
     kPidNormal = 20,
     kBrew = 30,
     kShotTimerAfterBrew = 31,
@@ -90,15 +91,13 @@ enum MachineState {
     kBackflush = 50,
     kWaterEmpty = 70,
     kEmergencyStop = 80,
-    kPidOffline = 90,
+    kPidDisabled = 90,
     kStandby = 95,
     kSensorError = 100,
     kEepromError = 110,
 };
 
 MachineState machineState = kInit;
-int machinestatecold = 0;
-unsigned long machinestatecoldmillis = 0;
 MachineState lastmachinestate = kInit;
 int lastmachinestatepid = -1;
 
@@ -154,7 +153,7 @@ const unsigned long intervalPressure = 100;
 unsigned long previousMillisPressure; // initialisation at the end of init()
 #endif
 
-GPIOPin* waterSensPin;
+Switch* waterSensor;
 
 GPIOPin* statusLedPin;
 GPIOPin* brewLedPin;
@@ -170,10 +169,6 @@ Relay pumpRelay(pumpRelayPin, PUMP_VALVE_SSR_TYPE);
 
 GPIOPin valveRelayPin(PIN_VALVE, GPIOPin::OUT);
 Relay valveRelay(valveRelayPin, PUMP_VALVE_SSR_TYPE);
-
-GPIOPin* powerSwitchPin;
-GPIOPin* brewSwitchPin;
-GPIOPin* steamSwitchPin;
 
 Switch* powerSwitch;
 Switch* brewSwitch;
@@ -194,7 +189,7 @@ void setBDPIDTunings();
 void loopcalibrate();
 void looppid();
 void loopLED();
-void loopWater();
+void checkWater();
 void printMachineState();
 char const* machinestateEnumToString(MachineState machineState);
 void initSteamQM();
@@ -284,11 +279,9 @@ SysPara<float> sysParaScale2Calibration(&scale2Calibration, -100000, 100000, STO
 SysPara<float> sysParaScaleKnownWeight(&scaleKnownWeight, 0, 2000, STO_ITEM_SCALE_KNOWN_WEIGHT);
 
 // Other variables
-boolean coldstart = true;                     // true = Rancilio started for first time
 boolean emergencyStop = false;                // Emergency stop if temperature is too high
 double EmergencyStopTemp = 120;               // Temp EmergencyStopTemp
 float inX = 0, inY = 0, inOld = 0, inSum = 0; // used for filterPressureValue()
-int signalBars = 0;                           // used for getSignalStrength()
 boolean brewDetected = 0;
 boolean setupDone = false;
 int backflushOn = 0;                          // 1 = backflush mode active
@@ -298,10 +291,9 @@ int backflushState = 10;
 
 // Water sensor
 boolean waterFull = true;
-unsigned long lastWaterCheck;
-const unsigned long waterCheckInterval = 200; // Check water level every 200 ms
-int waterCheckConsecutiveReads = 0;           // Counter for consecutive readings of water sensor
-const int waterCountsNeeded = 3;              // Number of same readings to change water sensing
+Timer loopWater(&checkWater, 200);  // Check water level every 200 ms
+int waterCheckConsecutiveReads = 0; // Counter for consecutive readings of water sensor
+const int waterCountsNeeded = 3;    // Number of same readings to change water sensing
 
 // Moving average for software brew detection
 double tempRateAverage = 0;            // average value of temp values
@@ -317,7 +309,6 @@ int maxErrorCounter = 10; // depends on intervaltempmes* , define max seconds fo
 
 // PID controller
 unsigned long previousMillistemp; // initialisation at the end of init()
-int pidMode = 1;                  // 1 = Automatic, 0 = Manual
 
 double setpointTemp;
 double previousInput = 0;
@@ -386,8 +377,8 @@ bool mqtt_was_connected = false;
 /**
  * @brief Get Wifi signal strength and set signalBars for display
  */
-void getSignalStrength() {
-    if (offlineMode == 1) return;
+int getSignalStrength() {
+    if (offlineMode == 1) return 0;
 
     long rssi;
 
@@ -399,19 +390,19 @@ void getSignalStrength() {
     }
 
     if (rssi >= -50) {
-        signalBars = 4;
+        return 4;
     }
     else if (rssi < -50 && rssi >= -65) {
-        signalBars = 3;
+        return 3;
     }
     else if (rssi < -65 && rssi >= -75) {
-        signalBars = 2;
+        return 2;
     }
     else if (rssi < -75 && rssi >= -80) {
-        signalBars = 1;
+        return 1;
     }
     else {
-        signalBars = 0;
+        return 0;
     }
 }
 
@@ -430,7 +421,7 @@ U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, OLED_CS, OLED_DC, /* reset=*
 
 // Update for Display
 unsigned long previousMillisDisplay; // initialisation at the end of init()
-const unsigned long intervalDisplay = 500;
+const unsigned long intervalDisplay = 100;
 
 // Horizontal or vertical display
 #if (OLED_DISPLAY != 0)
@@ -616,9 +607,7 @@ void initOfflineMode() {
 void checkWifi() {
     if (offlineMode == 1 || currBrewState > kBrewIdle) return;
 
-    /* if coldstart is still true when checkWifi() is called, then there was no WIFI connection
-     * at boot -> connect and if it does not suceed, enter offlinemode
-     */
+    // There was no WIFI connection at boot -> connect and if it does not succeed, enter offline mode
     do {
         if ((millis() - lastWifiConnectionAttempt >= wifiConnectionDelay) && (wifiReconnects <= maxWifiReconnects)) {
             int statusTemp = WiFi.status();
@@ -867,159 +856,19 @@ boolean checkSteamOffQM() {
 void handleMachineState() {
     switch (machineState) {
         case kInit:
-            // switch state to kColdStart if temperature is below BrewSetpoint or 150°
-            if (temperature < (brewSetpoint - 1) || temperature < 150) {
-                machineState = kColdStart;
-                LOGF(DEBUG, "%d", temperature);
-                LOGF(DEBUG, "%d", machineState);
+            if (!waterFull) {
+                machineState = kWaterEmpty;
+            }
 
-                // reset PID (some users have 100% output in kInit / KColdstart)
-                pidMode = 0;
-                bPID.SetMode(pidMode);
-                pidOutput = 0;
-                heaterRelay.off();
-
-                // start PID again
-                pidMode = 1;
-                bPID.SetMode(pidMode);
+            if (sensorError) {
+                machineState = kSensorError;
             }
 
             if (pidON == 0) {
-                machineState = kPidOffline;
+                machineState = kPidDisabled;
             }
-
-            if (!waterFull) {
-                machineState = kWaterEmpty;
-            }
-
-            if (sensorError) {
-                machineState = kSensorError;
-            }
-            break;
-
-        case kColdStart:
-            // Once the temperature is above BrewSetpoint for 10 seconds, the machineState is set to kAtSetpoint.
-            // if during the 10 seconds the temperature is below BrewSetpoint again,
-            // reset machinestatecold to 0
-            switch (machinestatecold) {
-                case 0:
-                    if (temperature >= (brewSetpoint - 1) && temperature < 150) {
-                        machinestatecoldmillis = millis(); // get millis for interval calc
-                        machinestatecold = 10;             // new state
-                        LOG(DEBUG, "temperature >= (BrewSetpoint-1), waiting 10 sec before switching to kAtSetpoint");
-                    }
-                    break;
-
-                case 10:
-                    // if the temperature was not above BrewSetpoint - 1 long enough, reset machinestatecold
-                    // This way, noisy temperature errors won't switch the machineState too early
-                    if (temperature < (brewSetpoint - 1)) {
-                        machinestatecold = 0;
-                        LOG(DEBUG, "Resetting timer for kAtSetpoint: temperature < (BrewSetpoint-1) again");
-                        break;
-                    }
-
-                    // 10 sec temperature above BrewSetpoint - 1, set new state
-                    if (machinestatecoldmillis + 10 * 1000 < millis()) {
-                        machineState = kAtSetpoint;
-                        LOG(DEBUG, "temperature >= (BrewSetpoint-1) for 10 sec, switching to kAtSetpoint");
-                    }
-                    break;
-            }
-
-            if ((timeBrewed > 0 && BREWCONTROL_TYPE == 0) || // timeBrewed without controlling brew
-                (BREWCONTROL_TYPE > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished)) {
-                machineState = kBrew;
-
-                if (standbyModeOn) {
-                    resetStandbyTimer();
-                }
-            }
-
-            if (steamON == 1) {
-                machineState = kSteam;
-
-                if (standbyModeOn) {
-                    resetStandbyTimer();
-                }
-            }
-
-            if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
-                machineState = kBackflush;
-
-                if (standbyModeOn) {
-                    resetStandbyTimer();
-                }
-            }
-
-            if (standbyModeOn && standbyModeRemainingTimeMillis == 0) {
-                machineState = kStandby;
-                pidON = 0;
-            }
-
-            if (pidON == 0 && machineState != kStandby) {
-                machineState = kPidOffline;
-            }
-
-            if (!waterFull) {
-                machineState = kWaterEmpty;
-            }
-
-            if (sensorError) {
-                machineState = kSensorError;
-            }
-
-            break;
-
-        // Current temperature is just below the setpoint
-        case kAtSetpoint:
-            brewDetection();
-
-            // when temperature has reached BrewSetpoint properly, switch to kPidNormal
-            if (temperature >= brewSetpoint) {
+            else {
                 machineState = kPidNormal;
-            }
-
-            // is a brew running? (values are set in brewDetection() above)
-            if ((timeBrewed > 0 && BREWCONTROL_TYPE == 0) || (BREWCONTROL_TYPE > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished)) {
-                machineState = kBrew;
-
-                if (standbyModeOn) {
-                    resetStandbyTimer();
-                }
-            }
-
-            if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
-                machineState = kBackflush;
-
-                if (standbyModeOn) {
-                    resetStandbyTimer();
-                }
-            }
-
-            if (steamON == 1) {
-                machineState = kSteam;
-
-                if (standbyModeOn) {
-                    resetStandbyTimer();
-                }
-            }
-
-            if (standbyModeOn && standbyModeRemainingTimeMillis == 0) {
-                machineState = kStandby;
-                pidON = 0;
-            }
-
-            if (pidON == 0 && machineState != kStandby) {
-                machineState = kPidOffline;
-            }
-
-            if (!waterFull) {
-                machineState = kWaterEmpty;
-            }
-
-            if (sensorError) {
-                machineState = kSensorError;
             }
 
             break;
@@ -1061,7 +910,7 @@ void handleMachineState() {
             }
 
             if (pidON == 0 && machineState != kStandby) {
-                machineState = kPidOffline;
+                machineState = kPidDisabled;
             }
 
             if (!waterFull) {
@@ -1103,7 +952,7 @@ void handleMachineState() {
             }
 
             if (pidON == 0) {
-                machineState = kPidOffline;
+                machineState = kPidDisabled;
             }
 
             if (sensorError) {
@@ -1133,7 +982,7 @@ void handleMachineState() {
             }
 
             if (pidON == 0) {
-                machineState = kPidOffline;
+                machineState = kPidDisabled;
             }
 
             if (!waterFull) {
@@ -1149,8 +998,6 @@ void handleMachineState() {
             brewDetection();
 
             if (isBrewDetected == 0) {
-                // TODO: this needs to go back to kColdStart if kPidNormal was never reached before
-                // (currently no brew detection is run during cold start though)
                 machineState = kPidNormal;
             }
 
@@ -1172,7 +1019,7 @@ void handleMachineState() {
             }
 
             if (pidON == 0) {
-                machineState = kPidOffline;
+                machineState = kPidDisabled;
             }
 
             if (!waterFull) {
@@ -1198,7 +1045,7 @@ void handleMachineState() {
             }
 
             if (pidON == 0) {
-                machineState = kPidOffline;
+                machineState = kPidDisabled;
             }
 
             if (!waterFull) {
@@ -1242,7 +1089,7 @@ void handleMachineState() {
             }
 
             if (pidON == 0) {
-                machineState = kPidOffline;
+                machineState = kPidDisabled;
             }
 
             if (!waterFull) {
@@ -1264,7 +1111,7 @@ void handleMachineState() {
             }
 
             if (pidON == 0) {
-                machineState = kPidOffline;
+                machineState = kPidDisabled;
             }
 
             if (!waterFull && (backflushState == kBackflushWaitBrewswitchOn || backflushState == kBackflushWaitBrewswitchOff)) {
@@ -1282,7 +1129,7 @@ void handleMachineState() {
             }
 
             if (pidON == 0) {
-                machineState = kPidOffline;
+                machineState = kPidDisabled;
             }
 
             if (sensorError) {
@@ -1296,7 +1143,7 @@ void handleMachineState() {
             }
 
             if (pidON == 0) {
-                machineState = kPidOffline;
+                machineState = kPidDisabled;
             }
 
             if (sensorError) {
@@ -1304,18 +1151,10 @@ void handleMachineState() {
             }
             break;
 
-        case kPidOffline:
+        case kPidDisabled:
             if (pidON == 1) {
-                if (coldstart) {
-                    machineState = kColdStart;
-                }
-                else if (!coldstart && (temperature > (brewSetpoint - 10))) { // temperature higher BrewSetpoint-10, normal PID
-                    machineState = kPidNormal;
-                }
-                else if (temperature <= (brewSetpoint - 10)) {
-                    machineState = kColdStart; // temperature 10C below set point, enter cold start
-                    coldstart = true;
-                }
+                // Enter regular PID operations
+                machineState = kPidNormal;
             }
 
             if (!waterFull) {
@@ -1379,10 +1218,6 @@ char const* machinestateEnumToString(MachineState machineState) {
     switch (machineState) {
         case kInit:
             return "Init";
-        case kColdStart:
-            return "Cold Start";
-        case kAtSetpoint:
-            return "Above Set Point";
         case kPidNormal:
             return "PID Normal";
         case kBrew:
@@ -1401,8 +1236,8 @@ char const* machinestateEnumToString(MachineState machineState) {
             return "Water Empty";
         case kEmergencyStop:
             return "Emergency Stop";
-        case kPidOffline:
-            return "PID Offline";
+        case kPidDisabled:
+            return "PID Disabled";
         case kStandby:
             return "Standby Mode";
         case kSensorError:
@@ -1958,13 +1793,11 @@ void setup() {
     pumpRelay.off();
 
     if (FEATURE_POWERSWITCH) {
-        powerSwitchPin = new GPIOPin(PIN_POWERSWITCH, GPIOPin::IN_HARDWARE);
-        powerSwitch = new IOSwitch(*powerSwitchPin, POWERSWITCH_TYPE, POWERSWITCH_MODE);
+        powerSwitch = new IOSwitch(PIN_POWERSWITCH, GPIOPin::IN_HARDWARE, POWERSWITCH_TYPE, POWERSWITCH_MODE);
     }
 
     if (FEATURE_STEAMSWITCH) {
-        steamSwitchPin = new GPIOPin(PIN_STEAMSWITCH, GPIOPin::IN_HARDWARE);
-        steamSwitch = new IOSwitch(*steamSwitchPin, STEAMSWITCH_TYPE, STEAMSWITCH_MODE);
+        steamSwitch = new IOSwitch(PIN_STEAMSWITCH, GPIOPin::IN_HARDWARE, STEAMSWITCH_TYPE, STEAMSWITCH_MODE);
     }
 
     // IF optocoupler selected
@@ -1977,8 +1810,7 @@ void setup() {
         }
     }
     else if (FEATURE_BREWSWITCH) {
-        brewSwitchPin = new GPIOPin(PIN_BREWSWITCH, GPIOPin::IN_HARDWARE);
-        brewSwitch = new IOSwitch(*brewSwitchPin, BREWSWITCH_TYPE, BREWSWITCH_MODE);
+        brewSwitch = new IOSwitch(PIN_BREWSWITCH, GPIOPin::IN_HARDWARE, BREWSWITCH_TYPE, BREWSWITCH_MODE);
     }
 
     if (LED_TYPE == LED::STANDARD) {
@@ -1993,12 +1825,7 @@ void setup() {
     }
 
     if (FEATURE_WATER_SENS == 1) {
-        if (WATER_SENS_TYPE == 0) {
-            waterSensPin = new GPIOPin(PIN_WATERSENSOR, GPIOPin::IN_PULLUP);
-        }
-        else if (WATER_SENS_TYPE == 1) {
-            waterSensPin = new GPIOPin(PIN_WATERSENSOR, GPIOPin::IN_PULLDOWN);
-        }
+        waterSensor = new IOSwitch(PIN_WATERSENSOR, (WATER_SENS_TYPE == Switch::NORMALLY_OPEN ? GPIOPin::IN_PULLDOWN : GPIOPin::IN_PULLUP), Switch::TOGGLE, WATER_SENS_TYPE);
     }
 
 #if OLED_DISPLAY != 0
@@ -2099,9 +1926,7 @@ void loop() {
     looppid();
     loopLED();
 
-    if (FEATURE_WATER_SENS == 1) {
-        loopWater();
-    }
+    loopWater();
 
     Logger::update();
 }
@@ -2224,47 +2049,36 @@ void looppid() {
 
     // Check if PID should run or not. If not, set to manual and force output to zero
 #if OLED_DISPLAY != 0
-
+    unsigned long currentMillisDisplay = millis();
     if (menu != nullptr) {
         menu->EventHandler();
         menu->Loop();
     }
 
     if (menu == nullptr || !menu->IsOpen()) {
-        unsigned long currentMillisDisplay = millis();
-
-        if (currentMillisDisplay - previousMillisDisplay >= 100) {
-            displayShottimer();
-        }
-
         if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
             previousMillisDisplay = currentMillisDisplay;
-#if DISPLAYTEMPLATE < 20   // not using vertical template
-            displayMachineState();
-#endif
             printScreen(); // refresh display
         }
     }
 #endif
 
-    if (machineState == kPidOffline || machineState == kWaterEmpty || machineState == kSensorError || machineState == kEmergencyStop || machineState == kEepromError || machineState == kStandby || brewPIDDisabled) {
-        if (pidMode == 1) {
+    if (machineState == kPidDisabled || machineState == kWaterEmpty || machineState == kSensorError || machineState == kEmergencyStop || machineState == kEepromError || machineState == kStandby || brewPIDDisabled) {
+        if (bPID.GetMode() == 1) {
             // Force PID shutdown
-            pidMode = 0;
-            bPID.SetMode(pidMode);
+            bPID.SetMode(0);
             pidOutput = 0;
             heaterRelay.off();
         }
     }
     else { // no sensorerror, no pid off or no Emergency Stop
-        if (pidMode == 0) {
-            pidMode = 1;
-            bPID.SetMode(pidMode);
+        if (bPID.GetMode() == 0) {
+            bPID.SetMode(0);
         }
     }
 
-    // Set PID if first start of machine detected, and no steamON
-    if ((machineState == kInit || machineState == kColdStart || machineState == kAtSetpoint)) {
+    // Regular PID operation
+    if (machineState == kPidNormal) {
         if (usePonM) {
             if (startTn != 0) {
                 startKi = startKp / startTn;
@@ -2283,11 +2097,6 @@ void looppid() {
         else {
             setNormalPIDTunings();
         }
-    }
-
-    if (machineState == kPidNormal) {
-        setNormalPIDTunings();
-        coldstart = false;
     }
 
     // BD PID
@@ -2378,44 +2187,20 @@ void loopLED() {
     }
 }
 
-void loopWater() {
-    unsigned long currentMillis = millis();
+void checkWater() {
+    if (FEATURE_WATER_SENS != 1) {
+        return;
+    }
 
-    if ((currentMillis - lastWaterCheck) > waterCheckInterval) {
-        lastWaterCheck = currentMillis;
+    bool isWaterDetected = waterSensor->isPressed();
 
-        bool isWaterDetected = waterSensPin->read() == (WATER_SENS_TYPE == 0 ? LOW : HIGH);
-
-        if (isWaterDetected) {
-            // Water is detected, increment counter if it was previously empty
-            if (!waterFull) {
-                waterCheckConsecutiveReads++;
-
-                if (waterCheckConsecutiveReads >= waterCountsNeeded) {
-                    waterFull = true;
-                    LOG(INFO, "Water full");
-                    waterCheckConsecutiveReads = 0;
-                }
-            }
-            else {
-                waterCheckConsecutiveReads = 0;
-            }
-        }
-        else {
-            // No water detected, increment counter if it was previously full
-            if (waterFull) {
-                waterCheckConsecutiveReads++;
-
-                if (waterCheckConsecutiveReads >= waterCountsNeeded) {
-                    waterFull = false;
-                    LOG(WARNING, "Water empty");
-                    waterCheckConsecutiveReads = 0;
-                }
-            }
-            else {
-                waterCheckConsecutiveReads = 0;
-            }
-        }
+    if (isWaterDetected && !waterFull) {
+        waterFull = true;
+        LOG(INFO, "Water full");
+    }
+    else if (!isWaterDetected && waterFull) {
+        waterFull = false;
+        LOG(WARNING, "Water empty");
     }
 }
 
