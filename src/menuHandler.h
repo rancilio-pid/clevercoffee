@@ -2,9 +2,9 @@
 #pragma once
 
 #include <Menu.h>
+#include <button.h>
 #include <hardware/pinmapping.h>
 #include <icons/menuIcons.h>
-#include <button.h>
 
 enum MENUINPUT {
     BUTTONS,
@@ -17,7 +17,6 @@ GPIOPin* menuUpPin;
 GPIOPin* menuDownPin;
 QueueHandle_t button_events;
 button_event_t ev;
-
 
 void saveBrewTemp() {
     sysParaBrewSetpoint.setStorage(true);
@@ -51,19 +50,13 @@ bool hasSoftwareDetection() {
     return BREWDETECTION_TYPE == 1;
 }
 
-
-
 void menuInputInit() {
     if (MENU_INPUT == MENUINPUT::BUTTONS) {
         menuEnterPin = new GPIOPin(PIN_MENU_ENTER, GPIOPin::IN_PULLUP);
         menuUpPin = new GPIOPin(PIN_MENU_OUT_A, GPIOPin::IN_PULLUP);
         menuDownPin = new GPIOPin(PIN_MENU_OUT_B, GPIOPin::IN_PULLUP);
 
-        button_events = pulled_button_init(
-            PIN_BIT(menuEnterPin->getPinNumber()) |
-                PIN_BIT(menuUpPin->getPinNumber()) |
-                PIN_BIT(menuDownPin->getPinNumber()), GPIO_PULLUP_ONLY
-        );
+        button_events = pulled_button_init(PIN_BIT(menuEnterPin->getPinNumber()) | PIN_BIT(menuUpPin->getPinNumber()) | PIN_BIT(menuDownPin->getPinNumber()), GPIO_PULLUP_ONLY);
     }
 }
 
@@ -74,42 +67,43 @@ void initMenu(U8G2& display) {
 
     /* Main Menu */
     menu->AddInputItem("Brew Temp.", "Brew Temperature", "", "°C", BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, saveBrewTemp, brewSetpoint, bitmap_icon_temp, 0.1, 0.5);
-    menu->AddInputItem("Steam Temp.", "Steam Temperature", "", "°C", STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, saveSteamTemp, steamSetpoint, bitmap_icon_steam,  0.1, 0.5);
+    menu->AddInputItem("Steam Temp.", "Steam Temperature", "", "°C", STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, saveSteamTemp, steamSetpoint, bitmap_icon_steam, 0.1, 0.5);
 
     menu->AddToggleItem("PID", savePIDOn, reinterpret_cast<bool&>(pidON), bitmap_icon_pid);
 
     menu->SetEventHandler([&]() {
-                if (xQueueReceive(button_events, &ev, 1 / portTICK_PERIOD_MS)) {
+        if (xQueueReceive(button_events, &ev, 1 / portTICK_PERIOD_MS)) {
 
-                    if (ev.pin == menuEnterPin->getPinNumber()) {
-                        if (standbyModeRemainingTimeMillis == 0) {
-                                resetStandbyTimer();
-                                display.setPowerSave(0);
-                                pidON = 1;
-                                if (steamON) {
-                                    machineState = kSteam;
-                                }
-                                else if (isBrewDetected) {
-                                    machineState = kBrew;
-                                }
-                                else {
-                                    machineState = kPidDisabled;
-                                }
-                            return;
-                        }
-                        if (ev.event == EventState::STATE_DOWN) {
-                            resetStandbyTimer();
-                        }
-                        menu->Event(EVENT_ENTER, EventState(ev.event));
-
-                    } else if (ev.pin == menuUpPin->getPinNumber()) {
-                        resetStandbyTimer();
-                        menu->Event(EVENT_UP, EventState(ev.event));
-                    } else if (ev.pin == menuDownPin->getPinNumber()) {
-                        resetStandbyTimer();
-                        menu->Event(EVENT_DOWN, EventState(ev.event));
+            if (ev.pin == menuEnterPin->getPinNumber()) {
+                if (standbyModeRemainingTimeMillis == 0) {
+                    resetStandbyTimer();
+                    display.setPowerSave(0);
+                    pidON = 1;
+                    if (steamON) {
+                        machineState = kSteam;
                     }
+                    else if (isBrewDetected) {
+                        machineState = kBrew;
+                    }
+                    else {
+                        machineState = kPidDisabled;
+                    }
+                    return;
                 }
+                if (ev.event == EventState::STATE_DOWN) {
+                    resetStandbyTimer();
+                }
+                menu->Event(EVENT_ENTER, EventState(ev.event));
+            }
+            else if (ev.pin == menuUpPin->getPinNumber()) {
+                resetStandbyTimer();
+                menu->Event(EVENT_UP, EventState(ev.event));
+            }
+            else if (ev.pin == menuDownPin->getPinNumber()) {
+                resetStandbyTimer();
+                menu->Event(EVENT_DOWN, EventState(ev.event));
+            }
+        }
     });
 
     /* Brew Weight & Time */
@@ -163,7 +157,7 @@ void initMenu(U8G2& display) {
     pidSettings->AddBackItem("Back", bitmap_icon_back);
 
     /* Brew PID Settings */
-    Menu * brewPidSettings = new Menu(display);
+    Menu* brewPidSettings = new Menu(display);
     brewPidSettings->AddToggleItem("Enable Brew PID", []() { sysParaUsePonM.setStorage(true); }, reinterpret_cast<bool&>(useBDPID));
     brewPidSettings->AddInputItem("BD Kp", "BD Kp", "", "", PID_KP_BD_MIN, PID_KP_BD_MAX, []() { sysParaPidKpBd.setStorage(true); }, aggbKp);
     brewPidSettings->AddInputItem("BD Tn", "BD Tn (=Kp/Ki)", "", "", PID_TN_BD_MIN, PID_TN_BD_MAX, []() { sysParaPidTnBd.setStorage(true); }, aggbTn);
