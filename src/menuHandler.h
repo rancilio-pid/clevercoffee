@@ -155,7 +155,6 @@ void initMenu(U8G2& display) {
     pidSettings->AddInputItem("Integrator Max", "Integrator Max", "", "", PID_I_MAX_REGULAR_MIN, PID_I_MAX_REGULAR_MAX, []() { sysParaPidIMaxReg.setStorage(true); }, aggIMax);
     pidSettings->AddInputItem("Steam Kp", "Steam Kp", "", "", PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, []() { sysParaPidKpSteam.setStorage(true); }, steamKp);
 
-
     /* Brew PID Settings */
     Menu* brewPidSettings = new Menu(display);
     brewPidSettings->AddToggleItem("Enable Brew PID", []() { sysParaUsePonM.setStorage(true); }, reinterpret_cast<bool&>(useBDPID));

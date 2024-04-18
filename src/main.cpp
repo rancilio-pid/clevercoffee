@@ -1647,9 +1647,9 @@ void setup() {
     displayLogo(String("Version "), String(sysVersion));
     delay(2000); // caused crash with wifi manager on esp8266, should be ok on esp32
 
-    #if FEATURE_MENU == 1
-        initMenu(u8g2);
-    #endif
+#if FEATURE_MENU == 1
+    initMenu(u8g2);
+#endif
 #endif
 
     // Fallback offline
