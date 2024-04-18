@@ -93,7 +93,7 @@ void initMenu(U8G2& display) {
                                     machineState = kBrew;
                                 }
                                 else {
-                                    machineState = kPidOffline;
+                                    machineState = kPidDisabled;
                                 }
                             return;
                         }
