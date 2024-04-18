@@ -154,7 +154,7 @@ void initMenu(U8G2& display) {
     pidSettings->AddInputItem("Tv", "Tv (=Kd/Kp)", "", "", PID_TV_REGULAR_MIN, PID_TV_REGULAR_MAX, []() { sysParaPidTvReg.setStorage(true); }, aggTv);
     pidSettings->AddInputItem("Integrator Max", "Integrator Max", "", "", PID_I_MAX_REGULAR_MIN, PID_I_MAX_REGULAR_MAX, []() { sysParaPidIMaxReg.setStorage(true); }, aggIMax);
     pidSettings->AddInputItem("Steam Kp", "Steam Kp", "", "", PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, []() { sysParaPidKpSteam.setStorage(true); }, steamKp);
-    pidSettings->AddBackItem("Back", bitmap_icon_back);
+
 
     /* Brew PID Settings */
     Menu* brewPidSettings = new Menu(display);
@@ -167,6 +167,7 @@ void initMenu(U8G2& display) {
     brewPidSettings->AddBackItem("Back", bitmap_icon_back);
 
     pidSettings->AddSubMenu("Brew PID", *brewPidSettings);
+    pidSettings->AddBackItem("Back", bitmap_icon_back);
 
     advancedMenu->AddSubMenu("PID Settings", *pidSettings, bitmap_icon_pid);
     advancedMenu->AddBackItem("Back", bitmap_icon_back);
