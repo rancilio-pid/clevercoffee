@@ -64,7 +64,6 @@ void menuInputInit() {
             button_events = pulled_button_init(PIN_BIT(menuEnterPin->getPinNumber()) | PIN_BIT(menuUpPin->getPinNumber()) | PIN_BIT(menuDownPin->getPinNumber()), GPIO_PULLUP_ONLY);
             break;
         case MENUINPUT::ROTARY:
-            // TODO add rotary setup
             menuEnterPin = new GPIOPin(PIN_MENU_ENTER, GPIOPin::IN_PULLUP);
             menuUpPin = new GPIOPin(PIN_MENU_OUT_A, GPIOPin::IN_PULLUP);
             menuDownPin = new GPIOPin(PIN_MENU_OUT_B, GPIOPin::IN_PULLUP);
@@ -130,12 +129,12 @@ void initMenu(U8G2& display) {
         }
         if (MENU_INPUT == MENUINPUT::ROTARY) {
             int32_t pos = encoder.getCount() / ENCODER_CLICKS_PER_NOTCH;
-            if (pos < last) {
+            if (pos > last) {
                 menu->Event(EVENT_UP, EventState(EventState::STATE_DOWN));
                 LOG(DEBUG, "Menu: Up\n");
                 menu->Event(EVENT_UP, EventState(EventState::STATE_UP));
             }
-            else if (pos > last) {
+            else if (pos < last) {
                 menu->Event(EVENT_DOWN, EventState(EventState::STATE_DOWN));
                 LOG(DEBUG, "Menu: Down\n");
                 menu->Event(EVENT_DOWN, EventState(EventState::STATE_UP));
