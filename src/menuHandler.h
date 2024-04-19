@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <ESP32Encoder.h>
 #include <Menu.h>
 #include <button.h>
 #include <hardware/pinmapping.h>
@@ -15,8 +16,13 @@ Menu* menu;
 GPIOPin* menuEnterPin;
 GPIOPin* menuUpPin;
 GPIOPin* menuDownPin;
+ESP32Encoder encoder;
 QueueHandle_t button_events;
 button_event_t ev;
+
+double menuRotaryLast = 0;
+double initialValue = 0;
+int last = 0;
 
 void saveBrewTemp() {
     sysParaBrewSetpoint.setStorage(true);
@@ -51,12 +57,29 @@ bool hasSoftwareDetection() {
 }
 
 void menuInputInit() {
-    if (MENU_INPUT == MENUINPUT::BUTTONS) {
-        menuEnterPin = new GPIOPin(PIN_MENU_ENTER, GPIOPin::IN_PULLUP);
-        menuUpPin = new GPIOPin(PIN_MENU_OUT_A, GPIOPin::IN_PULLUP);
-        menuDownPin = new GPIOPin(PIN_MENU_OUT_B, GPIOPin::IN_PULLUP);
+    switch (MENU_INPUT) {
+        case MENUINPUT::BUTTONS:
+            menuEnterPin = new GPIOPin(PIN_MENU_ENTER, GPIOPin::IN_PULLUP);
+            menuUpPin = new GPIOPin(PIN_MENU_OUT_A, GPIOPin::IN_PULLUP);
+            menuDownPin = new GPIOPin(PIN_MENU_OUT_B, GPIOPin::IN_PULLUP);
 
-        button_events = pulled_button_init(PIN_BIT(menuEnterPin->getPinNumber()) | PIN_BIT(menuUpPin->getPinNumber()) | PIN_BIT(menuDownPin->getPinNumber()), GPIO_PULLUP_ONLY);
+            button_events = pulled_button_init(PIN_BIT(menuEnterPin->getPinNumber()) | PIN_BIT(menuUpPin->getPinNumber()) | PIN_BIT(menuDownPin->getPinNumber()), GPIO_PULLUP_ONLY);
+            break;
+        case MENUINPUT::ROTARY:
+            // TODO add rotary setup
+            menuEnterPin = new GPIOPin(PIN_MENU_ENTER, GPIOPin::IN_PULLUP);
+            menuUpPin = new GPIOPin(PIN_MENU_OUT_A, GPIOPin::IN_PULLUP);
+            menuDownPin = new GPIOPin(PIN_MENU_OUT_B, GPIOPin::IN_PULLUP);
+
+            button_events = pulled_button_init(PIN_BIT(menuEnterPin->getPinNumber()), GPIO_PULLUP_ONLY);
+
+            encoder.useInternalWeakPullResistors = puType::up;
+            encoder.attachFullQuad(PIN_MENU_OUT_A, PIN_MENU_OUT_B);
+            encoder.setCount(0);
+
+            break;
+        default:
+            break;
     }
 }
 
@@ -73,7 +96,6 @@ void initMenu(U8G2& display) {
 
     menu->SetEventHandler([&]() {
         if (xQueueReceive(button_events, &ev, 1 / portTICK_PERIOD_MS)) {
-
             if (ev.pin == menuEnterPin->getPinNumber()) {
                 if (standbyModeRemainingTimeMillis == 0) {
                     resetStandbyTimer();
@@ -95,14 +117,33 @@ void initMenu(U8G2& display) {
                 }
                 menu->Event(EVENT_ENTER, EventState(ev.event));
             }
-            else if (ev.pin == menuUpPin->getPinNumber()) {
-                resetStandbyTimer();
-                menu->Event(EVENT_UP, EventState(ev.event));
+            else {
+                if (MENU_INPUT == MENUINPUT::BUTTONS) {
+                    if (ev.pin == menuUpPin->getPinNumber()) {
+                        resetStandbyTimer();
+                        menu->Event(EVENT_UP, EventState(ev.event));
+                    }
+                    else if (ev.pin == menuDownPin->getPinNumber()) {
+                        resetStandbyTimer();
+                        menu->Event(EVENT_DOWN, EventState(ev.event));
+                    }
+                }
             }
-            else if (ev.pin == menuDownPin->getPinNumber()) {
-                resetStandbyTimer();
-                menu->Event(EVENT_DOWN, EventState(ev.event));
+        }
+        if (MENU_INPUT == MENUINPUT::ROTARY) {
+            int32_t pos = encoder.getCount() / ENCODER_CLICKS_PER_NOTCH;
+            if (pos < last) {
+                menu->Event(EVENT_UP, EventState(EventState::STATE_DOWN));
+                LOG(DEBUG, "Menu: Up\n");
+                menu->Event(EVENT_UP, EventState(EventState::STATE_UP));
             }
+            else if (pos > last) {
+                menu->Event(EVENT_DOWN, EventState(EventState::STATE_DOWN));
+                LOG(DEBUG, "Menu: Down\n");
+                menu->Event(EVENT_DOWN, EventState(EventState::STATE_UP));
+            }
+
+            last = pos;
         }
     });
 
