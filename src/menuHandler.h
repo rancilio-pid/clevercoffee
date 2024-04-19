@@ -20,8 +20,6 @@ ESP32Encoder encoder;
 QueueHandle_t button_events;
 button_event_t ev;
 
-double menuRotaryLast = 0;
-double initialValue = 0;
 int last = 0;
 
 void saveBrewTemp() {
