@@ -27,25 +27,25 @@ void printScreen() {
 
     // If no specific machine state was printed, print default:
 
-    u8g2.clearBuffer();
-    u8g2.setFont(u8g2_font_profont11_tf); // set font
+    display.clearBuffer();
+    display.setFont(FontType::Normal); // set font
 
     displayStatusbar();
 
-    u8g2.setCursor(35, 16);
-    u8g2.print(langstring_current_temp);
-    u8g2.setCursor(84, 16);
-    u8g2.print(temperature, 1);
-    u8g2.setCursor(114, 16);
-    u8g2.print((char)176);
-    u8g2.print("C");
-    u8g2.setCursor(35, 26);
-    u8g2.print(langstring_set_temp);
-    u8g2.setCursor(84, 26);
-    u8g2.print(setpoint, 1);
-    u8g2.setCursor(114, 26);
-    u8g2.print((char)176);
-    u8g2.print("C");
+    display.setCursor(35, 16);
+    display.print(langstring_current_temp);
+    display.setCursor(84, 16);
+    display.print(temperature, 1);
+    display.setCursor(114, 16);
+    display.print((char)176);
+    display.print("C");
+    display.setCursor(35, 26);
+    display.print(langstring_set_temp);
+    display.setCursor(84, 26);
+    display.print(setpoint, 1);
+    display.setCursor(114, 26);
+    display.print((char)176);
+    display.print("C");
 
     displayThermometerOutline(4, 62);
 
@@ -60,51 +60,51 @@ void printScreen() {
     }
 
     // Brew time
-    u8g2.setCursor(35, 36);
+    display.setCursor(35, 36);
 
     // Shot timer shown if machine is brewing and after the brew
     if (machineState == kBrew || machineState == kShotTimerAfterBrew) {
-        u8g2.print(langstring_brew);
-        u8g2.setCursor(84, 36);
-        u8g2.print(timeBrewed / 1000, 0);
-        u8g2.print("/");
+        display.print(langstring_brew);
+        display.setCursor(84, 36);
+        display.print(timeBrewed / 1000, 0);
+        display.print("/");
 
         if (FEATURE_BREWCONTROL == 0) {
-            u8g2.print(brewtimesoftware, 0);
+            display.print(brewtimesoftware, 0);
         }
         else {
-            u8g2.print(totalBrewTime / 1000, 1);
+            display.print(totalBrewTime / 1000, 1);
         }
     }
 
     // PID values over heat bar
-    u8g2.setCursor(38, 47);
+    display.setCursor(38, 47);
 
-    u8g2.print(bPID.GetKp(), 0);
-    u8g2.print("|");
+    display.print(bPID.GetKp(), 0);
+    display.print("|");
 
     if (bPID.GetKi() != 0) {
-        u8g2.print(bPID.GetKp() / bPID.GetKi(), 0);
+        display.print(bPID.GetKp() / bPID.GetKi(), 0);
     }
     else {
-        u8g2.print("0");
+        display.print("0");
     }
 
-    u8g2.print("|");
-    u8g2.print(bPID.GetKd() / bPID.GetKp(), 0);
-    u8g2.setCursor(96, 47);
+    display.print("|");
+    display.print(bPID.GetKd() / bPID.GetKp(), 0);
+    display.setCursor(96, 47);
 
     if (pidOutput < 99) {
-        u8g2.print(pidOutput / 10, 1);
+        display.print(pidOutput / 10, 1);
     }
     else {
-        u8g2.print(pidOutput / 10, 0);
+        display.print(pidOutput / 10, 0);
     }
 
-    u8g2.print("%");
+    display.print("%");
 
     // Show heater output in %
     displayProgressbar(pidOutput / 10, 30, 60, 98);
 
-    u8g2.sendBuffer();
+    display.sendBuffer();
 }

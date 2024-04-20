@@ -20,7 +20,7 @@
 #include <ArduinoOTA.h>
 #include <LittleFS.h>
 #include <PID_v1.h>  // for PID calculation
-#include <U8g2lib.h> // i2c display
+#include "display/DisplayManager.h"
 #include <WiFiManager.h>
 #include <os.h>
 
@@ -53,10 +53,6 @@ hw_timer_t* timer = NULL;
 #if (FEATURE_PRESSURESENSOR == 1)
 #include "hardware/pressureSensor.h"
 #include <Wire.h>
-#endif
-
-#if OLED_DISPLAY == 3
-#include <SPI.h>
 #endif
 
 #if FEATURE_SCALE == 1
@@ -107,7 +103,7 @@ const int optocouplerType = OPTOCOUPLER_TYPE;
 const boolean ota = OTA;
 
 // Display
-uint8_t oled_i2c = OLED_I2C;
+DisplayManager display;
 
 // WiFi
 uint8_t wifiCredentialsSaved = 0;
@@ -396,21 +392,8 @@ int getSignalStrength() {
     }
 }
 
-// Display define & template
-#if OLED_DISPLAY == 1
-U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, PIN_I2CSCL, PIN_I2CSDA);  // e.g. 1.3"
-#endif
-#if OLED_DISPLAY == 2
-U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, PIN_I2CSCL, PIN_I2CSDA); // e.g. 0.96"
-#endif
-#if OLED_DISPLAY == 3
-#define OLED_CS 5
-#define OLED_DC 2
-U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, OLED_CS, OLED_DC, /* reset=*/U8X8_PIN_NONE); // e.g. 1.3"
-#endif
-
 // Horizontal or vertical display
-#if (OLED_DISPLAY != 0)
+#if (DISPLAY_HARDWARE != 0)
 #if (DISPLAYTEMPLATE < 20) // horizontal templates
 #include "display/displayCommon.h"
 #endif
@@ -451,7 +434,7 @@ void testEmergencyStop() {
  * @brief Switch to offline mode if maxWifiReconnects were exceeded during boot
  */
 void initOfflineMode() {
-#if OLED_DISPLAY != 0
+#if DISPLAY_HARDWARE != 0
     displayMessage("", "", "", "", "Begin Fallback,", "No Wifi");
 #endif
 
@@ -459,7 +442,7 @@ void initOfflineMode() {
     offlineMode = 1;
 
     if (readSysParamsFromStorage() != 0) {
-#if OLED_DISPLAY != 0
+#if DISPLAY_HARDWARE != 0
         displayMessage("", "", "", "", "No eeprom,", "Values");
 #endif
 
@@ -485,7 +468,7 @@ void checkWifi() {
                 LOGF(INFO, "Attempting WIFI (re-)connection: %i", wifiReconnects);
 
                 if (!setupDone) {
-#if OLED_DISPLAY != 0
+#if DISPLAY_HARDWARE != 0
                     displayMessage("", "", "", "", langstring_wifirecon, String(wifiReconnects));
 #endif
                 }
@@ -980,8 +963,7 @@ void handleMachineState() {
 
         case kStandby:
             if (standbyModeRemainingTimeDisplayOffMillis == 0) {
-#if OLED_DISPLAY != 0
-                u8g2.setPowerSave(1);
+                display.setPowerSave(1);
 #endif
             }
 
@@ -990,8 +972,7 @@ void handleMachineState() {
             if (pidON || steamON || isBrewDetected) {
                 pidON = 1;
                 resetStandbyTimer();
-#if OLED_DISPLAY != 0
-                u8g2.setPowerSave(0);
+                display.setPowerSave(0);
 #endif
 
                 if (steamON) {
@@ -1079,7 +1060,7 @@ void wiFiSetup() {
         const char hostname[] = (STR(HOSTNAME));
         LOGF(INFO, "Connecting to WiFi: %s", String(hostname));
 
-#if OLED_DISPLAY != 0
+#if DISPLAY_HARDWARE != 0
         displayLogo("Connecting to: ", HOSTNAME);
 #endif
     }
@@ -1105,7 +1086,7 @@ void wiFiSetup() {
     else {
         LOG(INFO, "WiFi connection timed out...");
 
-#if OLED_DISPLAY != 0
+#if DISPLAY_HARDWARE != 0
         displayLogo(langstring_nowifi[0], langstring_nowifi[1]);
 #endif
 
@@ -1115,7 +1096,7 @@ void wiFiSetup() {
         offlineMode = 1;
     }
 
-#if OLED_DISPLAY != 0
+#if DISPLAY_HARDWARE != 0
     displayLogo(langstring_connectwifi1, wm.getWiFiSSID(true));
 #endif
 }
@@ -1677,10 +1658,8 @@ void setup() {
         waterSensor = new IOSwitch(PIN_WATERSENSOR, (WATER_SENS_TYPE == Switch::NORMALLY_OPEN ? GPIOPin::IN_PULLDOWN : GPIOPin::IN_PULLUP), Switch::TOGGLE, WATER_SENS_TYPE);
     }
 
-#if OLED_DISPLAY != 0
-    u8g2.setI2CAddress(oled_i2c * 2);
-    u8g2.begin();
-    u8g2_prepare();
+#if DISPLAY_HARDWARE != 0
+    display.init(DISPLAYROTATE);
     displayLogo(String("Version "), String(sysVersion));
     delay(2000); // caused crash with wifi manager on esp8266, should be ok on esp32
 #endif
@@ -1899,7 +1878,7 @@ void looppid() {
     handleMachineState();
 
     // Check if PID should run or not. If not, set to manual and force output to zero
-#if OLED_DISPLAY != 0
+#if DISPLAY_HARDWARE != 0
     printDisplayTimer();
 #endif
 

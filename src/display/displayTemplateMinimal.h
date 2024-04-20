@@ -27,7 +27,7 @@ void printScreen() {
     }
 
     // If no specific machine state was printed, print default:
-    u8g2.clearBuffer();
+    display.clearBuffer();
 
     displayStatusbar();
 
@@ -47,60 +47,60 @@ void printScreen() {
     if ((fabs(temperature - setpoint) < 0.3) && !FEATURE_STATUS_LED) {
         if (isrCounter < 500) {
             // limit to 4 characters
-            u8g2.setCursor(2, 20);
-            u8g2.setFont(u8g2_font_profont22_tf);
-            u8g2.print(temperature, numDecimalsInput);
-            u8g2.setFont(u8g2_font_open_iconic_arrow_2x_t);
-            u8g2.print(char(78));
-            u8g2.setCursor(78, 20);
-            u8g2.setFont(u8g2_font_profont22_tf);
-            u8g2.print(setpoint, numDecimalsSetpoint);
+            display.setCursor(2, 20);
+            display.setFont(FontType::Big);
+            display.print(temperature, numDecimalsInput);
+            display.setFont(FontType::OpenIconicArrow2x);
+            display.print(char(78));
+            display.setCursor(78, 20);
+            display.setFont(FontType::Big);
+            display.print(setpoint, numDecimalsSetpoint);
         }
     }
     else {
-        u8g2.setCursor(2, 20);
-        u8g2.setFont(u8g2_font_profont22_tf);
-        u8g2.print(temperature, numDecimalsInput);
-        u8g2.setFont(u8g2_font_open_iconic_arrow_2x_t);
-        u8g2.setCursor(56, 24);
+        display.setCursor(2, 20);
+        display.setFont(FontType::Big);
+        display.print(temperature, numDecimalsInput);
+        display.setFont(FontType::OpenIconicArrow2x);
+        display.setCursor(56, 24);
 
         if (bPID.GetMode() == 1) {
-            u8g2.print(char(74));
+            display.print(char(74));
         }
         else {
-            u8g2.print(char(70));
+            display.print(char(70));
         }
 
-        u8g2.setCursor(79, 20);
-        u8g2.setFont(u8g2_font_profont22_tf);
-        u8g2.print(setpoint, numDecimalsSetpoint);
+        display.setCursor(79, 20);
+        display.setFont(FontType::Big);
+        display.print(setpoint, numDecimalsSetpoint);
     }
 
-    u8g2.setFont(u8g2_font_profont11_tf);
+    display.setFont(FontType::Normal);
 
     if (isBrewDetected == 1 && currBrewState == kBrewIdle) {
-        u8g2.setCursor(38, 44);
-        u8g2.print("BD: ");
-        u8g2.print((millis() - timeBrewDetection) / 1000, 1);
-        u8g2.print("/");
-        u8g2.print(brewtimesoftware, 0);
+        display.setCursor(38, 44);
+        display.print("BD: ");
+        display.print((millis() - timeBrewDetection) / 1000, 1);
+        display.print("/");
+        display.print(brewtimesoftware, 0);
     }
     else {
-        u8g2.setCursor(34, 44);
-        u8g2.print(langstring_brew);
-        u8g2.print(timeBrewed / 1000, 0);
-        u8g2.print("/");
+        display.setCursor(34, 44);
+        display.print(langstring_brew);
+        display.print(timeBrewed / 1000, 0);
+        display.print("/");
 
         if (FEATURE_BREWCONTROL == 0) {
-            u8g2.print(brewtimesoftware, 0);
+            display.print(brewtimesoftware, 0);
         }
         else {
-            u8g2.print(totalBrewTime / 1000, 0);
+            display.print(totalBrewTime / 1000, 0);
         }
     }
 
     // Show heater output in %
     displayProgressbar(pidOutput / 10, 15, 60, 100);
 
-    u8g2.sendBuffer();
+    display.sendBuffer();
 }

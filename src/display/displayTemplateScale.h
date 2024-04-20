@@ -26,7 +26,7 @@ void printScreen() {
     }
 
     // If no specific machine state was printed, print default:
-    u8g2.clearBuffer();
+    display.clearBuffer();
 
     displayStatusbar();
 
@@ -42,67 +42,67 @@ void printScreen() {
         drawTemperaturebar(8, 50, 30);
     }
 
-    u8g2.setFont(u8g2_font_profont11_tf);
+    display.setFont(FontType::Normal);
 
-    u8g2.setCursor(32, 16);
-    u8g2.print("T: ");
-    u8g2.print(temperature, 1);
+    display.setCursor(32, 16);
+    display.print("T: ");
+    display.print(temperature, 1);
 
-    u8g2.print("/");
-    u8g2.print(setpoint, 1);
+    display.print("/");
+    display.print(setpoint, 1);
 
-    u8g2.setCursor(32, 26);
-    u8g2.print("W: ");
+    display.setCursor(32, 26);
+    display.print("W: ");
 
     if (scaleFailure) {
-        u8g2.print("fault");
+        display.print("fault");
     }
     else {
         if (machineState == kBrew) {
-            u8g2.print(weightBrew, 0);
+            display.print(weightBrew, 0);
         }
         else {
-            u8g2.print(weight, 0);
+            display.print(weight, 0);
         }
 
         if (weightSetpoint > 0) {
-            u8g2.print("/");
-            u8g2.print(weightSetpoint, 0);
+            display.print("/");
+            display.print(weightSetpoint, 0);
         }
 
-        u8g2.print(" (");
-        u8g2.print(weightBrew, 1);
-        u8g2.print(")");
+        display.print(" (");
+        display.print(weightBrew, 1);
+        display.print(")");
     }
 
     // Brew
-    u8g2.setCursor(32, 36);
-    u8g2.print("t: ");
-    u8g2.print(timeBrewed / 1000, 0);
+    display.setCursor(32, 36);
+    display.print("t: ");
+    display8g2.print(timeBrewed / 1000, 0);
 
     if (FEATURE_BREWCONTROL == 0) {
         u8g2.print("/");
-        u8g2.print(brewtimesoftware, 0);
+        display.print(brewtimesoftware, 0);
     }
     else {
         if (brewTime > 0) {
-            u8g2.print("/");
-            u8g2.print(totalBrewTime / 1000, 0);
+            display.print("/");
+            display.print(totalBrewTime / 1000, 0);
         }
 
-        u8g2.print(" (");
-        u8g2.print(lastBrewTime / 1000, 1);
-        u8g2.print(")");
+        display.print(" (");
+        display.print(lastBrewTime / 1000, 1);
+        display.print(")");
     }
 
 #if (FEATURE_PRESSURESENSOR == 1)
-    u8g2.setCursor(32, 46);
-    u8g2.print("P: ");
-    u8g2.print(inputPressure, 1);
+    display.setCursor(32, 46);
+    display.print("P: ");
+    display.print(inputPressure, 1);
 #endif
 
     // Show heater output in %
     displayProgressbar(pidOutput / 10, 30, 60, 98);
 
-    u8g2.sendBuffer();
+    display.sendBuffer();
 }

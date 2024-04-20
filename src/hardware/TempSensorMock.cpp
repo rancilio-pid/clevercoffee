@@ -27,7 +27,7 @@ float getTemperature(float maxValue) {
         previousMillis = now;
     }
    
-    LOGF(DEBUG, "temp_current = %.1f", temp_current);
+    LOGF(TRACE, "temp_current = %.1f", temp_current);
     return temp_current;
 }
 
@@ -39,6 +39,6 @@ float TempSensorMock::getTemperatureCelsius() const {
     } else if (function_ == 3) { // error too hot
         return getTemperature(140.0);
     } else { // normal
-        return getTemperature(92.0);
+        return getTemperature(95.0);
     }
 }
