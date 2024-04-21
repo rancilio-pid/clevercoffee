@@ -299,11 +299,6 @@ unsigned long timeBrewDetection = 0;
 int isBrewDetected = 0;                // flag is set if brew was detected
 bool movingAverageInitialized = false; // flag set when average filter is initialized, also used for sensor check
 
-// Sensor check
-boolean sensorError = false;
-int error = 0;
-int maxErrorCounter = 10; // depends on intervaltempmes* , define max seconds for invalid data
-
 // PID controller
 unsigned long previousMillistemp; // initialisation at the end of init()
 
@@ -511,37 +506,6 @@ void calculateTemperatureMovingAverage() {
 }
 
 /**
- * @brief check sensor value.
- * @return If < 0 or difference between old and new >25, then increase error.
- *      If error is equal to maxErrorCounter, then set sensorError
- */
-boolean checkSensor(float tempInput) {
-    boolean sensorOK = false;
-    boolean badCondition = (tempInput < 0 || tempInput > 150 || fabs(tempInput - previousInput) > (5 + brewTempOffset));
-
-    if (badCondition && !sensorError) {
-        error++;
-        sensorOK = false;
-
-        LOGF(WARNING, "temperature sensor reading: consec_errors = %i, temp_current = %.1f, temp_prev = %.1f", error, tempInput, previousInput);
-    }
-    else if (badCondition == false && sensorOK == false) {
-        error = 0;
-        sensorOK = true;
-    }
-
-    if (error >= maxErrorCounter && !sensorError) {
-        sensorError = true;
-        LOGF(ERROR, "temperature sensor malfunction: temp_current = %.1f", tempInput);
-    }
-    else if (error == 0 && sensorError) {
-        sensorError = false;
-    }
-
-    return sensorOK;
-}
-
-/**
  * @brief Refresh temperature.
  *      Each time checkSensor() is called to verify the value.
  *      If the value is not valid, new data is not stored.
@@ -559,7 +523,7 @@ void refreshTemp() {
             temperature -= brewTempOffset;
         }
 
-        if (!checkSensor(temperature) && movingAverageInitialized) {
+        if (!tempSensor->check(temperature, brewTempOffset) && movingAverageInitialized) {
             temperature = previousInput;
             return; // if sensor data is not valid, abort function; Sensor must
                     // be read at least one time at system startup
@@ -854,7 +818,7 @@ void handleMachineState() {
                 machineState = kWaterEmpty;
             }
 
-            if (sensorError) {
+            if (tempSensor->hasError()) {
                 machineState = kSensorError;
             }
 
@@ -911,7 +875,7 @@ void handleMachineState() {
                 machineState = kWaterEmpty;
             }
 
-            if (sensorError) {
+            if (tempSensor->hasError()) {
                 machineState = kSensorError;
             }
 
@@ -949,7 +913,7 @@ void handleMachineState() {
                 machineState = kPidDisabled;
             }
 
-            if (sensorError) {
+            if (tempSensor->hasError()) {
                 machineState = kSensorError;
             }
             break;
@@ -983,7 +947,7 @@ void handleMachineState() {
                 machineState = kWaterEmpty;
             }
 
-            if (sensorError) {
+            if (tempSensor->hasError()) {
                 machineState = kSensorError;
             }
             break;
@@ -1020,7 +984,7 @@ void handleMachineState() {
                 machineState = kWaterEmpty;
             }
 
-            if (sensorError) {
+            if (tempSensor->hasError()) {
                 machineState = kSensorError;
             }
             break;
@@ -1046,7 +1010,7 @@ void handleMachineState() {
                 machineState = kWaterEmpty;
             }
 
-            if (sensorError) {
+            if (tempSensor->hasError()) {
                 machineState = kSensorError;
             }
             break;
@@ -1090,7 +1054,7 @@ void handleMachineState() {
                 machineState = kWaterEmpty;
             }
 
-            if (sensorError) {
+            if (tempSensor->hasError()) {
                 machineState = kSensorError;
             }
             break;
@@ -1112,7 +1076,7 @@ void handleMachineState() {
                 machineState = kWaterEmpty;
             }
 
-            if (sensorError) {
+            if (tempSensor->hasError()) {
                 machineState = kSensorError;
             }
             break;
@@ -1126,7 +1090,7 @@ void handleMachineState() {
                 machineState = kPidDisabled;
             }
 
-            if (sensorError) {
+            if (tempSensor->hasError()) {
                 machineState = kSensorError;
             }
             break;
@@ -1140,7 +1104,7 @@ void handleMachineState() {
                 machineState = kPidDisabled;
             }
 
-            if (sensorError) {
+            if (tempSensor->hasError()) {
                 machineState = kSensorError;
             }
             break;
@@ -1155,7 +1119,7 @@ void handleMachineState() {
                 machineState = kWaterEmpty;
             }
 
-            if (sensorError) {
+            if (tempSensor->hasError()) {
                 machineState = kSensorError;
             }
 
@@ -1184,7 +1148,7 @@ void handleMachineState() {
                 }
             }
 
-            if (sensorError) {
+            if (tempSensor->hasError()) {
                 machineState = kSensorError;
             }
             break;
