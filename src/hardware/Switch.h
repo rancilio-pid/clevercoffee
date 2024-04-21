@@ -29,8 +29,8 @@ class Switch {
          *          (normally-open, NO)
          */
         enum Mode {
-            NORMALLY_OPEN,
-            NORMALLY_CLOSED
+            NORMALLY_OPEN = 0,
+            NORMALLY_CLOSED = 1,
         };
 
         /**
