@@ -12,7 +12,7 @@ class Timer {
     public:
         Timer() = delete;
         Timer(std::function<void()> func, unsigned long interval) :
-            callback_(func), interval_(interval){};
+            callback_(func), interval_(interval) {};
         void operator()();
 
     private:
