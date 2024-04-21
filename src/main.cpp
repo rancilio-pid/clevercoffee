@@ -1732,6 +1732,10 @@ void setup() {
         pidON = 1;                  // pid on
     }
 
+    // Start the logger
+    Logger::begin();
+    Logger::setLevel(LOGLEVEL);
+
     // Initialize PID controller
     bPID.SetSampleTime(windowSize);
     bPID.SetOutputLimits(0, windowSize);
@@ -1775,10 +1779,6 @@ void setup() {
     setupDone = true;
 
     enableTimer1();
-
-    // Start the logger
-    Logger::begin();
-    Logger::setLevel(LOGLEVEL);
 
     double fsUsage = ((double)LittleFS.usedBytes() / LittleFS.totalBytes()) * 100;
     LOGF(INFO, "LittleFS: %d%% (used %ld bytes from %ld bytes)", (int)ceil(fsUsage), LittleFS.usedBytes(), LittleFS.totalBytes());
