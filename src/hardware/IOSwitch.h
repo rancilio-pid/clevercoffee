@@ -23,7 +23,7 @@ class IOSwitch : public Switch {
          * @param switchType Type of the switch
          * @param mode Operation mode of the switch
          */
-        IOSwitch(int pinNumber, GPIOPin::Type pinType, Type switchType = MOMENTARY, Mode mode = NORMALLY_OPEN);
+        IOSwitch(int pinNumber, GPIOPin::Type pinType, Type switchType = MOMENTARY, Mode mode = NORMALLY_OPEN, uint8_t initialState = LOW);
 
         /**
          * @brief Switch reading (pressed, not pressed)
@@ -44,8 +44,8 @@ class IOSwitch : public Switch {
         GPIOPin gpio;
 
         // Switch state
-        uint8_t lastState{LOW};
-        uint8_t currentState{LOW};
+        uint8_t lastState;
+        uint8_t currentState;
 
         // Debouncing and long-press detection
         unsigned long lastStateChangeTime{0};

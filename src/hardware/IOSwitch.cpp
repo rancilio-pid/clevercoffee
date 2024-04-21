@@ -7,8 +7,9 @@
 #include "IOSwitch.h"
 #include "GPIOPin.h"
 
-IOSwitch::IOSwitch(int pinNumber, GPIOPin::Type pinType, Type switchType, Mode mode) :
-    Switch(switchType, mode), gpio(pinNumber, pinType) {
+#include "Logger.h"
+IOSwitch::IOSwitch(int pinNumber, GPIOPin::Type pinType, Type switchType, Mode mode, uint8_t initialState) :
+    Switch(switchType, mode), gpio(pinNumber, pinType), lastState(initialState), currentState(initialState) {
 }
 
 bool IOSwitch::isPressed() {
