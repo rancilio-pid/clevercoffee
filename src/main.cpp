@@ -1918,12 +1918,17 @@ void setup() {
 }
 
 void loop() {
-    looppid();
-    loopLED();
+    // Accept potential connections for remote logging
+    Logger::update();
 
+    // Update water sensor
     loopWater();
 
-    Logger::update();
+    // Update PID settings & machine state
+    looppid();
+
+    // Update LED output based on machine state
+    loopLED();
 }
 
 void looppid() {
