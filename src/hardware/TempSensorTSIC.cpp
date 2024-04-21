@@ -16,15 +16,18 @@ TempSensorTSIC::TempSensorTSIC(int GPIOPin) {
     tsicSensor_->begin();
 }
 
-float TempSensorTSIC::sample_temperature() const {
+bool TempSensorTSIC::sample_temperature(double& temperature) const {
     auto temp = tsicSensor_->getTemp(MAX_CHANGERATE);
 
     if (temp == 222) {
         LOG(WARNING, "Temperature reading failed");
+        return false;
     }
     else if (temp == 221) {
         LOG(WARNING, "Temperature sensor not connected");
+        return false;
     }
 
-    return temp;
+    temperature = temp;
+    return true;
 }

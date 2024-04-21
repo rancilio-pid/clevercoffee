@@ -14,7 +14,7 @@ class TempSensorDallas : public TempSensor {
         TempSensorDallas(int GPIOPin);
 
     protected:
-        float sample_temperature() const override;
+        bool sample_temperature(double& temperature) const override;
 
     private:
         OneWire* oneWire_;

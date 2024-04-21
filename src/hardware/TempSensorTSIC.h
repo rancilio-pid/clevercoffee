@@ -14,7 +14,7 @@ class TempSensorTSIC : public TempSensor {
         TempSensorTSIC(int GPIOPin);
 
     protected:
-        float sample_temperature() const override;
+        bool sample_temperature(double& temperature) const override;
 
     private:
         ZACwire* tsicSensor_;

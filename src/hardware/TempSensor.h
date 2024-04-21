@@ -44,8 +44,7 @@ class TempSensor {
         /**
          * @brief Default destructor
          */
-        virtual ~TempSensor() {
-        }
+        virtual ~TempSensor() = default;
 
         /**
          * @brief check sensor value.
@@ -89,7 +88,7 @@ class TempSensor {
          *          implemented by every child class.
          * @return Temperature in degrees Celsius
          */
-        virtual float sample_temperature() const = 0;
+        virtual bool sample_temperature(double& temperature) const = 0;
 
     private:
         /**
