@@ -70,9 +70,12 @@ class TempSensor {
          * @brief Small helper method to be wrapped in a timer for updating the temperature from the sensors
          */
         void update_temperature_reading() {
+            LOG(TRACE, "Attempting temperature reading");
             // Update temperature and detect errors:
             auto updated = sample_temperature(last_temperature_);
             if (updated) {
+                LOGF(DEBUG, "Temperature reading successful: %.1f", last_temperature_);
+
                 // Reset error counter and error state
                 bad_readings_ = 0;
                 error_ = false;
