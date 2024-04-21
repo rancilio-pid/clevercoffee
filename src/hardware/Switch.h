@@ -40,7 +40,7 @@ class Switch {
          * @param mode Operation mode
          */
         Switch(Type type, Mode mode) :
-            type_(type), mode_(mode){};
+            type_(type), mode_(mode) {};
         Switch() = delete;
         virtual ~Switch() = default;
 
