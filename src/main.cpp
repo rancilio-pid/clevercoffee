@@ -2062,7 +2062,7 @@ void looppid() {
     }
     else { // no sensorerror, no pid off or no Emergency Stop
         if (bPID.GetMode() == 0) {
-            bPID.SetMode(0);
+            bPID.SetMode(1);
         }
     }
 
