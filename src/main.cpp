@@ -293,10 +293,8 @@ int waterCheckConsecutiveReads = 0; // Counter for consecutive readings of water
 const int waterCountsNeeded = 3;    // Number of same readings to change water sensing
 
 // Moving average for software brew detection
-double tempRateAverage = 0;            // average value of temp values
 unsigned long timeBrewDetection = 0;
-int isBrewDetected = 0;                // flag is set if brew was detected
-bool movingAverageInitialized = false; // flag set when average filter is initialized, also used for sensor check
+int isBrewDetected = 0; // flag is set if brew was detected
 
 // PID controller
 unsigned long previousMillistemp; // initialisation at the end of init()
@@ -449,58 +447,6 @@ void testEmergencyStop() {
 }
 
 /**
- * @brief FIR moving average filter for software brew detection
- */
-void calculateTemperatureMovingAverage() {
-    const int numValues = 15;                   // moving average filter length
-    static double tempValues[numValues];        // array of temp values
-    static unsigned long timeValues[numValues]; // array of time values
-    static double tempChangeRates[numValues];
-    static int valueIndex = 1;                  // the index of the current value
-
-    if (brewDetectionMode == 1 && !movingAverageInitialized) {
-        for (int index = 0; index < numValues; index++) {
-            tempValues[index] = temperature;
-            timeValues[index] = 0;
-            tempChangeRates[index] = 0;
-        }
-
-        movingAverageInitialized = true;
-    }
-
-    timeValues[valueIndex] = millis();
-    tempValues[valueIndex] = temperature;
-
-    // local change rate of temperature
-    double tempChangeRate = 0;
-
-    if (valueIndex == numValues - 1) {
-        tempChangeRate = (tempValues[numValues - 1] - tempValues[0]) / (timeValues[numValues - 1] - timeValues[0]) * 10000;
-    }
-    else {
-        tempChangeRate = (tempValues[valueIndex] - tempValues[valueIndex + 1]) / (timeValues[valueIndex] - timeValues[valueIndex + 1]) * 10000;
-    }
-
-    tempChangeRates[valueIndex] = tempChangeRate;
-
-    double totalTempChangeRateSum = 0;
-
-    for (int i = 0; i < numValues; i++) {
-        totalTempChangeRateSum += tempChangeRates[i];
-    }
-
-    tempRateAverage = totalTempChangeRateSum / numValues * 100;
-
-    if (valueIndex >= numValues - 1) {
-        // ...wrap around to the beginning:
-        valueIndex = 0;
-    }
-    else {
-        valueIndex++;
-    }
-}
-
-/**
  * @brief Refresh temperature.
  *      Each time checkSensor() is called to verify the value.
  *      If the value is not valid, new data is not stored.
@@ -512,23 +458,16 @@ void refreshTemp() {
     if (currentMillisTemp - previousMillistemp >= tempSensor->getSamplingInterval()) {
         previousMillistemp = currentMillisTemp;
 
-        temperature = tempSensor->getTemperatureCelsius();
+        temperature = tempSensor->getCurrentTemperature();
 
         if (machineState != kSteam) {
             temperature -= brewTempOffset;
         }
 
-        if (!tempSensor->check(temperature, brewTempOffset) && movingAverageInitialized) {
+        if (!tempSensor->check(temperature, brewTempOffset)) {
             temperature = previousInput;
             return; // if sensor data is not valid, abort function; Sensor must
                     // be read at least one time at system startup
-        }
-
-        if (brewDetectionMode == 1) {
-            calculateTemperatureMovingAverage();
-        }
-        else if (!movingAverageInitialized) {
-            movingAverageInitialized = true;
         }
     }
 }
@@ -677,7 +616,7 @@ void brewDetection() {
     // Activate brew detection
     if (brewDetectionMode == 1) { // SW BD
         // BD PID only +/- 4 °C, no detection if HW was active
-        if (tempRateAverage <= -brewSensitivity && isBrewDetected == 0 && (fabs(temperature - brewSetpoint) < 5)) {
+        if (tempSensor->getAverageTemperatureRate() <= -brewSensitivity && isBrewDetected == 0 && (fabs(temperature - brewSetpoint) < 5)) {
             LOG(DEBUG, "SW Brew detected");
             timeBrewDetection = millis();
             isBrewDetected = 1;
@@ -1020,7 +959,7 @@ void handleMachineState() {
 
             if (brewDetectionMode == 1 && BREWCONTROL_TYPE == 0) {
                 // if machine cooled down to 2°C above setpoint, enabled PID again
-                if (tempRateAverage > 0 && temperature < brewSetpoint + 2) {
+                if (tempSensor->getAverageTemperatureRate() > 0 && temperature < brewSetpoint + 2) {
                     machineState = kPidNormal;
                 }
             }
@@ -1833,7 +1772,7 @@ void setup() {
         tempSensor = new TempSensorTSIC(PIN_TEMPSENSOR);
     }
 
-    temperature = tempSensor->getTemperatureCelsius();
+    temperature = tempSensor->getCurrentTemperature();
 
     temperature -= brewTempOffset;
 
