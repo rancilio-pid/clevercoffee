@@ -14,7 +14,7 @@ TempSensorDallas::TempSensorDallas(int GPIOPin) {
     dallasSensor_->setResolution(sensorDeviceAddress_, 10);
 }
 
-float TempSensorDallas::getTemperatureCelsius() const {
+float TempSensorDallas::sample_temperature() const {
     dallasSensor_->requestTemperatures();
     return dallasSensor_->getTempCByIndex(0);
 }
