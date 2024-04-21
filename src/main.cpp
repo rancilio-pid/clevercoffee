@@ -447,32 +447,6 @@ void testEmergencyStop() {
 }
 
 /**
- * @brief Refresh temperature.
- *      Each time checkSensor() is called to verify the value.
- *      If the value is not valid, new data is not stored.
- */
-void refreshTemp() {
-    unsigned long currentMillisTemp = millis();
-    previousInput = temperature;
-
-    if (currentMillisTemp - previousMillistemp >= tempSensor->getSamplingInterval()) {
-        previousMillistemp = currentMillisTemp;
-
-        temperature = tempSensor->getCurrentTemperature();
-
-        if (machineState != kSteam) {
-            temperature -= brewTempOffset;
-        }
-
-        if (!tempSensor->check(temperature, brewTempOffset)) {
-            temperature = previousInput;
-            return; // if sensor data is not valid, abort function; Sensor must
-                    // be read at least one time at system startup
-        }
-    }
-}
-
-/**
  * @brief Switch to offline mode if maxWifiReconnects were exceeded during boot
  */
 void initOfflineMode() {
@@ -1864,7 +1838,13 @@ void looppid() {
         checkWifi();
     }
 
-    refreshTemp();       // update temperature values
+    // Update the temperature:
+    temperature = tempSensor->getCurrentTemperature();
+
+    if (machineState != kSteam) {
+        temperature -= brewTempOffset;
+    }
+
     testEmergencyStop(); // test if temp is too high
     bPID.Compute();      // the variable pidOutput now has new values from PID (will be written to heater pin in ISR.cpp)
 
