@@ -294,7 +294,6 @@ const int waterCountsNeeded = 3;    // Number of same readings to change water s
 
 // Moving average for software brew detection
 double tempRateAverage = 0;            // average value of temp values
-double tempChangeRateAverageMin = 0;
 unsigned long timeBrewDetection = 0;
 int isBrewDetected = 0;                // flag is set if brew was detected
 bool movingAverageInitialized = false; // flag set when average filter is initialized, also used for sensor check
@@ -491,10 +490,6 @@ void calculateTemperatureMovingAverage() {
     }
 
     tempRateAverage = totalTempChangeRateSum / numValues * 100;
-
-    if (tempRateAverage < tempChangeRateAverageMin) {
-        tempChangeRateAverageMin = tempRateAverage;
-    }
 
     if (valueIndex >= numValues - 1) {
         // ...wrap around to the beginning:
