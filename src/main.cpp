@@ -365,8 +365,7 @@ unsigned long lastTempEvent = 0;
 unsigned long tempEventInterval = 1000;
 
 #if MQTT_HASSIO_SUPPORT == 1
-static unsigned long lastHomeAssistantDiscoveryExecutionTime = 0;
-const unsigned long HomeAssistantDiscoveryExecutionInterval = 300000; // 5 minute
+Timer hassioDiscoveryTimer(&sendHASSIODiscoveryMsg, 300000);
 #endif
 
 bool mqtt_was_connected = false;
@@ -1940,10 +1939,7 @@ void looppid() {
             if (mqtt.connected() == 1) {
                 mqtt.loop();
 #if MQTT_HASSIO_SUPPORT == 1
-                if (millis() - lastHomeAssistantDiscoveryExecutionTime >= HomeAssistantDiscoveryExecutionInterval) {
-                    sendHASSIODiscoveryMsg();
-                    lastHomeAssistantDiscoveryExecutionTime = millis();
-                }
+                hassioDiscoveryTimer();
 #endif
                 mqtt_was_connected = true;
             }
