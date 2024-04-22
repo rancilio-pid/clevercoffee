@@ -325,7 +325,7 @@ PID bPID(&temperature, &pidOutput, &setpoint, aggKp, aggKi, aggKd, 1, DIRECT);
 
 #include "brewHandler.h"
 
-Timer logbrew([&]() { LOGF(DEBUG, "(tB,T,hra) --> %5.2f %6.2f %8.2f", (double)(millis() - startingTime) / 1000, temperature, tempRateAverage); }, 500);
+Timer logbrew([&]() { LOGF(DEBUG, "(tB,T,hra) --> %5.2f %6.2f %8.2f", (double)(millis() - startingTime) / 1000, temperature, tempSensor->getAverageTemperatureRate()); }, 500);
 
 // Embedded HTTP Server
 #include "embeddedWebserver.h"
