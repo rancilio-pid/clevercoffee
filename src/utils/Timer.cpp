@@ -3,16 +3,21 @@
 #include "Arduino.h"
 #include "Logger.h"
 
-void Timer::operator()() {
-    auto current = millis();
+Timer::Timer(std::function<void()> func, unsigned long interval) :
+    callback_(func), interval_(interval), next_(millis()) {};
 
-    if ((current - last_) >= interval_) {
+void Timer::operator()() {
+    if (millis() >= next_) {
         LOG(TRACE, "Timer expired, calling function");
 
         // Update timer
-        last_ = current;
+        next_ = millis() + interval_;
 
         // Call method:
         callback_();
     }
+}
+
+void Timer::reset() {
+    next_ = millis();
 }
