@@ -415,10 +415,6 @@ U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, PIN_I2CSCL, PIN
 U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, OLED_CS, OLED_DC, /* reset=*/U8X8_PIN_NONE); // e.g. 1.3"
 #endif
 
-// Update for Display
-unsigned long previousMillisDisplay; // initialisation at the end of init()
-const unsigned long intervalDisplay = 100;
-
 // Horizontal or vertical display
 #if (OLED_DISPLAY != 0)
 #if (DISPLAYTEMPLATE < 20) // horizontal templates
@@ -441,6 +437,8 @@ const unsigned long intervalDisplay = 100;
 #include "display/displayTemplateUpright.h"
 #endif
 #endif
+
+Timer printDisplayTimer(&printScreen, 100);
 
 #include "powerHandler.h"
 #include "scaleHandler.h"
@@ -1890,7 +1888,6 @@ void setup() {
     unsigned long currentTime = millis();
     previousMillistemp = currentTime;
     windowStartTime = currentTime;
-    previousMillisDisplay = currentTime;
     previousMillisMQTT = currentTime;
     previousMillisOptocouplerReading = currentTime;
     lastMQTTConnectionAttempt = currentTime;
@@ -2044,12 +2041,7 @@ void looppid() {
 
     // Check if PID should run or not. If not, set to manual and force output to zero
 #if OLED_DISPLAY != 0
-    unsigned long currentMillisDisplay = millis();
-
-    if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
-        previousMillisDisplay = currentMillisDisplay;
-        printScreen(); // refresh display
-    }
+    printDisplayTimer();
 #endif
 
     if (machineState == kPidDisabled || machineState == kWaterEmpty || machineState == kSensorError || machineState == kEmergencyStop || machineState == kEepromError || machineState == kStandby || brewPIDDisabled) {
