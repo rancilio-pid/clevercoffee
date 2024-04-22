@@ -247,7 +247,7 @@ void brew() {
         timeBrewed = currentMillisTemp - startingTime;
     }
 
-    if (currStateBrewSwitch == LOW && movingAverageInitialized) {
+    if (currStateBrewSwitch == LOW) {
         // check if brewswitch was turned off at least once, last time,
         brewSwitchWasOff = true;
     }
