@@ -20,5 +20,4 @@ using ImageDataType = const unsigned char;
      uint8_t dataSize;
      } tImage;
 
-
 #endif

@@ -7,9 +7,6 @@
 
 #pragma once
 
-#include "DisplayManager.h"
-extern DisplayManager display;  // declare the extern DisplayManager object to use the same instance everywhere
-
 // Define some Displayoptions
 int blinkingtemp = 1;           // 0: blinking near setpoint, 1: blinking far away from setpoint
 float blinkingtempoffset = 0.3; // offset for blinking

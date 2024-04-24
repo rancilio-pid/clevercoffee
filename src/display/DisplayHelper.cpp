@@ -43,10 +43,8 @@ String DisplayHelper::StatusIconToString(StatusIcon icon) {
     switch (icon) {
         case StatusIcon::None: return "None";
         case StatusIcon::Wifi_Not_Ok: return "Wifi_Not_Ok";
-        case StatusIcon::Blynk_Not_Ok: return "Blynk_Not_Ok";
         case StatusIcon::Mqtt_Not_Ok: return "Mqtt_Not_Ok";
         case StatusIcon::Wifi_Ok: return "Wifi_Ok";
-        case StatusIcon::Blynk_Ok: return "Blynk_Ok";
         case StatusIcon::Mqtt_Ok: return "Mqtt_Ok";
         default: return "Invalid value";
     }

@@ -6,17 +6,21 @@
 
 #pragma once
 
-#include "DisplayManager.h"
-extern DisplayManager display;  // declare the extern DisplayManager object to use the same instance everywhere
-
 #if (DISPLAY_HARDWARE != 0)
+
+#include "DisplayManager.h"
+#include "display/ImageDictionary.h" // user icons for display
+
+extern DisplayManager display;  // declare the extern DisplayManager object to use the same instance everywhere
+ImageDictionary images;
 
 /**
  * @brief Draw a water empty icon at the given coordinates if water supply is low
  */
 void displayWaterIcon(int x, int y) {
     if (!waterFull) {
-        display.drawImage(x, y, 8, 8, Water_Empty_Icon);
+        //display.drawImage(x, y, 8, 8, Water_Empty_Icon);
+        display.drawImage(x, y, images.getStatusIcon(StatusIcon::Water_Empty));
     }
 }
 
@@ -45,14 +49,16 @@ void displayWiFiStatus(int x, int y) {
     getSignalStrength();
 
     if (WiFi.status() == WL_CONNECTED) {
-        display.drawImage(x, y, 8, 8, Antenna_OK_Icon);
+        //display.drawImage(x, y, 8, 8, Antenna_OK_Icon);
+        display.drawImage(x, y, images.getStatusIcon(StatusIcon::Wifi_Ok));
 
         for (int b = 0; b <= getSignalStrength(); b++) {
             display.drawVLine(x + 5 + (b * 2), y + 8 - (b * 2), b * 2);
         }
     }
     else {
-        display.drawImage(x, y, 8, 8, Antenna_NOK_Icon);
+        //display.drawImage(x, y, 8, 8, Antenna_NOK_Icon);
+        display.drawImage(x, y, images.getStatusIcon(StatusIcon::Wifi_Not_Ok));
         display.setCursor(x + 5, y + 10);
         display.setFont(FontType::Normal);
         display.print("RC: ");
@@ -66,11 +72,13 @@ void displayWiFiStatus(int x, int y) {
 void displayMQTTStatus(int x, int y) {
     if (FEATURE_MQTT == 1) {
         if (mqtt.connected() == 1) {
+            //display.drawImage(x, y, images.getStatusIcon(StatusIcon::Mqtt_Ok));
             display.setCursor(x, y);
             display.setFont(FontType::Normal);
             display.print("MQTT");
         }
         else {
+            //display.drawImage(x, y, images.getStatusIcon(StatusIcon::Mqtt_Not_Ok));
             display.setCursor(x, y);
             display.print("");
         }

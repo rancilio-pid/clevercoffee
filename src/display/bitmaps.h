@@ -7,12 +7,16 @@
 
 #pragma once
 
+// for the antenna and mqtt icon
+#define status_icon_width   8
+#define status_icon_height  8
+
 #define CleverCoffee_Logo_width     40
 #define CleverCoffee_Logo_height    40
-#define Rancilio_Silvia_Logo_width  52
-#define Rancilio_Silvia_Logo_height 49
-#define Gaggia_Classic_Logo_width   46
-#define Gaggia_Classic_Logo_height  49
+#define Rancilio_Silvia_Logo_width  52 // not used
+#define Rancilio_Silvia_Logo_height 49 // not used
+#define Gaggia_Classic_Logo_width   46 // not used
+#define Gaggia_Classic_Logo_height  49 // not used
 #define Heating_Logo_width          40
 #define Heating_Logo_height         40
 #define Off_Logo_width              52
@@ -29,36 +33,59 @@
 // clang-format off
 
 static const unsigned char Antenna_OK_Icon[] PROGMEM = {
-    B00011111,
-    B00010101,
-    B00010101,
-    B00001110,
-    B00000100,
-    B00000100,
-    B00000100,
-    B00000100
+    0B00011111,
+    0B00010101,
+    0B00010101,
+    0B00001110,
+    0B00000100,
+    0B00000100,
+    0B00000100,
+    0B00000100
 };
 
 static const unsigned char Antenna_NOK_Icon[] PROGMEM = {
-    B00111101,
-    B00100010,
-    B00100100,
-    B00001000,
-    B00010000,
-    B00101000,
-    B01001000,
-    B10001000
+    0B00111101,
+    0B00100010,
+    0B00100100,
+    0B00001000,
+    0B00010000,
+    0B00101000,
+    0B01001000,
+    0B10001000
+};
+
+// mqtt for now just copies of antenna to make it compile
+static const unsigned char mqtt_nok_bits[] PROGMEM = {
+    0B00011111,
+    0B00010101,
+    0B00010101,
+    0B00001110,
+    0B00000100,
+    0B00000100,
+    0B00000100,
+    0B00000100
+};
+
+static const unsigned char mqtt_ok_bits[] PROGMEM = {
+    0B00111101,
+    0B00100010,
+    0B00100100,
+    0B00001000,
+    0B00010000,
+    0B00101000,
+    0B01001000,
+    0B10001000
 };
 
 static const unsigned char Water_Empty_Icon[] PROGMEM = {
-    B00001001,
-    B01001010,
-    B00011100,
-    B00010100,
-    B00101110,
-    B00111110,
-    B01011100,
-    B10000000
+    0B00001001,
+    0B01001010,
+    0B00011100,
+    0B00010100,
+    0B00101110,
+    0B00111110,
+    0B01011100,
+    0B10000000
 };
 
 static const unsigned char CleverCoffee_Logo[] PROGMEM = {
@@ -78,8 +105,8 @@ static const unsigned char CleverCoffee_Logo[] PROGMEM = {
     0xf0, 0x0c, 0xc0, 0x79, 0x00, 0xf0, 0x79, 0xf0, 0x7c, 0x00, 0xe0, 0xe3,
     0x3f, 0x3e, 0x00, 0xc0, 0x0f, 0x87, 0x1f, 0x00, 0x80, 0x3f, 0xe0, 0x0f,
     0x00, 0x00, 0xfe, 0xf8, 0x03, 0x00, 0x00, 0xfc, 0xff, 0x01, 0x00, 0x00,
-    0xf0, 0x7f, 0x00, 0x00, 0x00, 0xc0, 0x1f, 0x00}
-;
+    0xf0, 0x7f, 0x00, 0x00, 0x00, 0xc0, 0x1f, 0x00
+};
 
 static const unsigned char Heating_Logo[] PROGMEM = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,

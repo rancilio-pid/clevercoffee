@@ -22,11 +22,10 @@ enum class StatusImage {
 enum class StatusIcon {
     None = 0,
     Wifi_Not_Ok = 1,
-    Blynk_Not_Ok = 2,
     Mqtt_Not_Ok = 3,
     Wifi_Ok = 4,
-    Blynk_Ok = 5,
-    Mqtt_Ok = 6
+    Mqtt_Ok = 6,
+    Water_Empty = 7
 };
 
 enum class ProfileIcon {

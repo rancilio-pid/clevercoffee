@@ -15,7 +15,6 @@
 #endif
 
 #if (DISPLAY_HARDWARE == 3)
-// 23-MOSI 18-CLK
 #define OLED_CS             5
 #define OLED_DC             2
 #include <SPI.h>
@@ -58,24 +57,12 @@ void DisplayManager::clearBuffer() {
     display->clearBuffer();
 }
 
+void DisplayManager::sendBuffer() {
+    display->sendBuffer();
+}
+
 void DisplayManager::setPowerSave(uint32_t is_enabled) {
     display->setPowerSave(is_enabled);
-}
-
-void DisplayManager::clearRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
-    display->clearRect(x, y, w, h);
-};
-
-void DisplayManager::drawImage(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t *bitmap) {
-    display->drawImage(x, y, w, h, bitmap);
-}
-
-void DisplayManager::drawImage(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint16_t *bitmap) {
-    display->drawImage(x, y, w, h, bitmap);
-}
-
-void DisplayManager::drawImage(uint16_t x, uint16_t y, tImage bitmap) {
-    display->drawImage(x, y, bitmap);
 }
 
 void DisplayManager::setFont(FontType fontType) {
@@ -84,6 +71,14 @@ void DisplayManager::setFont(FontType fontType) {
 
 void DisplayManager::setCursor(int16_t x, int16_t y) {
     display->setCursor(x, y);
+}
+
+int DisplayManager::getWidth() {
+    return display->getWidth();
+}
+
+int DisplayManager::getHeight() {
+    return display->getHeight();
 }
 
 void DisplayManager::print(float data, int digits) {
@@ -102,22 +97,6 @@ void DisplayManager::println(const String &s) {
     display->println(s);
 }
 
-void DisplayManager::drawGlyph(uint8_t x, uint8_t y, uint8_t encoding) {
-    display->drawGlyph(x, y, encoding);
-}
-
-void DisplayManager::sendBuffer() {
-    display->sendBuffer();
-}
-
-int DisplayManager::getWidth() {
-    return display->getWidth();
-}
-
-int DisplayManager::getHeight() {
-    return display->getHeight();
-}
-
 void DisplayManager::printCentered(const char* c, uint16_t y) {
     display->printCentered(c, y);
 }
@@ -132,6 +111,54 @@ void DisplayManager::printRightAligned(const char* c, uint16_t y) {
 
 void DisplayManager::printRightAligned(float data, unsigned int digits, uint16_t y) {
     display->printRightAligned(data, digits, y);
+}
+
+void DisplayManager::drawLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
+    display->drawLine(x1, y1, x2, y2);
+}
+
+void DisplayManager::drawVLine(uint16_t x, uint16_t y, uint16_t h) {
+    display->drawVLine(x, y, h);
+}
+
+void DisplayManager::drawHLine(uint16_t x, uint16_t y, uint16_t w) {
+    display->drawHLine(x, y, w);
+}
+
+void DisplayManager::drawCircle(uint16_t x, uint16_t y, uint16_t rad) {
+    display->drawCircle(x, y, rad);
+}
+
+void DisplayManager::drawDisc(uint16_t x, uint16_t y, uint16_t rad) {
+    display->drawDisc(x, y, rad);
+}
+
+void DisplayManager::drawPixel(uint16_t x, uint16_t y) {
+    display->drawPixel(x, y);
+}
+
+void DisplayManager::drawFrame(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
+    display->drawFrame(x, y, w, h);
+}
+
+void DisplayManager::clearRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
+    display->clearRect(x, y, w, h);
+};
+
+void DisplayManager::drawImage(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t *bitmap) {
+    display->drawImage(x, y, w, h, bitmap);
+}
+
+void DisplayManager::drawImage(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint16_t *bitmap) {
+    display->drawImage(x, y, w, h, bitmap);
+}
+
+void DisplayManager::drawImage(uint16_t x, uint16_t y, tImage bitmap) {
+    display->drawImage(x, y, bitmap);
+}
+
+void DisplayManager::drawGlyph(uint8_t x, uint8_t y, uint8_t encoding) {
+    display->drawGlyph(x, y, encoding);
 }
 
 void DisplayManager::printTemperatures(float t1, float t2, bool steaming) {
@@ -176,32 +203,4 @@ void DisplayManager::printCentered(Area area, const char* line1, const char* lin
 
 void DisplayManager::drawBorder(Area area) {
     display->drawBorder(area);
-}
-
-void DisplayManager::drawLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
-    display->drawLine(x1, y1, x2, y2);
-}
-
-void DisplayManager::drawVLine(uint16_t x, uint16_t y, uint16_t h) {
-    display->drawVLine(x, y, h);
-}
-
-void DisplayManager::drawHLine(uint16_t x, uint16_t y, uint16_t w) {
-    display->drawHLine(x, y, w);
-}
-
-void DisplayManager::drawCircle(uint16_t x, uint16_t y, uint16_t rad) {
-    display->drawCircle(x, y, rad);
-}
-
-void DisplayManager::drawDisc(uint16_t x, uint16_t y, uint16_t rad) {
-    display->drawDisc(x, y, rad);
-}
-
-void DisplayManager::drawPixel(uint16_t x, uint16_t y) {
-    display->drawPixel(x, y);
-}
-
-void DisplayManager::drawFrame(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
-    display->drawFrame(x, y, w, h);
 }

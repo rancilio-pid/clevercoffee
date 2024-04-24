@@ -29,7 +29,7 @@ void U8g2Display::init(Rotation rotation) {
 
   u8g2.setBitmapMode(1);  // Enable transparent bitmap mode
 
-  initViews();    
+  initViews();
 }
 
 void U8g2Display::initViews() {
@@ -63,7 +63,7 @@ void U8g2Display::initViews() {
         {Area::StatusIcons, this->statusIcons},
         {Area::ProfileIcon, this->profileIcon},
         {Area::SoftwareUpdate, this->softwareUpdate},
-    };        
+    };
 }
 
 void U8g2Display::prepare(void) {
@@ -226,6 +226,8 @@ void U8g2Display::printRightAligned(float data, unsigned int digits, uint16_t y)
     //u8g2.sendBuffer();
 }
 
+// specific functions
+
 void U8g2Display::printTemperatures(float input, float setPoint, bool steaming) {
     int symbolWidth = 11;
     int yDeltaSymbol = 6; // for placing the symbol on correct height
@@ -306,7 +308,6 @@ void U8g2Display::printBrewingInfo(unsigned long totalBrewTime, unsigned long br
       }
 }
 
-
 void U8g2Display::printCountdown(unsigned int powerOffTimer) {
     // TODO: use own viewport for countdown??
     const unsigned int align_right_countdown_min = u8g2.getWidth() - 52;
@@ -330,6 +331,7 @@ void U8g2Display::printCountdown(unsigned int powerOffTimer) {
     u8g2.println(" s");
 }
 
+// functions for defined areas
 void U8g2Display::fillView(Area area, uint32_t color) {
     Viewport view = getView(area);
 

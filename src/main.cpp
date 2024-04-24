@@ -25,7 +25,6 @@
 #include <os.h>
 
 // Includes
-#include "display/bitmaps.h" // user icons for display
 #include "languages.h"       // for language translation
 #include "storage.h"
 
