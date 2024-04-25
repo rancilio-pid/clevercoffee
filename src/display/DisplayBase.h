@@ -36,6 +36,7 @@ public:
     virtual void printCentered(const char* line1, const char* line2, uint16_t y) = 0; 
 
     virtual void printRightAligned(const char* c, uint16_t y) = 0; 
+    virtual void printRightAligned(const char* c, uint16_t y, FontType font) = 0; 
     virtual void printRightAligned(float data, unsigned int digits, uint16_t y) = 0; 
     virtual void printTemperatures(float t1, float t2, bool steaming) = 0; 
     virtual void printBrewingInfo(unsigned long totalBrewTime, unsigned long brewTimer, unsigned int activeBrewTimeEndDetection, bool scaleEnabled, int currentWeight, float activeScaleSensorWeightSetPoint) = 0;
@@ -44,7 +45,7 @@ public:
     virtual void fillView(Area view, uint32_t color) = 0; 
     virtual void drawBorder(Area view) = 0;
 
-    // implemented by baseclass
+    // implemented by baseclass, probably we could move more methods there
     virtual int getDataDigits(float data);
     virtual Viewport getView(Area area);
     virtual void clearView(Area area);
@@ -58,14 +59,19 @@ protected:
 
     std::map<Area, Viewport> areaMap;
 
-    Viewport bootLogo;
-    Viewport bootMessage;
-    Viewport actionImage;
-    Viewport statusIcons;
-    Viewport profileIcon;
+    // Viewport bootLogo;
+    // Viewport bootMessage;
+    // Viewport actionImage;
+    // Viewport statusIcons;
+    // Viewport profileIcon;
+    // Viewport temperature;
+    // Viewport statusMessage;
+    // Viewport softwareUpdate;
+
+    Viewport statusbar;
+    Viewport progressbar;
     Viewport temperature;
-    Viewport statusMessage;
-    Viewport softwareUpdate;
+    Viewport brewTime;
 };
 
 #endif // DISPLAY_BASE_H

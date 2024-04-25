@@ -3,7 +3,7 @@
 // this block is needed to avoid crash with no display 
 Viewport dummy = Viewport(Point(), 0, 0);
 std::map<Area, Viewport> areaMap = {
-    {Area::BootLogo, dummy},
+    //{Area::BootLogo, dummy},
 };
 
 
@@ -73,6 +73,9 @@ void DummyDisplay::printCentered(const char* line1, const char* line2, uint16_t 
 }
 
 void DummyDisplay::printRightAligned(const char* c, uint16_t y) {
+}
+
+void DummyDisplay::printRightAligned(const char* c, uint16_t y, FontType font) {
 }
 
 void DummyDisplay::printRightAligned(float data, unsigned int digits, uint16_t y) {

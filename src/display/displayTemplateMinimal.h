@@ -42,7 +42,8 @@ void printScreen() {
     if (setpoint > 99.999) {
         numDecimalsSetpoint = 0;
     }
-
+    
+    Viewport temp = display.getView(Area::Temperature);
     // Draw temp, blink if feature STATUS_LED is not enabled
     if ((fabs(temperature - setpoint) < 0.3) && !FEATURE_STATUS_LED) {
         if (isrCounter < 500) {
@@ -78,29 +79,26 @@ void printScreen() {
 
     display.setFont(FontType::Normal);
 
+    char brewString[20];
     if (isBrewDetected == 1 && currBrewState == kBrewIdle) {
-        display.setCursor(38, 44);
-        display.print("BD: ");
-        display.print((millis() - timeBrewDetection) / 1000, 1);
-        display.print("/");
-        display.print(brewtimesoftware, 0);
+        const char* format = "BD: %.1f/%.0f";
+        snprintf(brewString, sizeof(brewString), format, ((millis() - timeBrewDetection) / 1000), brewtimesoftware);
+        display.printCentered(Area::BrewTime, (char*)brewString);
     }
     else {
-        display.setCursor(34, 44);
-        display.print(langstring_brew);
-        display.print(timeBrewed / 1000, 0);
-        display.print("/");
-
+        const char* format = "%s%.0f/%.0f";
         if (FEATURE_BREWCONTROL == 0) {
-            display.print(brewtimesoftware, 0);
+            snprintf(brewString, sizeof(brewString), format, langstring_brew, (timeBrewed / 1000), brewtimesoftware);
         }
         else {
-            display.print(totalBrewTime / 1000, 0);
+            snprintf(brewString, sizeof(brewString), format, langstring_brew, (timeBrewed / 1000), (totalBrewTime / 1000));
         }
+        display.printCentered(Area::BrewTime, (char*)brewString);
     }
 
     // Show heater output in %
-    displayProgressbar(pidOutput / 10, 15, 60, 100);
+    Viewport pg = display.getView(Area::Progressbar);
+    displayProgressbar(pidOutput / 10, pg.getUpperLeft().X + 15, pg.getUpperLeft().Y, 100);
 
     display.sendBuffer();
 }

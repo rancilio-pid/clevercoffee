@@ -16,7 +16,9 @@ enum class StatusImage {
     SoftwareUpdate = 9,
     MachineLogo = 10,
     GenericLogo = 11,
-    Test = 12
+    Test = 12,
+    // for clevercoffee
+    CleverCoffee
 };
 
 enum class StatusIcon {

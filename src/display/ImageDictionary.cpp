@@ -4,10 +4,12 @@
 #include <Arduino.h>
 
 ImageDictionary::ImageDictionary() {
-
+    // the same for testing
     const tImage logo = { CleverCoffee_Logo, CleverCoffee_Logo_width, CleverCoffee_Logo_height, IMAGE_DATA_SIZE };
+    const tImage ccLogo = { CleverCoffee_Logo, CleverCoffee_Logo_width, CleverCoffee_Logo_height, IMAGE_DATA_SIZE };
     logoDictionary = {
            {StatusImage::MachineLogo, logo},
+           {StatusImage::CleverCoffee, ccLogo}
     };
 
     // imageDictionary = {

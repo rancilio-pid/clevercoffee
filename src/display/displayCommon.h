@@ -37,9 +37,10 @@ void displayUptime(int x, int y, const char* format) {
     char uptimeString[9];
     snprintf(uptimeString, sizeof(uptimeString), format, hours, minutes, seconds);
 
-    display.setFont(FontType::Normal);
-    display.setCursor(x, y);
-    display.print(uptimeString);
+    // display.setFont(FontType::Normal);
+    // display.setCursor(x, y);
+    // display.print(uptimeString);
+    display.printRightAligned(uptimeString, y, FontType::Normal);
 }
 
 /**
@@ -184,20 +185,21 @@ void displayProgressbar(int value, int x, int y, int width) {
  */
 void displayStatusbar() {
     // For status info
-    display.drawLine(0, 12, 128, 12);
+    Viewport statusbar = display.getView(Area::Statusbar);
+    display.drawHLine(statusbar.getLowerLeft().X, statusbar.getLowerLeft().Y, statusbar.getWidth());
 
     if (offlineMode == 0) {
-        displayWiFiStatus(4, 1);
-        displayMQTTStatus(38, 0);
+        displayWiFiStatus(statusbar.getUpperLeft().X + 4, statusbar.getUpperLeft().Y + 1);
+        displayMQTTStatus(statusbar.getUpperLeft().X + 38, statusbar.getUpperLeft().Y);
     }
     else {
-        display.setCursor(4, 0);
+        display.setCursor(statusbar.getUpperLeft().X + 4, statusbar.getUpperLeft().X);
         display.setFont(FontType::Normal);
         display.print(langstring_offlinemode);
     }
 
     const char* format = "%02luh %02lum";
-    displayUptime(84, 0, format);
+    displayUptime(statusbar.getUpperLeft().X + 84, statusbar.getUpperLeft().Y, format); // todo: could be improved, x not need, we used printRightAligned in displayUptime
 }
 
 /**
@@ -230,7 +232,7 @@ void displayLogo(String displaymessagetext, String displaymessagetext2) {
     display.setCursor(0, 55);
     display.print(displaymessagetext2.c_str());
 
-    display.drawImage(38, 0, CleverCoffee_Logo_width, CleverCoffee_Logo_height, CleverCoffee_Logo);
+    display.drawImage(38, 0, images.getLogo(StatusImage::CleverCoffee));
 
     display.sendBuffer();
 }

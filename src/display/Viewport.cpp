@@ -12,7 +12,7 @@ Viewport::Viewport(Point startPoint, int width, int height) {
     this->startPoint = startPoint;
 }
 
-Viewport::Viewport(int x, int y, int width, int height) : Viewport(Point(x, y), width, height) {
+Viewport::Viewport(u_int16_t x, u_int16_t y, u_int16_t width, u_int16_t height) : Viewport(Point(x, y), width, height) {
 }
 
 int Viewport::getHeight() {
@@ -42,6 +42,5 @@ Point Viewport::getLowerRight() {
 
 String Viewport::getDebugString() {
     String output = "X/Y: " + String(startPoint.X) + " / " + String(startPoint.Y) + ", w=" + String(width) + ", h=" + String(height);
-    //snprintf((char*)displaymessagetextBuffer, sizeof(displaymessagetextBuffer), "%s", displaymessagetext);
     return output;
 }

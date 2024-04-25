@@ -109,6 +109,10 @@ void DisplayManager::printRightAligned(const char* c, uint16_t y) {
     display->printRightAligned(c, y);
 }
 
+void DisplayManager::printRightAligned(const char* c, uint16_t y, FontType font) {
+    display->printRightAligned(c, y, font);
+}
+
 void DisplayManager::printRightAligned(float data, unsigned int digits, uint16_t y) {
     display->printRightAligned(data, digits, y);
 }

@@ -49,18 +49,3 @@ String DisplayHelper::StatusIconToString(StatusIcon icon) {
         default: return "Invalid value";
     }
 }
-
-String DisplayHelper::StateToString(State state) {
-  switch(state) {
-    case State::Undefined: return "Undefined";
-    case State::ColdStart: return "ColdStart";
-    case State::StabilizeTemperature: return "StabilizeTemperature";
-    case State::InnerZoneDetected: return "InnerZoneDetected";
-    case State::BrewDetected: return "BrewDetected";
-    case State::OuterZoneDetected: return "OuterZoneDetected";
-    case State::SteamMode: return "SteamMode";
-    case State::SleepMode: return "SleepMode";
-    case State::CleanMode: return "CleanMode";
-    default: return "Unknown";
-  }
-}

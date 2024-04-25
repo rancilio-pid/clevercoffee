@@ -26,6 +26,7 @@ public:
     virtual void printCentered(const char* c, uint16_t y);
     virtual void printCentered(const char* line1, const char* line2, uint16_t y);
     virtual void printRightAligned(const char* c, uint16_t y);
+    virtual void printRightAligned(const char* c, uint16_t y, FontType font);
     virtual void printRightAligned(float data, unsigned int digits, uint16_t y);
 
     // generic graphic functions
@@ -63,7 +64,7 @@ public:
     virtual void drawBorder(Area);
 
 private:
-   IDisplay* display;  // Use a pointer to IDisplay to allow dynamic initialization
+    IDisplay* display;  // Use a pointer to IDisplay to allow dynamic initialization
 };
 
 #endif // DISPLAYMANAGER_H

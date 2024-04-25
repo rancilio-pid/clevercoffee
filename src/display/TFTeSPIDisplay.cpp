@@ -173,6 +173,12 @@ void TFTeSPIDisplay::printRightAligned(const char* c, uint16_t y) {
     tft.drawString(c, posX, y);
 }
 
+void TFTeSPIDisplay::printRightAligned(const char* c, uint16_t y, FontType font) {
+    // TODO use font
+    int posX = tft.width() - tft.textWidth(c);
+    tft.drawString(c, posX, y);
+}
+
 void TFTeSPIDisplay::printRightAligned(float data, unsigned int digits, uint16_t y) {
     int dataDigits = getDataDigits(data);
     int charWidth = tft.textWidth("0"); // Width of a single character

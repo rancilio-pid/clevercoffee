@@ -1,6 +1,5 @@
 #include "U8g2Display.h"
 #include "../userConfig.h"
-// #include "debugSerial.h"
 #include <float.h>
 
 U8g2Display::U8g2Display(U8G2& u8g2Instance) : u8g2(u8g2Instance) {}
@@ -33,36 +32,24 @@ void U8g2Display::init(Rotation rotation) {
 }
 
 void U8g2Display::initViews() {
-    int iconWidth  = 45;
-    int iconHeight  = 45;
-    int maxBootLogoHeight = 45;
-    int margin = 2;
-    int statusIconHeight = 9;
-    int statusIconWidth = 9;
-    int statusMessageY = iconHeight - 5;
-    int height = 37; 
 
-    bootLogo = Viewport(0, 0, getWidth(), maxBootLogoHeight);
-    bootMessage = Viewport(0, maxBootLogoHeight + margin, getWidth(), getHeight() - maxBootLogoHeight - margin);
+    // these are the values for the current minimal template
+    statusbar = Viewport(0, 0, getWidth(), 12);
+    temperature = Viewport(0, 20, getWidth(), 20);
+    brewTime = Viewport(0, 44, getWidth(), 16);
+    progressbar = Viewport(0, 60, getWidth(), 4);
 
-    actionImage = Viewport(0, 0, iconWidth, iconHeight);
-    temperature = Viewport(iconWidth + margin, 0, getWidth() - iconWidth - margin, iconHeight);
-
-    statusMessage = Viewport(0, statusMessageY, getWidth(), getHeight() - iconHeight - statusIconHeight);
-    statusIcons = Viewport(0, getHeight() - statusIconHeight, getWidth() - statusIconWidth, statusIconHeight);
-    profileIcon = Viewport(getWidth() - statusIconWidth - 1, getHeight() - statusIconHeight, statusIconWidth, statusIconHeight);
-
-    softwareUpdate = Viewport(0, 0, getWidth(), getHeight()); // fullscreen
-
+    // for testing we use a different layout for the minimal template
+    // statusbar = Viewport(0, 50, getWidth(), 12);
+    // temperature = Viewport(0, 20, getWidth(), 20);
+    // brewTime = Viewport(0, 5, getWidth(), 16);
+    // progressbar = Viewport(0, 0, getWidth(), 4);
+ 
     areaMap = {
-        {Area::BootLogo, this->bootLogo},
-        {Area::BootMessage, this->bootMessage},
-        {Area::ActionImage, this->actionImage},
-        {Area::StatusMessage, this->statusMessage},
+        {Area::Statusbar, this->statusbar},
+        {Area::Progressbar, this->progressbar},
         {Area::Temperature, this->temperature},
-        {Area::StatusIcons, this->statusIcons},
-        {Area::ProfileIcon, this->profileIcon},
-        {Area::SoftwareUpdate, this->softwareUpdate},
+        {Area::BrewTime, this->brewTime}
     };
 }
 
@@ -206,6 +193,14 @@ void U8g2Display::printRightAligned(const char* c, uint16_t y) {
     //u8g2.sendBuffer();
 }
 
+void U8g2Display::printRightAligned(const char* c, uint16_t y, FontType font) {
+    setFont(font);
+    int posX = u8g2.getWidth() - u8g2.getStrWidth(c);
+    u8g2.setCursor(posX, y);
+    u8g2.print(c);
+    //u8g2.sendBuffer();
+}
+
 int U8g2Display::getStringWidth(int lenght, FontType font) {
     setFont(font);
     return getStringWidth(lenght);
@@ -251,7 +246,6 @@ void U8g2Display::printTemperatures(float input, float setPoint, bool steaming) 
     setFont(FontType::OpenIconicEmbedded);
     u8g2.drawGlyph(x - symbolWidth, y + yDeltaSymbol, 0x0046); // 11 width of symbol + margin?
 
-    // if (Input <= *activeSetPoint + 5 || activeState == State::SteamMode) { //only show setpoint if we are not steaming
     if (!steaming) {
         setFont(FontType::Big);
         u8g2.setCursor(x, y + lineHeight);
@@ -345,7 +339,7 @@ void U8g2Display::fillView(Area area, uint32_t color) {
 
 void U8g2Display::drawBorder(Area area) {
     Viewport view = getView(area);
-    u8g2.drawBox(view.getUpperLeft().X, view.getUpperLeft().Y, view.getWidth(), view.getHeight());
+    u8g2.drawFrame(view.getUpperLeft().X, view.getUpperLeft().Y, view.getWidth(), view.getHeight());
     //u8g2.sendBuffer();
 }
 

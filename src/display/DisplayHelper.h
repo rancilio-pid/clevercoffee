@@ -2,7 +2,6 @@
 #define DISPLAY_HELPER_H
 
 #include "status_images.h"
-#include "state_enum.h"
 #include "ImageDictionary.h"
 #include <map>
 #include <utility>
@@ -13,7 +12,6 @@ public:
     DisplayHelper();
 
     String StatusIconToString(StatusIcon icon);
-    String StateToString(State state);
 
     ProfileIcon getCurrentProfileIcon();
     void setCurrentProfileIcon(ProfileIcon icon);

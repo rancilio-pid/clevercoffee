@@ -8,7 +8,7 @@ class Viewport {
 public:
     Viewport();
     Viewport(Point startingPoint, int width, int height);
-    Viewport(int x, int y, int width, int height);
+    Viewport(u_int16_t x, u_int16_t y, u_int16_t width, u_int16_t height);
     int getHeight();
     int getWidth();
 
@@ -22,8 +22,8 @@ public:
 
 private:
     Point startPoint;
-    int width;
-    int height;
+    u_int16_t width;
+    u_int16_t height;
 };
 
 #endif
