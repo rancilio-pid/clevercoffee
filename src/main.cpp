@@ -277,7 +277,7 @@ SysPara<float> sysParaScaleKnownWeight(&scaleKnownWeight, 0, 2000, STO_ITEM_SCAL
 
 // Other variables
 boolean emergencyStop = false;                // Emergency stop if temperature is too high
-double EmergencyStopTemp = 120;               // Temp EmergencyStopTemp
+double EmergencyStopTemp = 145;               // Temp EmergencyStopTemp
 float inX = 0, inY = 0, inOld = 0, inSum = 0; // used for filterPressureValue()
 boolean brewDetected = 0;
 boolean setupDone = false;
@@ -438,10 +438,10 @@ Timer printDisplayTimer(&printScreen, 100);
 
 // Emergency stop if temp is too high
 void testEmergencyStop() {
-    if (temperature > EmergencyStopTemp && emergencyStop == false) {
+    if (temperature > EmergencyStopTemp) {
         emergencyStop = true;
     }
-    else if (temperature < (brewSetpoint + 5) && emergencyStop == true) {
+    else if (temperature < (setpoint + 5)) {
         emergencyStop = false;
     }
 }
