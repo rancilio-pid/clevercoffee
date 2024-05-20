@@ -888,6 +888,10 @@ void handleMachineState() {
             break;
 
         case kSteam:
+            if (steamON == 0) {
+                machineState = kPidNormal;
+            }
+
             if (emergencyStop) {
                 machineState = kEmergencyStop;
             }
