@@ -1963,14 +1963,6 @@ void looppid() {
         setpoint = brewSetpoint;
     }
 
-    // TL
-    /*if (waterON && machineState == kWater) {
-        pumpRelay.on();
-    }
-    else if (!waterON && machineState == kWater) {
-        pumpRelay.off();
-    }*/
-
     updateStandbyTimer();
 
     handleMachineState();
