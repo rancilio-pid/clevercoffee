@@ -3,53 +3,43 @@
  *
  * @brief Handler for digital water switch
  */
-/*
-uint8_t currStateWaterSwitch;
 
-void checkSteamSwitch() {
+uint8_t currStateWaterSwitch;
+ 
+void checkWaterSwitch() {
     if (FEATURE_WATERSWITCH) {
         uint8_t waterSwitchReading = waterSwitch->isPressed();
 
-        if (STEAMSWITCH_TYPE == Switch::TOGGLE) {
-            // Set steamON to 1 when steamswitch is HIGH
-            if (steamSwitchReading == HIGH) {
-                steamON = 1;
+        if (WATERSWITCH_TYPE == Switch::TOGGLE) {
+            // Set waterON to 1 when steamswitch is HIGH
+            if (waterSwitchReading == HIGH) {
+                waterON = 1;
+                pumpRelay.on();
             }
 
             // if activated via web interface then steamFirstON == 1, prevent override
-            if (steamSwitchReading == LOW && !steamFirstON) {
-                steamON = 0;
+            if (waterSwitchReading == LOW && machineState == kWater) {
+                waterON = 0;
+                pumpRelay.off();
             }
 
-            // monitor QuickMill thermoblock steam-mode
-            if (machine == QuickMill) {
-                if (steamQM_active == true) {
-                    if (checkSteamOffQM() == true) { // if true: steam-mode can be turned off
-                        steamON = 0;
-                        steamQM_active = false;
-                        lastTimeOptocouplerOn = 0;
-                    }
-                    else {
-                        steamON = 1;
-                    }
-                }
-            }
         }
-        else if (STEAMSWITCH_TYPE == Switch::MOMENTARY) {
-            if (steamSwitchReading != currStateSteamSwitch) {
-                currStateSteamSwitch = steamSwitchReading;
+        else if (WATERSWITCH_TYPE == Switch::MOMENTARY) {
+            if (waterSwitchReading != currStateWaterSwitch) {
+                currStateWaterSwitch = waterSwitchReading;
 
                 // only toggle heating power if the new button state is HIGH
-                if (currStateSteamSwitch == HIGH) {
-                    if (steamON == 0) {
-                        steamON = 1;
+                if (currStateWaterSwitch == HIGH) {
+                    if (waterON == 0) {
+                        waterON = 1;
+                        pumpRelay.on();
                     }
                     else {
-                        steamON = 0;
+                        waterON = 0;
+                        pumpRelay.off();
                     }
                 }
             }
         }
     }
 }
-*/

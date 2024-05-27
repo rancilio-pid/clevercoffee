@@ -84,6 +84,7 @@ enum MachineState {
     kShotTimerAfterBrew = 31,
     kBrewDetectionTrailing = 35,
     kSteam = 40,
+    kWater = 41,
     kBackflush = 50,
     kWaterEmpty = 70,
     kEmergencyStop = 80,
@@ -309,6 +310,8 @@ double previousInput = 0;
 double temperature, pidOutput;
 int steamON = 0;
 int steamFirstON = 0;
+int waterON = 0;
+int waterFirstON = 0; // SW activation of water switch not implemented yet
 
 #if startTn == 0
 double startKi = 0;
@@ -753,6 +756,14 @@ void handleMachineState() {
                 }
             }
 
+            if (waterON == 1) {
+                machineState = kWater;
+
+                if (standbyModeOn) {
+                    resetStandbyTimer();
+                }
+            }
+
             if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
                 machineState = kBackflush;
 
@@ -808,6 +819,10 @@ void handleMachineState() {
                 machineState = kSteam;
             }
 
+            if (waterON == 1) {
+                machineState = kWater;
+            }
+
             if (emergencyStop) {
                 machineState = kEmergencyStop;
             }
@@ -832,6 +847,10 @@ void handleMachineState() {
             if (steamON == 1) {
                 machineState = kSteam;
             }
+
+            if (waterON == 1) {
+                machineState = kWater;
+            }            
 
             if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
                 machineState = kBackflush;
@@ -870,6 +889,10 @@ void handleMachineState() {
                 machineState = kSteam;
             }
 
+            if (waterON == 1) {
+                machineState = kWater;
+            }
+
             if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
                 machineState = kBackflush;
             }
@@ -895,6 +918,41 @@ void handleMachineState() {
             if (steamON == 0) {
                 machineState = kPidNormal;
             }
+
+            if (waterON == 1) {
+                machineState = kWater;
+            }
+
+            if (emergencyStop) {
+                machineState = kEmergencyStop;
+            }
+
+            if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
+                machineState = kBackflush;
+            }
+
+            if (pidON == 0) {
+                machineState = kPidDisabled;
+            }
+
+            if (!waterFull) {
+                machineState = kWaterEmpty;
+            }
+
+            if (tempSensor->hasError()) {
+                machineState = kSensorError;
+            }
+            break;
+
+        case kWater:
+            if (waterON == 0) {
+                machineState = kPidNormal;
+            }
+
+            if (steamON == 1) {
+                machineState = kSteam;
+            }
+
 
             if (emergencyStop) {
                 machineState = kEmergencyStop;
@@ -996,7 +1054,7 @@ void handleMachineState() {
 
             brewDetection();
 
-            if (pidON || steamON || isBrewDetected) {
+            if (pidON || steamON || waterON || isBrewDetected) {
                 pidON = 1;
                 resetStandbyTimer();
 #if OLED_DISPLAY != 0
@@ -1006,7 +1064,9 @@ void handleMachineState() {
                 if (steamON) {
                     machineState = kSteam;
                 }
-                else if (isBrewDetected) {
+                else if (waterON) {
+                    machineState = kWater;
+                }else if (isBrewDetected) {
                     machineState = kBrew;
                 }
                 else {
@@ -1052,6 +1112,8 @@ char const* machinestateEnumToString(MachineState machineState) {
             return "Brew Detection Trailing";
         case kSteam:
             return "Steam";
+        case kWater:
+            return "Water";
         case kBackflush:
             return "Backflush";
         case kWaterEmpty:
@@ -1484,6 +1546,9 @@ void setup() {
     editableVars["STEAM_MODE"] = {
         .displayName = F("Steam Mode"), .hasHelpText = false, .helpText = "", .type = kUInt8, .section = sOtherSection, .position = 28, .show = [] { return false; }, .minValue = 0, .maxValue = 1, .ptr = (void*)&steamON};
 
+    editableVars["WATER_MODE"] = {
+        .displayName = F("Water Mode"), .hasHelpText = false, .helpText = "", .type = kUInt8, .section = sOtherSection, .position = 34, .show = [] { return false; }, .minValue = 0, .maxValue = 1, .ptr = (void*)&waterON};
+
     editableVars["BACKFLUSH_ON"] = {
         .displayName = F("Backflush"), .hasHelpText = false, .helpText = "", .type = kUInt8, .section = sOtherSection, .position = 29, .show = [] { return false; }, .minValue = 0, .maxValue = 1, .ptr = (void*)&backflushOn};
 
@@ -1571,6 +1636,7 @@ void setup() {
     mqttVars["brewSetpoint"] = [] { return &editableVars.at("BREW_SETPOINT"); };
     mqttVars["brewTempOffset"] = [] { return &editableVars.at("BREW_TEMP_OFFSET"); };
     mqttVars["steamON"] = [] { return &editableVars.at("STEAM_MODE"); };
+    mqttVars["waterON"] = [] { return &editableVars.at("WATER_MODE"); };
     mqttVars["steamSetpoint"] = [] { return &editableVars.at("STEAM_SETPOINT"); };
     mqttVars["brewPidDelay"] = [] { return &editableVars.at("PID_BD_DELAY"); };
     mqttVars["backflushOn"] = [] { return &editableVars.at("BACKFLUSH_ON"); };
@@ -1895,6 +1961,8 @@ void looppid() {
     }
 #endif
 
+    //TL
+    checkWaterSwitch();
     checkSteamSwitch();
     checkPowerSwitch();
 
@@ -1905,6 +1973,14 @@ void looppid() {
     else if (steamON == 0) {
         setpoint = brewSetpoint;
     }
+
+    // TL
+    /*if (waterON && machineState == kWater) {
+        pumpRelay.on();
+    }
+    else if (!waterON && machineState == kWater) {
+        pumpRelay.off();
+    }*/
 
     updateStandbyTimer();
 
