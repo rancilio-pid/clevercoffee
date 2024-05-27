@@ -309,7 +309,6 @@ double temperature, pidOutput;
 int steamON = 0;
 int steamFirstON = 0;
 int waterON = 0;
-int waterFirstON = 0; // SW activation of water switch not implemented yet
 
 #if startTn == 0
 double startKi = 0;
