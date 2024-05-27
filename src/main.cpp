@@ -172,8 +172,6 @@ Relay valveRelay(valveRelayPin, PUMP_VALVE_SSR_TYPE);
 Switch* powerSwitch;
 Switch* brewSwitch;
 Switch* steamSwitch;
-
-//TL
 Switch* waterSwitch;
 
 TempSensor* tempSensor;
@@ -441,8 +439,6 @@ Timer printDisplayTimer(&printScreen, 100);
 #include "powerHandler.h"
 #include "scaleHandler.h"
 #include "steamHandler.h"
-
-//TL
 #include "waterHandler.h"
 
 // Emergency stop if temp is too high
@@ -1724,7 +1720,6 @@ void setup() {
         steamSwitch = new IOSwitch(PIN_STEAMSWITCH, GPIOPin::IN_HARDWARE, STEAMSWITCH_TYPE, STEAMSWITCH_MODE);
     }
 
-    //TL
     if (FEATURE_WATERSWITCH) {
         waterSwitch = new IOSwitch(PIN_WATERSWITCH, GPIOPin::IN_HARDWARE, WATERSWITCH_TYPE, WATERSWITCH_MODE);
     }
@@ -1961,7 +1956,6 @@ void looppid() {
     }
 #endif
 
-    //TL
     checkWaterSwitch();
     checkSteamSwitch();
     checkPowerSwitch();
