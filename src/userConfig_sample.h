@@ -59,7 +59,7 @@ enum MACHINE {
 #define FEATURE_BREWSWITCH    0                       // 0 = deactivated, 1 = activated
 #define BREWSWITCH_TYPE       Switch::TOGGLE          // Switch::TOGGLE or Switch::MOMENTARY (trigger)
 #define BREWSWITCH_MODE       Switch::NORMALLY_OPEN   // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
-#define FEATURE_WATERSWITCH   1                       // 0 = deactivated, 1 = activated
+#define FEATURE_WATERSWITCH   0                       // 0 = deactivated, 1 = activated
 #define WATERSWITCH_TYPE      Switch::TOGGLE          // Switch::TOGGLE or Switch::MOMENTARY (trigger)
 #define WATERSWITCH_MODE      Switch::NORMALLY_OPEN   // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
 #define FEATURE_STEAMSWITCH   0                       // 0 = deactivated, 1 = activated
