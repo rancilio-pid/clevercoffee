@@ -430,9 +430,8 @@ U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, OLED_CS, OLED_DC, /* reset=*
 #elif (DISPLAYTEMPLATE == 20)
 #include "display/displayTemplateUpright.h"
 #endif
-#endif
-
 Timer printDisplayTimer(&printScreen, 100);
+#endif
 
 #include "powerHandler.h"
 #include "scaleHandler.h"
@@ -1040,7 +1039,9 @@ void handleMachineState() {
 
         case kStandby:
             if (standbyModeRemainingTimeDisplayOffMillis == 0) {
+#if OLED_DISPLAY != 0
                 u8g2.setPowerSave(1);
+#endif
             }
 
             brewDetection();
@@ -1048,7 +1049,9 @@ void handleMachineState() {
             if (pidON || steamON || waterON || isBrewDetected) {
                 pidON = 1;
                 resetStandbyTimer();
+#if OLED_DISPLAY != 0
                 u8g2.setPowerSave(0);
+#endif
 
                 if (steamON) {
                     machineState = kSteam;
@@ -1924,7 +1927,7 @@ void looppid() {
 
     handleMachineState();
 
-#if (FEATURE_SCALE == 1 && BREWCONTROL_TYPE == 0) // SHOTTIMER with scale
+#if (FEATURE_SCALE == 1 && BREWCONTROL_TYPE < 2) // SHOTTIMER with scale
     shottimerscale();
 #endif
 
