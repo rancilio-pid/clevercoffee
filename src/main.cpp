@@ -845,7 +845,7 @@ void handleMachineState() {
 
             if (waterON == 1) {
                 machineState = kWater;
-            }            
+            }
 
             if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
                 machineState = kBackflush;
@@ -947,7 +947,6 @@ void handleMachineState() {
             if (steamON == 1) {
                 machineState = kSteam;
             }
-
 
             if (emergencyStop) {
                 machineState = kEmergencyStop;
@@ -1057,7 +1056,8 @@ void handleMachineState() {
                 }
                 else if (waterON) {
                     machineState = kWater;
-                }else if (isBrewDetected) {
+                }
+                else if (isBrewDetected) {
                     machineState = kBrew;
                 }
                 else {
@@ -1714,7 +1714,6 @@ void setup() {
     if (FEATURE_WATERSWITCH) {
         waterSwitch = new IOSwitch(PIN_WATERSWITCH, GPIOPin::IN_HARDWARE, WATERSWITCH_TYPE, WATERSWITCH_MODE);
     }
-
 
     // IF optocoupler selected
     if (BREWDETECTION_TYPE == 3) {
