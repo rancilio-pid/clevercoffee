@@ -1541,9 +1541,6 @@ void setup() {
     editableVars["STEAM_MODE"] = {
         .displayName = F("Steam Mode"), .hasHelpText = false, .helpText = "", .type = kUInt8, .section = sOtherSection, .position = 28, .show = [] { return false; }, .minValue = 0, .maxValue = 1, .ptr = (void*)&steamON};
 
-    editableVars["WATER_MODE"] = {
-        .displayName = F("Water Mode"), .hasHelpText = false, .helpText = "", .type = kUInt8, .section = sOtherSection, .position = 34, .show = [] { return false; }, .minValue = 0, .maxValue = 1, .ptr = (void*)&waterON};
-
     editableVars["BACKFLUSH_ON"] = {
         .displayName = F("Backflush"), .hasHelpText = false, .helpText = "", .type = kUInt8, .section = sOtherSection, .position = 29, .show = [] { return false; }, .minValue = 0, .maxValue = 1, .ptr = (void*)&backflushOn};
 
@@ -1631,7 +1628,6 @@ void setup() {
     mqttVars["brewSetpoint"] = [] { return &editableVars.at("BREW_SETPOINT"); };
     mqttVars["brewTempOffset"] = [] { return &editableVars.at("BREW_TEMP_OFFSET"); };
     mqttVars["steamON"] = [] { return &editableVars.at("STEAM_MODE"); };
-    mqttVars["waterON"] = [] { return &editableVars.at("WATER_MODE"); };
     mqttVars["steamSetpoint"] = [] { return &editableVars.at("STEAM_SETPOINT"); };
     mqttVars["brewPidDelay"] = [] { return &editableVars.at("PID_BD_DELAY"); };
     mqttVars["backflushOn"] = [] { return &editableVars.at("BACKFLUSH_ON"); };
