@@ -84,6 +84,7 @@ enum MachineState {
     kShotTimerAfterBrew = 31,
     kBrewDetectionTrailing = 35,
     kSteam = 40,
+    kWater = 41,
     kBackflush = 50,
     kWaterEmpty = 70,
     kEmergencyStop = 80,
@@ -169,6 +170,7 @@ Relay valveRelay(valveRelayPin, PUMP_VALVE_SSR_TYPE);
 Switch* powerSwitch;
 Switch* brewSwitch;
 Switch* steamSwitch;
+Switch* waterSwitch;
 
 TempSensor* tempSensor;
 
@@ -305,6 +307,7 @@ double previousInput = 0;
 double temperature, pidOutput;
 int steamON = 0;
 int steamFirstON = 0;
+int waterON = 0;
 
 #if startTn == 0
 double startKi = 0;
@@ -433,6 +436,7 @@ Timer printDisplayTimer(&printScreen, 100);
 #include "powerHandler.h"
 #include "scaleHandler.h"
 #include "steamHandler.h"
+#include "waterHandler.h"
 
 // Emergency stop if temp is too high
 void testEmergencyStop() {
@@ -747,6 +751,14 @@ void handleMachineState() {
                 }
             }
 
+            if (waterON == 1) {
+                machineState = kWater;
+
+                if (standbyModeOn) {
+                    resetStandbyTimer();
+                }
+            }
+
             if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
                 machineState = kBackflush;
 
@@ -802,6 +814,10 @@ void handleMachineState() {
                 machineState = kSteam;
             }
 
+            if (waterON == 1) {
+                machineState = kWater;
+            }
+
             if (emergencyStop) {
                 machineState = kEmergencyStop;
             }
@@ -826,6 +842,10 @@ void handleMachineState() {
 
             if (steamON == 1) {
                 machineState = kSteam;
+            }
+
+            if (waterON == 1) {
+                machineState = kWater;
             }
 
             if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
@@ -865,6 +885,10 @@ void handleMachineState() {
                 machineState = kSteam;
             }
 
+            if (waterON == 1) {
+                machineState = kWater;
+            }
+
             if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
                 machineState = kBackflush;
             }
@@ -889,6 +913,40 @@ void handleMachineState() {
         case kSteam:
             if (steamON == 0) {
                 machineState = kPidNormal;
+            }
+
+            if (waterON == 1) {
+                machineState = kWater;
+            }
+
+            if (emergencyStop) {
+                machineState = kEmergencyStop;
+            }
+
+            if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
+                machineState = kBackflush;
+            }
+
+            if (pidON == 0) {
+                machineState = kPidDisabled;
+            }
+
+            if (!waterFull) {
+                machineState = kWaterEmpty;
+            }
+
+            if (tempSensor->hasError()) {
+                machineState = kSensorError;
+            }
+            break;
+
+        case kWater:
+            if (waterON == 0) {
+                machineState = kPidNormal;
+            }
+
+            if (steamON == 1) {
+                machineState = kSteam;
             }
 
             if (emergencyStop) {
@@ -987,7 +1045,7 @@ void handleMachineState() {
 
             brewDetection();
 
-            if (pidON || steamON || isBrewDetected) {
+            if (pidON || steamON || waterON || isBrewDetected) {
                 pidON = 1;
                 resetStandbyTimer();
 #if OLED_DISPLAY != 0
@@ -996,6 +1054,9 @@ void handleMachineState() {
 
                 if (steamON) {
                     machineState = kSteam;
+                }
+                else if (waterON) {
+                    machineState = kWater;
                 }
                 else if (isBrewDetected) {
                     machineState = kBrew;
@@ -1043,6 +1104,8 @@ char const* machinestateEnumToString(MachineState machineState) {
             return "Brew Detection Trailing";
         case kSteam:
             return "Steam";
+        case kWater:
+            return "Water";
         case kBackflush:
             return "Backflush";
         case kWaterEmpty:
@@ -1613,6 +1676,10 @@ void setup() {
         steamSwitch = new IOSwitch(PIN_STEAMSWITCH, GPIOPin::IN_HARDWARE, STEAMSWITCH_TYPE, STEAMSWITCH_MODE);
     }
 
+    if (FEATURE_WATERSWITCH) {
+        waterSwitch = new IOSwitch(PIN_WATERSWITCH, GPIOPin::IN_HARDWARE, WATERSWITCH_TYPE, WATERSWITCH_MODE);
+    }
+
     // IF optocoupler selected
     if (BREWDETECTION_TYPE == 3) {
         if (optocouplerType == HIGH) {
@@ -1843,6 +1910,7 @@ void looppid() {
     }
 #endif
 
+    checkWaterSwitch();
     checkSteamSwitch();
     checkPowerSwitch();
 
