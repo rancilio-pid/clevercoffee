@@ -35,8 +35,7 @@ enum MACHINE {
 #define DISPLAYROTATE         U8G2_R0 // rotate display clockwise: U8G2_R0 = no rotation; U8G2_R1 = 90°; U8G2_R2 = 180°; U8G2_R3 = 270°
 #define SCREEN_WIDTH          128     // OLED display width, in pixels
 #define SCREEN_HEIGHT         64      // OLED display height, in pixels
-#define FEATURE_SHOTTIMER     1       // 0 = deactivated, 1 = activated
-#define SHOTTIMER_TYPE        1       // 1 = timer 2 = timer with scale
+#define FEATURE_SHOTTIMER     1       // 0 = deactivated, 1 = activated (with weight if FEATURE_SCALE activated)
 #define FEATURE_HEATINGLOGO   1       // 0 = deactivated, 1 = activated
 #define FEATURE_PIDOFF_LOGO   1       // 0 = deactivated, 1 = activated
 #define SHOTTIMERDISPLAYDELAY 3000    // time in ms that shot timer will be shown after brew finished
@@ -51,9 +50,9 @@ enum MACHINE {
 #define WIFICONNECTIONDELAY 10000          // delay between reconnects in ms
 
 // PID & Hardware
-#define BREWCONTROL_TYPE      0                       // 0 = off (no brewing control), 1 = Brew by time (with preinfusion), 2 = Brew by weight (from scale)
+#define FEATURE_BREWCONTROL   0                       // 0 = deactivated, 1 = activated
 #define FEATURE_BREWDETECTION 1                       // 0 = deactivated, 1 = activated
-#define BREWDETECTION_TYPE    1                       // 1 = Software (BREWCONTROL_TYPE 0), 2 = Hardware BREWCONTROL_TYPE 1 or 2, 3 = optocoupler for BREWCONTROL_TYPE 0
+#define BREWDETECTION_TYPE    1                       // 1 = Software (FEATURE_BREWCONTROL 0), 2 = Hardware FEATURE_BREWCONTROL 1, 3 = optocoupler for FEATURE_BREWCONTROL 0
 #define FEATURE_POWERSWITCH   0                       // 0 = deactivated, 1 = activated
 #define POWERSWITCH_TYPE      Switch::TOGGLE          // Switch::TOGGLE or Switch::MOMENTARY (trigger)
 #define POWERSWITCH_MODE      Switch::NORMALLY_OPEN   // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
