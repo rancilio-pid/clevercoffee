@@ -69,7 +69,7 @@ void printScreen() {
         u8g2.print(timeBrewed / 1000, 0);
         u8g2.print("/");
 
-        if (BREWCONTROL_TYPE == 0) {
+        if (FEATURE_BREWCONTROL == 0) {
             u8g2.print(brewtimesoftware, 0);
         }
         else {

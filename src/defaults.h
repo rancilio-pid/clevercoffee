@@ -73,7 +73,7 @@ int writeSysParamsToStorage(void);
 #define BREW_TEMP_OFFSET_MAX   20
 #define BREW_TEMP_TIME_MIN     1
 #define BREW_TEMP_TIME_MAX     180
-#define BREW_TIME_MIN          1
+#define BREW_TIME_MIN          0
 #define BREW_TIME_MAX          180
 #define BREW_PID_DELAY_MIN     0
 #define BREW_PID_DELAY_MAX     60
