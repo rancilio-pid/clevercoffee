@@ -186,6 +186,9 @@ void shottimerscale() {
                     weightPreBrew = weight;
                     shottimerCounter = 20;
                 }
+                else if (timeBrewed > 0) {
+                    weightBrew = 0;
+                }
             }
 
             break;
