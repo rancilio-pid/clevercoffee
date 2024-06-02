@@ -65,8 +65,11 @@ void printScreen() {
             u8g2.print(weight, 0);
         }
 
-        u8g2.print("/");
-        u8g2.print(weightSetpoint, 0);
+        if (weightSetpoint > 0) {
+            u8g2.print("/");
+            u8g2.print(weightSetpoint, 0);
+        }
+
         u8g2.print(" (");
         u8g2.print(weightBrew, 1);
         u8g2.print(")");
@@ -76,13 +79,20 @@ void printScreen() {
     u8g2.setCursor(32, 36);
     u8g2.print("t: ");
     u8g2.print(timeBrewed / 1000, 0);
-    u8g2.print("/");
 
-    if (BREWCONTROL_TYPE == 0) {
+    if (FEATURE_BREWCONTROL == 0) {
+        u8g2.print("/");
         u8g2.print(brewtimesoftware, 0);
     }
     else {
-        u8g2.print(totalBrewTime / 1000, 1);
+        if (brewTime > 0) {
+            u8g2.print("/");
+            u8g2.print(totalBrewTime / 1000, 0);
+        }
+
+        u8g2.print(" (");
+        u8g2.print(lastBrewTime / 1000, 1);
+        u8g2.print(")");
     }
 
 #if (FEATURE_PRESSURESENSOR == 1)

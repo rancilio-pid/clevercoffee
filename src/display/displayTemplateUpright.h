@@ -21,7 +21,7 @@ void printScreen() {
     if (((machineState == kPidNormal || machineState == kBrewDetectionTrailing) || ((machineState == kBrew || machineState == kShotTimerAfterBrew) && FEATURE_SHOTTIMER == 0) || // shottimer == 0, auch Bezug anzeigen
          (machineState == kPidNormal && (setpoint - temperature) > 5. && FEATURE_HEATINGLOGO == 0) || ((machineState == kPidDisabled) && FEATURE_PIDOFF_LOGO == 0)) &&
         (brewSwitchState != kBrewSwitchFlushOff)) {
-        if (!sensorError) {
+        if (!tempSensor->hasError()) {
             u8g2.clearBuffer();
             u8g2.setCursor(1, 14);
             u8g2.print(langstring_current_temp_rot_ur);
@@ -103,7 +103,7 @@ void printScreen() {
             u8g2.print(timeBrewed / 1000, 0);
             u8g2.print("/");
 
-            if (BREWCONTROL_TYPE == 0) {
+            if (FEATURE_BREWCONTROL == 0) {
                 u8g2.print(brewtimesoftware, 0);     // deaktivieren wenn Preinfusion ( // voransetzen )
             }
             else {

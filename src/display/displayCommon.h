@@ -241,7 +241,7 @@ bool displayShottimer() {
         return false;
     }
 
-    if ((machineState == kBrew || brewSwitchState == kBrewSwitchFlushOff) && SHOTTIMER_TYPE == 1) {
+    if (machineState == kBrew || brewSwitchState == kBrewSwitchFlushOff) {
         u8g2.clearBuffer();
 
         if (brewSwitchState != kBrewSwitchFlushOff) {
@@ -251,7 +251,18 @@ bool displayShottimer() {
             u8g2.drawXBMP(0, 12, Manual_Flush_Logo_width, Manual_Flush_Logo_height, Manual_Flush_Logo);
         }
 
+#if (FEATURE_SCALE == 1)
+        u8g2.setFont(u8g2_font_profont22_tf);
+        u8g2.setCursor(64, 15);
+        u8g2.print(timeBrewed / 1000, 1);
+        u8g2.print("s");
+        u8g2.setCursor(64, 38);
+        u8g2.print(weightBrew, 1);
+        u8g2.print("g");
+        u8g2.setFont(u8g2_font_profont11_tf);
+#else
         displayBrewtime(48, 25, timeBrewed);
+#endif
 
         displayWaterIcon(119, 1);
         u8g2.sendBuffer();
@@ -262,39 +273,11 @@ bool displayShottimer() {
      * nothing should be done, otherwise wrong time is displayed
      * because the switch is pressed later than totalBrewTime
      */
-    else if ((machineState == kShotTimerAfterBrew && brewSwitchState != kBrewSwitchFlushOff) && SHOTTIMER_TYPE == 1) {
+    else if (machineState == kShotTimerAfterBrew && brewSwitchState != kBrewSwitchFlushOff) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
 
-        displayBrewtime(48, 25, lastBrewTime);
-
-        displayWaterIcon(119, 1);
-        u8g2.sendBuffer();
-        return true;
-    }
-
-#if FEATURE_SCALE == 1
-    else if ((machineState == kBrew) && SHOTTIMER_TYPE == 2) {
-        u8g2.clearBuffer();
-
-        // temp icon
-        u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
-        u8g2.setFont(u8g2_font_profont22_tf);
-        u8g2.setCursor(64, 15);
-        u8g2.print(timeBrewed / 1000, 1);
-        u8g2.print("s");
-        u8g2.setCursor(64, 38);
-        u8g2.print(weightBrew, 1);
-        u8g2.print("g");
-        u8g2.setFont(u8g2_font_profont11_tf);
-        displayWaterIcon(119, 1);
-        u8g2.sendBuffer();
-        return true;
-    }
-
-    else if (((machineState == kShotTimerAfterBrew) && SHOTTIMER_TYPE == 2)) {
-        u8g2.clearBuffer();
-        u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
+#if (FEATURE_SCALE == 1)
         u8g2.setFont(u8g2_font_profont22_tf);
         u8g2.setCursor(64, 15);
         u8g2.print(lastBrewTime / 1000, 1);
@@ -303,11 +286,14 @@ bool displayShottimer() {
         u8g2.print(weightBrew, 1);
         u8g2.print("g");
         u8g2.setFont(u8g2_font_profont11_tf);
+#else
+        displayBrewtime(48, 25, lastBrewTime);
+#endif
+
         displayWaterIcon(119, 1);
         u8g2.sendBuffer();
         return true;
     }
-#endif
     return false;
 }
 
