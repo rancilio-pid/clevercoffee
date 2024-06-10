@@ -71,8 +71,11 @@ enum MACHINE {
 #define LED_TYPE              LED::STANDARD           // STANDARD_LED for an LED connected to a GPIO pin, WS2812 for adressable LEDs
 #define FEATURE_WATER_SENS    0                       // 0 = deactivated, 1 = activated
 #define WATER_SENS_TYPE       Switch::NORMALLY_CLOSED // Switch::NORMALLY_CLOSED for sensor XKC-Y25-NPN or Switch::NORMALLY_OPEN for XKC-Y25-PNP
-
 #define FEATURE_PRESSURESENSOR 0                      // 0 = deactivated, 1 = activated
+#define FEATURE_CURRENT_SENS   1                      //0 = deactivated, 1 = activated
+#if FEATURE_CURRENT_SENS == 1                         
+    #define CURRENT_LIMIT 30                          // The Limit for EmergencyStopCurrent in Ampere
+#endif 
 
 // Brew Scale
 #define FEATURE_SCALE 0 // 0 = deactivated, 1 = activated

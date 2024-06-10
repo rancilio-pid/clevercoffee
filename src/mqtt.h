@@ -397,14 +397,15 @@ DiscoveryObject GenerateButtonDevice(String name, String displayName, String pay
 /**
  * @brief Generate a sensor device for Home Assistant MQTT discovery
  *
- * This function generates a sensor device configuration for Home Assistant MQTT discovery. It creates a `DiscoveryObject` containing the necessary information for Home Assistant to discover and monitor the sensor device.
+ * This function generates a sensor device configuration for Home Assistant MQTT discovery. 
+ * It creates a `DiscoveryObject` containing the necessary information for Home Assistant to discover and monitor the sensor device.
  *
  * @param name The name of the sensor (used in MQTT topics)
  * @param displayName The display name of the sensor (shown in Home Assistant)
- * @param unit_of_measurement The unit of measurement for the sensor data (default: "°C")
+ * @param unit_of_measurement The unit of measurement for the sensor data 
  * @return A `DiscoveryObject` containing the sensor device configuration
  */
-DiscoveryObject GenerateSensorDevice(String name, String displayName, String unit_of_measurement = "°C", String device_class = "temperature") {
+DiscoveryObject GenerateSensorDevice(String name, String displayName, String unit_of_measurement, String device_class) {
     String mqtt_topic = String(mqtt_topic_prefix) + String(hostname);
     DiscoveryObject sensor_device;
     String unique_id = "clevercoffee-" + String(hostname);
@@ -519,13 +520,17 @@ int sendHASSIODiscoveryMsg() {
     DiscoveryObject brewtime = GenerateNumberDevice("brewtime", "Brew time", BREW_TIME_MIN, BREW_TIME_MAX, 0.1, "s");
 
     // Sensor Devices
-    DiscoveryObject actual_temperature = GenerateSensorDevice("temperature", "Boiler Temperature");
+    DiscoveryObject actual_temperature = GenerateSensorDevice("temperature", "Boiler Temperature","°C", "temperature");
     DiscoveryObject heaterPower = GenerateSensorDevice("heaterPower", "Heater Power", "%", "power_factor");
     DiscoveryObject machineStateDevice = GenerateSensorDevice("machineState", "Machine State", "", "enum");
     DiscoveryObject currentWeight = GenerateSensorDevice("currentWeight", "Weight", "g", "weight");
 
 #if FEATURE_PRESSURESENSOR == 1
     DiscoveryObject pressure = GenerateSensorDevice("pressure", "Pressure", "bar", "pressure");
+#endif
+#if FEATURE_CURRENT_SENS==1
+// DiscoveryObject momentary_power = GenerateSensorDevice("power", "Power Consumption","W", "power");
+    DiscoveryObject momentary_current = GenerateSensorDevice("current", "Current Consumtion","A", "current");
 #endif
 
     // Switch Devices
@@ -561,6 +566,12 @@ int sendHASSIODiscoveryMsg() {
 #if FEATURE_PRESSURESENSOR == 1
                                                      ,
                                                      pressure
+#endif
+#if FEATURE_CURRENT_SENS == 1
+                                                    ,
+                                                    momentary_current
+                                                     //,
+                                                     //momentary_power
 #endif
     };
 

@@ -42,6 +42,7 @@
 #include "hardware/TempSensorDallas.h"
 #include "hardware/TempSensorTSIC.h"
 #include "hardware/pinmapping.h"
+#include "hardware/CurrentSensorAnalog.h"
 
 // User configuration & defaults
 #include "defaults.h"
@@ -148,6 +149,10 @@ float inputPressureFilter = 0;
 const unsigned long intervalPressure = 100;
 unsigned long previousMillisPressure; // initialisation at the end of init()
 #endif
+//Current Sensor
+#if FEATURE_CURRENT_SENS == 1
+        double current;
+#endif 
 
 Switch* waterSensor;
 
@@ -171,6 +176,7 @@ Switch* brewSwitch;
 Switch* steamSwitch;
 
 TempSensor* tempSensor;
+CurrentSensor* currentSensor;
 
 #include "isr.h"
 
@@ -275,8 +281,9 @@ SysPara<float> sysParaScale2Calibration(&scale2Calibration, -100000, 100000, STO
 SysPara<float> sysParaScaleKnownWeight(&scaleKnownWeight, 0, 2000, STO_ITEM_SCALE_KNOWN_WEIGHT);
 
 // Other variables
-boolean emergencyStop = false;                // Emergency stop if temperature is too high
+boolean emergencyStop = false;                // Emergency stop if temperature or current is too high
 const double EmergencyStopTemp = 145;         // Temp EmergencyStopTemp
+const double EmergencyStopCurrent = CURRENT_LIMIT;         // Current EmergencyStopCurrent
 float inX = 0, inY = 0, inOld = 0, inSum = 0; // used for filterPressureValue()
 boolean brewDetected = 0;
 boolean setupDone = false;
@@ -290,6 +297,7 @@ boolean waterFull = true;
 Timer loopWater(&checkWater, 200);  // Check water level every 200 ms
 int waterCheckConsecutiveReads = 0; // Counter for consecutive readings of water sensor
 const int waterCountsNeeded = 3;    // Number of same readings to change water sensing
+
 
 // Moving average for software brew detection
 unsigned long timeBrewDetection = 0;
@@ -434,12 +442,12 @@ Timer printDisplayTimer(&printScreen, 100);
 #include "scaleHandler.h"
 #include "steamHandler.h"
 
-// Emergency stop if temp is too high
+// Emergency stop if temp or current is too high
 void testEmergencyStop() {
-    if (temperature > EmergencyStopTemp && emergencyStop == false) {
+    if ( ( temperature > EmergencyStopTemp || current > EmergencyStopCurrent ) && emergencyStop == false) {
         emergencyStop = true;
     }
-    else if (temperature < (brewSetpoint + 5) && emergencyStop == true) {
+    else if ((temperature < (brewSetpoint + 5)|| current < EmergencyStopCurrent) && emergencyStop == true) {
         emergencyStop = false;
     }
 }
@@ -707,6 +715,7 @@ boolean checkSteamOffQM() {
 
 /**
  * @brief Handle the different states of the machine
+ * @todo implement currentsensor properly: whats machinestate, kPidNormal...
  */
 void handleMachineState() {
     switch (machineState) {
@@ -716,6 +725,9 @@ void handleMachineState() {
             }
 
             if (tempSensor->hasError()) {
+                machineState = kSensorError;
+            }
+            if (currentSensor->hasError()) {
                 machineState = kSensorError;
             }
 
@@ -1588,6 +1600,10 @@ void setup() {
     mqttSensors["currentWeight"] = [] { return weight; };
 #endif
 
+#if FEATURE_CURRENT_SENS == 1
+    mqttSensors["current"] = [] { return current; };
+#endif
+
     initTimer1();
 
     storageSetup();
@@ -1698,8 +1714,13 @@ void setup() {
     }
 
     temperature = tempSensor->getCurrentTemperature();
+    current=currentSensor->getCurrentCurrent();
 
     temperature -= brewTempOffset;
+
+#if FEATURE_CURRENT_SENS == 1
+    currentSensor = new CurrentSensorAnalog(PIN_CURRENTSENSOR);
+#endif
 
 // Init Scale
 #if FEATURE_SCALE == 1
@@ -1787,6 +1808,10 @@ void looppid() {
 
     // Update the temperature:
     temperature = tempSensor->getCurrentTemperature();
+
+#if FEATURE_CURRENT_SENS == 1
+    current = currentSensor->getCurrentCurrent();
+#endif
 
     if (machineState != kSteam) {
         temperature -= brewTempOffset;

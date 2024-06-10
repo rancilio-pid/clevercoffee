@@ -16,7 +16,7 @@ class Timer {
         Timer() = delete;
 
         /**
-         * @brief COnstructor taking a function pointer and the desired interval
+         * @brief Constructor taking a function pointer and the desired interval
          *
          * @param func Function pointer for the callback to be executed upon timer expiry
          * @param long Desired interval between calls in milliseconds
