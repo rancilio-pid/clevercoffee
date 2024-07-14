@@ -52,7 +52,7 @@ enum MACHINE {
 // PID & Hardware
 #define FEATURE_BREWCONTROL   0                       // 0 = deactivated, 1 = activated
 #define FEATURE_BREWDETECTION 1                       // 0 = deactivated, 1 = activated
-#define BREWDETECTION_TYPE    1                       // 1 = Software (FEATURE_BREWCONTROL 0), 2 = Hardware FEATURE_BREWCONTROL 1, 3 = optocoupler for FEATURE_BREWCONTROL 0
+#define BREWDETECTION_TYPE    1                       // 1 = Software (FEATURE_BREWCONTROL 0), 2 = Hardware (FEATURE_BREWCONTROL 1), 3 = Optocoupler (FEATURE_BREWCONTROL 0)
 #define FEATURE_POWERSWITCH   0                       // 0 = deactivated, 1 = activated
 #define POWERSWITCH_TYPE      Switch::TOGGLE          // Switch::TOGGLE or Switch::MOMENTARY (trigger)
 #define POWERSWITCH_MODE      Switch::NORMALLY_OPEN   // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
