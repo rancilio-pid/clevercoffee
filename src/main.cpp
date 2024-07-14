@@ -1301,7 +1301,7 @@ void setup() {
 
     editableVars["BREW_TIME"] = {.displayName = F("Brew Time (s)"),
                                  .hasHelpText = true,
-                                 .helpText = F("Stop brew after this time --> 0=Deactivated"),
+                                 .helpText = F("Stop brew after this time. Set to 0 to deactivate brew-by-time-feature."),
                                  .type = kDouble,
                                  .section = sBrewSection,
                                  .position = 14,
@@ -1334,7 +1334,7 @@ void setup() {
 
     editableVars["SCALE_WEIGHTSETPOINT"] = {.displayName = F("Brew weight setpoint (g)"),
                                             .hasHelpText = true,
-                                            .helpText = F("Brew until this weight has been measured. --> 0=Deactivated"),
+                                            .helpText = F("Brew is running until this weight has been measured. Set to 0 to deactivate brew-by-weight-feature."),
                                             .type = kDouble,
                                             .section = sBrewSection,
                                             .position = 17,
