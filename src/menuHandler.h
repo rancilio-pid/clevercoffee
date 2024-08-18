@@ -43,7 +43,7 @@ void saveStandbyTime() {
 }
 
 bool hasBrewControl() {
-    return BREWCONTROL_TYPE > 0;
+    return FEATURE_BREWCONTROL > 0;
 }
 
 bool hasScale() {
