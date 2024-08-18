@@ -11,14 +11,14 @@ void checkWaterSwitch() {
         uint8_t waterSwitchReading = waterSwitch->isPressed();
 
         if (WATERSWITCH_TYPE == Switch::TOGGLE) {
-            // Set waterON to 1 when waterswitch is HIGH
+            // Set hotWaterOn to 1 when waterswitch is HIGH
             if (waterSwitchReading == HIGH) {
-                waterON = 1;
+                hotWaterOn = 1;
                 pumpRelay.on();
             }
 
-            if (waterSwitchReading == LOW && machineState == kWater) {
-                waterON = 0;
+            if (waterSwitchReading == LOW && machineState == kHotWater) {
+                hotWaterOn = 0;
                 pumpRelay.off();
             }
         }
@@ -27,12 +27,12 @@ void checkWaterSwitch() {
                 currStateWaterSwitch = waterSwitchReading;
 
                 if (currStateWaterSwitch == HIGH) {
-                    if (waterON == 0) {
-                        waterON = 1;
+                    if (hotWaterOn == 0) {
+                        hotWaterOn = 1;
                         pumpRelay.on();
                     }
                     else {
-                        waterON = 0;
+                        hotWaterOn = 0;
                         pumpRelay.off();
                     }
                 }

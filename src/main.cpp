@@ -83,7 +83,7 @@ enum MachineState {
     kBrew = 30,
     kShotTimerAfterBrew = 31,
     kBrewDetectionTrailing = 35,
-    kWater = 40,
+    kHotWater = 40,
     kSteam = 50,
     kBackflush = 60,
     kWaterEmpty = 70,
@@ -287,6 +287,7 @@ const double EmergencyStopTemp = 145;         // Temp EmergencyStopTemp
 float inX = 0, inY = 0, inOld = 0, inSum = 0; // used for filterPressureValue()
 boolean brewDetected = 0;
 boolean setupDone = false;
+int hotWaterOn = 0;
 
 // Water sensor
 boolean waterFull = true;
@@ -308,7 +309,6 @@ double previousInput = 0;
 double temperature, pidOutput;
 int steamON = 0;
 int steamFirstON = 0;
-int waterON = 0;
 
 #if startTn == 0
 double startKi = 0;
@@ -743,8 +743,8 @@ void handleMachineState() {
                 }
             }
 
-            if (waterON == 1) {
-                machineState = kWater;
+            if (hotWaterOn == 1) {
+                machineState = kHotWater;
 
                 if (standbyModeOn) {
                     resetStandbyTimer();
@@ -810,8 +810,8 @@ void handleMachineState() {
                 machineState = kBrewDetectionTrailing;
             }
 
-            if (waterON == 1) {
-                machineState = kWater;
+            if (hotWaterOn == 1) {
+                machineState = kHotWater;
             }
 
             if (steamON == 1) {
@@ -839,8 +839,8 @@ void handleMachineState() {
                 machineState = kBrewDetectionTrailing;
             }
 
-            if (waterON == 1) {
-                machineState = kWater;
+            if (hotWaterOn == 1) {
+                machineState = kHotWater;
             }
 
             if (steamON == 1) {
@@ -880,8 +880,8 @@ void handleMachineState() {
                 machineState = kBrew;
             }
 
-            if (waterON == 1) {
-                machineState = kWater;
+            if (hotWaterOn == 1) {
+                machineState = kHotWater;
             }
 
             if (steamON == 1) {
@@ -909,8 +909,8 @@ void handleMachineState() {
             }
             break;
 
-        case kWater:
-            if (waterON == 0) {
+        case kHotWater:
+            if (hotWaterOn == 0) {
                 machineState = kPidNormal;
             }
 
@@ -940,8 +940,8 @@ void handleMachineState() {
             break;
 
         case kSteam:
-            if (waterON == 1) {
-                machineState = kWater;
+            if (hotWaterOn == 1) {
+                machineState = kHotWater;
             }
 
             if (steamON == 0) {
@@ -1048,7 +1048,7 @@ void handleMachineState() {
 
             brewDetection();
 
-            if (pidON || steamON || waterON || isBrewDetected) {
+            if (pidON || steamON || hotWaterOn || isBrewDetected) {
                 pidON = 1;
                 resetStandbyTimer();
 #if OLED_DISPLAY != 0
@@ -1058,8 +1058,8 @@ void handleMachineState() {
                 if (steamON) {
                     machineState = kSteam;
                 }
-                else if (waterON) {
-                    machineState = kWater;
+                else if (hotWaterOn) {
+                    machineState = kHotWater;
                 }
                 else if (isBrewDetected) {
                     machineState = kBrew;
@@ -1105,8 +1105,8 @@ char const* machinestateEnumToString(MachineState machineState) {
             return "Shot Timer After Brew";
         case kBrewDetectionTrailing:
             return "Brew Detection Trailing";
-        case kWater:
-            return "Water";
+        case kHotWater:
+            return "Hot Water";
         case kSteam:
             return "Steam";
         case kBackflush:
