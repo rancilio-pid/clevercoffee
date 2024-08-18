@@ -83,9 +83,9 @@ enum MachineState {
     kBrew = 30,
     kShotTimerAfterBrew = 31,
     kBrewDetectionTrailing = 35,
-    kSteam = 40,
-    kWater = 41,
-    kBackflush = 50,
+    kWater = 40,
+    kSteam = 50,
+    kBackflush = 60,
     kWaterEmpty = 70,
     kEmergencyStop = 80,
     kPidDisabled = 90,
@@ -741,16 +741,16 @@ void handleMachineState() {
                 }
             }
 
-            if (steamON == 1) {
-                machineState = kSteam;
+            if (waterON == 1) {
+                machineState = kWater;
 
                 if (standbyModeOn) {
                     resetStandbyTimer();
                 }
             }
 
-            if (waterON == 1) {
-                machineState = kWater;
+            if (steamON == 1) {
+                machineState = kSteam;
 
                 if (standbyModeOn) {
                     resetStandbyTimer();
@@ -808,12 +808,12 @@ void handleMachineState() {
                 machineState = kBrewDetectionTrailing;
             }
 
-            if (steamON == 1) {
-                machineState = kSteam;
-            }
-
             if (waterON == 1) {
                 machineState = kWater;
+            }
+
+            if (steamON == 1) {
+                machineState = kSteam;
             }
 
             if (emergencyStop) {
@@ -837,12 +837,12 @@ void handleMachineState() {
                 machineState = kBrewDetectionTrailing;
             }
 
-            if (steamON == 1) {
-                machineState = kSteam;
-            }
-
             if (waterON == 1) {
                 machineState = kWater;
+            }
+
+            if (steamON == 1) {
+                machineState = kSteam;
             }
 
             if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
@@ -878,50 +878,20 @@ void handleMachineState() {
                 machineState = kBrew;
             }
 
+            if (waterON == 1) {
+                machineState = kWater;
+            }
+
             if (steamON == 1) {
                 machineState = kSteam;
             }
 
-            if (waterON == 1) {
-                machineState = kWater;
-            }
-
             if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
                 machineState = kBackflush;
             }
 
             if (emergencyStop) {
                 machineState = kEmergencyStop;
-            }
-
-            if (pidON == 0) {
-                machineState = kPidDisabled;
-            }
-
-            if (!waterFull) {
-                machineState = kWaterEmpty;
-            }
-
-            if (tempSensor->hasError()) {
-                machineState = kSensorError;
-            }
-            break;
-
-        case kSteam:
-            if (steamON == 0) {
-                machineState = kPidNormal;
-            }
-
-            if (waterON == 1) {
-                machineState = kWater;
-            }
-
-            if (emergencyStop) {
-                machineState = kEmergencyStop;
-            }
-
-            if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
-                machineState = kBackflush;
             }
 
             if (pidON == 0) {
@@ -944,6 +914,36 @@ void handleMachineState() {
 
             if (steamON == 1) {
                 machineState = kSteam;
+            }
+
+            if (emergencyStop) {
+                machineState = kEmergencyStop;
+            }
+
+            if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
+                machineState = kBackflush;
+            }
+
+            if (pidON == 0) {
+                machineState = kPidDisabled;
+            }
+
+            if (!waterFull) {
+                machineState = kWaterEmpty;
+            }
+
+            if (tempSensor->hasError()) {
+                machineState = kSensorError;
+            }
+            break;
+
+        case kSteam:
+            if (waterON == 1) {
+                machineState = kWater;
+            }
+
+            if (steamON == 0) {
+                machineState = kPidNormal;
             }
 
             if (emergencyStop) {
@@ -1099,10 +1099,10 @@ char const* machinestateEnumToString(MachineState machineState) {
             return "Shot Timer After Brew";
         case kBrewDetectionTrailing:
             return "Brew Detection Trailing";
-        case kSteam:
-            return "Steam";
         case kWater:
             return "Water";
+        case kSteam:
+            return "Steam";
         case kBackflush:
             return "Backflush";
         case kWaterEmpty:
