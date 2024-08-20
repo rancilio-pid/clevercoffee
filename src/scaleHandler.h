@@ -78,9 +78,9 @@ void checkWeight() {
     }
 
 #if SCALE_TYPE == 0
-    weight = w1 + w2;
+    currReadingWeight = w1 + w2;
 #else
-    weight = w1;
+    currReadingWeight = w1;
 #endif
 
     if (scaleCalibrationOn) {
@@ -138,6 +138,7 @@ void initScale() {
 
     if (LoadCell.getTareTimeoutFlag() || LoadCell.getSignalTimeoutFlag()) {
         LOG(ERROR, "Timeout, check MCU>HX711 wiring for scale");
+        u8g2.clearBuffer();
         u8g2.drawStr(0, 32, "failed!");
         u8g2.drawStr(0, 42, "Scale not working..."); // scale timeout will most likely trigger after OTA update, but will still work after boot
         u8g2.sendBuffer();
@@ -149,6 +150,7 @@ void initScale() {
 #if SCALE_TYPE == 0
     if (LoadCell2.getTareTimeoutFlag() || LoadCell2.getSignalTimeoutFlag()) {
         LOG(ERROR, "Timeout, check MCU>HX711 wiring for scale 2");
+        u8g2.clearBuffer();
         u8g2.drawStr(0, 32, "failed!");
         u8g2.drawStr(0, 42, "Scale not working..."); // scale timeout will most likely trigger after OTA update, but will still work after boot
         u8g2.sendBuffer();
@@ -175,28 +177,17 @@ void initScale() {
 void shottimerscale() {
     switch (shottimerCounter) {
         case 10: // waiting step for brew switch turning on
-            if (preinfusionPause == 0 || preinfusion == 0) {
-                if (timeBrewed > 0) {
-                    weightPreBrew = weight;
-                    shottimerCounter = 20;
-                }
-            }
-            else {
-                if (timeBrewed > preinfusion * 1000) {
-                    weightPreBrew = weight;
-                    shottimerCounter = 20;
-                }
-                else if (timeBrewed > 0) {
-                    weightBrew = 0;
-                }
+            if (currBrewState != kBrewIdle) {
+                prewBrewWeight = currReadingWeight;
+                shottimerCounter = 20;
             }
 
             break;
 
         case 20:
-            weightBrew = weight - weightPreBrew;
+            currBrewWeight = currReadingWeight - prewBrewWeight;
 
-            if (timeBrewed == 0) {
+            if (currBrewState == kBrewIdle) {
                 shottimerCounter = 10;
             }
 

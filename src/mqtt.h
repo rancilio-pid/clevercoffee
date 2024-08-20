@@ -39,31 +39,6 @@ struct DiscoveryObject {
 };
 
 /**
- * @brief Get the string name corresponding to a MACHINE enum value.
- *
- * @param machine The MACHINE enum value.
- * @return String The string name of the MACHINE.
- */
-String getMachineName(MACHINE machine) {
-    switch (machine) {
-        case RancilioSilvia:
-            return "RancilioSilvia";
-
-        case RancilioSilviaE:
-            return "RancilioSilviaE";
-
-        case Gaggia:
-            return "Gaggia";
-
-        case QuickMill:
-            return "QuickMill";
-
-        default:
-            return ""; // Handle any unknown or invalid values
-    }
-}
-
-/**
  * @brief Check if MQTT is connected, if not reconnect. Abort function if offline or brew is running
  *      MQTT is also using maxWifiReconnects!
  */
@@ -155,19 +130,24 @@ void assignMQTTParam(char* param, double value) {
                     break;
 
                 case kFloat:
-                    *(float*)var->ptr = value;
-                    mqtt_publish(param, number2string(value), true);
+                    *(float*)var->ptr = static_cast<float>(value);
+                    mqtt_publish(param, number2string(static_cast<float>(value)), true);
                     break;
 
                 case kUInt8:
-                    *(uint8_t*)var->ptr = value;
+                    *(uint8_t*)var->ptr = static_cast<uint8_t>(value);
 
                     if (strcasecmp(param, "steamON") == 0) {
                         steamFirstON = value;
                     }
 
-                    mqtt_publish(param, number2string(value), true);
+                    mqtt_publish(param, number2string(static_cast<uint8_t>(value)), true);
                     writeSysParamsToStorage();
+                    break;
+
+                case kInteger:
+                    *(int*)var->ptr = static_cast<int>(value);
+                    mqtt_publish(param, number2string(static_cast<int>(value)), true);
                     break;
 
                 default:
@@ -176,10 +156,10 @@ void assignMQTTParam(char* param, double value) {
             }
         }
         else {
-            LOGF(WARNING, "Value out of range for MQTT parameter %s", param);
+            LOGF(WARNING, "%s is not a valid MQTT parameter.", param);
         }
     } catch (const std::out_of_range& e) {
-        LOGF(WARNING, "%s is not a valid MQTT parameter.", param);
+        LOGF(WARNING, "Value out of range for MQTT parameter %s", param);
     }
 }
 
@@ -315,7 +295,6 @@ DiscoveryObject GenerateSwitchDevice(String name, String displayName, String pay
     DynamicJsonDocument DeviceMapDoc(1024);
     DeviceMapDoc["identifiers"] = String(hostname);
     DeviceMapDoc["manufacturer"] = "CleverCoffee";
-    DeviceMapDoc["model"] = getMachineName(machine);
     DeviceMapDoc["name"] = String(hostname);
 
     DynamicJsonDocument switchConfigDoc(512);
@@ -367,7 +346,6 @@ DiscoveryObject GenerateButtonDevice(String name, String displayName, String pay
     DynamicJsonDocument DeviceMapDoc(1024);
     DeviceMapDoc["identifiers"] = String(hostname);
     DeviceMapDoc["manufacturer"] = "CleverCoffee";
-    DeviceMapDoc["model"] = getMachineName(machine);
     DeviceMapDoc["name"] = String(hostname);
 
     DynamicJsonDocument buttonConfigDoc(512);
@@ -416,7 +394,6 @@ DiscoveryObject GenerateSensorDevice(String name, String displayName, String uni
     DynamicJsonDocument DeviceMapDoc(1024);
     DeviceMapDoc["identifiers"] = String(hostname);
     DeviceMapDoc["manufacturer"] = "CleverCoffee";
-    DeviceMapDoc["model"] = getMachineName(machine);
     DeviceMapDoc["name"] = String(hostname);
 
     DynamicJsonDocument sensorConfigDoc(512);
@@ -468,7 +445,6 @@ DiscoveryObject GenerateNumberDevice(String name, String displayName, int min_va
     DynamicJsonDocument DeviceMapDoc(1024);
     DeviceMapDoc["identifiers"] = String(hostname);
     DeviceMapDoc["manufacturer"] = "CleverCoffee";
-    DeviceMapDoc["model"] = getMachineName(machine);
     DeviceMapDoc["name"] = String(hostname);
 
     DynamicJsonDocument numberConfigDoc(512);
@@ -504,84 +480,76 @@ DiscoveryObject GenerateNumberDevice(String name, String displayName, int min_va
  * @return 0 if successful, MQTT connection error code if failed to send messages
  */
 int sendHASSIODiscoveryMsg() {
-    // Number Devices
+    // Sensor, number and switch objects which will always be published
+
+    DiscoveryObject machineStateDevice = GenerateSensorDevice("machineState", "Machine State", "", "enum");
+    DiscoveryObject actual_temperature = GenerateSensorDevice("temperature", "Boiler Temperature", "°C", "temperature");
+    DiscoveryObject heaterPower = GenerateSensorDevice("heaterPower", "Heater Power", "%", "power_factor");
+
     DiscoveryObject brewSetpoint = GenerateNumberDevice("brewSetpoint", "Brew setpoint", BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, 0.1, "°C");
-    DiscoveryObject steamSetPoint = GenerateNumberDevice("steamSetpoint", "Steam setpoint", STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, 0.1, "°C");
+    DiscoveryObject steamSetpoint = GenerateNumberDevice("steamSetpoint", "Steam setpoint", STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, 0.1, "°C");
     DiscoveryObject brewTempOffset = GenerateNumberDevice("brewTempOffset", "Brew Temp. Offset", BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, 0.1, "°C");
-    DiscoveryObject brewPidDelay = GenerateNumberDevice("brewPidDelay", "Brew Pid Delay", BREW_PID_DELAY_MIN, BREW_PID_DELAY_MAX, 0.1, "");
-    DiscoveryObject steamKp = GenerateNumberDevice("steamKp", "Start Kp", PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, 0.1, "");
+    DiscoveryObject steamKp = GenerateNumberDevice("steamKp", "Steam Kp", PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, 0.1, "");
     DiscoveryObject aggKp = GenerateNumberDevice("aggKp", "aggKp", PID_KP_REGULAR_MIN, PID_KP_REGULAR_MAX, 0.1, "");
     DiscoveryObject aggTn = GenerateNumberDevice("aggTn", "aggTn", PID_TN_REGULAR_MIN, PID_TN_REGULAR_MAX, 0.1, "");
     DiscoveryObject aggTv = GenerateNumberDevice("aggTv", "aggTv", PID_TV_REGULAR_MIN, PID_TV_REGULAR_MAX, 0.1, "");
     DiscoveryObject aggIMax = GenerateNumberDevice("aggIMax", "aggIMax", PID_I_MAX_REGULAR_MIN, PID_I_MAX_REGULAR_MAX, 0.1, "");
 
-#if FEATURE_BREWCONTROL == 1
-    DiscoveryObject brewtime = GenerateNumberDevice("brewtime", "Brew time", BREW_TIME_MIN, BREW_TIME_MAX, 0.1, "s");
+    DiscoveryObject pidOn = GenerateSwitchDevice("pidON", "Use PID");
+    DiscoveryObject steamON = GenerateSwitchDevice("steamON", "Steam");
+    DiscoveryObject usePonM = GenerateSwitchDevice("usePonM", "Use PonM");
+
+    // List of all DiscoveryObjects, will be always published
+    std::vector<DiscoveryObject> discoveryObjects = {machineStateDevice, actual_temperature, heaterPower, brewSetpoint, steamSetpoint, brewTempOffset, steamKp, aggKp, aggTn, aggTv, aggIMax, pidOn, steamON, usePonM};
+
+    // Sensor, number and switch object which will be published based on feature set
+#if FEATURE_BREWSWITCH == 1
+
+    DiscoveryObject currBrewTime = GenerateSensorDevice("currBrewTime", "Current Brew Time ", "s", "duration");
+
+    DiscoveryObject brewPidDelay = GenerateNumberDevice("brewPidDelay", "Brew Pid Delay", BREW_PID_DELAY_MIN, BREW_PID_DELAY_MAX, 0.1, "s");
+    DiscoveryObject targetBrewTime = GenerateNumberDevice("targetBrewTime", "Target Brew time", TARGET_BREW_TIME_MIN, TARGET_BREW_TIME_MAX, 0.1, "s");
     DiscoveryObject preinfusion = GenerateNumberDevice("preinfusion", "Preinfusion filling time", PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX, 0.1, "s");
     DiscoveryObject preinfusionPause = GenerateNumberDevice("preinfusionPause", "Preinfusion pause time", PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, 0.1, "s");
     DiscoveryObject backflushCycles = GenerateNumberDevice("backflushCycles", "Backflush Cycles", BACKFLUSH_CYCLES_MIN, BACKFLUSH_CYCLES_MAX, 1, "");
     DiscoveryObject backflushFillTime = GenerateNumberDevice("backflushFillTime", "Backflush filling time", BACKFLUSH_FILL_TIME_MIN, BACKFLUSH_FILL_TIME_MAX, 0.1, "s");
     DiscoveryObject backflushFlushTime = GenerateNumberDevice("backflushFlushTime", "Backflush flushing time", BACKFLUSH_FLUSH_TIME_MIN, BACKFLUSH_FLUSH_TIME_MAX, 0.1, "s");
 
-#endif
-
-    // Sensor Devices
-    DiscoveryObject actual_temperature = GenerateSensorDevice("temperature", "Boiler Temperature", "°C", "temperature");
-    DiscoveryObject heaterPower = GenerateSensorDevice("heaterPower", "Heater Power", "%", "power_factor");
-    DiscoveryObject machineStateDevice = GenerateSensorDevice("machineState", "Machine State", "", "enum");
-    DiscoveryObject currentWeight = GenerateSensorDevice("currentWeight", "Weight", "g", "weight");
-
-#if FEATURE_PRESSURESENSOR == 1
-    DiscoveryObject pressure = GenerateSensorDevice("pressure", "Pressure", "bar", "pressure");
-#endif
-
-    // Switch Devices
-    DiscoveryObject pidOn = GenerateSwitchDevice("pidON", "Use PID");
-    DiscoveryObject steamON = GenerateSwitchDevice("steamON", "Steam");
-#if FEATURE_BREWCONTROL == 1
     DiscoveryObject backflushOn = GenerateSwitchDevice("backflushOn", "Backflush");
-#endif
-    DiscoveryObject startUsePonM = GenerateSwitchDevice("startUsePonM", "Use PonM");
 
-    // Button Devices
+    discoveryObjects.push_back(currBrewTime);
+    discoveryObjects.push_back(brewPidDelay);
+    discoveryObjects.push_back(targetBrewTime);
+    discoveryObjects.push_back(preinfusion);
+    discoveryObjects.push_back(preinfusionPause);
+    discoveryObjects.push_back(backflushCycles);
+    discoveryObjects.push_back(backflushFillTime);
+    discoveryObjects.push_back(backflushFlushTime);
+    discoveryObjects.push_back(backflushOn);
+#endif
+
+#if FEATURE_SCALE == 1
+
+    DiscoveryObject currReadingWeight = GenerateSensorDevice("currReadingWeight", "Weight", "g", "weight");
+    DiscoveryObject currBrewWeight = GenerateSensorDevice("currBrewWeight", "current Brew Weight", "g", "weight");
+
     DiscoveryObject scaleCalibrateButton = GenerateButtonDevice("scaleCalibrationOn", "Calibrate Scale");
     DiscoveryObject scaleTareButton = GenerateButtonDevice("scaleTareOn", "Tare Scale");
 
-    std::vector<DiscoveryObject> discoveryObjects = {brewSetpoint,
-                                                     steamSetPoint,
-                                                     brewTempOffset,
-                                                     brewPidDelay,
-                                                     steamKp,
-                                                     aggKp,
-                                                     aggTn,
-                                                     aggTv,
-                                                     aggIMax,
-                                                     actual_temperature,
-                                                     heaterPower,
-                                                     machineStateDevice,
-#if FEATURE_BREWCONTROL == 1
-                                                     brewtime,
-                                                     preinfusion,
-                                                     preinfusionPause,
-                                                     backflushOn,
-                                                     backflushCycles,
-                                                     backflushFillTime,
-                                                     backflushFlushTime,
-#endif
-                                                     pidOn,
-                                                     steamON,
-                                                     startUsePonM
+    DiscoveryObject targetBrewWeight = GenerateNumberDevice("targetBrewWeight", "Brew Weight Target", TARGET_BREW_WEIGHT_MIN, TARGET_BREW_WEIGHT_MAX, 0.1, "g");
 
-#if FEATURE_PRESSURESENSOR == 1
-                                                     ,
-                                                     pressure
-#endif
-    };
-
-#if FEATURE_SCALE == 1
-    discoveryObjects.push_back(currentWeight);
+    discoveryObjects.push_back(currReadingWeight);
+    discoveryObjects.push_back(currBrewWeight);
     discoveryObjects.push_back(scaleCalibrateButton);
     discoveryObjects.push_back(scaleTareButton);
+    discoveryObjects.push_back(targetBrewWeight);
+#endif
+
+#if FEATURE_PRESSURESENSOR == 1
+
+    DiscoveryObject pressure = GenerateSensorDevice("pressure", "Pressure", "bar", "pressure");
+
+    discoveryObjects.push_back(pressure);
 #endif
 
     // Send the Objects to Hassio

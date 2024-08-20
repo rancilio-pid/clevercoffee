@@ -20,20 +20,6 @@ void checkSteamSwitch() {
             if (steamSwitchReading == LOW && !steamFirstON) {
                 steamON = 0;
             }
-
-            // monitor QuickMill thermoblock steam-mode
-            if (machine == QuickMill) {
-                if (steamQM_active == true) {
-                    if (checkSteamOffQM() == true) { // if true: steam-mode can be turned off
-                        steamON = 0;
-                        steamQM_active = false;
-                        lastTimeOptocouplerOn = 0;
-                    }
-                    else {
-                        steamON = 1;
-                    }
-                }
-            }
         }
         else if (STEAMSWITCH_TYPE == Switch::MOMENTARY) {
             if (steamSwitchReading != currStateSteamSwitch) {
