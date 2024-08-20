@@ -14,14 +14,14 @@
  */
 void printScreen() {
 
-    // Show shot timer:
-    if (displayShottimer()) {
+    // Show fullscreen brew timer:
+    if (displayFullscreenBrewTimer()) {
         // Display was updated, end here
         return;
     }
 
-    // Print the machine state
-    if (displayMachineState()) {
+    // Show fullscreen manual flush timer:
+    if (displayFullscreenManualFlushTimer()) {
         // Display was updated, end here
         return;
     }
@@ -78,26 +78,37 @@ void printScreen() {
 
     u8g2.setFont(u8g2_font_profont11_tf);
 
-    if (isBrewDetected == 1 && currBrewState == kBrewIdle) {
-        u8g2.setCursor(38, 44);
-        u8g2.print("BD: ");
-        u8g2.print((millis() - timeBrewDetection) / 1000, 1);
-        u8g2.print("/");
-        u8g2.print(brewtimesoftware, 0);
+// Brew time
+#if (FEATURE_BREWSWITCH == 1)
+    if (featureBrewControl) {
+        // Shown brew time
+        if (shouldDisplayBrewTimer()) {
+            u8g2.setCursor(34, 44);
+            u8g2.print(langstring_brew);
+            u8g2.print(currBrewTime / 1000, 0);
+            u8g2.print("/");
+            u8g2.print(totalTargetBrewTime / 1000, 0);
+        }
+
+        // Shown flush time
+        if (machineState == kManualFlush) {
+            u8g2.setDrawColor(0);
+            u8g2.drawBox(34, 44, 100, 15);
+            u8g2.setDrawColor(1);
+            u8g2.setCursor(34, 44);
+            u8g2.print(langstring_manual_flush);
+            u8g2.print(currBrewTime / 1000, 0);
+        }
     }
     else {
-        u8g2.setCursor(34, 44);
-        u8g2.print(langstring_brew);
-        u8g2.print(timeBrewed / 1000, 0);
-        u8g2.print("/");
-
-        if (FEATURE_BREWCONTROL == 0) {
-            u8g2.print(brewtimesoftware, 0);
-        }
-        else {
-            u8g2.print(totalBrewTime / 1000, 0);
+        // Brew Timer with optocoupler
+        if (shouldDisplayBrewTimer()) {
+            u8g2.setCursor(34, 44);
+            u8g2.print(langstring_brew);
+            u8g2.print(currBrewTime / 1000, 0);
         }
     }
+#endif
 
     // Show heater output in %
     displayProgressbar(pidOutput / 10, 15, 60, 100);

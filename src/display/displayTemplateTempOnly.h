@@ -18,8 +18,14 @@ float blinkingtempoffset = 0.3; // offset for blinking
  */
 void printScreen() {
 
-    // Show shot timer:
-    if (displayShottimer()) {
+    // Show fullscreen brew timer:
+    if (displayFullscreenBrewTimer()) {
+        // Display was updated, end here
+        return;
+    }
+
+    // Show fullscreen manual flush timer:
+    if (displayFullscreenManualFlushTimer()) {
         // Display was updated, end here
         return;
     }

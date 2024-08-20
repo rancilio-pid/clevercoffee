@@ -139,9 +139,110 @@ void displayTemperature(int x, int y) {
 }
 
 /**
- * @brief Draw the brew time at given position
+ * @brief determines if brew timer should be visible; postBrewTimerDuration defines how long the timer after the brew is shown
+ * @return true if timer should be visible, false otherwise
  */
-void displayBrewtime(int x, int y, double brewtime) {
+bool shouldDisplayBrewTimer() {
+
+    enum BrewTimerState {
+        kBrewTimerIdle = 10,
+        kBrewTimerRunning = 20,
+        kBrewTimerPostBrew = 30
+    };
+
+    static BrewTimerState currBrewTimerState = kBrewTimerIdle;
+
+    static uint32_t brewEndTime = 0;
+
+    switch (currBrewTimerState) {
+        case kBrewTimerIdle:
+            if (brew()) {
+                currBrewTimerState = kBrewTimerRunning;
+            }
+            break;
+
+        case kBrewTimerRunning:
+            if (!brew()) {
+                currBrewTimerState = kBrewTimerPostBrew;
+                brewEndTime = millis();
+            }
+            break;
+
+        case kBrewTimerPostBrew:
+            if ((millis() - brewEndTime) > (uint32_t)(postBrewTimerDuration * 1000)) {
+                currBrewTimerState = kBrewTimerIdle;
+            }
+            break;
+    }
+
+    return (currBrewTimerState != kBrewTimerIdle);
+}
+
+/**
+ * @brief Draw current brew time with optional brew target time at given position
+ *
+ * Shows the current brew time in seconds. If a target time (totalTargetBrewTime) is provided (> 0), it is displayed alongside the current time.
+ *
+ * @param x              Horizontal position to start drawing
+ * @param y              Vertical position to start drawing
+ * @param label          Text label to display before the time
+ * @param currBrewTime     Current brewed time in milliseconds
+ * @param totalTargetBrewTime  Target brew time in milliseconds (optional, default -1)
+ */
+void displayBrewTime(int x, int y, const char* label, double currBrewTime, double totalTargetBrewTime = -1) {
+    u8g2.setCursor(x, y);
+    u8g2.print(label);
+    u8g2.setCursor(x + 50, y);
+    u8g2.print(currBrewTime / 1000, 0);
+
+    if (totalTargetBrewTime > 0) {
+        u8g2.print("/");
+        u8g2.print(totalTargetBrewTime / 1000, 0);
+    }
+
+    u8g2.print(" s");
+}
+
+/**
+ * @brief Draw the current weight with error handling and target indicators at given position
+ *
+ * If the scale reports an error, "fault" is shown on the display instead of weight.
+ * Otherwise, the function displays the current weight.
+ * If a target weight (setpoint) is set (> 0), it will be displayed alongside the current weight.
+ * This function is intended to provide the status of the scales during brewing, flushing, or other machine states.
+ *
+ * @param x        Horizontal position to start drawing
+ * @param y        Vertical position to start drawing
+ * @param weight   Current measured weight to display
+ * @param setpoint Target weight to display alongside current weight (optional, default -1)
+ * @param fault    Indicates if the scale has an error (optional, default false)
+ */
+void displayBrewWeight(int x, int y, float weight, float setpoint = -1, bool fault = false) {
+    if (fault) {
+        u8g2.setCursor(x, y);
+        u8g2.print(langstring_weight);
+        u8g2.setCursor(x + 50, y);
+        u8g2.print(langstring_scale_Failure);
+        return;
+    }
+
+    u8g2.setCursor(x, y);
+    u8g2.print(langstring_weight);
+    u8g2.setCursor(x + 50, y);
+    u8g2.print(weight, 0);
+
+    if (setpoint > 0) {
+        u8g2.print("/");
+        u8g2.print(setpoint, 0);
+    }
+
+    u8g2.print(" g");
+}
+
+/**
+ * @brief Draw the brew time at given position (fullscreen brewtimer)
+ */
+void displayBrewtimeFs(int x, int y, double brewtime) {
     u8g2.setFont(u8g2_font_fub25_tf);
 
     if (brewtime < 10000.000) {
@@ -234,66 +335,53 @@ void displayLogo(String displaymessagetext, String displaymessagetext2) {
 }
 
 /**
- * @brief display shot timer
+ * @brief display fullscreen brew timer
  */
-bool displayShottimer() {
-    if (FEATURE_SHOTTIMER == 0) {
+bool displayFullscreenBrewTimer() {
+    if (featureFullscreenBrewTimer == 0) {
         return false;
     }
 
-    if (machineState == kBrew || brewSwitchState == kBrewSwitchFlushOff) {
-        u8g2.clearBuffer();
-
-        if (brewSwitchState != kBrewSwitchFlushOff) {
-            u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
-        }
-        else {
-            u8g2.drawXBMP(0, 12, Manual_Flush_Logo_width, Manual_Flush_Logo_height, Manual_Flush_Logo);
-        }
-
-#if (FEATURE_SCALE == 1)
-        u8g2.setFont(u8g2_font_profont22_tf);
-        u8g2.setCursor(64, 15);
-        u8g2.print(timeBrewed / 1000, 1);
-        u8g2.print("s");
-        u8g2.setCursor(64, 38);
-        u8g2.print(weightBrew, 1);
-        u8g2.print("g");
-        u8g2.setFont(u8g2_font_profont11_tf);
-#else
-        displayBrewtime(48, 25, timeBrewed);
-#endif
-
-        displayWaterIcon(119, 1);
-        u8g2.sendBuffer();
-        return true;
-    }
-
-    /* if the totalBrewTime is reached automatically,
-     * nothing should be done, otherwise wrong time is displayed
-     * because the switch is pressed later than totalBrewTime
-     */
-    else if (machineState == kShotTimerAfterBrew && brewSwitchState != kBrewSwitchFlushOff) {
+    if (shouldDisplayBrewTimer()) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
-
 #if (FEATURE_SCALE == 1)
         u8g2.setFont(u8g2_font_profont22_tf);
         u8g2.setCursor(64, 15);
-        u8g2.print(lastBrewTime / 1000, 1);
+        u8g2.print(currBrewTime / 1000, 1);
         u8g2.print("s");
         u8g2.setCursor(64, 38);
-        u8g2.print(weightBrew, 1);
+        u8g2.print(currBrewWeight, 1);
         u8g2.print("g");
         u8g2.setFont(u8g2_font_profont11_tf);
 #else
-        displayBrewtime(48, 25, lastBrewTime);
+        displayBrewtimeFs(48, 25, currBrewTime);
 #endif
-
         displayWaterIcon(119, 1);
         u8g2.sendBuffer();
         return true;
     }
+
+    return false;
+}
+
+/**
+ * @brief display fullscreen manual flush timer
+ */
+bool displayFullscreenManualFlushTimer() {
+    if (featureFullscreenManualFlushTimer == 0) {
+        return false;
+    }
+
+    if (machineState == kManualFlush) {
+        u8g2.clearBuffer();
+        u8g2.drawXBMP(0, 12, Manual_Flush_Logo_width, Manual_Flush_Logo_height, Manual_Flush_Logo);
+        displayBrewtimeFs(48, 25, currBrewTime);
+        displayWaterIcon(119, 1);
+        u8g2.sendBuffer();
+        return true;
+    }
+
     return false;
 }
 
@@ -302,7 +390,7 @@ bool displayShottimer() {
  */
 bool displayMachineState() {
     // Show the heating logo when we are in regular PID mode and more than 5degC below the set point
-    if (FEATURE_HEATINGLOGO > 0 && machineState == kPidNormal && (setpoint - temperature) > 5. && brewSwitchState != kBrewSwitchFlushOff) {
+    if (featureHeatingLogo > 0 && (machineState == kPidNormal || machineState == kSteam) && (setpoint - temperature) > 5.) {
         // For status info
         u8g2.clearBuffer();
 
@@ -318,7 +406,7 @@ bool displayMachineState() {
         return true;
     }
     // Offline logo
-    else if (FEATURE_PIDOFF_LOGO == 1 && machineState == kPidDisabled) {
+    else if (featurePidOffLogo == 1 && machineState == kPidDisabled) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(38, 0, Off_Logo_width, Off_Logo_height, Off_Logo);
         u8g2.setCursor(0, 55);
@@ -328,7 +416,7 @@ bool displayMachineState() {
         u8g2.sendBuffer();
         return true;
     }
-    else if (FEATURE_PIDOFF_LOGO == 1 && machineState == kStandby) {
+    else if (featurePidOffLogo == 1 && machineState == kStandby) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(38, 0, Off_Logo_width, Off_Logo_height, Off_Logo);
         u8g2.setCursor(36, 55);
@@ -339,7 +427,7 @@ bool displayMachineState() {
         return true;
     }
     // Steam
-    else if (machineState == kSteam && brewSwitchState != kBrewSwitchFlushOff) {
+    else if (machineState == kSteam) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(-1, 12, Steam_Logo_width, Steam_Logo_height, Steam_Logo);
 
@@ -350,7 +438,7 @@ bool displayMachineState() {
         return true;
     }
     // Water empty
-    else if (machineState == kWaterTankEmpty && brewSwitchState != kBrewSwitchFlushOff) {
+    else if (machineState == kWaterTankEmpty) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(45, 0, Water_Tank_Empty_Logo_width, Water_Tank_Empty_Logo_height, Water_Tank_Empty_Logo);
         u8g2.setFont(u8g2_font_profont11_tf);
@@ -364,8 +452,8 @@ bool displayMachineState() {
         u8g2.setCursor(2, 10);
         u8g2.print("Backflush");
 
-        switch (backflushState) {
-            case kBackflushWaitBrewswitchOn:
+        switch (currBackflushState) {
+            case kBackflushIdle:
                 u8g2.setFont(u8g2_font_profont12_tf);
                 u8g2.setCursor(4, 37);
                 u8g2.print(langstring_backflush_press);
@@ -373,7 +461,7 @@ bool displayMachineState() {
                 u8g2.print(langstring_backflush_start);
                 break;
 
-            case kBackflushWaitBrewswitchOff:
+            case kBackflushFinished:
                 u8g2.setFont(u8g2_font_profont12_tf);
                 u8g2.setCursor(4, 37);
                 u8g2.print(langstring_backflush_press);
@@ -384,7 +472,7 @@ bool displayMachineState() {
             default:
                 u8g2.setFont(u8g2_font_fub17_tf);
                 u8g2.setCursor(42, 42);
-                u8g2.print(currBackflushCycles + 1, 0);
+                u8g2.print(currBackflushCycles, 0);
                 u8g2.print("/");
                 u8g2.print(backflushCycles, 0);
                 break;

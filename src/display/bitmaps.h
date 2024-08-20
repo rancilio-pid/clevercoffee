@@ -9,10 +9,6 @@
 
 #define CleverCoffee_Logo_width      40
 #define CleverCoffee_Logo_height     40
-#define Rancilio_Silvia_Logo_width   52
-#define Rancilio_Silvia_Logo_height  49
-#define Gaggia_Classic_Logo_width    46
-#define Gaggia_Classic_Logo_height   49
 #define Heating_Logo_width           40
 #define Heating_Logo_height          40
 #define Off_Logo_width               52
