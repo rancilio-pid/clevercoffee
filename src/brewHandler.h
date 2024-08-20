@@ -46,6 +46,7 @@ uint8_t currBrewSwitchStateMomentary = LOW;
 int brewSwitchState = kBrewSwitchIdle;
 boolean brewSwitchWasOff = false;
 
+int isBrewDetected = 0;          // flag is set if brew was detected
 double totalBrewTime = 0;        // total brewtime set in software
 double timeBrewed = 0;           // total brewed time
 double lastBrewTimeMillis = 0;   // for shottimer delay after disarmed button
@@ -101,6 +102,7 @@ void checkbrewswitch() {
                 if (currBrewSwitchStateMomentary == LOW) {
                     // Brew trigger
                     currStateBrewSwitch = HIGH;
+                    isBrewDetected = 1;
                     brewSwitchState = kBrewSwitchBrewAbort;
                     LOG(DEBUG, "brewSwitchState = kBrewSwitchBrew; brew switch short pressed - start Brew");
                 }
@@ -120,6 +122,7 @@ void checkbrewswitch() {
                 if ((currBrewSwitchStateMomentary == HIGH && currStateBrewSwitch == HIGH) || (machineState == kShotTimerAfterBrew) || (backflushState == kBackflushWaitBrewswitchOff)) {
                     currStateBrewSwitch = LOW;
                     brewSwitchState = kBrewSwitchReset;
+                    isBrewDetected = 0;
                     LOG(DEBUG, "brewSwitchState = kBrewSwitchBrewAbort: brew switch short pressed - stop brew");
                 }
                 break;
@@ -128,6 +131,7 @@ void checkbrewswitch() {
                 // Brew switch got released - stop flushing
                 if (currBrewSwitchStateMomentary == LOW && currStateBrewSwitch == LOW) {
                     brewSwitchState = kBrewSwitchReset;
+                    isBrewDetected = 0;
                     LOG(DEBUG, "brewswitchTriggerCase = kBrewSwitchFlushOff: brew switch long press released - stop flushing");
                     valveRelay.off();
                     pumpRelay.off();
@@ -348,7 +352,6 @@ void brew() {
 
                 // disarmed button
                 currentMillisTemp = 0;
-                brewDetected = 0;          // rearm brewDetection
                 currBrewState = kBrewIdle;
                 lastBrewTime = timeBrewed; // store brewtime to show in Shottimer after brew is finished
                 timeBrewed = 0;
