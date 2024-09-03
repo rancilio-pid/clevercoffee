@@ -7,24 +7,24 @@
 
 #pragma once
 
-#define CleverCoffee_Logo_width     40
-#define CleverCoffee_Logo_height    40
-#define Rancilio_Silvia_Logo_width  52
-#define Rancilio_Silvia_Logo_height 49
-#define Gaggia_Classic_Logo_width   46
-#define Gaggia_Classic_Logo_height  49
-#define Heating_Logo_width          40
-#define Heating_Logo_height         40
-#define Off_Logo_width              52
-#define Off_Logo_height             53
-#define Steam_Logo_width            40
-#define Steam_Logo_height           40
-#define Brew_Cup_Logo_width         40
-#define Brew_Cup_Logo_height        40
-#define Water_Empty_Logo_width      47
-#define Water_Empty_Logo_height     64
-#define Manual_Flush_Logo_width     40
-#define Manual_Flush_Logo_height    40
+#define CleverCoffee_Logo_width      40
+#define CleverCoffee_Logo_height     40
+#define Rancilio_Silvia_Logo_width   52
+#define Rancilio_Silvia_Logo_height  49
+#define Gaggia_Classic_Logo_width    46
+#define Gaggia_Classic_Logo_height   49
+#define Heating_Logo_width           40
+#define Heating_Logo_height          40
+#define Off_Logo_width               52
+#define Off_Logo_height              53
+#define Steam_Logo_width             40
+#define Steam_Logo_height            40
+#define Brew_Cup_Logo_width          40
+#define Brew_Cup_Logo_height         40
+#define Water_Tank_Empty_Logo_width  47
+#define Water_Tank_Empty_Logo_height 64
+#define Manual_Flush_Logo_width      40
+#define Manual_Flush_Logo_height     40
 
 // clang-format off
 
@@ -50,7 +50,7 @@ static const unsigned char Antenna_NOK_Icon[] U8X8_PROGMEM = {
     B10001000
 };
 
-static const unsigned char Water_Empty_Icon[] U8X8_PROGMEM = {
+static const unsigned char Water_Tank_Empty_Icon[] U8X8_PROGMEM = {
     B00001001,
     B01001010,
     B00011100,
@@ -176,7 +176,7 @@ static const unsigned char Brew_Cup_Logo[] U8X8_PROGMEM = {
     0xff, 0xff, 0x07, 0xf8, 0xff, 0xff, 0xff, 0x03
 };
 
-static const unsigned char Water_Empty_Logo[] U8X8_PROGMEM = {
+static const unsigned char Water_Tank_Empty_Logo[] U8X8_PROGMEM = {
     0x00,0x00,0xfc,0x07,0x00,0x00,0x00,0x80,0xff,0x3f,0x00,0x00,0x00,0xe0,
     0x07,0xfc,0x00,0x00,0x00,0xf0,0x00,0xe0,0x01,0x00,0x00,0x3c,0xf0,0x81,
     0x03,0x00,0x00,0x1e,0xfe,0x0f,0x07,0x00,0x00,0x87,0x1f,0x3f,0x0e,0x00,

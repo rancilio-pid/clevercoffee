@@ -90,7 +90,7 @@ void checkbrewswitch() {
         // Convert momentary brew switch input to brew switch state
         switch (brewSwitchState) {
             case kBrewSwitchIdle:
-                if (currBrewSwitchStateMomentary == HIGH && machineState != kWaterEmpty) {
+                if (currBrewSwitchStateMomentary == HIGH && machineState != kWaterTankEmpty) {
                     brewSwitchState = kBrewSwitchBrew;
                     LOG(DEBUG, "brewSwitchState = kBrewSwitchIdle; waiting for brew switch input");
                 }
@@ -106,7 +106,7 @@ void checkbrewswitch() {
                 }
 
                 // Brew switch more than brewSwitchMomentaryLongPress pressed - start flushing
-                if (currBrewSwitchStateMomentary == HIGH && brewSwitch->longPressDetected() && machineState != kWaterEmpty) {
+                if (currBrewSwitchStateMomentary == HIGH && brewSwitch->longPressDetected() && machineState != kWaterTankEmpty) {
                     brewSwitchState = kBrewSwitchFlushOff;
                     valveRelay.on();
                     pumpRelay.on();
@@ -263,7 +263,7 @@ void brew() {
     // state machine for brew
     switch (currBrewState) {
         case kBrewIdle: // waiting step for brew switch turning on
-            if (currStateBrewSwitch == HIGH && backflushState == 10 && backflushOn == 0 && brewSwitchWasOff && machineState != kWaterEmpty) {
+            if (currStateBrewSwitch == HIGH && backflushState == 10 && backflushOn == 0 && brewSwitchWasOff && machineState != kWaterTankEmpty) {
                 startingTime = millis();
 
                 if (preinfusionPause == 0 || preinfusion == 0) {
