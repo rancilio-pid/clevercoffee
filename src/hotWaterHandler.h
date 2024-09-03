@@ -12,7 +12,7 @@ void checkHotWaterSwitch() {
 
         if (HOTWATERSWITCH_TYPE == Switch::TOGGLE) {
             // Set hotWaterOn to 1 when waterswitch is HIGH
-            if (hotWaterSwitchReading == HIGH) {
+            if (hotWaterSwitchReading == HIGH && machineState != kWaterEmpty) {
                 hotWaterOn = 1;
                 pumpRelay.on();
             }
@@ -26,7 +26,7 @@ void checkHotWaterSwitch() {
             if (hotWaterSwitchReading != currStateHotWaterSwitch) {
                 currStateHotWaterSwitch = hotWaterSwitchReading;
 
-                if (currStateHotWaterSwitch == HIGH) {
+                if (currStateHotWaterSwitch == HIGH && machineState != kWaterEmpty) {
                     if (hotWaterOn == 0) {
                         hotWaterOn = 1;
                         pumpRelay.on();
