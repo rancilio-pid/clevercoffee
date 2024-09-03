@@ -172,7 +172,7 @@ Relay valveRelay(valveRelayPin, PUMP_VALVE_SSR_TYPE);
 Switch* powerSwitch;
 Switch* brewSwitch;
 Switch* steamSwitch;
-Switch* waterSwitch;
+Switch* hotWaterSwitch;
 
 TempSensor* tempSensor;
 
@@ -435,10 +435,10 @@ U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, OLED_CS, OLED_DC, /* reset=*
 Timer printDisplayTimer(&printScreen, 100);
 #endif
 
+#include "hotWaterHandler.h"
 #include "powerHandler.h"
 #include "scaleHandler.h"
 #include "steamHandler.h"
-#include "waterHandler.h"
 
 // Emergency stop if temp is too high
 void testEmergencyStop() {
@@ -1715,8 +1715,8 @@ void setup() {
         steamSwitch = new IOSwitch(PIN_STEAMSWITCH, GPIOPin::IN_HARDWARE, STEAMSWITCH_TYPE, STEAMSWITCH_MODE);
     }
 
-    if (FEATURE_WATERSWITCH) {
-        waterSwitch = new IOSwitch(PIN_WATERSWITCH, GPIOPin::IN_HARDWARE, WATERSWITCH_TYPE, WATERSWITCH_MODE);
+    if (FEATURE_HOTWATERSWITCH) {
+        hotWaterSwitch = new IOSwitch(PIN_HOTWATERSWITCH, GPIOPin::IN_HARDWARE, HOTWATERSWITCH_TYPE, HOTWATERSWITCH_MODE);
     }
 
     // IF optocoupler selected
@@ -1950,7 +1950,7 @@ void looppid() {
     }
 #endif
 
-    checkWaterSwitch();
+    checkHotWaterSwitch();
     checkSteamSwitch();
     checkPowerSwitch();
 
