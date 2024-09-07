@@ -218,9 +218,8 @@ double aggbKi = aggbKp / aggbTn;
 #endif
 
 double aggbKd = aggbTv * aggbKp;
-double brewtimesoftware = BREW_SW_TIME;  // use userConfig time until disabling BD PID
-double brewSensitivity = BD_SENSITIVITY; // use userConfig brew detection sensitivity
-double brewPIDDelay = BREW_PID_DELAY;    // use userConfig brew detection PID delay
+double brewPidTime = BREW_PID_TIME;   // Time while Brew PID is running
+double brewPIDDelay = BREW_PID_DELAY; // Time PID will be disabled after brew started
 
 uint8_t standbyModeOn = 0;
 double standbyModeTime = STANDBY_MODE_TIME;
@@ -244,8 +243,7 @@ SysPara<double> sysParaTempOffset(&brewTempOffset, BREW_TEMP_OFFSET_MIN, BREW_TE
 SysPara<double> sysParaBrewPIDDelay(&brewPIDDelay, BREW_PID_DELAY_MIN, BREW_PID_DELAY_MAX, STO_ITEM_BREW_PID_DELAY);
 SysPara<uint8_t> sysParaUseBDPID(&useBDPID, 0, 1, STO_ITEM_USE_BD_PID);
 SysPara<double> sysParaBrewTime(&brewTime, BREW_TIME_MIN, BREW_TIME_MAX, STO_ITEM_BREW_TIME);
-SysPara<double> sysParaBrewSwTime(&brewtimesoftware, BREW_SW_TIME_MIN, BREW_SW_TIME_MAX, STO_ITEM_BREW_SW_TIME);
-SysPara<double> sysParaBrewThresh(&brewSensitivity, BD_THRESHOLD_MIN, BD_THRESHOLD_MAX, STO_ITEM_BD_THRESHOLD);
+SysPara<double> sysParaBrewPidTime(&brewPidTime, BREW_PID_TIME_MIN, BREW_PID_TIME_MAX, STO_ITEM_BREW_PID_TIME);
 SysPara<uint8_t> sysParaWifiCredentialsSaved(&wifiCredentialsSaved, 0, 1, STO_ITEM_WIFI_CREDENTIALS_SAVED);
 SysPara<double> sysParaPreInfTime(&preinfusion, PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX, STO_ITEM_PRE_INFUSION_TIME);
 SysPara<double> sysParaPreInfPause(&preinfusionPause, PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, STO_ITEM_PRE_INFUSION_PAUSE);
@@ -608,11 +606,10 @@ void handleMachineState() {
 
         case kBrew:
 
-            if (currBrewState == kBrewIdle || currBrewState == kWaitBrewOff)
-            {
+            if (currBrewState == kBrewIdle || currBrewState == kWaitBrewOff) {
                 // delay shot timer display for voltage sensor or hw brew toggle switch (brew counter)
                 machineState = kShotTimerAfterBrew;
-                lastBrewTimeMillis = millis();                                                    // for delay
+                lastBrewTimeMillis = millis(); // for delay
             }
 
             if (steamON == 1) {
@@ -1616,7 +1613,7 @@ void looppid() {
             LOGF(TRACE, "Current PID Output: %f", pidOutput);
             LOGF(TRACE, "Current Machinestate: %s", machinestateEnumToString(machineState));
             LOGF(TRACE, "timeBrewed %f", timeBrewed);
-            LOGF(TRACE, "brewtimesoftware %f", brewtimesoftware);
+            LOGF(TRACE, "Brew PID time %f", brewPidTime);
             LOGF(TRACE, "Brew detected %i", brewOn);
         }
     }
@@ -1627,11 +1624,11 @@ void looppid() {
 #endif
 
 #if (FEATURE_BREWSWITCH == 1)
-    #if (FEATURE_BREWCONTROLL == 0)
+#if (FEATURE_BREWCONTROLL == 0)
     brewTimer();
-    #elif
+#elif
     brew();
-    #endif
+#endif
 #endif
 
 #if (FEATURE_PRESSURESENSOR == 1)
@@ -1707,7 +1704,7 @@ void looppid() {
             if (!brewPIDDisabled) {
                 brewPIDDisabled = true;
                 bPID.SetMode(MANUAL);
-                LOGF(DEBUG, "disabled PID, waiting for %d seconds before enabling PID again", brewPIDDelay);
+                LOGF(DEBUG, "disabled PID, waiting for %.0f seconds before enabling PID again", brewPIDDelay);
             }
         }
         else {
@@ -1870,8 +1867,7 @@ int readSysParamsFromStorage(void) {
     if (sysParaPidTnBd.getStorage() != 0) return -1;
     if (sysParaPidTvBd.getStorage() != 0) return -1;
     if (sysParaBrewTime.getStorage() != 0) return -1;
-    if (sysParaBrewSwTime.getStorage() != 0) return -1;
-    if (sysParaBrewThresh.getStorage() != 0) return -1;
+    if (sysParaBrewPidTime.getStorage() != 0) return -1;
     if (sysParaPreInfTime.getStorage() != 0) return -1;
     if (sysParaPreInfPause.getStorage() != 0) return -1;
     if (sysParaPidKpSteam.getStorage() != 0) return -1;
@@ -1912,8 +1908,7 @@ int writeSysParamsToStorage(void) {
     if (sysParaPidTnBd.setStorage() != 0) return -1;
     if (sysParaPidTvBd.setStorage() != 0) return -1;
     if (sysParaBrewTime.setStorage() != 0) return -1;
-    if (sysParaBrewSwTime.setStorage() != 0) return -1;
-    if (sysParaBrewThresh.setStorage() != 0) return -1;
+    if (sysParaBrewPidTime.setStorage() != 0) return -1;
     if (sysParaPreInfTime.setStorage() != 0) return -1;
     if (sysParaPreInfPause.setStorage() != 0) return -1;
     if (sysParaPidKpSteam.setStorage() != 0) return -1;

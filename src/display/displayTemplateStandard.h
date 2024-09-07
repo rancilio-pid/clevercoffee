@@ -68,13 +68,7 @@ void printScreen() {
         u8g2.setCursor(84, 36);
         u8g2.print(timeBrewed / 1000, 0);
         u8g2.print("/");
-
-        if (FEATURE_BREWCONTROL == 0) {
-            u8g2.print(brewtimesoftware, 0);
-        }
-        else {
-            u8g2.print(totalBrewTime / 1000, 1);
-        }
+        u8g2.print(totalBrewTime / 1000, 1);
     }
 
     // PID values over heat bar

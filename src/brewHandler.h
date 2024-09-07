@@ -46,7 +46,7 @@ uint8_t currBrewSwitchStateMomentary = LOW;
 int brewSwitchState = kBrewSwitchIdle;
 boolean brewSwitchWasOff = false;
 
-int brewOn = 0;          // flag is set if brew was detected
+int brewOn = 0;                  // flag is set if brew was detected
 double totalBrewTime = 0;        // total brewtime set in software
 double timeBrewed = 0;           // total brewed time
 double lastBrewTimeMillis = 0;   // for shottimer delay after disarmed button
@@ -262,7 +262,6 @@ void brewTimer() {
     }
 }
 #endif
-
 
 #if (FEATURE_BREWCONTROL == 1)
 /**

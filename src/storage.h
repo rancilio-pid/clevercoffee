@@ -24,9 +24,8 @@ typedef enum {
     STO_ITEM_BREW_TEMP_OFFSET,          // brew temp offset
     STO_ITEM_USE_BD_PID,                // use separate PID for brew detection (otherwise continue with regular PID)
     STO_ITEM_BREW_TIME,                 // brew time
-    STO_ITEM_BREW_SW_TIME,              // brew software time
+    STO_ITEM_BREW_PID_TIME,             // brew PID time
     STO_ITEM_BREW_PID_DELAY,            // brew PID delay
-    STO_ITEM_BD_THRESHOLD,              // brew detection limit
     STO_ITEM_WIFI_CREDENTIALS_SAVED,    // flag for wifisetup
     STO_ITEM_PRE_INFUSION_TIME,         // pre-infusion time
     STO_ITEM_PRE_INFUSION_PAUSE,        // pre-infusion pause
@@ -94,10 +93,10 @@ typedef struct __attribute__((packed)) {
         uint8_t freeToUse8[2];
         double pidTvBd;
         uint8_t freeToUse9[2];
-        double brewSwTimeSec;
+        double brewPidTimeSec;
         double brewPIDDelaySec;
         uint8_t freeToUse10;
-        double brewDetectionThreshold;
+        double freeToUse11;
         uint8_t wifiCredentialsSaved;
         uint8_t useStartPonM;
         double pidKpStart;
@@ -145,10 +144,10 @@ static const sto_data_t itemDefaults PROGMEM = {
     {0xFF, 0xFF},                                                                                                                   // free to use
     AGGBTV,                                                                                                                         // STO_ITEM_PID_TV_BD
     {0xFF, 0xFF},                                                                                                                   // free to use
-    BREW_SW_TIME,                                                                                                                   // STO_ITEM_BREW_SW_TIME
+    BREW_PID_TIME,                                                                                                                  // STO_ITEM_BREW_PID_TIME
     BREW_PID_DELAY,                                                                                                                 // STO_ITEM_BREW_PID_DELAY
     0xFF,                                                                                                                           // free to use
-    BD_SENSITIVITY,                                                                                                                 // STO_ITEM_BD_THRESHOLD
+    0xFF,                                                                                                                           // free to use
     WIFI_CREDENTIALS_SAVED,                                                                                                         // STO_ITEM_WIFI_CREDENTIALS_SAVED
     0,                                                                                                                              // STO_ITEM_USE_START_PON_M
     STARTKP,                                                                                                                        // STO_ITEM_PID_KP_START
@@ -254,14 +253,9 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
             size = STRUCT_MEMBER_SIZE(sto_data_t, pidTvBd);
             break;
 
-        case STO_ITEM_BREW_SW_TIME:
-            addr = offsetof(sto_data_t, brewSwTimeSec);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, brewSwTimeSec);
-            break;
-
-        case STO_ITEM_BD_THRESHOLD:
-            addr = offsetof(sto_data_t, brewDetectionThreshold);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, brewDetectionThreshold);
+        case STO_ITEM_BREW_PID_TIME:
+            addr = offsetof(sto_data_t, brewPidTimeSec);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, brewPidTimeSec);
             break;
 
         case STO_ITEM_WIFI_CREDENTIALS_SAVED:
