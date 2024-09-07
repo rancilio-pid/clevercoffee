@@ -1626,8 +1626,12 @@ void looppid() {
     shottimerscale(); // Calculation of weight of shot while brew is running
 #endif
 
-#if (FEATURE_BREWCONTROL == 1)
+#if (FEATURE_BREWSWITCH == 1)
+    #if (FEATURE_BREWCONTROLL == 0)
+    brewTimer();
+    #elif
     brew();
+    #endif
 #endif
 
 #if (FEATURE_PRESSURESENSOR == 1)
