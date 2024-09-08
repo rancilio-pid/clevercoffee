@@ -605,7 +605,7 @@ void handleMachineState() {
         case kBrew:
 
             if (currBrewState == kBrewIdle || currBrewState == kWaitBrewOff) {
-                // delay shot timer display for voltage sensor or hw brew toggle switch (brew counter)
+                // delay shot timer display after brewSwitch got released
                 machineState = kShotTimerAfterBrew;
                 lastBrewTimeMillis = millis(); // for delay
             }
@@ -1593,12 +1593,12 @@ void looppid() {
     shottimerscale(); // Calculation of weight of shot while brew is running
 #endif
 
-#if (FEATURE_BREWSWITCH == 1)
-#if (FEATURE_BREWCONTROLL == 0)
+#if (FEATURE_BREWSWITCH == 1 && FEATURE_BREWCONTROL == 0)
     brewTimer();
-#elif
-    brew();
 #endif
+
+#if (FEATURE_BREWSWITCH == 1 && FEATURE_BREWCONTROL == 1)
+    brew();
 #endif
 
 #if (FEATURE_PRESSURESENSOR == 1)
