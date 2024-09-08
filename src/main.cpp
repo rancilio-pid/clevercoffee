@@ -218,7 +218,6 @@ double aggbKi = aggbKp / aggbTn;
 #endif
 
 double aggbKd = aggbTv * aggbKp;
-double brewPidTime = BREW_PID_TIME;   // Time while Brew PID is running
 double brewPIDDelay = BREW_PID_DELAY; // Time PID will be disabled after brew started
 
 uint8_t standbyModeOn = 0;
@@ -243,7 +242,6 @@ SysPara<double> sysParaTempOffset(&brewTempOffset, BREW_TEMP_OFFSET_MIN, BREW_TE
 SysPara<double> sysParaBrewPIDDelay(&brewPIDDelay, BREW_PID_DELAY_MIN, BREW_PID_DELAY_MAX, STO_ITEM_BREW_PID_DELAY);
 SysPara<uint8_t> sysParaUseBDPID(&useBDPID, 0, 1, STO_ITEM_USE_BD_PID);
 SysPara<double> sysParaBrewTime(&brewTime, BREW_TIME_MIN, BREW_TIME_MAX, STO_ITEM_BREW_TIME);
-SysPara<double> sysParaBrewPidTime(&brewPidTime, BREW_PID_TIME_MIN, BREW_PID_TIME_MAX, STO_ITEM_BREW_PID_TIME);
 SysPara<uint8_t> sysParaWifiCredentialsSaved(&wifiCredentialsSaved, 0, 1, STO_ITEM_WIFI_CREDENTIALS_SAVED);
 SysPara<double> sysParaPreInfTime(&preinfusion, PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX, STO_ITEM_PRE_INFUSION_TIME);
 SysPara<double> sysParaPreInfPause(&preinfusionPause, PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, STO_ITEM_PRE_INFUSION_PAUSE);
@@ -1227,45 +1225,18 @@ void setup() {
                                  .maxValue = PID_TV_BD_MAX,
                                  .ptr = (void*)&aggbTv};
 
-    editableVars["PID_BD_TIME"] = {.displayName = F("PID BD Time (s)"),
-                                   .hasHelpText = true,
-                                   .helpText = F("Fixed time in seconds for which the BD PID will stay "
-                                                 "enabled (also after Brew switch is inactive again)."),
-                                   .type = kDouble,
-                                   .section = sBDSection,
-                                   .position = 26,
-                                   .show = [] { return true && FEATURE_BREWDETECTION == 1 && (useBDPID || BREWDETECTION_TYPE == 1); },
-                                   .minValue = BREW_SW_TIME_MIN,
-                                   .maxValue = BREW_SW_TIME_MAX,
-                                   .ptr = (void*)&brewtimesoftware};
+    editableVars["STEAM_MODE"] = {
+        .displayName = F("Steam Mode"), .hasHelpText = false, .helpText = "", .type = kUInt8, .section = sOtherSection, .position = 26, .show = [] { return false; }, .minValue = 0, .maxValue = 1, .ptr = (void*)&steamON};
 
-    editableVars["STEAM_MODE"] = {.displayName = F("Steam Mode"),
-                                  .hasHelpText = false,
-                                  .helpText = "",
-                                  .type = kUInt8,
-                                  .section = sOtherSection,
-                                  .position = 27, .show = [] { return false; },
-                                  .minValue = 0,
-                                  .maxValue = 1,
-                                  .ptr = (void*)&steamON};
-
-    editableVars["BACKFLUSH_ON"] = {.displayName = F("Backflush"),
-                                    .hasHelpText = false,
-                                    .helpText = "",
-                                    .type = kUInt8,
-                                    .section = sOtherSection,
-                                    .position = 28,
-                                    .show = [] { return false; },
-                                    .minValue = 0,
-                                    .maxValue = 1,
-                                    .ptr = (void*)&backflushOn};
+    editableVars["BACKFLUSH_ON"] = {
+        .displayName = F("Backflush"), .hasHelpText = false, .helpText = "", .type = kUInt8, .section = sOtherSection, .position = 27, .show = [] { return false; }, .minValue = 0, .maxValue = 1, .ptr = (void*)&backflushOn};
 
     editableVars["STANDBY_MODE_ON"] = {.displayName = F("Enable Standby Timer"),
                                        .hasHelpText = true,
                                        .helpText = F("Turn heater off after standby time has elapsed."),
                                        .type = kUInt8,
                                        .section = sPowerSection,
-                                       .position = 29,
+                                       .position = 28,
                                        .show = [] { return true; },
                                        .minValue = 0,
                                        .maxValue = 1,
@@ -1276,7 +1247,7 @@ void setup() {
                                           .helpText = F("Time in minutes until the heater is turned off. Timer is reset by brew detection."),
                                           .type = kDouble,
                                           .section = sPowerSection,
-                                          .position = 30,
+                                          .position = 29,
                                           .show = [] { return true; },
                                           .minValue = STANDBY_MODE_TIME_MIN,
                                           .maxValue = STANDBY_MODE_TIME_MAX,
@@ -1284,14 +1255,14 @@ void setup() {
 
 #if FEATURE_SCALE == 1
     editableVars["TARE_ON"] = {
-        .displayName = F("Tare"), .hasHelpText = false, .helpText = "", .type = kUInt8, .section = sScaleSection, .position = 31, .show = [] { return false; }, .minValue = 0, .maxValue = 1, .ptr = (void*)&scaleTareOn};
+        .displayName = F("Tare"), .hasHelpText = false, .helpText = "", .type = kUInt8, .section = sScaleSection, .position = 30, .show = [] { return false; }, .minValue = 0, .maxValue = 1, .ptr = (void*)&scaleTareOn};
 
     editableVars["CALIBRATION_ON"] = {.displayName = F("Calibration"),
                                       .hasHelpText = false,
                                       .helpText = "",
                                       .type = kUInt8,
                                       .section = sScaleSection,
-                                      .position = 32,
+                                      .position = 31,
                                       .show = [] { return false; },
                                       .minValue = 0,
                                       .maxValue = 1,
@@ -1302,7 +1273,7 @@ void setup() {
                                           .helpText = "",
                                           .type = kFloat,
                                           .section = sScaleSection,
-                                          .position = 33,
+                                          .position = 32,
                                           .show = [] { return true; },
                                           .minValue = 0,
                                           .maxValue = 2000,
@@ -1313,7 +1284,7 @@ void setup() {
                                          .helpText = "",
                                          .type = kFloat,
                                          .section = sScaleSection,
-                                         .position = 34,
+                                         .position = 33,
                                          .show = [] { return true; },
                                          .minValue = -100000,
                                          .maxValue = 100000,
@@ -1324,7 +1295,7 @@ void setup() {
                                           .helpText = "",
                                           .type = kFloat,
                                           .section = sScaleSection,
-                                          .position = 35,
+                                          .position = 34,
                                           .show = [] { return SCALE_TYPE == 0; },
                                           .minValue = -100000,
                                           .maxValue = 100000,
@@ -1332,7 +1303,7 @@ void setup() {
 #endif
 
     editableVars["VERSION"] = {
-        .displayName = F("Version"), .hasHelpText = false, .helpText = "", .type = kCString, .section = sOtherSection, .position = 36, .show = [] { return false; }, .minValue = 0, .maxValue = 1, .ptr = (void*)sysVersion};
+        .displayName = F("Version"), .hasHelpText = false, .helpText = "", .type = kCString, .section = sOtherSection, .position = 35, .show = [] { return false; }, .minValue = 0, .maxValue = 1, .ptr = (void*)sysVersion};
     // when adding parameters, set EDITABLE_VARS_LEN to max of .position
 
 #if (FEATURE_PRESSURESENSOR == 1)
@@ -1613,7 +1584,6 @@ void looppid() {
             LOGF(TRACE, "Current PID Output: %f", pidOutput);
             LOGF(TRACE, "Current Machinestate: %s", machinestateEnumToString(machineState));
             LOGF(TRACE, "timeBrewed %f", timeBrewed);
-            LOGF(TRACE, "Brew PID time %f", brewPidTime);
             LOGF(TRACE, "Brew detected %i", brewOn);
         }
     }
@@ -1867,7 +1837,6 @@ int readSysParamsFromStorage(void) {
     if (sysParaPidTnBd.getStorage() != 0) return -1;
     if (sysParaPidTvBd.getStorage() != 0) return -1;
     if (sysParaBrewTime.getStorage() != 0) return -1;
-    if (sysParaBrewPidTime.getStorage() != 0) return -1;
     if (sysParaPreInfTime.getStorage() != 0) return -1;
     if (sysParaPreInfPause.getStorage() != 0) return -1;
     if (sysParaPidKpSteam.getStorage() != 0) return -1;
@@ -1908,7 +1877,6 @@ int writeSysParamsToStorage(void) {
     if (sysParaPidTnBd.setStorage() != 0) return -1;
     if (sysParaPidTvBd.setStorage() != 0) return -1;
     if (sysParaBrewTime.setStorage() != 0) return -1;
-    if (sysParaBrewPidTime.setStorage() != 0) return -1;
     if (sysParaPreInfTime.setStorage() != 0) return -1;
     if (sysParaPreInfPause.setStorage() != 0) return -1;
     if (sysParaPidKpSteam.setStorage() != 0) return -1;
