@@ -241,10 +241,10 @@ bool displayShottimer() {
         return false;
     }
 
-    if (machineState == kBrew || brewSwitchState == kBrewSwitchFlushOff) {
+    if (machineState == kBrew || brewSwitchState == kBrewSwitchFlush) {
         u8g2.clearBuffer();
 
-        if (brewSwitchState != kBrewSwitchFlushOff) {
+        if (brewSwitchState != kBrewSwitchFlush) {
             u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
         }
         else {
@@ -273,7 +273,7 @@ bool displayShottimer() {
      * nothing should be done, otherwise wrong time is displayed
      * because the switch is pressed later than totalBrewTime
      */
-    else if (machineState == kShotTimerAfterBrew && brewSwitchState != kBrewSwitchFlushOff) {
+    else if (machineState == kShotTimerAfterBrew && brewSwitchState != kBrewSwitchFlush) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
 
@@ -302,7 +302,7 @@ bool displayShottimer() {
  */
 bool displayMachineState() {
     // Show the heating logo when we are in regular PID mode and more than 5degC below the set point
-    if (FEATURE_HEATINGLOGO > 0 && machineState == kPidNormal && (setpoint - temperature) > 5. && brewSwitchState != kBrewSwitchFlushOff) {
+    if (FEATURE_HEATINGLOGO > 0 && machineState == kPidNormal && (setpoint - temperature) > 5. && brewSwitchState != kBrewSwitchFlush) {
         // For status info
         u8g2.clearBuffer();
 
@@ -339,7 +339,7 @@ bool displayMachineState() {
         return true;
     }
     // Steam
-    else if (machineState == kSteam && brewSwitchState != kBrewSwitchFlushOff) {
+    else if (machineState == kSteam && brewSwitchState != kBrewSwitchFlush) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(-1, 12, Steam_Logo_width, Steam_Logo_height, Steam_Logo);
 
@@ -350,7 +350,7 @@ bool displayMachineState() {
         return true;
     }
     // Water empty
-    else if (machineState == kWaterEmpty && brewSwitchState != kBrewSwitchFlushOff) {
+    else if (machineState == kWaterEmpty && brewSwitchState != kBrewSwitchFlush) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(45, 0, Water_Empty_Logo_width, Water_Empty_Logo_height, Water_Empty_Logo);
         u8g2.setFont(u8g2_font_profont11_tf);
