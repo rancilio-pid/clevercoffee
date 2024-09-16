@@ -241,6 +241,7 @@ void brewTimer() {
 
     // Start the timer when the brew switch is turned on
     if (currStateBrewSwitch == HIGH && currBrewState == kBrewIdle) {
+        brewOn = 1;
         startingTime = currentMillisTemp;
         currBrewState = kBrewRunning;
         LOG(INFO, "Brew timer started");
@@ -254,6 +255,7 @@ void brewTimer() {
     // Stop the timer when the brew switch is turned off
     if (currStateBrewSwitch == LOW && currBrewState == kBrewRunning) {
         LOG(INFO, "Brew timer stopped");
+        brewOn = 0;
         currBrewState = kBrewIdle;
         lastBrewTime = timeBrewed; // store brewtime to show in Shottimer after brew is finished
         timeBrewed = 0;
