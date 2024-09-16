@@ -257,6 +257,7 @@ void brewTimer() {
         currBrewState = kBrewIdle;
         lastBrewTime = timeBrewed; // store brewtime to show in Shottimer after brew is finished
         timeBrewed = 0;
+        LOGF(INFO, "Shot time: %4.1f s", lastBrewTime / 1000);
     }
 }
 #endif
@@ -383,6 +384,7 @@ void brew() {
                 currBrewState = kBrewIdle;
                 lastBrewTime = timeBrewed; // store brewtime to show in Shottimer after brew is finished
                 timeBrewed = 0;
+                LOGF(INFO, "Shot time: %4.1f s", lastBrewTime / 1000);
             }
 
             break;

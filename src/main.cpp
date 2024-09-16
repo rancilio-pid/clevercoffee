@@ -630,7 +630,6 @@ void handleMachineState() {
         case kShotTimerAfterBrew:
 
             if (millis() - lastBrewTimeMillis > SHOTTIMERDISPLAYDELAY) {
-                LOGF(INFO, "Shot time: %4.1f s", lastBrewTime / 1000);
                 machineState = kPidNormal;
             }
 
