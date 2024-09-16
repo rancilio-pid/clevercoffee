@@ -100,7 +100,6 @@ void checkbrewswitch() {
             case kBrewSwitchBrew: // Brew switch short pressed - start brew
                 if (currBrewSwitchStateMomentary == LOW && currStateBrewSwitch == LOW) {
                     currStateBrewSwitch = HIGH;
-                    brewOn = 1;
                     brewSwitchState = kBrewSwitchActive;
                     LOG(DEBUG, "brewSwitchState = kBrewSwitchBrew; brew switch short pressed - start Brew");
                 }
@@ -116,13 +115,11 @@ void checkbrewswitch() {
             case kBrewSwitchActive:
                 if (currBrewSwitchStateMomentary == HIGH && currStateBrewSwitch == HIGH) { // Brew switch got short pressed while brew is running - abort brew
                     currStateBrewSwitch = LOW;
-                    brewOn = 0;
                     brewSwitchState = kBrewSwitchWaitForRelease;
                     LOG(DEBUG, "brewSwitchState = kBrewSwitchActive: brew switch short pressed - stop brew");
                 }
                 else if ((machineState == kShotTimerAfterBrew) || (backflushState == kBackflushWaitBrewswitchOff)) { // Brew reached target and stopped or blackflush cycle done
                     currStateBrewSwitch = LOW;
-                    brewOn = 0;
                     brewSwitchState = kBrewSwitchWaitForRelease;
                     LOG(DEBUG, "brewSwitchState = kBrewSwitchActive: brew reached target or backflush done - reset brew switch");
                 }
@@ -275,6 +272,7 @@ void brew() {
     if (currStateBrewSwitch == LOW && currBrewState > kBrewIdle) {
         // abort function for state machine from every state
         LOG(INFO, "Brew stopped manually");
+        brewOn = 0;
         currBrewState = kWaitBrewOff;
     }
 
@@ -302,9 +300,11 @@ void brew() {
                 startingTime = millis();
 
                 if (preinfusionPause == 0 || preinfusion == 0) {
+                    brewOn = 1;
                     currBrewState = kBrewRunning;
                 }
                 else {
+                    brewOn = 1;
                     currBrewState = kPreinfusion;
                 }
             }
@@ -369,6 +369,7 @@ void brew() {
             break;
 
         case kBrewFinished: // brew finished
+            brewOn = 0;
             LOG(INFO, "Brew stopped");
             valveRelay.off();
             pumpRelay.off();
