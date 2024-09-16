@@ -118,7 +118,7 @@ void checkbrewswitch() {
                     brewSwitchState = kBrewSwitchWaitForRelease;
                     LOG(DEBUG, "brewSwitchState = kBrewSwitchActive: brew switch short pressed - stop brew");
                 }
-                else if ((machineState == kShotTimerAfterBrew) || (backflushState == kBackflushWaitBrewswitchOff)) { // Brew reached target and stopped or blackflush cycle done
+                else if ((currBrewState == kBrewFinished) || (backflushState == kBackflushWaitBrewswitchOff)) { // Brew reached target and stopped or blackflush cycle done
                     currStateBrewSwitch = LOW;
                     brewSwitchState = kBrewSwitchWaitForRelease;
                     LOG(DEBUG, "brewSwitchState = kBrewSwitchActive: brew reached target or backflush done - reset brew switch");

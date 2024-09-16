@@ -81,8 +81,6 @@ enum MachineState {
     kInit = 0,
     kPidNormal = 20,
     kBrew = 30,
-    kShotTimerAfterBrew = 31,
-    kBrewDetectionTrailing = 35,
     kSteam = 40,
     kBackflush = 50,
     kWaterEmpty = 70,
@@ -604,49 +602,12 @@ void handleMachineState() {
 
         case kBrew:
 
-            if (currBrewState == kBrewIdle || currBrewState == kWaitBrewOff) {
-                // delay shot timer display after brewSwitch got released
-                machineState = kShotTimerAfterBrew;
-                lastBrewTimeMillis = millis(); // for delay
-            }
-
-            if (steamON == 1) {
-                machineState = kSteam;
-            }
-
-            if (emergencyStop) {
-                machineState = kEmergencyStop;
-            }
-
-            if (pidON == 0) {
-                machineState = kPidDisabled;
-            }
-
-            if (tempSensor->hasError()) {
-                machineState = kSensorError;
-            }
-            break;
-
-        case kShotTimerAfterBrew:
-
-            if (millis() - lastBrewTimeMillis > SHOTTIMERDISPLAYDELAY) {
+            if (brewOn == 0) {
                 machineState = kPidNormal;
             }
 
-            if (brewOn == 1) {
-                machineState = kBrew;
-
-                if (standbyModeOn) {
-                    resetStandbyTimer();
-                }
-            }
-
             if (steamON == 1) {
                 machineState = kSteam;
-            }
-
-            if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
-                machineState = kBackflush;
             }
 
             if (emergencyStop) {
@@ -655,10 +616,6 @@ void handleMachineState() {
 
             if (pidON == 0) {
                 machineState = kPidDisabled;
-            }
-
-            if (!waterFull) {
-                machineState = kWaterEmpty;
             }
 
             if (tempSensor->hasError()) {
@@ -815,10 +772,6 @@ char const* machinestateEnumToString(MachineState machineState) {
             return "PID Normal";
         case kBrew:
             return "Brew";
-        case kShotTimerAfterBrew:
-            return "Shot Timer After Brew";
-        case kBrewDetectionTrailing:
-            return "Brew Detection Trailing";
         case kSteam:
             return "Steam";
         case kBackflush:
@@ -1667,7 +1620,7 @@ void looppid() {
     }
 
     // BD PID
-    if (machineState >= kBrew && machineState <= kBrewDetectionTrailing) {
+    if (machineState == kBrew) {
         if (brewPIDDelay > 0 && timeBrewed > 0 && timeBrewed < brewPIDDelay * 1000) {
             // disable PID for brewPIDDelay seconds, enable PID again with new tunings after that
             if (!brewPIDDisabled) {
