@@ -59,17 +59,34 @@ void printScreen() {
         drawTemperaturebar(8, 50, 30);
     }
 
-    // Brew time
-    u8g2.setCursor(35, 36);
+// Brew time
+#if (FEATURE_BREWSWITCH == 1 && FEATURE_BREWCONTROL == 1)
 
-    // Shot timer shown if machine is brewing and after the brew
-    if (machineState == kBrew) {
+    // Shown brew time while machine is brewing and after the brewing during SHOTTIMERDISPLAYDELAY
+    if (machineState == kBrew || (millis() - lastBrewTimeMillis) < SHOTTIMERDISPLAYDELAY) {
+        u8g2.setCursor(35, 36);
         u8g2.print(langstring_brew);
         u8g2.setCursor(84, 36);
         u8g2.print(timeBrewed / 1000, 0);
         u8g2.print("/");
-        u8g2.print(totalBrewTime / 1000, 1);
+        u8g2.print(totalBrewTime / 1000, 0);
+        u8g2.print(" s");
     }
+
+#endif
+
+#if (FEATURE_BREWSWITCH == 1 && FEATURE_BREWCONTROL == 0)
+
+    // Show brew time; after brew finished show lastBrewTime during SHOTTIMERDISPLAYDELAY
+    if (machineState == kBrew || (millis() - lastBrewTimeMillis) < SHOTTIMERDISPLAYDELAY) {
+        u8g2.setCursor(35, 36);
+        u8g2.print(langstring_brew);
+        u8g2.setCursor(84, 36);
+        u8g2.print(timeBrewed / 1000, 0);
+        u8g2.print(" s");
+    }
+
+#endif
 
     // PID values over heat bar
     u8g2.setCursor(38, 47);

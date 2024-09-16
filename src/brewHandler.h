@@ -4,6 +4,16 @@
  * @brief Handler for brewing
  *
  */
+// TODO: Clean up brew()
+//  move flush out of checkbrewswitch
+//  flush should trigger standby timer
+//  flush should stop standby
+//  move brewPIDDisabled to kBrew?
+//  add flush to display templates, SHOTTIMER 0
+//  check all Scale stuff
+//  add shot time log info output
+//  check params website
+//  ...
 
 #pragma once
 
@@ -49,8 +59,7 @@ boolean brewSwitchWasOff = false;
 int brewOn = 0;                  // flag is set if brew was detected
 double totalBrewTime = 0;        // total brewtime set in software
 double timeBrewed = 0;           // total brewed time
-double lastBrewTimeMillis = 0;   // for shottimer delay after disarmed button
-double lastBrewTime = 0;
+double lastBrewTimeMillis = 0;   // for shottimer delay after brew is finished
 unsigned long startingTime = 0;  // start time of brew
 boolean brewPIDDisabled = false; // is PID disabled for delay after brew has started?
 
@@ -240,6 +249,7 @@ void brewTimer() {
     if (currStateBrewSwitch == HIGH && currBrewState == kBrewIdle) {
         brewOn = 1;
         startingTime = currentMillisTemp;
+        timeBrewed = 0; // reset timeBrewed, last brew is still stored
         currBrewState = kBrewRunning;
         LOG(INFO, "Brew timer started");
     }
@@ -253,10 +263,9 @@ void brewTimer() {
     if (currStateBrewSwitch == LOW && currBrewState == kBrewRunning) {
         LOG(INFO, "Brew timer stopped");
         brewOn = 0;
+        lastBrewTimeMillis = millis(); // time brew finished for shottimer delay
         currBrewState = kBrewIdle;
-        lastBrewTime = timeBrewed; // store brewtime to show in Shottimer after brew is finished
-        timeBrewed = 0;
-        LOGF(INFO, "Shot time: %4.1f s", lastBrewTime / 1000);
+        LOGF(INFO, "Shot time: %4.1f s", timeBrewed / 1000);
     }
 }
 #endif
@@ -298,6 +307,7 @@ void brew() {
         case kBrewIdle: // waiting step for brew switch turning on
             if (currStateBrewSwitch == HIGH && backflushState == 10 && backflushOn == 0 && brewSwitchWasOff && machineState != kWaterEmpty) {
                 startingTime = millis();
+                timeBrewed = 0;
 
                 if (preinfusionPause == 0 || preinfusion == 0) {
                     brewOn = 1;
@@ -353,7 +363,6 @@ void brew() {
             break;
 
         case kWaitBrew: // waiting time or weight brew
-            lastBrewTime = timeBrewed;
 
             // stop brew if target-time is reached --> No stop if stop by time is deactivated via Parameter (0)
             if ((timeBrewed > totalBrewTime) && ((brewTime > 0))) {
@@ -384,10 +393,9 @@ void brew() {
 
                 // disarmed button
                 currentMillisTemp = 0;
+                lastBrewTimeMillis = millis(); // time brew finished for shottimer delay
                 currBrewState = kBrewIdle;
-                lastBrewTime = timeBrewed; // store brewtime to show in Shottimer after brew is finished
-                timeBrewed = 0;
-                LOGF(INFO, "Shot time: %4.1f s", lastBrewTime / 1000);
+                LOGF(INFO, "Shot time: %4.1f s", timeBrewed / 1000);
             }
 
             break;

@@ -1315,7 +1315,9 @@ void setup() {
     mqttSensors["currentKi"] = [] { return bPID.GetKi(); };
     mqttSensors["currentKd"] = [] { return bPID.GetKd(); };
     mqttSensors["machineState"] = [] { return machineState; };
-
+#if FEATURE_BREWSWITCH == 1
+    mqttSensors["timeBrewed"] = [] { return timeBrewed / 1000; };
+#endif
 #if FEATURE_PRESSURESENSOR == 1
     mqttSensors["pressure"] = [] { return inputPressureFilter; };
 #endif

@@ -241,7 +241,7 @@ bool displayShottimer() {
         return false;
     }
 
-    if (machineState == kBrew || brewSwitchState == kBrewSwitchFlush) {
+    if (machineState == kBrew || (millis() - lastBrewTimeMillis) < SHOTTIMERDISPLAYDELAY || brewSwitchState == kBrewSwitchFlush) {
         u8g2.clearBuffer();
 
         if (brewSwitchState != kBrewSwitchFlush) {
@@ -269,31 +269,6 @@ bool displayShottimer() {
         return true;
     }
 
-    /* if the totalBrewTime is reached automatically,
-     * nothing should be done, otherwise wrong time is displayed
-     * because the switch is pressed later than totalBrewTime
-     */
-    else if (brewSwitchState != kBrewSwitchFlush) {  //TODO: Show shottimer after brew finished fpr SHOTTIMERDISPLAYDELAY
-        u8g2.clearBuffer();
-        u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
-
-#if (FEATURE_SCALE == 1)
-        u8g2.setFont(u8g2_font_profont22_tf);
-        u8g2.setCursor(64, 15);
-        u8g2.print(lastBrewTime / 1000, 1);
-        u8g2.print("s");
-        u8g2.setCursor(64, 38);
-        u8g2.print(weightBrew, 1);
-        u8g2.print("g");
-        u8g2.setFont(u8g2_font_profont11_tf);
-#else
-        displayBrewtime(48, 25, lastBrewTime);
-#endif
-
-        displayWaterIcon(119, 1);
-        u8g2.sendBuffer();
-        return true;
-    }
     return false;
 }
 
