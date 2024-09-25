@@ -40,7 +40,11 @@ enum MACHINE {
 #define FEATURE_PIDOFF_LOGO   1       // 0 = deactivated, 1 = activated
 #define SHOTTIMERDISPLAYDELAY 3000    // time in ms that shot timer will be shown after brew finished
 
-#define LANGUAGE 0                    // LANGUAGE = 0 (DE), LANGUAGE = 1 (EN), LANGUAGE = 2 (ES)
+// Display Menu
+#define FEATURE_MENU 0                  // 0 = deactivated, 1 = enabled
+#define MENU_INPUT   MENUINPUT::BUTTONS // MENUINPUT::BUTTONS = input with three buttons, MENUINPUT::ROTARY = input with rotary encoder with shaft switch
+
+#define LANGUAGE 0                      // LANGUAGE = 0 (DE), LANGUAGE = 1 (EN), LANGUAGE = 2 (ES)
 
 // Connectivity
 #define CONNECTMODE         1              // 0 = offline 1 = WIFI-MODE

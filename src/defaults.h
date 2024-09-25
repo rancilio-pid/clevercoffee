@@ -91,3 +91,5 @@ int writeSysParamsToStorage(void);
 #define PID_KP_STEAM_MAX       500
 #define STANDBY_MODE_TIME_MIN  30
 #define STANDBY_MODE_TIME_MAX  120
+
+#define ENCODER_CLICKS_PER_NOTCH 4
