@@ -51,7 +51,7 @@ double timeBrewed = 0;           // total brewed time
 double lastBrewTimeMillis = 0;   // for shottimer delay after disarmed button
 double lastBrewTime = 0;
 unsigned long startingTime = 0;  // start time of brew
-boolean brewPIDDisabled = false; // is PID disabled for delay after brew has started?
+boolean pidBrewDisabled = false; // is PID disabled for delay after brew has started?
 
 // Shot timer with or without scale
 #if FEATURE_SCALE == 1

@@ -13,11 +13,11 @@ void checkPowerSwitch() {
         if (POWERSWITCH_TYPE == Switch::TOGGLE) {
             // Set pidON to 1 when powerswitch is HIGH
             if ((powerSwitchReading == HIGH && machineState != kStandby) || (powerSwitchReading == LOW && machineState == kStandby)) {
-                pidON = 1;
+                pidOn = 1;
             }
             else {
                 // Set pidON to 0 when powerswitch is not HIGH
-                pidON = 0;
+                pidOn = 0;
             }
         }
         else if (POWERSWITCH_TYPE == Switch::MOMENTARY) {
@@ -27,11 +27,11 @@ void checkPowerSwitch() {
 
                 // only toggle heating power if the new button state is HIGH
                 if (currStatePowerSwitch == HIGH) {
-                    if (pidON == 0) {
-                        pidON = 1;
+                    if (pidOn == 0) {
+                        pidOn = 1;
                     }
                     else {
-                        pidON = 0;
+                        pidOn = 0;
                     }
                 }
             }

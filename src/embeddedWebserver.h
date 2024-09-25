@@ -58,7 +58,7 @@ void serverSetup();
 void setEepromWriteFcn(int (*fcnPtr)(void));
 
 // editable vars are specified in main.cpp
-#define EDITABLE_VARS_LEN 33
+#define EDITABLE_VARS_LEN 31
 extern std::map<String, editable_t> editableVars;
 
 // EEPROM
@@ -245,7 +245,7 @@ void serverSetup() {
     // set up dynamic routes (endpoints)
 
     server.on("/toggleSteam", HTTP_POST, [](AsyncWebServerRequest* request) {
-        int steam = flipUintValue(steamON);
+        int steam = flipUintValue(steamOn);
 
         setSteamMode(steam);
         LOGF(DEBUG, "Toggle steam mode: %i", steam);
@@ -255,7 +255,7 @@ void serverSetup() {
 
     server.on("/togglePid", HTTP_POST, [](AsyncWebServerRequest* request) {
         LOGF(DEBUG, "/togglePid requested, method: %d", request->method());
-        int status = flipUintValue(pidON);
+        int status = flipUintValue(pidOn);
 
         setPidStatus(status);
         LOGF(DEBUG, "Toggle PID state: %d\n", status);

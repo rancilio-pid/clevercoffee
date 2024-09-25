@@ -10,39 +10,34 @@
 // storage items
 typedef enum {
     STO_ITEM_PID_ON,                    // PID on/off state
-    STO_ITEM_PID_START_PONM,            // Use PonM for cold start phase (otherwise use normal PID and same params)
-    STO_ITEM_PID_KP_START,              // PID P part at cold start phase
-    STO_ITEM_PID_TN_START,              // PID I part at cold start phase
+    STO_ITEM_PID_PONM_ON,               // PID PonM on/off
     STO_ITEM_PID_KP_REGULAR,            // PID P part at regular operation
     STO_ITEM_PID_TN_REGULAR,            // PID I part at regular operation
     STO_ITEM_PID_TV_REGULAR,            // PID D part at regular operation
     STO_ITEM_PID_I_MAX_REGULAR,         // PID Integrator upper limit
-    STO_ITEM_PID_KP_BD,                 // PID P part at brew detection phase
-    STO_ITEM_PID_TN_BD,                 // PID I part at brew detection phase
-    STO_ITEM_PID_TV_BD,                 // PID D part at brew detection phase
-    STO_ITEM_BREW_SETPOINT,             // brew setpoint
-    STO_ITEM_BREW_TEMP_OFFSET,          // brew temp offset
-    STO_ITEM_USE_BD_PID,                // use separate PID for brew detection (otherwise continue with regular PID)
-    STO_ITEM_BREW_TIME,                 // brew time
-    STO_ITEM_BREW_SW_TIME,              // brew software time
-    STO_ITEM_BREW_PID_DELAY,            // brew PID delay
+    STO_ITEM_PID_KP_STEAM,              // PID P part at steam phase
+    STO_ITEM_PID_BREW_ON,               // PID during brewing (otherwise continue with regular PID)
+    STO_ITEM_PID_KP_BREW,               // PID P part during brewing
+    STO_ITEM_PID_TN_BREW,               // PID I part during brewing
+    STO_ITEM_PID_TV_BREW,               // PID D part during brewing
+    STO_ITEM_PID_BREW_DELAY,            // PID brew delay
     STO_ITEM_BD_THRESHOLD,              // brew detection limit
-    STO_ITEM_WIFI_CREDENTIALS_SAVED,    // flag for wifisetup
+    STO_ITEM_BREW_SW_TIME,              // brew software time
+    STO_ITEM_BREW_TEMP_OFFSET,          // brew temp offset (offset boiler/thermoblock to group head)
+    STO_ITEM_BREW_SETPOINT,             // setpoint for Brew mode
+    STO_ITEM_STEAM_SETPOINT,            // setpoint for Steam mode
+    STO_ITEM_BREW_TIME,                 // brew time
     STO_ITEM_PRE_INFUSION_TIME,         // pre-infusion time
     STO_ITEM_PRE_INFUSION_PAUSE,        // pre-infusion pause
-    STO_ITEM_PID_KP_STEAM,              // PID P part at steam phase
-    STO_ITEM_STEAM_SETPOINT,            // Setpoint for Steam mode
-    STO_ITEM_SOFT_AP_ENABLED_CHECK,     // soft AP enable state
+    STO_ITEM_WEIGHTSETPOINT,            // Brew weight setpoint
+    STO_ITEM_SCALE_CALIBRATION_FACTOR,  // calibration factor for scale
+    STO_ITEM_SCALE2_CALIBRATION_FACTOR, // calibration factor for scale 2
+    STO_ITEM_SCALE_KNOWN_WEIGHT,        // calibration weight for scale
     STO_ITEM_WIFI_SSID,                 // Wifi SSID
     STO_ITEM_WIFI_PASSWORD,             // Wifi password
-    STO_ITEM_WEIGHTSETPOINT,            // Brew weight setpoint
+    STO_ITEM_WIFI_CREDENTIALS_SAVED,    // flag for wifisetup
     STO_ITEM_STANDBY_MODE_ON,           // Enable tandby mode
-    STO_ITEM_STANDBY_MODE_TIME,         // Time until heater is turned off
-    STO_ITEM_SCALE_CALIBRATION_FACTOR,  // Calibration factor for scale
-    STO_ITEM_SCALE2_CALIBRATION_FACTOR, // Calibration factor for scale 2
-    STO_ITEM_SCALE_KNOWN_WEIGHT,        // Calibration weight for scale
-    STO_ITEM_RESERVED_30,               // reserved
-    STO_ITEM_RESERVED_21,               // reserved
+    STO_ITEM_STANDBY_MODE_TIME,         // time until heater is turned off
 
     /* WHEN ADDING NEW ITEMS, THE FOLLOWING HAS TO BE UPDATED:
      * - storage structure:  sto_data_t
@@ -66,97 +61,68 @@ typedef enum {
 
 // storage data structure
 typedef struct __attribute__((packed)) {
-        // Any 'freeToUse' areas ensure the compatibility to origin EEPROM layout and can be used by new value.
-        double pidKpRegular;
-        uint8_t reserved1[2];
-        double pidTnRegular;
         uint8_t pidOn;
-        uint8_t freeToUse1;
+        uint8_t pidPonmOn;
+        double pidKpRegular;
+        double pidTnRegular;
         double pidTvRegular;
         double pidIMaxRegular;
-        uint8_t freeToUse2;
-        double brewSetpoint;
-        double brewTempOffset;
-        uint8_t freeToUse3;
-        double brewTimeMs;
-        float scaleCalibration;
-        double preInfusionTimeMs;
-        float scaleKnownWeight;
-        double preInfusionPauseMs;
-        uint8_t freeToUse6[21];
-        uint8_t pidBdOn;
-        double pidKpBd;
-        float scale2Calibration;
-        double pidTnBd;
-        uint8_t freeToUse8[2];
-        double pidTvBd;
-        uint8_t freeToUse9[2];
-        double brewSwTimeSec;
-        double brewPIDDelaySec;
-        uint8_t freeToUse10;
+        double pidKpSteam;
+        uint8_t pidBrewOn;
+        double pidKpBrew;
+        double pidTnBrew;
+        double pidTvBrew;
+        double pidBrewDelaySec;
         double brewDetectionThreshold;
-        uint8_t wifiCredentialsSaved;
-        uint8_t useStartPonM;
-        double pidKpStart;
-        uint8_t freeToUse12[2];
-        uint8_t softApEnabledCheck;
-        uint8_t freeToUse13[9];
-        double pidTnStart;
-        uint8_t freeToUse14[2];
+        double brewSwTimeSec;
+        double brewTempOffset;
+        double brewSetpoint;
+        double steamSetpoint;
+        double brewTimeMs;
+        double preInfusionTimeMs;
+        double preInfusionPauseMs;
+        double weightSetpoint;
+        float scaleCalibration;
+        float scale2Calibration;
+        float scaleKnownWeight;
         char wifiSSID[25 + 1];
         char wifiPassword[25 + 1];
-        double weightSetpoint;
-        double steamkp;
-        double steamSetpoint;
+        uint8_t wifiCredentialsSaved;
         uint8_t standbyModeOn;
         double standbyModeTime;
 } sto_data_t;
 
 // set item defaults
 static const sto_data_t itemDefaults PROGMEM = {
-    AGGKP,                                                                                                                          // STO_ITEM_PID_KP_REGULAR
-    {0xFF, 0xFF},                                                                                                                   // reserved (maybe for structure version)
-    AGGTN,                                                                                                                          // STO_ITEM_PID_TN_REGULAR
-    0,                                                                                                                              // STO_ITEM_PID_ON
-    0xFF,                                                                                                                           // free to use
-    AGGTV,                                                                                                                          // STO_ITEM_PID_TV_REGULAR
-    AGGIMAX,                                                                                                                        // STO_ITEM_PID_I_MAX_REGULAR
-    0xFF,                                                                                                                           // free to use
-    SETPOINT,                                                                                                                       // STO_ITEM_BREW_SETPOINT
-    TEMPOFFSET,                                                                                                                     // STO_ITEM_BREW_TEMP_OFFSET
-    0xFF,                                                                                                                           // free to use
-    BREW_TIME,                                                                                                                      // STO_ITEM_BREW_TIME
-    SCALE_CALIBRATION_FACTOR,                                                                                                       // STO_ITEM_SCALE_CALIBRATION_FACTOR
-    PRE_INFUSION_TIME,                                                                                                              // STO_ITEM_PRE_INFUSION_TIME
-    SCALE_KNOWN_WEIGHT,                                                                                                             // STO_ITEM_SCALE_KNOWN_WEIGHT
-    PRE_INFUSION_PAUSE_TIME,                                                                                                        // STO_ITEM_PRE_INFUSION_PAUSE
-    {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, // free to use
-    0,                                                                                                                              // STO_ITEM_USE_PID_BD
-    AGGBKP,                                                                                                                         // STO_ITEM_PID_KP_BD
-    SCALE2_CALIBRATION_FACTOR,                                                                                                      // STO_ITEM_SCALE2_CALIBRATION_FACTOR
-    AGGBTN,                                                                                                                         // STO_ITEM_PID_TN_BD
-    {0xFF, 0xFF},                                                                                                                   // free to use
-    AGGBTV,                                                                                                                         // STO_ITEM_PID_TV_BD
-    {0xFF, 0xFF},                                                                                                                   // free to use
-    BREW_SW_TIME,                                                                                                                   // STO_ITEM_BREW_SW_TIME
-    BREW_PID_DELAY,                                                                                                                 // STO_ITEM_BREW_PID_DELAY
-    0xFF,                                                                                                                           // free to use
-    BD_SENSITIVITY,                                                                                                                 // STO_ITEM_BD_THRESHOLD
-    WIFI_CREDENTIALS_SAVED,                                                                                                         // STO_ITEM_WIFI_CREDENTIALS_SAVED
-    0,                                                                                                                              // STO_ITEM_USE_START_PON_M
-    STARTKP,                                                                                                                        // STO_ITEM_PID_KP_START
-    {0xFF, 0xFF},                                                                                                                   // free to use
-    0,                                                                                                                              // STO_ITEM_SOFT_AP_ENABLED_CHECK
-    {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},                                                                         // free to use
-    STARTTN,                                                                                                                        // STO_ITEM_PID_TN_START
-    {0xFF, 0xFF},                                                                                                                   // free to use
-    "",                                                                                                                             // STO_ITEM_WIFI_SSID
-    "",                                                                                                                             // STO_ITEM_WIFI_PASSWORD
-    SCALE_WEIGHTSETPOINT,                                                                                                           // STO_ITEM_WEIGHTSETPOINT
-    STEAMKP,                                                                                                                        // STO_ITEM_PID_KP_STEAM
-    STEAMSETPOINT,                                                                                                                  // STO_ITEM_STEAM_SETPOINT
-    STANDBY_MODE_ON,                                                                                                                // STO_ITEM_STANDBY_MODE_ON
-    STANDBY_MODE_TIME                                                                                                               // STO_ITEM_STANDBY_MODE_TIME
+    0,                         // STO_ITEM_PID_ON
+    0,                         // STO_ITEM_PONM_ON
+    AGGKP,                     // STO_ITEM_PID_KP_REGULAR
+    AGGTN,                     // STO_ITEM_PID_TN_REGULAR
+    AGGTV,                     // STO_ITEM_PID_TV_REGULAR
+    AGGIMAX,                   // STO_ITEM_PID_I_MAX_REGULAR
+    STEAMKP,                   // STO_ITEM_PID_KP_STEAM
+    0,                         // STO_ITEM_PID_BREW_ON
+    AGGBKP,                    // STO_ITEM_PID_KP_BREW
+    AGGBTN,                    // STO_ITEM_PID_TN_BREW
+    AGGBTV,                    // STO_ITEM_PID_TV_BREW
+    PID_BREW_DELAY,            // STO_ITEM_PID_BREW_DELAY
+    BD_SENSITIVITY,            // STO_ITEM_BD_THRESHOLD
+    BREW_SW_TIME,              // STO_ITEM_BREW_SW_TIME
+    BREWTEMPOFFSET,            // STO_ITEM_BREW_TEMP_OFFSET
+    SETPOINT,                  // STO_ITEM_BREW_SETPOINT
+    STEAMSETPOINT,             // STO_ITEM_STEAM_SETPOINT
+    BREW_TIME,                 // STO_ITEM_BREW_TIME
+    PRE_INFUSION_TIME,         // STO_ITEM_PRE_INFUSION_TIME
+    PRE_INFUSION_PAUSE_TIME,   // STO_ITEM_PRE_INFUSION_PAUSE
+    SCALE_WEIGHTSETPOINT,      // STO_ITEM_WEIGHTSETPOINT
+    SCALE_CALIBRATION_FACTOR,  // STO_ITEM_SCALE_CALIBRATION_FACTOR
+    SCALE2_CALIBRATION_FACTOR, // STO_ITEM_SCALE2_CALIBRATION_FACTOR
+    SCALE_KNOWN_WEIGHT,        // STO_ITEM_SCALE_KNOWN_WEIGHT
+    "",                        // STO_ITEM_WIFI_SSID
+    "",                        // STO_ITEM_WIFI_PASSWORD
+    WIFI_CREDENTIALS_SAVED,    // STO_ITEM_WIFI_CREDENTIALS_SAVED
+    STANDBY_MODE_ON,           // STO_ITEM_STANDBY_MODE_ON
+    STANDBY_MODE_TIME          // STO_ITEM_STANDBY_MODE_TIME
 };
 
 /**
@@ -174,6 +140,16 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
     uint16_t size;
 
     switch (itemId) {
+        case STO_ITEM_PID_ON:
+            addr = offsetof(sto_data_t, pidOn);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, pidOn);
+            break;
+
+        case STO_ITEM_PID_PONM_ON:
+            addr = offsetof(sto_data_t, pidPonmOn);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, pidPonmOn);
+            break;
+
         case STO_ITEM_PID_KP_REGULAR:
             addr = offsetof(sto_data_t, pidKpRegular);
             size = STRUCT_MEMBER_SIZE(sto_data_t, pidKpRegular);
@@ -194,14 +170,59 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
             size = STRUCT_MEMBER_SIZE(sto_data_t, pidIMaxRegular);
             break;
 
-        case STO_ITEM_BREW_SETPOINT:
-            addr = offsetof(sto_data_t, brewSetpoint);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, brewSetpoint);
+        case STO_ITEM_PID_KP_STEAM:
+            addr = offsetof(sto_data_t, pidKpSteam);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, pidKpSteam);
+            break;
+
+        case STO_ITEM_PID_BREW_ON:
+            addr = offsetof(sto_data_t, pidBrewOn);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, pidBrewOn);
+            break;
+
+        case STO_ITEM_PID_KP_BREW:
+            addr = offsetof(sto_data_t, pidKpBrew);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, pidKpBrew);
+            break;
+
+        case STO_ITEM_PID_TN_BREW:
+            addr = offsetof(sto_data_t, pidTnBrew);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, pidTnBrew);
+            break;
+
+        case STO_ITEM_PID_TV_BREW:
+            addr = offsetof(sto_data_t, pidTvBrew);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, pidTvBrew);
+            break;
+
+        case STO_ITEM_PID_BREW_DELAY:
+            addr = offsetof(sto_data_t, pidBrewDelaySec);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, pidBrewDelaySec);
+            break;
+
+        case STO_ITEM_BD_THRESHOLD:
+            addr = offsetof(sto_data_t, brewDetectionThreshold);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, brewDetectionThreshold);
+            break;
+
+        case STO_ITEM_BREW_SW_TIME:
+            addr = offsetof(sto_data_t, brewSwTimeSec);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, brewSwTimeSec);
             break;
 
         case STO_ITEM_BREW_TEMP_OFFSET:
             addr = offsetof(sto_data_t, brewTempOffset);
             size = STRUCT_MEMBER_SIZE(sto_data_t, brewTempOffset);
+            break;
+
+        case STO_ITEM_BREW_SETPOINT:
+            addr = offsetof(sto_data_t, brewSetpoint);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, brewSetpoint);
+            break;
+
+        case STO_ITEM_STEAM_SETPOINT:
+            addr = offsetof(sto_data_t, steamSetpoint);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, steamSetpoint);
             break;
 
         case STO_ITEM_BREW_TIME:
@@ -219,104 +240,9 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
             size = STRUCT_MEMBER_SIZE(sto_data_t, preInfusionPauseMs);
             break;
 
-        case STO_ITEM_BREW_PID_DELAY:
-            addr = offsetof(sto_data_t, brewPIDDelaySec);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, brewPIDDelaySec);
-            break;
-
-        case STO_ITEM_USE_BD_PID:
-            addr = offsetof(sto_data_t, pidBdOn);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, pidBdOn);
-            break;
-
-        case STO_ITEM_PID_KP_BD:
-            addr = offsetof(sto_data_t, pidKpBd);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, pidKpBd);
-            break;
-
-        case STO_ITEM_PID_TN_BD:
-            addr = offsetof(sto_data_t, pidTnBd);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, pidTnBd);
-            break;
-
-        case STO_ITEM_PID_TV_BD:
-            addr = offsetof(sto_data_t, pidTvBd);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, pidTvBd);
-            break;
-
-        case STO_ITEM_BREW_SW_TIME:
-            addr = offsetof(sto_data_t, brewSwTimeSec);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, brewSwTimeSec);
-            break;
-
-        case STO_ITEM_BD_THRESHOLD:
-            addr = offsetof(sto_data_t, brewDetectionThreshold);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, brewDetectionThreshold);
-            break;
-
-        case STO_ITEM_WIFI_CREDENTIALS_SAVED:
-            addr = offsetof(sto_data_t, wifiCredentialsSaved);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, wifiCredentialsSaved);
-            break;
-
-        case STO_ITEM_PID_START_PONM:
-            addr = offsetof(sto_data_t, useStartPonM);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, useStartPonM);
-            break;
-
-        case STO_ITEM_PID_KP_START:
-            addr = offsetof(sto_data_t, pidKpStart);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, pidKpStart);
-            break;
-
-        case STO_ITEM_PID_TN_START:
-            addr = offsetof(sto_data_t, pidTnStart);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, pidTnStart);
-            break;
-
-        case STO_ITEM_SOFT_AP_ENABLED_CHECK:
-            addr = offsetof(sto_data_t, softApEnabledCheck);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, softApEnabledCheck);
-            break;
-
-        case STO_ITEM_WIFI_SSID:
-            addr = offsetof(sto_data_t, wifiSSID);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, wifiSSID);
-            break;
-
-        case STO_ITEM_WIFI_PASSWORD:
-            addr = offsetof(sto_data_t, wifiPassword);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, wifiPassword);
-            break;
-
-        case STO_ITEM_PID_ON:
-            addr = offsetof(sto_data_t, pidOn);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, pidOn);
-            break;
-
-        case STO_ITEM_PID_KP_STEAM:
-            addr = offsetof(sto_data_t, steamkp);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, steamkp);
-            break;
-
         case STO_ITEM_WEIGHTSETPOINT:
             addr = offsetof(sto_data_t, weightSetpoint);
             size = STRUCT_MEMBER_SIZE(sto_data_t, weightSetpoint);
-            break;
-
-        case STO_ITEM_STEAM_SETPOINT:
-            addr = offsetof(sto_data_t, steamSetpoint);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, steamSetpoint);
-            break;
-
-        case STO_ITEM_STANDBY_MODE_ON:
-            addr = offsetof(sto_data_t, standbyModeOn);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, standbyModeOn);
-            break;
-
-        case STO_ITEM_STANDBY_MODE_TIME:
-            addr = offsetof(sto_data_t, standbyModeTime);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, standbyModeTime);
             break;
 
         case STO_ITEM_SCALE_CALIBRATION_FACTOR:
@@ -332,6 +258,31 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
         case STO_ITEM_SCALE_KNOWN_WEIGHT:
             addr = offsetof(sto_data_t, scaleKnownWeight);
             size = STRUCT_MEMBER_SIZE(sto_data_t, scaleKnownWeight);
+            break;
+
+        case STO_ITEM_WIFI_SSID:
+            addr = offsetof(sto_data_t, wifiSSID);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, wifiSSID);
+            break;
+
+        case STO_ITEM_WIFI_PASSWORD:
+            addr = offsetof(sto_data_t, wifiPassword);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, wifiPassword);
+            break;
+
+        case STO_ITEM_WIFI_CREDENTIALS_SAVED:
+            addr = offsetof(sto_data_t, wifiCredentialsSaved);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, wifiCredentialsSaved);
+            break;
+
+        case STO_ITEM_STANDBY_MODE_ON:
+            addr = offsetof(sto_data_t, standbyModeOn);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, standbyModeOn);
+            break;
+
+        case STO_ITEM_STANDBY_MODE_TIME:
+            addr = offsetof(sto_data_t, standbyModeTime);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, standbyModeTime);
             break;
 
         default:

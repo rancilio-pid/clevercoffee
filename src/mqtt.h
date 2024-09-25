@@ -162,8 +162,8 @@ void assignMQTTParam(char* param, double value) {
                 case kUInt8:
                     *(uint8_t*)var->ptr = value;
 
-                    if (strcasecmp(param, "steamON") == 0) {
-                        steamFirstON = value;
+                    if (strcasecmp(param, "steamOn") == 0) {
+                        steamFirstOn = value;
                     }
 
                     mqtt_publish(param, number2string(value), true);
@@ -507,10 +507,8 @@ int sendHASSIODiscoveryMsg() {
     // Number Devices
     DiscoveryObject brewSetpoint = GenerateNumberDevice("brewSetpoint", "Brew setpoint", BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, 0.1, "°C");
     DiscoveryObject steamSetPoint = GenerateNumberDevice("steamSetpoint", "Steam setpoint", STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, 0.1, "°C");
-    DiscoveryObject brewTempOffset = GenerateNumberDevice("brewTempOffset", "Brew Temp. Offset", BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, 0.1, "°C");
-    DiscoveryObject brewPidDelay = GenerateNumberDevice("brewPidDelay", "Brew Pid Delay", BREW_PID_DELAY_MIN, BREW_PID_DELAY_MAX, 0.1, "");
-    DiscoveryObject startKp = GenerateNumberDevice("startKp", "Start kP", PID_KP_START_MIN, PID_KP_START_MAX, 0.1, "");
-    DiscoveryObject startTn = GenerateNumberDevice("startTn", "Start Tn", PID_TN_START_MIN, PID_TN_START_MAX, 0.1, "");
+    DiscoveryObject brewTempOffset = GenerateNumberDevice("brewtempOffset", "Brew Temp. Offset", BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, 0.1, "°C");
+    DiscoveryObject pidBrewDelay = GenerateNumberDevice("pidBrewDelay", "Pid Brew Delay", PID_BREW_DELAY_MIN, PID_BREW_DELAY_MAX, 0.1, "");
     DiscoveryObject steamKp = GenerateNumberDevice("steamKp", "Start Kp", PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, 0.1, "");
     DiscoveryObject aggKp = GenerateNumberDevice("aggKp", "aggKp", PID_KP_REGULAR_MIN, PID_KP_REGULAR_MAX, 0.1, "");
     DiscoveryObject aggTn = GenerateNumberDevice("aggTn", "aggTn", PID_TN_REGULAR_MIN, PID_TN_REGULAR_MAX, 0.1, "");
@@ -529,10 +527,10 @@ int sendHASSIODiscoveryMsg() {
 #endif
 
     // Switch Devices
-    DiscoveryObject pidOn = GenerateSwitchDevice("pidON", "Use PID");
-    DiscoveryObject steamON = GenerateSwitchDevice("steamON", "Steam");
+    DiscoveryObject pidOn = GenerateSwitchDevice("pidOn", "PID On");
+    DiscoveryObject steamOn = GenerateSwitchDevice("steamOn", "Steam");
     DiscoveryObject backflushOn = GenerateSwitchDevice("backflushOn", "Backflush");
-    DiscoveryObject startUsePonM = GenerateSwitchDevice("startUsePonM", "Use PonM");
+    DiscoveryObject pidPonmOn = GenerateSwitchDevice("pidPonmOn", "PID PonM On");
 
     // Button Devices
     DiscoveryObject scaleCalibrateButton = GenerateButtonDevice("scaleCalibrationOn", "Calibrate Scale");
@@ -541,9 +539,7 @@ int sendHASSIODiscoveryMsg() {
     std::vector<DiscoveryObject> discoveryObjects = {brewSetpoint,
                                                      steamSetPoint,
                                                      brewTempOffset,
-                                                     brewPidDelay,
-                                                     startKp,
-                                                     startTn,
+                                                     pidBrewDelay,
                                                      steamKp,
                                                      aggKp,
                                                      aggTn,
@@ -554,9 +550,9 @@ int sendHASSIODiscoveryMsg() {
                                                      machineStateDevice,
                                                      brewtime,
                                                      pidOn,
-                                                     steamON,
+                                                     steamOn,
                                                      backflushOn,
-                                                     startUsePonM
+                                                     pidPonmOn
 
 #if FEATURE_PRESSURESENSOR == 1
                                                      ,
