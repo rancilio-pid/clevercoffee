@@ -94,7 +94,7 @@ int writeSysParamsToStorage(void);
 #define PID_KP_STEAM_MAX         500
 #define STANDBY_MODE_TIME_MIN    30
 #define STANDBY_MODE_TIME_MAX    120
-#define BACKFLUSH_CYCLES_MIN     5
+#define BACKFLUSH_CYCLES_MIN     2
 #define BACKFLUSH_CYCLES_MAX     20
 #define BACKFLUSH_FILL_TIME_MIN  5
 #define BACKFLUSH_FILL_TIME_MAX  20

@@ -1334,12 +1334,45 @@ void setup() {
                                         .maxValue = PRE_INFUSION_TIME_MAX,
                                         .ptr = (void*)&preinfusion};
 
+    editableVars["BACKFLUSH_CYCLES"] = {.displayName = F("Backflush Cycles"),
+                                        .hasHelpText = true,
+                                        .helpText = "Number of Cycles of filling and flushing during a backflush",
+                                        .type = kUInt8,
+                                        .section = sBrewSection,
+                                        .position = 17,
+                                        .show = [] { return true && FEATURE_BREWCONTROL == 1; },
+                                        .minValue = BACKFLUSH_CYCLES_MIN,
+                                        .maxValue = BACKFLUSH_CYCLES_MAX,
+                                        .ptr = (void*)&backflushCycles};
+
+    editableVars["BACKFLUSH_FILLTIME"] = {.displayName = F("Backflush Fill Time (s)"),
+                                        .hasHelpText = true,
+                                        .helpText = "Time in seconds the pump is running during one backflush cycle",
+                                        .type = kDouble,
+                                        .section = sBrewSection,
+                                        .position = 18,
+                                        .show = [] { return true && FEATURE_BREWCONTROL == 1; },
+                                        .minValue = BACKFLUSH_FILL_TIME_MIN,
+                                        .maxValue = BACKFLUSH_FILL_TIME_MAX,
+                                        .ptr = (void*)&backflushFillTime};
+
+    editableVars["BACKFLUSH_FLUSHTIME"] = {.displayName = F("Backflush Flush Time (s)"),
+                                        .hasHelpText = true,
+                                        .helpText = "Time in seconds the 3-way-valves stayes open during one backflush cycle",
+                                        .type = kDouble,
+                                        .section = sBrewSection,
+                                        .position = 19,
+                                        .show = [] { return true && FEATURE_BREWCONTROL == 1; },
+                                        .minValue = BACKFLUSH_FLUSH_TIME_MIN,
+                                        .maxValue = BACKFLUSH_FLUSH_TIME_MAX,
+                                        .ptr = (void*)&backflushFlushTime};
+
     editableVars["SCALE_WEIGHTSETPOINT"] = {.displayName = F("Brew weight setpoint (g)"),
                                             .hasHelpText = true,
                                             .helpText = F("Brew is running until this weight has been measured. Set to 0 to deactivate brew-by-weight-feature."),
                                             .type = kDouble,
                                             .section = sBrewSection,
-                                            .position = 17,
+                                            .position = 20,
                                             .show = [] { return true && FEATURE_SCALE == 1; },
                                             .minValue = WEIGHTSETPOINT_MIN,
                                             .maxValue = WEIGHTSETPOINT_MAX,
@@ -1353,7 +1386,7 @@ void setup() {
                                                   "Silvia. Set to 0 for thermoblock machines."),
                                     .type = kDouble,
                                     .section = sBDSection,
-                                    .position = 18,
+                                    .position = 21,
                                     .show = [] { return true; },
                                     .minValue = BREW_PID_DELAY_MIN,
                                     .maxValue = BREW_PID_DELAY_MAX,
@@ -1364,7 +1397,7 @@ void setup() {
                                  .helpText = F("Use separate PID parameters while brew is running"),
                                  .type = kUInt8,
                                  .section = sBDSection,
-                                 .position = 19,
+                                 .position = 22,
                                  .show = [] { return true && FEATURE_BREWDETECTION == 1; },
                                  .minValue = 0,
                                  .maxValue = 1,
@@ -1382,7 +1415,7 @@ void setup() {
                                                "#post-1453641' target='_blank'>Details<a>)"),
                                  .type = kDouble,
                                  .section = sBDSection,
-                                 .position = 20,
+                                 .position = 23,
                                  .show = [] { return true && FEATURE_BREWDETECTION == 1 && useBDPID; },
                                  .minValue = PID_KP_BD_MIN,
                                  .maxValue = PID_KP_BD_MAX,
@@ -1394,7 +1427,7 @@ void setup() {
                                                "brewing has been detected."),
                                  .type = kDouble,
                                  .section = sBDSection,
-                                 .position = 21,
+                                 .position = 24,
                                  .show = [] { return true && FEATURE_BREWDETECTION == 1 && useBDPID; },
                                  .minValue = PID_TN_BD_MIN,
                                  .maxValue = PID_TN_BD_MAX,
@@ -1406,7 +1439,7 @@ void setup() {
                                                "when brewing has been detected."),
                                  .type = kDouble,
                                  .section = sBDSection,
-                                 .position = 22,
+                                 .position = 25,
                                  .show = [] { return true && FEATURE_BREWDETECTION == 1 && useBDPID; },
                                  .minValue = PID_TV_BD_MIN,
                                  .maxValue = PID_TV_BD_MAX,
@@ -1418,7 +1451,7 @@ void setup() {
                                                  "enabled (also after Brew switch is inactive again)."),
                                    .type = kDouble,
                                    .section = sBDSection,
-                                   .position = 23,
+                                   .position = 26,
                                    .show = [] { return true && FEATURE_BREWDETECTION == 1 && (useBDPID || BREWDETECTION_TYPE == 1); },
                                    .minValue = BREW_SW_TIME_MIN,
                                    .maxValue = BREW_SW_TIME_MAX,
@@ -1432,24 +1465,24 @@ void setup() {
                                                         "Needs to be &gt;0 also for Hardware switch detection."),
                                           .type = kDouble,
                                           .section = sBDSection,
-                                          .position = 24,
+                                          .position = 27,
                                           .show = [] { return true && BREWDETECTION_TYPE == 1; },
                                           .minValue = BD_THRESHOLD_MIN,
                                           .maxValue = BD_THRESHOLD_MAX,
                                           .ptr = (void*)&brewSensitivity};
 
     editableVars["STEAM_MODE"] = {
-        .displayName = F("Steam Mode"), .hasHelpText = false, .helpText = "", .type = kUInt8, .section = sOtherSection, .position = 25, .show = [] { return false; }, .minValue = 0, .maxValue = 1, .ptr = (void*)&steamON};
+        .displayName = F("Steam Mode"), .hasHelpText = false, .helpText = "", .type = kUInt8, .section = sOtherSection, .position = 28, .show = [] { return false; }, .minValue = 0, .maxValue = 1, .ptr = (void*)&steamON};
 
     editableVars["BACKFLUSH_ON"] = {
-        .displayName = F("Backflush"), .hasHelpText = false, .helpText = "", .type = kUInt8, .section = sOtherSection, .position = 26, .show = [] { return false; }, .minValue = 0, .maxValue = 1, .ptr = (void*)&backflushOn};
+        .displayName = F("Backflush"), .hasHelpText = false, .helpText = "", .type = kUInt8, .section = sOtherSection, .position = 29, .show = [] { return false; }, .minValue = 0, .maxValue = 1, .ptr = (void*)&backflushOn};
 
     editableVars["STANDBY_MODE_ON"] = {.displayName = F("Enable Standby Timer"),
                                        .hasHelpText = true,
                                        .helpText = F("Turn heater off after standby time has elapsed."),
                                        .type = kUInt8,
                                        .section = sPowerSection,
-                                       .position = 27,
+                                       .position = 30,
                                        .show = [] { return true; },
                                        .minValue = 0,
                                        .maxValue = 1,
@@ -1460,7 +1493,7 @@ void setup() {
                                           .helpText = F("Time in minutes until the heater is turned off. Timer is reset by brew detection."),
                                           .type = kDouble,
                                           .section = sPowerSection,
-                                          .position = 28,
+                                          .position = 31,
                                           .show = [] { return true; },
                                           .minValue = STANDBY_MODE_TIME_MIN,
                                           .maxValue = STANDBY_MODE_TIME_MAX,
@@ -1468,14 +1501,14 @@ void setup() {
 
 #if FEATURE_SCALE == 1
     editableVars["TARE_ON"] = {
-        .displayName = F("Tare"), .hasHelpText = false, .helpText = "", .type = kUInt8, .section = sScaleSection, .position = 29, .show = [] { return false; }, .minValue = 0, .maxValue = 1, .ptr = (void*)&scaleTareOn};
+        .displayName = F("Tare"), .hasHelpText = false, .helpText = "", .type = kUInt8, .section = sScaleSection, .position = 32, .show = [] { return false; }, .minValue = 0, .maxValue = 1, .ptr = (void*)&scaleTareOn};
 
     editableVars["CALIBRATION_ON"] = {.displayName = F("Calibration"),
                                       .hasHelpText = false,
                                       .helpText = "",
                                       .type = kUInt8,
                                       .section = sScaleSection,
-                                      .position = 30,
+                                      .position = 33,
                                       .show = [] { return false; },
                                       .minValue = 0,
                                       .maxValue = 1,
@@ -1486,7 +1519,7 @@ void setup() {
                                           .helpText = "",
                                           .type = kFloat,
                                           .section = sScaleSection,
-                                          .position = 31,
+                                          .position = 34,
                                           .show = [] { return true; },
                                           .minValue = 0,
                                           .maxValue = 2000,
@@ -1497,7 +1530,7 @@ void setup() {
                                          .helpText = "",
                                          .type = kFloat,
                                          .section = sScaleSection,
-                                         .position = 32,
+                                         .position = 35,
                                          .show = [] { return true; },
                                          .minValue = -100000,
                                          .maxValue = 100000,
@@ -1508,7 +1541,7 @@ void setup() {
                                           .helpText = "",
                                           .type = kFloat,
                                           .section = sScaleSection,
-                                          .position = 32,
+                                          .position = 36,
                                           .show = [] { return SCALE_TYPE == 0; },
                                           .minValue = -100000,
                                           .maxValue = 100000,
