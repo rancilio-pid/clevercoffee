@@ -384,9 +384,9 @@ bool displayMachineState() {
             default:
                 u8g2.setFont(u8g2_font_fub17_tf);
                 u8g2.setCursor(42, 42);
-                u8g2.print(flushCycles + 1, 0);
+                u8g2.print(currBackflushCycles + 1, 0);
                 u8g2.print("/");
-                u8g2.print(maxflushCycles, 0);
+                u8g2.print(backflushCycles, 0);
                 break;
         }
 

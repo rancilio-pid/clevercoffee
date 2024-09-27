@@ -153,7 +153,7 @@ void backflush() {
         backflushState = kBackflushWaitBrewswitchOff; // Force reset in case backflushOn is reset during backflush!
         LOG(INFO, "Backflush: Disabled via Webinterface");
     }
-    else if (offlineMode == 1 || currBrewState > kBrewIdle || maxflushCycles <= 0 || backflushOn == 0) {
+    else if (offlineMode == 1 || currBrewState > kBrewIdle || backflushCycles <= 0 || backflushOn == 0) {
         return;
     }
 
@@ -189,7 +189,7 @@ void backflush() {
             break;
 
         case kBackflushFilling:
-            if (millis() - startingTime > FILLTIME) {
+            if (millis() - startingTime > (backflushFillTime * 1000)) {
                 startingTime = millis();
                 backflushState = kBackflushFlushingStart;
             }
@@ -200,17 +200,17 @@ void backflush() {
             LOG(INFO, "Backflush: Flushing to drip tray...");
             valveRelay.off();
             pumpRelay.off();
-            flushCycles++;
+            currBackflushCycles++;
             backflushState = kBackflushFlushing;
 
             break;
 
         case kBackflushFlushing:
-            if (millis() - startingTime > flushTime && flushCycles < maxflushCycles) {
+            if (millis() - startingTime > (backflushFlushTime * 10000) && currBackflushCycles < backflushCycles) {
                 startingTime = millis();
                 backflushState = kBackflushFillingStart;
             }
-            else if (flushCycles >= maxflushCycles) {
+            else if (currBackflushCycles >= backflushCycles) {
                 backflushState = kBackflushWaitBrewswitchOff;
             }
 
@@ -221,7 +221,7 @@ void backflush() {
                 LOG(INFO, "Backflush: Finished!");
                 valveRelay.off();
                 pumpRelay.off();
-                flushCycles = 0;
+                currBackflushCycles = 0;
                 backflushState = kBackflushWaitBrewswitchOn;
             }
 

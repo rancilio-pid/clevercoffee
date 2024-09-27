@@ -43,6 +43,9 @@ typedef enum {
     STO_ITEM_SCALE_KNOWN_WEIGHT,        // Calibration weight for scale
     STO_ITEM_RESERVED_30,               // reserved
     STO_ITEM_RESERVED_21,               // reserved
+    STO_ITEM_BACKFLUSH_CYCLES,          // number of cycles the backflush should run
+    STO_ITEM_BACKFLUSH_FILL_TIME,       // time in ms the pump is running during backflush
+    STO_ITEM_BACKFLUSH_FLUSH_TIME,      // time in ms the 3-way valve is open during backflush
 
     /* WHEN ADDING NEW ITEMS, THE FOLLOWING HAS TO BE UPDATED:
      * - storage structure:  sto_data_t
@@ -110,6 +113,10 @@ typedef struct __attribute__((packed)) {
         double steamSetpoint;
         uint8_t standbyModeOn;
         double standbyModeTime;
+        uint8_t backflushCycles;
+        double backflushFillTimeMs;
+        double backflushFlushTimeMs;
+
 } sto_data_t;
 
 // set item defaults
@@ -156,7 +163,10 @@ static const sto_data_t itemDefaults PROGMEM = {
     STEAMKP,                                                                                                                        // STO_ITEM_PID_KP_STEAM
     STEAMSETPOINT,                                                                                                                  // STO_ITEM_STEAM_SETPOINT
     STANDBY_MODE_ON,                                                                                                                // STO_ITEM_STANDBY_MODE_ON
-    STANDBY_MODE_TIME                                                                                                               // STO_ITEM_STANDBY_MODE_TIME
+    STANDBY_MODE_TIME,                                                                                                              // STO_ITEM_STANDBY_MODE_TIME
+    BACKFLUSH_CYCLES,                                                                                                               // STO_ITEM_BACKFLUSH_CYCLES
+    BACKFLUSH_FILL_TIME,                                                                                                            // STO_ITEM_BACKFLUSH_FILLTIME
+    BACKFLUSH_FLUSH_TIME,                                                                                                           // STO_ITEM_BACKFLUSH_FLUSHTIME
 };
 
 /**
@@ -332,6 +342,21 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
         case STO_ITEM_SCALE_KNOWN_WEIGHT:
             addr = offsetof(sto_data_t, scaleKnownWeight);
             size = STRUCT_MEMBER_SIZE(sto_data_t, scaleKnownWeight);
+            break;
+
+        case STO_ITEM_BACKFLUSH_CYCLES:
+            addr = offsetof(sto_data_t, backflushCycles);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, backflushCycles);
+            break;
+
+        case STO_ITEM_BACKFLUSH_FILL_TIME:
+            addr = offsetof(sto_data_t, backflushFillTimeMs);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, backflushFillTimeMs);
+            break;
+
+        case STO_ITEM_BACKFLUSH_FLUSH_TIME:
+            addr = offsetof(sto_data_t, backflushFlushTimeMs);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, backflushFlushTimeMs);
             break;
 
         default:

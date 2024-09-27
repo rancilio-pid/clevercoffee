@@ -122,9 +122,12 @@ unsigned int wifiReconnects = 0; // actual number of reconnects
 const char* OTApass = OTAPASS;
 
 // Backflush values
-const unsigned long fillTime = FILLTIME;
-const unsigned long flushTime = FLUSHTIME;
-int maxflushCycles = MAXFLUSHCYCLES;
+uint8_t backflushCycles = BACKFLUSH_CYCLES;
+double backflushFillTime = BACKFLUSH_FILL_TIME;
+double backflushFlushTime = BACKFLUSH_FLUSH_TIME;
+int backflushOn = 0;
+int backflushState = 10;
+int currBackflushCycles = 0; // number of active flush cycles
 
 // Optocoupler
 unsigned long previousMillisOptocouplerReading = millis();
@@ -272,6 +275,9 @@ SysPara<double> sysParaStandbyModeTime(&standbyModeTime, STANDBY_MODE_TIME_MIN, 
 SysPara<float> sysParaScaleCalibration(&scaleCalibration, -100000, 100000, STO_ITEM_SCALE_CALIBRATION_FACTOR);
 SysPara<float> sysParaScale2Calibration(&scale2Calibration, -100000, 100000, STO_ITEM_SCALE2_CALIBRATION_FACTOR);
 SysPara<float> sysParaScaleKnownWeight(&scaleKnownWeight, 0, 2000, STO_ITEM_SCALE_KNOWN_WEIGHT);
+SysPara<uint8_t> sysParaBackflushCycles(&backflushCycles, BACKFLUSH_CYCLES_MIN, BACKFLUSH_CYCLES_MAX, STO_ITEM_BACKFLUSH_CYCLES);
+SysPara<double> sysParaBackflushFillTime(&backflushFillTime, BACKFLUSH_FILL_TIME_MIN, BACKFLUSH_FILL_TIME_MAX, STO_ITEM_BACKFLUSH_FILL_TIME);
+SysPara<double> sysParaBackflushFlushTime(&backflushFlushTime, BACKFLUSH_FLUSH_TIME_MIN, BACKFLUSH_FLUSH_TIME_MAX, STO_ITEM_BACKFLUSH_FLUSH_TIME);
 
 // Other variables
 boolean emergencyStop = false;                // Emergency stop if temperature is too high
@@ -279,10 +285,6 @@ const double EmergencyStopTemp = 145;         // Temp EmergencyStopTemp
 float inX = 0, inY = 0, inOld = 0, inSum = 0; // used for filterPressureValue()
 boolean brewDetected = 0;
 boolean setupDone = false;
-int backflushOn = 0;                          // 1 = backflush mode active
-int flushCycles = 0;                          // number of active flush cycles
-
-int backflushState = 10;
 
 // Water sensor
 boolean waterFull = true;
@@ -2080,6 +2082,9 @@ int readSysParamsFromStorage(void) {
     if (sysParaScaleCalibration.getStorage() != 0) return -1;
     if (sysParaScale2Calibration.getStorage() != 0) return -1;
     if (sysParaScaleKnownWeight.getStorage() != 0) return -1;
+    if (sysParaBackflushCycles.getStorage() != 0) return -1;
+    if (sysParaBackflushFillTime.getStorage() != 0) return -1;
+    if (sysParaBackflushFlushTime.getStorage() != 0) return -1;
 
     return 0;
 }
@@ -2119,6 +2124,9 @@ int writeSysParamsToStorage(void) {
     if (sysParaScaleCalibration.setStorage() != 0) return -1;
     if (sysParaScale2Calibration.setStorage() != 0) return -1;
     if (sysParaScaleKnownWeight.setStorage() != 0) return -1;
+    if (sysParaBackflushCycles.setStorage() != 0) return -1;
+    if (sysParaBackflushFillTime.setStorage() != 0) return -1;
+    if (sysParaBackflushFlushTime.setStorage() != 0) return -1;
 
     return storageCommit();
 }
