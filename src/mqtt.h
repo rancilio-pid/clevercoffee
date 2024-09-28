@@ -404,7 +404,7 @@ DiscoveryObject GenerateButtonDevice(String name, String displayName, String pay
  * @param unit_of_measurement The unit of measurement for the sensor data (default: "°C")
  * @return A `DiscoveryObject` containing the sensor device configuration
  */
-DiscoveryObject GenerateSensorDevice(String name, String displayName, String unit_of_measurement = "°C", String device_class = "temperature") {
+DiscoveryObject GenerateSensorDevice(String name, String displayName, String unit_of_measurement, String device_class) {
     String mqtt_topic = String(mqtt_topic_prefix) + String(hostname);
     DiscoveryObject sensor_device;
     String unique_id = "clevercoffee-" + String(hostname);
@@ -457,7 +457,7 @@ DiscoveryObject GenerateSensorDevice(String name, String displayName, String uni
  * @param ui_mode Control how the number should be displayed in the UI
  * @return A `DiscoveryObject` containing the number device configuration
  */
-DiscoveryObject GenerateNumberDevice(String name, String displayName, int min_value, int max_value, float steps_value, String unit_of_measurement = "°C", String ui_mode = "box") {
+DiscoveryObject GenerateNumberDevice(String name, String displayName, int min_value, int max_value, float steps_value, String unit_of_measurement, String ui_mode = "box") {
     String mqtt_topic = String(mqtt_topic_prefix) + String(hostname);
     DiscoveryObject number_device;
     String unique_id = "clevercoffee-" + String(hostname);
@@ -516,10 +516,19 @@ int sendHASSIODiscoveryMsg() {
     DiscoveryObject aggTn = GenerateNumberDevice("aggTn", "aggTn", PID_TN_REGULAR_MIN, PID_TN_REGULAR_MAX, 0.1, "");
     DiscoveryObject aggTv = GenerateNumberDevice("aggTv", "aggTv", PID_TV_REGULAR_MIN, PID_TV_REGULAR_MAX, 0.1, "");
     DiscoveryObject aggIMax = GenerateNumberDevice("aggIMax", "aggIMax", PID_I_MAX_REGULAR_MIN, PID_I_MAX_REGULAR_MAX, 0.1, "");
+
+#if FEATURE_BREWCONTROL == 1
     DiscoveryObject brewtime = GenerateNumberDevice("brewtime", "Brew time", BREW_TIME_MIN, BREW_TIME_MAX, 0.1, "s");
+    DiscoveryObject preinfusion = GenerateNumberDevice("preinfusion", "Preinfusion filling time", PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX, 0.1, "s");
+    DiscoveryObject preinfusionPause = GenerateNumberDevice("preinfusionPause", "Preinfusion pause time", PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, 0.1, "s");
+    DiscoveryObject backflushCycles = GenerateNumberDevice("backflushCycles", "Backflush Cycles", BACKFLUSH_CYCLES_MIN, BACKFLUSH_CYCLES_MAX, 1, "");
+    DiscoveryObject backflushFillTime = GenerateNumberDevice("backflushFillTime", "Backflush filling time", BACKFLUSH_FILL_TIME_MIN, BACKFLUSH_FILL_TIME_MAX, 0.1, "s");
+    DiscoveryObject backflushFlushTime = GenerateNumberDevice("backflushFlushTime", "Backflush flushing time", BACKFLUSH_FLUSH_TIME_MIN, BACKFLUSH_FLUSH_TIME_MAX, 0.1, "s");
+
+#endif
 
     // Sensor Devices
-    DiscoveryObject actual_temperature = GenerateSensorDevice("temperature", "Boiler Temperature");
+    DiscoveryObject actual_temperature = GenerateSensorDevice("temperature", "Boiler Temperature", "°C", "temperature");
     DiscoveryObject heaterPower = GenerateSensorDevice("heaterPower", "Heater Power", "%", "power_factor");
     DiscoveryObject machineStateDevice = GenerateSensorDevice("machineState", "Machine State", "", "enum");
     DiscoveryObject currentWeight = GenerateSensorDevice("currentWeight", "Weight", "g", "weight");
@@ -531,7 +540,9 @@ int sendHASSIODiscoveryMsg() {
     // Switch Devices
     DiscoveryObject pidOn = GenerateSwitchDevice("pidON", "Use PID");
     DiscoveryObject steamON = GenerateSwitchDevice("steamON", "Steam");
+#if FEATURE_BREWCONTROL == 1
     DiscoveryObject backflushOn = GenerateSwitchDevice("backflushOn", "Backflush");
+#endif
     DiscoveryObject startUsePonM = GenerateSwitchDevice("startUsePonM", "Use PonM");
 
     // Button Devices
@@ -552,10 +563,17 @@ int sendHASSIODiscoveryMsg() {
                                                      actual_temperature,
                                                      heaterPower,
                                                      machineStateDevice,
+#if FEATURE_BREWCONTROL == 1
                                                      brewtime,
+                                                     preinfusion,
+                                                     preinfusionPause,
+                                                     backflushOn,
+                                                     backflushCycles,
+                                                     backflushFillTime,
+                                                     backflushFlushTime,
+#endif
                                                      pidOn,
                                                      steamON,
-                                                     backflushOn,
                                                      startUsePonM
 
 #if FEATURE_PRESSURESENSOR == 1

@@ -1345,27 +1345,27 @@ void setup() {
                                         .maxValue = BACKFLUSH_CYCLES_MAX,
                                         .ptr = (void*)&backflushCycles};
 
-    editableVars["BACKFLUSH_FILLTIME"] = {.displayName = F("Backflush Fill Time (s)"),
-                                          .hasHelpText = true,
-                                          .helpText = "Time in seconds the pump is running during one backflush cycle",
-                                          .type = kDouble,
-                                          .section = sBrewSection,
-                                          .position = 18,
-                                          .show = [] { return true && FEATURE_BREWCONTROL == 1; },
-                                          .minValue = BACKFLUSH_FILL_TIME_MIN,
-                                          .maxValue = BACKFLUSH_FILL_TIME_MAX,
-                                          .ptr = (void*)&backflushFillTime};
-
-    editableVars["BACKFLUSH_FLUSHTIME"] = {.displayName = F("Backflush Flush Time (s)"),
+    editableVars["BACKFLUSH_FILL_TIME"] = {.displayName = F("Backflush Fill Time (s)"),
                                            .hasHelpText = true,
-                                           .helpText = "Time in seconds the 3-way-valves stayes open during one backflush cycle",
+                                           .helpText = "Time in seconds the pump is running during one backflush cycle",
                                            .type = kDouble,
                                            .section = sBrewSection,
-                                           .position = 19,
+                                           .position = 18,
                                            .show = [] { return true && FEATURE_BREWCONTROL == 1; },
-                                           .minValue = BACKFLUSH_FLUSH_TIME_MIN,
-                                           .maxValue = BACKFLUSH_FLUSH_TIME_MAX,
-                                           .ptr = (void*)&backflushFlushTime};
+                                           .minValue = BACKFLUSH_FILL_TIME_MIN,
+                                           .maxValue = BACKFLUSH_FILL_TIME_MAX,
+                                           .ptr = (void*)&backflushFillTime};
+
+    editableVars["BACKFLUSH_FLUSH_TIME"] = {.displayName = F("Backflush Flush Time (s)"),
+                                            .hasHelpText = true,
+                                            .helpText = "Time in seconds the 3-way-valves stayes open during one backflush cycle",
+                                            .type = kDouble,
+                                            .section = sBrewSection,
+                                            .position = 19,
+                                            .show = [] { return true && FEATURE_BREWCONTROL == 1; },
+                                            .minValue = BACKFLUSH_FLUSH_TIME_MIN,
+                                            .maxValue = BACKFLUSH_FLUSH_TIME_MAX,
+                                            .ptr = (void*)&backflushFlushTime};
 
     editableVars["SCALE_WEIGHTSETPOINT"] = {.displayName = F("Brew weight setpoint (g)"),
                                             .hasHelpText = true,
@@ -1576,8 +1576,11 @@ void setup() {
 
     if (FEATURE_BREWCONTROL == 1) {
         mqttVars["brewtime"] = [] { return &editableVars.at("BREW_TIME"); };
-        mqttVars["preinfusionpause"] = [] { return &editableVars.at("BREW_PREINFUSIONPAUSE"); };
         mqttVars["preinfusion"] = [] { return &editableVars.at("BREW_PREINFUSION"); };
+        mqttVars["preinfusionPause"] = [] { return &editableVars.at("BREW_PREINFUSIONPAUSE"); };
+        mqttVars["backflushCycles"] = [] { return &editableVars.at("BACKFLUSH_CYCLES"); };
+        mqttVars["backflushFillTime"] = [] { return &editableVars.at("BACKFLUSH_FILL_TIME"); };
+        mqttVars["backflushFlushTime"] = [] { return &editableVars.at("BACKFLUSH_FLUSH_TIME"); };
     }
 
     if (FEATURE_SCALE == 1) {
