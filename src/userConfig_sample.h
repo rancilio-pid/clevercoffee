@@ -78,11 +78,6 @@ enum MACHINE {
 #define SCALE_TYPE    0 // 0 = one HX711 per load cell, 1 = Only a single HX711 with two channels
 #define SCALE_SAMPLES 2 // Load cell sample rate
 
-// Backflush values
-#define FILLTIME       5000  // time in ms the pump is running
-#define FLUSHTIME      10000 // time in ms the 3-way valve is open -> backflush
-#define MAXFLUSHCYCLES 5     // number of cycles the backflush should run, 0 = disabled
-
 // PlatformIO OTA
 #define OTA     true      // true = OTA activated, false = OTA deactivated
 #define OTAPASS "otapass" // Password for OTA updates
