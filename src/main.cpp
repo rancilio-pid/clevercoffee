@@ -122,7 +122,7 @@ unsigned int wifiReconnects = 0; // actual number of reconnects
 const char* OTApass = OTAPASS;
 
 // Backflush values
-uint8_t backflushCycles = BACKFLUSH_CYCLES;
+int backflushCycles = BACKFLUSH_CYCLES;
 double backflushFillTime = BACKFLUSH_FILL_TIME;
 double backflushFlushTime = BACKFLUSH_FLUSH_TIME;
 int backflushOn = 0;
@@ -275,7 +275,7 @@ SysPara<double> sysParaStandbyModeTime(&standbyModeTime, STANDBY_MODE_TIME_MIN, 
 SysPara<float> sysParaScaleCalibration(&scaleCalibration, -100000, 100000, STO_ITEM_SCALE_CALIBRATION_FACTOR);
 SysPara<float> sysParaScale2Calibration(&scale2Calibration, -100000, 100000, STO_ITEM_SCALE2_CALIBRATION_FACTOR);
 SysPara<float> sysParaScaleKnownWeight(&scaleKnownWeight, 0, 2000, STO_ITEM_SCALE_KNOWN_WEIGHT);
-SysPara<uint8_t> sysParaBackflushCycles(&backflushCycles, BACKFLUSH_CYCLES_MIN, BACKFLUSH_CYCLES_MAX, STO_ITEM_BACKFLUSH_CYCLES);
+SysPara<int> sysParaBackflushCycles(&backflushCycles, BACKFLUSH_CYCLES_MIN, BACKFLUSH_CYCLES_MAX, STO_ITEM_BACKFLUSH_CYCLES);
 SysPara<double> sysParaBackflushFillTime(&backflushFillTime, BACKFLUSH_FILL_TIME_MIN, BACKFLUSH_FILL_TIME_MAX, STO_ITEM_BACKFLUSH_FILL_TIME);
 SysPara<double> sysParaBackflushFlushTime(&backflushFlushTime, BACKFLUSH_FLUSH_TIME_MIN, BACKFLUSH_FLUSH_TIME_MAX, STO_ITEM_BACKFLUSH_FLUSH_TIME);
 
@@ -1346,26 +1346,26 @@ void setup() {
                                         .ptr = (void*)&backflushCycles};
 
     editableVars["BACKFLUSH_FILLTIME"] = {.displayName = F("Backflush Fill Time (s)"),
-                                        .hasHelpText = true,
-                                        .helpText = "Time in seconds the pump is running during one backflush cycle",
-                                        .type = kDouble,
-                                        .section = sBrewSection,
-                                        .position = 18,
-                                        .show = [] { return true && FEATURE_BREWCONTROL == 1; },
-                                        .minValue = BACKFLUSH_FILL_TIME_MIN,
-                                        .maxValue = BACKFLUSH_FILL_TIME_MAX,
-                                        .ptr = (void*)&backflushFillTime};
+                                          .hasHelpText = true,
+                                          .helpText = "Time in seconds the pump is running during one backflush cycle",
+                                          .type = kDouble,
+                                          .section = sBrewSection,
+                                          .position = 18,
+                                          .show = [] { return true && FEATURE_BREWCONTROL == 1; },
+                                          .minValue = BACKFLUSH_FILL_TIME_MIN,
+                                          .maxValue = BACKFLUSH_FILL_TIME_MAX,
+                                          .ptr = (void*)&backflushFillTime};
 
     editableVars["BACKFLUSH_FLUSHTIME"] = {.displayName = F("Backflush Flush Time (s)"),
-                                        .hasHelpText = true,
-                                        .helpText = "Time in seconds the 3-way-valves stayes open during one backflush cycle",
-                                        .type = kDouble,
-                                        .section = sBrewSection,
-                                        .position = 19,
-                                        .show = [] { return true && FEATURE_BREWCONTROL == 1; },
-                                        .minValue = BACKFLUSH_FLUSH_TIME_MIN,
-                                        .maxValue = BACKFLUSH_FLUSH_TIME_MAX,
-                                        .ptr = (void*)&backflushFlushTime};
+                                           .hasHelpText = true,
+                                           .helpText = "Time in seconds the 3-way-valves stayes open during one backflush cycle",
+                                           .type = kDouble,
+                                           .section = sBrewSection,
+                                           .position = 19,
+                                           .show = [] { return true && FEATURE_BREWCONTROL == 1; },
+                                           .minValue = BACKFLUSH_FLUSH_TIME_MIN,
+                                           .maxValue = BACKFLUSH_FLUSH_TIME_MAX,
+                                           .ptr = (void*)&backflushFlushTime};
 
     editableVars["SCALE_WEIGHTSETPOINT"] = {.displayName = F("Brew weight setpoint (g)"),
                                             .hasHelpText = true,

@@ -113,7 +113,7 @@ typedef struct __attribute__((packed)) {
         double steamSetpoint;
         uint8_t standbyModeOn;
         double standbyModeTime;
-        uint8_t backflushCycles;
+        int backflushCycles;
         double backflushFillTimeMs;
         double backflushFlushTimeMs;
 
