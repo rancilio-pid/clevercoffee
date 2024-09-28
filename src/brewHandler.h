@@ -206,7 +206,7 @@ void backflush() {
             break;
 
         case kBackflushFlushing:
-            if (millis() - startingTime > (backflushFlushTime * 10000) && currBackflushCycles < backflushCycles) {
+            if (millis() - startingTime > (backflushFlushTime * 1000) && currBackflushCycles < backflushCycles) {
                 startingTime = millis();
                 backflushState = kBackflushFillingStart;
             }
