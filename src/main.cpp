@@ -1337,7 +1337,7 @@ void setup() {
     editableVars["BACKFLUSH_CYCLES"] = {.displayName = F("Backflush Cycles"),
                                         .hasHelpText = true,
                                         .helpText = "Number of Cycles of filling and flushing during a backflush",
-                                        .type = kUInt8,
+                                        .type = kInteger,
                                         .section = sBrewSection,
                                         .position = 17,
                                         .show = [] { return true && FEATURE_BREWCONTROL == 1; },

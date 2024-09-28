@@ -31,11 +31,16 @@
                                                 </template>
                                             </div>
                                             <div class="col-md-3">
-                                                <div v-if="param.type == 1" class="col-5 mb-1">
+                                                <div v-if="param.type == 0" class="col-5 mb-1"> <!-- integer -->
+                                                    <input class="form-control form-control-lg" type="number" step="1" :min="param.min" :max="param.max" :id="'var'+param.name" :name="'var'+param.name" v-model="param.value" style="min-width: 5em;">
+                                                    <span v-if="param.value < param.min">Value is too small!</span>
+                                                    <span v-if="param.value > param.max">Value is too large!</span>
+                                                </div>
+                                                <div v-if="param.type == 1" class="col-5 mb-1"> <!-- boolean -->
                                                     <input type="hidden" :id="'var'+param.name" :name="'var'+param.name" :value="0">
                                                     <input type="checkbox" class="form-check-input form-control-lg" :id="'var'+param.name" :name="'var'+param.name" value="1" @change="param.value = 1-param.value" :checked="param.value != 0 ? 'checked' : null">
                                                 </div>
-                                                <div v-if="param.type == 2 || param.type == 5" class="col-5 mb-1">
+                                                <div v-if="param.type == 2 || param.type == 5" class="col-5 mb-1"> <!-- double -->
                                                     <input class="form-control form-control-lg" type="number" step="0.1" :min="param.min" :max="param.max" :id="'var'+param.name" :name="'var'+param.name" v-model="param.value" style="min-width: 5em;">
                                                     <span v-if="param.value < param.min">Value is too small!</span>
                                                     <span v-if="param.value > param.max">Value is too large!</span>
