@@ -153,90 +153,6 @@ void checkbrewswitch() {
     }
 }
 
-/**
- * @brief Backflush
- */
-void backflush() {
-    if (backflushState != kBackflushWaitBrewswitchOn && backflushOn == 0) {
-        backflushState = kBackflushWaitBrewswitchOff; // Force reset in case backflushOn is reset during backflush!
-        LOG(INFO, "Backflush: Disabled via Webinterface");
-    }
-    else if (offlineMode == 1 || currBrewState > kBrewIdle || maxflushCycles <= 0 || backflushOn == 0) {
-        return;
-    }
-
-    if (bPID.GetMode() == 1) { // Deactivate PID
-        bPID.SetMode(0);
-        pidOutput = 0;
-    }
-
-    heaterRelay.off(); // Stop heating
-
-    checkbrewswitch();
-
-    if (currStateBrewSwitch == LOW && backflushState != kBackflushWaitBrewswitchOn) { // Abort function for state machine from every state
-        backflushState = kBackflushWaitBrewswitchOff;
-    }
-
-    // State machine for backflush
-    switch (backflushState) {
-        case kBackflushWaitBrewswitchOn:
-            if (currStateBrewSwitch == HIGH && backflushOn) {
-                startingTime = millis();
-                backflushState = kBackflushFillingStart;
-            }
-
-            break;
-
-        case kBackflushFillingStart:
-            LOG(INFO, "Backflush: Portafilter filling...");
-            valveRelay.on();
-            pumpRelay.on();
-            backflushState = kBackflushFilling;
-
-            break;
-
-        case kBackflushFilling:
-            if (millis() - startingTime > FILLTIME) {
-                startingTime = millis();
-                backflushState = kBackflushFlushingStart;
-            }
-
-            break;
-
-        case kBackflushFlushingStart:
-            LOG(INFO, "Backflush: Flushing to drip tray...");
-            valveRelay.off();
-            pumpRelay.off();
-            flushCycles++;
-            backflushState = kBackflushFlushing;
-
-            break;
-
-        case kBackflushFlushing:
-            if (millis() - startingTime > flushTime && flushCycles < maxflushCycles) {
-                startingTime = millis();
-                backflushState = kBackflushFillingStart;
-            }
-            else if (flushCycles >= maxflushCycles) {
-                backflushState = kBackflushWaitBrewswitchOff;
-            }
-
-            break;
-
-        case kBackflushWaitBrewswitchOff:
-            if (currStateBrewSwitch == LOW) {
-                LOG(INFO, "Backflush: Finished!");
-                valveRelay.off();
-                pumpRelay.off();
-                flushCycles = 0;
-                backflushState = kBackflushWaitBrewswitchOn;
-            }
-
-            break;
-    }
-}
-
 #if (FEATURE_BREWCONTROL == 0)
 /**
  * @brief Brew timer
@@ -401,4 +317,88 @@ void brew() {
             break;
     }
 }
+/**
+ * @brief Backflush
+ */
+void backflush() {
+    if (backflushState != kBackflushWaitBrewswitchOn && backflushOn == 0) {
+        backflushState = kBackflushWaitBrewswitchOff; // Force reset in case backflushOn is reset during backflush!
+        LOG(INFO, "Backflush: Disabled via Webinterface");
+    }
+    else if (offlineMode == 1 || currBrewState > kBrewIdle || maxflushCycles <= 0 || backflushOn == 0) {
+        return;
+    }
+
+    if (bPID.GetMode() == 1) { // Deactivate PID
+        bPID.SetMode(0);
+        pidOutput = 0;
+    }
+
+    heaterRelay.off(); // Stop heating
+
+    checkbrewswitch();
+
+    if (currStateBrewSwitch == LOW && backflushState != kBackflushWaitBrewswitchOn) { // Abort function for state machine from every state
+        backflushState = kBackflushWaitBrewswitchOff;
+    }
+
+    // State machine for backflush
+    switch (backflushState) {
+        case kBackflushWaitBrewswitchOn:
+            if (currStateBrewSwitch == HIGH && backflushOn) {
+                startingTime = millis();
+                backflushState = kBackflushFillingStart;
+            }
+
+            break;
+
+        case kBackflushFillingStart:
+            LOG(INFO, "Backflush: Portafilter filling...");
+            valveRelay.on();
+            pumpRelay.on();
+            backflushState = kBackflushFilling;
+
+            break;
+
+        case kBackflushFilling:
+            if (millis() - startingTime > FILLTIME) {
+                startingTime = millis();
+                backflushState = kBackflushFlushingStart;
+            }
+
+            break;
+
+        case kBackflushFlushingStart:
+            LOG(INFO, "Backflush: Flushing to drip tray...");
+            valveRelay.off();
+            pumpRelay.off();
+            flushCycles++;
+            backflushState = kBackflushFlushing;
+
+            break;
+
+        case kBackflushFlushing:
+            if (millis() - startingTime > flushTime && flushCycles < maxflushCycles) {
+                startingTime = millis();
+                backflushState = kBackflushFillingStart;
+            }
+            else if (flushCycles >= maxflushCycles) {
+                backflushState = kBackflushWaitBrewswitchOff;
+            }
+
+            break;
+
+        case kBackflushWaitBrewswitchOff:
+            if (currStateBrewSwitch == LOW) {
+                LOG(INFO, "Backflush: Finished!");
+                valveRelay.off();
+                pumpRelay.off();
+                flushCycles = 0;
+                backflushState = kBackflushWaitBrewswitchOn;
+            }
+
+            break;
+    }
+}
+
 #endif
