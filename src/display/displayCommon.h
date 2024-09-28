@@ -234,17 +234,17 @@ void displayLogo(String displaymessagetext, String displaymessagetext2) {
 }
 
 /**
- * @brief display shot timer
+ * @brief display shot and flush timer
  */
 bool displayShottimer() {
     if (FEATURE_SHOTTIMER == 0) {
         return false;
     }
 
-    if (machineState == kBrew || (millis() - lastBrewTimeMillis) < SHOTTIMERDISPLAYDELAY || brewSwitchState == kBrewSwitchFlush) {
+    if (machineState == kBrew || (millis() - lastBrewTimeMillis) < SHOTTIMERDISPLAYDELAY || machineState == kManualFlush) {
         u8g2.clearBuffer();
 
-        if (brewSwitchState != kBrewSwitchFlush) {
+        if (machineState != kManualFlush) {
             u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
         }
         else {
@@ -277,7 +277,7 @@ bool displayShottimer() {
  */
 bool displayMachineState() {
     // Show the heating logo when we are in regular PID mode and more than 5degC below the set point
-    if (FEATURE_HEATINGLOGO > 0 && machineState == kPidNormal && (setpoint - temperature) > 5. && brewSwitchState != kBrewSwitchFlush) {
+    if (FEATURE_HEATINGLOGO > 0 && machineState == kPidNormal && (setpoint - temperature) > 5.) {
         // For status info
         u8g2.clearBuffer();
 
@@ -314,7 +314,7 @@ bool displayMachineState() {
         return true;
     }
     // Steam
-    else if (machineState == kSteam && brewSwitchState != kBrewSwitchFlush) {
+    else if (machineState == kSteam) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(-1, 12, Steam_Logo_width, Steam_Logo_height, Steam_Logo);
 
@@ -325,7 +325,7 @@ bool displayMachineState() {
         return true;
     }
     // Water empty
-    else if (machineState == kWaterEmpty && brewSwitchState != kBrewSwitchFlush) {
+    else if (machineState == kWaterEmpty) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(45, 0, Water_Empty_Logo_width, Water_Empty_Logo_height, Water_Empty_Logo);
         u8g2.setFont(u8g2_font_profont11_tf);

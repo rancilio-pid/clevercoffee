@@ -81,6 +81,7 @@ enum MachineState {
     kInit = 0,
     kPidNormal = 20,
     kBrew = 30,
+    kManualFlush = 35,
     kSteam = 40,
     kBackflush = 50,
     kWaterEmpty = 70,
@@ -559,6 +560,14 @@ void handleMachineState() {
                 }
             }
 
+            if (manualFlushOn == 1) {
+                machineState = kManualFlush;
+
+                if (standbyModeOn) {
+                    resetStandbyTimer();
+                }
+            }
+
             if (steamON == 1) {
                 machineState = kSteam;
 
@@ -601,6 +610,29 @@ void handleMachineState() {
         case kBrew:
 
             if (brewOn == 0) {
+                machineState = kPidNormal;
+            }
+
+            if (steamON == 1) {
+                machineState = kSteam;
+            }
+
+            if (emergencyStop) {
+                machineState = kEmergencyStop;
+            }
+
+            if (pidON == 0) {
+                machineState = kPidDisabled;
+            }
+
+            if (tempSensor->hasError()) {
+                machineState = kSensorError;
+            }
+            break;
+
+        case kManualFlush:
+
+            if (manualFlushOn == 0) {
                 machineState = kPidNormal;
             }
 
@@ -720,7 +752,7 @@ void handleMachineState() {
 #endif
             }
 
-            if (pidON || steamON || brewOn) {
+            if (pidON || steamON || brewOn || manualFlushOn) {
                 pidON = 1;
                 resetStandbyTimer();
 #if OLED_DISPLAY != 0
@@ -732,6 +764,9 @@ void handleMachineState() {
                 }
                 else if (brewOn) {
                     machineState = kBrew;
+                }
+                else if (manualFlushOn) {
+                    machineState = kManualFlush;
                 }
                 else {
                     machineState = kPidNormal;
@@ -770,6 +805,8 @@ char const* machinestateEnumToString(MachineState machineState) {
             return "PID Normal";
         case kBrew:
             return "Brew";
+        case kManualFlush:
+            return "Manual Flush";
         case kSteam:
             return "Steam";
         case kBackflush:
@@ -1515,6 +1552,7 @@ void looppid() {
 
 #if (FEATURE_BREWSWITCH == 1 && FEATURE_BREWCONTROL == 1)
     brew();
+    manualFlush();
 #endif
 
 #if (FEATURE_PRESSURESENSOR == 1)
