@@ -32,8 +32,10 @@ void checkHotWaterSwitch() {
                         pumpRelay.on();
                     }
                     else {
-                        hotWaterOn = 0;
-                        pumpRelay.off();
+                        if (machineState == kHotWater) {
+                            hotWaterOn = 0;
+                            pumpRelay.off();
+                        }
                     }
                 }
             }
