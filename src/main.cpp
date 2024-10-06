@@ -1336,7 +1336,7 @@ void setup() {
 
     editableVars["BACKFLUSH_CYCLES"] = {.displayName = F("Backflush Cycles"),
                                         .hasHelpText = true,
-                                        .helpText = "Number of Cycles of filling and flushing during a backflush",
+                                        .helpText = "Number of cycles of filling and flushing during a backflush",
                                         .type = kInteger,
                                         .section = sBrewSection,
                                         .position = 17,
@@ -1358,7 +1358,7 @@ void setup() {
 
     editableVars["BACKFLUSH_FLUSH_TIME"] = {.displayName = F("Backflush Flush Time (s)"),
                                             .hasHelpText = true,
-                                            .helpText = "Time in seconds the 3-way-valves stayes open during one backflush cycle",
+                                            .helpText = "Time in seconds the selenoid valve stays open during one backflush cycle",
                                             .type = kDouble,
                                             .section = sBrewSection,
                                             .position = 19,
