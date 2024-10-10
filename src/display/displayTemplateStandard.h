@@ -32,18 +32,18 @@ void printScreen() {
 
     displayStatusbar();
 
-    u8g2.setCursor(35, 16);
+    u8g2.setCursor(34, 16);
     u8g2.print(langstring_current_temp);
     u8g2.setCursor(84, 16);
     u8g2.print(temperature, 1);
-    u8g2.setCursor(114, 16);
+    u8g2.setCursor(115, 16);
     u8g2.print((char)176);
     u8g2.print("C");
-    u8g2.setCursor(35, 26);
+    u8g2.setCursor(34, 26);
     u8g2.print(langstring_set_temp);
     u8g2.setCursor(84, 26);
     u8g2.print(setpoint, 1);
-    u8g2.setCursor(114, 26);
+    u8g2.setCursor(115, 26);
     u8g2.print((char)176);
     u8g2.print("C");
 
@@ -59,23 +59,50 @@ void printScreen() {
         drawTemperaturebar(8, 50, 30);
     }
 
-    // Brew time
-    u8g2.setCursor(35, 36);
+// Brew time
+#if (FEATURE_BREWSWITCH == 1 && FEATURE_BREWCONTROL == 1)
 
-    // Shot timer shown if machine is brewing and after the brew
-    if (machineState == kBrew || machineState == kShotTimerAfterBrew) {
+    // Shown brew time while machine is brewing and after the brewing during SHOTTIMERDISPLAYDELAY
+    if (machineState == kBrew || (millis() - lastBrewTimeMillis) < SHOTTIMERDISPLAYDELAY) {
+        u8g2.setFontMode(1);
+        u8g2.setCursor(34, 36);
         u8g2.print(langstring_brew);
         u8g2.setCursor(84, 36);
         u8g2.print(timeBrewed / 1000, 0);
         u8g2.print("/");
-
-        if (FEATURE_BREWCONTROL == 0) {
-            u8g2.print(brewtimesoftware, 0);
-        }
-        else {
-            u8g2.print(totalBrewTime / 1000, 1);
-        }
+        u8g2.print(totalBrewTime / 1000, 0);
+        u8g2.print(" s");
     }
+
+    // Flush time
+
+    // Shown flush time while machine is flushing
+    if (machineState == kManualFlush) {
+        u8g2.setDrawColor(0);
+        u8g2.drawBox(34, 36, 100, 10);
+        u8g2.setDrawColor(1);
+        u8g2.setCursor(34, 36);
+        u8g2.print(langstring_manual_flush);
+        u8g2.setCursor(84, 36);
+        u8g2.print(timeBrewed / 1000, 0);
+        u8g2.print(" s");
+    }
+
+#endif
+
+// Brew Timer with optocoupler
+#if (FEATURE_BREWSWITCH == 1 && FEATURE_BREWCONTROL == 0)
+
+    // Shown brew time while machine is brewing and after the brewing during SHOTTIMERDISPLAYDELAY
+    if (machineState == kBrew || (millis() - lastBrewTimeMillis) < SHOTTIMERDISPLAYDELAY) {
+        u8g2.setCursor(34, 36);
+        u8g2.print(langstring_brew);
+        u8g2.setCursor(84, 36);
+        u8g2.print(timeBrewed / 1000, 0);
+        u8g2.print(" s");
+    }
+
+#endif
 
     // PID values over heat bar
     u8g2.setCursor(38, 47);
