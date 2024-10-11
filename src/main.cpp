@@ -1167,7 +1167,7 @@ void setup() {
                                  .type = kUInt8,
                                  .section = sBDSection,
                                  .position = 22,
-                                 .show = [] { return true && FEATURE_BREWDETECTION == 1; },
+                                 .show = [] { return true && FEATURE_BREWSWITCH == 1; },
                                  .minValue = 0,
                                  .maxValue = 1,
                                  .ptr = (void*)&useBDPID};
@@ -1185,7 +1185,7 @@ void setup() {
                                  .type = kDouble,
                                  .section = sBDSection,
                                  .position = 23,
-                                 .show = [] { return true && FEATURE_BREWDETECTION == 1 && useBDPID; },
+                                 .show = [] { return true && FEATURE_BREWSWITCH == 1 && useBDPID; },
                                  .minValue = PID_KP_BD_MIN,
                                  .maxValue = PID_KP_BD_MAX,
                                  .ptr = (void*)&aggbKp};
@@ -1197,7 +1197,7 @@ void setup() {
                                  .type = kDouble,
                                  .section = sBDSection,
                                  .position = 24,
-                                 .show = [] { return true && FEATURE_BREWDETECTION == 1 && useBDPID; },
+                                 .show = [] { return true && FEATURE_BREWSWITCH == 1 && useBDPID; },
                                  .minValue = PID_TN_BD_MIN,
                                  .maxValue = PID_TN_BD_MAX,
                                  .ptr = (void*)&aggbTn};
@@ -1209,7 +1209,7 @@ void setup() {
                                  .type = kDouble,
                                  .section = sBDSection,
                                  .position = 25,
-                                 .show = [] { return true && FEATURE_BREWDETECTION == 1 && useBDPID; },
+                                 .show = [] { return true && FEATURE_BREWSWITCH == 1 && useBDPID; },
                                  .minValue = PID_TV_BD_MIN,
                                  .maxValue = PID_TV_BD_MAX,
                                  .ptr = (void*)&aggbTv};
