@@ -5,7 +5,7 @@
  *
  */
 // TODO:
-//  clean up backflush
+//  FEATURE_BREWCONTROL has to be removed from userconfig, setup on website
 //  Flush Timer configurable and seperated from shottimer?
 //  move brewPIDDisabled to kBrew? new fuction to set PID State based on mashine state switching? if kBrew -> disable PID/wait/BDPID or NORMALPID
 //  check all Scale stuff
@@ -29,12 +29,9 @@ enum BrewSwitchState {
 enum BrewState {
     kBrewIdle = 10,
     kPreinfusion = 20,
-    kWaitPreinfusion = 21,
     kPreinfusionPause = 30,
-    kWaitPreinfusionPause = 31,
     kBrewRunning = 40,
-    kWaitBrew = 41,
-    kBrewFinished = 42,
+    kBrewFinished = 50,
 };
 
 enum ManualFlushState {
@@ -43,30 +40,38 @@ enum ManualFlushState {
 };
 
 enum BackflushState {
-    kBackflushWaitBrewswitchOn = 10,
-    kBackflushFillingStart = 20,
-    kBackflushFilling = 21,
-    kBackflushFlushingStart = 30,
-    kBackflushFlushing = 31,
-    kBackflushWaitBrewswitchOff = 43
+    kBackflushIdle = 10,
+    kBackflushFilling = 20,
+    kBackflushFlushing = 30,
+    kBackflushFinished = 40
 };
 
 // Brew control states
 BrewSwitchState currBrewSwitchState = kBrewSwitchIdle;
 BrewState currBrewState = kBrewIdle;
 ManualFlushState currManualFlushState = kManualFlushIdle;
+BackflushState currBackflushState = kBackflushIdle;
 
 uint8_t brewSwitchReading = LOW;
 uint8_t currReadingBrewSwitch = LOW;
-boolean brewSwitchWasOff = false;
+bool brewSwitchWasOff = false;
 
-int brewOn = 0;                  // flag is set if brew was detected
-int manualFlushOn = 0;           // flag is set if manual flush is detected
-double totalBrewTime = 0;        // total brewtime set in software
-double timeBrewed = 0;           // total brewed time
-double lastBrewTimeMillis = 0;   // for shottimer delay after brew is finished
-unsigned long startingTime = 0;  // start time of brew
-boolean brewPIDDisabled = false; // is PID disabled for delay after brew has started?
+// Brew values
+double brewTime = BREW_TIME;                       // brewtime in s
+double preinfusion = PRE_INFUSION_TIME;            // preinfusion time in s
+double preinfusionPause = PRE_INFUSION_PAUSE_TIME; // preinfusion pause time in s
+double totalBrewTime = 0;       // total brewtime including preinfusion and preinfusion pause
+double timeBrewed = 0;          // total brewed time
+double lastBrewTimeMillis = 0;  // for shottimer delay after brew is finished
+unsigned long startingTime = 0; // start time of brew
+bool brewPIDDisabled = false;   // is PID disabled for delay after brew has started?
+
+// Backflush values
+int backflushCycles = BACKFLUSH_CYCLES;
+double backflushFillTime = BACKFLUSH_FILL_TIME;
+double backflushFlushTime = BACKFLUSH_FLUSH_TIME;
+int backflushOn = 0;
+int currBackflushCycles = 1;
 
 // Shot timer with or without scale
 #if FEATURE_SCALE == 1
@@ -132,9 +137,9 @@ void checkbrewswitch() {
             case kBrewSwitchShortPressed:
                 if (currReadingBrewSwitch == HIGH) { // Brew switch short press detected while brew is running - abort brew
                     currBrewSwitchState = kBrewSwitchWaitForRelease;
-                    LOG(DEBUG, "Brew switch short press detected -> got to currBrewSwitchState = kBrewSwitchWaitForRelease; brew stopped manually");
+                    LOG(DEBUG, "Brew switch short press detected -> got to currBrewSwitchState = kBrewSwitchWaitForRelease; brew or backflush stopped manually");
                 }
-                else if ((currBrewState == kBrewFinished) || (backflushState == kBackflushWaitBrewswitchOff)) { // Brew reached target and stopped or blackflush cycle done
+                else if ((currBrewState == kBrewFinished) || (currBackflushState == kBackflushFinished)) { // Brew reached target and stopped or blackflush cycle done
                     currBrewSwitchState = kBrewSwitchWaitForRelease;
                     LOG(DEBUG, "Brew reached target or backflush done -> got to currBrewSwitchState = kBrewSwitchWaitForRelease");
                 }
@@ -157,148 +162,36 @@ void checkbrewswitch() {
     }
 }
 
-#if (FEATURE_BREWCONTROL == 0)
 /**
- * @brief Brew timer
+ * @brief Brew process handeling including timer and state machine for brew-by-time and brew-by-weight
+ * @return true if brew is running, false otherwise
  */
-void brewTimer() {
+bool brew() {
     unsigned long currentMillisTemp = millis();
     checkbrewswitch();
 
-    // Start the timer when the brew switch is turned on
-    if (currBrewSwitchState == kBrewSwitchShortPressed && currBrewState == kBrewIdle) {
-        brewOn = 1;
-        startingTime = currentMillisTemp;
-        timeBrewed = 0; // reset timeBrewed, last brew is still stored
-        LOG(INFO, "Brew timer started");
-        currBrewState = kBrewRunning;
-    }
-
-    // Update the brewed time if the brew switch is still on
-    if (currBrewSwitchState == kBrewSwitchShortPressed && currBrewState == kBrewRunning) {
-        timeBrewed = currentMillisTemp - startingTime;
-    }
-
-    // Stop the timer when the brew switch is turned off
-    if (currBrewSwitchState == kBrewSwitchIdle && currBrewState == kBrewRunning) {
-        brewOn = 0;
-        lastBrewTimeMillis = millis(); // time brew finished for shottimer delay
-        LOG(INFO, "Brew timer stopped");
-        LOGF(INFO, "Shot time: %4.1f s", timeBrewed / 1000);
-        currBrewState = kBrewIdle;
-    }
-}
-#endif
-
-#if (FEATURE_BREWCONTROL == 1)
-/**
- * @brief Backflush
- */
-void backflush() {
-    if (backflushState != kBackflushWaitBrewswitchOn && backflushOn == 0) {
-        backflushState = kBackflushWaitBrewswitchOff; // Force reset in case backflushOn is reset during backflush!
-        LOG(INFO, "Backflush: Disabled via Webinterface");
-    }
-    else if (offlineMode == 1 || currBrewState > kBrewIdle || backflushCycles <= 0 || backflushOn == 0) {
-        return;
-    }
-
-    if (bPID.GetMode() == 1) { // Deactivate PID
-        bPID.SetMode(0);
-        pidOutput = 0;
-    }
-
-    heaterRelay.off(); // Stop heating
-
-    checkbrewswitch();
-
-    if (currBrewSwitchState == kBrewSwitchIdle && backflushState != kBackflushWaitBrewswitchOn) { // Abort function for state machine from every state
-        backflushState = kBackflushWaitBrewswitchOff;
-    }
-
-    // State machine for backflush
-    switch (backflushState) {
-        case kBackflushWaitBrewswitchOn:
-            if (currBrewSwitchState == kBrewSwitchShortPressed && backflushOn && machineState != kWaterEmpty) {
-                startingTime = millis();
-                backflushState = kBackflushFillingStart;
-            }
-
-            break;
-
-        case kBackflushFillingStart:
-            LOG(INFO, "Backflush: Portafilter filling...");
-            valveRelay.on();
-            pumpRelay.on();
-            backflushState = kBackflushFilling;
-
-            break;
-
-        case kBackflushFilling:
-            if (millis() - startingTime > (backflushFillTime * 1000)) {
-                startingTime = millis();
-                backflushState = kBackflushFlushingStart;
-            }
-
-            break;
-
-        case kBackflushFlushingStart:
-            LOG(INFO, "Backflush: Flushing to drip tray...");
-            valveRelay.off();
-            pumpRelay.off();
-            currBackflushCycles++;
-            backflushState = kBackflushFlushing;
-
-            break;
-
-        case kBackflushFlushing:
-            if (millis() - startingTime > (backflushFlushTime * 1000) && currBackflushCycles < backflushCycles) {
-                startingTime = millis();
-                backflushState = kBackflushFillingStart;
-            }
-            else if (currBackflushCycles >= backflushCycles) {
-                backflushState = kBackflushWaitBrewswitchOff;
-            }
-
-            break;
-
-        case kBackflushWaitBrewswitchOff:
-            if (currBrewSwitchState == kBrewSwitchIdle) {
-                LOG(INFO, "Backflush: Finished!");
-                valveRelay.off();
-                pumpRelay.off();
-                currBackflushCycles = 0;
-                backflushState = kBackflushWaitBrewswitchOn;
-            }
-
-            break;
-    }
-}
-
-/**
- * @brief Time or weight based brew mode
- */
-void brew() {
-    unsigned long currentMillisTemp = millis();
-    checkbrewswitch();
-
+    // abort function for state machine from every state
     if (currBrewSwitchState == kBrewSwitchIdle && currBrewState > kBrewIdle && currBrewState < kBrewFinished) {
-        // abort function for state machine from every state
-        LOG(INFO, "Brew stopped manually");
+        if (currBrewState != kBrewFinished) {
+            LOG(INFO, "Brew stopped manually");
+        }
         currBrewState = kBrewFinished;
     }
-
-    if (currBrewSwitchState == kBrewSwitchIdle) {
-        // check if brewswitch was turned off at least once, last time,
-        brewSwitchWasOff = true;
-    }
-
+    // calculated brew time while brew is running
     if (currBrewState > kBrewIdle && currBrewState < kBrewFinished) {
         timeBrewed = currentMillisTemp - startingTime;
     }
 
+#if (FEATURE_BREWCONTROL == 1) // brew-by-time and brew-by-weight
+
+    // check if brewswitch was turned off after a brew; Brew only runs once even brewswitch is still pressed
+    if (currBrewSwitchState == kBrewSwitchIdle) {
+        brewSwitchWasOff = true;
+    }
+
+    // set brew time every cycle, in case changes are done during brew
     if (brewTime > 0) {
-        totalBrewTime = (preinfusion * 1000) + (preinfusionPause * 1000) + (brewTime * 1000); // running every cycle, in case changes are done during brew
+        totalBrewTime = (preinfusion * 1000) + (preinfusionPause * 1000) + (brewTime * 1000);
     }
     else {
         // Stop by time deactivated --> brewTime = 0
@@ -307,66 +200,49 @@ void brew() {
 
     // state machine for brew
     switch (currBrewState) {
-        case kBrewIdle: // waiting step for brew switch turning on
-            if (currBrewSwitchState == kBrewSwitchShortPressed && backflushState == 10 && backflushOn == 0 && brewSwitchWasOff && machineState != kWaterEmpty) {
+        case kBrewIdle:         // waiting step for brew switch turning on
+            if (currBrewSwitchState == kBrewSwitchShortPressed && brewSwitchWasOff && backflushOn == 0 && machineState != kWaterEmpty && machineState != kBackflush) {
                 startingTime = millis();
-                timeBrewed = 0;
+                timeBrewed = 0; // reset timeBrewed, last brew is still stored
                 LOG(INFO, "Brew started");
 
                 if (preinfusionPause == 0 || preinfusion == 0) {
-                    brewOn = 1;
+                    LOG(INFO, "Brew running");
                     currBrewState = kBrewRunning;
                 }
                 else {
-                    brewOn = 1;
+                    LOG(INFO, "Preinfusion running");
                     currBrewState = kPreinfusion;
                 }
             }
-            else {
-                backflush();
-            }
 
             break;
 
-        case kPreinfusion: // preinfusioon
+        case kPreinfusion:
             valveRelay.on();
             pumpRelay.on();
-            LOG(INFO, "Preinfusion");
-            currBrewState = kWaitPreinfusion;
 
-            break;
-
-        case kWaitPreinfusion: // waiting time preinfusion
             if (timeBrewed > (preinfusion * 1000)) {
+                LOG(INFO, "Preinfusion pause running");
                 currBrewState = kPreinfusionPause;
             }
 
             break;
 
-        case kPreinfusionPause: // preinfusion pause
+        case kPreinfusionPause:
             valveRelay.on();
             pumpRelay.off();
-            LOG(INFO, "Preinfusion pause");
-            currBrewState = kWaitPreinfusionPause;
 
-            break;
-
-        case kWaitPreinfusionPause: // waiting time preinfusion pause
-            if (timeBrewed > ((preinfusion * 1000) + (preinfusionPause * 1000))) {
+            if (timeBrewed > ((preinfusion + preinfusionPause) * 1000)) {
+                LOG(INFO, "Brew running");
                 currBrewState = kBrewRunning;
             }
 
             break;
 
-        case kBrewRunning: // brew running
+        case kBrewRunning:
             valveRelay.on();
             pumpRelay.on();
-            LOG(INFO, "Brew running");
-            currBrewState = kWaitBrew;
-
-            break;
-
-        case kWaitBrew: // waiting time or weight brew
 
             // stop brew if target-time is reached --> No stop if stop by time is deactivated via Parameter (0)
             if ((timeBrewed > totalBrewTime) && ((brewTime > 0))) {
@@ -383,25 +259,60 @@ void brew() {
 
             break;
 
-        case kBrewFinished: // brew finished
+        case kBrewFinished:
             valveRelay.off();
             pumpRelay.off();
-            brewOn = 0;
             currentMillisTemp = 0;
             lastBrewTimeMillis = millis(); // time brew finished for shottimer delay
             brewSwitchWasOff = false;
             LOG(INFO, "Brew finished");
             LOGF(INFO, "Shot time: %4.1f s", timeBrewed / 1000);
+            LOG(INFO, "Brew idle");
             currBrewState = kBrewIdle;
 
             break;
     }
+#else // FEATURE_BREWCONTROL == 0, only brew time
+
+    switch (currBrewState) {
+        case kBrewIdle:         // waiting step for brew switch turning on
+            if (currBrewSwitchState == kBrewSwitchShortPressed && machineState != kWaterEmpty) {
+                startingTime = millis();
+                timeBrewed = 0; // reset timeBrewed, last brew is still stored
+                LOG(INFO, "Brew timer started");
+                currBrewState = kBrewRunning;
+            }
+
+            break;
+
+        case kBrewRunning:
+            if (currBrewSwitchState == kBrewSwitchIdle && currBrewState == kBrewRunning) {
+                currBrewState = kBrewFinished;
+            }
+
+            break;
+
+        case kBrewFinished:
+            currentMillisTemp = 0;
+            lastBrewTimeMillis = millis(); // time brew finished for shottimer delay
+            LOG(INFO, "Brew finished");
+            LOGF(INFO, "Shot time: %4.1f s", timeBrewed / 1000);
+            LOG(INFO, "Brew idle");
+            currBrewState = kBrewIdle;
+
+            break;
+    }
+#endif
+
+    return (currBrewState != kBrewIdle && currBrewState != kBrewFinished);
 }
 
+#if (FEATURE_BREWCONTROL == 1)
 /**
  * @brief manual grouphead flush
+ * @return true if manual flush is running, false otherwise
  */
-void manualFlush() {
+bool manualFlush() {
     unsigned long currentMillisTemp = millis();
     checkbrewswitch();
     if (currManualFlushState == kManualFlushRunning) {
@@ -414,7 +325,6 @@ void manualFlush() {
                 startingTime = millis();
                 valveRelay.on();
                 pumpRelay.on();
-                manualFlushOn = 1;
                 LOG(INFO, "Manual flush started");
                 currManualFlushState = kManualFlushRunning;
             }
@@ -424,13 +334,91 @@ void manualFlush() {
             if (currBrewSwitchState != kBrewSwitchLongPressed) {
                 valveRelay.off();
                 pumpRelay.off();
-                manualFlushOn = 0;
                 LOG(INFO, "Manual flush stopped");
                 LOGF(INFO, "Manual flush time: %4.1f s", timeBrewed / 1000);
                 currManualFlushState = kManualFlushIdle;
             }
             break;
     }
+    return (currManualFlushState == kManualFlushRunning);
 }
 
+/**
+ * @brief Backflush
+ */
+void backflush() {
+    checkbrewswitch();
+    if (currBackflushState != kBackflushIdle && backflushOn == 0) {
+        currBackflushState = kBackflushFinished; // Force reset in case backflushOn is reset during backflush!
+        LOG(INFO, "Backflush: Disabled via webinterface");
+    }
+    else if (offlineMode == 1 || currBrewState > kBrewIdle || backflushCycles <= 0 || backflushOn == 0) {
+        return;
+    }
+
+    // abort function for state machine from every state
+    if (currBrewSwitchState == kBrewSwitchIdle && currBackflushState > kBackflushIdle && currBackflushState < kBackflushFinished) {
+        currBackflushState = kBackflushFinished;
+        if (currBackflushState != kBackflushFinished) {
+            LOG(INFO, "Backflush stopped manually");
+        }
+    }
+
+    // check if brewswitch was turned off after a backflush; Backflush only runs once even brewswitch is still pressed
+    if (currBrewSwitchState == kBrewSwitchIdle) {
+        brewSwitchWasOff = true;
+    }
+
+    // State machine for backflush
+    switch (currBackflushState) {
+        case kBackflushIdle:
+            if (currBrewSwitchState == kBrewSwitchShortPressed && backflushOn && brewSwitchWasOff && machineState != kWaterEmpty) {
+                startingTime = millis();
+                valveRelay.on();
+                pumpRelay.on();
+                LOGF(INFO, "Start backflush cycle %d", currBackflushCycles);
+                LOG(INFO, "Backflush: filling portafilter");
+                currBackflushState = kBackflushFilling;
+            }
+
+            break;
+
+        case kBackflushFilling:
+            if (millis() - startingTime > (backflushFillTime * 1000)) {
+                startingTime = millis();
+                valveRelay.off();
+                pumpRelay.off();
+                LOG(INFO, "Backflush: flushing into drip tray");
+                currBackflushState = kBackflushFlushing;
+            }
+            break;
+
+        case kBackflushFlushing:
+            if (millis() - startingTime > (backflushFlushTime * 1000)) {
+                if (currBackflushCycles < backflushCycles) {
+                    startingTime = millis();
+                    valveRelay.on();
+                    pumpRelay.on();
+                    currBackflushCycles++;
+                    LOGF(INFO, "Backflush: next backflush cycle %d", currBackflushCycles);
+                    LOG(INFO, "Backflush: filling portafilter");
+                    currBackflushState = kBackflushFilling;
+                }
+                else {
+                    currBackflushState = kBackflushFinished;
+                }
+            }
+            break;
+
+        case kBackflushFinished:
+            valveRelay.off();
+            pumpRelay.off();
+            LOGF(INFO, "Backflush finished after %d cycles", currBackflushCycles);
+            currBackflushCycles = 1;
+            brewSwitchWasOff = false;
+            currBackflushState = kBackflushIdle;
+
+            break;
+    }
+}
 #endif

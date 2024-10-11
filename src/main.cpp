@@ -118,14 +118,6 @@ unsigned int wifiReconnects = 0; // actual number of reconnects
 // OTA
 const char* OTApass = OTAPASS;
 
-// Backflush values
-int backflushCycles = BACKFLUSH_CYCLES;
-double backflushFillTime = BACKFLUSH_FILL_TIME;
-double backflushFlushTime = BACKFLUSH_FLUSH_TIME;
-int backflushOn = 0;
-int backflushState = 10;
-int currBackflushCycles = 0; // number of active flush cycles
-
 // Pressure sensor
 #if (FEATURE_PRESSURESENSOR == 1)
 float inputPressure = 0;
@@ -199,9 +191,7 @@ double aggKp = AGGKP;
 double aggTn = AGGTN;
 double aggTv = AGGTV;
 double aggIMax = AGGIMAX;
-double brewTime = BREW_TIME;                       // brewtime in s
-double preinfusion = PRE_INFUSION_TIME;            // preinfusion time in s
-double preinfusionPause = PRE_INFUSION_PAUSE_TIME; // preinfusion pause time in s
+
 double weightSetpoint = SCALE_WEIGHTSETPOINT;
 
 // PID - values for offline brew detection
@@ -223,6 +213,29 @@ uint8_t standbyModeOn = 0;
 double standbyModeTime = STANDBY_MODE_TIME;
 
 #include "standby.h"
+
+// Variables to hold PID values (Temp input, Heater output)
+double temperature, pidOutput;
+int steamON = 0;
+int steamFirstON = 0;
+
+#if startTn == 0
+double startKi = 0;
+#else
+double startKi = startKp / startTn;
+#endif
+
+#if aggTn == 0
+double aggKi = 0;
+#else
+double aggKi = aggKp / aggTn;
+#endif
+
+double aggKd = aggTv * aggKp;
+
+PID bPID(&temperature, &pidOutput, &setpoint, aggKp, aggKi, aggKd, 1, DIRECT);
+
+#include "brewHandler.h"
 
 // system parameter EEPROM storage wrappers (current value as pointer to variable, minimum, maximum, optional storage ID)
 SysPara<uint8_t> sysParaPidOn(&pidON, 0, 1, STO_ITEM_PID_ON);
@@ -273,29 +286,6 @@ unsigned long previousMillistemp; // initialisation at the end of init()
 
 double setpointTemp;
 double previousInput = 0;
-
-// Variables to hold PID values (Temp input, Heater output)
-double temperature, pidOutput;
-int steamON = 0;
-int steamFirstON = 0;
-
-#if startTn == 0
-double startKi = 0;
-#else
-double startKi = startKp / startTn;
-#endif
-
-#if aggTn == 0
-double aggKi = 0;
-#else
-double aggKi = aggKp / aggTn;
-#endif
-
-double aggKd = aggTv * aggKp;
-
-PID bPID(&temperature, &pidOutput, &setpoint, aggKp, aggKi, aggKd, 1, DIRECT);
-
-#include "brewHandler.h"
 
 // Embedded HTTP Server
 #include "embeddedWebserver.h"
@@ -553,16 +543,17 @@ void handleMachineState() {
             break;
 
         case kPidNormal:
-
-            if (brewOn == 1) {
+#if (FEATURE_BREWSWITCH == 1)
+            if (brew()) {
                 machineState = kBrew;
 
                 if (standbyModeOn) {
                     resetStandbyTimer();
                 }
             }
-
-            if (manualFlushOn == 1) {
+#endif
+#if (FEATURE_BREWCONTROL == 1)
+            if (manualFlush()) {
                 machineState = kManualFlush;
 
                 if (standbyModeOn) {
@@ -570,16 +561,16 @@ void handleMachineState() {
                 }
             }
 
-            if (steamON == 1) {
-                machineState = kSteam;
+            if (backflushOn || currBackflushState > kBackflushIdle) {
+                machineState = kBackflush;
 
                 if (standbyModeOn) {
                     resetStandbyTimer();
                 }
             }
-
-            if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
-                machineState = kBackflush;
+#endif
+            if (steamON == 1) {
+                machineState = kSteam;
 
                 if (standbyModeOn) {
                     resetStandbyTimer();
@@ -608,10 +599,10 @@ void handleMachineState() {
             }
 
             break;
-
+#if (FEATURE_BREWSWITCH == 1)
         case kBrew:
 
-            if (brewOn == 0) {
+            if (!brew()) {
                 machineState = kPidNormal;
             }
 
@@ -631,10 +622,11 @@ void handleMachineState() {
                 machineState = kSensorError;
             }
             break;
-
+#endif
+#if (FEATURE_BREWCONTROL == 1)
         case kManualFlush:
 
-            if (manualFlushOn == 0) {
+            if (!manualFlush()) {
                 machineState = kPidNormal;
             }
 
@@ -654,7 +646,7 @@ void handleMachineState() {
                 machineState = kSensorError;
             }
             break;
-
+#endif
         case kSteam:
             if (steamON == 0) {
                 machineState = kPidNormal;
@@ -664,7 +656,7 @@ void handleMachineState() {
                 machineState = kEmergencyStop;
             }
 
-            if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
+            if (backflushOn || currBackflushState > kBackflushIdle) { // if this is possible, any other state change (brew, flush.etc should be possible)
                 machineState = kBackflush;
             }
 
@@ -680,8 +672,18 @@ void handleMachineState() {
                 machineState = kSensorError;
             }
             break;
-
+#if (FEATURE_BREWCONTROL == 1)
         case kBackflush:
+            // turn off PID and Heater during backflush; flushing will cause the PID to swing
+            if (bPID.GetMode() == 1) { // Deactivate PID
+                bPID.SetMode(0);
+                pidOutput = 0;
+            }
+
+            heaterRelay.off(); // Stop heating
+
+            backflush();
+
             if (backflushOn == 0) {
                 machineState = kPidNormal;
             }
@@ -694,7 +696,7 @@ void handleMachineState() {
                 machineState = kPidDisabled;
             }
 
-            if (!waterFull && (backflushState == kBackflushWaitBrewswitchOn || backflushState == kBackflushWaitBrewswitchOff)) {
+            if (!waterFull && (currBackflushState == kBackflushIdle || currBackflushState == kBackflushFinished)) {
                 machineState = kWaterEmpty;
             }
 
@@ -702,7 +704,7 @@ void handleMachineState() {
                 machineState = kSensorError;
             }
             break;
-
+#endif
         case kEmergencyStop:
             if (!emergencyStop) {
                 machineState = kPidNormal;
@@ -754,41 +756,55 @@ void handleMachineState() {
 #endif
             }
 
-            if (pidON || steamON || brewOn || manualFlushOn) {
+            if (pidON) {
                 pidON = 1;
                 resetStandbyTimer();
 #if OLED_DISPLAY != 0
                 u8g2.setPowerSave(0);
 #endif
-
-                if (steamON) {
-                    machineState = kSteam;
-                }
-                else if (brewOn) {
-                    machineState = kBrew;
-                }
-                else if (manualFlushOn) {
-                    machineState = kManualFlush;
-                }
-                else {
-                    machineState = kPidNormal;
-                }
+                machineState = kPidNormal;
+            }
+            if (steamON) {
+                pidON = 1;
+                resetStandbyTimer();
+#if OLED_DISPLAY != 0
+                u8g2.setPowerSave(0);
+#endif
+                machineState = kSteam;
             }
 
-            if (tempSensor->hasError()) {
-                machineState = kSensorError;
+#if (FEATURE_BREWSWITCH == 1)
+            if (brew()) {
+                pidON = 1;
+                resetStandbyTimer();
+#if OLED_DISPLAY != 0
+                u8g2.setPowerSave(0);
+#endif
+#endif
+#if (FEATURE_BREWCONTROL == 1)
+                if (manualFlush()) {
+                    pidON = 1;
+                    resetStandbyTimer();
+#if OLED_DISPLAY != 0
+                    u8g2.setPowerSave(0);
+#endif
+                }
+#endif
+
+                if (tempSensor->hasError()) {
+                    machineState = kSensorError;
+                }
+                break;
+
+                case kSensorError:
+                    machineState = kSensorError;
+                    break;
+
+                case kEepromError:
+                    machineState = kEepromError;
+                    break;
             }
-            break;
-
-        case kSensorError:
-            machineState = kSensorError;
-            break;
-
-        case kEepromError:
-            machineState = kEepromError;
-            break;
     }
-
     if (machineState != lastmachinestate) {
         printMachineState();
         lastmachinestate = machineState;
@@ -1575,17 +1591,13 @@ void looppid() {
             LOGF(TRACE, "Current PID Output: %f", pidOutput);
             LOGF(TRACE, "Current Machinestate: %s", machinestateEnumToString(machineState));
             LOGF(TRACE, "timeBrewed %f", timeBrewed);
-            LOGF(TRACE, "Brew detected %i", brewOn);
+            LOGF(TRACE, "Brew detected %i", brew());
         }
     }
 
 #if FEATURE_SCALE == 1
     checkWeight();    // Check Weight Scale in the loop
     shottimerscale(); // Calculation of weight of shot while brew is running
-#endif
-
-#if (FEATURE_BREWSWITCH == 1 && FEATURE_BREWCONTROL == 0)
-    brewTimer();
 #endif
 
 #if (FEATURE_BREWSWITCH == 1 && FEATURE_BREWCONTROL == 1)

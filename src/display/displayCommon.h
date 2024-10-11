@@ -339,8 +339,8 @@ bool displayMachineState() {
         u8g2.setCursor(2, 10);
         u8g2.print("Backflush");
 
-        switch (backflushState) {
-            case kBackflushWaitBrewswitchOn:
+        switch (currBackflushState) {
+            case kBackflushIdle:
                 u8g2.setFont(u8g2_font_profont12_tf);
                 u8g2.setCursor(4, 37);
                 u8g2.print(langstring_backflush_press);
@@ -348,7 +348,7 @@ bool displayMachineState() {
                 u8g2.print(langstring_backflush_start);
                 break;
 
-            case kBackflushWaitBrewswitchOff:
+            case kBackflushFinished:
                 u8g2.setFont(u8g2_font_profont12_tf);
                 u8g2.setCursor(4, 37);
                 u8g2.print(langstring_backflush_press);
@@ -359,7 +359,7 @@ bool displayMachineState() {
             default:
                 u8g2.setFont(u8g2_font_fub17_tf);
                 u8g2.setCursor(42, 42);
-                u8g2.print(currBackflushCycles + 1, 0);
+                u8g2.print(currBackflushCycles, 0);
                 u8g2.print("/");
                 u8g2.print(backflushCycles, 0);
                 break;
