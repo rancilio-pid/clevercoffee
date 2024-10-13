@@ -50,7 +50,6 @@ enum MACHINE {
 #define WIFICONNECTIONDELAY 10000          // delay between reconnects in ms
 
 // PID & Hardware
-#define FEATURE_BREWCONTROL 0                       // 0 = deactivated, 1 = activated
 #define FEATURE_POWERSWITCH 0                       // 0 = deactivated, 1 = activated
 #define POWERSWITCH_TYPE    Switch::TOGGLE          // Switch::TOGGLE or Switch::MOMENTARY (trigger)
 #define POWERSWITCH_MODE    Switch::NORMALLY_OPEN   // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED

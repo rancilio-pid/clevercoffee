@@ -88,7 +88,7 @@ void displayEmergencyStop(void) {
  * @brief display shot timer
  */
 bool displayShottimer() {
-    if (((timeBrewed > 0 && FEATURE_BREWCONTROL == 0) || (FEATURE_BREWCONTROL > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished)) && FEATURE_SHOTTIMER == 1) {
+    if (((timeBrewed > 0 && featureBrewControl == 0) || (featureBrewControl > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished)) && FEATURE_SHOTTIMER == 1) {
         u8g2.clearBuffer();
 
         // draw temp icon

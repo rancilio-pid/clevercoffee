@@ -24,7 +24,7 @@ const vueApp = Vue.createApp({
             // post parameter array the same as if it was posted from a form (the values are already updated
             // from the v-model bindings)
             var formBody = [];
-            
+
             this.parameters.forEach(param => {
                 var encodedKey = encodeURIComponent(param.name);
                 var encodedValue = encodeURIComponent(param.value);
@@ -41,7 +41,7 @@ const vueApp = Vue.createApp({
                 cache: 'no-cache',
                 body: formBody
             };
-            
+
             this.isPostingForm = true
 
             fetch("/parameters", requestOptions)
@@ -74,13 +74,13 @@ const vueApp = Vue.createApp({
         sectionName(sectionId) {
             const sectionNames = {
                 0: 'PID Parameters',
-                1: 'Temperature and Preinfusion',
-                2: 'Brew Detection and Brew PID Parameters',
+                1: 'Temperature',
+                2: 'Brew PID Parameters',
                 3: 'Brew Control',
                 4: 'Scale Parameters',
                 5: 'Power Settings'
             }
-            
+
             return sectionNames[sectionId]
         },
 

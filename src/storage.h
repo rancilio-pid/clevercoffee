@@ -44,6 +44,7 @@ typedef enum {
     STO_ITEM_BACKFLUSH_CYCLES,          // number of cycles the backflush should run
     STO_ITEM_BACKFLUSH_FILL_TIME,       // time in ms the pump is running during backflush
     STO_ITEM_BACKFLUSH_FLUSH_TIME,      // time in ms the 3-way valve is open during backflush
+    STO_ITEM_FEATURE_BREW_CONTROL,      // enables function to control pump and solenoid valve
 
     /* WHEN ADDING NEW ITEMS, THE FOLLOWING HAS TO BE UPDATED:
      * - storage structure:  sto_data_t
@@ -114,6 +115,7 @@ typedef struct __attribute__((packed)) {
         int backflushCycles;
         double backflushFillTimeMs;
         double backflushFlushTimeMs;
+        bool featureBrewControl;
 
 } sto_data_t;
 
@@ -165,6 +167,7 @@ static const sto_data_t itemDefaults PROGMEM = {
     BACKFLUSH_CYCLES,                                                                                                               // STO_ITEM_BACKFLUSH_CYCLES
     BACKFLUSH_FILL_TIME,                                                                                                            // STO_ITEM_BACKFLUSH_FILLTIME
     BACKFLUSH_FLUSH_TIME,                                                                                                           // STO_ITEM_BACKFLUSH_FLUSHTIME
+    FEATURE_BREW_CONTROL,                                                                                                           // STO_ITEM_FEATURE_BREW_CONTROL
 };
 
 /**
@@ -345,6 +348,11 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
         case STO_ITEM_BACKFLUSH_FLUSH_TIME:
             addr = offsetof(sto_data_t, backflushFlushTimeMs);
             size = STRUCT_MEMBER_SIZE(sto_data_t, backflushFlushTimeMs);
+            break;
+
+        case STO_ITEM_FEATURE_BREW_CONTROL:
+            addr = offsetof(sto_data_t, featureBrewControl);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, featureBrewControl);
             break;
 
         default:
@@ -670,7 +678,7 @@ int storageGet(sto_item_id_t itemId, String& itemValue) {
  *        The value is set in the RAM only! Use 'commit=true' or call
  *        storageCommit() to write the RAM content to the non-volatile memory!
  *
- *  @param itemId    - storage item ID
+ * @param itemId    - storage item ID
  * @param itemValue - item value to set
  * @param commit    - true=write current RAM content to NV memory (optional, default=false)
  *

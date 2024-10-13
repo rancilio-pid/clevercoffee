@@ -47,6 +47,7 @@ int writeSysParamsToStorage(void);
 #define BACKFLUSH_CYCLES          5      // number of cycles the backflush should run
 #define BACKFLUSH_FILL_TIME       5      // time in seconds the pump is running during backflush
 #define BACKFLUSH_FLUSH_TIME      10     // time in seconds the 3-way valve is open during backflush
+#define FEATURE_BREW_CONTROL      0      // enables function to control pump and solenoid valve
 
 #define PID_KP_START_MIN         0
 #define PID_KP_START_MAX         999

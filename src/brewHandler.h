@@ -7,12 +7,11 @@
 // TODO:
 //  FEATURE_BREWCONTROL has to be removed from userconfig, setup on website
 //  Flush Timer configurable and seperated from shottimer?
-//  move brewPIDDisabled to kBrew? new fuction to set PID State based on mashine state switching? if kBrew -> disable PID/wait/BDPID or NORMALPID
 //  check all Scale stuff
-//  check params website
 //  check MQTT/HASSIO for all brew stuff
 //  show heating logo if steam temp isn´t reached?
 //  how handle brew, backflush, manualflush, hotwater if mashine is in steam mode
+//  show sections on website only if needed
 
 #pragma once
 
@@ -57,14 +56,15 @@ uint8_t currReadingBrewSwitch = LOW;
 bool brewSwitchWasOff = false;
 
 // Brew values
+uint8_t featureBrewControl = FEATURE_BREW_CONTROL; // enables control of pumpe and valve
 double brewTime = BREW_TIME;                       // brewtime in s
 double preinfusion = PRE_INFUSION_TIME;            // preinfusion time in s
 double preinfusionPause = PRE_INFUSION_PAUSE_TIME; // preinfusion pause time in s
-double totalBrewTime = 0;       // total brewtime including preinfusion and preinfusion pause
-double timeBrewed = 0;          // total brewed time
-double lastBrewTimeMillis = 0;  // for shottimer delay after brew is finished
-unsigned long startingTime = 0; // start time of brew
-bool brewPIDDisabled = false;   // is PID disabled for delay after brew has started?
+double totalBrewTime = 0;                          // total brewtime including preinfusion and preinfusion pause
+double timeBrewed = 0;                             // total brewed time
+double lastBrewTimeMillis = 0;                     // for shottimer delay after brew is finished
+unsigned long startingTime = 0;                    // start time of brew
+bool brewPIDDisabled = false;                      // is PID disabled for delay after brew has started?
 
 // Backflush values
 int backflushCycles = BACKFLUSH_CYCLES;
@@ -182,132 +182,131 @@ bool brew() {
         timeBrewed = currentMillisTemp - startingTime;
     }
 
-#if (FEATURE_BREWCONTROL == 1) // brew-by-time and brew-by-weight
+    if (featureBrewControl) { // brew-by-time and brew-by-weight
 
-    // check if brewswitch was turned off after a brew; Brew only runs once even brewswitch is still pressed
-    if (currBrewSwitchState == kBrewSwitchIdle) {
-        brewSwitchWasOff = true;
-    }
+        // check if brewswitch was turned off after a brew; Brew only runs once even brewswitch is still pressed
+        if (currBrewSwitchState == kBrewSwitchIdle) {
+            brewSwitchWasOff = true;
+        }
 
-    // set brew time every cycle, in case changes are done during brew
-    if (brewTime > 0) {
-        totalBrewTime = (preinfusion * 1000) + (preinfusionPause * 1000) + (brewTime * 1000);
-    }
-    else {
-        // Stop by time deactivated --> brewTime = 0
-        totalBrewTime = 0;
-    }
+        // set brew time every cycle, in case changes are done during brew
+        if (brewTime > 0) {
+            totalBrewTime = (preinfusion * 1000) + (preinfusionPause * 1000) + (brewTime * 1000);
+        }
+        else {
+            // Stop by time deactivated --> brewTime = 0
+            totalBrewTime = 0;
+        }
 
-    // state machine for brew
-    switch (currBrewState) {
-        case kBrewIdle:         // waiting step for brew switch turning on
-            if (currBrewSwitchState == kBrewSwitchShortPressed && brewSwitchWasOff && backflushOn == 0 && machineState != kWaterEmpty && machineState != kBackflush) {
-                startingTime = millis();
-                timeBrewed = 0; // reset timeBrewed, last brew is still stored
-                LOG(INFO, "Brew started");
+        // state machine for brew
+        switch (currBrewState) {
+            case kBrewIdle:         // waiting step for brew switch turning on
+                if (currBrewSwitchState == kBrewSwitchShortPressed && brewSwitchWasOff && backflushOn == 0 && machineState != kWaterEmpty && machineState != kBackflush) {
+                    startingTime = millis();
+                    timeBrewed = 0; // reset timeBrewed, last brew is still stored
+                    LOG(INFO, "Brew started");
 
-                if (preinfusionPause == 0 || preinfusion == 0) {
+                    if (preinfusionPause == 0 || preinfusion == 0) {
+                        LOG(INFO, "Brew running");
+                        currBrewState = kBrewRunning;
+                    }
+                    else {
+                        LOG(INFO, "Preinfusion running");
+                        currBrewState = kPreinfusion;
+                    }
+                }
+
+                break;
+
+            case kPreinfusion:
+                valveRelay.on();
+                pumpRelay.on();
+
+                if (timeBrewed > (preinfusion * 1000)) {
+                    LOG(INFO, "Preinfusion pause running");
+                    currBrewState = kPreinfusionPause;
+                }
+
+                break;
+
+            case kPreinfusionPause:
+                valveRelay.on();
+                pumpRelay.off();
+
+                if (timeBrewed > ((preinfusion + preinfusionPause) * 1000)) {
                     LOG(INFO, "Brew running");
                     currBrewState = kBrewRunning;
                 }
-                else {
-                    LOG(INFO, "Preinfusion running");
-                    currBrewState = kPreinfusion;
+
+                break;
+
+            case kBrewRunning:
+                valveRelay.on();
+                pumpRelay.on();
+
+                // stop brew if target-time is reached --> No stop if stop by time is deactivated via Parameter (0)
+                if ((timeBrewed > totalBrewTime) && ((brewTime > 0))) {
+                    LOG(INFO, "Brew reached time target");
+                    currBrewState = kBrewFinished;
                 }
-            }
-
-            break;
-
-        case kPreinfusion:
-            valveRelay.on();
-            pumpRelay.on();
-
-            if (timeBrewed > (preinfusion * 1000)) {
-                LOG(INFO, "Preinfusion pause running");
-                currBrewState = kPreinfusionPause;
-            }
-
-            break;
-
-        case kPreinfusionPause:
-            valveRelay.on();
-            pumpRelay.off();
-
-            if (timeBrewed > ((preinfusion + preinfusionPause) * 1000)) {
-                LOG(INFO, "Brew running");
-                currBrewState = kBrewRunning;
-            }
-
-            break;
-
-        case kBrewRunning:
-            valveRelay.on();
-            pumpRelay.on();
-
-            // stop brew if target-time is reached --> No stop if stop by time is deactivated via Parameter (0)
-            if ((timeBrewed > totalBrewTime) && ((brewTime > 0))) {
-                LOG(INFO, "Brew reached time target");
-                currBrewState = kBrewFinished;
-            }
 #if (FEATURE_SCALE == 1)
-            // stop brew if target-weight is reached --> No stop if stop by weight is deactivated via Parameter (0)
-            else if (((FEATURE_SCALE == 1) && (weightBrew > weightSetpoint)) && (weightSetpoint > 0)) {
-                LOG(INFO, "Brew reached weight target");
-                currBrewState = kBrewFinished;
-            }
+                // stop brew if target-weight is reached --> No stop if stop by weight is deactivated via Parameter (0)
+                else if (((FEATURE_SCALE == 1) && (weightBrew > weightSetpoint)) && (weightSetpoint > 0)) {
+                    LOG(INFO, "Brew reached weight target");
+                    currBrewState = kBrewFinished;
+                }
 #endif
 
-            break;
+                break;
 
-        case kBrewFinished:
-            valveRelay.off();
-            pumpRelay.off();
-            currentMillisTemp = 0;
-            lastBrewTimeMillis = millis(); // time brew finished for shottimer delay
-            brewSwitchWasOff = false;
-            LOG(INFO, "Brew finished");
-            LOGF(INFO, "Shot time: %4.1f s", timeBrewed / 1000);
-            LOG(INFO, "Brew idle");
-            currBrewState = kBrewIdle;
+            case kBrewFinished:
+                valveRelay.off();
+                pumpRelay.off();
+                currentMillisTemp = 0;
+                lastBrewTimeMillis = millis(); // time brew finished for shottimer delay
+                brewSwitchWasOff = false;
+                LOG(INFO, "Brew finished");
+                LOGF(INFO, "Shot time: %4.1f s", timeBrewed / 1000);
+                LOG(INFO, "Brew idle");
+                currBrewState = kBrewIdle;
 
-            break;
+                break;
+        }
     }
-#else // FEATURE_BREWCONTROL == 0, only brew time
+    else {                          // brewControlOn == 0, only brew time
 
-    switch (currBrewState) {
-        case kBrewIdle:         // waiting step for brew switch turning on
-            if (currBrewSwitchState == kBrewSwitchShortPressed && machineState != kWaterEmpty) {
-                startingTime = millis();
-                timeBrewed = 0; // reset timeBrewed, last brew is still stored
-                LOG(INFO, "Brew timer started");
-                currBrewState = kBrewRunning;
-            }
+        switch (currBrewState) {
+            case kBrewIdle:         // waiting step for brew switch turning on
+                if (currBrewSwitchState == kBrewSwitchShortPressed && machineState != kWaterEmpty) {
+                    startingTime = millis();
+                    timeBrewed = 0; // reset timeBrewed, last brew is still stored
+                    LOG(INFO, "Brew timer started");
+                    currBrewState = kBrewRunning;
+                }
 
-            break;
+                break;
 
-        case kBrewRunning:
-            if (currBrewSwitchState == kBrewSwitchIdle && currBrewState == kBrewRunning) {
-                currBrewState = kBrewFinished;
-            }
+            case kBrewRunning:
+                if (currBrewSwitchState == kBrewSwitchIdle && currBrewState == kBrewRunning) {
+                    currBrewState = kBrewFinished;
+                }
 
-            break;
+                break;
 
-        case kBrewFinished:
-            currentMillisTemp = 0;
-            lastBrewTimeMillis = millis(); // time brew finished for shottimer delay
-            LOG(INFO, "Brew finished");
-            LOGF(INFO, "Shot time: %4.1f s", timeBrewed / 1000);
-            LOG(INFO, "Brew idle");
-            currBrewState = kBrewIdle;
+            case kBrewFinished:
+                currentMillisTemp = 0;
+                lastBrewTimeMillis = millis(); // time brew finished for shottimer delay
+                LOG(INFO, "Brew finished");
+                LOGF(INFO, "Shot time: %4.1f s", timeBrewed / 1000);
+                LOG(INFO, "Brew idle");
+                currBrewState = kBrewIdle;
 
-            break;
+                break;
+        }
     }
-#endif
-
     return (currBrewState != kBrewIdle && currBrewState != kBrewFinished);
 }
 
-#if (FEATURE_BREWCONTROL == 1)
 /**
  * @brief manual grouphead flush
  * @return true if manual flush is running, false otherwise
@@ -421,4 +420,3 @@ void backflush() {
             break;
     }
 }
-#endif

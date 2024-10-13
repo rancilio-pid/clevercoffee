@@ -87,40 +87,42 @@ void printScreen() {
         u8g2.print("%");
 
 // Brew time
-#if (FEATURE_BREWSWITCH == 1 && FEATURE_BREWCONTROL == 1)
-        // Show brew time; after brew finished show lastBrewTime during SHOTTIMERDISPLAYDELAY
-        if (machineState == kBrew || (millis() - lastBrewTimeMillis) < SHOTTIMERDISPLAYDELAY) {
-            u8g2.setCursor(1, 34);
-            u8g2.print(langstring_brew_rot_ur);
-            u8g2.print(timeBrewed / 1000, 0);
-            u8g2.print("/");
-            u8g2.print(totalBrewTime / 1000, 0);
-            u8g2.print(" s");
+#if (FEATURE_BREWSWITCH == 1)
+        if (featureBrewControl) {
+            // Show brew time; after brew finished show lastBrewTime during SHOTTIMERDISPLAYDELAY
+            if (machineState == kBrew || (millis() - lastBrewTimeMillis) < SHOTTIMERDISPLAYDELAY) {
+                u8g2.setCursor(1, 34);
+                u8g2.print(langstring_brew_rot_ur);
+                u8g2.print(timeBrewed / 1000, 0);
+                u8g2.print("/");
+                u8g2.print(totalBrewTime / 1000, 0);
+                u8g2.print(" s");
+            }
+
+            // Flush time
+
+            // Shown flush time while machine is flushing
+            if (machineState == kManualFlush) {
+                u8g2.setDrawColor(0);
+                u8g2.drawBox(1, 34, 100, 15);
+                u8g2.setDrawColor(1);
+                u8g2.setCursor(1, 34);
+                u8g2.print(langstring_manual_flush_rot_ur);
+                u8g2.print(timeBrewed / 1000, 0);
+                u8g2.print(" s");
+            }
         }
+        else {
 
-        // Flush time
+            // Brew Timer with optocoupler
 
-        // Shown flush time while machine is flushing
-        if (machineState == kManualFlush) {
-            u8g2.setDrawColor(0);
-            u8g2.drawBox(1, 34, 100, 15);
-            u8g2.setDrawColor(1);
-            u8g2.setCursor(1, 34);
-            u8g2.print(langstring_manual_flush_rot_ur);
-            u8g2.print(timeBrewed / 1000, 0);
-            u8g2.print(" s");
-        }
-
-#endif
-
-// Brew Timer with optocoupler
-#if (FEATURE_BREWSWITCH == 1 && FEATURE_BREWCONTROL == 0)
-        // Shown brew time while machine is brewing and after the brewing during SHOTTIMERDISPLAYDELAY
-        if (machineState == kBrew || (millis() - lastBrewTimeMillis) < SHOTTIMERDISPLAYDELAY) {
-            u8g2.setCursor(1, 34);
-            u8g2.print(langstring_brew_rot_ur);
-            u8g2.print(timeBrewed / 1000, 0);
-            u8g2.print(" s");
+            // Shown brew time while machine is brewing and after the brewing during SHOTTIMERDISPLAYDELAY
+            if (machineState == kBrew || (millis() - lastBrewTimeMillis) < SHOTTIMERDISPLAYDELAY) {
+                u8g2.setCursor(1, 34);
+                u8g2.print(langstring_brew_rot_ur);
+                u8g2.print(timeBrewed / 1000, 0);
+                u8g2.print(" s");
+            }
         }
 #endif
 
