@@ -5,10 +5,8 @@
  *
  */
 // TODO:
-//  FEATURE_BREWCONTROL has to be removed from userconfig, setup on website
 //  Flush Timer configurable and seperated from shottimer?
 //  check all Scale stuff
-//  check MQTT/HASSIO for all brew stuff
 //  show heating logo if steam temp isn´t reached?
 //  how handle brew, backflush, manualflush, hotwater if mashine is in steam mode
 //  show sections on website only if needed

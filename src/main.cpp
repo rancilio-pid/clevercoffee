@@ -1332,8 +1332,6 @@ void setup() {
     mqttVars["brewTempOffset"] = [] { return &editableVars.at("BREW_TEMP_OFFSET"); };
     mqttVars["steamON"] = [] { return &editableVars.at("STEAM_MODE"); };
     mqttVars["steamSetpoint"] = [] { return &editableVars.at("STEAM_SETPOINT"); };
-    mqttVars["brewPidDelay"] = [] { return &editableVars.at("PID_BD_DELAY"); };
-    mqttVars["backflushOn"] = [] { return &editableVars.at("BACKFLUSH_ON"); };
     mqttVars["startUsePonM"] = [] { return &editableVars.at("START_USE_PONM"); };
     mqttVars["startKp"] = [] { return &editableVars.at("START_KP"); };
     mqttVars["startTn"] = [] { return &editableVars.at("START_TN"); };
@@ -1343,33 +1341,18 @@ void setup() {
     mqttVars["aggIMax"] = [] { return &editableVars.at("PID_I_MAX"); };
     mqttVars["steamKp"] = [] { return &editableVars.at("STEAM_KP"); };
     mqttVars["standbyModeOn"] = [] { return &editableVars.at("STANDBY_MODE_ON"); };
-
-    if (featureBrewControl == 1) {
-        mqttVars["brewtime"] = [] { return &editableVars.at("BREW_TIME"); };
-        mqttVars["preinfusion"] = [] { return &editableVars.at("BREW_PREINFUSION"); };
-        mqttVars["preinfusionPause"] = [] { return &editableVars.at("BREW_PREINFUSIONPAUSE"); };
-        mqttVars["backflushCycles"] = [] { return &editableVars.at("BACKFLUSH_CYCLES"); };
-        mqttVars["backflushFillTime"] = [] { return &editableVars.at("BACKFLUSH_FILL_TIME"); };
-        mqttVars["backflushFlushTime"] = [] { return &editableVars.at("BACKFLUSH_FLUSH_TIME"); };
-    }
-
-    if (FEATURE_SCALE == 1) {
-        mqttVars["weightSetpoint"] = [] { return &editableVars.at("SCALE_WEIGHTSETPOINT"); };
-        mqttVars["scaleCalibration"] = [] { return &editableVars.at("SCALE_CALIBRATION"); };
-#if SCALE_TYPE == 0
-        mqttVars["scale2Calibration"] = [] { return &editableVars.at("SCALE2_CALIBRATION"); };
-#endif
-        mqttVars["scaleKnownWeight"] = [] { return &editableVars.at("SCALE_KNOWN_WEIGHT"); };
-        mqttVars["scaleTareOn"] = [] { return &editableVars.at("TARE_ON"); };
-        mqttVars["scaleCalibrationOn"] = [] { return &editableVars.at("CALIBRATION_ON"); };
-    }
-
-    if (FEATURE_BREWSWITCH == 1) {
-        mqttVars["pidUseBD"] = [] { return &editableVars.at("PID_BD_ON"); };
-        mqttVars["aggbKp"] = [] { return &editableVars.at("PID_BD_KP"); };
-        mqttVars["aggbTn"] = [] { return &editableVars.at("PID_BD_TN"); };
-        mqttVars["aggbTv"] = [] { return &editableVars.at("PID_BD_TV"); };
-    }
+    mqttVars["brewTime"] = [] { return &editableVars.at("BREW_TIME"); };
+    mqttVars["preinfusion"] = [] { return &editableVars.at("BREW_PREINFUSION"); };
+    mqttVars["preinfusionPause"] = [] { return &editableVars.at("BREW_PREINFUSIONPAUSE"); };
+    mqttVars["backflushOn"] = [] { return &editableVars.at("BACKFLUSH_ON"); };
+    mqttVars["backflushCycles"] = [] { return &editableVars.at("BACKFLUSH_CYCLES"); };
+    mqttVars["backflushFillTime"] = [] { return &editableVars.at("BACKFLUSH_FILL_TIME"); };
+    mqttVars["backflushFlushTime"] = [] { return &editableVars.at("BACKFLUSH_FLUSH_TIME"); };
+    mqttVars["brewPidDelay"] = [] { return &editableVars.at("PID_BD_DELAY"); };
+    mqttVars["pidUseBD"] = [] { return &editableVars.at("PID_BD_ON"); };
+    mqttVars["aggbKp"] = [] { return &editableVars.at("PID_BD_KP"); };
+    mqttVars["aggbTn"] = [] { return &editableVars.at("PID_BD_TN"); };
+    mqttVars["aggbTv"] = [] { return &editableVars.at("PID_BD_TV"); };
 
     // Values reported to MQTT
     mqttSensors["temperature"] = [] { return temperature; };
@@ -1379,17 +1362,27 @@ void setup() {
     mqttSensors["currentKi"] = [] { return bPID.GetKi(); };
     mqttSensors["currentKd"] = [] { return bPID.GetKd(); };
     mqttSensors["machineState"] = [] { return machineState; };
+
 #if FEATURE_BREWSWITCH == 1
     mqttSensors["timeBrewed"] = [] { return timeBrewed / 1000; };
 #endif
-#if FEATURE_PRESSURESENSOR == 1
-    mqttSensors["pressure"] = [] { return inputPressureFilter; };
-#endif
 
 #if FEATURE_SCALE == 1
+    mqttVars["weightSetpoint"] = [] { return &editableVars.at("SCALE_WEIGHTSETPOINT"); };
+    mqttVars["scaleCalibration"] = [] { return &editableVars.at("SCALE_CALIBRATION"); };
+#if SCALE_TYPE == 0
+    mqttVars["scale2Calibration"] = [] { return &editableVars.at("SCALE2_CALIBRATION"); };
+#endif
+    mqttVars["scaleKnownWeight"] = [] { return &editableVars.at("SCALE_KNOWN_WEIGHT"); };
+    mqttVars["scaleTareOn"] = [] { return &editableVars.at("TARE_ON"); };
+    mqttVars["scaleCalibrationOn"] = [] { return &editableVars.at("CALIBRATION_ON"); };
+
     mqttSensors["currentWeight"] = [] { return weight; };
 #endif
 
+#if FEATURE_PRESSURESENSOR == 1
+    mqttSensors["pressure"] = [] { return inputPressureFilter; };
+#endif
     initTimer1();
 
     storageSetup();

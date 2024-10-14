@@ -115,7 +115,7 @@ typedef struct __attribute__((packed)) {
         int backflushCycles;
         double backflushFillTimeMs;
         double backflushFlushTimeMs;
-        bool featureBrewControl;
+        uint8_t featureBrewControl;
 
 } sto_data_t;
 
