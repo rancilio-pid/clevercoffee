@@ -8,7 +8,6 @@
 //  Flush Timer configurable and seperated from shottimer?
 //  check all Scale stuff
 //  show heating logo if steam temp isn´t reached?
-//  how handle brew, backflush, manualflush, hotwater if mashine is in steam mode
 //  show sections on website only if needed
 
 #pragma once

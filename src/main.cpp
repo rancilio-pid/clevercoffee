@@ -655,10 +655,6 @@ void handleMachineState() {
                 machineState = kEmergencyStop;
             }
 
-            if (backflushOn || currBackflushState > kBackflushIdle) { // if this is possible, any other state change (brew, flush.etc should be possible)
-                machineState = kBackflush;
-            }
-
             if (pidON == 0) {
                 machineState = kPidDisabled;
             }
