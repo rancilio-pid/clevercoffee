@@ -237,11 +237,11 @@ void displayLogo(String displaymessagetext, String displaymessagetext2) {
  * @brief display shot and flush timer
  */
 bool displayShottimer() {
-    if (FEATURE_SHOTTIMER == 0) {
+    if (featureShotTimer == 0) {
         return false;
     }
 
-    if (machineState == kBrew || (millis() - lastBrewTimeMillis) < SHOTTIMERDISPLAYDELAY || machineState == kManualFlush) {
+    if (machineState == kBrew || (millis() - lastBrewTimeMillis) < (shotTimerDisplayDelay * 1000) || machineState == kManualFlush) {
         u8g2.clearBuffer();
 
         if (machineState != kManualFlush) {
@@ -277,7 +277,7 @@ bool displayShottimer() {
  */
 bool displayMachineState() {
     // Show the heating logo when we are in regular PID mode and more than 5degC below the set point
-    if (FEATURE_HEATINGLOGO > 0 && machineState == kPidNormal && (setpoint - temperature) > 5.) {
+    if (featureHeatingLogo > 0 && machineState == kPidNormal && (setpoint - temperature) > 5.) {
         // For status info
         u8g2.clearBuffer();
 
@@ -293,7 +293,7 @@ bool displayMachineState() {
         return true;
     }
     // Offline logo
-    else if (FEATURE_PIDOFF_LOGO == 1 && machineState == kPidDisabled) {
+    else if (featurePidOffLogo == 1 && machineState == kPidDisabled) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(38, 0, Off_Logo_width, Off_Logo_height, Off_Logo);
         u8g2.setCursor(0, 55);
@@ -303,7 +303,7 @@ bool displayMachineState() {
         u8g2.sendBuffer();
         return true;
     }
-    else if (FEATURE_PIDOFF_LOGO == 1 && machineState == kStandby) {
+    else if (featurePidOffLogo == 1 && machineState == kStandby) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(38, 0, Off_Logo_width, Off_Logo_height, Off_Logo);
         u8g2.setCursor(36, 55);

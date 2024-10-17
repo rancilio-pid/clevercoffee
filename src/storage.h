@@ -45,6 +45,10 @@ typedef enum {
     STO_ITEM_BACKFLUSH_FILL_TIME,       // time in ms the pump is running during backflush
     STO_ITEM_BACKFLUSH_FLUSH_TIME,      // time in ms the 3-way valve is open during backflush
     STO_ITEM_FEATURE_BREW_CONTROL,      // enables function to control pump and solenoid valve
+    STO_ITEM_FEATURE_SHOT_TIMER,        // enables full screen shot timer
+    STO_ITEM_SHOT_TIMER_DISPLAY_DELAY,  // time in ms that shot timer will be shown after brew finished
+    STO_ITEM_FEATURE_HEATING_LOGO,      // enables full screen logo if mashine is heating
+    STO_ITEM_FEATURE_PID_OFF_LOGO,      // enables full screen logo if pid is switched off
 
     /* WHEN ADDING NEW ITEMS, THE FOLLOWING HAS TO BE UPDATED:
      * - storage structure:  sto_data_t
@@ -116,6 +120,10 @@ typedef struct __attribute__((packed)) {
         double backflushFillTimeMs;
         double backflushFlushTimeMs;
         uint8_t featureBrewControl;
+        uint8_t featureShotTimer;
+        double shotTimerDisplayDelay;
+        uint8_t featureHeatingLogo;
+        uint8_t featurePidOffLogo;
 
 } sto_data_t;
 
@@ -168,6 +176,10 @@ static const sto_data_t itemDefaults PROGMEM = {
     BACKFLUSH_FILL_TIME,                                                                                                            // STO_ITEM_BACKFLUSH_FILLTIME
     BACKFLUSH_FLUSH_TIME,                                                                                                           // STO_ITEM_BACKFLUSH_FLUSHTIME
     FEATURE_BREW_CONTROL,                                                                                                           // STO_ITEM_FEATURE_BREW_CONTROL
+    FEATURE_SHOT_TIMER,                                                                                                             // STO_ITEM_FEATURE_SHOT_TIMER
+    SHOT_TIMER_DISPLAY_DELAY,                                                                                                       // STO_ITEM_SHOT_TIMER_DISPLAY_DELAY
+    FEATURE_HEATING_LOGO,                                                                                                           // STO_ITEM_FEATURE_HEATING_LOGO
+    FEATURE_PID_OFF_LOGO,                                                                                                           // STO_ITEM_FEATURE_PID_OFF_LOGO
 };
 
 /**
@@ -353,6 +365,26 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
         case STO_ITEM_FEATURE_BREW_CONTROL:
             addr = offsetof(sto_data_t, featureBrewControl);
             size = STRUCT_MEMBER_SIZE(sto_data_t, featureBrewControl);
+            break;
+
+        case STO_ITEM_FEATURE_SHOT_TIMER:
+            addr = offsetof(sto_data_t, featureShotTimer);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, featureShotTimer);
+            break;
+
+        case STO_ITEM_SHOT_TIMER_DISPLAY_DELAY:
+            addr = offsetof(sto_data_t, shotTimerDisplayDelay);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, shotTimerDisplayDelay);
+            break;
+
+        case STO_ITEM_FEATURE_HEATING_LOGO:
+            addr = offsetof(sto_data_t, featureHeatingLogo);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, featureHeatingLogo);
+            break;
+
+        case STO_ITEM_FEATURE_PID_OFF_LOGO:
+            addr = offsetof(sto_data_t, featurePidOffLogo);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, featurePidOffLogo);
             break;
 
         default:

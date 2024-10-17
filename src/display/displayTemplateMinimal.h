@@ -81,8 +81,8 @@ void printScreen() {
 // Brew time
 #if (FEATURE_BREWSWITCH == 1)
     if (featureBrewControl) {
-        // Shown brew time while machine is brewing and after the brewing during SHOTTIMERDISPLAYDELAY
-        if (machineState == kBrew || (millis() - lastBrewTimeMillis) < SHOTTIMERDISPLAYDELAY) {
+        // Shown brew time while machine is brewing and after the brewing during shotTimerDisplayDelay
+        if (machineState == kBrew || (millis() - lastBrewTimeMillis) < (shotTimerDisplayDelay * 1000)) {
             u8g2.setCursor(34, 44);
             u8g2.print(langstring_brew);
             u8g2.print(timeBrewed / 1000, 0);
@@ -105,8 +105,8 @@ void printScreen() {
 
     // Brew Timer with optocoupler
     else {
-        // Shown brew time while machine is brewing and after the brewing during SHOTTIMERDISPLAYDELAY
-        if (machineState == kBrew || (millis() - lastBrewTimeMillis) < SHOTTIMERDISPLAYDELAY) {
+        // Shown brew time while machine is brewing and after the brewing during shotTimerDisplayDelay
+        if (machineState == kBrew || (millis() - lastBrewTimeMillis) < (shotTimerDisplayDelay * 1000)) {
             u8g2.setCursor(34, 44);
             u8g2.print(langstring_brew);
             u8g2.print(timeBrewed / 1000, 0);
