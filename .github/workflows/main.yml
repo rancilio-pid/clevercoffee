@@ -3,20 +3,51 @@ name: Build
 on: [push, pull_request]
 
 jobs:
-    build:
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout
-          uses: actions/checkout@v3
-        - name: Add config file
-          working-directory: ./src
-          run: cp userConfig_sample.h userConfig.h
-        - name: Enable features
-          working-directory: ./src
-          run: header_file="userConfig.h"; sed -i -E 's/^(#define[[:space:]]+FEATURE_[A-Za-z_]+[[:space:]]+)[0-9]+/\11/' $header_file
-        - name: PlatformIO Run
-          uses: karniv00l/platformio-run-action@v1
-          with:
-            silent: false
-            verbose: true
-            disable-auto-clean: false
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        OLED_DISPLAY: [0, 1, 2, 3]
+        DISPLAYTEMPLATE: [1, 2, 3, 4, 20]
+        LANGUAGE: [0, 1, 2]
+        FEATURE_SHOTTIMER: [0, 1]
+        FEATURE_HEATINGLOGO: [0, 1]
+        FEATURE_OFFLINELOGO: [0, 1]
+        ONLYPID: [0, 1]
+        ONLYPIDSCALE: [0, 1]
+        FEATURE_BREWDETECTION: [0, 1]
+        FEATURE_TEMP_LED: [0, 1]
+        FEATURE_WATER_SENS: [0, 1]
+        FEATURE_PRESSURESENSOR: [0, 1]
+        FEATURE_MQTT: [0, 1]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Add config file
+        working-directory: ./src
+        run: cp userConfig_sample.h userConfig.h
+      - name: Set Configuration
+        working-directory: ./src
+        run: |
+          sed -i "s/^#define OLED_DISPLAY .*/#define OLED_DISPLAY ${MATRIX_OLED_DISPLAY}/" userConfig.h
+          sed -i "s/^#define DISPLAYTEMPLATE .*/#define DISPLAYTEMPLATE ${MATRIX_DISPLAYTEMPLATE}/" userConfig.h
+          sed -i "s/^#define LANGUAGE .*/#define LANGUAGE ${MATRIX_LANGUAGE}/" userConfig.h
+          sed -i "s/^#define FEATURE_SHOTTIMER .*/#define FEATURE_SHOTTIMER ${MATRIX_FEATURE_SHOTTIMER}/" userConfig.h
+          sed -i "s/^#define FEATURE_HEATINGLOGO .*/#define FEATURE_HEATINGLOGO ${MATRIX_FEATURE_HEATINGLOGO}/" userConfig.h
+          sed -i "s/^#define FEATURE_OFFLINELOGO .*/#define FEATURE_OFFLINELOGO ${MATRIX_FEATURE_OFFLINELOGO}/" userConfig.h
+          sed -i "s/^#define ONLYPID .*/#define ONLYPID ${MATRIX_ONLYPID}/" userConfig.h
+          sed -i "s/^#define ONLYPIDSCALE .*/#define ONLYPIDSCALE ${MATRIX_ONLYPIDSCALE}/" userConfig.h
+          sed -i "s/^#define BREWMODE .*/#define BREWMODE ${MATRIX_BREWMODE}/" userConfig.h
+          sed -i "s/^#define FEATURE_BREWDETECTION .*/#define FEATURE_BREWDETECTION ${MATRIX_FEATURE_BREWDETECTION}/" userConfig.h
+          sed -i "s/^#define FEATURE_TEMP_LED .*/#define FEATURE_TEMP_LED ${MATRIX_FEATURE_TEMP_LED}/" userConfig.h
+          sed -i "s/^#define FEATURE_WATER_SENS .*/#define FEATURE_WATER_SENS ${MATRIX_FEATURE_WATER_SENS}/" userConfig.h
+          sed -i "s/^#define FEATURE_PRESSURESENSOR .*/#define FEATURE_PRESSURESENSOR ${MATRIX_FEATURE_PRESSURESENSOR}/" userConfig.h
+          sed -i "s/^#define FEATURE_MQTT .*/#define FEATURE_MQTT ${MATRIX_FEATURE_MQTT}/" userConfig.h
+          sed -i "s/^#define TEMPSENSOR .*/#define TEMPSENSOR ${MATRIX_TEMPSENSOR}/" userConfig.h
+          # Add other sed commands for other features as required
+      - name: PlatformIO Run
+        uses: karniv00l/platformio-run-action@v1
+        with:
+          silent: false
+          verbose: true
+          disable-auto-clean: false
