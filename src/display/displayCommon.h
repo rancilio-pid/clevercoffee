@@ -24,8 +24,8 @@ void u8g2_prepare(void) {
  * @brief Draw a water empty icon at the given coordinates if water supply is low
  */
 void displayWaterIcon(int x, int y) {
-    if (!waterFull) {
-        u8g2.drawXBMP(x, y, 8, 8, Water_Empty_Icon);
+    if (!waterTankFull) {
+        u8g2.drawXBMP(x, y, 8, 8, Water_Tank_Empty_Icon);
     }
 }
 
@@ -350,9 +350,9 @@ bool displayMachineState() {
         return true;
     }
     // Water empty
-    else if (machineState == kWaterEmpty && brewSwitchState != kBrewSwitchFlushOff) {
+    else if (machineState == kWaterTankEmpty && brewSwitchState != kBrewSwitchFlushOff) {
         u8g2.clearBuffer();
-        u8g2.drawXBMP(45, 0, Water_Empty_Logo_width, Water_Empty_Logo_height, Water_Empty_Logo);
+        u8g2.drawXBMP(45, 0, Water_Tank_Empty_Logo_width, Water_Tank_Empty_Logo_height, Water_Tank_Empty_Logo);
         u8g2.setFont(u8g2_font_profont11_tf);
         u8g2.sendBuffer();
         return true;
