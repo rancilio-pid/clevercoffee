@@ -1005,6 +1005,8 @@ void handleMachineState() {
             break;
 
         case kWaterEmpty:
+            checkHotWaterSwitch();
+
             if (waterFull) {
                 machineState = kPidNormal;
 
