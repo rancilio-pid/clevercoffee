@@ -922,10 +922,6 @@ void handleMachineState() {
                 machineState = kEmergencyStop;
             }
 
-            if (backflushOn || backflushState > kBackflushWaitBrewswitchOn) {
-                machineState = kBackflush;
-            }
-
             if (pidON == 0) {
                 machineState = kPidDisabled;
             }
