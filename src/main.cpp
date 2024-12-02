@@ -735,9 +735,9 @@ void handleMachineState() {
         case kPidNormal:
             brewDetection();
 
-            #if (FEATURE_BREWCONTROL == 1)
-                brew(); 
-            #endif
+#if (FEATURE_BREWCONTROL == 1)
+            brew();
+#endif
 
             checkHotWaterSwitch();
             checkSteamSwitch();
@@ -800,17 +800,18 @@ void handleMachineState() {
         case kBrew:
             brewDetection();
 
-            #if (FEATURE_BREWCONTROL == 1)
-                brew(); 
-            #endif
+#if (FEATURE_BREWCONTROL == 1)
+            brew();
+#endif
 
             // Output brew time, temp and tempRateAverage during brew (used for SW BD only)
             if (FEATURE_BREWDETECTION == 1 && BREWDETECTION_TYPE == 1) {
                 logbrew();
             }
 
-            if (((timeBrewed == 0 && brewDetectionMode == 3 && FEATURE_BREWCONTROL == 0) ||                   // PID + optocoupler: optocoupler BD timeBrewed == 0 -> switch is off again
-                ((currBrewState == kBrewIdle || currBrewState == kWaitBrewOff) && FEATURE_BREWCONTROL == 1)) && hotWaterOn == 0 && steamON == 0) // Hardware BD
+            if (((timeBrewed == 0 && brewDetectionMode == 3 && FEATURE_BREWCONTROL == 0) || // PID + optocoupler: optocoupler BD timeBrewed == 0 -> switch is off again
+                 ((currBrewState == kBrewIdle || currBrewState == kWaitBrewOff) && FEATURE_BREWCONTROL == 1)) &&
+                hotWaterOn == 0 && steamON == 0)                                            // Hardware BD
             {
                 // delay shot timer display for voltage sensor or hw brew toggle switch (brew counter)
                 machineState = kShotTimerAfterBrew;
@@ -837,9 +838,9 @@ void handleMachineState() {
         case kShotTimerAfterBrew:
             brewDetection();
 
-            #if (FEATURE_BREWCONTROL == 1)
-                brew(); 
-            #endif
+#if (FEATURE_BREWCONTROL == 1)
+            brew();
+#endif
 
             checkHotWaterSwitch();
             checkSteamSwitch();
@@ -881,16 +882,17 @@ void handleMachineState() {
         case kBrewDetectionTrailing:
             brewDetection();
 
-            #if (FEATURE_BREWCONTROL == 1)
-                brew(); 
-            #endif
+#if (FEATURE_BREWCONTROL == 1)
+            brew();
+#endif
 
             if (isBrewDetected == 0) {
                 machineState = kPidNormal;
             }
 
             if (((timeBrewed > 0 && FEATURE_BREWCONTROL == 0 && brewDetectionMode == 3) || // Allow brew directly after BD only when using FEATURE_BREWCONTROL 0 AND hardware brew switch detection
-                (FEATURE_BREWCONTROL == 1 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished)) && hotWaterOn == 0 && steamON == 0) {
+                 (FEATURE_BREWCONTROL == 1 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished)) &&
+                hotWaterOn == 0 && steamON == 0) {
                 machineState = kBrew;
             }
 
@@ -970,7 +972,7 @@ void handleMachineState() {
                 machineState = kPidDisabled;
             }
 
-            if (!waterFull ) {
+            if (!waterFull) {
                 machineState = kWaterEmpty;
             }
 
