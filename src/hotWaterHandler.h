@@ -17,7 +17,7 @@ void checkHotWaterSwitch() {
                 pumpRelay.on();
             }
 
-            if (hotWaterSwitchReading == LOW && machineState == kHotWater) {
+            if (hotWaterSwitchReading == LOW) {
                 hotWaterOn = 0;
                 pumpRelay.off();
             }
@@ -26,8 +26,8 @@ void checkHotWaterSwitch() {
             if (hotWaterSwitchReading != currStateHotWaterSwitch) {
                 currStateHotWaterSwitch = hotWaterSwitchReading;
 
-                if (currStateHotWaterSwitch == HIGH && machineState != kWaterEmpty) {
-                    if (hotWaterOn == 0) {
+                if (currStateHotWaterSwitch == HIGH) {
+                    if (hotWaterOn == 0 && machineState != kWaterEmpty) {
                         hotWaterOn = 1;
                         pumpRelay.on();
                     }
