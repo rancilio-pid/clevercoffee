@@ -734,6 +734,7 @@ void handleMachineState() {
 
         case kPidNormal:
             brewDetection();
+            checkHotWaterSwitch();
 
             if ((timeBrewed > 0 && FEATURE_BREWCONTROL == 0) || (FEATURE_BREWCONTROL == 1 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished)) {
                 machineState = kBrew;
@@ -810,10 +811,6 @@ void handleMachineState() {
                 machineState = kBrewDetectionTrailing;
             }
 
-            if (hotWaterOn == 1) {
-                machineState = kHotWater;
-            }
-
             if (steamON == 1) {
                 machineState = kSteam;
             }
@@ -833,6 +830,7 @@ void handleMachineState() {
 
         case kShotTimerAfterBrew:
             brewDetection();
+            checkHotWaterSwitch();
 
             if (millis() - lastBrewTimeMillis > SHOTTIMERDISPLAYDELAY) {
                 LOGF(INFO, "Shot time: %4.1f s", lastBrewTime / 1000);
@@ -870,6 +868,7 @@ void handleMachineState() {
 
         case kBrewDetectionTrailing:
             brewDetection();
+            checkHotWaterSwitch();
 
             if (isBrewDetected == 0) {
                 machineState = kPidNormal;
@@ -910,6 +909,8 @@ void handleMachineState() {
             break;
 
         case kHotWater:
+            checkHotWaterSwitch();
+
             if (hotWaterOn == 0) {
                 machineState = kPidNormal;
             }
@@ -936,12 +937,14 @@ void handleMachineState() {
             break;
 
         case kSteam:
-            if (hotWaterOn == 1) {
-                machineState = kHotWater;
-            }
+            checkHotWaterSwitch();
 
             if (steamON == 0) {
                 machineState = kPidNormal;
+            }
+
+            if (hotWaterOn == 1) {
+                machineState = kHotWater;
             }
 
             if (emergencyStop) {
@@ -1043,6 +1046,7 @@ void handleMachineState() {
             }
 
             brewDetection();
+            checkHotWaterSwitch();
 
             if (pidON || steamON || hotWaterOn || isBrewDetected) {
                 pidON = 1;
@@ -1946,7 +1950,6 @@ void looppid() {
     }
 #endif
 
-    checkHotWaterSwitch();
     checkSteamSwitch();
     checkPowerSwitch();
 
