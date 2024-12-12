@@ -617,10 +617,6 @@ void handleMachineState() {
                 machineState = kPidNormal;
             }
 
-            if (steamON == 1) {
-                machineState = kSteam;
-            }
-
             if (emergencyStop) {
                 machineState = kEmergencyStop;
             }
@@ -638,10 +634,6 @@ void handleMachineState() {
 
             if (!manualFlush()) {
                 machineState = kPidNormal;
-            }
-
-            if (steamON == 1) {
-                machineState = kSteam;
             }
 
             if (emergencyStop) {
