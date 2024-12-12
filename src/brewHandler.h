@@ -6,13 +6,13 @@
  */
 // TODO:
 //  Flush Timer configurable and seperated from shottimer?
-//  show heating logo if steam temp isn´t reached?
 //  show sections on website only if needed
 //  add pressure to shot timer?
+//  backflush also as bool, enable from website over diffrent var
+//  SteamOn also as bool, rething enable from website
+//  handling !waterFull in backflush
 
 #pragma once
-
-#include <hardware/pinmapping.h>
 
 enum BrewSwitchState {
     kBrewSwitchIdle = 10,

@@ -277,7 +277,7 @@ bool displayShottimer() {
  */
 bool displayMachineState() {
     // Show the heating logo when we are in regular PID mode and more than 5degC below the set point
-    if (featureHeatingLogo > 0 && machineState == kPidNormal && (setpoint - temperature) > 5.) {
+    if (featureHeatingLogo > 0 && (machineState == kPidNormal || machineState == kSteam) && (setpoint - temperature) > 5.) {
         // For status info
         u8g2.clearBuffer();
 
