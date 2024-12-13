@@ -5,11 +5,10 @@
  *
  */
 // TODO:
-//  Flush Timer configurable and seperated from shottimer?
 //  show sections on website only if needed
 //  add pressure to shot timer?
 //  backflush also as bool, enable from website over diffrent var
-//  SteamOn also as bool, rething enable from website
+//  SteamOn also as bool, rethink enable from website
 //  handling !waterFull in backflush
 
 #pragma once

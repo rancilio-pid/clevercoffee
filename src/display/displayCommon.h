@@ -234,36 +234,48 @@ void displayLogo(String displaymessagetext, String displaymessagetext2) {
 }
 
 /**
- * @brief display shot and flush timer
+ * @brief display fullscreen brew timer
  */
-bool displayShottimer() {
-    if (featureShotTimer == 0) {
+bool displayFullscreenBrewTimer() {
+    if (featureFullscreenBrewTimer == 0) {
         return false;
     }
 
-    if (machineState == kBrew || (millis() - lastBrewTimeMillis) < (shotTimerDisplayDelay * 1000) || machineState == kManualFlush) {
+    if (machineState == kBrew || ((millis() - lastBrewTimeMillis) < (postBrewTimerDuration * 1000) && lastBrewTimeMillis > 0)) {
         u8g2.clearBuffer();
-
-        if (machineState != kManualFlush) {
-            u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
+        u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
 #if (FEATURE_SCALE == 1)
-            u8g2.setFont(u8g2_font_profont22_tf);
-            u8g2.setCursor(64, 15);
-            u8g2.print(timeBrewed / 1000, 1);
-            u8g2.print("s");
-            u8g2.setCursor(64, 38);
-            u8g2.print(weightBrewed, 1);
-            u8g2.print("g");
-            u8g2.setFont(u8g2_font_profont11_tf);
+        u8g2.setFont(u8g2_font_profont22_tf);
+        u8g2.setCursor(64, 15);
+        u8g2.print(timeBrewed / 1000, 1);
+        u8g2.print("s");
+        u8g2.setCursor(64, 38);
+        u8g2.print(weightBrewed, 1);
+        u8g2.print("g");
+        u8g2.setFont(u8g2_font_profont11_tf);
 #else
-            displayBrewtime(48, 25, timeBrewed);
+        displayBrewtime(48, 25, timeBrewed);
 #endif
-        }
-        else {
-            u8g2.drawXBMP(0, 12, Manual_Flush_Logo_width, Manual_Flush_Logo_height, Manual_Flush_Logo);
-            displayBrewtime(48, 25, timeBrewed);
-        }
+        displayWaterIcon(119, 1);
+        u8g2.sendBuffer();
+        return true;
+    }
 
+    return false;
+}
+
+/**
+ * @brief display fullscreen manual flush timer
+ */
+bool displayFullscreenManualFlushTimer() {
+    if (featureFullscreenManualFlushTimer == 0) {
+        return false;
+    }
+
+    if (machineState == kManualFlush) {
+        u8g2.clearBuffer();
+        u8g2.drawXBMP(0, 12, Manual_Flush_Logo_width, Manual_Flush_Logo_height, Manual_Flush_Logo);
+        displayBrewtime(48, 25, timeBrewed);
         displayWaterIcon(119, 1);
         u8g2.sendBuffer();
         return true;

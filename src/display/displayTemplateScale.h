@@ -13,8 +13,14 @@
  */
 void printScreen() {
 
-    // Show shot timer:
-    if (displayShottimer()) {
+    // Show fullscreen brew timer:
+    if (displayFullscreenBrewTimer()) {
+        // Display was updated, end here
+        return;
+    }
+
+    // Show fullscreen manual flush timer:
+    if (displayFullscreenManualFlushTimer()) {
         // Display was updated, end here
         return;
     }
@@ -59,7 +65,7 @@ void printScreen() {
      * if brewControl is enabled and time or weight target is set show targets
      * if brewControl is enabled show flush time during manualFlush
      * if FEATURE_PRESSURESENSOR is enabled show current pressure during brew
-     * if brew is finished show brew values for shotTimerDisplayDelay
+     * if brew is finished show brew values for postBrewTimerDuration
      */
 
     // Show current weight if scale has no error
@@ -75,8 +81,8 @@ void printScreen() {
     }
 
     if (featureBrewControl) {
-        // Shown brew time and weight while machine is brewing and after the brewing during shotTimerDisplayDelay
-        if (machineState == kBrew || (millis() - lastBrewTimeMillis) < (shotTimerDisplayDelay * 1000)) {
+        // Shown brew time and weight while machine is brewing and after the brewing during postBrewTimerDuration
+        if (machineState == kBrew || ((millis() - lastBrewTimeMillis) < (postBrewTimerDuration * 1000) && lastBrewTimeMillis > 0)) {
 
             // weight
             u8g2.setCursor(32, 26);
@@ -116,8 +122,8 @@ void printScreen() {
     else {
         // Brew Timer with optocoupler
 
-        // Shown brew time and weight while machine is brewing and after the brewing during shotTimerDisplayDelay
-        if (machineState == kBrew || (millis() - lastBrewTimeMillis) < (shotTimerDisplayDelay * 1000)) {
+        // Shown brew time and weight while machine is brewing and after the brewing during postBrewTimerDuration
+        if (machineState == kBrew || ((millis() - lastBrewTimeMillis) < (postBrewTimerDuration * 1000) && lastBrewTimeMillis > 0)) {
             // weight
             u8g2.setCursor(32, 26);
             u8g2.print(langstring_weight);

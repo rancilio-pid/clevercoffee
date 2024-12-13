@@ -104,8 +104,9 @@ const boolean ota = OTA;
 
 // Display
 uint8_t oled_i2c = OLED_I2C;
-uint8_t featureShotTimer = FEATURE_SHOT_TIMER;
-double shotTimerDisplayDelay = SHOT_TIMER_DISPLAY_DELAY;
+uint8_t featureFullscreenBrewTimer = FEATURE_FULLSCREEN_BREW_TIMER;
+uint8_t featureFullscreenManualFlushTimer = FEATURE_FULLSCREEN_MANUAL_FLUSH_TIMER;
+double postBrewTimerDuration = POST_BREW_TIMER_DURATION;
 uint8_t featureHeatingLogo = FEATURE_HEATING_LOGO;
 uint8_t featurePidOffLogo = FEATURE_PID_OFF_LOGO;
 
@@ -274,8 +275,9 @@ SysPara<int> sysParaBackflushCycles(&backflushCycles, BACKFLUSH_CYCLES_MIN, BACK
 SysPara<double> sysParaBackflushFillTime(&backflushFillTime, BACKFLUSH_FILL_TIME_MIN, BACKFLUSH_FILL_TIME_MAX, STO_ITEM_BACKFLUSH_FILL_TIME);
 SysPara<double> sysParaBackflushFlushTime(&backflushFlushTime, BACKFLUSH_FLUSH_TIME_MIN, BACKFLUSH_FLUSH_TIME_MAX, STO_ITEM_BACKFLUSH_FLUSH_TIME);
 SysPara<uint8_t> sysParaFeatureBrewControl(&featureBrewControl, 0, 1, STO_ITEM_FEATURE_BREW_CONTROL);
-SysPara<uint8_t> sysParaFeatureShotTimer(&featureShotTimer, 0, 1, STO_ITEM_FEATURE_SHOT_TIMER);
-SysPara<double> sysParaShotTimerDisplayDelay(&shotTimerDisplayDelay, SHOT_TIMER_DISPLAY_DELAY_MIN, SHOT_TIMER_DISPLAY_DELAY_MAX, STO_ITEM_SHOT_TIMER_DISPLAY_DELAY);
+SysPara<uint8_t> sysParaFeatureFullscreenBrewTimer(&featureFullscreenBrewTimer, 0, 1, STO_ITEM_FEATURE_FULLSCREEN_BREW_TIMER);
+SysPara<uint8_t> sysParaFeatureFullscreenManualFlushTimer(&featureFullscreenManualFlushTimer, 0, 1, STO_ITEM_FEATURE_FULLSCREEN_MANUAL_FLUSH_TIMER);
+SysPara<double> sysParaPostBrewTimerDuration(&postBrewTimerDuration, POST_BREW_TIMER_DURATION_MIN, POST_BREW_TIMER_DURATION_MAX, STO_ITEM_POST_BREW_TIMER_DURATION);
 SysPara<uint8_t> sysParaFeatureHeatingLogo(&featureHeatingLogo, 0, 1, STO_ITEM_FEATURE_HEATING_LOGO);
 SysPara<uint8_t> sysParaFeaturePidOffLogo(&featurePidOffLogo, 0, 1, STO_ITEM_FEATURE_PID_OFF_LOGO);
 
@@ -1330,34 +1332,45 @@ void setup() {
                                           .ptr = (void*)&scale2Calibration};
 #endif
 
-    editableVars["SHOT_TIMER"] = {.displayName = F("Enable Shot Timer"),
-                                  .hasHelpText = true,
-                                  .helpText = "Enables a full screen shot and flush timer",
-                                  .type = kUInt8,
-                                  .section = sDisplaySection,
-                                  .position = 37,
-                                  .show = [] { return true; },
-                                  .minValue = 0,
-                                  .maxValue = 1,
-                                  .ptr = (void*)&featureShotTimer};
+    editableVars["FULLSCREEN_BREW_TIMER"] = {.displayName = F("Enable Fullscreen Brew Timer"),
+                                             .hasHelpText = true,
+                                             .helpText = "Enable fullscreen overlay during brew",
+                                             .type = kUInt8,
+                                             .section = sDisplaySection,
+                                             .position = 37,
+                                             .show = [] { return true; },
+                                             .minValue = 0,
+                                             .maxValue = 1,
+                                             .ptr = (void*)&featureFullscreenBrewTimer};
 
-    editableVars["SHOT_TIMER_DISPLAY_DELAY"] = {.displayName = F("Shot Timer Display Delay (s)"),
+    editableVars["FULLSCREEN_MANUAL_FLUSH_TIMER"] = {.displayName = F("Enable Fullscreen Manual Flush Timer"),
+                                                     .hasHelpText = true,
+                                                     .helpText = "Enable fullscreen overlay during manual flush",
+                                                     .type = kUInt8,
+                                                     .section = sDisplaySection,
+                                                     .position = 38,
+                                                     .show = [] { return true; },
+                                                     .minValue = 0,
+                                                     .maxValue = 1,
+                                                     .ptr = (void*)&featureFullscreenManualFlushTimer};
+
+    editableVars["POST_BREW_TIMER_DURATION"] = {.displayName = F("Post Brew Timer Duration (s)"),
                                                 .hasHelpText = true,
-                                                .helpText = "time in ms that shot timer will be shown after brew finished",
+                                                .helpText = "time in s that brew timer will be shown after brew finished",
                                                 .type = kDouble,
                                                 .section = sDisplaySection,
-                                                .position = 38,
+                                                .position = 39,
                                                 .show = [] { return true; },
-                                                .minValue = SHOT_TIMER_DISPLAY_DELAY_MIN,
-                                                .maxValue = SHOT_TIMER_DISPLAY_DELAY_MAX,
-                                                .ptr = (void*)&shotTimerDisplayDelay};
+                                                .minValue = POST_BREW_TIMER_DURATION_MIN,
+                                                .maxValue = POST_BREW_TIMER_DURATION_MAX,
+                                                .ptr = (void*)&postBrewTimerDuration};
 
     editableVars["HEATING_LOGO"] = {.displayName = F("Enable Heating Logo"),
                                     .hasHelpText = true,
                                     .helpText = "full screen logo will be shown if temperature is 5°C below setpoint",
                                     .type = kUInt8,
                                     .section = sDisplaySection,
-                                    .position = 39,
+                                    .position = 40,
                                     .show = [] { return true; },
                                     .minValue = 0,
                                     .maxValue = 1,
@@ -1368,13 +1381,13 @@ void setup() {
                                     .helpText = "full screen logo will be shown if pid is disabled",
                                     .type = kUInt8,
                                     .section = sDisplaySection,
-                                    .position = 40,
+                                    .position = 41,
                                     .show = [] { return true; },
                                     .minValue = 0,
                                     .maxValue = 1,
                                     .ptr = (void*)&featurePidOffLogo};
     editableVars["VERSION"] = {
-        .displayName = F("Version"), .hasHelpText = false, .helpText = "", .type = kCString, .section = sOtherSection, .position = 41, .show = [] { return false; }, .minValue = 0, .maxValue = 1, .ptr = (void*)sysVersion};
+        .displayName = F("Version"), .hasHelpText = false, .helpText = "", .type = kCString, .section = sOtherSection, .position = 42, .show = [] { return false; }, .minValue = 0, .maxValue = 1, .ptr = (void*)sysVersion};
     // when adding parameters, set EDITABLE_VARS_LEN to max of .position
 
 #if (FEATURE_PRESSURESENSOR == 1)
@@ -1923,8 +1936,9 @@ int readSysParamsFromStorage(void) {
     if (sysParaBackflushFillTime.getStorage() != 0) return -1;
     if (sysParaBackflushFlushTime.getStorage() != 0) return -1;
     if (sysParaFeatureBrewControl.getStorage() != 0) return -1;
-    if (sysParaFeatureShotTimer.getStorage() != 0) return -1;
-    if (sysParaShotTimerDisplayDelay.getStorage() != 0) return -1;
+    if (sysParaFeatureFullscreenBrewTimer.getStorage() != 0) return -1;
+    if (sysParaFeatureFullscreenManualFlushTimer.getStorage() != 0) return -1;
+    if (sysParaPostBrewTimerDuration.getStorage() != 0) return -1;
     if (sysParaFeatureHeatingLogo.getStorage() != 0) return -1;
     if (sysParaFeaturePidOffLogo.getStorage() != 0) return -1;
 
@@ -1968,8 +1982,9 @@ int writeSysParamsToStorage(void) {
     if (sysParaBackflushFillTime.setStorage() != 0) return -1;
     if (sysParaBackflushFlushTime.setStorage() != 0) return -1;
     if (sysParaFeatureBrewControl.setStorage() != 0) return -1;
-    if (sysParaFeatureShotTimer.setStorage() != 0) return -1;
-    if (sysParaShotTimerDisplayDelay.setStorage() != 0) return -1;
+    if (sysParaFeatureFullscreenBrewTimer.setStorage() != 0) return -1;
+    if (sysParaFeatureFullscreenManualFlushTimer.setStorage() != 0) return -1;
+    if (sysParaPostBrewTimerDuration.setStorage() != 0) return -1;
     if (sysParaFeatureHeatingLogo.setStorage() != 0) return -1;
     if (sysParaFeaturePidOffLogo.setStorage() != 0) return -1;
 
