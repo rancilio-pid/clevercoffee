@@ -58,7 +58,6 @@ double preinfusion = PRE_INFUSION_TIME;            // preinfusion time in s
 double preinfusionPause = PRE_INFUSION_PAUSE_TIME; // preinfusion pause time in s
 double totalBrewTime = 0;                          // total brewtime including preinfusion and preinfusion pause
 double timeBrewed = 0;                             // total brewed time
-double lastBrewTimeMillis = 0;                     // for shottimer delay after brew is finished
 unsigned long startingTime = 0;                    // start time of brew
 bool brewPIDDisabled = false;                      // is PID disabled for delay after brew has started?
 
@@ -259,7 +258,6 @@ bool brew() {
                 valveRelay.off();
                 pumpRelay.off();
                 currentMillisTemp = 0;
-                lastBrewTimeMillis = millis(); // time brew finished for shottimer delay
                 brewSwitchWasOff = false;
                 LOG(INFO, "Brew finished");
                 LOGF(INFO, "Shot time: %4.1f s", timeBrewed / 1000);
@@ -291,7 +289,6 @@ bool brew() {
 
             case kBrewFinished:
                 currentMillisTemp = 0;
-                lastBrewTimeMillis = millis(); // time brew finished for shottimer delay
                 LOG(INFO, "Brew finished");
                 LOGF(INFO, "Shot time: %4.1f s", timeBrewed / 1000);
                 LOG(INFO, "Brew idle");

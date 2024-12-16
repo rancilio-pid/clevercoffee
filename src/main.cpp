@@ -1703,6 +1703,11 @@ void looppid() {
     updateStandbyTimer();
     handleMachineState();
 
+    // Check if brew timer should be shown
+#if (FEATURE_BREWSWITCH == 1)
+    shouldDisplayBrewTimer();
+#endif
+
     // Check if PID should run or not. If not, set to manual and force output to zero
 #if OLED_DISPLAY != 0
     printDisplayTimer();

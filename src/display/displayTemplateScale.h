@@ -81,8 +81,8 @@ void printScreen() {
     }
 
     if (featureBrewControl) {
-        // Shown brew time and weight while machine is brewing and after the brewing during postBrewTimerDuration
-        if (machineState == kBrew || ((millis() - lastBrewTimeMillis) < (postBrewTimerDuration * 1000) && lastBrewTimeMillis > 0)) {
+        // Shown brew time and weight
+        if (shouldDisplayBrewTimer()) {
 
             // weight
             u8g2.setCursor(32, 26);
@@ -107,7 +107,7 @@ void printScreen() {
                 u8g2.print(" s");
             }
         }
-        // Shown flush time while machine is flushing
+        // Shown flush time
         if (machineState == kManualFlush) {
             u8g2.setDrawColor(0);
             u8g2.drawBox(32, 26, 100, 40);
@@ -121,9 +121,7 @@ void printScreen() {
     }
     else {
         // Brew Timer with optocoupler
-
-        // Shown brew time and weight while machine is brewing and after the brewing during postBrewTimerDuration
-        if (machineState == kBrew || ((millis() - lastBrewTimeMillis) < (postBrewTimerDuration * 1000) && lastBrewTimeMillis > 0)) {
+        if (shouldDisplayBrewTimer()) {
             // weight
             u8g2.setCursor(32, 26);
             u8g2.print(langstring_weight);

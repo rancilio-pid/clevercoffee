@@ -139,6 +139,46 @@ void displayTemperature(int x, int y) {
 }
 
 /**
+ * @brief determines if brew timer should be visible; postBrewTimerDuration defines how long the timer after the brew is shown
+ * @return true if timer should be visible, false otherwise
+ */
+bool shouldDisplayBrewTimer() {
+
+    enum BrewTimerState {
+        kBrewTimerIdle = 10,
+        kBrewTimerRunning = 20,
+        kBrewTimerPostBrew = 30
+    };
+
+    static BrewTimerState currBrewTimerState = kBrewTimerIdle;
+
+    static uint32_t brewEndTime = 0;
+
+    switch (currBrewTimerState) {
+        case kBrewTimerIdle:
+            if (brew()) {
+                currBrewTimerState = kBrewTimerRunning;
+            }
+            break;
+
+        case kBrewTimerRunning:
+            if (!brew()) {
+                currBrewTimerState = kBrewTimerPostBrew;
+                brewEndTime = millis();
+            }
+            break;
+
+        case kBrewTimerPostBrew:
+            if ((millis() - brewEndTime) > (uint32_t)(postBrewTimerDuration * 1000)) {
+                currBrewTimerState = kBrewTimerIdle;
+            }
+            break;
+    }
+
+    return (currBrewTimerState != kBrewTimerIdle);
+}
+
+/**
  * @brief Draw the brew time at given position
  */
 void displayBrewtime(int x, int y, double brewtime) {
@@ -241,7 +281,7 @@ bool displayFullscreenBrewTimer() {
         return false;
     }
 
-    if (machineState == kBrew || ((millis() - lastBrewTimeMillis) < (postBrewTimerDuration * 1000) && lastBrewTimeMillis > 0)) {
+    if (shouldDisplayBrewTimer()) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
 #if (FEATURE_SCALE == 1)

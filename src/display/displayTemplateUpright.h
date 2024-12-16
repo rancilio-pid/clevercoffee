@@ -96,8 +96,8 @@ void printScreen() {
 // Brew time
 #if (FEATURE_BREWSWITCH == 1)
         if (featureBrewControl) {
-            // Show brew time; after brew finished show lastBrewTime during postBrewTimerDuration
-            if (machineState == kBrew || ((millis() - lastBrewTimeMillis) < (postBrewTimerDuration * 1000) && lastBrewTimeMillis > 0)) {
+            // Show brew time
+            if (shouldDisplayBrewTimer()) {
                 u8g2.setCursor(1, 34);
                 u8g2.print(langstring_brew_rot_ur);
                 u8g2.print(timeBrewed / 1000, 0);
@@ -106,7 +106,7 @@ void printScreen() {
                 u8g2.print(" s");
             }
 
-            // Shown flush time while machine is flushing
+            // Shown flush time
             if (machineState == kManualFlush) {
                 u8g2.setDrawColor(0);
                 u8g2.drawBox(1, 34, 100, 15);
@@ -118,9 +118,8 @@ void printScreen() {
             }
         }
         else {
-            // Brew Timer with optocoupler
-            // Shown brew time while machine is brewing and after the brewing during postBrewTimerDuration
-            if (machineState == kBrew || ((millis() - lastBrewTimeMillis) < (postBrewTimerDuration * 1000) && lastBrewTimeMillis > 0)) {
+            // Show brew time with optocoupler
+            if (shouldDisplayBrewTimer()) {
                 u8g2.setCursor(1, 34);
                 u8g2.print(langstring_brew_rot_ur);
                 u8g2.print(timeBrewed / 1000, 0);
