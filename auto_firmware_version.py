@@ -1,9 +1,9 @@
-import pkg_resources
+import importlib.metadata
 
 Import("env")
 
 required_pkgs = {'dulwich'}
-installed_pkgs = {pkg.key for pkg in pkg_resources.working_set}
+installed_pkgs = {dist.metadata['Name'] for dist in importlib.metadata.distributions()}
 missing_pkgs = required_pkgs - installed_pkgs
 
 if missing_pkgs:
