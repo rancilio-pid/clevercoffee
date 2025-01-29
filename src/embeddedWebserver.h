@@ -317,7 +317,7 @@ void serverSetup() {
             // update all given params and match var name in editableVars
 
             for (int i = 0; i < requestParams; i++) {
-                AsyncWebParameter* p = request->getParam(i);
+                const AsyncWebParameter* p = request->getParam(i);
                 String varName;
 
                 if (p->name().startsWith("var")) {
@@ -372,7 +372,8 @@ void serverSetup() {
         else if (request->method() == 1) { // WebRequestMethod enum -> HTTP_GET
             // get parameter id from first parameter, e.g. /parameters?param=PID_ON
             int paramCount = request->params();
-            String paramId = paramCount > 0 ? request->getParam(0)->value() : "";
+            const AsyncWebParameter* param = request->getParam(static_cast<size_t>(0));
+            String paramId = paramCount > 0 && param != nullptr ? param->value() : "";
 
             std::map<String, editable_t>::iterator it;
 
@@ -407,7 +408,7 @@ void serverSetup() {
 
     server.on("/parameterHelp", HTTP_GET, [](AsyncWebServerRequest* request) {
         DynamicJsonDocument doc(1024);
-        AsyncWebParameter* p = request->getParam(0);
+        const AsyncWebParameter* p = request->getParam(static_cast<size_t>(0));
 
         if (p == NULL) {
             request->send(422, "text/plain", "parameter is missing");
