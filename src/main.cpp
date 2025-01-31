@@ -950,6 +950,10 @@ void handleMachineState() {
         case kWaterEmpty:
             if (waterFull) {
                 machineState = kPidNormal;
+
+                if (standbyModeOn) {
+                    resetStandbyTimer();
+                }
             }
 
             if (pidON == 0) {
