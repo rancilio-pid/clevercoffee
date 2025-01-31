@@ -338,6 +338,17 @@ bool displayMachineState() {
         u8g2.sendBuffer();
         return true;
     }
+    // Hot Water
+    else if (machineState == kHotWater && brewSwitchState != kBrewSwitchFlushOff) {
+        u8g2.clearBuffer();
+        u8g2.drawXBMP(0, 12, Hot_Water_Logo_width, Hot_Water_Logo_height, Hot_Water_Logo);
+
+        displayTemperature(48, 16);
+
+        displayWaterIcon(119, 1);
+        u8g2.sendBuffer();
+        return true;
+    }
     // Steam
     else if (machineState == kSteam && brewSwitchState != kBrewSwitchFlushOff) {
         u8g2.clearBuffer();
