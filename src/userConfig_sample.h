@@ -29,16 +29,17 @@ enum MACHINE {
 #define MACHINEID RancilioSilvia // Machine type (see enum MACHINE)
 
 // Display
-#define OLED_DISPLAY          2       // 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64), 3 = SH1106_126x64_SPI
-#define OLED_I2C              0x3C    // I2C address for OLED, 0x3C by default
-#define DISPLAYTEMPLATE       3       // 1 = Standard display template, 2 = Minimal template, 3 = only temperature, 4 = scale template, 20 = vertical display (see git Handbook for further information)
-#define DISPLAYROTATE         U8G2_R0 // rotate display clockwise: U8G2_R0 = no rotation; U8G2_R1 = 90°; U8G2_R2 = 180°; U8G2_R3 = 270°
-#define SCREEN_WIDTH          128     // OLED display width, in pixels
-#define SCREEN_HEIGHT         64      // OLED display height, in pixels
-#define FEATURE_SHOTTIMER     1       // 0 = deactivated, 1 = activated (with weight if FEATURE_SCALE activated)
-#define FEATURE_HEATINGLOGO   1       // 0 = deactivated, 1 = activated
-#define FEATURE_PIDOFF_LOGO   1       // 0 = deactivated, 1 = activated
-#define SHOTTIMERDISPLAYDELAY 3000    // time in ms that shot timer will be shown after brew finished
+#define DISPLAY_HARDWARE      1              // 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64), 3 = SH1106_126x64_SPI, 4=ST7789_240x240
+                                             // for 4 (ST7789 SPI) see documentation of TFT_eSPI (for 240x240 I recommend using Setup24_ST7789) with these settings
+#define OLED_I2C              0x3C           // I2C address for OLED, 0x3C by default
+#define DISPLAYTEMPLATE       3              // 1 = Standard display template, 2 = Minimal template, 3 = only temperature, 4 = scale template, 20 = vertical display (see git Handbook for further information)
+#define DISPLAYROTATE         Rotation::R0   // display rotation in degrees
+#define SCREEN_WIDTH          128            // display width, in pixels
+#define SCREEN_HEIGHT         64             // display height, in pixels
+#define FEATURE_SHOTTIMER     1              // 0 = deactivated, 1 = activated (with weight if FEATURE_SCALE activated)
+#define FEATURE_HEATINGLOGO   1              // 0 = deactivated, 1 = activated
+#define FEATURE_PIDOFF_LOGO   0              // 0 = deactivated, 1 = activated
+#define SHOTTIMERDISPLAYDELAY 3000           // time in ms that shot timer will be shown after brew finished
 
 #define LANGUAGE 0                    // LANGUAGE = 0 (DE), LANGUAGE = 1 (EN), LANGUAGE = 2 (ES)
 

@@ -10,22 +10,22 @@
 
 void scaleCalibrate(HX711_ADC loadCell, int pin, sto_item_id_t name, float* calibration) {
     loadCell.setCalFactor(1.0);
-    u8g2.clearBuffer();
-    u8g2.drawStr(0, 22, "Calibration coming up");
-    u8g2.drawStr(0, 32, "Empty scale ");
-    u8g2.print(pin, 0);
-    u8g2.sendBuffer();
+    display.clearBuffer();
+    display.drawStr(0, 22, "Calibration coming up");
+    display.drawStr(0, 32, "Empty scale ");
+    display.print(pin, 0);
+    display.sendBuffer();
     LOGF(INFO, "Taking scale %d to zero point", pin);
     loadCell.update();
     loadCell.tare();
     LOGF(INFO, "Put load on scale %d within the next 10 seconds", pin);
-    u8g2.clearBuffer();
-    u8g2.drawStr(2, 2, "Calibration in progress.");
-    u8g2.drawStr(2, 12, "Place known weight");
-    u8g2.drawStr(2, 22, "on scale in next");
-    u8g2.drawStr(2, 32, "10 seconds");
-    u8g2.drawStr(2, 42, number2string(scaleKnownWeight));
-    u8g2.sendBuffer();
+    display.clearBuffer();
+    display.drawStr(2, 2, "Calibration in progress.");
+    display.drawStr(2, 12, "Place known weight");
+    display.drawStr(2, 22, "on scale in next");
+    display.drawStr(2, 32, "10 seconds");
+    display.drawStr(2, 42, number2string(scaleKnownWeight));
+    display.sendBuffer();
     delay(10000);
     LOG(INFO, "Taking scale load point");
     // increase scale samples temporarily to ensure a stable reading
@@ -34,13 +34,13 @@ void scaleCalibrate(HX711_ADC loadCell, int pin, sto_item_id_t name, float* cali
     *calibration = loadCell.getNewCalibration(scaleKnownWeight);
     loadCell.setSamplesInUse(SCALE_SAMPLES);
     LOGF(INFO, "New calibration: %f", *calibration);
-    u8g2.sendBuffer();
+    display.sendBuffer();
     storageSet(name, *calibration, true);
-    u8g2.clearBuffer();
-    u8g2.drawStr(2, 2, "Calibration done!");
-    u8g2.drawStr(2, 12, "New calibration:");
-    u8g2.drawStr(2, 22, number2string(*calibration));
-    u8g2.sendBuffer();
+    display.clearBuffer();
+    display.drawStr(2, 2, "Calibration done!");
+    display.drawStr(2, 12, "New calibration:");
+    display.drawStr(2, 22, number2string(*calibration));
+    display.sendBuffer();
     delay(2000);
 }
 
@@ -93,20 +93,20 @@ void checkWeight() {
 
     if (scaleTareOn) {
         scaleTareOn = 0;
-        u8g2.clearBuffer();
-        u8g2.drawStr(0, 2, "Taring scale,");
-        u8g2.drawStr(0, 12, "remove any load!");
-        u8g2.drawStr(0, 22, "....");
+        display.clearBuffer();
+        display.drawStr(0, 2, "Taring scale,");
+        display.drawStr(0, 12, "remove any load!");
+        display.drawStr(0, 22, "....");
         delay(2000);
-        u8g2.sendBuffer();
+        display.sendBuffer();
         LoadCell.tare();
         LoadCell.setCalFactor(scaleCalibration);
 #if SCALE_TYPE == 0
         LoadCell2.setCalFactor(scale2Calibration);
         LoadCell2.tare();
 #endif
-        u8g2.drawStr(0, 32, "done");
-        u8g2.sendBuffer();
+        display.drawStr(0, 32, "done");
+        display.sendBuffer();
         delay(2000);
     }
 }
@@ -138,9 +138,9 @@ void initScale() {
 
     if (LoadCell.getTareTimeoutFlag() || LoadCell.getSignalTimeoutFlag()) {
         LOG(ERROR, "Timeout, check MCU>HX711 wiring for scale");
-        u8g2.drawStr(0, 32, "failed!");
-        u8g2.drawStr(0, 42, "Scale not working..."); // scale timeout will most likely trigger after OTA update, but will still work after boot
-        u8g2.sendBuffer();
+        display.drawStr(0, 32, "failed!");
+        display.drawStr(0, 42, "Scale not working..."); // scale timeout will most likely trigger after OTA update, but will still work after boot
+        display.sendBuffer();
         delay(5000);
         scaleFailure = true;
         return;
@@ -149,9 +149,9 @@ void initScale() {
 #if SCALE_TYPE == 0
     if (LoadCell2.getTareTimeoutFlag() || LoadCell2.getSignalTimeoutFlag()) {
         LOG(ERROR, "Timeout, check MCU>HX711 wiring for scale 2");
-        u8g2.drawStr(0, 32, "failed!");
-        u8g2.drawStr(0, 42, "Scale not working..."); // scale timeout will most likely trigger after OTA update, but will still work after boot
-        u8g2.sendBuffer();
+        display.drawStr(0, 32, "failed!");
+        display.drawStr(0, 42, "Scale not working..."); // scale timeout will most likely trigger after OTA update, but will still work after boot
+        display.sendBuffer();
         delay(5000);
         scaleFailure = true;
         return;

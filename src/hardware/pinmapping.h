@@ -48,5 +48,5 @@
 /**
  * Bidirectional Pins
  */
-#define PIN_I2CSCL 22
-#define PIN_I2CSDA 21
+#define PIN_I2CSCL 21
+#define PIN_I2CSDA 22
