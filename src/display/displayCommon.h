@@ -126,7 +126,7 @@ void drawTemperaturebar(int x, int y, int heightRange) {
 void displayTemperature(int x, int y) {
     u8g2.setFont(u8g2_font_fub30_tf);
 
-    if (temperature < 99.999) {
+    if (temperature < 99.499) {
         u8g2.setCursor(x + 20, y);
         u8g2.print(temperature, 0);
     }
