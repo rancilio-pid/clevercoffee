@@ -9,43 +9,47 @@
 
 // storage items
 typedef enum {
-    STO_ITEM_PID_ON,                    // PID on/off state
-    STO_ITEM_PID_START_PONM,            // Use PonM for cold start phase (otherwise use normal PID and same params)
-    STO_ITEM_PID_KP_START,              // PID P part at cold start phase
-    STO_ITEM_PID_TN_START,              // PID I part at cold start phase
-    STO_ITEM_PID_KP_REGULAR,            // PID P part at regular operation
-    STO_ITEM_PID_TN_REGULAR,            // PID I part at regular operation
-    STO_ITEM_PID_TV_REGULAR,            // PID D part at regular operation
-    STO_ITEM_PID_I_MAX_REGULAR,         // PID Integrator upper limit
-    STO_ITEM_PID_KP_BD,                 // PID P part at brew detection phase
-    STO_ITEM_PID_TN_BD,                 // PID I part at brew detection phase
-    STO_ITEM_PID_TV_BD,                 // PID D part at brew detection phase
-    STO_ITEM_BREW_SETPOINT,             // brew setpoint
-    STO_ITEM_BREW_TEMP_OFFSET,          // brew temp offset
-    STO_ITEM_USE_BD_PID,                // use separate PID for brew detection (otherwise continue with regular PID)
-    STO_ITEM_BREW_TIME,                 // brew time
-    STO_ITEM_BREW_SW_TIME,              // brew software time
-    STO_ITEM_BREW_PID_DELAY,            // brew PID delay
-    STO_ITEM_BD_THRESHOLD,              // brew detection limit
-    STO_ITEM_WIFI_CREDENTIALS_SAVED,    // flag for wifisetup
-    STO_ITEM_PRE_INFUSION_TIME,         // pre-infusion time
-    STO_ITEM_PRE_INFUSION_PAUSE,        // pre-infusion pause
-    STO_ITEM_PID_KP_STEAM,              // PID P part at steam phase
-    STO_ITEM_STEAM_SETPOINT,            // Setpoint for Steam mode
-    STO_ITEM_SOFT_AP_ENABLED_CHECK,     // soft AP enable state
-    STO_ITEM_WIFI_SSID,                 // Wifi SSID
-    STO_ITEM_WIFI_PASSWORD,             // Wifi password
-    STO_ITEM_WEIGHTSETPOINT,            // Brew weight setpoint
-    STO_ITEM_STANDBY_MODE_ON,           // Enable tandby mode
-    STO_ITEM_STANDBY_MODE_TIME,         // Time until heater is turned off
-    STO_ITEM_SCALE_CALIBRATION_FACTOR,  // Calibration factor for scale
-    STO_ITEM_SCALE2_CALIBRATION_FACTOR, // Calibration factor for scale 2
-    STO_ITEM_SCALE_KNOWN_WEIGHT,        // Calibration weight for scale
-    STO_ITEM_RESERVED_30,               // reserved
-    STO_ITEM_RESERVED_21,               // reserved
-    STO_ITEM_BACKFLUSH_CYCLES,          // number of cycles the backflush should run
-    STO_ITEM_BACKFLUSH_FILL_TIME,       // time in ms the pump is running during backflush
-    STO_ITEM_BACKFLUSH_FLUSH_TIME,      // time in ms the 3-way valve is open during backflush
+    STO_ITEM_PID_ON,                                // PID on/off state
+    STO_ITEM_PID_START_PONM,                        // Use PonM for cold start phase (otherwise use normal PID and same params)
+    STO_ITEM_PID_KP_START,                          // PID P part at cold start phase
+    STO_ITEM_PID_TN_START,                          // PID I part at cold start phase
+    STO_ITEM_PID_KP_REGULAR,                        // PID P part at regular operation
+    STO_ITEM_PID_TN_REGULAR,                        // PID I part at regular operation
+    STO_ITEM_PID_TV_REGULAR,                        // PID D part at regular operation
+    STO_ITEM_PID_I_MAX_REGULAR,                     // PID Integrator upper limit
+    STO_ITEM_PID_KP_BD,                             // PID P part at brew detection phase
+    STO_ITEM_PID_TN_BD,                             // PID I part at brew detection phase
+    STO_ITEM_PID_TV_BD,                             // PID D part at brew detection phase
+    STO_ITEM_BREW_SETPOINT,                         // brew setpoint
+    STO_ITEM_BREW_TEMP_OFFSET,                      // brew temp offset
+    STO_ITEM_USE_BD_PID,                            // use separate PID for brew detection (otherwise continue with regular PID)
+    STO_ITEM_BREW_TIME,                             // brew time
+    STO_ITEM_BREW_PID_DELAY,                        // brew PID delay
+    STO_ITEM_WIFI_CREDENTIALS_SAVED,                // flag for wifisetup
+    STO_ITEM_PRE_INFUSION_TIME,                     // pre-infusion time
+    STO_ITEM_PRE_INFUSION_PAUSE,                    // pre-infusion pause
+    STO_ITEM_PID_KP_STEAM,                          // PID P part at steam phase
+    STO_ITEM_STEAM_SETPOINT,                        // Setpoint for Steam mode
+    STO_ITEM_SOFT_AP_ENABLED_CHECK,                 // soft AP enable state
+    STO_ITEM_WIFI_SSID,                             // Wifi SSID
+    STO_ITEM_WIFI_PASSWORD,                         // Wifi password
+    STO_ITEM_WEIGHTSETPOINT,                        // Brew weight setpoint
+    STO_ITEM_STANDBY_MODE_ON,                       // Enable tandby mode
+    STO_ITEM_STANDBY_MODE_TIME,                     // Time until heater is turned off
+    STO_ITEM_SCALE_CALIBRATION_FACTOR,              // Calibration factor for scale
+    STO_ITEM_SCALE2_CALIBRATION_FACTOR,             // Calibration factor for scale 2
+    STO_ITEM_SCALE_KNOWN_WEIGHT,                    // Calibration weight for scale
+    STO_ITEM_RESERVED_30,                           // reserved
+    STO_ITEM_RESERVED_21,                           // reserved
+    STO_ITEM_BACKFLUSH_CYCLES,                      // number of cycles the backflush should run
+    STO_ITEM_BACKFLUSH_FILL_TIME,                   // time in ms the pump is running during backflush
+    STO_ITEM_BACKFLUSH_FLUSH_TIME,                  // time in ms the 3-way valve is open during backflush
+    STO_ITEM_FEATURE_BREW_CONTROL,                  // enables function to control pump and solenoid valve
+    STO_ITEM_FEATURE_FULLSCREEN_BREW_TIMER,         // enables full screen brew timer
+    STO_ITEM_FEATURE_FULLSCREEN_MANUAL_FLUSH_TIMER, // enables full screen manual flush timer
+    STO_ITEM_POST_BREW_TIMER_DURATION,              // time in s that brew timer will be shown after brew finished
+    STO_ITEM_FEATURE_HEATING_LOGO,                  // enables full screen logo if mashine is heating
+    STO_ITEM_FEATURE_PID_OFF_LOGO,                  // enables full screen logo if pid is switched off
 
     /* WHEN ADDING NEW ITEMS, THE FOLLOWING HAS TO BE UPDATED:
      * - storage structure:  sto_data_t
@@ -94,18 +98,18 @@ typedef struct __attribute__((packed)) {
         uint8_t freeToUse8[2];
         double pidTvBd;
         uint8_t freeToUse9[2];
-        double brewSwTimeSec;
+        double freeToUse10;
         double brewPIDDelaySec;
-        uint8_t freeToUse10;
-        double brewDetectionThreshold;
+        uint8_t freeToUse11;
+        double freeToUse12;
         uint8_t wifiCredentialsSaved;
         uint8_t useStartPonM;
         double pidKpStart;
-        uint8_t freeToUse12[2];
+        uint8_t freeToUse13[2];
         uint8_t softApEnabledCheck;
-        uint8_t freeToUse13[9];
+        uint8_t freeToUse14[9];
         double pidTnStart;
-        uint8_t freeToUse14[2];
+        uint8_t freeToUse15[2];
         char wifiSSID[25 + 1];
         char wifiPassword[25 + 1];
         double weightSetpoint;
@@ -116,6 +120,12 @@ typedef struct __attribute__((packed)) {
         int backflushCycles;
         double backflushFillTimeMs;
         double backflushFlushTimeMs;
+        uint8_t featureBrewControl;
+        uint8_t featureFullscreenBrewTimer;
+        uint8_t featureFullscreenManualFlushTimer;
+        double postBrewTimerDuration;
+        uint8_t featureHeatingLogo;
+        uint8_t featurePidOffLogo;
 
 } sto_data_t;
 
@@ -145,10 +155,10 @@ static const sto_data_t itemDefaults PROGMEM = {
     {0xFF, 0xFF},                                                                                                                   // free to use
     AGGBTV,                                                                                                                         // STO_ITEM_PID_TV_BD
     {0xFF, 0xFF},                                                                                                                   // free to use
-    BREW_SW_TIME,                                                                                                                   // STO_ITEM_BREW_SW_TIME
+    0xFF,                                                                                                                           // free to use
     BREW_PID_DELAY,                                                                                                                 // STO_ITEM_BREW_PID_DELAY
     0xFF,                                                                                                                           // free to use
-    BD_SENSITIVITY,                                                                                                                 // STO_ITEM_BD_THRESHOLD
+    0xFF,                                                                                                                           // free to use
     WIFI_CREDENTIALS_SAVED,                                                                                                         // STO_ITEM_WIFI_CREDENTIALS_SAVED
     0,                                                                                                                              // STO_ITEM_USE_START_PON_M
     STARTKP,                                                                                                                        // STO_ITEM_PID_KP_START
@@ -167,6 +177,12 @@ static const sto_data_t itemDefaults PROGMEM = {
     BACKFLUSH_CYCLES,                                                                                                               // STO_ITEM_BACKFLUSH_CYCLES
     BACKFLUSH_FILL_TIME,                                                                                                            // STO_ITEM_BACKFLUSH_FILLTIME
     BACKFLUSH_FLUSH_TIME,                                                                                                           // STO_ITEM_BACKFLUSH_FLUSHTIME
+    FEATURE_BREW_CONTROL,                                                                                                           // STO_ITEM_FEATURE_BREW_CONTROL
+    FEATURE_FULLSCREEN_BREW_TIMER,                                                                                                  // STO_ITEM_FEATURE_FULLSCREEN_BREW_TIMER
+    FEATURE_FULLSCREEN_MANUAL_FLUSH_TIMER,                                                                                          // STO_ITEM_FEATURE_FULLSCREEN_BREW_TIMER
+    POST_BREW_TIMER_DURATION,                                                                                                       // STO_ITEM_SHOT_TIMER_DISPLAY_DELAY
+    FEATURE_HEATING_LOGO,                                                                                                           // STO_ITEM_FEATURE_HEATING_LOGO
+    FEATURE_PID_OFF_LOGO,                                                                                                           // STO_ITEM_FEATURE_PID_OFF_LOGO
 };
 
 /**
@@ -252,16 +268,6 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
         case STO_ITEM_PID_TV_BD:
             addr = offsetof(sto_data_t, pidTvBd);
             size = STRUCT_MEMBER_SIZE(sto_data_t, pidTvBd);
-            break;
-
-        case STO_ITEM_BREW_SW_TIME:
-            addr = offsetof(sto_data_t, brewSwTimeSec);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, brewSwTimeSec);
-            break;
-
-        case STO_ITEM_BD_THRESHOLD:
-            addr = offsetof(sto_data_t, brewDetectionThreshold);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, brewDetectionThreshold);
             break;
 
         case STO_ITEM_WIFI_CREDENTIALS_SAVED:
@@ -357,6 +363,36 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
         case STO_ITEM_BACKFLUSH_FLUSH_TIME:
             addr = offsetof(sto_data_t, backflushFlushTimeMs);
             size = STRUCT_MEMBER_SIZE(sto_data_t, backflushFlushTimeMs);
+            break;
+
+        case STO_ITEM_FEATURE_BREW_CONTROL:
+            addr = offsetof(sto_data_t, featureBrewControl);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, featureBrewControl);
+            break;
+
+        case STO_ITEM_FEATURE_FULLSCREEN_BREW_TIMER:
+            addr = offsetof(sto_data_t, featureFullscreenBrewTimer);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, featureFullscreenBrewTimer);
+            break;
+
+        case STO_ITEM_FEATURE_FULLSCREEN_MANUAL_FLUSH_TIMER:
+            addr = offsetof(sto_data_t, featureFullscreenManualFlushTimer);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, featureFullscreenManualFlushTimer);
+            break;
+
+        case STO_ITEM_POST_BREW_TIMER_DURATION:
+            addr = offsetof(sto_data_t, postBrewTimerDuration);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, postBrewTimerDuration);
+            break;
+
+        case STO_ITEM_FEATURE_HEATING_LOGO:
+            addr = offsetof(sto_data_t, featureHeatingLogo);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, featureHeatingLogo);
+            break;
+
+        case STO_ITEM_FEATURE_PID_OFF_LOGO:
+            addr = offsetof(sto_data_t, featurePidOffLogo);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, featurePidOffLogo);
             break;
 
         default:
@@ -682,7 +718,7 @@ int storageGet(sto_item_id_t itemId, String& itemValue) {
  *        The value is set in the RAM only! Use 'commit=true' or call
  *        storageCommit() to write the RAM content to the non-volatile memory!
  *
- *  @param itemId    - storage item ID
+ * @param itemId    - storage item ID
  * @param itemValue - item value to set
  * @param commit    - true=write current RAM content to NV memory (optional, default=false)
  *

@@ -78,9 +78,9 @@ void checkWeight() {
     }
 
 #if SCALE_TYPE == 0
-    weight = w1 + w2;
+    currWeight = w1 + w2;
 #else
-    weight = w1;
+    currWeight = w1;
 #endif
 
     if (scaleCalibrationOn) {
@@ -177,24 +177,24 @@ void shottimerscale() {
         case 10: // waiting step for brew switch turning on
             if (preinfusionPause == 0 || preinfusion == 0) {
                 if (timeBrewed > 0) {
-                    weightPreBrew = weight;
+                    weightPreBrew = currWeight;
                     shottimerCounter = 20;
                 }
             }
             else {
                 if (timeBrewed > preinfusion * 1000) {
-                    weightPreBrew = weight;
+                    weightPreBrew = currWeight;
                     shottimerCounter = 20;
                 }
                 else if (timeBrewed > 0) {
-                    weightBrew = 0;
+                    weightBrewed = 0;
                 }
             }
 
             break;
 
         case 20:
-            weightBrew = weight - weightPreBrew;
+            weightBrewed = currWeight - weightPreBrew;
 
             if (timeBrewed == 0) {
                 shottimerCounter = 10;
