@@ -17,8 +17,9 @@ void u8g2_prepare(void) {
     u8g2.setDrawColor(1);
     u8g2.setFontPosTop();
     u8g2.setFontDirection(0);
-    u8g2.setDisplayRotation(U8G2_R1); // fix setting for veritcal
+    u8g2.setDisplayRotation(DISPLAYROTATE); // either put U8G2_R1 or U8G2_R3 in userconfig
 }
+
 
 /**
  * @brief print message
