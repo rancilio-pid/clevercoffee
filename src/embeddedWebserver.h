@@ -317,7 +317,7 @@ void serverSetup() {
             // update all given params and match var name in editableVars
 
             for (int i = 0; i < requestParams; i++) {
-                AsyncWebParameter* p = request->getParam(i);
+                auto* p = request->getParam(i);
                 String varName;
 
                 if (p->name().startsWith("var")) {
@@ -407,7 +407,7 @@ void serverSetup() {
 
     server.on("/parameterHelp", HTTP_GET, [](AsyncWebServerRequest* request) {
         DynamicJsonDocument doc(1024);
-        AsyncWebParameter* p = request->getParam(0);
+        auto* p = request->getParam(0);
 
         if (p == NULL) {
             request->send(422, "text/plain", "parameter is missing");
