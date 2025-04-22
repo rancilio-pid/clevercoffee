@@ -88,10 +88,9 @@ void displayEmergencyStop(void) {
  * @brief display shot timer
  */
 bool displayShottimer() {
-    if (((timeBrewed > 0 && FEATURE_BREWCONTROL == 0) || (FEATURE_BREWCONTROL > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished)) && FEATURE_SHOTTIMER == 1) {
+    if (((timeBrewed > 0 && featureBrewControl == 0) || (featureBrewControl > 0 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished)) && featureFullscreenBrewTimer == 1) {
         u8g2.clearBuffer();
 
-        // draw temp icon
         u8g2.drawXBMP(0, 0, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
         u8g2.setFont(u8g2_font_profont22_tf);
         u8g2.setCursor(5, 70);
@@ -100,10 +99,7 @@ bool displayShottimer() {
         u8g2.sendBuffer();
         return true;
     }
-    else if (FEATURE_SHOTTIMER == 1 && millis() >= lastBrewTimeMillis && // directly after creating lastbrewTimeMillis (happens when turning off the brew switch, case 43 in the code) should be started
-             lastBrewTimeMillis + SHOTTIMERDISPLAYDELAY >= millis() &&   // should run until millis() has caught up with SHOTTIMERDISPLAYDELAY, this can be used to control the display duration
-             lastBrewTimeMillis < totalBrewTime) // if the totalBrewTime is reached automatically, nothing should be done, otherwise wrong time will be displayed because switch is pressed later than totalBrewTime
-    {
+    else if (featureFullscreenBrewTimer == 1 && millis() >= lastBrewTimeMillis && lastBrewTimeMillis + (postBrewTimerDuration * 1000) >= millis() && lastBrewTimeMillis < totalBrewTime) {
         u8g2.clearBuffer();
         u8g2.drawXBMP(0, 0, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
         u8g2.setFont(u8g2_font_profont22_tf);
