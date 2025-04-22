@@ -83,8 +83,9 @@ enum MachineState {
     kBrew = 30,
     kShotTimerAfterBrew = 31,
     kBrewDetectionTrailing = 35,
-    kSteam = 40,
-    kBackflush = 50,
+    kHotWater = 40,
+    kSteam = 50,
+    kBackflush = 60,
     kWaterEmpty = 70,
     kEmergencyStop = 80,
     kPidDisabled = 90,
@@ -171,6 +172,7 @@ Relay valveRelay(valveRelayPin, PUMP_VALVE_SSR_TYPE);
 Switch* powerSwitch;
 Switch* brewSwitch;
 Switch* steamSwitch;
+Switch* hotWaterSwitch;
 
 TempSensor* tempSensor;
 
@@ -285,6 +287,7 @@ const double EmergencyStopTemp = 145;         // Temp EmergencyStopTemp
 float inX = 0, inY = 0, inOld = 0, inSum = 0; // used for filterPressureValue()
 boolean brewDetected = 0;
 boolean setupDone = false;
+int hotWaterOn = 0;
 
 // Water sensor
 boolean waterFull = true;
@@ -432,6 +435,7 @@ U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, OLED_CS, OLED_DC, /* reset=*
 Timer printDisplayTimer(&printScreen, 100);
 #endif
 
+#include "hotWaterHandler.h"
 #include "powerHandler.h"
 #include "scaleHandler.h"
 #include "steamHandler.h"
@@ -730,9 +734,18 @@ void handleMachineState() {
 
         case kPidNormal:
             brewDetection();
+            checkHotWaterSwitch();
 
             if ((timeBrewed > 0 && FEATURE_BREWCONTROL == 0) || (FEATURE_BREWCONTROL == 1 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished)) {
                 machineState = kBrew;
+
+                if (standbyModeOn) {
+                    resetStandbyTimer();
+                }
+            }
+
+            if (hotWaterOn == 1) {
+                machineState = kHotWater;
 
                 if (standbyModeOn) {
                     resetStandbyTimer();
@@ -817,10 +830,15 @@ void handleMachineState() {
 
         case kShotTimerAfterBrew:
             brewDetection();
+            checkHotWaterSwitch();
 
             if (millis() - lastBrewTimeMillis > SHOTTIMERDISPLAYDELAY) {
                 LOGF(INFO, "Shot time: %4.1f s", lastBrewTime / 1000);
                 machineState = kBrewDetectionTrailing;
+            }
+
+            if (hotWaterOn == 1) {
+                machineState = kHotWater;
             }
 
             if (steamON == 1) {
@@ -850,6 +868,7 @@ void handleMachineState() {
 
         case kBrewDetectionTrailing:
             brewDetection();
+            checkHotWaterSwitch();
 
             if (isBrewDetected == 0) {
                 machineState = kPidNormal;
@@ -858,6 +877,10 @@ void handleMachineState() {
             if ((timeBrewed > 0 && FEATURE_BREWCONTROL == 0 && brewDetectionMode == 3) || // Allow brew directly after BD only when using FEATURE_BREWCONTROL 0 AND hardware brew switch detection
                 (FEATURE_BREWCONTROL == 1 && currBrewState > kBrewIdle && currBrewState <= kBrewFinished)) {
                 machineState = kBrew;
+            }
+
+            if (hotWaterOn == 1) {
+                machineState = kHotWater;
             }
 
             if (steamON == 1) {
@@ -885,9 +908,43 @@ void handleMachineState() {
             }
             break;
 
+        case kHotWater:
+            checkHotWaterSwitch();
+
+            if (hotWaterOn == 0) {
+                machineState = kPidNormal;
+            }
+
+            if (steamON == 1) {
+                machineState = kSteam;
+            }
+
+            if (emergencyStop) {
+                machineState = kEmergencyStop;
+            }
+
+            if (pidON == 0) {
+                machineState = kPidDisabled;
+            }
+
+            if (!waterFull) {
+                machineState = kWaterEmpty;
+            }
+
+            if (tempSensor->hasError()) {
+                machineState = kSensorError;
+            }
+            break;
+
         case kSteam:
+            checkHotWaterSwitch();
+
             if (steamON == 0) {
                 machineState = kPidNormal;
+            }
+
+            if (hotWaterOn == 1) {
+                machineState = kHotWater;
             }
 
             if (emergencyStop) {
@@ -948,6 +1005,8 @@ void handleMachineState() {
             break;
 
         case kWaterEmpty:
+            checkHotWaterSwitch();
+
             if (waterFull) {
                 machineState = kPidNormal;
 
@@ -989,8 +1048,9 @@ void handleMachineState() {
             }
 
             brewDetection();
+            checkHotWaterSwitch();
 
-            if (pidON || steamON || isBrewDetected) {
+            if (pidON || steamON || hotWaterOn || isBrewDetected) {
                 pidON = 1;
                 resetStandbyTimer();
 #if OLED_DISPLAY != 0
@@ -999,6 +1059,9 @@ void handleMachineState() {
 
                 if (steamON) {
                     machineState = kSteam;
+                }
+                else if (hotWaterOn) {
+                    machineState = kHotWater;
                 }
                 else if (isBrewDetected) {
                     machineState = kBrew;
@@ -1044,6 +1107,8 @@ char const* machinestateEnumToString(MachineState machineState) {
             return "Shot Timer After Brew";
         case kBrewDetectionTrailing:
             return "Brew Detection Trailing";
+        case kHotWater:
+            return "Hot Water";
         case kSteam:
             return "Steam";
         case kBackflush:
@@ -1650,6 +1715,10 @@ void setup() {
 
     if (FEATURE_STEAMSWITCH) {
         steamSwitch = new IOSwitch(PIN_STEAMSWITCH, GPIOPin::IN_HARDWARE, STEAMSWITCH_TYPE, STEAMSWITCH_MODE);
+    }
+
+    if (FEATURE_HOTWATERSWITCH) {
+        hotWaterSwitch = new IOSwitch(PIN_HOTWATERSWITCH, GPIOPin::IN_HARDWARE, HOTWATERSWITCH_TYPE, HOTWATERSWITCH_MODE);
     }
 
     // IF optocoupler selected
