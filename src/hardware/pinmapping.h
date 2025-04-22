@@ -12,10 +12,10 @@
  */
 
 // Switches/Buttons
-#define PIN_POWERSWITCH 39
-#define PIN_BREWSWITCH  34
-#define PIN_STEAMSWITCH 35
-#define PIN_WATERSWITCH 36
+#define PIN_POWERSWITCH    39
+#define PIN_BREWSWITCH     34
+#define PIN_STEAMSWITCH    35
+#define PIN_HOTWATERSWITCH 36
 
 #define PIN_ROTARY_DT  4 // Rotary encoder data pin
 #define PIN_ROTARY_CLK 3 // Rotary encoder clock pin
