@@ -24,7 +24,7 @@ const vueApp = Vue.createApp({
             // post parameter array the same as if it was posted from a form (the values are already updated
             // from the v-model bindings)
             var formBody = [];
-            
+
             this.parameters.forEach(param => {
                 var encodedKey = encodeURIComponent(param.name);
                 var encodedValue = encodeURIComponent(param.value);
@@ -41,7 +41,7 @@ const vueApp = Vue.createApp({
                 cache: 'no-cache',
                 body: formBody
             };
-            
+
             this.isPostingForm = true
 
             fetch("/parameters", requestOptions)
@@ -80,7 +80,7 @@ const vueApp = Vue.createApp({
                 4: 'Scale Parameters',
                 5: 'Power Settings'
             }
-            
+
             return sectionNames[sectionId]
         },
 
@@ -92,6 +92,22 @@ const vueApp = Vue.createApp({
                 };
 
                 fetch("/toggleScaleCalibration", requestOptions)
+            }
+        },
+
+        async confirmReset() {
+            const confirmed = window.confirm(
+                "Are you sure you want to reset the WiFi settings?\n\nThis will erase saved credentials and restart the device."
+            );
+
+            if (!confirmed) return;
+
+            try {
+                const response = await fetch("/reset", { method: "POST" });
+                const text = await response.text();
+                alert(text);
+            } catch (err) {
+                alert("Reset failed: " + err.message);
             }
         }
     },

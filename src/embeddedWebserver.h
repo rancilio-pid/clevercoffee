@@ -461,6 +461,15 @@ void serverSetup() {
         request->send(response);
     });
 
+    server.on("/reset", HTTP_POST, [](AsyncWebServerRequest* request) {
+        request->send(200, "text/plain", "WiFi settings are being reset. Rebooting...");
+
+        // Defer slightly so the response gets sent before reboot
+        delay(1000);
+
+        wiFiReset();
+    });
+
     server.onNotFound([](AsyncWebServerRequest* request) { request->send(404, "text/plain", "Not found"); });
 
     // set up event handler for temperature messages
