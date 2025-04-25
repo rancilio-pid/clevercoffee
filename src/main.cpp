@@ -200,6 +200,7 @@ float filterPressureValue(float input);
 int writeSysParamsToMQTT(bool continueOnError);
 void updateStandbyTimer(void);
 void resetStandbyTimer(void);
+void wiFiReset(void);
 
 // system parameters
 uint8_t pidON = 0; // 1 = control loop in closed loop
@@ -1121,6 +1122,11 @@ void wiFiSetup() {
 #if OLED_DISPLAY != 0
     displayLogo(langstring_connectwifi1, wm.getWiFiSSID(true));
 #endif
+}
+
+void wiFiReset() {
+    wm.resetSettings();
+    ESP.restart();
 }
 
 /**
