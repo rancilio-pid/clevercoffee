@@ -103,7 +103,7 @@ const vueApp = Vue.createApp({
             if (!confirmed) return;
 
             try {
-                const response = await fetch("/reset", { method: "POST" });
+                const response = await fetch("/wifireset", { method: "POST" });
                 const text = await response.text();
                 alert(text);
             } catch (err) {
