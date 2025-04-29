@@ -1,14 +1,8 @@
 %HEADER%
 
     <script type="module">
-        if (window.appCreated === true) {
-            vueApp.mount('#content');
-        }
-        else {
-            window.addEventListener('appCreated', () => {
-                vueApp.mount('#content');
-            });
-        }
+        (window.appCreated ? Promise.resolve() : new Promise(resolve => window.addEventListener('appCreated', resolve)))
+            .then(() => vueApp.mount('#content'));
     </script>
 
     <div id="content">

@@ -461,7 +461,7 @@ void serverSetup() {
         request->send(response);
     });
 
-    server.on("/reset", HTTP_POST, [](AsyncWebServerRequest* request) {
+    server.on("/wifireset", HTTP_POST, [](AsyncWebServerRequest* request) {
         request->send(200, "text/plain", "WiFi settings are being reset. Rebooting...");
 
         // Defer slightly so the response gets sent before reboot
