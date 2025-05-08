@@ -133,9 +133,11 @@ Switch* waterTankSensor;
 
 GPIOPin* statusLedPin;
 GPIOPin* brewLedPin;
+GPIOPin* steamLedPin;
 
 LED* statusLed;
 LED* brewLed;
+LED* steamLed;
 
 GPIOPin heaterRelayPin(PIN_HEATER, GPIOPin::OUT);
 Relay heaterRelay(heaterRelayPin, HEATER_SSR_TYPE);
@@ -1436,9 +1438,14 @@ void setup() {
     if (LED_TYPE == LED::STANDARD) {
         statusLedPin = new GPIOPin(PIN_STATUSLED, GPIOPin::OUT);
         brewLedPin = new GPIOPin(PIN_BREWLED, GPIOPin::OUT);
+        steamLedPin = new GPIOPin(PIN_STEAMLED, GPIOPin::OUT);
 
-        statusLed = new StandardLED(*statusLedPin);
-        brewLed = new StandardLED(*brewLedPin);
+        statusLed = new StandardLED(*statusLedPin, FEATURE_STATUS_LED);
+        brewLed = new StandardLED(*brewLedPin, FEATURE_BREW_LED);
+        steamLed = new StandardLED(*steamLedPin, FEATURE_STEAM_LED);
+
+        brewLed->turnOff();
+        steamLed->turnOff();
     }
     else {
         // TODO Addressable LEDs
@@ -1742,23 +1749,14 @@ void looppid() {
 }
 
 void loopLED() {
-    if (FEATURE_STATUS_LED) {
-        if ((machineState == kPidNormal && (fabs(temperature - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) {
-            statusLed->turnOn();
-        }
-        else {
-            statusLed->turnOff();
-        }
+    if ((machineState == kPidNormal && (fabs(temperature - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) {
+        statusLed->turnOn();
     }
-
-    if (FEATURE_BREW_LED) {
-        if (machineState == kBrew) {
-            brewLed->turnOn();
-        }
-        else {
-            brewLed->turnOff();
-        }
+    else {
+        statusLed->turnOff();
     }
+    brewLed->setGPIOState(machineState == kBrew);
+    steamLed->setGPIOState(machineState == kSteam);
 }
 
 void checkWaterTank() {
