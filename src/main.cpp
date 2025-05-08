@@ -155,13 +155,13 @@ Switch* waterTankSensor;
 
 GPIOPin* statusLedPin;
 GPIOPin* brewLedPin;
-GPIOPin* waterLedPin;
 GPIOPin* steamLedPin;
+//GPIOPin* waterLedPin;
 
 LED* statusLed;
 LED* brewLed;
-LED* waterLed;
 LED* steamLed;
+//LED* waterLed;
 
 GPIOPin heaterRelayPin(PIN_HEATER, GPIOPin::OUT);
 Relay heaterRelay(heaterRelayPin, HEATER_SSR_TYPE);
