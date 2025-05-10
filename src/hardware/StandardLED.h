@@ -22,6 +22,6 @@ class StandardLED : public LED {
 
     private:
         GPIOPin& gpio;
-        bool inverted;  // If true, invert on/off behavior
-        bool enabled;   // If false, the LED will be disabled
+        bool inverted; // If true, invert on/off behavior
+        bool enabled;  // If false, the LED will be disabled
 };
