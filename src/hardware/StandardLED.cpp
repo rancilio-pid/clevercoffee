@@ -14,19 +14,20 @@ StandardLED::StandardLED(GPIOPin& gpioInstance, int featureFlag) :
 void StandardLED::setGPIOState(bool state) {
     if (enabled) {
         if (inverted) {
-            gpio.write(state ? LOW : HIGH);  // Inverted logic
-        } else {
-            gpio.write(state ? HIGH : LOW);  // Normal logic
+            gpio.write(state ? LOW : HIGH); // Inverted logic
+        }
+        else {
+            gpio.write(state ? HIGH : LOW); // Normal logic
         }
     }
 }
 
 void StandardLED::turnOn() {
-    setGPIOState(true);  // Turn on
+    setGPIOState(true); // Turn on
 }
 
 void StandardLED::turnOff() {
-    setGPIOState(false);  // Turn off
+    setGPIOState(false); // Turn off
 }
 
 void StandardLED::setColor(int red, int green, int blue) {
