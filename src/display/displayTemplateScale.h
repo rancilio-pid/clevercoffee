@@ -48,14 +48,19 @@ void printScreen() {
         drawTemperaturebar(8, 50, 30);
     }
 
+    // Draw current temp and temp setpoint
     u8g2.setFont(u8g2_font_profont11_tf);
 
     u8g2.setCursor(32, 16);
     u8g2.print("T: ");
     u8g2.print(temperature, 1);
-
     u8g2.print("/");
     u8g2.print(setpoint, 1);
+    u8g2.print((char)176);
+    u8g2.print("C");
+
+    // Show current weight if scale has no error
+    displayWeight(32, 26, currWeight, -1, scaleFailure);
 
     /**
      * @brief Shot timer for scale
@@ -68,71 +73,46 @@ void printScreen() {
      * if brew is finished show brew values for postBrewTimerDuration
      */
 
-    // Show current weight if scale has no error
-    u8g2.setCursor(32, 26);
-    u8g2.print(langstring_weight);
-    u8g2.setCursor(82, 26);
-    if (scaleFailure) {
-        u8g2.print("fault");
-    }
-    else if (machineState == kManualFlush) {
-        // Shown flush time
-        u8g2.setDrawColor(0);
-        u8g2.drawBox(32, 26, 100, 40);
-        u8g2.setDrawColor(1);
-        u8g2.setCursor(32, 26);
-        u8g2.print(langstring_manual_flush);
-        u8g2.setCursor(82, 26);
-        u8g2.print(timeBrewed / 1000, 0);
-        u8g2.print(" s");
-    }
-    else if (shouldDisplayBrewTimer()) {
-        // Shown brew time and weight
-        if (featureBrewControl) {
-            // weight
-            u8g2.setCursor(32, 36);
-            u8g2.print(langstring_weight);
-            u8g2.setCursor(82, 36);
-            u8g2.print(weightBrewed, 0);
+#if (FEATURE_BREWSWITCH == 1)
 
-            if (weightSetpoint > 0) {
-                u8g2.print("/");
-                u8g2.print(weightSetpoint, 0);
-            }
-            u8g2.print(" g");
+    if (featureBrewControl) {
 
+        if (shouldDisplayBrewTimer()) {
             // time
-            u8g2.setCursor(32, 26);
-            u8g2.print(langstring_brew);
-            u8g2.setCursor(82, 26);
-            u8g2.print(timeBrewed / 1000, 0);
+            displayBrewTime(32, 36, langstring_brew, timeBrewed, totalBrewTime);
 
-            if (brewTime > 0) {
-                u8g2.print("/");
-                u8g2.print(totalBrewTime / 1000, 0);
-            }
-            u8g2.print(" s");
+            // weight
+            u8g2.setDrawColor(0);
+            u8g2.drawBox(32, 27, 100, 10);
+            u8g2.setDrawColor(1);
+            displayWeight(32, 26, weightBrewed, weightSetpoint, scaleFailure);
         }
-        else {
-            // Brew Timer with optocoupler
-            // weight
-            u8g2.setCursor(32, 36);
-            u8g2.print(langstring_weight);
-            u8g2.setCursor(82, 36);
-            u8g2.print(weightBrewed, 0);
-            u8g2.print(" g");
-            // time
-            u8g2.setCursor(32, 26);
-            u8g2.print(langstring_brew);
-            u8g2.setCursor(82, 26);
-            u8g2.print(timeBrewed / 1000, 0);
-            u8g2.print(" s");
+        // Shown flush time while machine is flushing
+        if (machineState == kManualFlush) {
+            u8g2.setDrawColor(0);
+            u8g2.drawBox(32, 37, 100, 10);
+            u8g2.setDrawColor(1);
+            displayBrewTime(32, 36, langstring_manual_flush, timeBrewed);
         }
     }
     else {
-        u8g2.print(currWeight, 0);
-        u8g2.print(" g");
+        // Brew Timer with optocoupler
+        if (shouldDisplayBrewTimer()) {
+            // time
+            u8g2.setCursor(32, 36);
+            u8g2.print(langstring_brew);
+            u8g2.setCursor(84, 36);
+            u8g2.print(timeBrewed / 1000, 0);
+            u8g2.print(" s");
+
+            // weight
+            u8g2.setDrawColor(0);
+            u8g2.drawBox(32, 27, 100, 9);
+            u8g2.setDrawColor(1);
+            displayWeight(32, 26, weightBrewed, -1, scaleFailure);
+        }
     }
+#endif
 
 #if (FEATURE_PRESSURESENSOR == 1)
     u8g2.setCursor(32, 46);

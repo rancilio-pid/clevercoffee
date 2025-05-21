@@ -30,6 +30,7 @@ static const char* langstring_wifirecon = "Wifi reconnect:";
 static const char* langstring_connectwifi1 = "1: Verbinde WLAN:";
 static const char* langstring_nowifi[] = {"Kein ", "WLAN"};
 static const char* langstring_error_tsensor[] = {"Fehler, Temp: ", "Temp.-Sensor ueberpruefen!"};
+static const char* langstring_scale_Failure = "Fehler";
 // static const char *langstring_emergencyStop[] = {"HEATING", "STOPPED"};
 
 static const char* langstring_backflush_press = "Bruehsch. druecken";
@@ -59,6 +60,7 @@ static const char* langstring_connectwifi1 = "1: Connecting Wifi:";
 static const char* langstring_nowifi[] = {"No ", "WIFI"};
 
 static const char* langstring_error_tsensor[] = {"Error, Temp: ", "Check Temp. sensor!"};
+static const char* langstring_scale_Failure = "Fault";
 // static const char *langstring_emergencyStop[] = {"HEATING", "STOPPED"};
 
 static const char* langstring_backflush_press = "Press brew switch";
@@ -88,6 +90,7 @@ static const char* langstring_connectwifi1 = "1: Wifi conectado :";
 static const char* langstring_nowifi[] = {"No ", "WIFI"};
 
 static const char* langstring_error_tsensor[] = {"Error, Temp: ", "Comprueba sensor T!"};
+static const char* langstring_scale_Failure = "falla";
 // static const char *langstring_emergencyStop[] = {"CALENT.", "PARADO "};
 
 static const char* langstring_backflush_press = "Pulsa boton de cafe";

@@ -736,10 +736,6 @@ void handleMachineState() {
                 machineState = kPidNormal;
             }
 
-            if (!waterTankFull) {
-                machineState = kWaterTankEmpty;
-            }
-
             if (tempSensor->hasError()) {
                 machineState = kSensorError;
             }
