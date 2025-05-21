@@ -129,6 +129,15 @@ const unsigned long intervalPressure = 100;
 unsigned long previousMillisPressure; // initialisation at the end of init()
 #endif
 
+// timing flags
+bool displayBufferReady = false;
+bool displayUpdateRunning = false;
+bool websiteUpdateRunning = false;
+bool mqttUpdateRunning = false;
+bool hassioUpdateRunning = false;
+
+#include "utils/timingDebug.h"
+
 Switch* waterTankSensor;
 
 GPIOPin* statusLedPin;
@@ -627,6 +636,10 @@ void handleMachineState() {
             if (tempSensor->hasError()) {
                 machineState = kSensorError;
             }
+
+            if (machineState != kBrew) {
+                MQTTReCnctCount = 0; // allow MQTT to try to reconnect if exiting brew mode
+            }
             break;
 
         case kManualFlush:
@@ -793,6 +806,10 @@ void handleMachineState() {
                 u8g2.setPowerSave(0);
 #endif
                 machineState = kSensorError;
+            }
+
+            if (machineState != kStandby) {
+                MQTTReCnctCount = 0; // allow MQTT to try to reconnect if exiting standby
             }
             break;
 
@@ -1556,6 +1573,8 @@ void loop() {
 
     // Update LED output based on machine state
     loopLED();
+
+    debugTimingLoop();
 }
 
 void looppid() {
@@ -1563,14 +1582,26 @@ void looppid() {
     if (WiFi.status() == WL_CONNECTED && offlineMode == 0) {
         if (FEATURE_MQTT == 1) {
             checkMQTT();
-            writeSysParamsToMQTT(true); // Continue on error
+            mqttUpdateRunning = false;
+            // if screen is ready to refresh wait for next loop
+            if (!displayBufferReady) {
+                writeSysParamsToMQTT(true); // Continue on error
+            }
 
+            hassioUpdateRunning = false;
             if (mqtt.connected() == 1) {
                 mqtt.loop();
+                previousMqttConnection = millis();
 #if MQTT_HASSIO_SUPPORT == 1
-                hassioDiscoveryTimer();
-#endif
+                // resend discovery messages if not during a main function and MQTT has been disconnected but has now reconnected
+                // this could mean mqtt_was_connected stays false for up to 5 mins but mqtt retains old HASSIO messages
+                if (!((machineState >= kBrew) && (machineState <= kBackflush)) && (!mqtt_was_connected) && (!displayBufferReady)) {
+                    hassioDiscoveryTimer();
+                    mqtt_was_connected = true;
+                }
+#else
                 mqtt_was_connected = true;
+#endif
             }
             // Supress debug messages until we have a connection etablished
             else if (mqtt_was_connected) {
@@ -1608,7 +1639,10 @@ void looppid() {
     testEmergencyStop(); // test if temp is too high
     bPID.Compute();      // the variable pidOutput now has new values from PID (will be written to heater pin in ISR.cpp)
 
-    if ((millis() - lastTempEvent) > tempEventInterval) {
+    websiteUpdateRunning = false;
+    // refresh website if loop does not have
+    if (((millis() - lastTempEvent) > tempEventInterval) && (!mqttUpdateRunning) && (!hassioUpdateRunning)) {
+        websiteUpdateRunning = true;
         // send temperatures to website endpoint
         sendTempEvent(temperature, brewSetpoint, pidOutput / 10); // pidOutput is promill, so /10 to get percent value
         lastTempEvent = millis();
@@ -1676,9 +1710,21 @@ void looppid() {
     shouldDisplayBrewTimer();
 #endif
 
-    // Check if PID should run or not. If not, set to manual and force output to zero
+    displayUpdateRunning = false;
 #if OLED_DISPLAY != 0
-    printDisplayTimer();
+    // update display on loops that have not had other major tasks running, if blocked it will send in the next loop (average 0.5ms)
+    if ((!websiteUpdateRunning) && (!mqttUpdateRunning) && (!hassioUpdateRunning) && (standbyModeRemainingTimeDisplayOffMillis > 0)) {
+        if (displayBufferReady) {
+            u8g2.sendBuffer();
+            displayBufferReady = false;
+            displayUpdateRunning = true;
+            // displayUpdateRunning currently doesn't block anything as it is near the end of the loop
+            // sendBuffer() takes around 35ms so it flags that it has happened
+        }
+        else {
+            printDisplayTimer();
+        }
+    }
 #endif
 
     if (machineState == kPidDisabled || machineState == kWaterTankEmpty || machineState == kSensorError || machineState == kEmergencyStop || machineState == kEepromError || machineState == kStandby ||

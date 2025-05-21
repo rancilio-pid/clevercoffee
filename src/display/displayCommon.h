@@ -358,7 +358,7 @@ bool displayFullscreenBrewTimer() {
         displayBrewtimeFs(48, 25, currBrewTime);
 #endif
         displayWaterIcon(119, 1);
-        u8g2.sendBuffer();
+        displayBufferReady = true;
         return true;
     }
 
@@ -378,7 +378,7 @@ bool displayFullscreenManualFlushTimer() {
         u8g2.drawXBMP(0, 12, Manual_Flush_Logo_width, Manual_Flush_Logo_height, Manual_Flush_Logo);
         displayBrewtimeFs(48, 25, currBrewTime);
         displayWaterIcon(119, 1);
-        u8g2.sendBuffer();
+        displayBufferReady = true;
         return true;
     }
 
