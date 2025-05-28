@@ -1952,6 +1952,8 @@ void looppid() {
             if (!brewPIDDisabled) {
                 brewPIDDisabled = true;
                 bPID.SetMode(MANUAL);
+                pidOutput = 0;
+                heaterRelay.off();
                 LOGF(DEBUG, "disabled PID, waiting for %d seconds before enabling PID again", brewPIDDelay);
             }
         }
