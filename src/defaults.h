@@ -30,8 +30,6 @@ int writeSysParamsToStorage(void);
 #define AGGTN                     52     // PID Tn (regular phase)
 #define AGGTV                     11.5   // PID Tv (regular phase)
 #define AGGIMAX                   55     // PID Integrator Max (regular phase)
-#define STARTKP                   45     // PID Kp (coldstart phase)
-#define STARTTN                   130    // PID Tn (coldstart phase)
 #define STEAMKP                   150    // PID kp (steam phase)
 #define AGGBKP                    50     // PID Kp (brew detection phase)
 #define AGGBTN                    0      // PID Tn (brew detection phase)
@@ -50,10 +48,6 @@ int writeSysParamsToStorage(void);
 #define BACKFLUSH_FILL_TIME       5      // time in seconds the pump is running during backflush
 #define BACKFLUSH_FLUSH_TIME      10     // time in seconds the 3-way valve is open during backflush
 
-#define PID_KP_START_MIN         0
-#define PID_KP_START_MAX         999
-#define PID_TN_START_MIN         0
-#define PID_TN_START_MAX         999
 #define PID_KP_REGULAR_MIN       0
 #define PID_KP_REGULAR_MAX       999
 #define PID_TN_REGULAR_MIN       0

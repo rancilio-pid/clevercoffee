@@ -10,7 +10,7 @@
 // storage items
 typedef enum {
     STO_ITEM_PID_ON,                    // PID on/off state
-    STO_ITEM_PID_START_PONM,            // Use PonM for cold start phase (otherwise use normal PID and same params)
+    STO_ITEM_PID_USE_PONM,              // Use PonM mode for PID controller (Proportional on Measurement)
     STO_ITEM_PID_KP_START,              // PID P part at cold start phase
     STO_ITEM_PID_TN_START,              // PID I part at cold start phase
     STO_ITEM_PID_KP_REGULAR,            // PID P part at regular operation
@@ -99,7 +99,7 @@ typedef struct __attribute__((packed)) {
         uint8_t freeToUse10;
         double brewDetectionThreshold;
         uint8_t wifiCredentialsSaved;
-        uint8_t useStartPonM;
+        uint8_t pidUsePonM;
         double pidKpStart;
         uint8_t freeToUse12[2];
         uint8_t softApEnabledCheck;
@@ -151,11 +151,11 @@ static const sto_data_t itemDefaults PROGMEM = {
     BD_SENSITIVITY,                                                                                                                 // STO_ITEM_BD_THRESHOLD
     WIFI_CREDENTIALS_SAVED,                                                                                                         // STO_ITEM_WIFI_CREDENTIALS_SAVED
     0,                                                                                                                              // STO_ITEM_USE_START_PON_M
-    STARTKP,                                                                                                                        // STO_ITEM_PID_KP_START
+    0,                                                                                                                              // free to use
     {0xFF, 0xFF},                                                                                                                   // free to use
     0,                                                                                                                              // STO_ITEM_SOFT_AP_ENABLED_CHECK
     {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},                                                                         // free to use
-    STARTTN,                                                                                                                        // STO_ITEM_PID_TN_START
+    0,                                                                                                                              // free to use
     {0xFF, 0xFF},                                                                                                                   // free to use
     "",                                                                                                                             // STO_ITEM_WIFI_SSID
     "",                                                                                                                             // STO_ITEM_WIFI_PASSWORD
@@ -269,9 +269,9 @@ static inline int32_t getItemAddr(sto_item_id_t itemId, uint16_t* maxItemSize = 
             size = STRUCT_MEMBER_SIZE(sto_data_t, wifiCredentialsSaved);
             break;
 
-        case STO_ITEM_PID_START_PONM:
-            addr = offsetof(sto_data_t, useStartPonM);
-            size = STRUCT_MEMBER_SIZE(sto_data_t, useStartPonM);
+        case STO_ITEM_PID_USE_PONM:
+            addr = offsetof(sto_data_t, pidUsePonM);
+            size = STRUCT_MEMBER_SIZE(sto_data_t, pidUsePonM);
             break;
 
         case STO_ITEM_PID_KP_START:
