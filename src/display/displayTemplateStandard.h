@@ -106,5 +106,5 @@ void printScreen() {
     // Show heater output in %
     displayProgressbar(pidOutput / 10, 30, 60, 98);
 
-    u8g2.sendBuffer();
+    displayBufferReady = true;
 }

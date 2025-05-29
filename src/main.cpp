@@ -151,6 +151,22 @@ const unsigned long intervalPressure = 100;
 unsigned long previousMillisPressure; // initialisation at the end of init()
 #endif
 
+// timing flags
+bool displayBufferReady = false;
+bool displayUpdateRunning = false;
+bool websiteUpdateRunning = false;
+bool mqttUpdateRunning = false;
+bool hassioUpdateRunning = false;
+
+// Debugging - activity flags
+enum ActivityType : uint16_t {
+    ACT_DISPLAY_READY = 1 << 0,   // 0x01
+    ACT_DISPLAY_RUNNING = 1 << 1, // 0x02
+    ACT_WEBSITE_RUNNING = 1 << 2, // 0x04
+    ACT_MQTT_RUNNING = 1 << 3,    // 0x08
+    ACT_HASSIO_RUNNING = 1 << 4   // 0x10
+};
+
 Switch* waterTankSensor;
 
 GPIOPin* statusLedPin;
@@ -201,6 +217,9 @@ int writeSysParamsToMQTT(bool continueOnError);
 void updateStandbyTimer(void);
 void resetStandbyTimer(void);
 void wiFiReset(void);
+void debugTimingLoop(void);
+void printActivityFlags(const uint16_t* activity, int size);
+void printTimingAndActivityBatch(const unsigned long* timing, const uint16_t* activity, int size);
 
 // system parameters
 uint8_t pidON = 0; // 1 = control loop in closed loop
@@ -1745,6 +1764,89 @@ void loop() {
 
     // Update LED output based on machine state
     loopLED();
+    debugTimingLoop();
+}
+
+// print what has caused the long loop time
+void printActivityFlags(const uint16_t* activity, int size) {
+    char activityBuffer[512];
+    int len = 0;
+
+    len += snprintf(activityBuffer + len, sizeof(activityBuffer) - len, "Activity (short): [");
+    for (int i = 0; i < size; ++i) {
+        // Convert flags to short notation
+        if (activity[i] == 0) {
+            len += snprintf(activityBuffer + len, sizeof(activityBuffer) - len, "_");
+        }
+        else {
+            if (activity[i] & ACT_DISPLAY_READY) len += snprintf(activityBuffer + len, sizeof(activityBuffer) - len, "r");
+            if (activity[i] & ACT_DISPLAY_RUNNING) len += snprintf(activityBuffer + len, sizeof(activityBuffer) - len, "D");
+            if (activity[i] & ACT_WEBSITE_RUNNING) len += snprintf(activityBuffer + len, sizeof(activityBuffer) - len, "W");
+            if (activity[i] & ACT_MQTT_RUNNING) len += snprintf(activityBuffer + len, sizeof(activityBuffer) - len, "M");
+            if (activity[i] & ACT_HASSIO_RUNNING) len += snprintf(activityBuffer + len, sizeof(activityBuffer) - len, "H");
+        }
+        if (i < size - 1) len += snprintf(activityBuffer + len, sizeof(activityBuffer) - len, ",");
+    }
+    len += snprintf(activityBuffer + len, sizeof(activityBuffer) - len, "]");
+
+    LOGF(DEBUG, "%s", activityBuffer);
+}
+
+// Print both timing and compact activity in one batch
+void printTimingAndActivityBatch(const unsigned long* timing, const uint16_t* activity, int size) {
+    char timingBuffer[512];
+    int tLen = 0;
+
+    tLen += snprintf(timingBuffer + tLen, sizeof(timingBuffer) - tLen, "Loop timing (ms): [");
+    for (int i = 0; i < size; ++i) {
+        tLen += snprintf(timingBuffer + tLen, sizeof(timingBuffer) - tLen, "%lu", timing[i]);
+        if (i < size - 1) tLen += snprintf(timingBuffer + tLen, sizeof(timingBuffer) - tLen, ",");
+    }
+    tLen += snprintf(timingBuffer + tLen, sizeof(timingBuffer) - tLen, "]");
+
+    // Only two log lines total
+    LOGF(DEBUG, "%s", timingBuffer);
+    printActivityFlags(activity, size);
+}
+
+// Store all long duration activities and their loop times, send when array is full
+void debugTimingLoop() {
+    static const int LOOP_HISTORY_SIZE = 20;
+    static unsigned long loopTiming[LOOP_HISTORY_SIZE];
+    static uint16_t activityType[LOOP_HISTORY_SIZE];
+    static unsigned long previousMillisDebug = millis();
+    static unsigned long lastSendMillisDebug = millis();
+    static unsigned int loopIndex = 0;
+    static unsigned int loopCount = 0;
+    static unsigned long maxLoop = 0;
+
+    IFLOG(DEBUG) {
+        loopCount += 1;
+        unsigned long loopDuration = millis() - previousMillisDebug;
+        previousMillisDebug = millis();
+        if ((loopDuration > 35) || (displayUpdateRunning || websiteUpdateRunning || mqttUpdateRunning || hassioUpdateRunning)) {
+            if (loopDuration >= maxLoop) {
+                maxLoop = loopDuration;
+            }
+            loopTiming[loopIndex] = loopDuration;
+            activityType[loopIndex] = 0;
+            if (displayBufferReady) activityType[loopIndex] |= ACT_DISPLAY_READY;
+            if (displayUpdateRunning) activityType[loopIndex] |= ACT_DISPLAY_RUNNING;
+            if (websiteUpdateRunning) activityType[loopIndex] |= ACT_WEBSITE_RUNNING;
+            if (mqttUpdateRunning) activityType[loopIndex] |= ACT_MQTT_RUNNING;
+            if (hassioUpdateRunning) activityType[loopIndex] |= ACT_HASSIO_RUNNING;
+
+            loopIndex = (loopIndex + 1) % LOOP_HISTORY_SIZE;
+            if (loopIndex == 0) {
+                printTimingAndActivityBatch(loopTiming, activityType, LOOP_HISTORY_SIZE);
+                unsigned long reportTime = millis() - lastSendMillisDebug;
+                float avgLoopMs = loopCount > 0 ? ((float)reportTime / loopCount) : 0;
+                LOGF(DEBUG, "Max time %lu (ms) -- %i entries report time %lu (ms) -- average %0.2f (ms)", maxLoop, LOOP_HISTORY_SIZE, reportTime, avgLoopMs);
+                lastSendMillisDebug = millis();
+                loopCount = 0;
+            }
+        }
+    }
 }
 
 void looppid() {
@@ -1752,14 +1854,25 @@ void looppid() {
     if (WiFi.status() == WL_CONNECTED && offlineMode == 0) {
         if (FEATURE_MQTT == 1) {
             checkMQTT();
-            writeSysParamsToMQTT(true); // Continue on error
+            mqttUpdateRunning = false;
+            // if screen is ready to refresh wait for next loop
+            if (!displayBufferReady) {
+                writeSysParamsToMQTT(true); // Continue on error
+            }
 
+            hassioUpdateRunning = false;
             if (mqtt.connected() == 1) {
                 mqtt.loop();
 #if MQTT_HASSIO_SUPPORT == 1
-                hassioDiscoveryTimer();
-#endif
+                // resend discovery messages if not during a main function and MQTT has been disconnected but has now reconnected
+                // this could mean mqtt_was_connected stays false for up to 5 mins but mqtt retains old HASSIO messages
+                if (!((machineState >= kBrew) && (machineState <= kBackflush)) && (!mqtt_was_connected) && (!displayBufferReady)) {
+                    hassioDiscoveryTimer();
+                    mqtt_was_connected = true;
+                }
+#else
                 mqtt_was_connected = true;
+#endif
             }
             // Supress debug messages until we have a connection etablished
             else if (mqtt_was_connected) {
@@ -1797,7 +1910,10 @@ void looppid() {
     testEmergencyStop(); // test if temp is too high
     bPID.Compute();      // the variable pidOutput now has new values from PID (will be written to heater pin in ISR.cpp)
 
-    if ((millis() - lastTempEvent) > tempEventInterval) {
+    websiteUpdateRunning = false;
+    // refresh website if loop does not have
+    if (((millis() - lastTempEvent) > tempEventInterval) && (!mqttUpdateRunning) && (!hassioUpdateRunning)) {
+        websiteUpdateRunning = true;
         // send temperatures to website endpoint
         sendTempEvent(temperature, brewSetpoint, pidOutput / 10); // pidOutput is promill, so /10 to get percent value
         lastTempEvent = millis();
@@ -1861,11 +1977,23 @@ void looppid() {
 
     handleMachineState();
 
-    // Check if PID should run or not. If not, set to manual and force output to zero
+    displayUpdateRunning = false;
 #if OLED_DISPLAY != 0
-    printDisplayTimer();
+    // update display on loops that have not had other major tasks running, if blocked it will send in the next loop (average 0.5ms)
+    if ((!websiteUpdateRunning) && (!mqttUpdateRunning) && (!hassioUpdateRunning) && (standbyModeRemainingTimeDisplayOffMillis > 0)) {
+        if (displayBufferReady) {
+            u8g2.sendBuffer();
+            displayBufferReady = false;
+            displayUpdateRunning = true;
+            // displayUpdateRunning currently doesn't block anything as it is near the end of the loop
+            // sendBuffer() takes around 35ms so it flags that it has happened
+        }
+        else {
+            printDisplayTimer();
+        }
+    }
 #endif
-
+    // Check if PID should run or not. If not, set to manual and force output to zero
     if (machineState == kPidDisabled || machineState == kWaterTankEmpty || machineState == kSensorError || machineState == kEmergencyStop || machineState == kEepromError || machineState == kStandby || brewPIDDisabled) {
         if (bPID.GetMode() == 1) {
             // Force PID shutdown
