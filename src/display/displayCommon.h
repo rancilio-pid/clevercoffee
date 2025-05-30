@@ -265,7 +265,7 @@ bool displayShottimer() {
 #endif
 
         displayWaterIcon(119, 1);
-        u8g2.sendBuffer();
+        displayBufferReady = true;
         return true;
     }
 
@@ -291,7 +291,7 @@ bool displayShottimer() {
 #endif
 
         displayWaterIcon(119, 1);
-        u8g2.sendBuffer();
+        displayBufferReady = true;
         return true;
     }
     return false;
