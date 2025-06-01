@@ -798,14 +798,25 @@ void ParameterRegistry::initialize(Config& config) {
     );
 
     addEnumConfigParam(
-        "hardware.relays.pump_valve.trigger_type",
-        "Pump/Valve Relay Trigger Type",
+        "hardware.relays.valve.trigger_type",
+        "Valve Relay Trigger Type",
         sHardwareRelaySection,
         2102,
         nullptr,
         (const char* const[]){"Low Trigger", "High Trigger"},
         2,
-        "Relay trigger type for pump and valve control"
+        "Relay trigger type for valve control"
+    );
+    
+    addEnumConfigParam(
+        "hardware.relays.pump.trigger_type",
+        "Pump Relay Trigger Type",
+        sHardwareRelaySection,
+        2103,
+        nullptr,
+        (const char* const[]){"Low Trigger", "High Trigger"},
+        2,
+        "Relay trigger type for pump control"
     );
 
     // Switches
@@ -900,6 +911,37 @@ void ParameterRegistry::initialize(Config& config) {
         (const char* const[]){"Normally Open", "Normally Closed"},
         2,
         "Electrical configuration of power switch"
+    );
+
+    addBoolConfigParam(
+        "hardware.switches.water.enabled",
+        "Enable Water Switch",
+        sHardwareSwitchSection,
+        2231,
+        nullptr,
+        "Enable physical water switch"
+    );
+
+    addEnumConfigParam(
+        "hardware.switches.water.type",
+        "Water Switch Type",
+        sHardwareSwitchSection,
+        2232,
+        nullptr,
+        (const char* const[]){"Momentary", "Toggle"},
+        2,
+        "Type of water switch connected"
+    );
+
+    addEnumConfigParam(
+        "hardware.switches.water.mode",
+        "Water Switch Mode",
+        sHardwareSwitchSection,
+        2233,
+        nullptr,
+        (const char* const[]){"Normally Open", "Normally Closed"},
+        2,
+        "Electrical configuration of water switch"
     );
 
     // LEDs

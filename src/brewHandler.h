@@ -194,13 +194,27 @@ inline void checkBrewSwitch() {
         }
     }
 }
+/**
+ * @brief If set to publish debug messages then list what the current action is and what triggered it
+ * @return void
+ */
+void debugPumpState(String label, String state) {
+    waterStateDebug = state;
+    IFLOG(DEBUG) {
+        if (waterStateDebug != lastWaterStateDebug) {
+            LOGF(DEBUG, "Water state: %s - BrewHandler: %s", waterStateDebug, label);
+            lastWaterStateDebug = waterStateDebug;
+        }
+    }
+}
 
 /**
  * @brief Brew process handeling including timer and state machine for brew-by-time and brew-by-weight
  * @return true if brew is running, false otherwise
  */
 inline bool brew() {
-    if (!config.get<bool>("hardware.switches.brew.enabled") || brewSwitch == nullptr) {
+    if (!config.get<bool>("hardware.switches.brew.enabled") || brewSwitch == nullptr || machineState >= kEmergencyStop) {
+        valveRelay->off();
         return false; // brew switch is not enabled, so no brew process running
     }
 
@@ -258,6 +272,7 @@ inline bool brew() {
             case kPreinfusion:
                 valveRelay->on();
                 pumpRelay->on();
+                debugPumpState("Preinfusion", "on");
 
                 if (currBrewTime > preinfusion * 1000) {
                     LOG(INFO, "Preinfusion pause running");
@@ -269,6 +284,7 @@ inline bool brew() {
             case kPreinfusionPause:
                 valveRelay->on();
                 pumpRelay->off();
+                debugPumpState("PreinfusionPause", "off");
 
                 if (currBrewTime > (preinfusion + preinfusionPause) * 1000) {
                     LOG(INFO, "Brew running");
@@ -280,6 +296,7 @@ inline bool brew() {
             case kBrewRunning:
                 valveRelay->on();
                 pumpRelay->on();
+                debugPumpState("BrewRunning", "on");
 
                 // stop brew if target-time is reached --> No stop if stop by time is deactivated via Parameter (0)
                 if (currBrewTime > totalTargetBrewTime && targetBrewTime > 0) {
@@ -298,6 +315,7 @@ inline bool brew() {
             case kBrewFinished:
                 valveRelay->off();
                 pumpRelay->off();
+                debugPumpState("BrewFinished", "off");
                 brewSwitchWasOff = false;
                 LOG(INFO, "Brew finished");
                 LOGF(INFO, "Shot time: %4.1f s", currBrewTime / 1000);
@@ -373,6 +391,7 @@ inline bool manualFlush() {
                 startingTime = millis();
                 valveRelay->on();
                 pumpRelay->on();
+                debugPumpState("ManualFlush", "on");
                 LOG(INFO, "Manual flush started");
                 currManualFlushState = kManualFlushRunning;
             }
@@ -382,6 +401,7 @@ inline bool manualFlush() {
             if (currBrewSwitchState != kBrewSwitchLongPressed) {
                 valveRelay->off();
                 pumpRelay->off();
+                debugPumpState("ManualFlush", "off");
                 LOG(INFO, "Manual flush stopped");
                 LOGF(INFO, "Manual flush time: %4.1f s", currBrewTime / 1000);
                 currManualFlushState = kManualFlushIdle;
@@ -435,6 +455,7 @@ inline void backflush() {
                 startingTime = millis();
                 valveRelay->on();
                 pumpRelay->on();
+                debugPumpState("Backflush", "on");
                 LOGF(INFO, "Start backflush cycle %d", currBackflushCycles);
                 LOG(INFO, "Backflush: filling portafilter");
                 currBackflushState = kBackflushFilling;
@@ -447,6 +468,7 @@ inline void backflush() {
                 startingTime = millis();
                 valveRelay->off();
                 pumpRelay->off();
+                debugPumpState("Backflush", "off");
                 LOG(INFO, "Backflush: flushing into drip tray");
                 currBackflushState = kBackflushFlushing;
             }
@@ -458,6 +480,7 @@ inline void backflush() {
                     startingTime = millis();
                     valveRelay->on();
                     pumpRelay->on();
+                    debugPumpState("Backflush", "on");
                     currBackflushCycles++;
                     LOGF(INFO, "Backflush: next backflush cycle %d", currBackflushCycles);
                     LOG(INFO, "Backflush: filling portafilter");
@@ -472,6 +495,7 @@ inline void backflush() {
         case kBackflushFinished:
             valveRelay->off();
             pumpRelay->off();
+            debugPumpState("Backflush", "off");
             LOGF(INFO, "Backflush finished after %d cycles", currBackflushCycles);
             currBackflushCycles = 1;
             brewSwitchWasOff = false;

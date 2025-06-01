@@ -185,13 +185,21 @@ For each LED type (status, brew, steam):
     - `1`: High trigger (active high)
 - **Description**: Heater relay trigger type
 
-### `hardware.relays.pump_valve.trigger_type`
+### `hardware.relays.valve.trigger_type`
 - **Type**: Integer (enum)
 - **Default**: `1`
 - **Valid Values**:
     - `0`: Low trigger (active low)
     - `1`: High trigger (active high)
-- **Description**: Pump/valve relay trigger type
+- **Description**: Valve relay trigger type
+
+### `hardware.relays.pump.trigger_type`
+- **Type**: Integer (enum)
+- **Default**: `1`
+- **Valid Values**:
+    - `0`: Low trigger (active low)
+    - `1`: High trigger (active high)
+- **Description**: Pump relay trigger type
 
 ## Sensors
 
