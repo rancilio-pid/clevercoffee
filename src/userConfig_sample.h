@@ -64,16 +64,6 @@
 #define OTA     true      // true = OTA activated, false = OTA deactivated
 #define OTAPASS "otapass" // Password for OTA updates
 
-// MQTT
-#define FEATURE_MQTT                 0                 // 0 = deactivated, 1 = activated
-#define MQTT_USERNAME                "mymqttuser"
-#define MQTT_PASSWORD                "mymqttpass"
-#define MQTT_TOPIC_PREFIX            "custom/Küche."   // topic will be "<MQTT_TOPIC_PREFIX><HOSTNAME>/<READING>"
-#define MQTT_SERVER_IP               "XXX.XXX.XXX.XXX" // IP-Address of the MQTT Server
-#define MQTT_SERVER_PORT             1883              // Port of the specified MQTT Server
-#define MQTT_HASSIO_SUPPORT          0                 // Enables the Homeassistant Auto Discovery Feature
-#define MQTT_HASSIO_DISCOVERY_PREFIX "homeassistant"   // Homeassistant Auto Discovery Prefix
-
 // PID Parameters (not yet in Web interface)
 #define EMA_FACTOR 0.6 // Smoothing of input that is used for Tv (derivative component of PID). Smaller means less smoothing but also less delay, 0 means no filtering
 

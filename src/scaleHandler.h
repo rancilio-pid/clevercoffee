@@ -8,17 +8,24 @@
 
 #if FEATURE_SCALE == 1
 
-void scaleCalibrate(HX711_ADC loadCell, int pin, sto_item_id_t name, float* calibration) {
+void scaleCalibrate(HX711_ADC loadCell, int pin, bool isSecondCell, float* calibration) {
     loadCell.setCalFactor(1.0);
+
     u8g2.clearBuffer();
     u8g2.drawStr(0, 22, "Calibration coming up");
     u8g2.drawStr(0, 32, "Empty scale ");
     u8g2.print(pin, 0);
     u8g2.sendBuffer();
+
     LOGF(INFO, "Taking scale %d to zero point", pin);
+
     loadCell.update();
     loadCell.tare();
+
     LOGF(INFO, "Put load on scale %d within the next 10 seconds", pin);
+
+    float scaleKnownWeight = ParameterRegistry::getInstance().getParameterById("SCALE_KNOWN_WEIGHT")->getFloatValue();
+
     u8g2.clearBuffer();
     u8g2.drawStr(2, 2, "Calibration in progress.");
     u8g2.drawStr(2, 12, "Place known weight");
@@ -27,20 +34,32 @@ void scaleCalibrate(HX711_ADC loadCell, int pin, sto_item_id_t name, float* cali
     u8g2.drawStr(2, 42, number2string(scaleKnownWeight));
     u8g2.sendBuffer();
     delay(10000);
+
     LOG(INFO, "Taking scale load point");
+
     // increase scale samples temporarily to ensure a stable reading
     loadCell.setSamplesInUse(128);
     loadCell.refreshDataSet();
     *calibration = loadCell.getNewCalibration(scaleKnownWeight);
     loadCell.setSamplesInUse(SCALE_SAMPLES);
+
     LOGF(INFO, "New calibration: %f", *calibration);
+
     u8g2.sendBuffer();
-    storageSet(name, *calibration, true);
+
+    if (isSecondCell) {
+        ParameterRegistry::getInstance().setParameterValue("SCALE2_CALIBRATION", *calibration);
+    }
+    else {
+        ParameterRegistry::getInstance().setParameterValue("SCALE_CALIBRATION", *calibration);
+    }
+
     u8g2.clearBuffer();
     u8g2.drawStr(2, 2, "Calibration done!");
     u8g2.drawStr(2, 12, "New calibration:");
     u8g2.drawStr(2, 22, number2string(*calibration));
     u8g2.sendBuffer();
+
     delay(2000);
 }
 
@@ -84,9 +103,9 @@ void checkWeight() {
 #endif
 
     if (scaleCalibrationOn) {
-        scaleCalibrate(LoadCell, PIN_HXDAT, STO_ITEM_SCALE_CALIBRATION_FACTOR, &scaleCalibration);
+        scaleCalibrate(LoadCell, PIN_HXDAT, false, &scaleCalibration);
 #if SCALE_TYPE == 0
-        scaleCalibrate(LoadCell2, PIN_HXDAT2, STO_ITEM_SCALE2_CALIBRATION_FACTOR, &scale2Calibration);
+        scaleCalibrate(LoadCell2, PIN_HXDAT2, true, &scale2Calibration);
 #endif
         scaleCalibrationOn = 0;
     }
