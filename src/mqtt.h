@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "Parameter.h"
 #include "userConfig.h"
 #include <Arduino.h>
 #include <PubSubClient.h>
@@ -30,7 +31,7 @@ char topic_set[256];
 unsigned long lastMQTTConnectionAttempt = millis();
 unsigned int MQTTReCnctCount = 0;
 
-extern std::map<const char*, std::function<editable_t*()>, cmp_str> mqttVars;
+extern std::map<const char*, const char*, cmp_str> mqttVars;
 extern std::map<const char*, std::function<double()>, cmp_str> mqttSensors;
 
 struct DiscoveryObject {
@@ -42,7 +43,7 @@ struct DiscoveryObject {
  * @brief Check if MQTT is connected, if not reconnect. Abort function if offline or brew is running
  *      MQTT is also using maxWifiReconnects!
  */
-void checkMQTT() {
+inline void checkMQTT() {
     if (offlineMode == 1 || currBrewState > kBrewIdle) {
         return;
     }
@@ -120,46 +121,60 @@ int PublishLargeMessage(const String& topic, const String& largeMessage) {
  */
 void assignMQTTParam(char* param, double value) {
     try {
-        editable_t* var = mqttVars.at(param)();
+        auto it = mqttVars.find(param);
 
-        if (value >= var->minValue && value <= var->maxValue) {
-            switch (var->type) {
+        if (it == mqttVars.end()) {
+            LOGF(WARNING, "MQTT topic %s not found in mapping", param);
+            return;
+        }
+
+        const char* parameterId = it->second;
+
+        auto& registry = ParameterRegistry::getInstance();
+        std::shared_ptr<Parameter> var = registry.getParameterById(parameterId);
+
+        if (!var) {
+            LOGF(WARNING, "Parameter %s not found in ParameterRegistry", parameterId);
+            return;
+        }
+
+        if (value >= var->getMinValue() && value <= var->getMaxValue()) {
+            bool success = false;
+
+            switch (var->getType()) {
                 case kDouble:
-                    *(double*)var->ptr = value;
-                    mqtt_publish(param, number2string(value), true);
+                    success = registry.setParameterValue(parameterId, value);
                     break;
-
                 case kFloat:
-                    *(float*)var->ptr = static_cast<float>(value);
-                    mqtt_publish(param, number2string(static_cast<float>(value)), true);
+                    success = registry.setParameterValue(parameterId, static_cast<float>(value));
                     break;
-
                 case kUInt8:
-                    *(uint8_t*)var->ptr = static_cast<uint8_t>(value);
-
-                    if (strcasecmp(param, "steamON") == 0) {
+                    success = registry.setParameterValue(parameterId, static_cast<uint8_t>(value));
+                    if (success && strcasecmp(param, "steamON") == 0) {
                         steamFirstON = value;
                     }
-
-                    mqtt_publish(param, number2string(static_cast<uint8_t>(value)), true);
-                    writeSysParamsToStorage();
                     break;
-
                 case kInteger:
-                    *(int*)var->ptr = static_cast<int>(value);
-                    mqtt_publish(param, number2string(static_cast<int>(value)), true);
+                    success = registry.setParameterValue(parameterId, static_cast<int>(value));
                     break;
-
                 default:
-                    LOGF(WARNING, "%s is not a recognized type for this MQTT parameter.", var->type);
-                    break;
+                    LOGF(WARNING, "%s is not a recognized type for this MQTT parameter.", var->getType());
+                    return;
+            }
+
+            if (success) {
+                mqtt_publish(param, number2string(value), true); // Publish back with MQTT topic name
+                LOGF(DEBUG, "MQTT parameter %s (ID: %s) updated to %f", param, parameterId, value);
+            }
+            else {
+                LOGF(WARNING, "Failed to update MQTT parameter %s", param);
             }
         }
         else {
-            LOGF(WARNING, "%s is not a valid MQTT parameter.", param);
+            LOGF(WARNING, "Value %f is out of range for MQTT parameter %s (min: %f, max: %f)", value, param, var->getMinValue(), var->getMaxValue());
         }
-    } catch (const std::out_of_range& e) {
-        LOGF(WARNING, "Value out of range for MQTT parameter %s", param);
+    } catch (const std::exception& e) {
+        LOGF(WARNING, "Error processing MQTT parameter %s: %s", param, e.what());
     }
 }
 
@@ -198,6 +213,7 @@ void mqtt_callback(char* topic, byte* data, unsigned int length) {
  * @param continueOnError Flag to specify whether to continue publishing messages in case of an error (default: true)
  * @return 0 = success, MQTT error code = failure
  */
+
 int writeSysParamsToMQTT(bool continueOnError = true) {
     unsigned long currentMillisMQTT = millis();
 
@@ -207,61 +223,77 @@ int writeSysParamsToMQTT(bool continueOnError = true) {
         if (mqtt.connected()) {
             mqtt_publish("status", (char*)"online");
 
+            char data[256];
             int errorState = 0;
+            auto& registry = ParameterRegistry::getInstance();
 
-            for (const auto& pair : mqttVars) {
-                editable_t* e = pair.second();
+            // Iterate through the mqttVars mapping to publish parameters
+            for (const auto& mapping : mqttVars) {
+                const char* mqttTopic = mapping.first;    // MQTT topic name
+                const char* parameterId = mapping.second; // Parameter ID
 
-                switch (e->type) {
-                    case kFloat:
-                        if (!mqtt_publish(pair.first, number2string(*(float*)e->ptr), true)) {
-                            errorState = mqtt.state();
-                        }
-                        break;
-                    case kDouble:
-                        if (!mqtt_publish(pair.first, number2string(*(double*)e->ptr), true)) {
-                            errorState = mqtt.state();
-                        }
-                        break;
-                    case kDoubletime:
-                        if (!mqtt_publish(pair.first, number2string(*(double*)e->ptr), true)) {
-                            errorState = mqtt.state();
-                        }
-                        break;
+                std::shared_ptr<Parameter> param = registry.getParameterById(parameterId);
 
-                    case kInteger:
-                        if (!mqtt_publish(pair.first, number2string(*(int*)e->ptr), true)) {
-                            errorState = mqtt.state();
-                        }
-                        break;
+                if (param == nullptr) {
+                    if (!continueOnError) {
+                        LOGF(ERROR, "Parameter %s not found for MQTT topic %s", parameterId, mqttTopic);
+                        return 1;
+                    }
 
-                    case kUInt8:
-                        if (!mqtt_publish(pair.first, number2string(*(uint8_t*)e->ptr), true)) {
-                            errorState = mqtt.state();
-                        }
-                        break;
-
-                    case kCString:
-                        if (!mqtt_publish(pair.first, number2string(*(char*)e->ptr), true)) {
-                            errorState = mqtt.state();
-                        }
-                        break;
+                    LOGF(WARNING, "Parameter %s not found for MQTT topic %s, skipping", parameterId, mqttTopic);
+                    continue;
                 }
 
-                if (errorState != 0 && !continueOnError) {
-                    // An error occurred and continueOnError is false, return the error state
-                    return errorState;
+                // Get value based on parameter type and format as string
+                switch (param->getType()) {
+                    case kInteger:
+                        snprintf(data, sizeof(data), "%d", param->getIntValue());
+                        break;
+                    case kUInt8:
+                        snprintf(data, sizeof(data), "%u", param->getUInt8Value());
+                        break;
+                    case kDouble:
+                    case kDoubletime:
+                        snprintf(data, sizeof(data), "%.2f", param->getValue());
+                        break;
+                    case kFloat:
+                        snprintf(data, sizeof(data), "%.2f", param->getFloatValue());
+                        break;
+                    case kCString:
+                        snprintf(data, sizeof(data), "%s", param->getStringValue().c_str());
+                        break;
+                    default:
+                        if (!continueOnError) {
+                            LOGF(ERROR, "Unknown parameter type for topic %s", mqttTopic);
+                            return 1;
+                        }
+
+                        LOGF(WARNING, "Skipping unknown parameter type for topic %s", mqttTopic);
+                        continue;
+                }
+
+                if (!mqtt_publish(mqttTopic, data, true)) {
+                    errorState = mqtt.state();
+
+                    if (!continueOnError) {
+                        LOGF(ERROR, "Failed to publish parameter %s to MQTT, error: %d", mqttTopic, errorState);
+                        return errorState;
+                    }
+
+                    LOGF(WARNING, "Failed to publish parameter %s to MQTT, error: %d", mqttTopic, errorState);
+                }
+                else {
+                    LOGF(DEBUG, "Published %s = %s to MQTT", mqttTopic, data);
                 }
             }
 
             for (const auto& pair : mqttSensors) {
                 if (!mqtt_publish(pair.first, number2string(pair.second()))) {
                     errorState = mqtt.state();
-                }
 
-                if (errorState != 0 && !continueOnError) {
-                    // An error occurred and continueOnError is false, return the error state
-                    return errorState;
+                    if (!continueOnError) {
+                        return errorState;
+                    }
                 }
             }
         }

@@ -116,8 +116,11 @@ const vueApp = Vue.createApp({
 
     computed: {
         parameterSections() {
-            return groupBy(this.parameters, "section")
+            const excludedSections = [8] // Don't show sOtherSection
+            const filteredParameters = this.parameters.filter(param => !excludedSections.includes(param.section))
+            return groupBy(filteredParameters, "section")
         }
+
     },
 
     mounted() {
