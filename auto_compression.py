@@ -2,6 +2,7 @@ import os
 import gzip
 import shutil
 
+import sys
 
 
 """
@@ -57,5 +58,8 @@ def main():
                 ensure_dir_exists(os.path.dirname(dest_path))
                 copy_file(src_path, dest_path)
 
-if __name__ == "__main__":
+if "buildfs" in sys.argv:
+    main()
+
+if os.environ.get("PROJECT_TASK") == "buildfs":
     main()
