@@ -23,6 +23,9 @@ static const char* langstring_set_temp_rot_ur = "S: ";
 static const char* langstring_current_temp_rot_ur = "I: ";
 static const char* langstring_brew_rot_ur = "B: ";
 static const char* langstring_manual_flush_rot_ur = "S: ";
+static const char* langstring_weight_rot_ur = "G: ";
+static const char* langstring_pressure_rot_ur = "D: ";
+static const char* langstring_error_tsensor_rot_ur[] = {"Fehler", "Temp: ", "Temp.", "Sensor", "ueberpruefen!"};
 #endif
 
 static const char* langstring_offlinemode = "Offline";
@@ -52,6 +55,9 @@ static const char* langstring_set_temp_rot_ur = "S: ";
 static const char* langstring_current_temp_rot_ur = "T: ";
 static const char* langstring_brew_rot_ur = "B: ";
 static const char* langstring_manual_flush_rot_ur = "F: ";
+static const char* langstring_weight_rot_ur = "W: ";
+static const char* langstring_pressure_rot_ur = "P: ";
+static const char* langstring_error_tsensor_rot_ur[] = {"Error", "Temp: ", "check", "temp.", "sensor!"};
 #endif
 
 static const char* langstring_offlinemode = "Offline";
@@ -82,6 +88,9 @@ static const char* langstring_set_temp_rot_ur = "O: ";
 static const char* langstring_current_temp_rot_ur = "T: ";
 static const char* langstring_brew_rot_ur = "B: ";
 static const char* langstring_manual_flush_rot_ur = "F: ";
+static const char* langstring_weight_rot_ur = "P: ";
+static const char* langstring_pressure_rot_ur = "Pr: ";
+static const char* langstring_error_tsensor_rot_ur[] = {"Error", "Temp: ", "Comprueba", "sensor", "T!"};
 #endif
 
 static const char* langstring_offlinemode = "Offline";
