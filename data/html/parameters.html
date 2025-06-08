@@ -1,79 +1,83 @@
 
 %HEADER%
-<script type="module">
-    if (window.appCreated == true) {
-        vueApp.mount('#parameters')
-    } else {
-        window.addEventListener('appCreated', () => {
+    <script type="module">
+        if (window.appCreated == true) {
             vueApp.mount('#parameters')
-        })
-    }
-</script>
+        } else {
+            window.addEventListener('appCreated', () => {
+                vueApp.mount('#parameters')
+            })
+        }
+    </script>
 
-<div class="content-wrapper">
-    <div class="container my-5">
-        <div id="parameters">
-            <div class="card card-accent-dark mb-5 shadow-sm rounded">
-                <template v-for="(section, sectionKey, sectionIndex) in parameterSections">
-                    <div class="card-body bg-light pb-1 rounded">
-                        <h5 class="card-title"> {{ sectionName(sectionKey) }} </h5>
-                    </div>
-                    <div class="card-body">
-                        <form @submit.prevent="postParameters">
-                            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3">
-                                <template v-for="param in section">
-                                    <template v-if="param.show">
-                                        <div class="col mb-3">
-                                            <label class="form-label me-1" :for="'var'+param.name">{{param.displayName}}</label>
-                                            <template v-if="param.hasHelpText">
-                                                <a href="#" role="button" @mouseover="fetchHelpText(param.name)" data-bs-toggle="popover" data-bs-html="true" :data-bs-original-title="parametersHelpTexts[param.name]">
-                                                    <span class="fa-solid fa-question-circle"></span>
-                                                </a>
-                                            </template>
+    <div class="content-wrapper">
+        <div class="container my-5">
+            <div id="parameters">
+                <div class="card card-accent-dark mb-5 shadow-sm rounded">
+                    <template v-for="(section, sectionKey, sectionIndex) in parameterSections">
+                        <div class="card-body bg-light pb-1 rounded">
+                            <h5 class="card-title"> {{ sectionName(sectionKey) }} </h5>
+                        </div>
+                        <div class="card-body">
+                            <form @submit.prevent="postParameters">
+                                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3">
+                                    <template v-for="param in section">
+                                        <template v-if="param.show">
+                                            <div class="col mb-3">
+                                                <label class="form-label me-1" :for="'var'+param.name">{{param.displayName}}</label>
+                                                <template v-if="param.hasHelpText">
+                                                    <a href="#" role="button" @mouseover="fetchHelpText(param.name)" data-bs-toggle="popover" data-bs-html="true" :data-bs-original-title="parametersHelpTexts[param.name]">
+                                                        <span class="fa-solid fa-question-circle"></span>
+                                                    </a>
+                                                </template>
 
-                                            <div v-if="param.type == 0"> <!-- integer -->
-                                                <input class="form-control form-control-lg" type="number" step="1" :min="param.min" :max="param.max" :id="'var'+param.name" :name="'var'+param.name" v-model="param.value">
-                                                <span v-if="param.value < param.min" class="text-danger small">Value is too small!</span>
-                                                <span v-if="param.value > param.max" class="text-danger small">Value is too large!</span>
+                                                <div v-if="param.type == 0"> <!-- integer -->
+                                                    <input class="form-control form-control-lg" type="number" step="1" :min="param.min" :max="param.max" :id="'var'+param.name" :name="'var'+param.name" v-model="param.value">
+                                                    <span v-if="param.value < param.min" class="text-danger small">Value is too small!</span>
+                                                    <span v-if="param.value > param.max" class="text-danger small">Value is too large!</span>
+                                                </div>
+
+                                                <div v-if="param.type == 1"> <!-- boolean -->
+                                                    <input type="hidden" :id="'var'+param.name" :name="'var'+param.name" :value="0">
+                                                    <input type="checkbox" class="form-check-input form-control-lg" :id="'var'+param.name" :name="'var'+param.name" value="1" @change="param.value = 1-param.value" :checked="param.value != 0 ? 'checked' : null">
+                                                </div>
+
+                                                <div v-if="param.type == 2 || param.type == 5"> <!-- double -->
+                                                    <input class="form-control form-control-lg" type="number" step="0.1" :min="param.min" :max="param.max" :id="'var'+param.name" :name="'var'+param.name" v-model="param.value">
+                                                    <span v-if="param.value < param.min" class="text-danger small">Value is too small!</span>
+                                                    <span v-if="param.value > param.max" class="text-danger small">Value is too large!</span>
+                                                </div>
+
+                                                <div v-if="param.type == 4"> <!-- string -->
+                                                    <input class="form-control form-control-lg"
+                                                           :type="param.name.toLowerCase().includes('password') ? 'password' : 'text'"
+                                                           :id="'var'+param.name"
+                                                           :name="'var'+param.name"
+                                                           v-model="param.value"
+                                                           :maxlength="param.max > 0 ? param.max : 64">
+                                                    <span v-if="param.max > 0 && param.value && param.value.length > param.max" class="text-danger small">Value is too long!</span>
+                                                </div>
                                             </div>
-
-                                            <div v-if="param.type == 1"> <!-- boolean -->
-                                                <input type="hidden" :id="'var'+param.name" :name="'var'+param.name" :value="0">
-                                                <input type="checkbox" class="form-check-input form-control-lg" :id="'var'+param.name" :name="'var'+param.name" value="1" @change="param.value = 1-param.value" :checked="param.value != 0 ? 'checked' : null">
-                                            </div>
-
-                                            <div v-if="param.type == 2 || param.type == 5"> <!-- double -->
-                                                <input class="form-control form-control-lg" type="number" step="0.1" :min="param.min" :max="param.max" :id="'var'+param.name" :name="'var'+param.name" v-model="param.value">
-                                                <span v-if="param.value < param.min" class="text-danger small">Value is too small!</span>
-                                                <span v-if="param.value > param.max" class="text-danger small">Value is too large!</span>
-                                            </div>
-
-                                            <div v-if="param.type == 4"> <!-- string -->
-                                                <input class="form-control form-control-lg"
-                                                       :type="param.name.toLowerCase().includes('password') ? 'password' : 'text'"
-                                                       :id="'var'+param.name"
-                                                       :name="'var'+param.name"
-                                                       v-model="param.value"
-                                                       :maxlength="param.max > 0 ? param.max : 64">
-                                                <span v-if="param.max > 0 && param.value && param.value.length > param.max" class="text-danger small">Value is too long!</span>
-                                            </div>
-                                        </div>
+                                        </template>
                                     </template>
-                                </template>
-                            </div>
-                            <br>
-                            <div v-if="sectionIndex == Object.keys(parameterSections).length-1" class="float-end me-2">
-                                <button type="submit" class="btn btn-primary" :disabled="isPostingForm">
-                                    <span v-show="showPostSucceeded" class="fa-solid fa-check me-1"></span>
-                                    <span v-show="isPostingForm" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                    Save
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </template>
+                                </div>
+                                <br>
+                                <div v-if="sectionIndex == Object.keys(parameterSections).length-1" class="float-end me-2">
+                                    <button type="submit" class="btn btn-primary" :disabled="isPostingForm">
+                                        <span v-show="showPostSucceeded" class="fa-solid fa-check me-1"></span>
+                                        <span v-show="isPostingForm" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                        Save
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </template>
+                </div>
             </div>
         </div>
     </div>
+
 </div>
-%FOOTER%
+
+</body>
+</html>

@@ -541,13 +541,7 @@ void ParameterRegistry::initialize(Config& config) {
         "MQTT_HASSIO_PREFIX", "Hass.io Prefix", kCString, sMqttSection, 47, nullptr, nullptr, 0, MQTT_HASSIO_PREFIX_MAX_LENGTH, true, "Custom MQTT topic prefix, changes require a restart", []() -> bool { return true; },
         [&config]() { return config.getMqttHassioPrefix(); }, [&config](const String& val) { config.setMqttHassioPrefix(val); }, nullptr));
 
-    addParam(std::make_shared<Parameter>(
-        "VERSION", "Version", kCString, sOtherSection, 48, [&]() { return 0; }, [](double val) {}, 0, 1, false, "", []() { return false; },
-        []() {
-            // Get version directly from build defines or return a placeholder
-            return String("CleverCoffee v" + String(__DATE__) + " " + String(__TIME__));
-        },
-        nullptr, nullptr));
+    addParam(std::make_shared<Parameter>("VERSION", "Version", kCString, sOtherSection, 48, [&]() { return 0; }, [](double val) {}, 0, 1, false, "", []() { return false; }, []() { return sysVersion; }, nullptr, nullptr));
 
     std::sort(_parameters.begin(), _parameters.end(), [](const std::shared_ptr<Parameter>& a, const std::shared_ptr<Parameter>& b) { return a->getPosition() < b->getPosition(); });
 
