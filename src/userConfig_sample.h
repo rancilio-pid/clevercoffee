@@ -48,7 +48,7 @@
 #define PUMP_VALVE_SSR_TYPE     Relay::HIGH_TRIGGER     // HIGH_TRIGGER = relay switches when input is HIGH, vice versa for LOW_TRIGGER
 #define FEATURE_STATUS_LED      0                       // Blink status LED when temp is in range, 0 = deactivated, 1 = activated, 2 = activated inverted
 #define FEATURE_BREW_LED        0                       // Turn on brew LED when brew is started, 0 = deactivated, 1 = activated, 2 = activated inverted
-#define FEATURE_STEAM_LED       0                       // Turn on steam LED when switch is started, 0 = deactivated, 1 = activated, 2 = activated inverted
+#define FEATURE_STEAM_LED       0                       // Turn on steam LED when switch is started, 0 = deactivated, 1 = activated, 2 = activated inverted. Only use steam LED if not using USB monitoring
 #define LED_TYPE                LED::STANDARD           // STANDARD_LED for an LED connected to a GPIO pin, WS2812 for adressable LEDs
 #define FEATURE_WATERTANKSENSOR 0                       // 0 = deactivated, 1 = activated
 #define WATERTANKSENSOR_TYPE    Switch::NORMALLY_CLOSED // Switch::NORMALLY_CLOSED for sensor XKC-Y25-NPN or Switch::NORMALLY_OPEN for XKC-Y25-PNP

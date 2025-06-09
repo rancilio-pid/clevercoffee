@@ -1437,15 +1437,18 @@ void setup() {
 
     if (LED_TYPE == LED::STANDARD) {
         statusLedPin = new GPIOPin(PIN_STATUSLED, GPIOPin::OUT);
-        brewLedPin = new GPIOPin(PIN_BREWLED, GPIOPin::OUT);
-        steamLedPin = new GPIOPin(PIN_STEAMLED, GPIOPin::OUT);
-
         statusLed = new StandardLED(*statusLedPin, FEATURE_STATUS_LED);
-        brewLed = new StandardLED(*brewLedPin, FEATURE_BREW_LED);
-        steamLed = new StandardLED(*steamLedPin, FEATURE_STEAM_LED);
 
+        brewLedPin = new GPIOPin(PIN_BREWLED, GPIOPin::OUT);
+        brewLed = new StandardLED(*brewLedPin, FEATURE_BREW_LED);
         brewLed->turnOff();
+
+// directive required due to conflicts with TX0, Steam LED must be disabled when using USB for monitoring
+#if FEATURE_STEAM_LED
+        steamLedPin = new GPIOPin(PIN_STEAMLED, GPIOPin::OUT);
+        steamLed = new StandardLED(*steamLedPin, FEATURE_STEAM_LED);
         steamLed->turnOff();
+#endif
     }
     else {
         // TODO Addressable LEDs
@@ -1755,8 +1758,13 @@ void loopLED() {
     else {
         statusLed->turnOff();
     }
+
     brewLed->setGPIOState(machineState == kBrew);
+
+// directive required due to conflicts with TX0, Steam LED must be disabled when using USB for monitoring
+#if FEATURE_STEAM_LED
     steamLed->setGPIOState(machineState == kSteam);
+#endif
 }
 
 void checkWaterTank() {
