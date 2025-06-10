@@ -1,3 +1,4 @@
+
 const appCreatedEvent = new Event('appCreated')
 
 const vueApp = Vue.createApp({
@@ -6,7 +7,13 @@ const vueApp = Vue.createApp({
             parameters: [],
             parametersHelpTexts: [],
             isPostingForm: false,
-            showPostSucceeded: false
+            showPostSucceeded: false,
+
+            // Config upload properties
+            selectedFile: null,
+            isUploading: false,
+            uploadMessage: '',
+            uploadSuccess: false
         }
     },
 
@@ -112,6 +119,73 @@ const vueApp = Vue.createApp({
             } catch (err) {
                 alert("Reset failed: " + err.message);
             }
+        },
+
+        // Config upload methods
+        handleFileSelect(event) {
+            const file = event.target.files[0];
+            this.selectedFile = file;
+            this.uploadMessage = '';
+
+            if (file) {
+                // Validate file
+                if (!file.name.toLowerCase().endsWith('.json')) {
+                    this.uploadMessage = 'Please select a valid JSON configuration file.';
+                    this.uploadSuccess = false;
+                    this.selectedFile = null;
+                    return;
+                }
+
+                // Check file size (limit to 50KB)
+                const maxSize = 50 * 1024;
+                if (file.size > maxSize) {
+                    this.uploadMessage = 'Configuration file is too large. Maximum size is 50KB.';
+                    this.uploadSuccess = false;
+                    this.selectedFile = null;
+                    return;
+                }
+
+                this.uploadMessage = `Selected: ${file.name} (${this.formatFileSize(file.size)})`;
+                this.uploadSuccess = true;
+            }
+        },
+
+        async uploadConfig() {
+            if (!this.selectedFile) {
+                this.uploadMessage = 'Please select a configuration file first.';
+                this.uploadSuccess = false;
+                return;
+            }
+
+            this.isUploading = true;
+            this.uploadMessage = 'Uploading configuration...';
+
+            try {
+                const formData = new FormData();
+                formData.append('config', this.selectedFile);
+
+                await fetch('/upload/config', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                // This will never execute due to ESP restart
+            } catch (error) {
+                this.uploadMessage = 'Upload failed due to network error. Please try again.';
+                this.uploadSuccess = false;
+                console.error('Upload error:', error);
+                this.isUploading = false;
+            }
+        },
+
+        formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
     },
 
@@ -134,8 +208,8 @@ window.dispatchEvent(appCreatedEvent)
 window.appCreated = true
 
 /**
-* Takes an array of objects and returns an object of arrays where the value of key is the same
-*/
+ * Takes an array of objects and returns an object of arrays where the value of key is the same
+ */
 function groupBy(array, key) {
     const result = {}
 

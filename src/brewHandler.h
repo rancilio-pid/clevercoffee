@@ -51,7 +51,7 @@ uint8_t currReadingBrewSwitch = LOW;
 bool brewSwitchWasOff = false;
 
 // Brew values
-uint8_t featureBrewControl = FEATURE_BREW_CONTROL; // enables control of pumpe and valve
+uint8_t featureBrewControl = 0;                    // enables control of pumpe and valve
 double targetBrewTime = TARGET_BREW_TIME;          // brew time in s
 double preinfusion = PRE_INFUSION_TIME;            // preinfusion time in s
 double preinfusionPause = PRE_INFUSION_PAUSE_TIME; // preinfusion pause time in s

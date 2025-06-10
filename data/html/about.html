@@ -72,6 +72,35 @@
                     </div>
                 </div>
             </div>
+            <div class="row mt-3">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title text-warning">Configuration Upload</h5>
+                            <p class="card-text text-muted">Upload a previously downloaded configuration file to restore settings.</p>
+                            <div class="mb-3">
+                                <input type="file"
+                                       class="form-control"
+                                       id="configFileInput"
+                                       accept=".json"
+                                       @change="handleFileSelect">
+                            </div>
+                            <button @click="uploadConfig"
+                                    class="btn btn-warning btn-lg"
+                                    :disabled="!selectedFile || isUploading">
+                                <span class="fa-solid fa-upload me-2"></span>
+                                <span v-if="isUploading">Uploading...</span>
+                                <span v-else>Upload Config</span>
+                            </button>
+                            <div v-if="uploadMessage"
+                                 class="mt-2 alert"
+                                 :class="uploadSuccess ? 'alert-success' : 'alert-danger'">
+                                {{ uploadMessage }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

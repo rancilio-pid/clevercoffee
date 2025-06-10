@@ -444,6 +444,40 @@ inline void serverSetup() {
         configFile.close();
     });
 
+    server.on(
+        "/upload/config", HTTP_POST, [](AsyncWebServerRequest* request) { request->send(200, "text/plain", "Configuration upload completed"); },
+        [](AsyncWebServerRequest* request, const String& filename, const size_t index, uint8_t* data, const size_t len, const bool final) {
+            static String uploadBuffer;
+            static size_t totalSize = 0;
+
+            if (index == 0) {
+                uploadBuffer = "";
+                uploadBuffer.reserve(8192);
+                totalSize = 0;
+                LOGF(INFO, "Config upload started: %s", filename.c_str());
+            }
+
+            for (size_t i = 0; i < len; i++) {
+                uploadBuffer += static_cast<char>(data[i]);
+            }
+
+            totalSize += len;
+
+            if (final) {
+                LOGF(INFO, "Config upload finished: %s, total size: %u bytes", filename.c_str(), totalSize);
+
+                if (config.validateAndApplyFromJson(uploadBuffer)) {
+                    LOG(INFO, "Configuration validated and applied successfully, restarting...");
+                }
+                else {
+                    LOG(ERROR, "Configuration validation failed - invalid data or out of range values, restarting...");
+                }
+
+                delay(1000);
+                ESP.restart();
+            }
+        });
+
     server.onNotFound([](AsyncWebServerRequest* request) { request->send(404, "text/plain", "Not found"); });
 
     // set up event handler for temperature messages

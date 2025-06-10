@@ -105,11 +105,11 @@ const boolean ota = OTA;
 
 // Display
 uint8_t oled_i2c = OLED_I2C;
-uint8_t featureFullscreenBrewTimer = FEATURE_FULLSCREEN_BREW_TIMER;
-uint8_t featureFullscreenManualFlushTimer = FEATURE_FULLSCREEN_MANUAL_FLUSH_TIMER;
+uint8_t featureFullscreenBrewTimer = 0;
+uint8_t featureFullscreenManualFlushTimer = 0;
 double postBrewTimerDuration = POST_BREW_TIMER_DURATION;
-uint8_t featureHeatingLogo = FEATURE_HEATING_LOGO;
-uint8_t featurePidOffLogo = FEATURE_PID_OFF_LOGO;
+uint8_t featureHeatingLogo = 0;
+uint8_t featurePidOffLogo = 0;
 
 // WiFi
 uint8_t wifiCredentialsSaved = 0;
