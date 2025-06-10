@@ -165,16 +165,34 @@ const vueApp = Vue.createApp({
                 const formData = new FormData();
                 formData.append('config', this.selectedFile);
 
-                await fetch('/upload/config', {
+                const response = await fetch('/upload/config', {
                     method: 'POST',
                     body: formData
                 });
 
-                // This will never execute due to ESP restart
+                if (response.ok) {
+                    this.uploadMessage = 'Configuration uploaded successfully! Restarting device...';
+                    this.uploadSuccess = true;
+
+                    // Wait a moment, then trigger restart
+                    setTimeout(async () => {
+                        try {
+                            await fetch('/restart', { method: 'POST' });
+                        } catch (e) {
+                            // Expected - machine is restarting
+                        }
+
+                        this.uploadMessage = 'Machine is restarting. Please wait...';
+                    }, 1500);
+                } else {
+                    this.uploadMessage = 'Upload failed. Please try again.';
+                    this.uploadSuccess = false;
+                }
             } catch (error) {
                 this.uploadMessage = 'Upload failed due to network error. Please try again.';
                 this.uploadSuccess = false;
                 console.error('Upload error:', error);
+            } finally {
                 this.isUploading = false;
             }
         },
@@ -187,7 +205,24 @@ const vueApp = Vue.createApp({
             const i = Math.floor(Math.log(bytes) / Math.log(k));
 
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        },
+
+        confirmRestart() {
+            if (confirm('Are you sure you want to restart your machine?')) {
+                this.restartMachine();
+            }
+        },
+
+        async restartMachine() {
+            try {
+                await fetch('/restart', { method: 'POST' });
+                alert('Machine is restarting...');
+            } catch (e) {
+                // Expected - machine is restarting
+            }
         }
+
+
     },
 
     computed: {

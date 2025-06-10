@@ -45,7 +45,35 @@
                 </div>
             </div>
 
-            <!-- Actions Section -->
+            <!-- System Control Section -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title text-warning">Restart Machine</h5>
+                            <p class="card-text text-muted">Restart the machine to apply changes or resolve issues.</p>
+                            <button @click="confirmRestart" class="btn btn-warning btn-lg">
+                                <span class="fa-solid fa-power-off me-2"></span>
+                                Restart Machine
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title text-danger">WiFi Reset</h5>
+                            <p class="card-text text-muted">Reset WiFi settings to factory defaults.</p>
+                            <button @click="confirmReset" class="btn btn-danger btn-lg">
+                                <span class="fa-solid fa-wifi me-2"></span>
+                                Reset WiFi Settings
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuration Section -->
             <div class="row">
                 <div class="col-md-6">
                     <div class="card h-100">
@@ -61,20 +89,6 @@
                 </div>
                 <div class="col-md-6">
                     <div class="card h-100">
-                        <div class="card-body">
-                            <h5 class="card-title text-danger">System Reset</h5>
-                            <p class="card-text text-muted">Reset WiFi settings to factory defaults.</p>
-                            <button @click="confirmReset" class="btn btn-danger btn-lg">
-                                <span class="fa-solid fa-wifi me-2"></span>
-                                Reset WiFi Settings
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row mt-3">
-                <div class="col-md-12">
-                    <div class="card">
                         <div class="card-body">
                             <h5 class="card-title text-warning">Configuration Upload</h5>
                             <p class="card-text text-muted">Upload a previously downloaded configuration file to restore settings.</p>

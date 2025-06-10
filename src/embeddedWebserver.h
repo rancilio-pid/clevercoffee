@@ -472,11 +472,14 @@ inline void serverSetup() {
                 else {
                     LOG(ERROR, "Configuration validation failed - invalid data or out of range values, restarting...");
                 }
-
-                delay(1000);
-                ESP.restart();
             }
         });
+
+    server.on("/restart", HTTP_POST, [](AsyncWebServerRequest* request) {
+        request->send(200, "text/plain", "Restarting...");
+        delay(100);
+        ESP.restart();
+    });
 
     server.onNotFound([](AsyncWebServerRequest* request) { request->send(404, "text/plain", "Not found"); });
 
