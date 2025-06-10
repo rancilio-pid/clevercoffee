@@ -41,11 +41,16 @@
 #define FEATURE_BREWSWITCH      0                       // 0 = deactivated, 1 = activated
 #define BREWSWITCH_TYPE         Switch::TOGGLE          // Switch::TOGGLE or Switch::MOMENTARY (trigger)
 #define BREWSWITCH_MODE         Switch::NORMALLY_OPEN   // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
+#define FEATURE_WATERSWITCH     0                       // 0 = deactivated, 1 = activated
+#define WATERSWITCH_TYPE        Switch::TOGGLE          // Switch::TOGGLE or Switch::MOMENTARY (trigger)
+#define WATERSWITCH_MODE        Switch::NORMALLY_OPEN   // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
 #define FEATURE_STEAMSWITCH     0                       // 0 = deactivated, 1 = activated
 #define STEAMSWITCH_TYPE        Switch::TOGGLE          // Switch::TOGGLE or Switch::MOMENTARY (trigger)
 #define STEAMSWITCH_MODE        Switch::NORMALLY_OPEN   // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
+#define OPTOCOUPLER_TYPE        HIGH                    // BREWDETECTION 3 configuration; HIGH or LOW trigger optocoupler
 #define HEATER_SSR_TYPE         Relay::HIGH_TRIGGER     // HIGH_TRIGGER = relay switches when input is HIGH, vice versa for LOW_TRIGGER
 #define PUMP_VALVE_SSR_TYPE     Relay::HIGH_TRIGGER     // HIGH_TRIGGER = relay switches when input is HIGH, vice versa for LOW_TRIGGER
+#define PUMP_WATER_SSR_TYPE     Relay::HIGH_TRIGGER     // HIGH_TRIGGER = relay switches when input is HIGH, vice versa for LOW_TRIGGER
 #define FEATURE_STATUS_LED      0                       // Blink status LED when temp is in range, 0 = deactivated, 1 = activated, 2 = activated inverted
 #define FEATURE_BREW_LED        0                       // Turn on brew LED when brew is started, 0 = deactivated, 1 = activated, 2 = activated inverted
 #define FEATURE_STEAM_LED       0                       // Turn on steam LED when switch is started, 0 = deactivated, 1 = activated, 2 = activated inverted. Only use steam LED if not using USB monitoring
