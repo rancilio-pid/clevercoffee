@@ -88,7 +88,8 @@ const vueApp = Vue.createApp({
                 5: 'Display Settings',
                 6: 'Maintenance',
                 7: 'Power Settings',
-                8: 'MQTT Settings'
+                8: 'MQTT Settings',
+                9: 'System Settings'
             }
 
             return sectionNames[sectionId]
@@ -191,7 +192,7 @@ const vueApp = Vue.createApp({
 
     computed: {
         parameterSections() {
-            const excludedSections = [9] // Don't show sOtherSection
+            const excludedSections = [10] // Don't show sOtherSection
             const filteredParameters = this.parameters.filter(param => !excludedSections.includes(param.section))
             return groupBy(filteredParameters, "section")
         }

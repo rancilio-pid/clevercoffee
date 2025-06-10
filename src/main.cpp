@@ -101,8 +101,6 @@ int lastmachinestatepid = -1;
 int connectmode = CONNECTMODE;
 
 int offlineMode = 0;
-const boolean ota = OTA;
-
 // Display
 uint8_t oled_i2c = OLED_I2C;
 uint8_t featureFullscreenBrewTimer = 0;
@@ -116,13 +114,13 @@ uint8_t wifiCredentialsSaved = 0;
 WiFiManager wm;
 constexpr unsigned long wifiConnectionDelay = WIFICONNECTIONDELAY;
 constexpr unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
-auto hostname = HOSTNAME;
+String hostname;
 auto pass = PASS;
 unsigned long lastWifiConnectionAttempt = millis();
 unsigned int wifiReconnects = 0; // actual number of reconnects
 
 // OTA
-const char* OTApass = OTAPASS;
+String otaPass;
 
 // Pressure sensor
 #if (FEATURE_PRESSURESENSOR == 1)
@@ -195,6 +193,7 @@ double aggKp = AGGKP;
 double aggTn = AGGTN;
 double aggTv = AGGTV;
 double aggIMax = AGGIMAX;
+double emaFactor = EMA_FACTOR;
 
 // Scale
 float scaleCalibration = SCALE_CALIBRATION_FACTOR;
@@ -801,17 +800,16 @@ void wiFiSetup() {
     wm.setConnectRetries(3);
 
     if (wifiCredentialsSaved == 0) {
-        constexpr char hostname[] = STR(HOSTNAME);
-        LOGF(INFO, "Connecting to WiFi: %s", String(hostname));
+        LOGF(INFO, "Connecting to WiFi: %s", hostname.c_str());
 
 #if OLED_DISPLAY != 0
-        displayLogo("Connecting to: ", HOSTNAME);
+        displayLogo("Connecting to: ", hostname.c_str());
 #endif
     }
 
-    wm.setHostname(hostname);
+    wm.setHostname(hostname.c_str());
 
-    if (wm.autoConnect(hostname, pass)) {
+    if (wm.autoConnect(hostname.c_str(), pass)) {
         wifiCredentialsSaved = 1;
         config.setWifiCredentialsSaved(true);
 
@@ -886,6 +884,7 @@ void setup() {
     }
     else {
         ParameterRegistry::getInstance().syncGlobalVariables();
+        hostname = config.getHostname();
     }
 
     // Calculate derived values
@@ -1014,15 +1013,16 @@ void setup() {
         serverSetup();
 
         // OTA Updates
-        if (ota && WiFi.status() == WL_CONNECTED) {
-            ArduinoOTA.setHostname(hostname); //  Device name for OTA
-            ArduinoOTA.setPassword(OTApass);  //  Password for OTA
+        if (WiFi.status() == WL_CONNECTED) {
+            otaPass = config.getOtaPass();
+            ArduinoOTA.setHostname(hostname.c_str()); //  Device name for OTA
+            ArduinoOTA.setPassword(otaPass.c_str());  //  Password for OTA
             ArduinoOTA.begin();
         }
 
         if (mqtt_enabled) {
-            snprintf(topic_will, sizeof(topic_will), "%s%s/%s", mqtt_topic_prefix.c_str(), hostname, "status");
-            snprintf(topic_set, sizeof(topic_set), "%s%s/+/%s", mqtt_topic_prefix.c_str(), hostname, "set");
+            snprintf(topic_will, sizeof(topic_will), "%s%s/%s", mqtt_topic_prefix.c_str(), hostname.c_str(), "status");
+            snprintf(topic_set, sizeof(topic_set), "%s%s/+/%s", mqtt_topic_prefix.c_str(), hostname.c_str(), "set");
             mqtt.setServer(mqtt_server_ip.c_str(), mqtt_server_port);
             mqtt.setCallback(mqtt_callback);
 
@@ -1047,7 +1047,7 @@ void setup() {
     bPID.SetSampleTime(windowSize);
     bPID.SetOutputLimits(0, windowSize);
     bPID.SetIntegratorLimits(0, AGGIMAX);
-    bPID.SetSmoothingFactor(EMA_FACTOR);
+    bPID.SetSmoothingFactor(emaFactor);
     bPID.SetMode(AUTOMATIC);
 
     if (TEMP_SENSOR == 1) {

@@ -28,11 +28,8 @@
 #define LANGUAGE 0              // LANGUAGE = 0 (DE), LANGUAGE = 1 (EN), LANGUAGE = 2 (ES)
 
 // Connectivity
-#define CONNECTMODE         1              // 0 = offline 1 = WIFI-MODE
-#define HOSTNAME            "silvia"
-#define PASS                "CleverCoffee" // default password for WiFiManager
-#define MAXWIFIRECONNECTS   5              // maximum number of reconnection attempts, use -1 to deactivate
-#define WIFICONNECTIONDELAY 10000          // delay between reconnects in ms
+#define CONNECTMODE 1              // 0 = offline 1 = WIFI-MODE
+#define PASS        "CleverCoffee" // default password for WiFiManager
 
 // PID & Hardware
 #define FEATURE_POWERSWITCH     0                       // 0 = deactivated, 1 = activated
@@ -60,14 +57,7 @@
 #define SCALE_TYPE    0 // 0 = one HX711 per load cell, 1 = Only a single HX711 with two channels
 #define SCALE_SAMPLES 2 // Load cell sample rate
 
-// PlatformIO OTA
-#define OTA     true      // true = OTA activated, false = OTA deactivated
-#define OTAPASS "otapass" // Password for OTA updates
-
-// PID Parameters (not yet in Web interface)
-#define EMA_FACTOR 0.6 // Smoothing of input that is used for Tv (derivative component of PID). Smaller means less smoothing but also less delay, 0 means no filtering
-
-#define TEMP_SENSOR 2  // Temp sensor type: 1 = DS18B20, 2 = TSIC306
+#define TEMP_SENSOR 2   // Temp sensor type: 1 = DS18B20, 2 = TSIC306
 
 // Log level for serial console, valid options (all with Logger::Level:: prefix) are:
 // TRACE, DEBUG, INFO, WARNING, ERROR, FATAL

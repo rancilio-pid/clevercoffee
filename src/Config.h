@@ -54,6 +54,7 @@ class Config {
             // PID general
             _doc["pid"]["enabled"] = false;
             _doc["pid"]["use_ponm"] = false;
+            _doc["pid"]["ema_factor"] = EMA_FACTOR;
 
             // PID regular
             _doc["pid"]["regular"]["kp"] = AGGKP;
@@ -110,11 +111,15 @@ class Config {
             _doc["mqtt"]["enabled"] = false;
             _doc["mqtt"]["broker"] = "";
             _doc["mqtt"]["port"] = 1883;
-            _doc["mqtt"]["username"] = "rancilio";
-            _doc["mqtt"]["password"] = "silvia";
-            _doc["mqtt"]["topic"] = "custom/kitchen.";
+            _doc["mqtt"]["username"] = MQTT_USERNAME;
+            _doc["mqtt"]["password"] = MQTT_PASSWORD;
+            _doc["mqtt"]["topic"] = MQTT_TOPIC;
             _doc["mqtt"]["hassio"]["enabled"] = false;
-            _doc["mqtt"]["hassio"]["prefix"] = "homeassistant";
+            _doc["mqtt"]["hassio"]["prefix"] = MQTT_HASSIO_PREFIX;
+
+            // System
+            _doc["system"]["hostname"] = HOSTNAME;
+            _doc["system"]["ota_password"] = OTAPASS;
 
             // WiFi credentials flag
             _doc["wifi"]["credentials_saved"] = false;
@@ -228,6 +233,14 @@ class Config {
 
         void setUsePonM(const bool value) {
             _doc["pid"]["use_ponm"] = value;
+        }
+
+        double getPidEmaFactor() {
+            return _doc["pid"]["ema_factor"] | EMA_FACTOR;
+        }
+
+        void setPidEmaFactor(const double value) {
+            _doc["pid"]["ema_factor"] = constrain(value, PID_EMA_FACTOR_MIN, PID_EMA_FACTOR_MAX);
         }
 
         // PID regular
@@ -553,6 +566,22 @@ class Config {
             _doc["mqtt"]["hassio"]["prefix"] = constrainStringParameter(value, MQTT_HASSIO_PREFIX_MAX_LENGTH, "mqtt.hassio.prefix");
         }
 
+        String getHostname() {
+            return _doc["system"]["hostname"];
+        }
+
+        void setHostname(const String& value) {
+            _doc["system"]["hostname"] = constrainStringParameter(value, HOSTNAME_MAX_LENGTH, "system.hostname");
+        }
+
+        String getOtaPass() {
+            return _doc["system"]["ota_password"];
+        }
+
+        void setOtaPass(const String& value) {
+            _doc["system"]["ota_password"] = constrainStringParameter(value, OTAPASS_MAX_LENGTH, "system.ota_password");
+        }
+
     private:
         inline static auto CONFIG_FILE = "/config.json";
 
@@ -574,6 +603,16 @@ class Config {
                 }
 
                 setUsePonM(doc["pid"]["use_ponm"].as<bool>());
+            }
+
+            if (doc["pid"].containsKey("ema_factor")) {
+                const double value = doc["pid"]["ema_factor"].as<double>();
+
+                if (!validateParameterRange("pid.ema_factor", value, PID_EMA_FACTOR_MIN, PID_EMA_FACTOR_MAX)) {
+                    return false;
+                }
+
+                setPidEmaFactor(value);
             }
 
             // PID regular parameters
@@ -932,6 +971,16 @@ class Config {
             if (doc["mqtt"]["hassio"].containsKey("prefix")) {
                 const String value = constrainStringParameter(doc["mqtt"]["hassio"]["prefix"].as<String>(), MQTT_HASSIO_PREFIX_MAX_LENGTH, "mqtt.hassio.prefix");
                 setMqttHassioPrefix(value);
+            }
+
+            if (doc["system"].containsKey("hostname")) {
+                const String value = constrainStringParameter(doc["system"]["hostname"].as<String>(), HOSTNAME_MAX_LENGTH, "system.hostname");
+                setHostname(value);
+            }
+
+            if (doc["system"].containsKey("ota_password")) {
+                const String value = constrainStringParameter(doc["system"]["ota_password"].as<String>(), OTAPASS_MAX_LENGTH, "system.ota_password");
+                setOtaPass(value);
             }
 
             // WiFi parameters

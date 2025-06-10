@@ -17,7 +17,8 @@ enum ParameterSection {
     sMaintenanceSection = 6,
     sPowerSection = 7,
     sMqttSection = 8,
-    sOtherSection = 9
+    sSystemSection = 9,
+    sOtherSection = 10
 };
 
 inline const char* getSectionName(const int sectionId) {
@@ -40,6 +41,8 @@ inline const char* getSectionName(const int sectionId) {
             return "Maintenance";
         case sMqttSection:
             return "MQTT";
+        case sSystemSection:
+            return "System";
         case sOtherSection:
             return "Other";
         default:

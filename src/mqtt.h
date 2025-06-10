@@ -75,7 +75,7 @@ inline void checkMQTT() {
             MQTTReCnctCount++;                    // Increment reconnection Counter
             LOGF(DEBUG, "Attempting MQTT reconnection: %i", MQTTReCnctCount);
 
-            if (mqtt.connect(hostname, mqtt_username.c_str(), mqtt_password.c_str(), topic_will, 0, true, "offline")) {
+            if (mqtt.connect(hostname.c_str(), mqtt_username.c_str(), mqtt_password.c_str(), topic_will, 0, true, "offline")) {
                 mqtt.subscribe(topic_set);
                 LOGF(DEBUG, "Subscribed to MQTT Topic: %s", topic_set);
             } // Try to reconnect to the server; connect() is a blocking
@@ -92,7 +92,7 @@ inline void checkMQTT() {
  */
 inline bool mqtt_publish(const char* reading, const char* payload, const boolean retain = false) {
     char topic[120];
-    snprintf(topic, 120, "%s%s/%s", mqtt_topic_prefix.c_str(), hostname, reading);
+    snprintf(topic, 120, "%s%s/%s", mqtt_topic_prefix.c_str(), hostname.c_str(), reading);
     return mqtt.publish(topic, payload, retain);
 }
 
@@ -213,7 +213,7 @@ inline void mqtt_callback(const char* topic, const byte* data, const unsigned in
     char cmd[64];
     double data_double;
 
-    snprintf(topic_pattern, sizeof(topic_pattern), "%s%s/%%[^\\/]/%%[^\\/]", mqtt_topic_prefix.c_str(), hostname);
+    snprintf(topic_pattern, sizeof(topic_pattern), "%s%s/%%[^\\/]/%%[^\\/]", mqtt_topic_prefix.c_str(), hostname.c_str());
 
     if (sscanf(topic_str, topic_pattern, &configVar, &cmd) != 2 || strcmp(cmd, "set") != 0) {
         LOGF(WARNING, "Invalid MQTT topic/command: %s", topic_str);
@@ -334,9 +334,9 @@ inline int writeSysParamsToMQTT(const bool continueOnError = true) {
  * @return A `DiscoveryObject` containing the switch device configuration
  */
 inline DiscoveryObject GenerateSwitchDevice(const String& name, const String& displayName, const String& payload_on = "1", const String& payload_off = "0") {
-    String mqtt_topic = String(mqtt_topic_prefix) + String(hostname);
+    String mqtt_topic = String(mqtt_topic_prefix) + hostname;
     DiscoveryObject switch_device;
-    String unique_id = "clevercoffee-" + String(hostname);
+    String unique_id = "clevercoffee-" + hostname;
     String SwitchDiscoveryTopic = mqtt_hassio_discovery_prefix + "/switch/";
 
     String switch_command_topic = mqtt_topic + "/" + name + "/set";
@@ -345,9 +345,9 @@ inline DiscoveryObject GenerateSwitchDevice(const String& name, const String& di
     switch_device.discovery_topic = SwitchDiscoveryTopic + unique_id + "-" + name + "" + "/config";
 
     DynamicJsonDocument DeviceMapDoc(1024);
-    DeviceMapDoc["identifiers"] = String(hostname);
+    DeviceMapDoc["identifiers"] = hostname;
     DeviceMapDoc["manufacturer"] = "CleverCoffee";
-    DeviceMapDoc["name"] = String(hostname);
+    DeviceMapDoc["name"] = hostname;
 
     DynamicJsonDocument switchConfigDoc(512);
     switchConfigDoc["name"] = displayName;
@@ -385,9 +385,9 @@ inline DiscoveryObject GenerateSwitchDevice(const String& name, const String& di
  * @return A `DiscoveryObject` containing the switch device configuration
  */
 inline DiscoveryObject GenerateButtonDevice(const String& name, const String& displayName, const String& payload_press = "1") {
-    String mqtt_topic = String(mqtt_topic_prefix) + String(hostname);
+    String mqtt_topic = String(mqtt_topic_prefix) + hostname;
     DiscoveryObject button_device;
-    String unique_id = "clevercoffee-" + String(hostname);
+    String unique_id = "clevercoffee-" + hostname;
     String buttonDiscoveryTopic = mqtt_hassio_discovery_prefix + "/button/";
 
     String button_command_topic = mqtt_topic + "/" + name + "/set";
@@ -396,9 +396,9 @@ inline DiscoveryObject GenerateButtonDevice(const String& name, const String& di
     button_device.discovery_topic = buttonDiscoveryTopic + unique_id + "-" + name + "" + "/config";
 
     DynamicJsonDocument DeviceMapDoc(1024);
-    DeviceMapDoc["identifiers"] = String(hostname);
+    DeviceMapDoc["identifiers"] = hostname;
     DeviceMapDoc["manufacturer"] = "CleverCoffee";
-    DeviceMapDoc["name"] = String(hostname);
+    DeviceMapDoc["name"] = hostname;
 
     DynamicJsonDocument buttonConfigDoc(512);
     buttonConfigDoc["name"] = displayName;
@@ -436,18 +436,18 @@ inline DiscoveryObject GenerateButtonDevice(const String& name, const String& di
  * @return A `DiscoveryObject` containing the sensor device configuration
  */
 inline DiscoveryObject GenerateSensorDevice(const String& name, const String& displayName, const String& unit_of_measurement, const String& device_class) {
-    String mqtt_topic = String(mqtt_topic_prefix) + String(hostname);
+    String mqtt_topic = String(mqtt_topic_prefix) + hostname;
     DiscoveryObject sensor_device;
-    String unique_id = "clevercoffee-" + String(hostname);
+    String unique_id = "clevercoffee-" + hostname;
     String SensorDiscoveryTopic = mqtt_hassio_discovery_prefix + "/sensor/";
 
     String sensor_state_topic = mqtt_topic + "/" + name;
     sensor_device.discovery_topic = SensorDiscoveryTopic + unique_id + "-" + name + "" + "/config";
 
     DynamicJsonDocument DeviceMapDoc(1024);
-    DeviceMapDoc["identifiers"] = String(hostname);
+    DeviceMapDoc["identifiers"] = hostname;
     DeviceMapDoc["manufacturer"] = "CleverCoffee";
-    DeviceMapDoc["name"] = String(hostname);
+    DeviceMapDoc["name"] = hostname;
 
     DynamicJsonDocument sensorConfigDoc(512);
     sensorConfigDoc["name"] = displayName;
@@ -488,17 +488,17 @@ inline DiscoveryObject GenerateSensorDevice(const String& name, const String& di
  * @return A `DiscoveryObject` containing the number device configuration
  */
 inline DiscoveryObject GenerateNumberDevice(const String& name, const String& displayName, int min_value, int max_value, float steps_value, const String& unit_of_measurement, const String& ui_mode = "box") {
-    String mqtt_topic = String(mqtt_topic_prefix) + String(hostname);
+    String mqtt_topic = String(mqtt_topic_prefix) + hostname;
     DiscoveryObject number_device;
-    String unique_id = "clevercoffee-" + String(hostname);
+    String unique_id = "clevercoffee-" + hostname;
 
     String NumberDiscoveryTopic = String(mqtt_hassio_discovery_prefix) + "/number/";
     number_device.discovery_topic = NumberDiscoveryTopic + unique_id + "-" + name + "" + "/config";
 
     DynamicJsonDocument DeviceMapDoc(1024);
-    DeviceMapDoc["identifiers"] = String(hostname);
+    DeviceMapDoc["identifiers"] = hostname;
     DeviceMapDoc["manufacturer"] = "CleverCoffee";
-    DeviceMapDoc["name"] = String(hostname);
+    DeviceMapDoc["name"] = hostname;
 
     DynamicJsonDocument numberConfigDoc(512);
     numberConfigDoc["name"] = displayName;

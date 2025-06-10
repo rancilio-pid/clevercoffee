@@ -20,6 +20,7 @@ extern uint8_t useBDPID;
 extern double aggbKp;
 extern double aggbTn;
 extern double aggbTv;
+extern double emaFactor;
 extern double steamSetpoint;
 extern double targetBrewTime;
 extern double preinfusion;
@@ -90,7 +91,20 @@ void ParameterRegistry::initialize(Config& config) {
         0, 1, true, "Use PonM mode (<a href='http://brettbeauregard.com/blog/2017/06/introducing-proportional-on-measurement/' target='_blank'>details</a>)", []() { return true; }, nullptr, nullptr, &usePonM));
 
     addParam(std::make_shared<Parameter>(
-        "PID_KP", "PID Kp", kDouble, sPIDSection, 3,
+        "PID_EMA_FACTOR", "PID EMA Factor", kDouble, sPIDSection, 3,
+        [&config]() {
+            emaFactor = config.getPidEmaFactor();
+            return emaFactor;
+        },
+        [&config](double val) {
+            config.setPidEmaFactor(val);
+            emaFactor = val;
+        },
+        PID_EMA_FACTOR_MIN, PID_EMA_FACTOR_MAX, true, "Smoothing of input that is used for Tv (derivative component of PID). Smaller means less smoothing but also less delay, 0 means no filtering", []() { return true; },
+        nullptr, nullptr, &emaFactor));
+
+    addParam(std::make_shared<Parameter>(
+        "PID_KP", "PID Kp", kDouble, sPIDSection, 4,
         [&config]() {
             aggKp = config.getPidKpRegular();
             return aggKp;
@@ -105,7 +119,7 @@ void ParameterRegistry::initialize(Config& config) {
         []() { return true; }, nullptr, nullptr, &aggKp));
 
     addParam(std::make_shared<Parameter>(
-        "PID_TN", "PID Tn (=Kp/Ki)", kDouble, sPIDSection, 4,
+        "PID_TN", "PID Tn (=Kp/Ki)", kDouble, sPIDSection, 5,
         [&config]() {
             aggTn = config.getPidTnRegular();
             return aggTn;
@@ -120,7 +134,7 @@ void ParameterRegistry::initialize(Config& config) {
         []() { return true; }, nullptr, nullptr, &aggTn));
 
     addParam(std::make_shared<Parameter>(
-        "PID_TV", "PID Tv (=Kd/Kp)", kDouble, sPIDSection, 5,
+        "PID_TV", "PID Tv (=Kd/Kp)", kDouble, sPIDSection, 6,
         [&config]() {
             aggTv = config.getPidTvRegular();
             return aggTv;
@@ -135,7 +149,7 @@ void ParameterRegistry::initialize(Config& config) {
         []() { return true; }, nullptr, nullptr, &aggTv));
 
     addParam(std::make_shared<Parameter>(
-        "PID_I_MAX", "PID Integrator Max", kDouble, sPIDSection, 6,
+        "PID_I_MAX", "PID Integrator Max", kDouble, sPIDSection, 7,
         [&config]() {
             aggIMax = config.getPidIMaxRegular();
             return aggIMax;
@@ -150,7 +164,7 @@ void ParameterRegistry::initialize(Config& config) {
         []() { return true; }, nullptr, nullptr, &aggIMax));
 
     addParam(std::make_shared<Parameter>(
-        "STEAM_KP", "Steam Kp", kDouble, sPIDSection, 7,
+        "STEAM_KP", "Steam Kp", kDouble, sPIDSection, 8,
         [&config]() {
             steamKp = config.getPidKpSteam();
             return steamKp;
@@ -162,11 +176,11 @@ void ParameterRegistry::initialize(Config& config) {
         PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, true, "Proportional gain for the steaming mode (I or D are not used)", []() { return true; }, nullptr, nullptr, &steamKp));
 
     addParam(std::make_shared<Parameter>(
-        "TEMP", "Temperature", kDouble, sPIDSection, 8, [&]() { return temperature; }, [](double val) { temperature = val; }, 0, 200, false, "", []() { return false; }, nullptr, nullptr, &temperature));
+        "TEMP", "Temperature", kDouble, sPIDSection, 9, [&]() { return temperature; }, [](double val) { temperature = val; }, 0, 200, false, "", []() { return false; }, nullptr, nullptr, &temperature));
 
     // Temperature Section
     addParam(std::make_shared<Parameter>(
-        "BREW_SETPOINT", "Set point (°C)", kDouble, sTempSection, 9,
+        "BREW_SETPOINT", "Setpoint (°C)", kDouble, sTempSection, 10,
         [&config]() {
             brewSetpoint = config.getBrewSetpoint();
             return brewSetpoint;
@@ -178,7 +192,7 @@ void ParameterRegistry::initialize(Config& config) {
         BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, true, "The temperature that the PID will attempt to reach and hold", []() { return true; }, nullptr, nullptr, &brewSetpoint));
 
     addParam(std::make_shared<Parameter>(
-        "BREW_TEMP_OFFSET", "Offset (°C)", kDouble, sTempSection, 10,
+        "BREW_TEMP_OFFSET", "Offset (°C)", kDouble, sTempSection, 11,
         [&config]() {
             brewTempOffset = config.getBrewTempOffset();
             return brewTempOffset;
@@ -193,7 +207,7 @@ void ParameterRegistry::initialize(Config& config) {
         []() { return true; }, nullptr, nullptr, &brewTempOffset));
 
     addParam(std::make_shared<Parameter>(
-        "STEAM_SETPOINT", "Steam Set point (°C)", kDouble, sTempSection, 11,
+        "STEAM_SETPOINT", "Steam Set point (°C)", kDouble, sTempSection, 12,
         [&config]() {
             steamSetpoint = config.getSteamSetpoint();
             return steamSetpoint;
@@ -206,7 +220,7 @@ void ParameterRegistry::initialize(Config& config) {
 
     // Brew Section
     addParam(std::make_shared<Parameter>(
-        "BREWCONTROL", "Brew Control", kUInt8, sBrewSection, 12,
+        "BREWCONTROL", "Brew Control", kUInt8, sBrewSection, 13,
         [&config]() {
             featureBrewControl = config.getFeatureBrewControl() ? 1 : 0;
             return featureBrewControl;
@@ -218,7 +232,7 @@ void ParameterRegistry::initialize(Config& config) {
         0, 1, true, "Enables brew-by-time or brew-by-weight", []() { return FEATURE_BREWSWITCH == 1; }, nullptr, nullptr, &featureBrewControl));
 
     addParam(std::make_shared<Parameter>(
-        "TARGET_BREW_TIME", "Target Brew Time (s)", kDouble, sBrewSection, 13,
+        "TARGET_BREW_TIME", "Target Brew Time (s)", kDouble, sBrewSection, 14,
         [&config]() {
             targetBrewTime = config.getTargetBrewTime();
             return targetBrewTime;
@@ -230,7 +244,7 @@ void ParameterRegistry::initialize(Config& config) {
         TARGET_BREW_TIME_MIN, TARGET_BREW_TIME_MAX, true, "Stop brew after this time. Set to 0 to deactivate brew-by-time-feature.", []() { return featureBrewControl == 1; }, nullptr, nullptr, &targetBrewTime));
 
     addParam(std::make_shared<Parameter>(
-        "BREW_PREINFUSIONPAUSE", "Preinfusion Pause Time (s)", kDouble, sBrewSection, 14,
+        "BREW_PREINFUSIONPAUSE", "Preinfusion Pause Time (s)", kDouble, sBrewSection, 15,
         [&config]() {
             preinfusionPause = config.getPreInfusionPause();
             return preinfusionPause;
@@ -242,7 +256,7 @@ void ParameterRegistry::initialize(Config& config) {
         PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, false, "", []() { return featureBrewControl == 1; }, nullptr, nullptr, &preinfusionPause));
 
     addParam(std::make_shared<Parameter>(
-        "BREW_PREINFUSION", "Preinfusion Time (s)", kDouble, sBrewSection, 15,
+        "BREW_PREINFUSION", "Preinfusion Time (s)", kDouble, sBrewSection, 16,
         [&config]() {
             preinfusion = config.getPreInfusionTime();
             return preinfusion;
@@ -255,7 +269,7 @@ void ParameterRegistry::initialize(Config& config) {
 
     // Maintenance Section
     addParam(std::make_shared<Parameter>(
-        "BACKFLUSH_CYCLES", "Backflush Cycles", kInteger, sMaintenanceSection, 16,
+        "BACKFLUSH_CYCLES", "Backflush Cycles", kInteger, sMaintenanceSection, 17,
         [&config]() {
             backflushCycles = config.getBackflushCycles();
             return backflushCycles;
@@ -267,7 +281,7 @@ void ParameterRegistry::initialize(Config& config) {
         BACKFLUSH_CYCLES_MIN, BACKFLUSH_CYCLES_MAX, true, "Number of cycles of filling and flushing during a backflush", []() { return featureBrewControl == 1; }, nullptr, nullptr, &backflushCycles));
 
     addParam(std::make_shared<Parameter>(
-        "BACKFLUSH_FILL_TIME", "Backflush Fill Time (s)", kDouble, sMaintenanceSection, 17,
+        "BACKFLUSH_FILL_TIME", "Backflush Fill Time (s)", kDouble, sMaintenanceSection, 18,
         [&config]() {
             backflushFillTime = config.getBackflushFillTime();
             return backflushFillTime;
@@ -279,7 +293,7 @@ void ParameterRegistry::initialize(Config& config) {
         BACKFLUSH_FILL_TIME_MIN, BACKFLUSH_FILL_TIME_MAX, true, "Time in seconds the pump is running during one backflush cycle", []() { return featureBrewControl == 1; }, nullptr, nullptr, &backflushFillTime));
 
     addParam(std::make_shared<Parameter>(
-        "BACKFLUSH_FLUSH_TIME", "Backflush Flush Time (s)", kDouble, sMaintenanceSection, 18,
+        "BACKFLUSH_FLUSH_TIME", "Backflush Flush Time (s)", kDouble, sMaintenanceSection, 19,
         [&config]() {
             backflushFlushTime = config.getBackflushFlushTime();
             return backflushFlushTime;
@@ -292,7 +306,7 @@ void ParameterRegistry::initialize(Config& config) {
 
 #if (FEATURE_SCALE == 1)
     addParam(std::make_shared<Parameter>(
-        "SCALE_TARGET_BREW_WEIGHT", "Brew weight target (g)", kDouble, sBrewSection, 19,
+        "SCALE_TARGET_BREW_WEIGHT", "Brew weight target (g)", kDouble, sBrewSection, 20,
         [&config]() {
             targetBrewWeight = config.getTargetBrewWeight();
             return targetBrewWeight;
@@ -305,14 +319,14 @@ void ParameterRegistry::initialize(Config& config) {
         []() { return FEATURE_SCALE == 1 && featureBrewControl == 1; }, nullptr, nullptr, &targetBrewWeight));
 
     addParam(std::make_shared<Parameter>(
-        "TARE_ON", "Tare", kUInt8, sScaleSection, 30, [&]() { return scaleTareOn; }, [](double val) { scaleTareOn = val != 0 ? 1 : 0; }, 0, 1, false, "", []() { return false; }, nullptr, nullptr, &scaleTareOn));
+        "TARE_ON", "Tare", kUInt8, sScaleSection, 21, [&]() { return scaleTareOn; }, [](double val) { scaleTareOn = val != 0 ? 1 : 0; }, 0, 1, false, "", []() { return false; }, nullptr, nullptr, &scaleTareOn));
 
     addParam(std::make_shared<Parameter>(
-        "CALIBRATION_ON", "Calibration", kUInt8, sScaleSection, 31, [&]() { return scaleCalibrationOn; }, [](double val) { scaleCalibrationOn = val != 0 ? 1 : 0; }, 0, 1, false, "", []() { return false; }, nullptr, nullptr,
+        "CALIBRATION_ON", "Calibration", kUInt8, sScaleSection, 22, [&]() { return scaleCalibrationOn; }, [](double val) { scaleCalibrationOn = val != 0 ? 1 : 0; }, 0, 1, false, "", []() { return false; }, nullptr, nullptr,
         &scaleCalibrationOn));
 
     addParam(std::make_shared<Parameter>(
-        "SCALE_KNOWN_WEIGHT", "Known weight in g", kFloat, sScaleSection, 32,
+        "SCALE_KNOWN_WEIGHT", "Known weight in g", kFloat, sScaleSection, 23,
         [&config]() {
             scaleKnownWeight = config.getScaleKnownWeight();
             return scaleKnownWeight;
@@ -324,7 +338,7 @@ void ParameterRegistry::initialize(Config& config) {
         0, 2000, false, "", []() { return true; }, nullptr, nullptr, &scaleKnownWeight));
 
     addParam(std::make_shared<Parameter>(
-        "SCALE_CALIBRATION", "Calibration factor scale 1", kFloat, sScaleSection, 33,
+        "SCALE_CALIBRATION", "Calibration factor scale 1", kFloat, sScaleSection, 24,
         [&config]() {
             scaleCalibration = config.getScaleCalibration();
             return scaleCalibration;
@@ -336,7 +350,7 @@ void ParameterRegistry::initialize(Config& config) {
         -100000, 100000, false, "", []() { return true; }, nullptr, nullptr, &scaleCalibration));
 
     addParam(std::make_shared<Parameter>(
-        "SCALE2_CALIBRATION", "Calibration factor scale 2", kFloat, sScaleSection, 34,
+        "SCALE2_CALIBRATION", "Calibration factor scale 2", kFloat, sScaleSection, 25,
         [&config]() {
             scale2Calibration = config.getScale2Calibration();
             return scale2Calibration;
@@ -350,7 +364,7 @@ void ParameterRegistry::initialize(Config& config) {
 
     // Brew PID Section
     addParam(std::make_shared<Parameter>(
-        "PID_BD_DELAY", "Brew PID Delay (s)", kDouble, sBrewPidSection, 20,
+        "PID_BD_DELAY", "Brew PID Delay (s)", kDouble, sBrewPidSection, 26,
         [&config]() {
             brewPIDDelay = config.getBrewPIDDelay();
             return brewPIDDelay;
@@ -364,7 +378,7 @@ void ParameterRegistry::initialize(Config& config) {
         []() { return true; }, nullptr, nullptr, &brewPIDDelay));
 
     addParam(std::make_shared<Parameter>(
-        "PID_BD_ON", "Enable Brew PID", kUInt8, sBrewPidSection, 21,
+        "PID_BD_ON", "Enable Brew PID", kUInt8, sBrewPidSection, 27,
         [&config]() {
             useBDPID = config.getUseBDPID() ? 1 : 0;
             return useBDPID;
@@ -376,7 +390,7 @@ void ParameterRegistry::initialize(Config& config) {
         0, 1, true, "Use separate PID parameters while brew is running", []() { return FEATURE_BREWSWITCH == 1; }, nullptr, nullptr, &useBDPID));
 
     addParam(std::make_shared<Parameter>(
-        "PID_BD_KP", "BD Kp", kDouble, sBrewPidSection, 22,
+        "PID_BD_KP", "BD Kp", kDouble, sBrewPidSection, 28,
         [&config]() {
             aggbKp = config.getPidKpBD();
             return aggbKp;
@@ -392,7 +406,7 @@ void ParameterRegistry::initialize(Config& config) {
         []() { return FEATURE_BREWSWITCH == 1 && useBDPID == 1; }, nullptr, nullptr, &aggbKp));
 
     addParam(std::make_shared<Parameter>(
-        "PID_BD_TN", "BD Tn (=Kp/Ki)", kDouble, sBrewPidSection, 23,
+        "PID_BD_TN", "BD Tn (=Kp/Ki)", kDouble, sBrewPidSection, 29,
         [&config]() {
             aggbTn = config.getPidTnBD();
             return aggbTn;
@@ -404,7 +418,7 @@ void ParameterRegistry::initialize(Config& config) {
         PID_TN_BD_MIN, PID_TN_BD_MAX, true, "Integral time constant (in seconds) for the PID when brewing has been detected.", []() { return FEATURE_BREWSWITCH == 1 && useBDPID == 1; }, nullptr, nullptr, &aggbTn));
 
     addParam(std::make_shared<Parameter>(
-        "PID_BD_TV", "BD Tv (=Kd/Kp)", kDouble, sBrewPidSection, 24,
+        "PID_BD_TV", "BD Tv (=Kd/Kp)", kDouble, sBrewPidSection, 30,
         [&config]() {
             aggbTv = config.getPidTvBD();
             return aggbTv;
@@ -417,14 +431,14 @@ void ParameterRegistry::initialize(Config& config) {
 
     // Other Section (special parameters, e.g. runtime-only toggles)
     addParam(std::make_shared<Parameter>(
-        "STEAM_MODE", "Steam Mode", kUInt8, sOtherSection, 25, [&]() { return steamON; }, [](double val) { steamON = val != 0 ? 1 : 0; }, 0, 1, false, "", []() { return true; }, nullptr, nullptr, &steamON));
+        "STEAM_MODE", "Steam Mode", kUInt8, sOtherSection, 31, [&]() { return steamON; }, [](double val) { steamON = val != 0 ? 1 : 0; }, 0, 1, false, "", []() { return true; }, nullptr, nullptr, &steamON));
 
     addParam(std::make_shared<Parameter>(
-        "BACKFLUSH_ON", "Backflush", kUInt8, sOtherSection, 26, [&]() { return backflushOn; }, [](double val) { backflushOn = val != 0 ? 1 : 0; }, 0, 1, false, "", []() { return true; }, nullptr, nullptr, &backflushOn));
+        "BACKFLUSH_ON", "Backflush", kUInt8, sOtherSection, 32, [&]() { return backflushOn; }, [](double val) { backflushOn = val != 0 ? 1 : 0; }, 0, 1, false, "", []() { return true; }, nullptr, nullptr, &backflushOn));
 
     // Power Section
     addParam(std::make_shared<Parameter>(
-        "STANDBY_MODE_ON", "Enable Standby Timer", kUInt8, sPowerSection, 27,
+        "STANDBY_MODE_ON", "Enable Standby Timer", kUInt8, sPowerSection, 33,
         [&config]() {
             standbyModeOn = config.getStandbyModeOn() ? 1 : 0;
             return standbyModeOn;
@@ -436,7 +450,7 @@ void ParameterRegistry::initialize(Config& config) {
         0, 1, true, "Turn heater off after standby time has elapsed.", []() { return true; }, nullptr, nullptr, &standbyModeOn));
 
     addParam(std::make_shared<Parameter>(
-        "STANDBY_MODE_TIMER", "Standby Time", kDouble, sPowerSection, 28,
+        "STANDBY_MODE_TIMER", "Standby Time", kDouble, sPowerSection, 34,
         [&config]() {
             standbyModeTime = config.getStandbyModeTime();
             return standbyModeTime;
@@ -510,23 +524,23 @@ void ParameterRegistry::initialize(Config& config) {
         0, 1, true, "full screen logo will be shown if pid is disabled", []() { return true; }, nullptr, nullptr, &featurePidOffLogo));
 
     addParam(std::make_shared<Parameter>(
-        "MQTT_ENABLED", "MQTT enabled", kUInt8, sMqttSection, 41, [&config]() { return config.getMqttEnabled(); }, [&config](const double val) { config.setMqttEnabled(val != 0); }, 0, 1, true,
+        "MQTT_ENABLED", "MQTT enabled", kUInt8, sMqttSection, 40, [&config]() { return config.getMqttEnabled(); }, [&config](const double val) { config.setMqttEnabled(val != 0); }, 0, 1, true,
         "Enables MQTT, requires a restart", []() -> bool { return true; }, nullptr, nullptr, nullptr));
 
     addParam(std::make_shared<Parameter>(
-        "MQTT_BROKER", "Hostname", kCString, sMqttSection, 42, nullptr, nullptr, 0, MQTT_BROKER_MAX_LENGTH, true, "IP addresss or hostname of your MQTT broker, changes require a restart", []() -> bool { return true; },
+        "MQTT_BROKER", "Hostname", kCString, sMqttSection, 41, nullptr, nullptr, 0, MQTT_BROKER_MAX_LENGTH, true, "IP addresss or hostname of your MQTT broker, changes require a restart", []() -> bool { return true; },
         [&config]() { return config.getMqttBroker(); }, [&config](const String& val) { config.setMqttBroker(val); }, nullptr));
 
     addParam(std::make_shared<Parameter>(
-        "MQTT_PORT", "Port", kInteger, sMqttSection, 43, [&config]() { return config.getMqttPort(); }, [&config](const double val) { config.setMqttPort(val); }, 0, 99999, true,
+        "MQTT_PORT", "Port", kInteger, sMqttSection, 42, [&config]() { return config.getMqttPort(); }, [&config](const double val) { config.setMqttPort(val); }, 0, 99999, true,
         "Port number of your MQTT broker, changes require a restart", []() -> bool { return true; }, nullptr, nullptr, nullptr));
 
     addParam(std::make_shared<Parameter>(
-        "MQTT_USERNAME", "Username", kCString, sMqttSection, 44, nullptr, nullptr, 0, MQTT_USERNAME_MAX_LENGTH, true, "Username for your MQTT broker, changes require a restart", []() -> bool { return true; },
+        "MQTT_USERNAME", "Username", kCString, sMqttSection, 43, nullptr, nullptr, 0, MQTT_USERNAME_MAX_LENGTH, true, "Username for your MQTT broker, changes require a restart", []() -> bool { return true; },
         [&config]() { return config.getMqttUsername(); }, [&config](const String& val) { config.setMqttUsername(val); }, nullptr));
 
     addParam(std::make_shared<Parameter>(
-        "MQTT_PASSWORD", "Password", kCString, sMqttSection, 45, nullptr, nullptr, 0, MQTT_PASSWORD_MAX_LENGTH, true, "Password for your MQTT broker, changes require a restart", []() -> bool { return true; },
+        "MQTT_PASSWORD", "Password", kCString, sMqttSection, 44, nullptr, nullptr, 0, MQTT_PASSWORD_MAX_LENGTH, true, "Password for your MQTT broker, changes require a restart", []() -> bool { return true; },
         [&config]() { return config.getMqttPassword(); }, [&config](const String& val) { config.setMqttPassword(val); }, nullptr));
 
     addParam(std::make_shared<Parameter>(
@@ -541,7 +555,15 @@ void ParameterRegistry::initialize(Config& config) {
         "MQTT_HASSIO_PREFIX", "Hass.io Prefix", kCString, sMqttSection, 47, nullptr, nullptr, 0, MQTT_HASSIO_PREFIX_MAX_LENGTH, true, "Custom MQTT topic prefix, changes require a restart", []() -> bool { return true; },
         [&config]() { return config.getMqttHassioPrefix(); }, [&config](const String& val) { config.setMqttHassioPrefix(val); }, nullptr));
 
-    addParam(std::make_shared<Parameter>("VERSION", "Version", kCString, sOtherSection, 48, [&]() { return 0; }, [](double val) {}, 0, 1, false, "", []() { return false; }, []() { return sysVersion; }, nullptr, nullptr));
+    addParam(std::make_shared<Parameter>(
+        "HOSTNAME", "Hostname", kCString, sSystemSection, 48, nullptr, nullptr, 0, HOSTNAME_MAX_LENGTH, true, "Hostname of your machine, changes require a restart", []() -> bool { return true; },
+        [&config]() { return config.getHostname(); }, [&config](const String& val) { config.setHostname(val); }, nullptr));
+
+    addParam(std::make_shared<Parameter>(
+        "OTA_PASSWORD", "OtA Password", kCString, sSystemSection, 49, nullptr, nullptr, 0, OTAPASS_MAX_LENGTH, true, "Password for over-the-air updates, changes require a restart", []() -> bool { return true; },
+        [&config]() { return config.getOtaPass(); }, [&config](const String& val) { config.setOtaPass(val); }, nullptr));
+
+    addParam(std::make_shared<Parameter>("VERSION", "Version", kCString, sOtherSection, 50, [&]() { return 0; }, [](double val) {}, 0, 1, false, "", []() { return false; }, []() { return sysVersion; }, nullptr, nullptr));
 
     std::sort(_parameters.begin(), _parameters.end(), [](const std::shared_ptr<Parameter>& a, const std::shared_ptr<Parameter>& b) { return a->getPosition() < b->getPosition(); });
 
