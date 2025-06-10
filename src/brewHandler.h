@@ -210,6 +210,11 @@ void checkbrewswitch() {
  * @return true if brew is running, false otherwise
  */
 bool brew() {
+
+#if FEATURE_BREWSWITCH == 0
+    return false; // brew switch is not enabled, so no brew process running
+#endif
+
     unsigned long currentMillisTemp = millis();
     checkbrewswitch();
 
@@ -365,6 +370,11 @@ bool brew() {
  * @return true if manual flush is running, false otherwise
  */
 bool manualFlush() {
+
+#if FEATURE_BREWSWITCH == 0
+    return false; // brew switch is not enabled, so no brew process running
+#endif
+
     unsigned long currentMillisTemp = millis();
     checkbrewswitch();
     if (currManualFlushState == kManualFlushRunning) {
