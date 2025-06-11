@@ -82,7 +82,7 @@ class ParameterRegistry {
             return _parameters;
         }
 
-        void syncGlobalVariables();
+        void syncGlobalVariables() const;
 
         std::shared_ptr<Parameter> getParameterById(const char* id);
 

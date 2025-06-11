@@ -47,56 +47,149 @@ class Parameter {
             _globalVariablePointer(globalVariablePointer) {
         }
 
-        const char* getId() const {
+        // For string parameters
+        Parameter(
+            const char* id,
+            const char* displayName,
+            EditableKind type,
+            int section,
+            int position,
+            const std::function<String()>& stringGetter,
+            const std::function<void(const String&)>& stringSetter,
+            double maxLength, // Maximum string length
+            bool hasHelpText = false,
+            const char* helpText = "",
+            const std::function<bool()>& showCondition = [] { return true; },
+            void* globalVariablePointer = nullptr) :
+            _id(id),
+            _displayName(displayName),
+            _type(type),
+            _section(section),
+            _position(position),
+            _getter(nullptr),     // Not used for strings
+            _setter(nullptr),     // Not used for strings
+            _minValue(0),         // Not applicable for strings
+            _maxValue(maxLength), // Used for string length validation
+            _hasHelpText(hasHelpText),
+            _helpText(helpText),
+            _showCondition(showCondition),
+            _stringGetter(stringGetter),
+            _stringSetter(stringSetter),
+            _globalVariablePointer(globalVariablePointer) {
+        }
+
+        // For numeric parameters (no string getter/setter)
+        Parameter(
+            const char* id,
+            const char* displayName,
+            EditableKind type,
+            int section,
+            int position,
+            std::function<double()> getter,
+            std::function<void(double)> setter,
+            double minValue,
+            double maxValue,
+            bool hasHelpText = false,
+            const char* helpText = "",
+            std::function<bool()> showCondition = [] { return true; },
+            void* globalVariablePointer = nullptr) :
+            _id(id),
+            _displayName(displayName),
+            _type(type),
+            _section(section),
+            _position(position),
+            _getter(std::move(getter)),
+            _setter(std::move(setter)),
+            _minValue(minValue),
+            _maxValue(maxValue),
+            _hasHelpText(hasHelpText),
+            _helpText(helpText),
+            _showCondition(std::move(showCondition)),
+            _stringGetter(nullptr), // Not used for numeric
+            _stringSetter(nullptr), // Not used for numeric
+            _globalVariablePointer(globalVariablePointer) {
+        }
+
+        // For boolean parameters (using kUInt8 type with 0/1 values)
+        Parameter(
+            const char* id,
+            const char* displayName,
+            EditableKind type,
+            int section,
+            int position,
+            const std::function<bool()>& boolGetter,
+            const std::function<void(bool)>& boolSetter,
+            bool hasHelpText = false,
+            const char* helpText = "",
+            const std::function<bool()>& showCondition = [] { return true; },
+            void* globalVariablePointer = nullptr) :
+            _id(id),
+            _displayName(displayName),
+            _type(type),
+            _section(section),
+            _position(position),
+            _getter([boolGetter]() { return boolGetter() ? 1.0 : 0.0; }),
+            _setter([boolSetter](double val) { boolSetter(val > 0.5); }),
+            _minValue(0),
+            _maxValue(1),
+            _hasHelpText(hasHelpText),
+            _helpText(helpText),
+            _showCondition(showCondition),
+            _stringGetter(nullptr),
+            _stringSetter(nullptr),
+            _globalVariablePointer(globalVariablePointer) {
+        }
+
+        [[nodiscard]] const char* getId() const {
             return _id;
         }
 
-        const char* getDisplayName() const {
+        [[nodiscard]] const char* getDisplayName() const {
             return _displayName;
         }
 
-        EditableKind getType() const {
+        [[nodiscard]] EditableKind getType() const {
             return _type;
         }
 
-        int getSection() const {
+        [[nodiscard]] int getSection() const {
             return _section;
         }
 
-        int getPosition() const {
+        [[nodiscard]] int getPosition() const {
             return _position;
         }
 
-        double getValue() const {
+        [[nodiscard]] double getValue() const {
             return _getter();
         }
 
-        void setValue(double value) {
+        void setValue(double value) const {
             _setter(value);
             syncToGlobalVariable(value);
         }
 
-        bool getBoolValue() const {
+        [[nodiscard]] bool getBoolValue() const {
             return getValue() != 0.0;
         }
 
-        int getIntValue() const {
+        [[nodiscard]] int getIntValue() const {
             return static_cast<int>(getValue());
         }
 
-        float getFloatValue() const {
+        [[nodiscard]] float getFloatValue() const {
             return static_cast<float>(getValue());
         }
 
-        uint8_t getUInt8Value() const {
+        [[nodiscard]] uint8_t getUInt8Value() const {
             return static_cast<uint8_t>(getValue());
         }
 
-        String getStringValue() const {
+        [[nodiscard]] String getStringValue() const {
             if (_stringGetter) {
                 return _stringGetter();
             }
-            return String();
+            return {};
         }
 
         void setStringValue(const String& value) {
@@ -106,27 +199,27 @@ class Parameter {
             }
         }
 
-        double getMinValue() const {
+        [[nodiscard]] double getMinValue() const {
             return _minValue;
         }
 
-        double getMaxValue() const {
+        [[nodiscard]] double getMaxValue() const {
             return _maxValue;
         }
 
-        bool hasHelpText() const {
+        [[nodiscard]] bool hasHelpText() const {
             return _hasHelpText;
         }
 
-        const char* getHelpText() const {
+        [[nodiscard]] const char* getHelpText() const {
             return _helpText;
         }
 
-        bool shouldShow() const {
+        [[nodiscard]] bool shouldShow() const {
             return _showCondition();
         }
 
-        String getFormattedValue() const {
+        [[nodiscard]] String getFormattedValue() const {
             switch (_type) {
                 case kFloat:
                     return String(getFloatValue());
@@ -144,7 +237,7 @@ class Parameter {
             }
         }
 
-        void* getGlobalVariablePointer() const {
+        [[nodiscard]] void* getGlobalVariablePointer() const {
             return _globalVariablePointer;
         }
 
