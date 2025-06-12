@@ -28,13 +28,13 @@ inline double hPower = 0.0;
 
 #define HISTORY_LENGTH 600 // 30 mins of values (20 vals/min * 60 min) = 600 (7,2kb)
 
-static float tempHistory[3][HISTORY_LENGTH] = {0};
+static float tempHistory[3][HISTORY_LENGTH] = {};
 inline int historyCurrentIndex = 0;
 inline int historyValueCount = 0;
 
 void serverSetup();
 
-inline uint8_t flipUintValue(uint8_t value) {
+inline uint8_t flipUintValue(const uint8_t value) {
     return (value + 3) % 2;
 }
 
@@ -52,21 +52,21 @@ inline String getTempString() {
 }
 
 // proper modulo function (% is remainder, so will return negatives)
-inline int mod(int a, int b) {
-    int r = a % b;
+inline int mod(const int a, const int b) {
+    const int r = a % b;
     return r < 0 ? r + b : r;
 }
 
 // rounds a number to 2 decimal places
 // example: round(3.14159) -> 3.14
 // (less characters when serialized to json)
-inline double round2(double value) {
-    return (int)(value * 100 + 0.5) / 100.0;
+inline double round2(const double value) {
+    return static_cast<int>(value * 100 + 0.5) / 100.0;
 }
 
 inline String getValue(const String& varName) {
     try {
-        std::shared_ptr<Parameter> e = ParameterRegistry::getInstance().getParameterById(varName.c_str());
+        const std::shared_ptr<Parameter> e = ParameterRegistry::getInstance().getParameterById(varName.c_str());
 
         if (e == nullptr) {
             return "(unknown variable " + varName + ")";
@@ -88,21 +88,51 @@ inline void paramToJson(const String& name, const std::shared_ptr<Parameter>& pa
     paramObj["hasHelpText"] = param->hasHelpText();
     paramObj["show"] = param->shouldShow();
 
-    // set parameter value using the appropriate method based on type
-    if (param->getType() == kInteger) {
-        paramObj["value"] = static_cast<int>(param->getValue());
-    }
-    else if (param->getType() == kUInt8) {
-        paramObj["value"] = static_cast<uint8_t>(param->getValue());
-    }
-    else if (param->getType() == kDouble || param->getType() == kDoubletime) {
-        paramObj["value"] = round2(param->getValue());
-    }
-    else if (param->getType() == kFloat) {
-        paramObj["value"] = round2(static_cast<float>(param->getValue()));
-    }
-    else if (param->getType() == kCString) {
-        paramObj["value"] = param->getStringValue();
+    // Set parameter value using the appropriate method based on type
+    switch (param->getType()) {
+        case kInteger:
+            paramObj["value"] = static_cast<int>(param->getValue());
+            break;
+
+        case kUInt8:
+            paramObj["value"] = static_cast<uint8_t>(param->getValue());
+            break;
+
+        case kDouble:
+        case kDoubletime:
+            paramObj["value"] = round2(param->getValue());
+            break;
+
+        case kFloat:
+            paramObj["value"] = round2(static_cast<float>(param->getValue()));
+            break;
+
+        case kCString:
+            paramObj["value"] = param->getStringValue();
+            break;
+
+        case kEnum:
+            {
+                paramObj["value"] = static_cast<int>(param->getValue());
+
+                const JsonArray options = paramObj.createNestedArray("options");
+
+                const char* const* enumOptions = param->getEnumOptions();
+                const size_t enumCount = param->getEnumCount();
+
+                for (size_t i = 0; i < enumCount; i++) {
+                    JsonObject optionObj = options.createNestedObject();
+                    optionObj["value"] = static_cast<int>(i);
+                    optionObj["label"] = enumOptions[i];
+                }
+
+                break;
+            }
+
+        default:
+            // Handle unknown types gracefully
+            paramObj["value"] = param->getValue();
+            break;
     }
 
     paramObj["min"] = param->getMinValue();
@@ -265,12 +295,12 @@ inline void serverSetup() {
         }
 
         // Calculate document size dynamically based on actual parameter count
-        size_t docSize = JSON_ARRAY_SIZE(webVisibleCount) + (webVisibleCount * JSON_OBJECT_SIZE(9)) + (webVisibleCount * JSON_STRING_SIZE(55)); // Estimated string sizes for name + displayName
+        const size_t docSize = JSON_ARRAY_SIZE(webVisibleCount) + (webVisibleCount * JSON_OBJECT_SIZE(9)) + webVisibleCount * JSON_STRING_SIZE(55); // Estimated string sizes for name + displayName
 
         DynamicJsonDocument doc(docSize);
 
         if (request->method() == 2) { // HTTP_POST - Update parameters
-            int requestParams = request->params();
+            const int requestParams = request->params();
 
             for (int i = 0; i < requestParams; i++) {
                 auto* p = request->getParam(i);
@@ -325,13 +355,12 @@ inline void serverSetup() {
         }
         else if (request->method() == 1) { // HTTP_GET - Retrieve parameters
             const size_t paramCount = request->params();
-            String paramId = paramCount > 0 ? request->getParam(0)->value() : "";
+            const String paramId = paramCount > 0 ? request->getParam(0)->value() : "";
 
             if (!paramId.isEmpty()) {
                 // Get specific parameter
-                std::shared_ptr<Parameter> param = registry.getParameterById(paramId.c_str());
 
-                if (param != nullptr && param->shouldShow()) {
+                if (std::shared_ptr<Parameter> param = registry.getParameterById(paramId.c_str()); param != nullptr && param->shouldShow()) {
                     paramToJson(paramId, param, doc);
                 }
             }
@@ -368,7 +397,7 @@ inline void serverSetup() {
 
         const String& varValue = p->value();
 
-        std::shared_ptr<Parameter> param = ParameterRegistry::getInstance().getParameterById(varValue.c_str());
+        const std::shared_ptr<Parameter> param = ParameterRegistry::getInstance().getParameterById(varValue.c_str());
 
         if (param == nullptr) {
             request->send(404, "application/json", "parameter not found");
@@ -446,7 +475,7 @@ inline void serverSetup() {
 
     server.on(
         "/upload/config", HTTP_POST, [](AsyncWebServerRequest* request) { request->send(200, "text/plain", "Configuration upload completed"); },
-        [](AsyncWebServerRequest* request, const String& filename, const size_t index, uint8_t* data, const size_t len, const bool final) {
+        [](AsyncWebServerRequest* request, const String& filename, const size_t index, const uint8_t* data, const size_t len, const bool final) {
             static String uploadBuffer;
             static size_t totalSize = 0;
 
@@ -512,7 +541,7 @@ inline void serverSetup() {
 inline int skippedValues = 0;
 #define SECONDS_TO_SKIP 2
 
-inline void sendTempEvent(double currentTemp, double targetTemp, double heaterPower) {
+inline void sendTempEvent(const double currentTemp, const double targetTemp, const double heaterPower) {
     curTemp = currentTemp;
     tTemp = targetTemp;
     hPower = heaterPower;
@@ -522,9 +551,9 @@ inline void sendTempEvent(double currentTemp, double targetTemp, double heaterPo
         // use array and int value for start index (round robin)
         // one record (3 float values == 12 bytes) every three seconds, for half
         // an hour -> 7.2kB of static memory
-        tempHistory[0][historyCurrentIndex] = (float)currentTemp;
-        tempHistory[1][historyCurrentIndex] = (float)targetTemp;
-        tempHistory[2][historyCurrentIndex] = (float)heaterPower;
+        tempHistory[0][historyCurrentIndex] = static_cast<float>(currentTemp);
+        tempHistory[1][historyCurrentIndex] = static_cast<float>(targetTemp);
+        tempHistory[2][historyCurrentIndex] = static_cast<float>(heaterPower);
         historyCurrentIndex = (historyCurrentIndex + 1) % HISTORY_LENGTH;
         historyValueCount = min(HISTORY_LENGTH - 1, historyValueCount + 1);
         skippedValues = 0;

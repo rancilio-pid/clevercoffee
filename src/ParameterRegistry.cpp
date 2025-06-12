@@ -1,5 +1,6 @@
 
 #include "ParameterRegistry.h"
+#include "Logger.h"
 #include "userConfig.h"
 #include <algorithm>
 
@@ -45,6 +46,7 @@ extern uint8_t backflushOn;
 extern double temperature;
 extern uint8_t scaleTareOn;
 extern uint8_t scaleCalibrationOn;
+extern int logLevel;
 extern const char sysVersion[64];
 
 void ParameterRegistry::initialize(Config& config) {
@@ -175,7 +177,7 @@ void ParameterRegistry::initialize(Config& config) {
         },
         PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, true, "Proportional gain for the steaming mode (I or D are not used)", [] { return true; }, &steamKp));
 
-    addParam(std::make_shared<Parameter>("TEMP", "Temperature", kDouble, sPIDSection, 9, [&] { return temperature; }, [](const double val) { temperature = val; }, 0, 200, false, "", [] { return false; }, &temperature));
+    addParam(std::make_shared<Parameter>("TEMP", "Temperature", kDouble, sPIDSection, 9, [&] { return temperature; }, [](const double val) { temperature = val; }, 0.0, 200.0, false, "", [] { return false; }, &temperature));
 
     // Temperature Section
     addParam(std::make_shared<Parameter>(
@@ -526,8 +528,8 @@ void ParameterRegistry::initialize(Config& config) {
         "IP addresss or hostname of your MQTT broker, changes require a restart", []() -> bool { return true; }, nullptr));
 
     addParam(std::make_shared<Parameter>(
-        "MQTT_PORT", "Port", kInteger, sMqttSection, 42, [&config] { return config.getMqttPort(); }, [&config](const double val) { config.setMqttPort(val); }, 0, 99999, true,
-        "Port number of your MQTT broker, changes require a restart", []() -> bool { return true; }, nullptr));
+        "MQTT_PORT", "Port", kInteger, sMqttSection, 42, [&config] { return static_cast<double>(config.getMqttPort()); }, [&config](const double val) { config.setMqttPort(static_cast<int>(val)); }, 0.0, 99999.0, true,
+        "Port number of your MQTT broker, changes require a restart", []() -> bool { return true; }, static_cast<void*>(nullptr)));
 
     addParam(std::make_shared<Parameter>(
         "MQTT_USERNAME", "Username", kCString, sMqttSection, 43, [&config] { return config.getMqttUsername(); }, [&config](const String& val) { config.setMqttUsername(val); }, MQTT_USERNAME_MAX_LENGTH, true,
@@ -557,7 +559,15 @@ void ParameterRegistry::initialize(Config& config) {
         "OTA_PASSWORD", "OtA Password", kCString, sSystemSection, 49, [&config] { return config.getOtaPass(); }, [&config](const String& val) { config.setOtaPass(val); }, OTAPASS_MAX_LENGTH, true,
         "Password for over-the-air updates, changes require a restart", []() -> bool { return true; }, nullptr));
 
-    addParam(std::make_shared<Parameter>("VERSION", "Version", kCString, sOtherSection, 50, [] { return sysVersion; }, nullptr, 64, false, "", [] { return false; }, nullptr));
+    addParam(std::make_shared<Parameter>(
+        "LOG_LEVEL", "Log Level", kEnum, sSystemSection, 50, [&config] { return config.getLogLevel(); },
+        [&config](const double val) {
+            config.setLogLevel(val);
+            Logger::setLevel(static_cast<Logger::Level>(val));
+        },
+        (const char* const[]){"TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "FATAL", "SILENT"}, 7, true, "Set the logging verbosity level", [] { return true; }));
+
+    addParam(std::make_shared<Parameter>("VERSION", "Version", kCString, sOtherSection, 51, [] { return sysVersion; }, nullptr, 64, false, "", [] { return false; }, nullptr));
 
     std::sort(_parameters.begin(), _parameters.end(), [](const std::shared_ptr<Parameter>& a, const std::shared_ptr<Parameter>& b) { return a->getPosition() < b->getPosition(); });
 

@@ -65,7 +65,7 @@ class ParameterRegistry {
         Config* _config;
         bool _pendingChanges;
         unsigned long _lastChangeTime;
-        static const unsigned long SAVE_DELAY_MS = 2000;
+        static constexpr unsigned long SAVE_DELAY_MS = 2000;
 
     public:
         static ParameterRegistry& getInstance() {
@@ -86,8 +86,8 @@ class ParameterRegistry {
 
         std::shared_ptr<Parameter> getParameterById(const char* id);
 
-        bool setParameterValue(const char* id, double value) {
-            auto param = getParameterById(id);
+        bool setParameterValue(const char* id, const double value) {
+            const auto param = getParameterById(id);
 
             if (!param) {
                 return false;
@@ -99,8 +99,8 @@ class ParameterRegistry {
             return true;
         }
 
-        bool setParameterBoolValue(const char* id, bool value) {
-            auto param = getParameterById(id);
+        bool setParameterBoolValue(const char* id, const bool value) {
+            const auto param = getParameterById(id);
 
             if (!param) {
                 return false;
@@ -112,34 +112,8 @@ class ParameterRegistry {
             return true;
         }
 
-        bool setParameterIntValue(const char* id, int value) {
-            auto param = getParameterById(id);
-
-            if (!param) {
-                return false;
-            }
-
-            param->setValue(static_cast<double>(value));
-            markChanged();
-
-            return true;
-        }
-
-        bool setParameterFloatValue(const char* id, float value) {
-            auto param = getParameterById(id);
-
-            if (!param) {
-                return false;
-            }
-
-            param->setValue(static_cast<double>(value));
-            markChanged();
-
-            return true;
-        }
-
-        bool setParameterDoubleValue(const char* id, double value) {
-            auto param = getParameterById(id);
+        bool setParameterIntValue(const char* id, const int value) {
+            const auto param = getParameterById(id);
 
             if (!param) {
                 return false;
@@ -151,21 +125,47 @@ class ParameterRegistry {
             return true;
         }
 
-        bool setParameterUInt8Value(const char* id, uint8_t value) {
-            auto param = getParameterById(id);
+        bool setParameterFloatValue(const char* id, const float value) {
+            const auto param = getParameterById(id);
 
             if (!param) {
                 return false;
             }
 
-            param->setValue(static_cast<double>(value));
+            param->setValue(value);
+            markChanged();
+
+            return true;
+        }
+
+        bool setParameterDoubleValue(const char* id, const double value) {
+            const auto param = getParameterById(id);
+
+            if (!param) {
+                return false;
+            }
+
+            param->setValue(value);
+            markChanged();
+
+            return true;
+        }
+
+        bool setParameterUInt8Value(const char* id, const uint8_t value) {
+            const auto param = getParameterById(id);
+
+            if (!param) {
+                return false;
+            }
+
+            param->setValue(value);
             markChanged();
 
             return true;
         }
 
         bool setParameterStringValue(const char* id, const String& value) {
-            auto param = getParameterById(id);
+            const auto param = getParameterById(id);
 
             if (!param) {
                 return false;
@@ -175,7 +175,7 @@ class ParameterRegistry {
                 param->setStringValue(value);
             }
             else {
-                double numericValue = value.toDouble();
+                const double numericValue = value.toDouble();
                 param->setValue(numericValue);
             }
 
@@ -190,7 +190,7 @@ class ParameterRegistry {
             }
 
             // Check if enough time has passed since last change
-            if ((millis() - _lastChangeTime) > SAVE_DELAY_MS) {
+            if (millis() - _lastChangeTime > SAVE_DELAY_MS) {
                 if (_config->save()) {
                     _pendingChanges = false;
                     LOG(INFO, "Configuration automatically saved to filesystem");

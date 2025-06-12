@@ -120,6 +120,7 @@ class Config {
             // System
             _doc["system"]["hostname"] = HOSTNAME;
             _doc["system"]["ota_password"] = OTAPASS;
+            _doc["system"]["log_level"] = static_cast<int>(Logger::Level::INFO);
 
             // WiFi credentials flag
             _doc["wifi"]["credentials_saved"] = false;
@@ -566,6 +567,7 @@ class Config {
             _doc["mqtt"]["hassio"]["prefix"] = constrainStringParameter(value, MQTT_HASSIO_PREFIX_MAX_LENGTH, "mqtt.hassio.prefix");
         }
 
+        // System
         String getHostname() {
             return _doc["system"]["hostname"];
         }
@@ -580,6 +582,15 @@ class Config {
 
         void setOtaPass(const String& value) {
             _doc["system"]["ota_password"] = constrainStringParameter(value, OTAPASS_MAX_LENGTH, "system.ota_password");
+        }
+
+        int getLogLevel() {
+            return _doc["system"]["log_level"];
+        }
+
+        void setLogLevel(int value) {
+            value = constrain(value, 0, 6);
+            _doc["system"]["log_level"] = value;
         }
 
     private:
@@ -973,6 +984,7 @@ class Config {
                 setMqttHassioPrefix(value);
             }
 
+            // System parameters
             if (doc["system"].containsKey("hostname")) {
                 const String value = constrainStringParameter(doc["system"]["hostname"].as<String>(), HOSTNAME_MAX_LENGTH, "system.hostname");
                 setHostname(value);
@@ -981,6 +993,16 @@ class Config {
             if (doc["system"].containsKey("ota_password")) {
                 const String value = constrainStringParameter(doc["system"]["ota_password"].as<String>(), OTAPASS_MAX_LENGTH, "system.ota_password");
                 setOtaPass(value);
+            }
+
+            if (doc["system"].containsKey("log_level")) {
+                const int value = doc["system"]["log_level"].as<int>();
+
+                if (value < 0 || value > 6) {
+                    return false;
+                }
+
+                setLogLevel(value);
             }
 
             // WiFi parameters

@@ -9,7 +9,8 @@ enum EditableKind {
     kDouble,
     kDoubletime,
     kCString,
-    kFloat
+    kFloat,
+    kEnum
 };
 
 class Parameter {
@@ -39,6 +40,8 @@ class Parameter {
             _setter(std::move(setter)),
             _minValue(minValue),
             _maxValue(maxValue),
+            _enumOptions(nullptr),
+            _enumCount(0),
             _hasHelpText(hasHelpText),
             _helpText(helpText),
             _showCondition(std::move(showCondition)),
@@ -56,7 +59,7 @@ class Parameter {
             int position,
             const std::function<String()>& stringGetter,
             const std::function<void(const String&)>& stringSetter,
-            double maxLength, // Maximum string length
+            double maxLength,
             bool hasHelpText = false,
             const char* helpText = "",
             const std::function<bool()>& showCondition = [] { return true; },
@@ -66,10 +69,12 @@ class Parameter {
             _type(type),
             _section(section),
             _position(position),
-            _getter(nullptr),     // Not used for strings
-            _setter(nullptr),     // Not used for strings
-            _minValue(0),         // Not applicable for strings
-            _maxValue(maxLength), // Used for string length validation
+            _getter(nullptr),
+            _setter(nullptr),
+            _minValue(0),
+            _maxValue(maxLength),
+            _enumOptions(nullptr),
+            _enumCount(0),
             _hasHelpText(hasHelpText),
             _helpText(helpText),
             _showCondition(showCondition),
@@ -102,11 +107,13 @@ class Parameter {
             _setter(std::move(setter)),
             _minValue(minValue),
             _maxValue(maxValue),
+            _enumOptions(nullptr),
+            _enumCount(0),
             _hasHelpText(hasHelpText),
             _helpText(helpText),
             _showCondition(std::move(showCondition)),
-            _stringGetter(nullptr), // Not used for numeric
-            _stringSetter(nullptr), // Not used for numeric
+            _stringGetter(nullptr),
+            _stringSetter(nullptr),
             _globalVariablePointer(globalVariablePointer) {
         }
 
@@ -128,10 +135,46 @@ class Parameter {
             _type(type),
             _section(section),
             _position(position),
-            _getter([boolGetter]() { return boolGetter() ? 1.0 : 0.0; }),
-            _setter([boolSetter](double val) { boolSetter(val > 0.5); }),
+            _getter([boolGetter] { return boolGetter() ? 1.0 : 0.0; }),
+            _setter([boolSetter](const double val) { boolSetter(val > 0.5); }),
             _minValue(0),
             _maxValue(1),
+            _enumOptions(nullptr),
+            _enumCount(0),
+            _hasHelpText(hasHelpText),
+            _helpText(helpText),
+            _showCondition(showCondition),
+            _stringGetter(nullptr),
+            _stringSetter(nullptr),
+            _globalVariablePointer(globalVariablePointer) {
+        }
+
+        // For enum parameters
+        Parameter(
+            const char* id,
+            const char* displayName,
+            EditableKind type,
+            int section,
+            int position,
+            const std::function<double()>& getter,
+            const std::function<void(double)>& setter,
+            const char* const* enumOptions,
+            size_t enumCount,
+            bool hasHelpText = false,
+            const char* helpText = "",
+            const std::function<bool()>& showCondition = [] { return true; },
+            void* globalVariablePointer = nullptr) :
+            _id(id),
+            _displayName(displayName),
+            _type(type),
+            _section(section),
+            _position(position),
+            _getter(getter),
+            _setter(setter),
+            _enumOptions(enumOptions),
+            _enumCount(enumCount),
+            _minValue(0),
+            _maxValue(static_cast<double>(enumCount - 1)),
             _hasHelpText(hasHelpText),
             _helpText(helpText),
             _showCondition(showCondition),
@@ -164,7 +207,7 @@ class Parameter {
             return _getter();
         }
 
-        void setValue(double value) const {
+        void setValue(const double value) const {
             _setter(value);
             syncToGlobalVariable(value);
         }
@@ -192,7 +235,7 @@ class Parameter {
             return {};
         }
 
-        void setStringValue(const String& value) {
+        void setStringValue(const String& value) const {
             if (_stringSetter) {
                 _stringSetter(value);
                 syncToGlobalVariable(value);
@@ -223,18 +266,48 @@ class Parameter {
             switch (_type) {
                 case kFloat:
                     return String(getFloatValue());
+
                 case kDouble:
                 case kDoubletime:
                     return String(getValue());
+
                 case kInteger:
                     return String(getIntValue());
+
                 case kUInt8:
                     return String(getUInt8Value());
+
                 case kCString:
                     return getStringValue();
+
+                case kEnum:
+                    return getEnumDisplayValue();
+
                 default:
                     return "Unknown type";
             }
+        }
+
+        [[nodiscard]] const char* const* getEnumOptions() const {
+            return _enumOptions;
+        }
+
+        [[nodiscard]] size_t getEnumCount() const {
+            return _enumCount;
+        }
+
+        [[nodiscard]] bool isEnum() const {
+            return _type == kEnum;
+        }
+
+        [[nodiscard]] String getEnumDisplayValue() const {
+            if (!isEnum() || _enumOptions == nullptr) {
+                return "";
+            }
+
+            const int index = static_cast<int>(getValue());
+
+            return (index >= 0 && index < static_cast<int>(_enumCount)) ? String(_enumOptions[index]) : "";
         }
 
         [[nodiscard]] void* getGlobalVariablePointer() const {
@@ -245,7 +318,7 @@ class Parameter {
             _globalVariablePointer = ptr;
         }
 
-        void syncToGlobalVariable(double value) const {
+        void syncToGlobalVariable(const double value) const {
             if (_globalVariablePointer == nullptr) return;
 
             switch (_type) {
@@ -264,6 +337,10 @@ class Parameter {
 
                 case kFloat:
                     *static_cast<float*>(_globalVariablePointer) = static_cast<float>(value);
+                    break;
+
+                case kEnum:
+                    *static_cast<int*>(_globalVariablePointer) = static_cast<int>(value);
                     break;
 
                 case kCString:
@@ -289,6 +366,8 @@ class Parameter {
         int _position;
         std::function<double()> _getter;
         std::function<void(double)> _setter;
+        const char* const* _enumOptions;
+        size_t _enumCount;
         double _minValue;
         double _maxValue;
         bool _hasHelpText;

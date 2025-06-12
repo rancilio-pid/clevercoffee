@@ -95,6 +95,43 @@ const vueApp = Vue.createApp({
             return sectionNames[sectionId]
         },
 
+        // Helper method to determine input type for parameters
+        getInputType(param) {
+            switch(param.type) {
+                case 6: // enum
+                    return 'select';
+                case 4: // string
+                    return 'text';
+                case 0: // integer
+                case 1: // uint8
+                case 2: // float/double
+                case 3: // doubletime
+                    return 'number';
+                default:
+                    return 'text';
+            }
+        },
+
+        // Helper method to get step value for number inputs
+        getNumberStep(param) {
+            switch(param.type) {
+                case 0: // integer
+                case 1: // uint8
+                    return '1';
+                case 2: // float/double
+                case 3: // doubletime
+                    return '0.01';
+                default:
+                    return '1';
+            }
+        },
+
+        // Helper method to check if parameter is a boolean (displayed as checkbox)
+        isBoolean(param) {
+            // Type 1 is uint8, and if min=0 max=1, it's a boolean checkbox
+            return param.type === 1 && param.min === 0 && param.max === 1;
+        },
+
         confirmSubmission() {
             if (confirm('Are you sure you want to start the scale calibration?')) {
                 const requestOptions = {
@@ -221,8 +258,6 @@ const vueApp = Vue.createApp({
                 // Expected - machine is restarting
             }
         }
-
-
     },
 
     computed: {
@@ -231,7 +266,6 @@ const vueApp = Vue.createApp({
             const filteredParameters = this.parameters.filter(param => !excludedSections.includes(param.section))
             return groupBy(filteredParameters, "section")
         }
-
     },
 
     mounted() {

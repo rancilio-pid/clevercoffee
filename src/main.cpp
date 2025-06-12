@@ -1041,7 +1041,8 @@ void setup() {
 
     // Start the logger
     Logger::begin();
-    Logger::setLevel(LOGLEVEL);
+    int level = ParameterRegistry::getInstance().getParameterById("LOG_LEVEL")->getIntValue();
+    Logger::setLevel(static_cast<Logger::Level>(level));
 
     // Initialize PID controller
     bPID.SetSampleTime(windowSize);
