@@ -101,11 +101,6 @@ class Config {
 
             // Features
             _doc["features"]["brew_control"] = false;
-            _doc["features"]["fullscreen_brew_timer"] = false;
-            _doc["features"]["fullscreen_manual_flush_timer"] = false;
-            _doc["features"]["post_brew_timer_duration"] = POST_BREW_TIMER_DURATION;
-            _doc["features"]["heating_logo"] = true;
-            _doc["features"]["pid_off_logo"] = true;
 
             // MQTT
             _doc["mqtt"]["enabled"] = false;
@@ -121,6 +116,14 @@ class Config {
             _doc["system"]["hostname"] = HOSTNAME;
             _doc["system"]["ota_password"] = OTAPASS;
             _doc["system"]["log_level"] = static_cast<int>(Logger::Level::INFO);
+
+            // Display
+            _doc["display"]["template"] = 0;
+            _doc["display"]["fullscreen_brew_timer"] = false;
+            _doc["display"]["fullscreen_manual_flush_timer"] = false;
+            _doc["display"]["post_brew_timer_duration"] = POST_BREW_TIMER_DURATION;
+            _doc["display"]["heating_logo"] = true;
+            _doc["display"]["pid_off_logo"] = true;
 
             // WiFi credentials flag
             _doc["wifi"]["credentials_saved"] = false;
@@ -462,46 +465,6 @@ class Config {
             _doc["features"]["brew_control"] = value;
         }
 
-        bool getFeatureFullscreenBrewTimer() {
-            return _doc["features"]["fullscreen_brew_timer"] | false;
-        }
-
-        void setFeatureFullscreenBrewTimer(const bool value) {
-            _doc["features"]["fullscreen_brew_timer"] = value;
-        }
-
-        bool getFeatureFullscreenManualFlushTimer() {
-            return _doc["features"]["fullscreen_manual_flush_timer"] | false;
-        }
-
-        void setFeatureFullscreenManualFlushTimer(const bool value) {
-            _doc["features"]["fullscreen_manual_flush_timer"] = value;
-        }
-
-        double getPostBrewTimerDuration() {
-            return _doc["features"]["post_brew_timer_duration"] | POST_BREW_TIMER_DURATION;
-        }
-
-        void setPostBrewTimerDuration(const double value) {
-            _doc["features"]["post_brew_timer_duration"] = constrain(value, POST_BREW_TIMER_DURATION_MIN, POST_BREW_TIMER_DURATION_MAX);
-        }
-
-        bool getFeatureHeatingLogo() {
-            return _doc["features"]["heating_logo"] | false;
-        }
-
-        void setFeatureHeatingLogo(const bool value) {
-            _doc["features"]["heating_logo"] = value;
-        }
-
-        bool getFeaturePidOffLogo() {
-            return _doc["features"]["pid_off_logo"] | false;
-        }
-
-        void setFeaturePidOffLogo(const bool value) {
-            _doc["features"]["pid_off_logo"] = value;
-        }
-
         // MQTT
         bool getMqttEnabled() {
             return _doc["mqtt"]["enabled"] | false;
@@ -591,6 +554,55 @@ class Config {
         void setLogLevel(int value) {
             value = constrain(value, 0, 6);
             _doc["system"]["log_level"] = value;
+        }
+
+        int getDisplayTemplate() {
+            return _doc["display"]["template"];
+        }
+
+        void setDisplayTemplate(int value) {
+            value = constrain(value, 0, 4);
+            _doc["system"]["log_level"] = value;
+        }
+
+        bool getFeatureFullscreenBrewTimer() {
+            return _doc["display"]["fullscreen_brew_timer"] | false;
+        }
+
+        void setFeatureFullscreenBrewTimer(const bool value) {
+            _doc["display"]["fullscreen_brew_timer"] = value;
+        }
+
+        bool getFeatureFullscreenManualFlushTimer() {
+            return _doc["display"]["fullscreen_manual_flush_timer"] | false;
+        }
+
+        void setFeatureFullscreenManualFlushTimer(const bool value) {
+            _doc["display"]["fullscreen_manual_flush_timer"] = value;
+        }
+
+        double getPostBrewTimerDuration() {
+            return _doc["display"]["post_brew_timer_duration"] | POST_BREW_TIMER_DURATION;
+        }
+
+        void setPostBrewTimerDuration(const double value) {
+            _doc["display"]["post_brew_timer_duration"] = constrain(value, POST_BREW_TIMER_DURATION_MIN, POST_BREW_TIMER_DURATION_MAX);
+        }
+
+        bool getFeatureHeatingLogo() {
+            return _doc["display"]["heating_logo"] | false;
+        }
+
+        void setFeatureHeatingLogo(const bool value) {
+            _doc["display"]["heating_logo"] = value;
+        }
+
+        bool getFeaturePidOffLogo() {
+            return _doc["display"]["pid_off_logo"] | false;
+        }
+
+        void setFeaturePidOffLogo(const bool value) {
+            _doc["display"]["pid_off_logo"] = value;
         }
 
     private:
@@ -890,46 +902,46 @@ class Config {
                 setFeatureBrewControl(doc["features"]["brew_control"].as<bool>());
             }
 
-            if (doc["features"].containsKey("fullscreen_brew_timer")) {
-                if (!doc["features"]["fullscreen_brew_timer"].is<bool>()) {
+            if (doc["display"].containsKey("fullscreen_brew_timer")) {
+                if (!doc["display"]["fullscreen_brew_timer"].is<bool>()) {
                     return false;
                 }
 
                 setFeatureFullscreenBrewTimer(doc["features"]["fullscreen_brew_timer"].as<bool>());
             }
 
-            if (doc["features"].containsKey("fullscreen_manual_flush_timer")) {
-                if (!doc["features"]["fullscreen_manual_flush_timer"].is<bool>()) {
+            if (doc["display"].containsKey("fullscreen_manual_flush_timer")) {
+                if (!doc["display"]["fullscreen_manual_flush_timer"].is<bool>()) {
                     return false;
                 }
 
-                setFeatureFullscreenManualFlushTimer(doc["features"]["fullscreen_manual_flush_timer"].as<bool>());
+                setFeatureFullscreenManualFlushTimer(doc["display"]["fullscreen_manual_flush_timer"].as<bool>());
             }
 
-            if (doc["features"].containsKey("post_brew_timer_duration")) {
-                const double value = doc["features"]["post_brew_timer_duration"].as<double>();
+            if (doc["display"].containsKey("post_brew_timer_duration")) {
+                const double value = doc["display"]["post_brew_timer_duration"].as<double>();
 
-                if (!validateParameterRange("features.post_brew_timer_duration", value, POST_BREW_TIMER_DURATION_MIN, POST_BREW_TIMER_DURATION_MAX)) {
+                if (!validateParameterRange("display.post_brew_timer_duration", value, POST_BREW_TIMER_DURATION_MIN, POST_BREW_TIMER_DURATION_MAX)) {
                     return false;
                 }
 
                 setPostBrewTimerDuration(value);
             }
 
-            if (doc["features"].containsKey("heating_logo")) {
-                if (!doc["features"]["heating_logo"].is<bool>()) {
+            if (doc["display"].containsKey("heating_logo")) {
+                if (!doc["display"]["heating_logo"].is<bool>()) {
                     return false;
                 }
 
-                setFeatureHeatingLogo(doc["features"]["heating_logo"].as<bool>());
+                setFeatureHeatingLogo(doc["display"]["heating_logo"].as<bool>());
             }
 
-            if (doc["features"].containsKey("pid_off_logo")) {
-                if (!doc["features"]["pid_off_logo"].is<bool>()) {
+            if (doc["display"].containsKey("pid_off_logo")) {
+                if (!doc["display"]["pid_off_logo"].is<bool>()) {
                     return false;
                 }
 
-                setFeaturePidOffLogo(doc["features"]["pid_off_logo"].as<bool>());
+                setFeaturePidOffLogo(doc["display"]["pid_off_logo"].as<bool>());
             }
 
             // MQTT parameters
@@ -1003,6 +1015,16 @@ class Config {
                 }
 
                 setLogLevel(value);
+            }
+
+            if (doc["display"].containsKey("template")) {
+                const int value = doc["display"]["template"].as<int>();
+
+                if (value < 0 || value > 4) {
+                    return false;
+                }
+
+                setDisplayTemplate(value);
             }
 
             // WiFi parameters

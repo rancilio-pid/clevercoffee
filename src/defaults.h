@@ -45,6 +45,8 @@
 #define MQTT_PASSWORD             "silvia"          // default MQTT password
 #define MQTT_TOPIC                "custom/kitchen/" // default MQTT topic prefix
 #define MQTT_HASSIO_PREFIX        "homeassistant"   // default MQTT prefix for Home Assistant
+#define SCREEN_WIDTH              128               // OLED display width, in pixels
+#define SCREEN_HEIGHT             64                // OLED display height, in pixels
 
 #define PID_KP_REGULAR_MIN            0.0
 #define PID_KP_REGULAR_MAX            999.0

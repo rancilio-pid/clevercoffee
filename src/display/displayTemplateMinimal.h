@@ -7,8 +7,6 @@
 
 #pragma once
 
-#include "displayCommon.h"
-
 /**
  * @brief Send data to display
  */

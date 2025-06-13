@@ -11,8 +11,6 @@
 int blinkingtemp = 1;           // 0: blinking near setpoint, 1: blinking far away from setpoint
 float blinkingtempoffset = 0.3; // offset for blinking
 
-#include "displayCommon.h"
-
 /**
  * @brief Send data to display
  */

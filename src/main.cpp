@@ -60,10 +60,6 @@ hw_timer_t* timer = nullptr;
 #include <Wire.h>
 #endif
 
-#if OLED_DISPLAY == 3
-#include <SPI.h>
-#endif
-
 #if FEATURE_SCALE == 1
 #define HX711_ADC_config_h
 #define SAMPLES                32
@@ -315,6 +311,14 @@ int getSignalStrength() {
     return 0;
 }
 
+// Forward declarations for display methods
+#if OLED_DISPLAY != 0
+void displayMessage(String text1, String text2, String text3, String text4, String text5, String text6);
+void displayLogo(String displaymessagetext, String displaymessagetext2);
+bool shouldDisplayBrewTimer();
+void u8g2_prepare();
+#endif
+
 // Display define & template
 #if OLED_DISPLAY == 1
 U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, PIN_I2CSCL, PIN_I2CSDA);  // e.g. 1.3"
@@ -328,29 +332,9 @@ U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, PIN_I2CSCL, PIN
 U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, OLED_CS, OLED_DC, /* reset=*/U8X8_PIN_NONE); // e.g. 1.3"
 #endif
 
-// Horizontal or vertical display
-#if (OLED_DISPLAY != 0)
-#if (DISPLAYTEMPLATE < 20) // horizontal templates
-#include "display/displayCommon.h"
-#endif
+#include "display/displayTemplateManager.h"
 
-#if (DISPLAYTEMPLATE >= 20) // vertical templates
-#include "display/displayRotateUpright.h"
-#endif
-
-#if (DISPLAYTEMPLATE == 1)
-#include "display/displayTemplateStandard.h"
-#elif (DISPLAYTEMPLATE == 2)
-#include "display/displayTemplateMinimal.h"
-#elif (DISPLAYTEMPLATE == 3)
-#include "display/displayTemplateTempOnly.h"
-#elif (DISPLAYTEMPLATE == 4)
-#include "display/displayTemplateScale.h"
-#elif (DISPLAYTEMPLATE == 20)
-#include "display/displayTemplateUpright.h"
-#endif
-Timer printDisplayTimer(&printScreen, 100);
-#endif
+Timer printDisplayTimer(&DisplayTemplateManager::printScreen, 100);
 
 #include "powerHandler.h"
 #include "scaleHandler.h"
@@ -885,6 +869,11 @@ void setup() {
     else {
         ParameterRegistry::getInstance().syncGlobalVariables();
         hostname = config.getHostname();
+    }
+
+    if (OLED_DISPLAY > 0) {
+        int templateId = config.getDisplayTemplate();
+        DisplayTemplateManager::initializeDisplay(templateId);
     }
 
     // Calculate derived values
