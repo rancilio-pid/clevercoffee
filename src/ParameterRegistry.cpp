@@ -230,7 +230,7 @@ void ParameterRegistry::initialize(Config& config) {
             config.setFeatureBrewControl(val);
             featureBrewControl = val;
         },
-        true, "Enables brew-by-time or brew-by-weight", [] { return FEATURE_BREWSWITCH == 1; }, &featureBrewControl));
+        true, "Enables brew-by-time or brew-by-weight", [] { return true; }, &featureBrewControl));
 
     addParam(std::make_shared<Parameter>(
         "TARGET_BREW_TIME", "Target Brew Time (s)", kDouble, sBrewSection, 14,
@@ -371,7 +371,7 @@ void ParameterRegistry::initialize(Config& config) {
             config.setUseBDPID(val);
             useBDPID = val;
         },
-        true, "Use separate PID parameters while brew is running", [] { return FEATURE_BREWSWITCH == 1; }, &useBDPID));
+        true, "Use separate PID parameters while brew is running", [] { return true; }, &useBDPID));
 
     addParam(std::make_shared<Parameter>(
         "PID_BD_DELAY", "Brew PID Delay (s)", kDouble, sBrewPidSection, 27,

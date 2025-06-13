@@ -7,7 +7,8 @@
 #pragma once
 
 /**
- * @class Abstract interface class for an LED
+ * @class LED.h
+ * @brief Abstract interface class for an LED
  */
 class LED {
     public:
@@ -19,7 +20,7 @@ class LED {
          */
         enum Type {
             STANDARD,
-            WS2812
+            I2C
         };
 
         virtual void turnOn() = 0;
@@ -27,6 +28,5 @@ class LED {
         virtual void setColor(int red, int green, int blue) = 0;
         virtual void setBrightness(int value) = 0;
         virtual void setGPIOState(bool state);
-        virtual ~LED() {
-        }
+        virtual ~LED() = default;
 };

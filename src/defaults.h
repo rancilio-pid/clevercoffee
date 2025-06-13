@@ -20,6 +20,7 @@
 #define SCALE_CALIBRATION_FACTOR  1.00              // Raw data is divided by this value to convert to readable data
 #define SCALE2_CALIBRATION_FACTOR 1.00              // Raw data is divided by this value to convert to readable data
 #define SCALE_KNOWN_WEIGHT        267.00            // Calibration weight for scale (weight of the tray)
+#define SCALE_SAMPLES             2                 // Number of samples used for calibration
 #define AGGKP                     62.0              // PID Kp (regular phase)
 #define AGGTN                     52.0              // PID Tn (regular phase)
 #define AGGTV                     11.5              // PID Tv (regular phase)

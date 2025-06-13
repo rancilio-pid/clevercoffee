@@ -38,7 +38,7 @@ void printScreen() {
     u8g2.clearBuffer();
 
     // draw (blinking) temp
-    if (((fabs(temperature - setpoint) < blinkingtempoffset && blinkingtemp == 0) || (fabs(temperature - setpoint) >= blinkingtempoffset && blinkingtemp == 1)) && !FEATURE_STATUS_LED) {
+    if (((fabs(temperature - setpoint) < blinkingtempoffset && blinkingtemp == 0) || (fabs(temperature - setpoint) >= blinkingtempoffset && blinkingtemp == 1)) && !config.getStatusLedEnabled()) {
         if (isrCounter < 500) {
             if (temperature < 99.999) {
                 u8g2.setCursor(8, 22);

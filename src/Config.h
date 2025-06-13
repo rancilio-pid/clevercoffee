@@ -9,6 +9,8 @@
 
 #include "Logger.h"
 #include "defaults.h"
+#include "hardware/Relay.h"
+#include "hardware/Switch.h"
 #include <ArduinoJson.h>
 #include <LittleFS.h>
 
@@ -124,6 +126,37 @@ class Config {
             _doc["display"]["post_brew_timer_duration"] = POST_BREW_TIMER_DURATION;
             _doc["display"]["heating_logo"] = true;
             _doc["display"]["pid_off_logo"] = true;
+
+            // Hardware
+            _doc["hardware"]["relays"]["heater"]["trigger_type"] = Relay::HIGH_TRIGGER;
+            _doc["hardware"]["relays"]["pump_valve"]["trigger_type"] = Relay::HIGH_TRIGGER;
+
+            _doc["hardware"]["switches"]["brew"]["enabled"] = false;
+            _doc["hardware"]["switches"]["brew"]["type"] = static_cast<int>(Switch::TOGGLE);
+            _doc["hardware"]["switches"]["brew"]["mode"] = static_cast<int>(Switch::NORMALLY_OPEN);
+            _doc["hardware"]["switches"]["steam"]["enabled"] = false;
+            _doc["hardware"]["switches"]["steam"]["type"] = static_cast<int>(Switch::TOGGLE);
+            _doc["hardware"]["switches"]["steam"]["mode"] = static_cast<int>(Switch::NORMALLY_OPEN);
+            _doc["hardware"]["switches"]["power"]["enabled"] = false;
+            _doc["hardware"]["switches"]["power"]["type"] = static_cast<int>(Switch::TOGGLE);
+            _doc["hardware"]["switches"]["power"]["mode"] = static_cast<int>(Switch::NORMALLY_OPEN);
+
+            _doc["hardware"]["leds"]["status"]["enabled"] = false;
+            _doc["hardware"]["leds"]["status"]["inverted"] = false;
+            _doc["hardware"]["leds"]["brew"]["enabled"] = false;
+            _doc["hardware"]["leds"]["brew"]["inverted"] = false;
+            _doc["hardware"]["leds"]["steam"]["enabled"] = false;
+            _doc["hardware"]["leds"]["steam"]["inverted"] = false;
+
+            _doc["hardware"]["sensors"]["pressure"]["enabled"] = false;
+
+            _doc["hardware"]["sensors"]["watertank"]["enabled"] = false;
+            _doc["hardware"]["sensors"]["watertank"]["mode"] = static_cast<int>(Switch::NORMALLY_CLOSED);
+            ;
+
+            _doc["hardware"]["sensors"]["scale"]["enabled"] = false;
+            _doc["hardware"]["sensors"]["scale"]["samples"] = SCALE_SAMPLES;
+            _doc["hardware"]["sensors"]["scale"]["type"] = 0;
 
             // WiFi credentials flag
             _doc["wifi"]["credentials_saved"] = false;
@@ -605,6 +638,194 @@ class Config {
             _doc["display"]["pid_off_logo"] = value;
         }
 
+        // Hardware - Relays
+        int getHeaterRelayTriggerType() {
+            return _doc["hardware"]["relays"]["heater"]["trigger_type"];
+        }
+
+        void setHeaterRelayTriggerType(const int value) {
+            _doc["hardware"]["relays"]["heater"]["trigger_type"] = value;
+        }
+
+        int getPumpValveRelayTriggerType() {
+            return _doc["hardware"]["relays"]["pump_valve"]["trigger_type"];
+        }
+
+        void setPumpValveRelayTriggerType(const int value) {
+            _doc["hardware"]["relays"]["pump_valve"]["trigger_type"] = value;
+        }
+
+        // Hardware - Switches
+        bool getBrewSwitchEnabled() {
+            return _doc["hardware"]["switches"]["brew"]["enabled"] | false;
+        }
+
+        void setBrewSwitchEnabled(const bool value) {
+            _doc["hardware"]["switches"]["brew"]["enabled"] = value;
+        }
+
+        int getBrewSwitchType() {
+            return _doc["hardware"]["switches"]["brew"]["type"];
+        }
+
+        void setBrewSwitchType(const int value) {
+            _doc["hardware"]["switches"]["brew"]["type"] = value;
+        }
+
+        int getBrewSwitchMode() {
+            return _doc["hardware"]["switches"]["brew"]["mode"];
+        }
+
+        void setBrewSwitchMode(const int value) {
+            _doc["hardware"]["switches"]["brew"]["mode"] = value;
+        }
+
+        bool getSteamSwitchEnabled() {
+            return _doc["hardware"]["switches"]["steam"]["enabled"] | false;
+        }
+
+        void setSteamSwitchEnabled(const bool value) {
+            _doc["hardware"]["switches"]["steam"]["enabled"] = value;
+        }
+
+        int getSteamSwitchType() {
+            return _doc["hardware"]["switches"]["steam"]["type"];
+        }
+
+        void setSteamSwitchType(const int value) {
+            _doc["hardware"]["switches"]["steam"]["type"] = value;
+        }
+
+        int getSteamSwitchMode() {
+            return _doc["hardware"]["switches"]["steam"]["mode"];
+        }
+
+        void setSteamSwitchMode(int value) {
+            _doc["hardware"]["switches"]["steam"]["mode"] = value;
+        }
+
+        bool getPowerSwitchEnabled() {
+            return _doc["hardware"]["switches"]["power"]["enabled"] | false;
+        }
+
+        void setPowerSwitchEnabled(const bool value) {
+            _doc["hardware"]["switches"]["power"]["enabled"] = value;
+        }
+
+        int getPowerSwitchType() {
+            return _doc["hardware"]["switches"]["power"]["type"];
+        }
+
+        void setPowerSwitchType(const int value) {
+            _doc["hardware"]["switches"]["power"]["type"] = value;
+        }
+
+        int getPowerSwitchMode() {
+            return _doc["hardware"]["switches"]["power"]["mode"];
+        }
+
+        void setPowerSwitchMode(int value) {
+            _doc["hardware"]["switches"]["power"]["mode"] = value;
+        }
+
+        // Hardware - LEDs
+        bool getStatusLedEnabled() {
+            return _doc["hardware"]["leds"]["status"]["enabled"] | false;
+        }
+
+        void setStatusLedEnabled(const bool value) {
+            _doc["hardware"]["leds"]["status"]["enabled"] = value;
+        }
+
+        bool getStatusLedInverted() {
+            return _doc["hardware"]["leds"]["status"]["inverted"] | false;
+        }
+
+        void setStatusLedInverted(const bool value) {
+            _doc["hardware"]["leds"]["status"]["inverted"] = value;
+        }
+
+        bool getBrewLedEnabled() {
+            return _doc["hardware"]["leds"]["brew"]["enabled"] | false;
+        }
+
+        void setBrewLedEnabled(const bool value) {
+            _doc["hardware"]["leds"]["brew"]["enabled"] = value;
+        }
+
+        bool getBrewLedInverted() {
+            return _doc["hardware"]["leds"]["brew"]["inverted"] | false;
+        }
+
+        void setBrewLedInverted(const bool value) {
+            _doc["hardware"]["leds"]["brew"]["inverted"] = value;
+        }
+
+        bool getSteamLedEnabled() {
+            return _doc["hardware"]["leds"]["steam"]["enabled"] | false;
+        }
+
+        void setSteamLedEnabled(const bool value) {
+            _doc["hardware"]["leds"]["steam"]["enabled"] = value;
+        }
+
+        bool getSteamLedInverted() {
+            return _doc["hardware"]["leds"]["steam"]["inverted"] | false;
+        }
+
+        void setSteamLedInverted(const bool value) {
+            _doc["hardware"]["leds"]["steam"]["inverted"] = value;
+        }
+
+        // Hardware - Sensors
+        bool getPressureSensorEnabled() {
+            return _doc["hardware"]["sensors"]["pressure"]["enabled"] | false;
+        }
+
+        void setPressureSensorEnabled(const bool value) {
+            _doc["hardware"]["sensors"]["pressure"]["enabled"] = value;
+        }
+
+        bool getWaterTankSensorEnabled() {
+            return _doc["hardware"]["sensors"]["watertank"]["enabled"] | false;
+        }
+
+        void setWaterTankSensorEnabled(const bool value) {
+            _doc["hardware"]["sensors"]["watertank"]["enabled"] = value;
+        }
+
+        int getWaterTankSensorMode() {
+            return _doc["hardware"]["sensors"]["watertank"]["mode"];
+        }
+
+        void setWaterTankSensorMode(const int value) {
+            _doc["hardware"]["sensors"]["watertank"]["mode"] = value;
+        }
+
+        bool getScaleEnabled() {
+            return _doc["hardware"]["sensors"]["scale"]["enabled"] | false;
+        }
+
+        void setScaleEnabled(const bool value) {
+            _doc["hardware"]["sensors"]["scale"]["enabled"] = value;
+        }
+
+        int getScaleSamples() {
+            return _doc["hardware"]["sensors"]["scale"]["samples"];
+        }
+
+        void setScaleSamples(const int value) {
+            _doc["hardware"]["sensors"]["scale"]["samples"] = value;
+        }
+
+        int getScaleType() {
+            return _doc["hardware"]["sensors"]["scale"]["type"];
+        }
+
+        void setScaleType(const int value) {
+            _doc["hardware"]["sensors"]["scale"]["type"] = value;
+        }
+
     private:
         inline static auto CONFIG_FILE = "/config.json";
 
@@ -1025,6 +1246,215 @@ class Config {
                 }
 
                 setDisplayTemplate(value);
+            }
+
+            // Hardware - Relays
+            if (doc["hardware"]["relays"]["heater"].containsKey("trigger_type")) {
+                int value = doc["hardware"]["relays"]["heater"]["trigger_type"].as<int>();
+
+                if (!validateParameterRange("hardware.relays.heater.trigger_type", value, 0, 1)) {
+                    return false;
+                }
+
+                setHeaterRelayTriggerType(value);
+            }
+
+            if (doc["hardware"]["relays"]["pump_valve"].containsKey("trigger_type")) {
+                int value = doc["hardware"]["relays"]["pump_valve"]["trigger_type"].as<int>();
+
+                if (!validateParameterRange("hardware.relays.pump_valve.trigger_type", value, 0, 1)) {
+                    return false;
+                }
+
+                setPumpValveRelayTriggerType(value);
+            }
+
+            // Hardware - Switches
+            if (doc["hardware"]["switches"]["brew"].containsKey("enabled")) {
+                if (!doc["hardware"]["switches"]["brew"]["enabled"].is<bool>()) {
+                    return false;
+                }
+
+                setBrewSwitchEnabled(doc["hardware"]["switches"]["brew"]["enabled"].as<bool>());
+            }
+
+            if (doc["hardware"]["switches"]["brew"].containsKey("type")) {
+                int value = doc["hardware"]["switches"]["brew"]["type"].as<int>();
+
+                if (!validateParameterRange("hardware.switches.brew.type", value, 0, 1)) {
+                    return false;
+                }
+
+                setBrewSwitchType(value);
+            }
+
+            if (doc["hardware"]["switches"]["brew"].containsKey("mode")) {
+                int value = doc["hardware"]["switches"]["brew"]["mode"].as<int>();
+
+                if (!validateParameterRange("hardware.switches.brew.mode", value, 0, 1)) {
+                    return false;
+                }
+
+                setBrewSwitchMode(value);
+            }
+
+            if (doc["hardware"]["switches"]["steam"].containsKey("enabled")) {
+                if (!doc["hardware"]["switches"]["steam"]["enabled"].is<bool>()) {
+                    return false;
+                }
+
+                setSteamSwitchEnabled(doc["hardware"]["switches"]["steam"]["enabled"].as<bool>());
+            }
+
+            if (doc["hardware"]["switches"]["steam"].containsKey("type")) {
+                int value = doc["hardware"]["switches"]["steam"]["type"].as<int>();
+
+                if (!validateParameterRange("hardware.switches.steam.type", value, 0, 1)) {
+                    return false;
+                }
+
+                setSteamSwitchType(value);
+            }
+
+            if (doc["hardware"]["switches"]["steam"].containsKey("mode")) {
+                int value = doc["hardware"]["switches"]["steam"]["mode"].as<int>();
+
+                if (!validateParameterRange("hardware.switches.steam.mode", value, 0, 1)) {
+                    return false;
+                }
+
+                setSteamSwitchMode(value);
+            }
+
+            if (doc["hardware"]["switches"]["power"].containsKey("enabled")) {
+                if (!doc["hardware"]["switches"]["power"]["enabled"].is<bool>()) {
+                    return false;
+                }
+
+                setPowerSwitchEnabled(doc["hardware"]["switches"]["power"]["enabled"].as<bool>());
+            }
+
+            if (doc["hardware"]["switches"]["power"].containsKey("type")) {
+                int value = doc["hardware"]["switches"]["power"]["type"].as<int>();
+
+                if (!validateParameterRange("hardware.switches.power.type", value, 0, 1)) {
+                    return false;
+                }
+
+                setPowerSwitchType(value);
+            }
+
+            if (doc["hardware"]["switches"]["power"].containsKey("mode")) {
+                int value = doc["hardware"]["switches"]["power"]["mode"].as<int>();
+
+                if (!validateParameterRange("hardware.switches.power.mode", value, 0, 1)) {
+                    return false;
+                }
+
+                setPowerSwitchMode(value);
+            }
+
+            // Hardware - LEDs
+            if (doc["hardware"]["leds"]["status"].containsKey("enabled")) {
+                if (!doc["hardware"]["leds"]["status"]["enabled"].is<bool>()) {
+                    return false;
+                }
+
+                setStatusLedEnabled(doc["hardware"]["leds"]["status"]["enabled"].as<bool>());
+            }
+
+            if (doc["hardware"]["leds"]["status"].containsKey("inverted")) {
+                if (!doc["hardware"]["leds"]["status"]["inverted"].is<bool>()) {
+                    return false;
+                }
+
+                setStatusLedInverted(doc["hardware"]["leds"]["status"]["inverted"].as<bool>());
+            }
+
+            if (doc["hardware"]["leds"]["brew"].containsKey("enabled")) {
+                if (!doc["hardware"]["leds"]["brew"]["enabled"].is<bool>()) {
+                    return false;
+                }
+
+                setBrewLedEnabled(doc["hardware"]["leds"]["brew"]["enabled"].as<bool>());
+            }
+
+            if (doc["hardware"]["leds"]["brew"].containsKey("inverted")) {
+                if (!doc["hardware"]["leds"]["brew"]["inverted"].is<bool>()) {
+                    return false;
+                }
+                setBrewLedInverted(doc["hardware"]["leds"]["brew"]["inverted"].as<bool>());
+            }
+
+            if (doc["hardware"]["leds"]["steam"].containsKey("enabled")) {
+                if (!doc["hardware"]["leds"]["steam"]["enabled"].is<bool>()) {
+                    return false;
+                }
+
+                setSteamLedEnabled(doc["hardware"]["leds"]["steam"]["enabled"].as<bool>());
+            }
+
+            if (doc["hardware"]["leds"]["steam"].containsKey("inverted")) {
+                if (!doc["hardware"]["leds"]["steam"]["inverted"].is<bool>()) {
+                    return false;
+                }
+
+                setSteamLedInverted(doc["hardware"]["leds"]["steam"]["inverted"].as<bool>());
+            }
+
+            // Hardware - Sensors
+            if (doc["hardware"]["sensors"]["pressure"].containsKey("enabled")) {
+                if (!doc["hardware"]["sensors"]["pressure"]["enabled"].is<bool>()) {
+                    return false;
+                }
+
+                setPressureSensorEnabled(doc["hardware"]["sensors"]["pressure"]["enabled"].as<bool>());
+            }
+
+            if (doc["hardware"]["sensors"]["watertank"].containsKey("enabled")) {
+                if (!doc["hardware"]["sensors"]["watertank"]["enabled"].is<bool>()) {
+                    return false;
+                }
+
+                setWaterTankSensorEnabled(doc["hardware"]["sensors"]["watertank"]["enabled"].as<bool>());
+            }
+
+            if (doc["hardware"]["sensors"]["watertank"].containsKey("mode")) {
+                int value = doc["hardware"]["sensors"]["watertank"]["mode"].as<int>();
+
+                if (!validateParameterRange("hardware.sensors.watertank.mode", value, 0, 1)) {
+                    return false;
+                }
+
+                setWaterTankSensorMode(value);
+            }
+
+            if (doc["hardware"]["sensors"]["scale"].containsKey("enabled")) {
+                if (!doc["hardware"]["sensors"]["scale"]["enabled"].is<bool>()) {
+                    return false;
+                }
+
+                setScaleEnabled(doc["hardware"]["sensors"]["scale"]["enabled"].as<bool>());
+            }
+
+            if (doc["hardware"]["sensors"]["scale"].containsKey("samples")) {
+                int value = doc["hardware"]["sensors"]["scale"]["samples"].as<int>();
+
+                if (!validateParameterRange("hardware.sensors.scale.samples", value, 1, 10)) {
+                    return false;
+                }
+
+                setScaleSamples(value);
+            }
+
+            if (doc["hardware"]["sensors"]["scale"].containsKey("type")) {
+                int value = doc["hardware"]["sensors"]["scale"]["type"].as<int>();
+
+                if (!validateParameterRange("hardware.sensors.scale.type", value, 0, 1)) {
+                    return false;
+                }
+
+                setScaleType(value);
             }
 
             // WiFi parameters

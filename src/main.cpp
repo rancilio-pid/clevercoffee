@@ -48,19 +48,11 @@
 #include "defaults.h"
 #include "userConfig.h" // needs to be configured by the user
 
-// Version of userConfig need to match, checked by preprocessor
-#if (FW_VERSION != USR_FW_VERSION) || (FW_SUBVERSION != USR_FW_SUBVERSION) || (FW_HOTFIX != USR_FW_HOTFIX)
-#error Version of userConfig file and main.cpp need to match!
-#endif
-
 hw_timer_t* timer = nullptr;
 
-#if (FEATURE_PRESSURESENSOR == 1)
 #include "hardware/pressureSensor.h"
 #include <Wire.h>
-#endif
 
-#if FEATURE_SCALE == 1
 #define HX711_ADC_config_h
 #define SAMPLES                32
 #define IGN_HIGH_SAMPLE        1
@@ -68,7 +60,6 @@ hw_timer_t* timer = nullptr;
 #define SCK_DELAY              1
 #define SCK_DISABLE_INTERRUPTS 0
 #include <HX711_ADC.h>
-#endif
 
 #define HIGH_ACCURACY
 
@@ -119,12 +110,10 @@ unsigned int wifiReconnects = 0; // actual number of reconnects
 String otaPass;
 
 // Pressure sensor
-#if (FEATURE_PRESSURESENSOR == 1)
 float inputPressure = 0;
 float inputPressureFilter = 0;
 const unsigned long intervalPressure = 100;
 unsigned long previousMillisPressure; // initialisation at the end of init()
-#endif
 
 Switch* waterTankSensor;
 
@@ -137,13 +126,13 @@ LED* brewLed;
 LED* steamLed;
 
 GPIOPin heaterRelayPin(PIN_HEATER, GPIOPin::OUT);
-Relay heaterRelay(heaterRelayPin, HEATER_SSR_TYPE);
+Relay* heaterRelay;
 
 GPIOPin pumpRelayPin(PIN_PUMP, GPIOPin::OUT);
-Relay pumpRelay(pumpRelayPin, PUMP_VALVE_SSR_TYPE);
+Relay* pumpRelay;
 
 GPIOPin valveRelayPin(PIN_VALVE, GPIOPin::OUT);
-Relay valveRelay(valveRelayPin, PUMP_VALVE_SSR_TYPE);
+Relay* valveRelay;
 
 Switch* powerSwitch;
 Switch* brewSwitch;
@@ -325,11 +314,6 @@ U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, PIN_I2CSCL, PIN_
 #endif
 #if OLED_DISPLAY == 2
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, PIN_I2CSCL, PIN_I2CSDA); // e.g. 0.96"
-#endif
-#if OLED_DISPLAY == 3
-#define OLED_CS 5
-#define OLED_DC 2
-U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI u8g2(U8G2_R0, OLED_CS, OLED_DC, /* reset=*/U8X8_PIN_NONE); // e.g. 1.3"
 #endif
 
 #include "display/displayTemplateManager.h"
@@ -882,9 +866,9 @@ void setup() {
     aggbKi = aggbTn > 0 ? aggbKp / aggbTn : 0;
     aggbKd = aggbTv * aggbKp;
 
-#if (FEATURE_PRESSURESENSOR == 1)
-    Wire.begin();
-#endif
+    if (config.getPressureSensorEnabled()) {
+        Wire.begin();
+    }
 
     setupMqtt();
 
@@ -915,77 +899,93 @@ void setup() {
         mqttSensors["currentKd"] = [] { return bPID.GetKd(); };
         mqttSensors["machineState"] = [] { return machineState; };
 
-#if FEATURE_BREWSWITCH == 1
-        mqttVars["pidUseBD"] = "PID_BD_ON";
-        mqttVars["brewPidDelay"] = "PID_BD_DELAY";
-        mqttSensors["currBrewTime"] = [] { return currBrewTime / 1000; };
-        mqttVars["targetBrewTime"] = "TARGET_BREW_TIME";
-        mqttVars["preinfusion"] = "BREW_PREINFUSION";
-        mqttVars["preinfusionPause"] = "BREW_PREINFUSIONPAUSE";
-        mqttVars["backflushOn"] = "BACKFLUSH_ON";
-        mqttVars["backflushCycles"] = "BACKFLUSH_CYCLES";
-        mqttVars["backflushFillTime"] = "BACKFLUSH_FILL_TIME";
-        mqttVars["backflushFlushTime"] = "BACKFLUSH_FLUSH_TIME";
-#endif
+        if (config.getBrewSwitchEnabled()) {
+            mqttVars["pidUseBD"] = "PID_BD_ON";
+            mqttVars["brewPidDelay"] = "PID_BD_DELAY";
+            mqttSensors["currBrewTime"] = [] { return currBrewTime / 1000; };
+            mqttVars["targetBrewTime"] = "TARGET_BREW_TIME";
+            mqttVars["preinfusion"] = "BREW_PREINFUSION";
+            mqttVars["preinfusionPause"] = "BREW_PREINFUSIONPAUSE";
+            mqttVars["backflushOn"] = "BACKFLUSH_ON";
+            mqttVars["backflushCycles"] = "BACKFLUSH_CYCLES";
+            mqttVars["backflushFillTime"] = "BACKFLUSH_FILL_TIME";
+            mqttVars["backflushFlushTime"] = "BACKFLUSH_FLUSH_TIME";
+        }
     }
 
-#if FEATURE_SCALE == 1
-    mqttVars["targetBrewWeight"] = "SCALE_TARGET_BREW_WEIGHT";
-    mqttVars["scaleCalibration"] = "SCALE_CALIBRATION";
-#if SCALE_TYPE == 0
-    mqttVars["scale2Calibration"] = "SCALE2_CALIBRATION";
-#endif
-    mqttVars["scaleKnownWeight"] = "SCALE_KNOWN_WEIGHT";
-    mqttVars["scaleTareOn"] = "TARE_ON";
-    mqttVars["scaleCalibrationOn"] = "CALIBRATION_ON";
+    if (config.getScaleEnabled()) {
+        mqttVars["targetBrewWeight"] = "SCALE_TARGET_BREW_WEIGHT";
+        mqttVars["scaleCalibration"] = "SCALE_CALIBRATION";
 
-    mqttSensors["currReadingWeight"] = [] { return currReadingWeight; };
-    mqttSensors["currBrewWeight"] = [] { return currBrewWeight; };
-#endif
+        if (config.getScaleType() == 0) {
+            mqttVars["scale2Calibration"] = "SCALE2_CALIBRATION";
+        }
 
-#if FEATURE_PRESSURESENSOR == 1
-    mqttSensors["pressure"] = [] { return inputPressureFilter; };
-#endif
+        mqttVars["scaleKnownWeight"] = "SCALE_KNOWN_WEIGHT";
+        mqttVars["scaleTareOn"] = "TARE_ON";
+        mqttVars["scaleCalibrationOn"] = "CALIBRATION_ON";
+
+        mqttSensors["currReadingWeight"] = [] { return currReadingWeight; };
+        mqttSensors["currBrewWeight"] = [] { return currBrewWeight; };
+    }
+
+    if (config.getPressureSensorEnabled()) {
+        mqttSensors["pressure"] = [] { return inputPressureFilter; };
+    }
 
     initTimer1();
 
-    heaterRelay.off();
-    valveRelay.off();
-    pumpRelay.off();
+    const auto heaterTriggerType = static_cast<Relay::TriggerType>(config.getHeaterRelayTriggerType());
+    heaterRelay = new Relay(heaterRelayPin, heaterTriggerType);
+    heaterRelay->off();
 
-    if (FEATURE_POWERSWITCH) {
-        powerSwitch = new IOSwitch(PIN_POWERSWITCH, GPIOPin::IN_HARDWARE, POWERSWITCH_TYPE, POWERSWITCH_MODE);
+    const auto valvePumpTriggerType = static_cast<Relay::TriggerType>(config.getPumpValveRelayTriggerType());
+    valveRelay = new Relay(valveRelayPin, valvePumpTriggerType);
+    valveRelay->off();
+    pumpRelay = new Relay(pumpRelayPin, valvePumpTriggerType);
+    pumpRelay->off();
+
+    if (config.getPowerSwitchEnabled()) {
+        const auto type = static_cast<Switch::Type>(config.getPowerSwitchType());
+        const auto mode = static_cast<Switch::Mode>(config.getPowerSwitchMode());
+        powerSwitch = new IOSwitch(PIN_POWERSWITCH, GPIOPin::IN_HARDWARE, type, mode);
     }
 
-    if (FEATURE_STEAMSWITCH) {
-        steamSwitch = new IOSwitch(PIN_STEAMSWITCH, GPIOPin::IN_HARDWARE, STEAMSWITCH_TYPE, STEAMSWITCH_MODE);
+    if (config.getSteamSwitchEnabled()) {
+        const auto type = static_cast<Switch::Type>(config.getSteamSwitchType());
+        const auto mode = static_cast<Switch::Mode>(config.getSteamSwitchMode());
+        steamSwitch = new IOSwitch(PIN_STEAMSWITCH, GPIOPin::IN_HARDWARE, type, mode);
     }
 
-    if (FEATURE_BREWSWITCH) {
-        brewSwitch = new IOSwitch(PIN_BREWSWITCH, GPIOPin::IN_HARDWARE, BREWSWITCH_TYPE, BREWSWITCH_MODE);
+    if (config.getBrewSwitchEnabled()) {
+        const auto type = static_cast<Switch::Type>(config.getBrewSwitchType());
+        const auto mode = static_cast<Switch::Mode>(config.getBrewSwitchMode());
+        brewSwitch = new IOSwitch(PIN_BREWSWITCH, GPIOPin::IN_HARDWARE, type, mode);
     }
 
-    if (LED_TYPE == LED::STANDARD) {
+    if (config.getStatusLedEnabled()) {
+        const bool inverted = config.getStatusLedInverted();
         statusLedPin = new GPIOPin(PIN_STATUSLED, GPIOPin::OUT);
-        statusLed = new StandardLED(*statusLedPin, FEATURE_STATUS_LED);
+        statusLed = new StandardLED(*statusLedPin, inverted);
+        statusLed->turnOff();
+    }
 
+    if (config.getBrewLedEnabled()) {
+        const bool inverted = config.getBrewLedInverted();
         brewLedPin = new GPIOPin(PIN_BREWLED, GPIOPin::OUT);
-        brewLed = new StandardLED(*brewLedPin, FEATURE_BREW_LED);
+        brewLed = new StandardLED(*brewLedPin, inverted);
         brewLed->turnOff();
-
-// directive required due to conflicts with TX0, Steam LED must be disabled when using USB for monitoring
-#if FEATURE_STEAM_LED
+    }
+    if (config.getSteamLedEnabled()) {
+        const bool inverted = config.getSteamLedInverted();
         steamLedPin = new GPIOPin(PIN_STEAMLED, GPIOPin::OUT);
-        steamLed = new StandardLED(*steamLedPin, FEATURE_STEAM_LED);
+        steamLed = new StandardLED(*steamLedPin, inverted);
         steamLed->turnOff();
-#endif
-    }
-    else {
-        // TODO Addressable LEDs
     }
 
-    if (FEATURE_WATERTANKSENSOR == 1) {
-        waterTankSensor = new IOSwitch(PIN_WATERTANKSENSOR, (WATERTANKSENSOR_TYPE == Switch::NORMALLY_OPEN ? GPIOPin::IN_PULLDOWN : GPIOPin::IN_PULLUP), Switch::TOGGLE, WATERTANKSENSOR_TYPE);
+    if (config.getWaterTankSensorEnabled()) {
+        const auto mode = static_cast<Switch::Mode>(config.getWaterTankSensorMode());
+        waterTankSensor = new IOSwitch(PIN_WATERTANKSENSOR, (mode == Switch::NORMALLY_OPEN ? GPIOPin::IN_PULLDOWN : GPIOPin::IN_PULLUP), Switch::TOGGLE, mode);
     }
 
 #if OLED_DISPLAY != 0
@@ -1040,20 +1040,16 @@ void setup() {
     bPID.SetSmoothingFactor(emaFactor);
     bPID.SetMode(AUTOMATIC);
 
-    if (TEMP_SENSOR == 1) {
+    if constexpr (TEMP_SENSOR == 1) {
         tempSensor = new TempSensorDallas(PIN_TEMPSENSOR);
     }
-    else if (TEMP_SENSOR == 2) {
+
+    if constexpr (TEMP_SENSOR == 2) {
         tempSensor = new TempSensorTSIC(PIN_TEMPSENSOR);
     }
 
     temperature = tempSensor->getCurrentTemperature();
     temperature -= brewTempOffset;
-
-// Init Scale
-#if FEATURE_SCALE == 1
-    initScale();
-#endif
 
     // Initialisation MUST be at the very end of the init(), otherwise the
     // time comparision in loop() will have a big offset
@@ -1063,13 +1059,15 @@ void setup() {
     previousMillisMQTT = currentTime;
     lastMQTTConnectionAttempt = currentTime;
 
-#if FEATURE_SCALE == 1
-    previousMillisScale = currentTime;
-#endif
+    // Init Scale
+    if (config.getScaleEnabled()) {
+        initScale();
+        previousMillisScale = currentTime;
+    }
 
-#if (FEATURE_PRESSURESENSOR == 1)
-    previousMillisPressure = currentTime;
-#endif
+    if (config.getPressureSensorEnabled()) {
+        previousMillisPressure = currentTime;
+    }
 
     setupDone = true;
 
@@ -1124,7 +1122,7 @@ void looppid() {
         // Disable interrupt if OTA is starting, otherwise it will not work
         ArduinoOTA.onStart([]() {
             disableTimer1();
-            heaterRelay.off();
+            heaterRelay->off();
         });
 
         ArduinoOTA.onError([](ota_error_t error) { enableTimer1(); });
@@ -1227,7 +1225,7 @@ void looppid() {
             // Force PID shutdown
             bPID.SetMode(0);
             pidOutput = 0;
-            heaterRelay.off();
+            heaterRelay->off();
         }
     }
     else { // no sensorerror, no pid off or no Emergency Stop
@@ -1249,7 +1247,7 @@ void looppid() {
                 brewPIDDisabled = true;
                 bPID.SetMode(MANUAL);
                 pidOutput = 0;
-                heaterRelay.off();
+                heaterRelay->off();
                 LOGF(DEBUG, "disabled PID, waiting for %.0f seconds before enabling PID again", brewPIDDelay);
             }
         }
@@ -1289,29 +1287,30 @@ void looppid() {
 }
 
 void loopLED() {
-    if ((machineState == kPidNormal && (fabs(temperature - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) {
-        statusLed->turnOn();
-    }
-    else {
-        statusLed->turnOff();
+    if (config.getStatusLedEnabled()) {
+        if ((machineState == kPidNormal && (fabs(temperature - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) {
+            statusLed->turnOn();
+        }
+        else {
+            statusLed->turnOff();
+        }
     }
 
-    brewLed->setGPIOState(machineState == kBrew);
+    if (config.getBrewLedEnabled()) {
+        brewLed->setGPIOState(machineState == kBrew);
+    }
 
-// directive required due to conflicts with TX0, Steam LED must be disabled when using USB for monitoring
-#if FEATURE_STEAM_LED
-    steamLed->setGPIOState(machineState == kSteam);
-#endif
+    if (config.getSteamLedEnabled()) {
+        steamLed->setGPIOState(machineState == kSteam);
+    }
 }
 
 void checkWaterTank() {
-    if (FEATURE_WATERTANKSENSOR != 1) {
+    if (!config.getWaterTankSensorEnabled()) {
         return;
     }
 
-    bool isWaterDetected = waterTankSensor->isPressed();
-
-    if (isWaterDetected && !waterTankFull) {
+    if (bool isWaterDetected = waterTankSensor->isPressed(); isWaterDetected && !waterTankFull) {
         waterTankFull = true;
         LOG(INFO, "Water tank full");
     }
@@ -1325,7 +1324,6 @@ void setBackflush(const int backflush) {
     backflushOn = backflush;
 }
 
-#if FEATURE_SCALE == 1
 void setScaleCalibration(int calibration) {
     scaleCalibrationOn = calibration;
 }
@@ -1333,7 +1331,6 @@ void setScaleCalibration(int calibration) {
 void setScaleTare(int tare) {
     scaleTareOn = tare;
 }
-#endif
 
 void setRuntimePidState(const bool enabled) {
     pidON = enabled ? 1 : 0;

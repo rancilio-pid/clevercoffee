@@ -1,16 +1,17 @@
 /**
- * @file powerSwitch.h
+ * @file powerHandler.h
  *
  * @brief Handler for digital power switch
  */
+#pragma once
 
-uint8_t currStatePowerSwitch; // the current reading from the input pin
+inline uint8_t currStatePowerSwitch; // the current reading from the input pin
 
-void checkPowerSwitch() {
-    if (FEATURE_POWERSWITCH) {
+inline void checkPowerSwitch() {
+    if (config.getPowerSwitchEnabled()) {
         uint8_t powerSwitchReading = powerSwitch->isPressed();
 
-        if (POWERSWITCH_TYPE == Switch::TOGGLE) {
+        if (config.getPowerSwitchType() == Switch::TOGGLE) {
             // Set pidON to 1 when powerswitch is HIGH
             if ((powerSwitchReading == HIGH && machineState != kStandby) || (powerSwitchReading == LOW && machineState == kStandby)) {
                 setRuntimePidState(true);
@@ -20,7 +21,7 @@ void checkPowerSwitch() {
                 setRuntimePidState(false);
             }
         }
-        else if (POWERSWITCH_TYPE == Switch::MOMENTARY) {
+        else if (config.getPowerSwitchType() == Switch::MOMENTARY) {
             // if the button state has changed:
             if (powerSwitchReading != currStatePowerSwitch) {
                 currStatePowerSwitch = powerSwitchReading;

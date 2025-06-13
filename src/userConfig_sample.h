@@ -7,50 +7,15 @@
 
 #pragma once
 
-// firmware version (must match with definitions in the main source file)
-#define USR_FW_VERSION    4
-#define USR_FW_SUBVERSION 0
-#define USR_FW_HOTFIX     0
-#define USR_FW_BRANCH     "MASTER"
-
-/**
- * Preconfiguration
- */
-
 // Display
 #define OLED_DISPLAY  2       // 0 = deactivated, 1 = SH1106 (e.g. 1.3 "128x64), 2 = SSD1306 (e.g. 0.96" 128x64)
 #define OLED_I2C      0x3C    // I2C address for OLED, 0x3C by default
 #define DISPLAYROTATE U8G2_R0 // rotate display clockwise: U8G2_R0 = no rotation; U8G2_R1 = 90°; U8G2_R2 = 180°; U8G2_R3 = 270°
-#define LANGUAGE      0       // LANGUAGE = 0 (DE), LANGUAGE = 1 (EN), LANGUAGE = 2 (ES)
+
+#define LANGUAGE 0            // LANGUAGE = 0 (DE), LANGUAGE = 1 (EN), LANGUAGE = 2 (ES)
 
 // Connectivity
 #define CONNECTMODE 1              // 0 = offline 1 = WIFI-MODE
 #define PASS        "CleverCoffee" // default password for WiFiManager
 
-// PID & Hardware
-#define FEATURE_POWERSWITCH     0                       // 0 = deactivated, 1 = activated
-#define POWERSWITCH_TYPE        Switch::TOGGLE          // Switch::TOGGLE or Switch::MOMENTARY (trigger)
-#define POWERSWITCH_MODE        Switch::NORMALLY_OPEN   // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
-#define FEATURE_BREWSWITCH      0                       // 0 = deactivated, 1 = activated
-#define BREWSWITCH_TYPE         Switch::TOGGLE          // Switch::TOGGLE or Switch::MOMENTARY (trigger)
-#define BREWSWITCH_MODE         Switch::NORMALLY_OPEN   // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
-#define FEATURE_STEAMSWITCH     0                       // 0 = deactivated, 1 = activated
-#define STEAMSWITCH_TYPE        Switch::TOGGLE          // Switch::TOGGLE or Switch::MOMENTARY (trigger)
-#define STEAMSWITCH_MODE        Switch::NORMALLY_OPEN   // Switch::NORMALLY_OPEN or Switch::NORMALLY_CLOSED
-#define HEATER_SSR_TYPE         Relay::HIGH_TRIGGER     // HIGH_TRIGGER = relay switches when input is HIGH, vice versa for LOW_TRIGGER
-#define PUMP_VALVE_SSR_TYPE     Relay::HIGH_TRIGGER     // HIGH_TRIGGER = relay switches when input is HIGH, vice versa for LOW_TRIGGER
-#define FEATURE_STATUS_LED      0                       // Blink status LED when temp is in range, 0 = deactivated, 1 = activated, 2 = activated inverted
-#define FEATURE_BREW_LED        0                       // Turn on brew LED when brew is started, 0 = deactivated, 1 = activated, 2 = activated inverted
-#define FEATURE_STEAM_LED       0                       // Turn on steam LED when switch is started, 0 = deactivated, 1 = activated, 2 = activated inverted. Only use steam LED if not using USB monitoring
-#define LED_TYPE                LED::STANDARD           // STANDARD_LED for an LED connected to a GPIO pin, WS2812 for adressable LEDs
-#define FEATURE_WATERTANKSENSOR 0                       // 0 = deactivated, 1 = activated
-#define WATERTANKSENSOR_TYPE    Switch::NORMALLY_CLOSED // Switch::NORMALLY_CLOSED for sensor XKC-Y25-NPN or Switch::NORMALLY_OPEN for XKC-Y25-PNP
-
-#define FEATURE_PRESSURESENSOR 0                        // 0 = deactivated, 1 = activated
-
-// Brew Scale
-#define FEATURE_SCALE 0 // 0 = deactivated, 1 = activated
-#define SCALE_TYPE    0 // 0 = one HX711 per load cell, 1 = Only a single HX711 with two channels
-#define SCALE_SAMPLES 2 // Load cell sample rate
-
-#define TEMP_SENSOR 2   // Temp sensor type: 1 = DS18B20, 2 = TSIC306
+#define TEMP_SENSOR 2              // Temp sensor type: 1 = DS18B20, 2 = TSIC306

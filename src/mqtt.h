@@ -556,52 +556,52 @@ inline int sendHASSIODiscoveryMsg() {
     std::vector discoveryObjects = {machineStateDevice, actual_temperature, heaterPower, brewSetpoint, steamSetpoint, brewTempOffset, steamKp, aggKp, aggTn, aggTv, aggIMax, pidOn, steamON, usePonM};
 
     // Sensor, number and switch object which will be published based on feature set
-#if FEATURE_BREWSWITCH == 1
-    DiscoveryObject currBrewTime = GenerateSensorDevice("currBrewTime", "Current Brew Time ", "s", "duration");
 
-    DiscoveryObject brewPidDelay = GenerateNumberDevice("brewPidDelay", "Brew Pid Delay", BREW_PID_DELAY_MIN, BREW_PID_DELAY_MAX, 0.1, "s");
-    DiscoveryObject targetBrewTime = GenerateNumberDevice("targetBrewTime", "Target Brew time", TARGET_BREW_TIME_MIN, TARGET_BREW_TIME_MAX, 0.1, "s");
-    DiscoveryObject preinfusion = GenerateNumberDevice("preinfusion", "Preinfusion filling time", PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX, 0.1, "s");
-    DiscoveryObject preinfusionPause = GenerateNumberDevice("preinfusionPause", "Preinfusion pause time", PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, 0.1, "s");
-    DiscoveryObject backflushCycles = GenerateNumberDevice("backflushCycles", "Backflush Cycles", BACKFLUSH_CYCLES_MIN, BACKFLUSH_CYCLES_MAX, 1, "");
-    DiscoveryObject backflushFillTime = GenerateNumberDevice("backflushFillTime", "Backflush filling time", BACKFLUSH_FILL_TIME_MIN, BACKFLUSH_FILL_TIME_MAX, 0.1, "s");
-    DiscoveryObject backflushFlushTime = GenerateNumberDevice("backflushFlushTime", "Backflush flushing time", BACKFLUSH_FLUSH_TIME_MIN, BACKFLUSH_FLUSH_TIME_MAX, 0.1, "s");
+    if (config.getBrewSwitchEnabled()) {
+        DiscoveryObject currBrewTime = GenerateSensorDevice("currBrewTime", "Current Brew Time ", "s", "duration");
 
-    DiscoveryObject backflushOn = GenerateSwitchDevice("backflushOn", "Backflush");
+        DiscoveryObject brewPidDelay = GenerateNumberDevice("brewPidDelay", "Brew Pid Delay", BREW_PID_DELAY_MIN, BREW_PID_DELAY_MAX, 0.1, "s");
+        DiscoveryObject targetBrewTime = GenerateNumberDevice("targetBrewTime", "Target Brew time", TARGET_BREW_TIME_MIN, TARGET_BREW_TIME_MAX, 0.1, "s");
+        DiscoveryObject preinfusion = GenerateNumberDevice("preinfusion", "Preinfusion filling time", PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX, 0.1, "s");
+        DiscoveryObject preinfusionPause = GenerateNumberDevice("preinfusionPause", "Preinfusion pause time", PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, 0.1, "s");
+        DiscoveryObject backflushCycles = GenerateNumberDevice("backflushCycles", "Backflush Cycles", BACKFLUSH_CYCLES_MIN, BACKFLUSH_CYCLES_MAX, 1, "");
+        DiscoveryObject backflushFillTime = GenerateNumberDevice("backflushFillTime", "Backflush filling time", BACKFLUSH_FILL_TIME_MIN, BACKFLUSH_FILL_TIME_MAX, 0.1, "s");
+        DiscoveryObject backflushFlushTime = GenerateNumberDevice("backflushFlushTime", "Backflush flushing time", BACKFLUSH_FLUSH_TIME_MIN, BACKFLUSH_FLUSH_TIME_MAX, 0.1, "s");
 
-    discoveryObjects.push_back(currBrewTime);
-    discoveryObjects.push_back(brewPidDelay);
-    discoveryObjects.push_back(targetBrewTime);
-    discoveryObjects.push_back(preinfusion);
-    discoveryObjects.push_back(preinfusionPause);
-    discoveryObjects.push_back(backflushCycles);
-    discoveryObjects.push_back(backflushFillTime);
-    discoveryObjects.push_back(backflushFlushTime);
-    discoveryObjects.push_back(backflushOn);
-#endif
+        DiscoveryObject backflushOn = GenerateSwitchDevice("backflushOn", "Backflush");
 
-#if FEATURE_SCALE == 1
-    DiscoveryObject currReadingWeight = GenerateSensorDevice("currReadingWeight", "Weight", "g", "weight");
-    DiscoveryObject currBrewWeight = GenerateSensorDevice("currBrewWeight", "current Brew Weight", "g", "weight");
+        discoveryObjects.push_back(currBrewTime);
+        discoveryObjects.push_back(brewPidDelay);
+        discoveryObjects.push_back(targetBrewTime);
+        discoveryObjects.push_back(preinfusion);
+        discoveryObjects.push_back(preinfusionPause);
+        discoveryObjects.push_back(backflushCycles);
+        discoveryObjects.push_back(backflushFillTime);
+        discoveryObjects.push_back(backflushFlushTime);
+        discoveryObjects.push_back(backflushOn);
+    }
 
-    DiscoveryObject scaleCalibrateButton = GenerateButtonDevice("scaleCalibrationOn", "Calibrate Scale");
-    DiscoveryObject scaleTareButton = GenerateButtonDevice("scaleTareOn", "Tare Scale");
+    if (config.getScaleEnabled()) {
+        DiscoveryObject currReadingWeight = GenerateSensorDevice("currReadingWeight", "Weight", "g", "weight");
+        DiscoveryObject currBrewWeight = GenerateSensorDevice("currBrewWeight", "current Brew Weight", "g", "weight");
 
-    DiscoveryObject targetBrewWeight = GenerateNumberDevice("targetBrewWeight", "Brew Weight Target", TARGET_BREW_WEIGHT_MIN, TARGET_BREW_WEIGHT_MAX, 0.1, "g");
+        DiscoveryObject scaleCalibrateButton = GenerateButtonDevice("scaleCalibrationOn", "Calibrate Scale");
+        DiscoveryObject scaleTareButton = GenerateButtonDevice("scaleTareOn", "Tare Scale");
 
-    discoveryObjects.push_back(currReadingWeight);
-    discoveryObjects.push_back(currBrewWeight);
-    discoveryObjects.push_back(scaleCalibrateButton);
-    discoveryObjects.push_back(scaleTareButton);
-    discoveryObjects.push_back(targetBrewWeight);
-#endif
+        DiscoveryObject targetBrewWeight = GenerateNumberDevice("targetBrewWeight", "Brew Weight Target", TARGET_BREW_WEIGHT_MIN, TARGET_BREW_WEIGHT_MAX, 0.1, "g");
 
-#if FEATURE_PRESSURESENSOR == 1
+        discoveryObjects.push_back(currReadingWeight);
+        discoveryObjects.push_back(currBrewWeight);
+        discoveryObjects.push_back(scaleCalibrateButton);
+        discoveryObjects.push_back(scaleTareButton);
+        discoveryObjects.push_back(targetBrewWeight);
+    }
 
-    DiscoveryObject pressure = GenerateSensorDevice("pressure", "Pressure", "bar", "pressure");
+    if (config.getPressureSensorEnabled()) {
+        DiscoveryObject pressure = GenerateSensorDevice("pressure", "Pressure", "bar", "pressure");
 
-    discoveryObjects.push_back(pressure);
-#endif
+        discoveryObjects.push_back(pressure);
+    }
 
     // Send the Objects to Hassio
     if (mqtt.connected()) {

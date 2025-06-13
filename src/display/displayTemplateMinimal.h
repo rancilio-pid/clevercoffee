@@ -42,7 +42,7 @@ void printScreen() {
     }
 
     // Draw temp, blink if feature STATUS_LED is not enabled
-    if ((fabs(temperature - setpoint) < 0.3) && !FEATURE_STATUS_LED) {
+    if ((fabs(temperature - setpoint) < 0.3) && !config.getStatusLedEnabled()) {
         if (isrCounter < 500) {
             // limit to 4 characters
             u8g2.setCursor(2, 20);

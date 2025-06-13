@@ -10,8 +10,6 @@
 #include "hardware/Relay.h"
 
 extern double pidOutput;
-extern hw_timer_t* timer;
-extern Relay heaterRelay;
 
 unsigned int isrCounter = 0; // counter for ISR
 unsigned long windowStartTime;
@@ -21,10 +19,10 @@ void IRAM_ATTR onTimer() {
     timerAlarmWrite(timer, 10000, true);
 
     if (pidOutput <= isrCounter) {
-        heaterRelay.off();
+        heaterRelay->off();
     }
     else {
-        heaterRelay.on();
+        heaterRelay->on();
     }
 
     isrCounter += 10; // += 10 because one tick = 10ms
@@ -38,20 +36,20 @@ void IRAM_ATTR onTimer() {
 /**
  * @brief Initialize hardware timers
  */
-void initTimer1(void) {
+void initTimer1() {
     timer = timerBegin(0, 80, true);
     timerAttachInterrupt(timer, &onTimer, true);
     timerAlarmWrite(timer, 10000, true);
 }
 
-void enableTimer1(void) {
+void enableTimer1() {
     timerAlarmEnable(timer);
 }
 
-void disableTimer1(void) {
+void disableTimer1() {
     timerAlarmDisable(timer);
 }
 
-bool isTimer1Enabled(void) {
+bool isTimer1Enabled() {
     return timerAlarmEnabled(timer);
 }
