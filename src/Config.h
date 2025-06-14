@@ -87,11 +87,6 @@ class Config {
             // Steam
             _doc["steam"]["setpoint"] = STEAMSETPOINT;
 
-            // Scale
-            _doc["scale"]["calibration"] = SCALE_CALIBRATION_FACTOR;
-            _doc["scale"]["calibration2"] = SCALE_CALIBRATION_FACTOR;
-            _doc["scale"]["known_weight"] = SCALE_KNOWN_WEIGHT;
-
             // Backflushing
             _doc["backflush"]["cycles"] = BACKFLUSH_CYCLES;
             _doc["backflush"]["fill_time"] = BACKFLUSH_FILL_TIME;
@@ -152,11 +147,14 @@ class Config {
 
             _doc["hardware"]["sensors"]["watertank"]["enabled"] = false;
             _doc["hardware"]["sensors"]["watertank"]["mode"] = static_cast<int>(Switch::NORMALLY_CLOSED);
-            ;
 
+            // Scale
             _doc["hardware"]["sensors"]["scale"]["enabled"] = false;
             _doc["hardware"]["sensors"]["scale"]["samples"] = SCALE_SAMPLES;
             _doc["hardware"]["sensors"]["scale"]["type"] = 0;
+            _doc["hardware"]["sensors"]["scale"]["calibration"] = SCALE_CALIBRATION_FACTOR;
+            _doc["hardware"]["sensors"]["scale"]["calibration2"] = SCALE_CALIBRATION_FACTOR;
+            _doc["hardware"]["sensors"]["scale"]["known_weight"] = SCALE_KNOWN_WEIGHT;
 
             // WiFi credentials flag
             _doc["wifi"]["credentials_saved"] = false;
@@ -422,31 +420,6 @@ class Config {
             _doc["steam"]["setpoint"] = constrain(value, STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX);
         }
 
-        // Scale
-        float getScaleCalibration() {
-            return _doc["scale"]["calibration"] | static_cast<float>(SCALE_CALIBRATION_FACTOR);
-        }
-
-        void setScaleCalibration(const float value) {
-            _doc["scale"]["calibration"] = constrain(value, -100000.0f, 100000.0f);
-        }
-
-        void setScaleKnownWeight(const float value) {
-            _doc["scale"]["known_weight"] = constrain(value, 0.0f, 2000.0f);
-        }
-
-        float getScaleKnownWeight() {
-            return _doc["scale"]["known_weight"] | static_cast<float>(SCALE_KNOWN_WEIGHT);
-        }
-
-        float getScale2Calibration() {
-            return _doc["scale"]["calibration2"] | static_cast<float>(SCALE_CALIBRATION_FACTOR);
-        }
-
-        void setScale2Calibration(const float value) {
-            _doc["scale"]["calibration2"] = constrain(value, -100000.0f, 100000.0f);
-        }
-
         // Backflushing
         int getBackflushCycles() {
             return _doc["backflush"]["cycles"] | BACKFLUSH_CYCLES;
@@ -595,7 +568,7 @@ class Config {
 
         void setDisplayTemplate(int value) {
             value = constrain(value, 0, 4);
-            _doc["system"]["log_level"] = value;
+            _doc["display"]["template"] = value;
         }
 
         bool getFeatureFullscreenBrewTimer() {
@@ -700,7 +673,7 @@ class Config {
             return _doc["hardware"]["switches"]["steam"]["mode"];
         }
 
-        void setSteamSwitchMode(int value) {
+        void setSteamSwitchMode(const int value) {
             _doc["hardware"]["switches"]["steam"]["mode"] = value;
         }
 
@@ -724,7 +697,7 @@ class Config {
             return _doc["hardware"]["switches"]["power"]["mode"];
         }
 
-        void setPowerSwitchMode(int value) {
+        void setPowerSwitchMode(const int value) {
             _doc["hardware"]["switches"]["power"]["mode"] = value;
         }
 
@@ -802,6 +775,7 @@ class Config {
             _doc["hardware"]["sensors"]["watertank"]["mode"] = value;
         }
 
+        // Scale
         bool getScaleEnabled() {
             return _doc["hardware"]["sensors"]["scale"]["enabled"] | false;
         }
@@ -824,6 +798,30 @@ class Config {
 
         void setScaleType(const int value) {
             _doc["hardware"]["sensors"]["scale"]["type"] = value;
+        }
+
+        float getScaleCalibration() {
+            return _doc["hardware"]["sensors"]["scale"]["calibration"] | static_cast<float>(SCALE_CALIBRATION_FACTOR);
+        }
+
+        void setScaleCalibration(const float value) {
+            _doc["hardware"]["sensors"]["scale"]["calibration"] = constrain(value, -100000.0f, 100000.0f);
+        }
+
+        void setScaleKnownWeight(const float value) {
+            _doc["hardware"]["sensors"]["scale"]["known_weight"] = constrain(value, 0.0f, 2000.0f);
+        }
+
+        float getScaleKnownWeight() {
+            return _doc["hardware"]["sensors"]["scale"]["known_weight"] | static_cast<float>(SCALE_KNOWN_WEIGHT);
+        }
+
+        float getScale2Calibration() {
+            return _doc["hardware"]["sensors"]["scale"]["calibration2"] | static_cast<float>(SCALE_CALIBRATION_FACTOR);
+        }
+
+        void setScale2Calibration(const float value) {
+            _doc["hardware"]["sensors"]["scale"]["calibration2"] = constrain(value, -100000.0f, 100000.0f);
         }
 
     private:
@@ -1031,37 +1029,6 @@ class Config {
                 }
 
                 setSteamSetpoint(value);
-            }
-
-            // Scale parameters
-            if (doc["scale"].containsKey("calibration")) {
-                const float value = doc["scale"]["calibration"].as<float>();
-
-                if (!validateParameterRange("scale.calibration", static_cast<double>(value), SCALE_CALIBRATION_MIN, SCALE_CALIBRATION_MAX)) {
-                    return false;
-                }
-
-                setScaleCalibration(value);
-            }
-
-            if (doc["scale"].containsKey("calibration2")) {
-                const float value = doc["scale"]["calibration2"].as<float>();
-
-                if (!validateParameterRange("scale.calibration2", static_cast<double>(value), SCALE2_CALIBRATION_MIN, SCALE2_CALIBRATION_MAX)) {
-                    return false;
-                }
-
-                setScale2Calibration(value);
-            }
-
-            if (doc["scale"].containsKey("known_weight")) {
-                const float value = doc["scale"]["known_weight"].as<float>();
-
-                if (!validateParameterRange("scale.known_weight", static_cast<double>(value), SCALE_KNOWN_WEIGHT_MIN, SCALE_KNOWN_WEIGHT_MAX)) {
-                    return false;
-                }
-
-                setScaleKnownWeight(value);
             }
 
             // Backflush parameters
@@ -1429,7 +1396,38 @@ class Config {
                 setWaterTankSensorMode(value);
             }
 
-            if (doc["hardware"]["sensors"]["scale"].containsKey("enabled")) {
+            // Scale
+            if (doc["hardware"]["sensors"]["scale"].containsKey("calibration")) {
+                const float value = doc["scale"]["calibration"].as<float>();
+
+                if (!validateParameterRange("scale.calibration", static_cast<double>(value), SCALE_CALIBRATION_MIN, SCALE_CALIBRATION_MAX)) {
+                    return false;
+                }
+
+                setScaleCalibration(value);
+            }
+
+            if (doc["hardware"]["sensors"]["scale"].containsKey("calibration2")) {
+                const float value = doc["scale"]["calibration2"].as<float>();
+
+                if (!validateParameterRange("scale.calibration2", static_cast<double>(value), SCALE2_CALIBRATION_MIN, SCALE2_CALIBRATION_MAX)) {
+                    return false;
+                }
+
+                setScale2Calibration(value);
+            }
+
+            if (doc["hardware"]["sensors"]["scale"].containsKey("known_weight")) {
+                const float value = doc["scale"]["known_weight"].as<float>();
+
+                if (!validateParameterRange("scale.known_weight", static_cast<double>(value), SCALE_KNOWN_WEIGHT_MIN, SCALE_KNOWN_WEIGHT_MAX)) {
+                    return false;
+                }
+
+                setScaleKnownWeight(value);
+            }
+
+            if (doc["hardware"]["sensors"]["hardware"]["sensors"]["scale"].containsKey("enabled")) {
                 if (!doc["hardware"]["sensors"]["scale"]["enabled"].is<bool>()) {
                     return false;
                 }
@@ -1437,7 +1435,7 @@ class Config {
                 setScaleEnabled(doc["hardware"]["sensors"]["scale"]["enabled"].as<bool>());
             }
 
-            if (doc["hardware"]["sensors"]["scale"].containsKey("samples")) {
+            if (doc["hardware"]["sensors"]["hardware"]["sensors"]["scale"].containsKey("samples")) {
                 int value = doc["hardware"]["sensors"]["scale"]["samples"].as<int>();
 
                 if (!validateParameterRange("hardware.sensors.scale.samples", value, 1, 10)) {
@@ -1447,7 +1445,7 @@ class Config {
                 setScaleSamples(value);
             }
 
-            if (doc["hardware"]["sensors"]["scale"].containsKey("type")) {
+            if (doc["hardware"]["sensors"]["hardware"]["sensors"]["scale"].containsKey("type")) {
                 int value = doc["hardware"]["sensors"]["scale"]["type"].as<int>();
 
                 if (!validateParameterRange("hardware.sensors.scale.type", value, 0, 1)) {
