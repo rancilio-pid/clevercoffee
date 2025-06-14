@@ -1,4 +1,6 @@
+
 %HEADER%
+
     <script type="module">
         if (window.appCreated == true) {
             vueApp.mount('#parameters')
@@ -19,31 +21,66 @@
                         </div>
                         <div class="card-body">
                             <form @submit.prevent="postParameters">
-                                <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6">
+                                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3">
                                     <template v-for="param in section">
                                         <template v-if="param.show">
-                                            <div class="col-md-3">
-                                                <label class="form-label me-1 col-form-label" :for="'var'+param.name">{{param.displayName}}</label>
+                                            <div class="col mb-3">
+                                                <label class="form-label me-1" :for="'var'+param.name">{{param.displayName}}</label>
                                                 <template v-if="param.hasHelpText">
                                                     <a href="#" role="button" @mouseover="fetchHelpText(param.name)" data-bs-toggle="popover" data-bs-html="true" :data-bs-original-title="parametersHelpTexts[param.name]">
                                                         <span class="fa-solid fa-question-circle"></span>
                                                     </a>
                                                 </template>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div v-if="param.type == 0" class="col-5 mb-1"> <!-- integer -->
-                                                    <input class="form-control form-control-lg" type="number" step="1" :min="param.min" :max="param.max" :id="'var'+param.name" :name="'var'+param.name" v-model="param.value" style="min-width: 5em;">
-                                                    <span v-if="param.value < param.min">Value is too small!</span>
-                                                    <span v-if="param.value > param.max">Value is too large!</span>
-                                                </div>
-                                                <div v-if="param.type == 1" class="col-5 mb-1"> <!-- boolean -->
+
+                                                <div v-if="isBoolean(param)">
                                                     <input type="hidden" :id="'var'+param.name" :name="'var'+param.name" :value="0">
-                                                    <input type="checkbox" class="form-check-input form-control-lg" :id="'var'+param.name" :name="'var'+param.name" value="1" @change="param.value = 1-param.value" :checked="param.value != 0 ? 'checked' : null">
+                                                    <input type="checkbox"
+                                                           class="form-check-input form-control-lg"
+                                                           :id="'var'+param.name"
+                                                           :name="'var'+param.name"
+                                                           value="1"
+                                                           @change="param.value = 1-param.value"
+                                                           :checked="param.value != 0 ? 'checked' : null">
                                                 </div>
-                                                <div v-if="param.type == 2 || param.type == 5" class="col-5 mb-1"> <!-- double -->
-                                                    <input class="form-control form-control-lg" type="number" step="0.1" :min="param.min" :max="param.max" :id="'var'+param.name" :name="'var'+param.name" v-model="param.value" style="min-width: 5em;">
-                                                    <span v-if="param.value < param.min">Value is too small!</span>
-                                                    <span v-if="param.value > param.max">Value is too large!</span>
+
+                                                <div v-else-if="param.type === 6 && param.options">
+                                                    <select class="form-select form-control-lg"
+                                                            :id="'var'+param.name"
+                                                            :name="'var'+param.name"
+                                                            v-model="param.value">
+                                                        <option v-for="option in param.options"
+                                                                :key="option.value"
+                                                                :value="option.value">
+                                                            {{ option.label }}
+                                                        </option>
+                                                    </select>
+                                                    <span v-if="param.value < param.min" class="text-danger small">Value is too small!</span>
+                                                    <span v-if="param.value > param.max" class="text-danger small">Value is too large!</span>
+                                                </div>
+
+                                                <!-- String parameters -->
+                                                <div v-else-if="param.type === 4">
+                                                    <input class="form-control form-control-lg"
+                                                           :type="param.name.toLowerCase().includes('password') ? 'password' : 'text'"
+                                                           :id="'var'+param.name"
+                                                           :name="'var'+param.name"
+                                                           v-model="param.value"
+                                                           :maxlength="param.max > 0 ? param.max : 64">
+                                                    <span v-if="param.max > 0 && param.value && param.value.length > param.max" class="text-danger small">Value is too long!</span>
+                                                </div>
+
+                                                <!-- Numeric parameters (integer, uint8, double, float, doubletime) -->
+                                                <div v-else>
+                                                    <input class="form-control form-control-lg"
+                                                           :type="getInputType(param)"
+                                                           :step="getNumberStep(param)"
+                                                           :min="param.min"
+                                                           :max="param.max"
+                                                           :id="'var'+param.name"
+                                                           :name="'var'+param.name"
+                                                           v-model="param.value">
+                                                    <span v-if="param.value < param.min" class="text-danger small">Value is too small!</span>
+                                                    <span v-if="param.value > param.max" class="text-danger small">Value is too large!</span>
                                                 </div>
                                             </div>
                                         </template>
@@ -64,4 +101,8 @@
             </div>
         </div>
     </div>
-%FOOTER%
+
+</div>
+
+</body>
+</html>

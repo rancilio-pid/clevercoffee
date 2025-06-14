@@ -19,60 +19,26 @@
 #include "LittleFS.h"
 #include <functional>
 
-enum EditableKind {
-    kInteger,
-    kUInt8,
-    kDouble,
-    kDoubletime,
-    kCString,
-    kFloat
-};
+inline AsyncWebServer server(80);
+inline AsyncEventSource events("/events");
 
-struct editable_t {
-        String displayName;
-        boolean hasHelpText;
-        String helpText;
-        EditableKind type;
-        int section;                // parameter section number
-        int position;
-        std::function<bool()> show; // method that determines if we show this parameter (in the web interface)
-        int minValue;
-        int maxValue;
-        void* ptr;                  // TODO: there must be a tidier way to do this? could we use c++ templates?
-};
-
-AsyncWebServer server(80);
-AsyncEventSource events("/events");
-
-double curTemp = 0.0;
-double tTemp = 0.0;
-double hPower = 0.0;
+inline double curTemp = 0.0;
+inline double tTemp = 0.0;
+inline double hPower = 0.0;
 
 #define HISTORY_LENGTH 600 // 30 mins of values (20 vals/min * 60 min) = 600 (7,2kb)
 
-static float tempHistory[3][HISTORY_LENGTH] = {0};
-int historyCurrentIndex = 0;
-int historyValueCount = 0;
+static float tempHistory[3][HISTORY_LENGTH] = {};
+inline int historyCurrentIndex = 0;
+inline int historyValueCount = 0;
 
 void serverSetup();
-void setEepromWriteFcn(int (*fcnPtr)(void));
 
-// editable vars are specified in main.cpp
-#define EDITABLE_VARS_LEN 40
-extern std::map<String, editable_t> editableVars;
-
-// EEPROM
-int (*writeToEeprom)(void) = NULL;
-
-void setEepromWriteFcn(int (*fcnPtr)(void)) {
-    writeToEeprom = fcnPtr;
-}
-
-uint8_t flipUintValue(uint8_t value) {
+inline uint8_t flipUintValue(const uint8_t value) {
     return (value + 3) % 2;
 }
 
-String getTempString() {
+inline String getTempString() {
     StaticJsonDocument<96> doc;
 
     doc["currentTemp"] = curTemp;
@@ -86,72 +52,91 @@ String getTempString() {
 }
 
 // proper modulo function (% is remainder, so will return negatives)
-int mod(int a, int b) {
-    int r = a % b;
+inline int mod(const int a, const int b) {
+    const int r = a % b;
     return r < 0 ? r + b : r;
 }
 
 // rounds a number to 2 decimal places
 // example: round(3.14159) -> 3.14
 // (less characters when serialized to json)
-double round2(double value) {
-    return (int)(value * 100 + 0.5) / 100.0;
+inline double round2(const double value) {
+    return static_cast<int>(value * 100 + 0.5) / 100.0;
 }
 
-String getValue(String varName) {
+inline String getValue(const String& varName) {
     try {
-        editable_t e = editableVars.at(varName);
-        switch (e.type) {
-            case kFloat:
-                return String(*(float*)e.ptr);
-            case kDouble:
-                return String(*(double*)e.ptr);
-            case kDoubletime:
-                return String(*(double*)e.ptr);
-            case kInteger:
-                return String(*(int*)e.ptr);
-            case kUInt8:
-                return String(*(uint8_t*)e.ptr);
-            case kCString:
-                return String((char*)e.ptr);
-            default:
-                return F("Unknown type");
-                break;
+        const std::shared_ptr<Parameter> e = ParameterRegistry::getInstance().getParameterById(varName.c_str());
+
+        if (e == nullptr) {
+            return "(unknown variable " + varName + ")";
         }
+
+        return e->getFormattedValue();
     } catch (const std::out_of_range& exc) {
         return "(unknown variable " + varName + ")";
     }
 }
 
-void paramToJson(String name, editable_t& e, DynamicJsonDocument& doc) {
+inline void paramToJson(const String& name, const std::shared_ptr<Parameter>& param, DynamicJsonDocument& doc) {
     JsonObject paramObj = doc.createNestedObject();
-    paramObj["type"] = e.type;
+    paramObj["type"] = param->getType();
     paramObj["name"] = name;
-    paramObj["displayName"] = e.displayName;
-    paramObj["section"] = e.section;
-    paramObj["position"] = e.position;
-    paramObj["hasHelpText"] = e.hasHelpText;
-    paramObj["show"] = e.show();
+    paramObj["displayName"] = param->getDisplayName();
+    paramObj["section"] = param->getSection();
+    paramObj["position"] = param->getPosition();
+    paramObj["hasHelpText"] = param->hasHelpText();
+    paramObj["show"] = param->shouldShow();
 
-    // set parameter value
-    if (e.type == kInteger) {
-        paramObj["value"] = *(int*)e.ptr;
-    }
-    else if (e.type == kUInt8) {
-        paramObj["value"] = *(uint8_t*)e.ptr;
-    }
-    else if (e.type == kDouble || e.type == kDoubletime) {
-        paramObj["value"] = round2(*(double*)e.ptr);
-    }
-    else if (e.type == kFloat) {
-        paramObj["value"] = round2(*(float*)e.ptr);
-    }
-    else if (e.type == kCString) {
-        paramObj["value"] = (char*)e.ptr;
+    // Set parameter value using the appropriate method based on type
+    switch (param->getType()) {
+        case kInteger:
+            paramObj["value"] = static_cast<int>(param->getValue());
+            break;
+
+        case kUInt8:
+            paramObj["value"] = static_cast<uint8_t>(param->getValue());
+            break;
+
+        case kDouble:
+        case kDoubletime:
+            paramObj["value"] = round2(param->getValue());
+            break;
+
+        case kFloat:
+            paramObj["value"] = round2(static_cast<float>(param->getValue()));
+            break;
+
+        case kCString:
+            paramObj["value"] = param->getStringValue();
+            break;
+
+        case kEnum:
+            {
+                paramObj["value"] = static_cast<int>(param->getValue());
+
+                const JsonArray options = paramObj.createNestedArray("options");
+
+                const char* const* enumOptions = param->getEnumOptions();
+                const size_t enumCount = param->getEnumCount();
+
+                for (size_t i = 0; i < enumCount; i++) {
+                    JsonObject optionObj = options.createNestedObject();
+                    optionObj["value"] = static_cast<int>(i);
+                    optionObj["label"] = enumOptions[i];
+                }
+
+                break;
+            }
+
+        default:
+            // Handle unknown types gracefully
+            paramObj["value"] = param->getValue();
+            break;
     }
 
-    paramObj["min"] = e.minValue;
-    paramObj["max"] = e.maxValue;
+    paramObj["min"] = param->getMinValue();
+    paramObj["max"] = param->getMaxValue();
 }
 
 // Use libraries for the webinterface from the internet (0) or from the local filesystem (1). 0 has slightly faster load times
@@ -163,7 +148,7 @@ constexpr unsigned int str2int(const char* str, int h = 0) {
     return !str[h] ? 5381 : (str2int(str, h + 1) * 33) ^ str[h];
 }
 
-String getHeader(String varName) {
+inline String getHeader(const String& varName) {
     switch (str2int(varName.c_str())) {
         case (str2int("FONTAWESOME")):
 #if NOINTERNET == 1
@@ -207,8 +192,8 @@ String getHeader(String varName) {
     return "";
 }
 
-String staticProcessor(const String& var) {
-    // try replacing var for variables in editableVars
+inline String staticProcessor(const String& var) {
+    // try replacing var for variables in ParameterRegistry
     if (var.startsWith("VAR_SHOW_")) {
         return getValue(var.substring(9));   // cut off "VAR_SHOW_"
     }
@@ -238,10 +223,10 @@ String staticProcessor(const String& var) {
     }
 
     // didn't find a value for the var, replace var with empty string
-    return String();
+    return {};
 }
 
-void serverSetup() {
+inline void serverSetup() {
     // set up dynamic routes (endpoints)
 
     server.on("/toggleSteam", HTTP_POST, [](AsyncWebServerRequest* request) {
@@ -255,10 +240,15 @@ void serverSetup() {
 
     server.on("/togglePid", HTTP_POST, [](AsyncWebServerRequest* request) {
         LOGF(DEBUG, "/togglePid requested, method: %d", request->method());
-        int status = flipUintValue(pidON);
 
-        setPidStatus(status);
-        LOGF(DEBUG, "Toggle PID state: %d\n", status);
+        auto pidParam = ParameterRegistry::getInstance().getParameterById("PID_ON");
+        bool newPidState = !pidParam->getBoolValue();
+        ParameterRegistry::getInstance().setParameterBoolValue("PID_ON", newPidState);
+
+        // Update global variable for immediate effect
+        pidON = newPidState ? 1 : 0;
+
+        LOGF(DEBUG, "Toggle PID state: %d\n", newPidState);
 
         request->redirect("/");
     });
@@ -293,28 +283,24 @@ void serverSetup() {
 #endif
 
     server.on("/parameters", HTTP_GET | HTTP_POST, [](AsyncWebServerRequest* request) {
-        // Determine the size of the document to allocate based on the number
-        // of parameters
-        // GET = either
-        int requestParams = request->params();
-        int docLength = EDITABLE_VARS_LEN;
+        auto& registry = ParameterRegistry::getInstance();
 
-        if (request->method() == 1) {
-            if (requestParams > 0) {
-                docLength = std::min(requestParams, EDITABLE_VARS_LEN);
+        size_t webVisibleCount = 0;
+        const auto& parameters = registry.getParameters();
+
+        for (const auto& param : parameters) {
+            if (param->shouldShow()) {
+                webVisibleCount++;
             }
         }
-        else if (request->method() == 2) {
-            docLength = std::min(requestParams, EDITABLE_VARS_LEN);
-        }
 
-        DynamicJsonDocument doc(JSON_ARRAY_SIZE(EDITABLE_VARS_LEN)                // array EDITABLE_VARS_LEN with parameters
-                                + JSON_OBJECT_SIZE(9) * EDITABLE_VARS_LEN         // object with 9 values per parameter
-                                + JSON_STRING_SIZE(25 + 30) * EDITABLE_VARS_LEN); // string size for templateString and displayName
+        // Calculate document size dynamically based on actual parameter count
+        const size_t docSize = JSON_ARRAY_SIZE(webVisibleCount) + (webVisibleCount * JSON_OBJECT_SIZE(9)) + webVisibleCount * JSON_STRING_SIZE(55); // Estimated string sizes for name + displayName
 
-        if (request->method() == 2) {                                             // method() returns values from WebRequestMethod enum -> 2 == HTTP_POST
-            // returns values from WebRequestMethod enum -> 2 == HTTP_POST
-            // update all given params and match var name in editableVars
+        DynamicJsonDocument doc(docSize);
+
+        if (request->method() == 2) { // HTTP_POST - Update parameters
+            const int requestParams = request->params();
 
             for (int i = 0; i < requestParams; i++) {
                 auto* p = request->getParam(i);
@@ -328,67 +314,62 @@ void serverSetup() {
                 }
 
                 try {
-                    editable_t e = editableVars.at(varName);
+                    std::shared_ptr<Parameter> param = registry.getParameterById(varName.c_str());
 
-                    if (e.type == kInteger) {
-                        int newVal = atoi(p->value().c_str());
-                        *(int*)e.ptr = newVal;
-                    }
-                    else if (e.type == kUInt8) {
-                        *(uint8_t*)e.ptr = (uint8_t)atoi(p->value().c_str());
-                    }
-                    else if (e.type == kDouble || e.type == kDoubletime) {
-                        float newVal = atof(p->value().c_str());
-                        *(double*)e.ptr = newVal;
-                    }
-                    else if (e.type == kFloat) {
-                        float newVal = atof(p->value().c_str());
-                        *(float*)e.ptr = newVal;
+                    if (param == nullptr || !param->shouldShow()) {
+                        continue;
                     }
 
-                    paramToJson(varName, e, doc);
+                    if (param->getType() == kCString) {
+                        if (registry.setParameterStringValue(varName.c_str(), p->value())) {
+                            paramToJson(varName, param, doc);
+                        }
+                    }
+                    else {
+                        double newVal = 0.0;
+
+                        if (param->getType() == kInteger || param->getType() == kUInt8) {
+                            newVal = static_cast<double>(atoi(p->value().c_str()));
+                        }
+                        else {
+                            newVal = atof(p->value().c_str());
+                        }
+
+                        if (registry.setParameterValue(varName.c_str(), newVal)) {
+                            paramToJson(varName, param, doc);
+                        }
+                    }
                 } catch (const std::out_of_range& exc) {
                     continue;
                 }
             }
 
+            registry.forceSave();
+
             String paramsJson;
             serializeJson(doc, paramsJson);
             request->send(200, "application/json", paramsJson);
 
-            // Write to EEPROM
-            if (writeToEeprom) {
-                if (writeToEeprom() == 0) {
-                    LOG(DEBUG, "successfully wrote EEPROM");
-                }
-                else {
-                    LOG(ERROR, "EEPROM write failed");
-                }
-            }
-
             // Write the new values to MQTT
-            writeSysParamsToMQTT(true);    // Continue on error
+            writeSysParamsToMQTT(true);
         }
-        else if (request->method() == 1) { // WebRequestMethod enum -> HTTP_GET
-            // get parameter id from first parameter, e.g. /parameters?param=PID_ON
-            int paramCount = request->params();
-            String paramId = paramCount > 0 ? request->getParam(0)->value() : "";
-
-            std::map<String, editable_t>::iterator it;
+        else if (request->method() == 1) { // HTTP_GET - Retrieve parameters
+            const size_t paramCount = request->params();
+            const String paramId = paramCount > 0 ? request->getParam(0)->value() : "";
 
             if (!paramId.isEmpty()) {
-                it = editableVars.find(paramId);
+                // Get specific parameter
+
+                if (std::shared_ptr<Parameter> param = registry.getParameterById(paramId.c_str()); param != nullptr && param->shouldShow()) {
+                    paramToJson(paramId, param, doc);
+                }
             }
             else {
-                it = editableVars.begin();
-            }
-
-            for (; it != editableVars.end(); it++) {
-                editable_t e = it->second;
-                paramToJson(it->first, e, doc);
-
-                if (!paramId.isEmpty()) {
-                    break;
+                // Get all web-visible parameters
+                for (const auto& param : parameters) {
+                    if (param->shouldShow()) {
+                        paramToJson(param->getId(), param, doc);
+                    }
                 }
             }
         }
@@ -409,21 +390,22 @@ void serverSetup() {
         DynamicJsonDocument doc(1024);
         auto* p = request->getParam(0);
 
-        if (p == NULL) {
+        if (p == nullptr) {
             request->send(422, "text/plain", "parameter is missing");
             return;
         }
 
         const String& varValue = p->value();
 
-        try {
-            editable_t e = editableVars.at(varValue);
-            doc["name"] = varValue;
-            doc["helpText"] = e.helpText;
-        } catch (const std::out_of_range& exc) {
+        const std::shared_ptr<Parameter> param = ParameterRegistry::getInstance().getParameterById(varValue.c_str());
+
+        if (param == nullptr) {
             request->send(404, "application/json", "parameter not found");
             return;
         }
+
+        doc["name"] = varValue;
+        doc["helpText"] = param->getHelpText();
 
         String helpJson;
         serializeJson(doc, helpJson);
@@ -470,6 +452,64 @@ void serverSetup() {
         wiFiReset();
     });
 
+    server.on("/download/config", HTTP_GET, [](AsyncWebServerRequest* request) {
+        if (!LittleFS.exists("/config.json")) {
+            request->send(404, "text/plain", "Config file not found");
+            return;
+        }
+
+        File configFile = LittleFS.open("/config.json", "r");
+
+        if (!configFile) {
+            request->send(500, "text/plain", "Failed to open config file");
+            return;
+        }
+
+        AsyncWebServerResponse* response = request->beginResponse(LittleFS, "/config.json", "application/json", true);
+
+        response->addHeader("Content-Disposition", "attachment; filename=\"config.json\"");
+
+        request->send(response);
+        configFile.close();
+    });
+
+    server.on(
+        "/upload/config", HTTP_POST, [](AsyncWebServerRequest* request) { request->send(200, "text/plain", "Configuration upload completed"); },
+        [](AsyncWebServerRequest* request, const String& filename, const size_t index, const uint8_t* data, const size_t len, const bool final) {
+            static String uploadBuffer;
+            static size_t totalSize = 0;
+
+            if (index == 0) {
+                uploadBuffer = "";
+                uploadBuffer.reserve(8192);
+                totalSize = 0;
+                LOGF(INFO, "Config upload started: %s", filename.c_str());
+            }
+
+            for (size_t i = 0; i < len; i++) {
+                uploadBuffer += static_cast<char>(data[i]);
+            }
+
+            totalSize += len;
+
+            if (final) {
+                LOGF(INFO, "Config upload finished: %s, total size: %u bytes", filename.c_str(), totalSize);
+
+                if (config.validateAndApplyFromJson(uploadBuffer)) {
+                    LOG(INFO, "Configuration validated and applied successfully, restarting...");
+                }
+                else {
+                    LOG(ERROR, "Configuration validation failed - invalid data or out of range values, restarting...");
+                }
+            }
+        });
+
+    server.on("/restart", HTTP_POST, [](AsyncWebServerRequest* request) {
+        request->send(200, "text/plain", "Restarting...");
+        delay(100);
+        ESP.restart();
+    });
+
     server.onNotFound([](AsyncWebServerRequest* request) { request->send(404, "text/plain", "Not found"); });
 
     // set up event handler for temperature messages
@@ -478,7 +518,7 @@ void serverSetup() {
             LOGF(DEBUG, "Reconnected, last message ID was: %u", client->lastId());
         }
 
-        client->send("hello", NULL, millis(), 10000);
+        client->send("hello", nullptr, millis(), 10000);
     });
 
     server.addHandler(&events);
@@ -498,10 +538,10 @@ void serverSetup() {
 }
 
 // skip counter so we don't keep a value every second
-int skippedValues = 0;
+inline int skippedValues = 0;
 #define SECONDS_TO_SKIP 2
 
-void sendTempEvent(double currentTemp, double targetTemp, double heaterPower) {
+inline void sendTempEvent(const double currentTemp, const double targetTemp, const double heaterPower) {
     curTemp = currentTemp;
     tTemp = targetTemp;
     hPower = heaterPower;
@@ -511,9 +551,9 @@ void sendTempEvent(double currentTemp, double targetTemp, double heaterPower) {
         // use array and int value for start index (round robin)
         // one record (3 float values == 12 bytes) every three seconds, for half
         // an hour -> 7.2kB of static memory
-        tempHistory[0][historyCurrentIndex] = (float)currentTemp;
-        tempHistory[1][historyCurrentIndex] = (float)targetTemp;
-        tempHistory[2][historyCurrentIndex] = (float)heaterPower;
+        tempHistory[0][historyCurrentIndex] = static_cast<float>(currentTemp);
+        tempHistory[1][historyCurrentIndex] = static_cast<float>(targetTemp);
+        tempHistory[2][historyCurrentIndex] = static_cast<float>(heaterPower);
         historyCurrentIndex = (historyCurrentIndex + 1) % HISTORY_LENGTH;
         historyValueCount = min(HISTORY_LENGTH - 1, historyValueCount + 1);
         skippedValues = 0;
@@ -522,6 +562,6 @@ void sendTempEvent(double currentTemp, double targetTemp, double heaterPower) {
         skippedValues++;
     }
 
-    events.send("ping", NULL, millis());
+    events.send("ping", nullptr, millis());
     events.send(getTempString().c_str(), "new_temps", millis());
 }

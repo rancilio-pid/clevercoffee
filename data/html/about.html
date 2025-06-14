@@ -9,18 +9,116 @@
         <div class="container my-2">
             <br/>
             <div class="underlined-heading" id="epilog"><h3>About</h3></div>
-            <p>
-                Version: %VAR_SHOW_VERSION% <br/>
-                <a href="https://clevercoffee.de/">Clever Coffee Project Website</a><br/>
-                <a href="https://github.com/rancilio-pid/clevercoffee">Follow development on Github</a>
-            </p>
-            <br/>
-            <p>
-                <button @click="confirmReset" class="btn btn-danger btn-lg mt-3">
-                    Reset WiFi Settings
-                </button>
-            </p>
+
+            <!-- Version Section -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-0">Version</h5>
+                    <p class="card-text text-muted">%VAR_SHOW_VERSION%</p>
+                </div>
+            </div>
+
+            <!-- Links Section -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Community & Resources</h5>
+                    <div class="row">
+                        <div class="col-md-4 mb-2">
+                            <a href="https://clevercoffee.de/" class="btn btn-outline-primary w-100" target="_blank">
+                                <span class="fa-solid fa-globe me-2"></span>
+                                Project Website
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <a href="https://github.com/rancilio-pid/clevercoffee" class="btn btn-outline-dark w-100" target="_blank">
+                                <span class="fa-solid fa-globe me-2"></span>
+                                GitHub Repository
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <a href="https://discord.gg/Kq5RFznuU4" class="btn btn-outline-info w-100" target="_blank">
+                                <span class="fa-solid fa-globe me-2"></span>
+                                Discord Community
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Control Section -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title text-warning">Restart Machine</h5>
+                            <p class="card-text text-muted">Restart the machine to apply changes or resolve issues.</p>
+                            <button @click="confirmRestart" class="btn btn-warning btn-lg">
+                                <span class="fa-solid fa-power-off me-2"></span>
+                                Restart
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title text-danger">WiFi Reset</h5>
+                            <p class="card-text text-muted">Reset WiFi settings to factory defaults.</p>
+                            <button @click="confirmReset" class="btn btn-danger btn-lg">
+                                <span class="fa-solid fa-wifi me-2"></span>
+                                Reset WiFi Settings
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuration Section -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title text-success">Configuration Backup</h5>
+                            <p class="card-text text-muted">Download your current configuration as a backup file.</p>
+                            <a href="/download/config" class="btn btn-success btn-lg" download="clevercoffee-config.json">
+                                <span class="fa-solid fa-download me-2"></span>
+                                Download Config
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title text-warning">Configuration Upload</h5>
+                            <p class="card-text text-muted">Upload a previously downloaded configuration file to restore settings.</p>
+                            <div class="mb-3">
+                                <input type="file"
+                                       class="form-control"
+                                       id="configFileInput"
+                                       accept=".json"
+                                       @change="handleFileSelect">
+                            </div>
+                            <button @click="uploadConfig"
+                                    class="btn btn-warning btn-lg"
+                                    :disabled="!selectedFile || isUploading">
+                                <span class="fa-solid fa-upload me-2"></span>
+                                <span v-if="isUploading">Uploading...</span>
+                                <span v-else>Upload Config</span>
+                            </button>
+                            <div v-if="uploadMessage"
+                                 class="mt-2 alert"
+                                 :class="uploadSuccess ? 'alert-success' : 'alert-danger'">
+                                {{ uploadMessage }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-%FOOTER%
+</div>
+
+</body>
+</html>

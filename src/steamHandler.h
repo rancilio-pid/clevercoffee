@@ -1,16 +1,17 @@
 /**
- * @file steamSwitch.h
+ * @file steamHandler.h
  *
  * @brief Handler for digital steam switch
  */
+#pragma once
 
-uint8_t currStateSteamSwitch;
+inline uint8_t currStateSteamSwitch;
 
-void checkSteamSwitch() {
-    if (FEATURE_STEAMSWITCH) {
-        uint8_t steamSwitchReading = steamSwitch->isPressed();
+inline void checkSteamSwitch() {
+    if (config.getSteamSwitchEnabled()) {
+        const uint8_t steamSwitchReading = steamSwitch->isPressed();
 
-        if (STEAMSWITCH_TYPE == Switch::TOGGLE) {
+        if (config.getSteamSwitchType() == Switch::TOGGLE) {
             // Set steamON to 1 when steamswitch is HIGH
             if (steamSwitchReading == HIGH) {
                 steamON = 1;
@@ -21,7 +22,7 @@ void checkSteamSwitch() {
                 steamON = 0;
             }
         }
-        else if (STEAMSWITCH_TYPE == Switch::MOMENTARY) {
+        else if (config.getSteamSwitchType() == Switch::MOMENTARY) {
             if (steamSwitchReading != currStateSteamSwitch) {
                 currStateSteamSwitch = steamSwitchReading;
 

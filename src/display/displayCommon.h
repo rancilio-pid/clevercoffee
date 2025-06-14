@@ -72,7 +72,7 @@ void displayWiFiStatus(int x, int y) {
  * @brief Draw an MQTT status indicator at the given coordinates if MQTT is enabled
  */
 void displayMQTTStatus(int x, int y) {
-    if (FEATURE_MQTT == 1) {
+    if (mqtt_enabled) {
         if (mqtt.connected() == 1) {
             u8g2.setCursor(x, y);
             u8g2.setFont(u8g2_font_profont11_tf);

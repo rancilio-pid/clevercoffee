@@ -92,7 +92,7 @@ class Logger {
         }
 
     private:
-        static Logger& getInstanceImpl(const uint16_t port = 23);
+        static Logger& getInstanceImpl(uint16_t port = 23);
 
         /**
          * @brief Constructor for a logger

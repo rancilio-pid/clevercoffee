@@ -12,12 +12,12 @@ class GPIOPin;
 
 class StandardLED : public LED {
     public:
-        StandardLED(GPIOPin& gpioInstance, int featureFlag);
+        StandardLED(GPIOPin& gpioInstance, bool inverted);
 
         void turnOn() override;
         void turnOff() override;
-        void setColor(int red, int green, int blue);
-        void setBrightness(int value);
+        void setColor(int red, int green, int blue) override;
+        void setBrightness(int value) override;
         void setGPIOState(bool state) override;
 
     private:
