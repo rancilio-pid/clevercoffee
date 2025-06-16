@@ -304,60 +304,60 @@ void ParameterRegistry::initialize(Config& config) {
         },
         BACKFLUSH_FLUSH_TIME_MIN, BACKFLUSH_FLUSH_TIME_MAX, true, "Time in seconds the selenoid valve stays open during one backflush cycle", [] { return featureBrewControl == 1; }, &backflushFlushTime));
 
-#if (FEATURE_SCALE == 1)
-    addParam(std::make_shared<Parameter>(
-        "SCALE_TARGET_BREW_WEIGHT", "Brew weight target (g)", kDouble, sBrewSection, 20,
-        [&config] {
-            targetBrewWeight = config.getTargetBrewWeight();
-            return targetBrewWeight;
-        },
-        [&config](const double val) {
-            config.setTargetBrewWeight(val);
-            targetBrewWeight = val;
-        },
-        TARGET_BREW_WEIGHT_MIN, TARGET_BREW_WEIGHT_MAX, true, "Brew is running until this weight has been measured. Set to 0 to deactivate brew-by-weight-feature.", [] { return featureBrewControl == 1; }, &targetBrewWeight));
+    if (config.getScaleEnabled()) {
+        addParam(std::make_shared<Parameter>(
+            "SCALE_TARGET_BREW_WEIGHT", "Brew weight target (g)", kDouble, sBrewSection, 20,
+            [&config] {
+                targetBrewWeight = config.getTargetBrewWeight();
+                return targetBrewWeight;
+            },
+            [&config](const double val) {
+                config.setTargetBrewWeight(val);
+                targetBrewWeight = val;
+            },
+            TARGET_BREW_WEIGHT_MIN, TARGET_BREW_WEIGHT_MAX, true, "Brew is running until this weight has been measured. Set to 0 to deactivate brew-by-weight-feature.", [] { return featureBrewControl == 1; }, &targetBrewWeight));
 
-    addParam(std::make_shared<Parameter>("TARE_ON", "Tare", kUInt8, sScaleSection, 21, [&]() -> bool { return scaleTareOn; }, [](const bool val) { scaleTareOn = val; }, false, "", [] { return false; }, &scaleTareOn));
+        addParam(std::make_shared<Parameter>("TARE_ON", "Tare", kUInt8, sScaleSection, 21, [&]() -> bool { return scaleTareOn; }, [](const bool val) { scaleTareOn = val; }, false, "", [] { return true; }, &scaleTareOn));
 
-    addParam(std::make_shared<Parameter>(
-        "CALIBRATION_ON", "Calibration", kUInt8, sScaleSection, 22, [&]() -> bool { return scaleCalibrationOn; }, [](const bool val) { scaleCalibrationOn = val; }, false, "", [] { return false; }, &scaleCalibrationOn));
+        addParam(std::make_shared<Parameter>(
+            "CALIBRATION_ON", "Calibration", kUInt8, sScaleSection, 22, [&]() -> bool { return scaleCalibrationOn; }, [](const bool val) { scaleCalibrationOn = val; }, false, "", [] { return true; }, &scaleCalibrationOn));
 
-    addParam(std::make_shared<Parameter>(
-        "SCALE_KNOWN_WEIGHT", "Known weight in g", kFloat, sScaleSection, 23,
-        [&config] {
-            scaleKnownWeight = config.getScaleKnownWeight();
-            return scaleKnownWeight;
-        },
-        [&config](const double val) {
-            config.setScaleKnownWeight(static_cast<float>(val));
-            scaleKnownWeight = static_cast<float>(val);
-        },
-        0.0, 2000.0, false, "", [] { return true; }, &scaleKnownWeight));
+        addParam(std::make_shared<Parameter>(
+            "SCALE_KNOWN_WEIGHT", "Known weight in g", kFloat, sScaleSection, 23,
+            [&config] {
+                scaleKnownWeight = config.getScaleKnownWeight();
+                return scaleKnownWeight;
+            },
+            [&config](const double val) {
+                config.setScaleKnownWeight(static_cast<float>(val));
+                scaleKnownWeight = static_cast<float>(val);
+            },
+            0.0, 2000.0, false, "", [] { return true; }, &scaleKnownWeight));
 
-    addParam(std::make_shared<Parameter>(
-        "SCALE_CALIBRATION", "Calibration factor scale 1", kFloat, sScaleSection, 24,
-        [&config] {
-            scaleCalibration = config.getScaleCalibration();
-            return scaleCalibration;
-        },
-        [&config](const double val) {
-            config.setScaleCalibration(static_cast<float>(val));
-            scaleCalibration = static_cast<float>(val);
-        },
-        -100000, 100000, false, "", [] { return true; }, &scaleCalibration));
+        addParam(std::make_shared<Parameter>(
+            "SCALE_CALIBRATION", "Calibration factor scale 1", kFloat, sScaleSection, 24,
+            [&config] {
+                scaleCalibration = config.getScaleCalibration();
+                return scaleCalibration;
+            },
+            [&config](const double val) {
+                config.setScaleCalibration(static_cast<float>(val));
+                scaleCalibration = static_cast<float>(val);
+            },
+            -100000, 100000, false, "", [] { return true; }, &scaleCalibration));
 
-    addParam(std::make_shared<Parameter>(
-        "SCALE2_CALIBRATION", "Calibration factor scale 2", kFloat, sScaleSection, 25,
-        [&config] {
-            scale2Calibration = config.getScale2Calibration();
-            return scale2Calibration;
-        },
-        [&config](const double val) {
-            config.setScale2Calibration(static_cast<float>(val));
-            scale2Calibration = static_cast<float>(val);
-        },
-        -100000, 100000, false, "", [] { return SCALE_TYPE == 0; }, &scale2Calibration));
-#endif
+        addParam(std::make_shared<Parameter>(
+            "SCALE2_CALIBRATION", "Calibration factor scale 2", kFloat, sScaleSection, 25,
+            [&config] {
+                scale2Calibration = config.getScale2Calibration();
+                return scale2Calibration;
+            },
+            [&config](const double val) {
+                config.setScale2Calibration(static_cast<float>(val));
+                scale2Calibration = static_cast<float>(val);
+            },
+            -100000, 100000, false, "", [&config]{ return config.getScaleType() == 0; }, &scale2Calibration));
+    }
 
     // Brew PID Section
     addParam(std::make_shared<Parameter>(

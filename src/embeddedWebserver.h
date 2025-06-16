@@ -262,25 +262,25 @@ inline void serverSetup() {
         request->redirect("/");
     });
 
-#if FEATURE_SCALE == 1
-    server.on("/toggleTareScale", HTTP_POST, [](AsyncWebServerRequest* request) {
-        int tare = flipUintValue(scaleTareOn);
+    if (config.getScaleEnabled()) {
+        server.on("/toggleTareScale", HTTP_POST, [](AsyncWebServerRequest* request) {
+            int tare = flipUintValue(scaleTareOn);
 
-        setScaleTare(tare);
-        LOGF(DEBUG, "Toggle scale tare mode: %i", tare);
+            setScaleTare(tare);
+            LOGF(DEBUG, "Toggle scale tare mode: %i", tare);
 
-        request->redirect("/");
-    });
+            request->redirect("/");
+        });
 
-    server.on("/toggleScaleCalibration", HTTP_POST, [](AsyncWebServerRequest* request) {
-        int scaleCalibrate = flipUintValue(scaleCalibrationOn);
+        server.on("/toggleScaleCalibration", HTTP_POST, [](AsyncWebServerRequest* request) {
+            int scaleCalibrate = flipUintValue(scaleCalibrationOn);
 
-        setScaleCalibration(scaleCalibrate);
-        LOGF(DEBUG, "Toggle scale calibration mode: %i", scaleCalibrate);
+            setScaleCalibration(scaleCalibrate);
+            LOGF(DEBUG, "Toggle scale calibration mode: %i", scaleCalibrate);
 
-        request->redirect("/");
-    });
-#endif
+            request->redirect("/");
+        });
+    }
 
     server.on("/parameters", HTTP_GET | HTTP_POST, [](AsyncWebServerRequest* request) {
         auto& registry = ParameterRegistry::getInstance();

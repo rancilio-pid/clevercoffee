@@ -64,29 +64,28 @@ void printScreen() {
         drawTemperaturebar(8, 50, 30);
     }
 
-// Brew and flush time
-#if (FEATURE_BREWSWITCH == 1)
-
-    if (featureBrewControl) {
-        // Shown brew time
-        if (shouldDisplayBrewTimer()) {
-            displayBrewTime(34, 36, langstring_brew, currBrewTime, totalTargetBrewTime);
+    // Brew and flush time
+    if (config.getBrewSwitchEnabled()) {
+        if (featureBrewControl) {
+            // Shown brew time
+            if (shouldDisplayBrewTimer()) {
+                displayBrewTime(34, 36, langstring_brew, currBrewTime, totalTargetBrewTime);
+            }
+            // Shown flush time while machine is flushing
+            if (machineState == kManualFlush) {
+                u8g2->setDrawColor(0);
+                u8g2->drawBox(34, 37, 100, 10);
+                u8g2->setDrawColor(1);
+                displayBrewTime(34, 36, langstring_manual_flush, currBrewTime);
+            }
         }
-        // Shown flush time while machine is flushing
-        if (machineState == kManualFlush) {
-            u8g2->setDrawColor(0);
-            u8g2->drawBox(34, 37, 100, 10);
-            u8g2->setDrawColor(1);
-            displayBrewTime(34, 36, langstring_manual_flush, currBrewTime);
+        else {
+            // Brew Timer with optocoupler
+            if (shouldDisplayBrewTimer()) {
+                displayBrewTime(34, 36, langstring_brew, currBrewTime);
+            }
         }
     }
-    else {
-        // Brew Timer with optocoupler
-        if (shouldDisplayBrewTimer()) {
-            displayBrewTime(34, 36, langstring_brew, currBrewTime);
-        }
-    }
-#endif
 
     // PID values over heat bar
     u8g2->setCursor(38, 47);

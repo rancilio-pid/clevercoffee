@@ -361,18 +361,19 @@ bool displayFullscreenBrewTimer() {
     if (shouldDisplayBrewTimer()) {
         u8g2->clearBuffer();
         u8g2->drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
-#if (FEATURE_SCALE == 1)
-        u8g2->setFont(u8g2_font_profont22_tf);
-        u8g2->setCursor(64, 15);
-        u8g2->print(currBrewTime / 1000, 1);
-        u8g2->print("s");
-        u8g2->setCursor(64, 38);
-        u8g2->print(currBrewWeight, 1);
-        u8g2->print("g");
-        u8g2->setFont(u8g2_font_profont11_tf);
-#else
-        displayBrewtimeFs(48, 25, currBrewTime);
-#endif
+        if (config.getScaleEnabled()) {
+            u8g2->setFont(u8g2_font_profont22_tf);
+            u8g2->setCursor(64, 15);
+            u8g2->print(currBrewTime / 1000, 1);
+            u8g2->print("s");
+            u8g2->setCursor(64, 38);
+            u8g2->print(currBrewWeight, 1);
+            u8g2->print("g");
+            u8g2->setFont(u8g2_font_profont11_tf);
+        }
+        else {
+            displayBrewtimeFs(48, 25, currBrewTime);
+        }
         displayWaterIcon(119, 1);
         u8g2->sendBuffer();
         return true;
