@@ -31,7 +31,7 @@
                             </div>
 
                             <template v-for="param in parameters">
-                                <template v-if="param.name == 'BREW_SETPOINT'">
+                                <template v-if="param.name == 'brew.setpoint'">
                                     <div class="col-md-4">
                                         <label class="form-label me-1 col-form-label" :for="'var'+param.name">{{param.displayName}}</label>
                                         <template v-if="param.hasHelpText">
@@ -67,12 +67,12 @@
                             <tbody>
                                 <template v-for="param in parameters">
                                     <tr>
-                                        <template v-if="param.name == 'PID_ON'">
+                                        <template v-if="param.name == 'pid.enabled'">
                                             <td><b>Toggle PID Controller</b></td>
                                             <td><span id="pid_state"></span></td>
                                             <td>
                                                 <form action="/togglePid" method="post">
-                                                    <input type="hidden" id="varPID_ON" name="varPID_ON" />
+                                                    <input type="hidden" id="varpid.enabled" name="varpid.enabled" />
                                                     <input type="submit" class="btn btn-primary" :value="param.value == 1 ? 'Off' : 'On'" id="pid_toggle" />
                                                 </form>
                                             </td>

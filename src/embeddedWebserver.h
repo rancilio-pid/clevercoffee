@@ -240,11 +240,10 @@ inline void serverSetup() {
     server.on("/togglePid", HTTP_POST, [](AsyncWebServerRequest* request) {
         LOGF(DEBUG, "/togglePid requested, method: %d", request->method());
 
-        auto pidParam = ParameterRegistry::getInstance().getParameterById("PID_ON");
+        auto pidParam = ParameterRegistry::getInstance().getParameterById("pid.enabled");
         bool newPidState = !pidParam->getBoolValue();
-        ParameterRegistry::getInstance().setParameterBoolValue("PID_ON", newPidState);
+        ParameterRegistry::getInstance().setParameterBoolValue("pid.enabled", newPidState);
 
-        // Update global variable for immediate effect
         pidON = newPidState ? 1 : 0;
 
         LOGF(DEBUG, "Toggle PID state: %d\n", newPidState);

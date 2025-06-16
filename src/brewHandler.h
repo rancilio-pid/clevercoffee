@@ -85,7 +85,7 @@ inline HX711_ADC LoadCell2(PIN_HXDAT2, PIN_HXCLK);
 /**
  * @brief Toggle or momentary input for Brew Switch
  */
-inline void checkbrewswitch() {
+inline void checkBrewSwitch() {
     static bool loggedEmptyWaterTank = false;
     brewSwitchReading = brewSwitch->isPressed();
 
@@ -208,7 +208,7 @@ inline bool brew() {
     }
 
     const unsigned long currentMillisTemp = millis();
-    checkbrewswitch();
+    checkBrewSwitch();
 
     // abort function for state machine from every state
     if (currBrewSwitchState == kBrewSwitchIdle && currBrewState > kBrewIdle && currBrewState < kBrewFinished) {
@@ -364,7 +364,7 @@ inline bool manualFlush() {
     }
 
     const unsigned long currentMillisTemp = millis();
-    checkbrewswitch();
+    checkBrewSwitch();
 
     if (currManualFlushState == kManualFlushRunning) {
         currBrewTime = currentMillisTemp - startingTime;
@@ -405,7 +405,11 @@ inline bool manualFlush() {
  * @brief Backflush
  */
 inline void backflush() {
-    checkbrewswitch();
+    if (!config.getBrewSwitchEnabled() || brewSwitch == nullptr) {
+        return; // brew switch is not enabled, so no brew process running
+    }
+
+    checkBrewSwitch();
 
     if (currBackflushState != kBackflushIdle && backflushOn == 0) {
         currBackflushState = kBackflushFinished; // Force reset in case backflushOn is reset during backflush!
