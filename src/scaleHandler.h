@@ -22,7 +22,7 @@ inline void scaleCalibrate(HX711_ADC loadCell, int pin, bool isSecondCell, float
 
     LOGF(INFO, "Put load on scale %d within the next 10 seconds", pin);
 
-    float scaleKnownWeight = ParameterRegistry::getInstance().getParameterById("SCALE_KNOWN_WEIGHT")->getFloatValue();
+    float scaleKnownWeight = ParameterRegistry::getInstance().getParameterById("hardware.sensors.scale.known_weight")->getFloatValue();
 
     u8g2->clearBuffer();
     u8g2->drawStr(2, 2, "Calibration in progress.");
@@ -46,10 +46,10 @@ inline void scaleCalibrate(HX711_ADC loadCell, int pin, bool isSecondCell, float
     u8g2->sendBuffer();
 
     if (isSecondCell) {
-        ParameterRegistry::getInstance().setParameterValue("SCALE2_CALIBRATION", *calibration);
+        ParameterRegistry::getInstance().setParameterValue("hardware.sensors.scale.calibration2", *calibration);
     }
     else {
-        ParameterRegistry::getInstance().setParameterValue("SCALE_CALIBRATION", *calibration);
+        ParameterRegistry::getInstance().setParameterValue("hardware.sensors.scale.calibration", *calibration);
     }
 
     u8g2->clearBuffer();
@@ -135,9 +135,7 @@ inline void checkWeight() {
     }
 }
 
-void initScale() {
-    boolean shouldCalibrate = scaleCalibrationOn;
-
+inline void initScale() {
     LoadCell.begin();
 
     if (config.getScaleType() == 0) {
@@ -206,7 +204,7 @@ void initScale() {
 /**
  * @brief Scale with shot timer
  */
-inline void shottimerscale() {
+inline void shotTimerScale() {
     switch (shottimerCounter) {
         case 10: // waiting step for brew switch turning on
             if (currBrewState != kBrewIdle) {

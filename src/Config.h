@@ -1282,6 +1282,25 @@ class Config {
                 setFeaturePidOffLogo(doc["display"]["pid_off_logo"].as<bool>());
             }
 
+            // Hardware - OLED
+            if (doc["hardware"]["oled"].containsKey("enabled")) {
+                if (!doc["hardware"]["oled"]["enabled"].is<bool>()) {
+                    return false;
+                }
+
+                setOledEnabled(doc["hardware"]["oled"]["enabled"].as<bool>());
+            }
+
+            if (doc["hardware"]["oled"].containsKey("type")) {
+                int value = doc["hardware"]["oled"]["type"].as<int>();
+
+                if (!validateParameterRange("hardware.oled.type", value, 0, 1)) {
+                    return false;
+                }
+
+                setOledType(value);
+            }
+
             // Hardware - Relays
             if (doc["hardware"]["relays"]["heater"].containsKey("trigger_type")) {
                 int value = doc["hardware"]["relays"]["heater"]["trigger_type"].as<int>();

@@ -98,14 +98,14 @@ const vueApp = Vue.createApp({
         // Helper method to determine input type for parameters
         getInputType(param) {
             switch(param.type) {
-                case 6: // enum
+                case 5: // enum
                     return 'select';
                 case 4: // string
                     return 'text';
                 case 0: // integer
                 case 1: // uint8
-                case 2: // float/double
-                case 3: // doubletime
+                case 2: // double
+                case 3: // float
                     return 'number';
                 default:
                     return 'text';
@@ -118,8 +118,8 @@ const vueApp = Vue.createApp({
                 case 0: // integer
                 case 1: // uint8
                     return '1';
-                case 2: // float/double
-                case 3: // doubletime
+                case 2: // double
+                case 3: // float
                     return '0.01';
                 default:
                     return '1';
@@ -188,6 +188,7 @@ const vueApp = Vue.createApp({
             }
         },
 
+
         async uploadConfig() {
             if (!this.selectedFile) {
                 this.uploadMessage = 'Please select a configuration file first.';
@@ -207,30 +208,76 @@ const vueApp = Vue.createApp({
                     body: formData
                 });
 
-                if (response.ok) {
-                    this.uploadMessage = 'Configuration uploaded successfully! Restarting device...';
+                if (!response.ok) {
+                    // Try to parse error message if possible
+                    let errorMessage = 'Upload failed. Please try again.';
+
+                    try {
+                        const errorData = await response.json();
+
+                        if (errorData.message) {
+                            errorMessage = errorData.message;
+                        }
+                    } catch (jsonError) {
+                        errorMessage = `Upload failed: ${response.status} ${response.statusText}`;
+                    }
+
+                    this.uploadMessage = errorMessage;
+                    this.uploadSuccess = false;
+
+                    await this.handlePostUploadRestart();
+
+                    return;
+                }
+
+                let result;
+                try {
+                    result = await response.json();
+                } catch (jsonError) {
+                    // If JSON parsing fails but response was OK, assume success
+                    this.uploadMessage = 'Configuration uploaded successfully!';
                     this.uploadSuccess = true;
 
-                    // Wait a moment, then trigger restart
-                    setTimeout(async () => {
-                        try {
-                            await fetch('/restart', { method: 'POST' });
-                        } catch (e) {
-                            // Expected - machine is restarting
-                        }
+                    await this.handlePostUploadRestart();
 
-                        this.uploadMessage = 'Machine is restarting. Please wait...';
-                    }, 1500);
-                } else {
-                    this.uploadMessage = 'Upload failed. Please try again.';
-                    this.uploadSuccess = false;
+                    return;
                 }
+
+                this.uploadSuccess = result.success;
+                this.uploadMessage = result.message || (result.success ? 'Configuration uploaded successfully!' : 'Configuration validation failed.');
+
+                // Always restart after config upload attempt
+                await this.handlePostUploadRestart();
+
             } catch (error) {
-                this.uploadMessage = 'Upload failed due to network error. Please try again.';
-                this.uploadSuccess = false;
                 console.error('Upload error:', error);
+
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    this.uploadMessage = 'Network error: Could not connect to device. Please try again.';
+                } else if (error.name === 'AbortError') {
+                    this.uploadMessage = 'Upload was cancelled or timed out. Please try again.';
+                } else {
+                    this.uploadMessage = 'Upload failed due to an unexpected error. Please try again.';
+                }
+
+                this.uploadSuccess = false;
             } finally {
                 this.isUploading = false;
+            }
+        },
+
+        async handlePostUploadRestart() {
+            // Give user time to read the message
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            this.uploadMessage += ' Restarting machine...';
+
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            try {
+                await this.restartMachine();
+            } catch (error) {
+                console.log('Machine restarting...');
             }
         },
 
@@ -299,9 +346,9 @@ document.querySelector('body').addEventListener('click', function (e) {
     //if click was not on an opened popover (ignore those)
     if (!e.target.classList.contains("popover-header")) {
         //close popovers when clicking elsewhere
-        if (e.target.parentElement.getAttribute("data-bs-toggle") != "popover") {
+        if (e.target.parentElement.getAttribute("data-bs-toggle") !== "popover") {
             document.querySelectorAll('[data-bs-toggle="popover"]').forEach(function(el) {
-                var popover = bootstrap.Popover.getInstance(el);
+                const popover = bootstrap.Popover.getInstance(el);
 
                 if (popover != null) {
                     popover.hide();
@@ -312,7 +359,7 @@ document.querySelector('body').addEventListener('click', function (e) {
             e.preventDefault();
 
             // create new popover
-            var popover = bootstrap.Popover.getOrCreateInstance(e.target.parentElement);
+            const popover = bootstrap.Popover.getOrCreateInstance(e.target.parentElement);
             popover.show();
         }
     }

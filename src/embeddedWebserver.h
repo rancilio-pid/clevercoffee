@@ -99,7 +99,6 @@ inline void paramToJson(const String& name, const std::shared_ptr<Parameter>& pa
             break;
 
         case kDouble:
-        case kDoubletime:
             paramObj["value"] = round2(param->getValue());
             break;
 
@@ -474,7 +473,10 @@ inline void serverSetup() {
     });
 
     server.on(
-        "/upload/config", HTTP_POST, [](AsyncWebServerRequest* request) { request->send(200, "text/plain", "Configuration upload completed"); },
+        "/upload/config", HTTP_POST,
+        [](AsyncWebServerRequest* request) {
+            // This response will be set by the upload handler
+        },
         [](AsyncWebServerRequest* request, const String& filename, const size_t index, const uint8_t* data, const size_t len, const bool final) {
             static String uploadBuffer;
             static size_t totalSize = 0;
@@ -495,11 +497,22 @@ inline void serverSetup() {
             if (final) {
                 LOGF(INFO, "Config upload finished: %s, total size: %u bytes", filename.c_str(), totalSize);
 
-                if (config.validateAndApplyFromJson(uploadBuffer)) {
-                    LOG(INFO, "Configuration validated and applied successfully, restarting...");
+                if (bool isValid = config.validateAndApplyFromJson(uploadBuffer)) {
+                    LOG(INFO, "Configuration validated and applied successfully");
+
+                    AsyncWebServerResponse* response = request->beginResponse(200, "application/json", R"({"success": true, "message": "Configuration validated and applied successfully.", "restart": true})");
+
+                    response->addHeader("Connection", "close");
+                    request->send(response);
                 }
                 else {
-                    LOG(ERROR, "Configuration validation failed - invalid data or out of range values, restarting...");
+                    LOG(ERROR, "Configuration validation failed - invalid data or out of range values");
+
+                    AsyncWebServerResponse* response =
+                        request->beginResponse(400, "application/json", R"({"success": false, "message": "Configuration validation failed. Please check that all parameter values are within valid ranges.", "restart": true})");
+
+                    response->addHeader("Connection", "close");
+                    request->send(response);
                 }
             }
         });

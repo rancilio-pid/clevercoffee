@@ -7,9 +7,8 @@ enum EditableKind {
     kInteger,
     kUInt8,
     kDouble,
-    kDoubletime,
-    kCString,
     kFloat,
+    kCString,
     kEnum
 };
 

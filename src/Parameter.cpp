@@ -23,10 +23,10 @@ Parameter::Parameter(const char* id,
     _position(position),
     _getter(std::move(getter)),
     _setter(std::move(setter)),
-    _minValue(minValue),
-    _maxValue(maxValue),
     _enumOptions(nullptr),
     _enumCount(0),
+    _minValue(minValue),
+    _maxValue(maxValue),
     _hasHelpText(hasHelpText),
     _helpText(helpText),
     _showCondition(std::move(showCondition)),
@@ -55,10 +55,10 @@ Parameter::Parameter(const char* id,
     _position(position),
     _getter(nullptr),
     _setter(nullptr),
-    _minValue(0),
-    _maxValue(maxLength),
     _enumOptions(nullptr),
     _enumCount(0),
+    _minValue(0),
+    _maxValue(maxLength),
     _hasHelpText(hasHelpText),
     _helpText(helpText),
     _showCondition(showCondition),
@@ -88,10 +88,10 @@ Parameter::Parameter(const char* id,
     _position(position),
     _getter(std::move(getter)),
     _setter(std::move(setter)),
-    _minValue(minValue),
-    _maxValue(maxValue),
     _enumOptions(nullptr),
     _enumCount(0),
+    _minValue(minValue),
+    _maxValue(maxValue),
     _hasHelpText(hasHelpText),
     _helpText(helpText),
     _showCondition(std::move(showCondition)),
@@ -119,10 +119,10 @@ Parameter::Parameter(const char* id,
     _position(position),
     _getter([boolGetter] { return boolGetter() ? 1.0 : 0.0; }),
     _setter([boolSetter](const double val) { boolSetter(val > 0.5); }),
-    _minValue(0),
-    _maxValue(1),
     _enumOptions(nullptr),
     _enumCount(0),
+    _minValue(0),
+    _maxValue(1),
     _hasHelpText(hasHelpText),
     _helpText(helpText),
     _showCondition(showCondition),
@@ -249,7 +249,6 @@ String Parameter::getFormattedValue() const {
             return String(getFloatValue());
 
         case kDouble:
-        case kDoubletime:
             return String(getValue());
 
         case kInteger:
@@ -288,7 +287,7 @@ String Parameter::getEnumDisplayValue() const {
 
     const int index = static_cast<int>(getValue());
 
-    return (index >= 0 && index < static_cast<int>(_enumCount)) ? String(_enumOptions[index]) : "";
+    return index >= 0 && index < static_cast<int>(_enumCount) ? String(_enumOptions[index]) : "";
 }
 
 void* Parameter::getGlobalVariablePointer() const {
@@ -312,7 +311,6 @@ void Parameter::syncToGlobalVariable(const double value) const {
             break;
 
         case kDouble:
-        case kDoubletime:
             *static_cast<double*>(_globalVariablePointer) = value;
             break;
 

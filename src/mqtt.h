@@ -49,14 +49,14 @@ inline void setupMqtt() {
         return;
     }
 
-    mqtt_enabled = registry.getParameterById("MQTT_ENABLED")->getBoolValue();
-    mqtt_server_ip = registry.getParameterById("MQTT_BROKER")->getStringValue();
-    mqtt_server_port = registry.getParameterById("MQTT_PORT")->getIntValue();
-    mqtt_username = registry.getParameterById("MQTT_USERNAME")->getStringValue();
-    mqtt_password = registry.getParameterById("MQTT_PASSWORD")->getStringValue();
-    mqtt_topic_prefix = registry.getParameterById("MQTT_TOPIC")->getStringValue();
-    mqtt_hassio_enabled = registry.getParameterById("MQTT_HASSIO_ENABLED")->getBoolValue();
-    mqtt_hassio_discovery_prefix = registry.getParameterById("MQTT_HASSIO_PREFIX")->getStringValue();
+    mqtt_enabled = registry.getParameterById("mqtt.enabled")->getBoolValue();
+    mqtt_server_ip = registry.getParameterById("mqtt.broker")->getStringValue();
+    mqtt_server_port = registry.getParameterById("mqtt.port")->getIntValue();
+    mqtt_username = registry.getParameterById("mqtt.username")->getStringValue();
+    mqtt_password = registry.getParameterById("mqtt.password")->getStringValue();
+    mqtt_topic_prefix = registry.getParameterById("mqtt.topic")->getStringValue();
+    mqtt_hassio_enabled = registry.getParameterById("mqtt.hassio.enabled")->getBoolValue();
+    mqtt_hassio_discovery_prefix = registry.getParameterById("mqtt.hassio.prefix")->getStringValue();
 }
 
 /**
@@ -272,7 +272,6 @@ inline int writeSysParamsToMQTT(const bool continueOnError = true) {
                         snprintf(data, sizeof(data), "%u", param->getUInt8Value());
                         break;
                     case kDouble:
-                    case kDoubletime:
                         snprintf(data, sizeof(data), "%.2f", param->getValue());
                         break;
                     case kFloat:

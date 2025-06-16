@@ -147,7 +147,7 @@ void setPIDTunings(bool usePonM);
 void setBDPIDTunings();
 void setRuntimePidState(bool enabled);
 void loopcalibrate();
-void looppid();
+void loopPid();
 void loopLED();
 void checkWaterTank();
 void printMachineState();
@@ -864,21 +864,21 @@ void setup() {
 
     if (mqtt_enabled) {
         // Editable values reported to MQTT
-        mqttVars["pidON"] = "PID_ON";
-        mqttVars["brewSetpoint"] = "BREW_SETPOINT";
-        mqttVars["brewTempOffset"] = "BREW_TEMP_OFFSET";
+        mqttVars["pidON"] = "pid.enabled";
+        mqttVars["brewSetpoint"] = "brew.setpoint";
+        mqttVars["brewTempOffset"] = "brew.temp_offset";
         mqttVars["steamON"] = "STEAM_MODE";
-        mqttVars["steamSetpoint"] = "STEAM_SETPOINT";
-        mqttVars["pidUsePonM"] = "PID_USE_PONM";
-        mqttVars["aggKp"] = "PID_KP";
-        mqttVars["aggTn"] = "PID_TN";
-        mqttVars["aggTv"] = "PID_TV";
-        mqttVars["aggIMax"] = "PID_I_MAX";
-        mqttVars["steamKp"] = "STEAM_KP";
-        mqttVars["standbyModeOn"] = "STANDBY_MODE_ON";
-        mqttVars["aggbKp"] = "PID_BD_KP";
-        mqttVars["aggbTn"] = "PID_BD_TN";
-        mqttVars["aggbTv"] = "PID_BD_TV";
+        mqttVars["steamSetpoint"] = "steam.setpoint";
+        mqttVars["pidUsePonM"] = "pid.use_ponm";
+        mqttVars["aggKp"] = "pid.regular.kp";
+        mqttVars["aggTn"] = "pid.regular.tn";
+        mqttVars["aggTv"] = "pid.regular.tv";
+        mqttVars["aggIMax"] = "pid.regular.i_max";
+        mqttVars["steamKp"] = "pid.steam.kp";
+        mqttVars["standbyModeOn"] = "standby.enabled";
+        mqttVars["aggbKp"] = "pid.bd.kp";
+        mqttVars["aggbTn"] = "pid.bd.tn";
+        mqttVars["aggbTv"] = "pid.bd.tv";
 
         // Values reported to MQTT
         mqttSensors["temperature"] = [] { return temperature; };
@@ -890,28 +890,28 @@ void setup() {
         mqttSensors["machineState"] = [] { return machineState; };
 
         if (config.getBrewSwitchEnabled()) {
-            mqttVars["pidUseBD"] = "PID_BD_ON";
-            mqttVars["brewPidDelay"] = "PID_BD_DELAY";
+            mqttVars["pidUseBD"] = "pid.bd.enabled";
+            mqttVars["brewPidDelay"] = "brew.pid_delay";
             mqttSensors["currBrewTime"] = [] { return currBrewTime / 1000; };
-            mqttVars["targetBrewTime"] = "TARGET_BREW_TIME";
-            mqttVars["preinfusion"] = "BREW_PREINFUSION";
-            mqttVars["preinfusionPause"] = "BREW_PREINFUSIONPAUSE";
+            mqttVars["targetBrewTime"] = "brew.target_time";
+            mqttVars["preinfusion"] = "brew.pre_infusion.time";
+            mqttVars["preinfusionPause"] = "brew.pre_infusion.pause";
             mqttVars["backflushOn"] = "BACKFLUSH_ON";
-            mqttVars["backflushCycles"] = "BACKFLUSH_CYCLES";
-            mqttVars["backflushFillTime"] = "BACKFLUSH_FILL_TIME";
-            mqttVars["backflushFlushTime"] = "BACKFLUSH_FLUSH_TIME";
+            mqttVars["backflushCycles"] = "backflush.cycles";
+            mqttVars["backflushFillTime"] = "backflush.fill_time";
+            mqttVars["backflushFlushTime"] = "backflush.flush_time";
         }
     }
 
     if (config.getScaleEnabled()) {
-        mqttVars["targetBrewWeight"] = "SCALE_TARGET_BREW_WEIGHT";
-        mqttVars["scaleCalibration"] = "SCALE_CALIBRATION";
+        mqttVars["targetBrewWeight"] = "brew.target_weight";
+        mqttVars["scaleCalibration"] = "hardware.sensors.scale.calibration";
 
         if (config.getScaleType() == 0) {
-            mqttVars["scale2Calibration"] = "SCALE2_CALIBRATION";
+            mqttVars["scale2Calibration"] = "hardware.sensors.scale.calibration2";
         }
 
-        mqttVars["scaleKnownWeight"] = "SCALE_KNOWN_WEIGHT";
+        mqttVars["scaleKnownWeight"] = "hardware.sensors.scale.known_weight";
         mqttVars["scaleTareOn"] = "TARE_ON";
         mqttVars["scaleCalibrationOn"] = "CALIBRATION_ON";
 
@@ -1012,7 +1012,7 @@ void setup() {
 
     // Start the logger
     Logger::begin();
-    int level = ParameterRegistry::getInstance().getParameterById("LOG_LEVEL")->getIntValue();
+    int level = ParameterRegistry::getInstance().getParameterById("system.log_level")->getIntValue();
     Logger::setLevel(static_cast<Logger::Level>(level));
 
     // Initialize PID controller
@@ -1066,7 +1066,7 @@ void loop() {
     loopWaterTank();
 
     // Update PID settings & machine state
-    looppid();
+    loopPid();
 
     // Update LED output based on machine state
     loopLED();
@@ -1075,7 +1075,7 @@ void loop() {
     ParameterRegistry::getInstance().processPeriodicSave();
 }
 
-void looppid() {
+void loopPid() {
     // Only do Wifi stuff, if Wifi is connected
     if (WiFi.status() == WL_CONNECTED && offlineMode == 0) {
         if (mqtt_enabled) {
@@ -1158,7 +1158,7 @@ void looppid() {
 
     if (config.getScaleEnabled()) {
         checkWeight();    // Check Weight Scale in the loop
-        shottimerscale(); // Calculation of weight of shot while brew is running
+        shotTimerScale(); // Calculation of weight of shot while brew is running
     }
 
     brew();
@@ -1265,7 +1265,7 @@ void looppid() {
 }
 
 void loopLED() {
-    if (config.getStatusLedEnabled()) {
+    if (config.getStatusLedEnabled() && statusLed != nullptr) {
         if ((machineState == kPidNormal && (fabs(temperature - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) {
             statusLed->turnOn();
         }
@@ -1274,11 +1274,11 @@ void loopLED() {
         }
     }
 
-    if (config.getBrewLedEnabled()) {
+    if (config.getBrewLedEnabled() && brewLed != nullptr) {
         brewLed->setGPIOState(machineState == kBrew);
     }
 
-    if (config.getSteamLedEnabled()) {
+    if (config.getSteamLedEnabled() && steamLed != nullptr) {
         steamLed->setGPIOState(machineState == kSteam);
     }
 }
