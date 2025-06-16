@@ -1012,7 +1012,7 @@ void setup() {
 
     // Start the logger
     Logger::begin();
-    int level = ParameterRegistry::getInstance().getParameterById("system.log_level")->getIntValue();
+    int level = ParameterRegistry::getInstance().getParameterById("system.log_level")->getValueAs<int>();
     Logger::setLevel(static_cast<Logger::Level>(level));
 
     // Initialize PID controller

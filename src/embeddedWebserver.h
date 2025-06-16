@@ -240,9 +240,9 @@ inline void serverSetup() {
     server.on("/togglePid", HTTP_POST, [](AsyncWebServerRequest* request) {
         LOGF(DEBUG, "/togglePid requested, method: %d", request->method());
 
-        auto pidParam = ParameterRegistry::getInstance().getParameterById("pid.enabled");
-        bool newPidState = !pidParam->getBoolValue();
-        ParameterRegistry::getInstance().setParameterBoolValue("pid.enabled", newPidState);
+        const auto pidParam = ParameterRegistry::getInstance().getParameterById("pid.enabled");
+        const bool newPidState = !pidParam->getValueAs<bool>();
+        ParameterRegistry::getInstance().setParameterValue("pid.enabled", newPidState);
 
         pidON = newPidState ? 1 : 0;
 
@@ -319,7 +319,7 @@ inline void serverSetup() {
                     }
 
                     if (param->getType() == kCString) {
-                        if (registry.setParameterStringValue(varName.c_str(), p->value())) {
+                        if (registry.setParameterValue(varName.c_str(), p->value())) {
                             paramToJson(varName, param, doc);
                         }
                     }

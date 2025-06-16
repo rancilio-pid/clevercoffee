@@ -100,10 +100,6 @@ class Parameter {
         [[nodiscard]] int getPosition() const;
         [[nodiscard]] double getValue() const;
         void setValue(double value) const;
-        [[nodiscard]] bool getBoolValue() const;
-        [[nodiscard]] int getIntValue() const;
-        [[nodiscard]] float getFloatValue() const;
-        [[nodiscard]] uint8_t getUInt8Value() const;
         [[nodiscard]] String getStringValue() const;
         void setStringValue(const String& value) const;
         [[nodiscard]] double getMinValue() const;
@@ -120,6 +116,32 @@ class Parameter {
         void setGlobalVariablePointer(void* ptr);
         void syncToGlobalVariable(double value) const;
         void syncToGlobalVariable(const String& value) const;
+
+        template <typename T>
+        T getValueAs() const {
+            if constexpr (std::is_same_v<T, bool>) {
+                return getValue() != 0.0;
+            }
+            else if constexpr (std::is_same_v<T, int>) {
+                return static_cast<int>(getValue());
+            }
+            else if constexpr (std::is_same_v<T, float>) {
+                return static_cast<float>(getValue());
+            }
+            else if constexpr (std::is_same_v<T, uint8_t>) {
+                return static_cast<uint8_t>(getValue());
+            }
+            else if constexpr (std::is_same_v<T, double>) {
+                return getValue();
+            }
+            else if constexpr (std::is_same_v<T, String>) {
+                return getStringValue();
+            }
+            else {
+                static_assert(std::is_arithmetic_v<T>, "Type must be arithmetic or String");
+                return static_cast<T>(getValue());
+            }
+        }
 
     private:
         const char* _id;

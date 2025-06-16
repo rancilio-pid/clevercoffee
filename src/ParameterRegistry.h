@@ -72,13 +72,13 @@ class ParameterRegistry {
             return _singleton;
         }
 
-        bool isReady() const {
+        [[nodiscard]] bool isReady() const {
             return _ready;
         }
 
         void initialize(Config& config);
 
-        const std::vector<std::shared_ptr<Parameter>>& getParameters() const {
+        [[nodiscard]] const std::vector<std::shared_ptr<Parameter>>& getParameters() const {
             return _parameters;
         }
 
@@ -86,97 +86,31 @@ class ParameterRegistry {
 
         std::shared_ptr<Parameter> getParameterById(const char* id);
 
-        bool setParameterValue(const char* id, const double value) {
+        template <typename T>
+        bool setParameterValue(const char* id, const T& value) {
             const auto param = getParameterById(id);
 
             if (!param) {
                 return false;
             }
 
-            param->setValue(value);
-            markChanged();
-
-            return true;
-        }
-
-        bool setParameterBoolValue(const char* id, const bool value) {
-            const auto param = getParameterById(id);
-
-            if (!param) {
-                return false;
+            if constexpr (std::is_same_v<T, String> || std::is_same_v<T, std::string>) {
+                // Handle string parameters
+                if (param->getType() == kCString) {
+                    param->setStringValue(value);
+                }
+                else {
+                    const double numericValue = value.toDouble();
+                    param->setValue(numericValue);
+                }
             }
-
-            param->setValue(value ? 1.0 : 0.0);
-            markChanged();
-
-            return true;
-        }
-
-        bool setParameterIntValue(const char* id, const int value) {
-            const auto param = getParameterById(id);
-
-            if (!param) {
-                return false;
-            }
-
-            param->setValue(value);
-            markChanged();
-
-            return true;
-        }
-
-        bool setParameterFloatValue(const char* id, const float value) {
-            const auto param = getParameterById(id);
-
-            if (!param) {
-                return false;
-            }
-
-            param->setValue(value);
-            markChanged();
-
-            return true;
-        }
-
-        bool setParameterDoubleValue(const char* id, const double value) {
-            const auto param = getParameterById(id);
-
-            if (!param) {
-                return false;
-            }
-
-            param->setValue(value);
-            markChanged();
-
-            return true;
-        }
-
-        bool setParameterUInt8Value(const char* id, const uint8_t value) {
-            const auto param = getParameterById(id);
-
-            if (!param) {
-                return false;
-            }
-
-            param->setValue(value);
-            markChanged();
-
-            return true;
-        }
-
-        bool setParameterStringValue(const char* id, const String& value) {
-            const auto param = getParameterById(id);
-
-            if (!param) {
-                return false;
-            }
-
-            if (param->getType() == kCString) {
-                param->setStringValue(value);
+            else if constexpr (std::is_same_v<T, bool>) {
+                // Handle boolean parameters
+                param->setValue(value ? 1.0 : 0.0);
             }
             else {
-                const double numericValue = value.toDouble();
-                param->setValue(numericValue);
+                // Handle all numeric types (int, float, double, uint8_t, etc.)
+                param->setValue(static_cast<double>(value));
             }
 
             markChanged();

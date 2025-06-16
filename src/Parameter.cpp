@@ -193,22 +193,6 @@ void Parameter::setValue(const double value) const {
     syncToGlobalVariable(value);
 }
 
-bool Parameter::getBoolValue() const {
-    return getValue() != 0.0;
-}
-
-int Parameter::getIntValue() const {
-    return static_cast<int>(getValue());
-}
-
-float Parameter::getFloatValue() const {
-    return static_cast<float>(getValue());
-}
-
-uint8_t Parameter::getUInt8Value() const {
-    return static_cast<uint8_t>(getValue());
-}
-
 String Parameter::getStringValue() const {
     if (_stringGetter) {
         return _stringGetter();
@@ -246,19 +230,19 @@ bool Parameter::shouldShow() const {
 String Parameter::getFormattedValue() const {
     switch (_type) {
         case kFloat:
-            return String(getFloatValue());
+            return String(getValueAs<float>());
 
         case kDouble:
-            return String(getValue());
+            return String(getValueAs<double>());
 
         case kInteger:
-            return String(getIntValue());
+            return String(getValueAs<int>());
 
         case kUInt8:
-            return String(getUInt8Value());
+            return String(getValueAs<uint8_t>());
 
         case kCString:
-            return getStringValue();
+            return getValueAs<String>();
 
         case kEnum:
             return getEnumDisplayValue();

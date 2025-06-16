@@ -22,7 +22,7 @@ inline void scaleCalibrate(HX711_ADC loadCell, int pin, bool isSecondCell, float
 
     LOGF(INFO, "Put load on scale %d within the next 10 seconds", pin);
 
-    float scaleKnownWeight = ParameterRegistry::getInstance().getParameterById("hardware.sensors.scale.known_weight")->getFloatValue();
+    const auto scaleKnownWeight = ParameterRegistry::getInstance().getParameterById("hardware.sensors.scale.known_weight")->getValueAs<float>();
 
     u8g2->clearBuffer();
     u8g2->drawStr(2, 2, "Calibration in progress.");

@@ -49,14 +49,14 @@ inline void setupMqtt() {
         return;
     }
 
-    mqtt_enabled = registry.getParameterById("mqtt.enabled")->getBoolValue();
-    mqtt_server_ip = registry.getParameterById("mqtt.broker")->getStringValue();
-    mqtt_server_port = registry.getParameterById("mqtt.port")->getIntValue();
-    mqtt_username = registry.getParameterById("mqtt.username")->getStringValue();
-    mqtt_password = registry.getParameterById("mqtt.password")->getStringValue();
-    mqtt_topic_prefix = registry.getParameterById("mqtt.topic")->getStringValue();
-    mqtt_hassio_enabled = registry.getParameterById("mqtt.hassio.enabled")->getBoolValue();
-    mqtt_hassio_discovery_prefix = registry.getParameterById("mqtt.hassio.prefix")->getStringValue();
+    mqtt_enabled = registry.getParameterById("mqtt.enabled")->getValueAs<bool>();
+    mqtt_server_ip = registry.getParameterById("mqtt.broker")->getValueAs<String>();
+    mqtt_server_port = registry.getParameterById("mqtt.port")->getValueAs<int>();
+    mqtt_username = registry.getParameterById("mqtt.username")->getValueAs<String>();
+    mqtt_password = registry.getParameterById("mqtt.password")->getValueAs<String>();
+    mqtt_topic_prefix = registry.getParameterById("mqtt.topic")->getValueAs<String>();
+    mqtt_hassio_enabled = registry.getParameterById("mqtt.hassio.enabled")->getValueAs<bool>();
+    mqtt_hassio_discovery_prefix = registry.getParameterById("mqtt.hassio.prefix")->getValueAs<String>();
 }
 
 /**
@@ -266,19 +266,19 @@ inline int writeSysParamsToMQTT(const bool continueOnError = true) {
                 // Get value based on parameter type and format as string
                 switch (param->getType()) {
                     case kInteger:
-                        snprintf(data, sizeof(data), "%d", param->getIntValue());
+                        snprintf(data, sizeof(data), "%d", param->getValueAs<int>());
                         break;
                     case kUInt8:
-                        snprintf(data, sizeof(data), "%u", param->getUInt8Value());
+                        snprintf(data, sizeof(data), "%u", param->getValueAs<uint8_t>());
                         break;
                     case kDouble:
-                        snprintf(data, sizeof(data), "%.2f", param->getValue());
+                        snprintf(data, sizeof(data), "%.2f", param->getValueAs<double>());
                         break;
                     case kFloat:
-                        snprintf(data, sizeof(data), "%.2f", param->getFloatValue());
+                        snprintf(data, sizeof(data), "%.2f", param->getValueAs<float>());
                         break;
                     case kCString:
-                        snprintf(data, sizeof(data), "%s", param->getStringValue().c_str());
+                        snprintf(data, sizeof(data), "%s", param->getValueAs<String>().c_str());
                         break;
                     default:
                         if (!continueOnError) {
