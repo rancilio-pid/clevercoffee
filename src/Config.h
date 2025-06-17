@@ -7,12 +7,14 @@
 
 #pragma once
 
+#include "ConfigDef.h"
 #include "Logger.h"
 #include "defaults.h"
 #include "hardware/Relay.h"
 #include "hardware/Switch.h"
 #include <ArduinoJson.h>
 #include <LittleFS.h>
+#include <map>
 
 class Config {
     public:
@@ -765,124 +767,156 @@ class Config {
 
         StaticJsonDocument<4096> _doc;
 
+        std::map<std::string, ConfigDef> _configDefs;
+
+        void initializeConfigDefs() {
+            _configDefs = {
+                // PID general
+                {"pid.enabled", ConfigDef::forBool(false)},
+                {"pid.use_ponm", ConfigDef::forBool(false)},
+                {"pid.ema_factor", ConfigDef::forDouble(EMA_FACTOR, PID_EMA_FACTOR_MIN, PID_EMA_FACTOR_MAX)},
+
+                // PID regular
+                {"pid.regular.kp", ConfigDef::forDouble(AGGKP, PID_KP_REGULAR_MIN, PID_KP_REGULAR_MAX)},
+                {"pid.regular.tn", ConfigDef::forDouble(AGGTN, PID_TN_REGULAR_MIN, PID_TN_REGULAR_MAX)},
+                {"pid.regular.tv", ConfigDef::forDouble(AGGTV, PID_TV_REGULAR_MIN, PID_TV_REGULAR_MAX)},
+                {"pid.regular.i_max", ConfigDef::forDouble(AGGIMAX, PID_I_MAX_REGULAR_MIN, PID_I_MAX_REGULAR_MAX)},
+
+                // PID brew detection
+                {"pid.bd.enabled", ConfigDef::forBool(false)},
+                {"pid.bd.kp", ConfigDef::forDouble(AGGBKP, PID_KP_BD_MIN, PID_KP_BD_MAX)},
+                {"pid.bd.tn", ConfigDef::forDouble(AGGBTN, PID_TN_BD_MIN, PID_TN_BD_MAX)},
+                {"pid.bd.tv", ConfigDef::forDouble(AGGBTV, PID_TV_BD_MIN, PID_TV_BD_MAX)},
+
+                // PID steam
+                {"pid.steam.kp", ConfigDef::forDouble(STEAMKP, PID_KP_STEAM_MIN, PID_KP_STEAM_MAX)},
+
+                // Brew settings
+                {"brew.setpoint", ConfigDef::forDouble(SETPOINT, BREW_SETPOINT_MIN, BREW_SETPOINT_MAX)},
+                {"brew.temp_offset", ConfigDef::forDouble(TEMPOFFSET, BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX)},
+                {"brew.pid_delay", ConfigDef::forDouble(BREW_PID_DELAY, BREW_PID_DELAY_MIN, BREW_PID_DELAY_MAX)},
+                {"brew.target_time", ConfigDef::forDouble(TARGET_BREW_TIME, TARGET_BREW_TIME_MIN, TARGET_BREW_TIME_MAX)},
+                {"brew.target_weight", ConfigDef::forDouble(TARGET_BREW_WEIGHT, TARGET_BREW_WEIGHT_MIN, TARGET_BREW_WEIGHT_MAX)},
+
+                // Pre-infusion
+                {"brew.pre_infusion.time", ConfigDef::forDouble(PRE_INFUSION_TIME, PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX)},
+                {"brew.pre_infusion.pause", ConfigDef::forDouble(PRE_INFUSION_PAUSE_TIME, PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX)},
+
+                // Steam
+                {"steam.setpoint", ConfigDef::forDouble(STEAMSETPOINT, STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX)},
+
+                // Backflushing
+                {"backflush.cycles", ConfigDef::forInt(BACKFLUSH_CYCLES, BACKFLUSH_CYCLES_MIN, BACKFLUSH_CYCLES_MAX)},
+                {"backflush.fill_time", ConfigDef::forDouble(BACKFLUSH_FILL_TIME, BACKFLUSH_FILL_TIME_MIN, BACKFLUSH_FILL_TIME_MAX)},
+                {"backflush.flush_time", ConfigDef::forDouble(BACKFLUSH_FLUSH_TIME, BACKFLUSH_FLUSH_TIME_MIN, BACKFLUSH_FLUSH_TIME_MAX)},
+
+                // Standby
+                {"standby.enabled", ConfigDef::forBool(false)},
+                {"standby.time", ConfigDef::forDouble(STANDBY_MODE_TIME, STANDBY_MODE_TIME_MIN, STANDBY_MODE_TIME_MAX)},
+
+                // Features
+                {"features.brew_control", ConfigDef::forBool(false)},
+
+                // MQTT
+                {"mqtt.enabled", ConfigDef::forBool(false)},
+                {"mqtt.broker", ConfigDef::forString("", MQTT_BROKER_MAX_LENGTH)},
+                {"mqtt.port", ConfigDef::forInt(1883, 1, 65535)},
+                {"mqtt.username", ConfigDef::forString(MQTT_USERNAME, MQTT_USERNAME_MAX_LENGTH)},
+                {"mqtt.password", ConfigDef::forString(MQTT_PASSWORD, MQTT_PASSWORD_MAX_LENGTH)},
+                {"mqtt.topic", ConfigDef::forString(MQTT_TOPIC, MQTT_TOPIC_MAX_LENGTH)},
+                {"mqtt.hassio.enabled", ConfigDef::forBool(false)},
+                {"mqtt.hassio.prefix", ConfigDef::forString(MQTT_HASSIO_PREFIX, MQTT_HASSIO_PREFIX_MAX_LENGTH)},
+
+                // System
+                {"system.hostname", ConfigDef::forString(HOSTNAME, HOSTNAME_MAX_LENGTH)},
+                {"system.ota_password", ConfigDef::forString(OTAPASS, OTAPASS_MAX_LENGTH)},
+                {"system.offline_mode", ConfigDef::forBool(false)},
+                {"system.log_level", ConfigDef::forInt(static_cast<int>(Logger::Level::INFO), 0, 5)},
+
+                // Display
+                {"display.template", ConfigDef::forInt(0, 0, 10)},
+                {"display.language", ConfigDef::forInt(0, 0, 10)},
+                {"display.fullscreen_brew_timer", ConfigDef::forBool(false)},
+                {"display.fullscreen_manual_flush_timer", ConfigDef::forBool(false)},
+                {"display.post_brew_timer_duration", ConfigDef::forDouble(POST_BREW_TIMER_DURATION, POST_BREW_TIMER_DURATION_MIN, POST_BREW_TIMER_DURATION_MAX)},
+                {"display.heating_logo", ConfigDef::forBool(true)},
+                {"display.pid_off_logo", ConfigDef::forBool(true)},
+
+                // Hardware - OLED
+                {"hardware.oled.enabled", ConfigDef::forBool(true)},
+                {"hardware.oled.rotation", ConfigDef::forInt(0, 0, 3)},
+                {"hardware.oled.type", ConfigDef::forInt(0, 0, 10)},
+                {"hardware.oled.address", ConfigDef::forInt(0x3C, 0x00, 0xFF)},
+
+                // Hardware - Relays
+                {"hardware.relays.heater.trigger_type", ConfigDef::forInt(Relay::HIGH_TRIGGER, 0, 1)},
+                {"hardware.relays.pump_valve.trigger_type", ConfigDef::forInt(Relay::HIGH_TRIGGER, 0, 1)},
+
+                // Hardware - Switches
+                {"hardware.switches.brew.enabled", ConfigDef::forBool(false)},
+                {"hardware.switches.brew.type", ConfigDef::forInt(static_cast<int>(Switch::TOGGLE), 0, 2)},
+                {"hardware.switches.brew.mode", ConfigDef::forInt(static_cast<int>(Switch::NORMALLY_OPEN), 0, 1)},
+                {"hardware.switches.steam.enabled", ConfigDef::forBool(false)},
+                {"hardware.switches.steam.type", ConfigDef::forInt(static_cast<int>(Switch::TOGGLE), 0, 2)},
+                {"hardware.switches.steam.mode", ConfigDef::forInt(static_cast<int>(Switch::NORMALLY_OPEN), 0, 1)},
+                {"hardware.switches.power.enabled", ConfigDef::forBool(false)},
+                {"hardware.switches.power.type", ConfigDef::forInt(static_cast<int>(Switch::TOGGLE), 0, 2)},
+                {"hardware.switches.power.mode", ConfigDef::forInt(static_cast<int>(Switch::NORMALLY_OPEN), 0, 1)},
+
+                // Hardware - LEDs
+                {"hardware.leds.status.enabled", ConfigDef::forBool(false)},
+                {"hardware.leds.status.inverted", ConfigDef::forBool(false)},
+                {"hardware.leds.brew.enabled", ConfigDef::forBool(false)},
+                {"hardware.leds.brew.inverted", ConfigDef::forBool(false)},
+                {"hardware.leds.steam.enabled", ConfigDef::forBool(false)},
+                {"hardware.leds.steam.inverted", ConfigDef::forBool(false)},
+
+                // Hardware - Sensors
+                {"hardware.sensors.temperature.type", ConfigDef::forInt(0, 0, 5)},
+                {"hardware.sensors.pressure.enabled", ConfigDef::forBool(false)},
+                {"hardware.sensors.watertank.enabled", ConfigDef::forBool(false)},
+                {"hardware.sensors.watertank.mode", ConfigDef::forInt(static_cast<int>(Switch::NORMALLY_CLOSED), 0, 1)},
+
+                // Scale
+                {"hardware.sensors.scale.enabled", ConfigDef::forBool(false)},
+                {"hardware.sensors.scale.samples", ConfigDef::forInt(SCALE_SAMPLES, 1, 20)},
+                {"hardware.sensors.scale.type", ConfigDef::forInt(0, 0, 5)},
+                {"hardware.sensors.scale.calibration", ConfigDef::forDouble(SCALE_CALIBRATION_FACTOR, SCALE_CALIBRATION_MIN, SCALE_CALIBRATION_MAX)},
+                {"hardware.sensors.scale.calibration2", ConfigDef::forDouble(SCALE2_CALIBRATION_FACTOR, SCALE2_CALIBRATION_MIN, SCALE2_CALIBRATION_MAX)},
+                {"hardware.sensors.scale.known_weight", ConfigDef::forDouble(SCALE_KNOWN_WEIGHT, SCALE_KNOWN_WEIGHT_MIN, SCALE_KNOWN_WEIGHT_MAX)},
+            };
+        }
+
         /**
          * @brief Create a new configuration with default values
          */
         void createDefaults() {
-            // Clear the document
+            initializeConfigDefs();
             _doc.clear();
 
-            // PID general
-            _doc["pid"]["enabled"] = false;
-            _doc["pid"]["use_ponm"] = false;
-            _doc["pid"]["ema_factor"] = EMA_FACTOR;
+            for (const auto& [path, configDef] : _configDefs) {
+                // Navigate/create the nested JSON structure in _doc
+                auto currentObj = _doc.as<JsonObject>();
+                String pathStr = path.c_str();
+                int startIndex = 0;
+                int dotIndex;
 
-            // PID regular
-            _doc["pid"]["regular"]["kp"] = AGGKP;
-            _doc["pid"]["regular"]["tn"] = AGGTN;
-            _doc["pid"]["regular"]["tv"] = AGGTV;
-            _doc["pid"]["regular"]["i_max"] = AGGIMAX;
+                // Navigate through all path segments except the last one
+                while ((dotIndex = pathStr.indexOf('.', startIndex)) != -1) {
+                    String segment = pathStr.substring(startIndex, dotIndex);
 
-            // PID brew detection
-            _doc["pid"]["bd"]["enabled"] = false;
-            _doc["pid"]["bd"]["kp"] = AGGBKP;
-            _doc["pid"]["bd"]["tn"] = AGGBTN;
-            _doc["pid"]["bd"]["tv"] = AGGBTV;
+                    if (!currentObj[segment].is<JsonObject>()) {
+                        currentObj[segment] = currentObj.createNestedObject(segment);
+                    }
 
-            // PID steam
-            _doc["pid"]["steam"]["kp"] = STEAMKP;
+                    currentObj = currentObj[segment];
+                    startIndex = dotIndex + 1;
+                }
 
-            // Brew settings
-            _doc["brew"]["setpoint"] = SETPOINT;
-            _doc["brew"]["temp_offset"] = TEMPOFFSET;
-            _doc["brew"]["pid_delay"] = BREW_PID_DELAY;
-            _doc["brew"]["target_time"] = TARGET_BREW_TIME;
-            _doc["brew"]["target_weight"] = TARGET_BREW_WEIGHT;
-
-            // Pre-infusion
-            _doc["brew"]["pre_infusion"]["time"] = PRE_INFUSION_TIME;
-            _doc["brew"]["pre_infusion"]["pause"] = PRE_INFUSION_PAUSE_TIME;
-
-            // Steam
-            _doc["steam"]["setpoint"] = STEAMSETPOINT;
-
-            // Backflushing
-            _doc["backflush"]["cycles"] = BACKFLUSH_CYCLES;
-            _doc["backflush"]["fill_time"] = BACKFLUSH_FILL_TIME;
-            _doc["backflush"]["flush_time"] = BACKFLUSH_FLUSH_TIME;
-
-            // Standby
-            _doc["standby"]["enabled"] = false;
-            _doc["standby"]["time"] = STANDBY_MODE_TIME;
-
-            // Features
-            _doc["features"]["brew_control"] = false;
-
-            // MQTT
-            _doc["mqtt"]["enabled"] = false;
-            _doc["mqtt"]["broker"] = "";
-            _doc["mqtt"]["port"] = 1883;
-            _doc["mqtt"]["username"] = MQTT_USERNAME;
-            _doc["mqtt"]["password"] = MQTT_PASSWORD;
-            _doc["mqtt"]["topic"] = MQTT_TOPIC;
-            _doc["mqtt"]["hassio"]["enabled"] = false;
-            _doc["mqtt"]["hassio"]["prefix"] = MQTT_HASSIO_PREFIX;
-
-            // System
-            _doc["system"]["hostname"] = HOSTNAME;
-            _doc["system"]["ota_password"] = OTAPASS;
-            _doc["system"]["offline_mode"] = false;
-            _doc["system"]["log_level"] = static_cast<int>(Logger::Level::INFO);
-
-            // Display
-            _doc["display"]["template"] = 0;
-            _doc["display"]["language"] = 0;
-            _doc["display"]["fullscreen_brew_timer"] = false;
-            _doc["display"]["fullscreen_manual_flush_timer"] = false;
-            _doc["display"]["post_brew_timer_duration"] = POST_BREW_TIMER_DURATION;
-            _doc["display"]["heating_logo"] = true;
-            _doc["display"]["pid_off_logo"] = true;
-
-            // Hardware
-            _doc["hardware"]["oled"]["enabled"] = true;
-            _doc["hardware"]["oled"]["rotation"] = 0;
-            _doc["hardware"]["oled"]["type"] = 0;
-            _doc["hardware"]["oled"]["address"] = 0x3C;
-
-            _doc["hardware"]["relays"]["heater"]["trigger_type"] = Relay::HIGH_TRIGGER;
-            _doc["hardware"]["relays"]["pump_valve"]["trigger_type"] = Relay::HIGH_TRIGGER;
-
-            _doc["hardware"]["switches"]["brew"]["enabled"] = false;
-            _doc["hardware"]["switches"]["brew"]["type"] = static_cast<int>(Switch::TOGGLE);
-            _doc["hardware"]["switches"]["brew"]["mode"] = static_cast<int>(Switch::NORMALLY_OPEN);
-            _doc["hardware"]["switches"]["steam"]["enabled"] = false;
-            _doc["hardware"]["switches"]["steam"]["type"] = static_cast<int>(Switch::TOGGLE);
-            _doc["hardware"]["switches"]["steam"]["mode"] = static_cast<int>(Switch::NORMALLY_OPEN);
-            _doc["hardware"]["switches"]["power"]["enabled"] = false;
-            _doc["hardware"]["switches"]["power"]["type"] = static_cast<int>(Switch::TOGGLE);
-            _doc["hardware"]["switches"]["power"]["mode"] = static_cast<int>(Switch::NORMALLY_OPEN);
-
-            _doc["hardware"]["leds"]["status"]["enabled"] = false;
-            _doc["hardware"]["leds"]["status"]["inverted"] = false;
-            _doc["hardware"]["leds"]["brew"]["enabled"] = false;
-            _doc["hardware"]["leds"]["brew"]["inverted"] = false;
-            _doc["hardware"]["leds"]["steam"]["enabled"] = false;
-            _doc["hardware"]["leds"]["steam"]["inverted"] = false;
-
-            _doc["hardware"]["sensors"]["temperature"]["type"] = 0;
-
-            _doc["hardware"]["sensors"]["pressure"]["enabled"] = false;
-
-            _doc["hardware"]["sensors"]["watertank"]["enabled"] = false;
-            _doc["hardware"]["sensors"]["watertank"]["mode"] = static_cast<int>(Switch::NORMALLY_CLOSED);
-
-            // Scale
-            _doc["hardware"]["sensors"]["scale"]["enabled"] = false;
-            _doc["hardware"]["sensors"]["scale"]["samples"] = SCALE_SAMPLES;
-            _doc["hardware"]["sensors"]["scale"]["type"] = 0;
-            _doc["hardware"]["sensors"]["scale"]["calibration"] = SCALE_CALIBRATION_FACTOR;
-            _doc["hardware"]["sensors"]["scale"]["calibration2"] = SCALE2_CALIBRATION_FACTOR;
-            _doc["hardware"]["sensors"]["scale"]["known_weight"] = SCALE_KNOWN_WEIGHT;
+                // Set the final value with the default from ConfigDef
+                String finalSegment = pathStr.substring(startIndex);
+                currentObj[finalSegment] = configDef.getDefaultValue();
+            }
         }
 
         bool validateAndApplyConfig(const JsonDocument& doc) {
@@ -1456,6 +1490,16 @@ class Config {
             }
 
             // Hardware - Sensors
+            if (doc["hardware"]["sensors"]["temperature"].containsKey("type")) {
+                int value = doc["hardware"]["sensors"]["temperature"]["type"].as<int>();
+
+                if (!validateParameterRange("hardware.sensors.temperature.type", value, 0, 1)) {
+                    return false;
+                }
+
+                setTempSensorType(value);
+            }
+
             if (doc["hardware"]["sensors"]["pressure"].containsKey("enabled")) {
                 if (!doc["hardware"]["sensors"]["pressure"]["enabled"].is<bool>()) {
                     return false;
