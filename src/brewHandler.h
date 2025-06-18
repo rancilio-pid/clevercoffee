@@ -51,7 +51,7 @@ inline uint8_t currReadingBrewSwitch = LOW;
 inline bool brewSwitchWasOff = false;
 
 // Brew values
-inline uint8_t featureBrewControl = 0;                    // enables control of pumpe and valve
+inline bool featureBrewControl = false;                   // enables control of pumpe and valve
 inline double targetBrewTime = TARGET_BREW_TIME;          // brew time in s
 inline double preinfusion = PRE_INFUSION_TIME;            // preinfusion time in s
 inline double preinfusionPause = PRE_INFUSION_PAUSE_TIME; // preinfusion pause time in s
@@ -64,7 +64,7 @@ inline bool brewPIDDisabled = false;                      // is PID disabled for
 inline int backflushCycles = BACKFLUSH_CYCLES;
 inline double backflushFillTime = BACKFLUSH_FILL_TIME;
 inline double backflushFlushTime = BACKFLUSH_FLUSH_TIME;
-inline int backflushOn = 0;
+inline bool backflushOn = false;
 inline int currBackflushCycles = 1;
 
 // Shot timer with or without scale
@@ -100,9 +100,10 @@ inline void checkBrewSwitch() {
     }
 
     loggedEmptyWaterTank = false;
+    const int brewSwitchType = config.get<int>("hardware.switches.brew.type");
 
     // Convert toggle brew switch input to brew switch state
-    if (config.getBrewSwitchType() == Switch::TOGGLE) {
+    if (brewSwitchType == Switch::TOGGLE) {
         if (currReadingBrewSwitch != brewSwitchReading) {
             currReadingBrewSwitch = brewSwitchReading;
         }
@@ -141,7 +142,7 @@ inline void checkBrewSwitch() {
         }
     }
     // Convert momentary brew switch input to brew switch state
-    else if (config.getBrewSwitchType() == Switch::MOMENTARY) {
+    else if (brewSwitchType == Switch::MOMENTARY) {
         if (currReadingBrewSwitch != brewSwitchReading) {
             currReadingBrewSwitch = brewSwitchReading;
         }
@@ -203,7 +204,7 @@ inline void checkBrewSwitch() {
  * @return true if brew is running, false otherwise
  */
 inline bool brew() {
-    if (!config.getBrewSwitchEnabled() || brewSwitch == nullptr) {
+    if (!config.get<bool>("hardware.switches.brew.enabled") || brewSwitch == nullptr) {
         return false; // brew switch is not enabled, so no brew process running
     }
 
@@ -241,7 +242,7 @@ inline bool brew() {
         // state machine for brew
         switch (currBrewState) {
             case kBrewIdle:           // waiting step for brew switch turning on
-                if (currBrewSwitchState == kBrewSwitchShortPressed && brewSwitchWasOff && backflushOn == 0 && machineState != kBackflush) {
+                if (currBrewSwitchState == kBrewSwitchShortPressed && brewSwitchWasOff && !backflushOn && machineState != kBackflush) {
                     startingTime = millis();
                     currBrewTime = 0; // reset currBrewTime, last brew is still stored
                     LOG(INFO, "Brew started");
@@ -291,7 +292,7 @@ inline bool brew() {
                 }
 
                 // stop brew if target-weight is reached --> No stop if stop by weight is deactivated via Parameter (0)
-                else if (config.getScaleEnabled() && currBrewWeight > targetBrewWeight && targetBrewWeight > 0) {
+                else if (config.get<bool>("hardware.sensors.scale.enabled") && currBrewWeight > targetBrewWeight && targetBrewWeight > 0) {
                     LOG(INFO, "Brew reached weight target");
                     currBrewState = kBrewFinished;
                 }
@@ -359,7 +360,7 @@ inline bool brew() {
  * @return true if manual flush is running, false otherwise
  */
 inline bool manualFlush() {
-    if (!config.getBrewSwitchEnabled() || brewSwitch == nullptr) {
+    if (!config.get<bool>("hardware.switches.brew.enabled") || brewSwitch == nullptr) {
         return false; // brew switch is not enabled, so no brew process running
     }
 
@@ -405,17 +406,17 @@ inline bool manualFlush() {
  * @brief Backflush
  */
 inline void backflush() {
-    if (!config.getBrewSwitchEnabled() || brewSwitch == nullptr) {
+    if (!config.get<bool>("hardware.switches.brew.enabled") || brewSwitch == nullptr) {
         return; // brew switch is not enabled, so no brew process running
     }
 
     checkBrewSwitch();
 
-    if (currBackflushState != kBackflushIdle && backflushOn == 0) {
+    if (currBackflushState != kBackflushIdle && !backflushOn) {
         currBackflushState = kBackflushFinished; // Force reset in case backflushOn is reset during backflush!
         LOG(INFO, "Backflush: Disabled via webinterface");
     }
-    else if (offlineMode == 1 || currBrewState > kBrewIdle || backflushCycles <= 0 || backflushOn == 0) {
+    else if (offlineMode || currBrewState > kBrewIdle || backflushCycles <= 0 || !backflushOn) {
         return;
     }
 

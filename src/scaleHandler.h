@@ -80,7 +80,9 @@ inline void checkWeight() {
         newDataReady = true;
     }
 
-    if (config.getScaleType() == 0) {
+    const int scaleType = config.get<int>("hardware.sensors.scale.type");
+
+    if (scaleType == 0) {
         // weirdly, the library examples do not check for updates on the second cell before getting the values...
         LoadCell2.update();
     }
@@ -91,13 +93,13 @@ inline void checkWeight() {
             newDataReady = false;
             w1 = LoadCell.getData();
 
-            if (config.getScaleType() == 0) {
+            if (scaleType == 0) {
                 w2 = LoadCell2.getData();
             }
         }
     }
 
-    if (config.getScaleType() == 0) {
+    if (scaleType == 0) {
         currReadingWeight = w1 + w2;
     }
 
@@ -106,7 +108,7 @@ inline void checkWeight() {
     if (scaleCalibrationOn) {
         scaleCalibrate(LoadCell, PIN_HXDAT, false, &scaleCalibration);
 
-        if (config.getScaleType() == 0) {
+        if (scaleType == 0) {
             scaleCalibrate(LoadCell2, PIN_HXDAT2, true, &scale2Calibration);
         }
 
@@ -124,7 +126,7 @@ inline void checkWeight() {
         LoadCell.tare();
         LoadCell.setCalFactor(scaleCalibration);
 
-        if (config.getScaleType() == 0) {
+        if (scaleType == 0) {
             LoadCell2.setCalFactor(scale2Calibration);
             LoadCell2.tare();
         }
@@ -138,14 +140,16 @@ inline void checkWeight() {
 inline void initScale() {
     LoadCell.begin();
 
-    if (config.getScaleType() == 0) {
+    const int scaleType = config.get<int>("hardware.sensors.scale.type");
+
+    if (scaleType == 0) {
         LoadCell2.begin();
     }
 
     unsigned long stabilizingtime = 5000; // tare preciscion can be improved by adding a few seconds of stabilizing time
     boolean _tare = true;                 // set this to false if you don't want tare to be performed in the next step
 
-    if (config.getScaleType() == 1) {
+    if (scaleType == 1) {
         while (!LoadCell.startMultiple(stabilizingtime, _tare))
             ;
     }
@@ -177,7 +181,7 @@ inline void initScale() {
         return;
     }
 
-    if (config.getScaleType() == 0) {
+    if (scaleType == 0) {
         if (LoadCell2.getTareTimeoutFlag() || LoadCell2.getSignalTimeoutFlag()) {
             LOG(ERROR, "Timeout, check MCU>HX711 wiring for scale 2");
             u8g2->clearBuffer();
@@ -193,7 +197,7 @@ inline void initScale() {
     LoadCell.setCalFactor(scaleCalibration);
     LoadCell.setSamplesInUse(SCALE_SAMPLES);
 
-    if (config.getScaleType() == 0) {
+    if (scaleType) {
         LoadCell2.setCalFactor(scale2Calibration);
         LoadCell2.setSamplesInUse(SCALE_SAMPLES);
     }

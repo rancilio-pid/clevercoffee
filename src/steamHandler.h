@@ -8,13 +8,13 @@
 inline uint8_t currStateSteamSwitch;
 
 inline void checkSteamSwitch() {
-    if (!config.getSteamSwitchEnabled() || steamSwitch == nullptr) {
+    if (!config.get<bool>("hardware.switches.steam.enabled") || steamSwitch == nullptr) {
         return;
     }
 
     const uint8_t steamSwitchReading = steamSwitch->isPressed();
 
-    if (config.getSteamSwitchType() == Switch::TOGGLE) {
+    if (config.get<int>("hardware.switches.steam.type") == Switch::TOGGLE) {
         // Set steamON to 1 when steamswitch is HIGH
         if (steamSwitchReading == HIGH) {
             steamON = 1;
@@ -25,7 +25,7 @@ inline void checkSteamSwitch() {
             steamON = 0;
         }
     }
-    else if (config.getSteamSwitchType() == Switch::MOMENTARY) {
+    else if (config.get<int>("hardware.switches.steam.type") == Switch::MOMENTARY) {
         if (steamSwitchReading != currStateSteamSwitch) {
             currStateSteamSwitch = steamSwitchReading;
 

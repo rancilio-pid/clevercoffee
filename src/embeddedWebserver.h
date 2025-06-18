@@ -229,10 +229,10 @@ inline void serverSetup() {
     // set up dynamic routes (endpoints)
 
     server.on("/toggleSteam", HTTP_POST, [](AsyncWebServerRequest* request) {
-        int steam = flipUintValue(steamON);
+        const bool steamMode = !steamON;
+        setSteamMode(steamMode);
 
-        setSteamMode(steam);
-        LOGF(DEBUG, "Toggle steam mode: %i", steam);
+        LOGF(DEBUG, "Toggle steam mode: %s", steamON ? "on" : "off");
 
         request->redirect("/");
     });
@@ -252,29 +252,25 @@ inline void serverSetup() {
     });
 
     server.on("/toggleBackflush", HTTP_POST, [](AsyncWebServerRequest* request) {
-        int backflush = flipUintValue(backflushOn);
-
-        setBackflush(backflush);
-        LOGF(DEBUG, "Toggle backflush mode: %i", backflush);
+        backflushOn = !backflushOn;
+        LOGF(DEBUG, "Toggle backflush mode: %s", backflushOn ? "on" : "off");
 
         request->redirect("/");
     });
 
-    if (config.getScaleEnabled()) {
+    if (config.get<bool>("hardware.sensors.scale.enabled")) {
         server.on("/toggleTareScale", HTTP_POST, [](AsyncWebServerRequest* request) {
-            int tare = flipUintValue(scaleTareOn);
+            scaleTareOn = !scaleTareOn;
 
-            setScaleTare(tare);
-            LOGF(DEBUG, "Toggle scale tare mode: %i", tare);
+            LOGF(DEBUG, "Toggle scale tare mode: %s", scaleTareOn ? "on" : "off");
 
             request->redirect("/");
         });
 
         server.on("/toggleScaleCalibration", HTTP_POST, [](AsyncWebServerRequest* request) {
-            int scaleCalibrate = flipUintValue(scaleCalibrationOn);
+            scaleCalibrationOn = !scaleCalibrationOn;
 
-            setScaleCalibration(scaleCalibrate);
-            LOGF(DEBUG, "Toggle scale calibration mode: %i", scaleCalibrate);
+            LOGF(DEBUG, "Toggle scale calibration mode: %s", scaleCalibrationOn ? "on" : "off");
 
             request->redirect("/");
         });
@@ -518,6 +514,15 @@ inline void serverSetup() {
 
     server.on("/restart", HTTP_POST, [](AsyncWebServerRequest* request) {
         request->send(200, "text/plain", "Restarting...");
+        delay(100);
+        ESP.restart();
+    });
+
+    server.on("/factoryreset", HTTP_POST, [](AsyncWebServerRequest* request) {
+        const bool removed = LittleFS.remove("/config.json");
+
+        request->send(200, "text/plain", removed ? "Factory reset. Restarting..." : "Could not delete config.json. Restarting...");
+
         delay(100);
         ESP.restart();
     });

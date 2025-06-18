@@ -9,7 +9,7 @@
 #include "bitmaps.h"
 #include "languages.h"
 
-const u8g2_cb_t* getU8G2Rotation(int rotationValue) {
+inline const u8g2_cb_t* getU8G2Rotation(const int rotationValue) {
     switch (rotationValue) {
         case 0:
             return U8G2_R0;
@@ -27,7 +27,7 @@ const u8g2_cb_t* getU8G2Rotation(int rotationValue) {
 /**
  * @brief initialize display
  */
-void u8g2_prepare() {
+inline void u8g2_prepare() {
     u8g2->clearBuffer();
     u8g2->setFont(u8g2_font_profont11_tf);
     u8g2->setFontRefHeightExtendedText();
@@ -39,7 +39,7 @@ void u8g2_prepare() {
 /**
  * @brief Draw a water empty icon at the given coordinates if water supply is low
  */
-void displayWaterIcon(int x, int y) {
+inline void displayWaterIcon(const int x, const int y) {
     if (!waterTankFull) {
         u8g2->drawXBMP(x, y, 8, 8, Water_Tank_Empty_Icon);
     }
@@ -48,11 +48,11 @@ void displayWaterIcon(int x, int y) {
 /**
  * @brief Draw the system uptime at the given coordinates
  */
-void displayUptime(int x, int y, const char* format) {
+inline void displayUptime(const int x, const int y, const char* format) {
     // Show uptime of machine
     unsigned long seconds = millis() / 1000;
-    unsigned long hours = seconds / 3600;
-    unsigned long minutes = (seconds % 3600) / 60;
+    const unsigned long hours = seconds / 3600;
+    const unsigned long minutes = seconds % 3600 / 60;
     seconds = seconds % 60;
 
     char uptimeString[9];
@@ -65,14 +65,14 @@ void displayUptime(int x, int y, const char* format) {
 /**
  * @brief Draw a WiFi signal strength indicator at the given coordinates
  */
-void displayWiFiStatus(int x, int y) {
+inline void displayWiFiStatus(const int x, const int y) {
     getSignalStrength();
 
     if (WiFi.status() == WL_CONNECTED) {
         u8g2->drawXBMP(x, y, 8, 8, Antenna_OK_Icon);
 
         for (int b = 0; b <= getSignalStrength(); b++) {
-            u8g2->drawVLine(x + 5 + (b * 2), y + 8 - (b * 2), b * 2);
+            u8g2->drawVLine(x + 5 + b * 2, y + 8 - b * 2, b * 2);
         }
     }
     else {
@@ -87,7 +87,7 @@ void displayWiFiStatus(int x, int y) {
 /**
  * @brief Draw an MQTT status indicator at the given coordinates if MQTT is enabled
  */
-void displayMQTTStatus(int x, int y) {
+inline void displayMQTTStatus(const int x, const int y) {
     if (mqtt_enabled) {
         if (mqtt.connected() == 1) {
             u8g2->setCursor(x, y);
@@ -104,7 +104,7 @@ void displayMQTTStatus(int x, int y) {
 /**
  * @brief Draw the outline of a thermometer for use in conjunction with the drawTemperaturebar method
  */
-void displayThermometerOutline(int x, int y) {
+inline void displayThermometerOutline(const int x, const int y) {
     u8g2->drawLine(x + 3, y - 9, x + 3, y - 42);
     u8g2->drawLine(x + 9, y - 9, x + 9, y - 42);
     u8g2->drawPixel(x + 4, y - 43);
@@ -121,7 +121,7 @@ void displayThermometerOutline(int x, int y) {
  * @brief Draw temperature bar, e.g. inside the thermometer outline.
  *        Add 4 pixels to the x-coordinate and subtract 12 pixels from the y-coordinate of the thermometer.
  */
-void drawTemperaturebar(int x, int y, int heightRange) {
+inline void drawTemperaturebar(const int x, const int y, const int heightRange) {
     int width = x + 5;
 
     for (int i = x; i < width; i++) {
@@ -139,7 +139,7 @@ void drawTemperaturebar(int x, int y, int heightRange) {
 /**
  * @brief Draw the temperature in big font at given position
  */
-void displayTemperature(int x, int y) {
+inline void displayTemperature(const int x, const int y) {
     u8g2->setFont(u8g2_font_fub30_tf);
 
     if (temperature < 99.499) {
@@ -158,7 +158,7 @@ void displayTemperature(int x, int y) {
  * @brief determines if brew timer should be visible; postBrewTimerDuration defines how long the timer after the brew is shown
  * @return true if timer should be visible, false otherwise
  */
-bool shouldDisplayBrewTimer() {
+inline bool shouldDisplayBrewTimer() {
 
     enum BrewTimerState {
         kBrewTimerIdle = 10,
@@ -185,13 +185,13 @@ bool shouldDisplayBrewTimer() {
             break;
 
         case kBrewTimerPostBrew:
-            if ((millis() - brewEndTime) > (uint32_t)(postBrewTimerDuration * 1000)) {
+            if (millis() - brewEndTime > static_cast<uint32_t>(postBrewTimerDuration * 1000)) {
                 currBrewTimerState = kBrewTimerIdle;
             }
             break;
     }
 
-    return (currBrewTimerState != kBrewTimerIdle);
+    return currBrewTimerState != kBrewTimerIdle;
 }
 
 /**
@@ -205,7 +205,7 @@ bool shouldDisplayBrewTimer() {
  * @param currBrewTime     Current brewed time in milliseconds
  * @param totalTargetBrewTime  Target brew time in milliseconds (optional, default -1)
  */
-void displayBrewTime(int x, int y, const char* label, double currBrewTime, double totalTargetBrewTime = -1) {
+inline void displayBrewTime(const int x, const int y, const char* label, const double currBrewTime, const double totalTargetBrewTime = -1) {
     u8g2->setCursor(x, y);
     u8g2->print(label);
     u8g2->setCursor(x + 50, y);
@@ -233,7 +233,7 @@ void displayBrewTime(int x, int y, const char* label, double currBrewTime, doubl
  * @param setpoint Target weight to display alongside current weight (optional, default -1)
  * @param fault    Indicates if the scale has an error (optional, default false)
  */
-void displayBrewWeight(int x, int y, float weight, float setpoint = -1, bool fault = false) {
+inline void displayBrewWeight(const int x, const int y, const float weight, const float setpoint = -1, const bool fault = false) {
     if (fault) {
         u8g2->setCursor(x, y);
         u8g2->print(langstring_weight);
@@ -258,7 +258,7 @@ void displayBrewWeight(int x, int y, float weight, float setpoint = -1, bool fau
 /**
  * @brief Draw the brew time at given position (fullscreen brewtimer)
  */
-void displayBrewtimeFs(int x, int y, double brewtime) {
+inline void displayBrewtimeFs(const int x, const int y, const double brewtime) {
     u8g2->setFont(u8g2_font_fub25_tf);
 
     if (brewtime < 10000.000) {
@@ -285,11 +285,10 @@ void displayBrewtimeFs(int x, int y, double brewtime) {
 /**
  * @brief Draw a bar visualizing the output in % at the given coordinates and with the given width
  */
-void displayProgressbar(int value, int x, int y, int width) {
+inline void displayProgressbar(const int value, const int x, const int y, const int width) {
     u8g2->drawFrame(x, y, width, 4);
-    int output = map(value, 0, 100, 0, width);
 
-    if (output - 2 > 0) {
+    if (const int output = map(value, 0, 100, 0, width); output - 2 > 0) {
         u8g2->drawLine(x + 1, y + 1, x + output - 1, y + 1);
         u8g2->drawLine(x + 1, y + 2, x + output - 1, y + 2);
     }
@@ -299,11 +298,11 @@ void displayProgressbar(int value, int x, int y, int width) {
  * @brief Draw a status bar at the top of the screen with icons for WiFi, MQTT,
  *        the system uptime and a separator line underneath
  */
-void displayStatusbar() {
+inline void displayStatusbar() {
     // For status info
     u8g2->drawLine(0, 12, 128, 12);
 
-    if (offlineMode == 0) {
+    if (!offlineMode) {
         displayWiFiStatus(4, 1);
         displayMQTTStatus(38, 0);
     }
@@ -313,14 +312,14 @@ void displayStatusbar() {
         u8g2->print(langstring_offlinemode);
     }
 
-    const char* format = "%02luh %02lum";
+    const auto format = "%02luh %02lum";
     displayUptime(84, 0, format);
 }
 
 /**
  * @brief print message
  */
-void displayMessage(String text1, String text2, String text3, String text4, String text5, String text6) {
+inline void displayMessage(const String& text1, const String& text2, const String& text3, const String& text4, const String& text5, const String& text6) {
     u8g2->clearBuffer();
     u8g2->setCursor(0, 0);
     u8g2->print(text1);
@@ -340,7 +339,7 @@ void displayMessage(String text1, String text2, String text3, String text4, Stri
 /**
  * @brief print logo and message at boot
  */
-void displayLogo(String displaymessagetext, String displaymessagetext2) {
+inline void displayLogo(const String& displaymessagetext, const String& displaymessagetext2) {
     u8g2->clearBuffer();
     u8g2->drawStr(0, 45, displaymessagetext.c_str());
     u8g2->drawStr(0, 55, displaymessagetext2.c_str());
@@ -353,15 +352,16 @@ void displayLogo(String displaymessagetext, String displaymessagetext2) {
 /**
  * @brief display fullscreen brew timer
  */
-bool displayFullscreenBrewTimer() {
-    if (featureFullscreenBrewTimer == 0) {
+inline bool displayFullscreenBrewTimer() {
+    if (!featureFullscreenBrewTimer) {
         return false;
     }
 
     if (shouldDisplayBrewTimer()) {
         u8g2->clearBuffer();
         u8g2->drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
-        if (config.getScaleEnabled()) {
+
+        if (config.get<bool>("hardware.sensors.scale.enabled")) {
             u8g2->setFont(u8g2_font_profont22_tf);
             u8g2->setCursor(64, 15);
             u8g2->print(currBrewTime / 1000, 1);
@@ -374,6 +374,7 @@ bool displayFullscreenBrewTimer() {
         else {
             displayBrewtimeFs(48, 25, currBrewTime);
         }
+
         displayWaterIcon(119, 1);
         u8g2->sendBuffer();
         return true;
@@ -385,8 +386,8 @@ bool displayFullscreenBrewTimer() {
 /**
  * @brief display fullscreen manual flush timer
  */
-bool displayFullscreenManualFlushTimer() {
-    if (featureFullscreenManualFlushTimer == 0) {
+inline bool displayFullscreenManualFlushTimer() {
+    if (!featureFullscreenManualFlushTimer) {
         return false;
     }
 
@@ -405,9 +406,9 @@ bool displayFullscreenManualFlushTimer() {
 /**
  * @brief display heating logo
  */
-bool displayMachineState() {
+inline bool displayMachineState() {
     // Show the heating logo when we are in regular PID mode and more than 5degC below the set point
-    if (featureHeatingLogo > 0 && (machineState == kPidNormal || machineState == kSteam) && (setpoint - temperature) > 5.) {
+    if (featureHeatingLogo > 0 && (machineState == kPidNormal || machineState == kSteam) && setpoint - temperature > 5.) {
         // For status info
         u8g2->clearBuffer();
 
@@ -422,8 +423,9 @@ bool displayMachineState() {
         u8g2->sendBuffer();
         return true;
     }
+
     // Offline logo
-    else if (featurePidOffLogo == 1 && machineState == kPidDisabled) {
+    if (featurePidOffLogo == 1 && machineState == kPidDisabled) {
         u8g2->clearBuffer();
         u8g2->drawXBMP(38, 0, Off_Logo_width, Off_Logo_height, Off_Logo);
         u8g2->setCursor(0, 55);
@@ -433,7 +435,8 @@ bool displayMachineState() {
         u8g2->sendBuffer();
         return true;
     }
-    else if (featurePidOffLogo == 1 && machineState == kStandby) {
+
+    if (featurePidOffLogo == 1 && machineState == kStandby) {
         u8g2->clearBuffer();
         u8g2->drawXBMP(38, 0, Off_Logo_width, Off_Logo_height, Off_Logo);
         u8g2->setCursor(36, 55);
@@ -443,8 +446,9 @@ bool displayMachineState() {
         u8g2->sendBuffer();
         return true;
     }
+
     // Steam
-    else if (machineState == kSteam) {
+    if (machineState == kSteam) {
         u8g2->clearBuffer();
         u8g2->drawXBMP(-1, 12, Steam_Logo_width, Steam_Logo_height, Steam_Logo);
 
@@ -454,16 +458,18 @@ bool displayMachineState() {
         u8g2->sendBuffer();
         return true;
     }
+
     // Water empty
-    else if (machineState == kWaterTankEmpty) {
+    if (machineState == kWaterTankEmpty) {
         u8g2->clearBuffer();
         u8g2->drawXBMP(45, 0, Water_Tank_Empty_Logo_width, Water_Tank_Empty_Logo_height, Water_Tank_Empty_Logo);
         u8g2->setFont(u8g2_font_profont11_tf);
         u8g2->sendBuffer();
         return true;
     }
+
     // Backflush
-    else if (machineState == kBackflush) {
+    if (machineState == kBackflush) {
         u8g2->clearBuffer();
         u8g2->setFont(u8g2_font_fub17_tf);
         u8g2->setCursor(2, 10);
@@ -499,21 +505,22 @@ bool displayMachineState() {
         u8g2->sendBuffer();
         return true;
     }
+
     // PID Off
-    else if (machineState == kEmergencyStop) {
+    if (machineState == kEmergencyStop) {
         u8g2->clearBuffer();
         u8g2->setFont(u8g2_font_profont11_tf);
         u8g2->setCursor(32, 24);
         u8g2->print(langstring_current_temp);
         u8g2->print(temperature, 1);
         u8g2->print(" ");
-        u8g2->print((char)176);
+        u8g2->print(static_cast<char>(176));
         u8g2->print("C");
         u8g2->setCursor(32, 34);
         u8g2->print(langstring_set_temp);
         u8g2->print(setpoint, 1);
         u8g2->print(" ");
-        u8g2->print((char)176);
+        u8g2->print(static_cast<char>(176));
         u8g2->print("C");
 
         displayThermometerOutline(4, 58);
@@ -528,15 +535,18 @@ bool displayMachineState() {
         displayWaterIcon(119, 1);
 
         u8g2->sendBuffer();
+
         return true;
     }
-    else if (machineState == kSensorError) {
+
+    if (machineState == kSensorError) {
         u8g2->clearBuffer();
         u8g2->setFont(u8g2_font_profont11_tf);
         displayMessage(langstring_error_tsensor[0], String(temperature), langstring_error_tsensor[1], "", "", "");
         return true;
     }
-    else if (machineState == kEepromError) {
+
+    if (machineState == kEepromError) {
         u8g2->clearBuffer();
         u8g2->setFont(u8g2_font_profont11_tf);
         displayMessage("EEPROM Error, please set Values", "", "", "", "", "");

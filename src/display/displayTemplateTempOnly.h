@@ -8,13 +8,13 @@
 #pragma once
 
 // Define some Displayoptions
-int blinkingtemp = 1;           // 0: blinking near setpoint, 1: blinking far away from setpoint
-float blinkingtempoffset = 0.3; // offset for blinking
+inline const int blinkingtemp = 1;           // 0: blinking near setpoint, 1: blinking far away from setpoint
+inline const float blinkingtempoffset = 0.3; // offset for blinking
 
 /**
  * @brief Send data to display
  */
-void printScreen() {
+inline void printScreen() {
 
     // Show fullscreen brew timer:
     if (displayFullscreenBrewTimer()) {
@@ -38,7 +38,7 @@ void printScreen() {
     u8g2->clearBuffer();
 
     // draw (blinking) temp
-    if (((fabs(temperature - setpoint) < blinkingtempoffset && blinkingtemp == 0) || (fabs(temperature - setpoint) >= blinkingtempoffset && blinkingtemp == 1)) && !config.getStatusLedEnabled()) {
+    if (((fabs(temperature - setpoint) < blinkingtempoffset && blinkingtemp == 0) || (fabs(temperature - setpoint) >= blinkingtempoffset && blinkingtemp == 1)) && !config.get<bool>("hardware.leds.status.enabled")) {
         if (isrCounter < 500) {
             if (temperature < 99.999) {
                 u8g2->setCursor(8, 22);

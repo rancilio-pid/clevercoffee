@@ -10,7 +10,7 @@
 /**
  * @brief Send data to display
  */
-void printScreen() {
+inline void printScreen() {
 
     // Show fullscreen brew timer:
     if (displayFullscreenBrewTimer()) {
@@ -42,14 +42,14 @@ void printScreen() {
     }
 
     // Draw temp, blink if feature STATUS_LED is not enabled
-    if ((fabs(temperature - setpoint) < 0.3) && !config.getStatusLedEnabled()) {
+    if (fabs(temperature - setpoint) < 0.3 && !config.get<bool>("hardware.leds.status.enabled")) {
         if (isrCounter < 500) {
             // limit to 4 characters
             u8g2->setCursor(2, 20);
             u8g2->setFont(u8g2_font_profont22_tf);
             u8g2->print(temperature, numDecimalsInput);
             u8g2->setFont(u8g2_font_open_iconic_arrow_2x_t);
-            u8g2->print(char(78));
+            u8g2->print(static_cast<char>(78));
             u8g2->setCursor(78, 20);
             u8g2->setFont(u8g2_font_profont22_tf);
             u8g2->print(setpoint, numDecimalsSetpoint);
@@ -63,10 +63,10 @@ void printScreen() {
         u8g2->setCursor(56, 24);
 
         if (bPID.GetMode() == 1) {
-            u8g2->print(char(74));
+            u8g2->print(static_cast<char>(74));
         }
         else {
-            u8g2->print(char(70));
+            u8g2->print(static_cast<char>(70));
         }
 
         u8g2->setCursor(79, 20);
@@ -77,7 +77,7 @@ void printScreen() {
     u8g2->setFont(u8g2_font_profont11_tf);
 
     // Brew time
-    if (config.getBrewSwitchEnabled()) {
+    if (config.get<bool>("hardware.switches.brew.enabled")) {
         if (featureBrewControl) {
             // Shown brew time
             if (shouldDisplayBrewTimer()) {

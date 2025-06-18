@@ -8,13 +8,13 @@
 inline uint8_t currStatePowerSwitch; // the current reading from the input pin
 
 inline void checkPowerSwitch() {
-    if (!config.getPowerSwitchEnabled() || powerSwitch == nullptr) {
+    if (!config.get<bool>("hardware.switches.power.enabled") || powerSwitch == nullptr) {
         return;
     }
 
     const uint8_t powerSwitchReading = powerSwitch->isPressed();
 
-    if (config.getPowerSwitchType() == Switch::TOGGLE) {
+    if (const int powerSwitchType = config.get<int>("hardware.switches.power.type"); powerSwitchType == Switch::TOGGLE) {
         // Set pidON to 1 when powerswitch is HIGH
         if ((powerSwitchReading == HIGH && machineState != kStandby) || (powerSwitchReading == LOW && machineState == kStandby)) {
             setRuntimePidState(true);
@@ -24,7 +24,7 @@ inline void checkPowerSwitch() {
             setRuntimePidState(false);
         }
     }
-    else if (config.getPowerSwitchType() == Switch::MOMENTARY) {
+    else if (powerSwitchType == Switch::MOMENTARY) {
         // if the button state has changed:
         if (powerSwitchReading != currStatePowerSwitch) {
             currStatePowerSwitch = powerSwitchReading;

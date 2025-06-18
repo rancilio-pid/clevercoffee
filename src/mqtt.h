@@ -64,7 +64,7 @@ inline void setupMqtt() {
  *      MQTT is also using maxWifiReconnects!
  */
 inline void checkMQTT() {
-    if (offlineMode == 1 || currBrewState > kBrewIdle) {
+    if (offlineMode || currBrewState > kBrewIdle) {
         return;
     }
 
@@ -555,7 +555,7 @@ inline int sendHASSIODiscoveryMsg() {
 
     // Sensor, number and switch object which will be published based on feature set
 
-    if (config.getBrewSwitchEnabled()) {
+    if (config.get<bool>("hardware.switches.brew.enabled")) {
         DiscoveryObject currBrewTime = GenerateSensorDevice("currBrewTime", "Current Brew Time ", "s", "duration");
 
         DiscoveryObject brewPidDelay = GenerateNumberDevice("brewPidDelay", "Brew Pid Delay", BREW_PID_DELAY_MIN, BREW_PID_DELAY_MAX, 0.1, "s");
@@ -579,7 +579,7 @@ inline int sendHASSIODiscoveryMsg() {
         discoveryObjects.push_back(backflushOn);
     }
 
-    if (config.getScaleEnabled()) {
+    if (config.get<bool>("hardware.sensors.scale.enabled")) {
         DiscoveryObject currReadingWeight = GenerateSensorDevice("currReadingWeight", "Weight", "g", "weight");
         DiscoveryObject currBrewWeight = GenerateSensorDevice("currBrewWeight", "current Brew Weight", "g", "weight");
 
@@ -595,7 +595,7 @@ inline int sendHASSIODiscoveryMsg() {
         discoveryObjects.push_back(targetBrewWeight);
     }
 
-    if (config.getPressureSensorEnabled()) {
+    if (config.get<bool>("hardware.sensors.pressure.enabled")) {
         DiscoveryObject pressure = GenerateSensorDevice("pressure", "Pressure", "bar", "pressure");
 
         discoveryObjects.push_back(pressure);

@@ -62,12 +62,25 @@
                 <div class="col-md-6">
                     <div class="card h-100">
                         <div class="card-body">
-                            <h5 class="card-title text-danger">WiFi Reset</h5>
-                            <p class="card-text text-muted">Reset WiFi settings to factory defaults.</p>
-                            <button @click="confirmReset" class="btn btn-danger btn-lg">
-                                <span class="fa-solid fa-wifi me-2"></span>
-                                Reset WiFi Settings
-                            </button>
+                            <h5 class="card-title text-danger">Reset Options</h5>
+                            <p class="card-text text-muted">
+                                <strong>Warning:</strong> These actions cannot be undone.
+                            </p>
+                            <div class="d-grid gap-2 d-md-block">
+                                <button class="btn btn-danger btn-lg me-2" @click="confirmFactoryReset">
+                                    <span class="fa-solid fa-exclamation-triangle me-2"></span>
+                                    Factory Reset
+                                </button>
+                                <button class="btn btn-warning btn-lg" @click="confirmReset">
+                                    <span class="fa-solid fa-wifi me-2"></span>
+                                    Reset WiFi
+                                </button>
+                            </div>
+                            <div v-if="factoryResetMessage"
+                                 class="mt-2 alert"
+                                 :class="factoryResetSuccess ? 'alert-success' : 'alert-danger'">
+                                {{ factoryResetMessage }}
+                            </div>
                         </div>
                     </div>
                 </div>

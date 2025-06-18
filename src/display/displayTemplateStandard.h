@@ -10,7 +10,7 @@
 /**
  * @brief Send data to display
  */
-void printScreen() {
+inline void printScreen() {
 
     // Show fullscreen brew timer:
     if (displayFullscreenBrewTimer()) {
@@ -42,14 +42,14 @@ void printScreen() {
     u8g2->setCursor(84, 16);
     u8g2->print(temperature, 1);
     u8g2->setCursor(115, 16);
-    u8g2->print((char)176);
+    u8g2->print(static_cast<char>(176));
     u8g2->print("C");
     u8g2->setCursor(34, 26);
     u8g2->print(langstring_set_temp);
     u8g2->setCursor(84, 26);
     u8g2->print(setpoint, 1);
     u8g2->setCursor(115, 26);
-    u8g2->print((char)176);
+    u8g2->print(static_cast<char>(176));
     u8g2->print("C");
 
     displayThermometerOutline(4, 62);
@@ -65,7 +65,7 @@ void printScreen() {
     }
 
     // Brew and flush time
-    if (config.getBrewSwitchEnabled()) {
+    if (config.get<bool>("hardware.switches.brew.enabled")) {
         if (featureBrewControl) {
             // Shown brew time
             if (shouldDisplayBrewTimer()) {

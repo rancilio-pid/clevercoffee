@@ -10,7 +10,7 @@
 /**
  * @brief Send data to display
  */
-void printScreen() {
+inline void printScreen() {
 
     // Show fullscreen brew timer:
     if (displayFullscreenBrewTimer()) {
@@ -55,10 +55,12 @@ void printScreen() {
     u8g2->print(temperature, 1);
     u8g2->print("/");
     u8g2->print(setpoint, 1);
-    u8g2->print((char)176);
+    u8g2->print(static_cast<char>(176));
     u8g2->print("C");
 
-    if (config.getScaleEnabled()) {
+    const bool scaleEnabled = config.get<bool>("hardware.sensors.scale.enabled");
+
+    if (scaleEnabled) {
         // Show current weight if scale has no error
         displayBrewWeight(32, 26, currReadingWeight, -1, scaleFailure);
     }
@@ -69,11 +71,11 @@ void printScreen() {
      * if brew is running show current brew time and current brew weight
      * if brewControl is enabled and time or weight target is set show targets
      * if brewControl is enabled show flush time during manualFlush
-     * if config.getPressureSensorEnabled() is enabled show current pressure during brew
+     * if pressure sensor is enabled show current pressure during brew
      * if brew is finished show brew values for postBrewTimerDuration
      */
 
-    if (config.getBrewSwitchEnabled()) {
+    if (config.get<bool>("hardware.switches.brew.enabled")) {
         if (featureBrewControl) {
 
             if (shouldDisplayBrewTimer()) {
@@ -85,7 +87,7 @@ void printScreen() {
                 u8g2->drawBox(32, 27, 100, 10);
                 u8g2->setDrawColor(1);
 
-                if (config.getScaleEnabled()) {
+                if (scaleEnabled) {
                     displayBrewWeight(32, 26, currBrewWeight, targetBrewWeight, scaleFailure);
                 }
             }
@@ -107,14 +109,14 @@ void printScreen() {
                 u8g2->setDrawColor(0);
                 u8g2->drawBox(32, 27, 100, 10);
                 u8g2->setDrawColor(1);
-                if (config.getScaleEnabled()) {
+                if (scaleEnabled) {
                     displayBrewWeight(32, 26, currBrewWeight, -1, scaleFailure);
                 }
             }
         }
     }
 
-    if (config.getPressureSensorEnabled()) {
+    if (config.get<bool>("hardware.sensors.pressure.enabled")) {
         u8g2->setCursor(32, 46);
         u8g2->print(langstring_pressure);
         u8g2->print(inputPressure, 1);

@@ -13,7 +13,10 @@ const vueApp = Vue.createApp({
             selectedFile: null,
             isUploading: false,
             uploadMessage: '',
-            uploadSuccess: false
+            uploadSuccess: false,
+
+            // Factory reset properties
+            factoryResetMessage: ''
         }
     },
 
@@ -294,6 +297,21 @@ const vueApp = Vue.createApp({
         confirmRestart() {
             if (confirm('Are you sure you want to restart your machine?')) {
                 this.restartMachine();
+            }
+        },
+
+        async confirmFactoryReset() {
+            if (!window.confirm("Are you sure you want to reset the config to defaults and restart the ESP? This can't be undone.")) {
+                return;
+            }
+
+            this.factoryResetMessage = 'Factory reset initiated. Machine is restarting...';
+            this.factoryResetSuccess = true;
+
+            try {
+                await fetch("/factoryreset", { method: "POST" });
+            } catch (err) {
+                console.log('Machine restarting after factory reset...');
             }
         },
 

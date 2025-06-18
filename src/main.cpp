@@ -81,19 +81,18 @@ MachineState machineState = kInit;
 MachineState lastmachinestate = kInit;
 int lastmachinestatepid = -1;
 
-int offlineMode = 0;
+bool offlineMode = false;
 
 // Display
 U8G2* u8g2 = nullptr;
 
-uint8_t featureFullscreenBrewTimer = 0;
-uint8_t featureFullscreenManualFlushTimer = 0;
+bool featureFullscreenBrewTimer = false;
+bool featureFullscreenManualFlushTimer = false;
 double postBrewTimerDuration = POST_BREW_TIMER_DURATION;
-uint8_t featureHeatingLogo = 0;
-uint8_t featurePidOffLogo = 0;
+bool featureHeatingLogo = false;
+bool featurePidOffLogo = false;
 
 // WiFi
-uint8_t wifiCredentialsSaved = 0;
 WiFiManager wm;
 constexpr unsigned long wifiConnectionDelay = WIFICONNECTIONDELAY;
 constexpr unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
@@ -139,10 +138,7 @@ TempSensor* tempSensor = nullptr;
 #include "isr.h"
 
 // Method forward declarations
-void setSteamMode(int steamMode);
-void setBackflush(int backflush);
-void setScaleTare(int tare);
-void setScaleCalibration(int calibration);
+void setSteamMode(bool steamMode);
 void setPIDTunings(bool usePonM);
 void setBDPIDTunings();
 void setRuntimePidState(bool enabled);
@@ -163,8 +159,8 @@ void resetStandbyTimer();
 void wiFiReset();
 
 // system parameters
-uint8_t pidON = 0;   // 1 = control loop in closed loop
-uint8_t usePonM = 0; // 1 = use PonM for cold start PID, 0 = use normal PID for cold start
+bool pidON = false;
+bool usePonM = false;
 double brewSetpoint = SETPOINT;
 double brewTempOffset = TEMPOFFSET;
 double setpoint = brewSetpoint;
@@ -183,7 +179,7 @@ float scaleKnownWeight = SCALE_KNOWN_WEIGHT;
 double targetBrewWeight = TARGET_BREW_WEIGHT;
 
 // PID - values for offline brew detection
-uint8_t useBDPID = 0;
+bool useBDPID = false;
 double aggbKp = AGGBKP;
 double aggbTn = AGGBTN;
 double aggbTv = AGGBTV;
@@ -194,15 +190,15 @@ double aggKd = aggTv * aggKp;
 
 double brewPIDDelay = BREW_PID_DELAY; // Time PID will be disabled after brew started
 
-uint8_t standbyModeOn = 0;
+bool standbyModeOn = false;
 double standbyModeTime = STANDBY_MODE_TIME;
 
 #include "standby.h"
 
 // Variables to hold PID values (Temp input, Heater output)
 double temperature, pidOutput;
-int steamON = 0;
-int steamFirstON = 0;
+bool steamON = false;
+bool steamFirstON = false;
 
 PID bPID(&temperature, &pidOutput, &setpoint, aggKp, aggKi, aggKd, 1, DIRECT);
 
@@ -252,7 +248,7 @@ bool mqtt_was_connected = false;
  * @brief Get Wifi signal strength and set signalBars for display
  */
 int getSignalStrength() {
-    if (offlineMode == 1) return 0;
+    if (offlineMode) return 0;
 
     long rssi;
 
@@ -279,8 +275,8 @@ int getSignalStrength() {
     return 0;
 }
 
-void displayMessage(String text1, String text2, String text3, String text4, String text5, String text6);
-void displayLogo(String displaymessagetext, String displaymessagetext2);
+void displayMessage(const String& text1, const String& text2, const String& text3, const String& text4, const String& text5, const String& text6);
+void displayLogo(const String& displaymessagetext, const String& displaymessagetext2);
 bool shouldDisplayBrewTimer();
 void u8g2_prepare();
 
@@ -306,19 +302,19 @@ void testEmergencyStop() {
  * @brief Switch to offline mode if maxWifiReconnects were exceeded during boot
  */
 void initOfflineMode() {
-    if (config.getOledEnabled()) {
+    if (config.get<bool>("hardware.oled.enabled")) {
         displayMessage("", "", "", "", "Begin Fallback,", "No Wifi");
     }
 
     LOG(INFO, "Start offline mode with eeprom values, no wifi :(");
-    offlineMode = 1;
+    offlineMode = true;
 }
 
 /**
  * @brief Check if Wifi is connected, if not reconnect abort function if offline, or brew is running
  */
 void checkWifi() {
-    if (offlineMode == 1 || currBrewState > kBrewIdle) return;
+    if (offlineMode || currBrewState > kBrewIdle) return;
 
     // There was no WIFI connection at boot -> connect and if it does not succeed, enter offline mode
     do {
@@ -331,7 +327,7 @@ void checkWifi() {
                 LOGF(INFO, "Attempting WIFI (re-)connection: %i", wifiReconnects);
 
                 if (!setupDone) {
-                    if (config.getOledEnabled()) {
+                    if (config.get<bool>("hardware.oled.enabled")) {
                         displayMessage("", "", "", "", langstring_wifirecon, String(wifiReconnects));
                     }
                 }
@@ -416,11 +412,11 @@ void handleMachineState() {
                 machineState = kWaterTankEmpty;
             }
 
-            if (tempSensor->hasError()) {
+            if (tempSensor != nullptr && tempSensor->hasError()) {
                 machineState = kSensorError;
             }
 
-            if (pidON == 0) {
+            if (!pidON) {
                 machineState = kPidDisabled;
             }
             else {
@@ -472,7 +468,7 @@ void handleMachineState() {
                 setRuntimePidState(false);
             }
 
-            if (pidON == 0 && machineState != kStandby) {
+            if (!pidON && machineState != kStandby) {
                 machineState = kPidDisabled;
             }
 
@@ -480,7 +476,7 @@ void handleMachineState() {
                 machineState = kWaterTankEmpty;
             }
 
-            if (tempSensor->hasError()) {
+            if (tempSensor != nullptr && tempSensor->hasError()) {
                 machineState = kSensorError;
             }
 
@@ -496,11 +492,11 @@ void handleMachineState() {
                 machineState = kEmergencyStop;
             }
 
-            if (pidON == 0) {
+            if (!pidON) {
                 machineState = kPidDisabled;
             }
 
-            if (tempSensor->hasError()) {
+            if (tempSensor != nullptr && tempSensor->hasError()) {
                 machineState = kSensorError;
             }
             break;
@@ -515,17 +511,17 @@ void handleMachineState() {
                 machineState = kEmergencyStop;
             }
 
-            if (pidON == 0) {
+            if (!pidON) {
                 machineState = kPidDisabled;
             }
 
-            if (tempSensor->hasError()) {
+            if (tempSensor != nullptr && tempSensor->hasError()) {
                 machineState = kSensorError;
             }
             break;
 
         case kSteam:
-            if (steamON == 0) {
+            if (!steamON) {
                 machineState = kPidNormal;
             }
 
@@ -533,7 +529,7 @@ void handleMachineState() {
                 machineState = kEmergencyStop;
             }
 
-            if (pidON == 0) {
+            if (!pidON) {
                 machineState = kPidDisabled;
             }
 
@@ -541,7 +537,7 @@ void handleMachineState() {
                 machineState = kWaterTankEmpty;
             }
 
-            if (tempSensor->hasError()) {
+            if (tempSensor != nullptr && tempSensor->hasError()) {
                 machineState = kSensorError;
             }
             break;
@@ -550,7 +546,7 @@ void handleMachineState() {
 
             backflush();
 
-            if (backflushOn == 0) {
+            if (!backflushOn) {
                 machineState = kPidNormal;
             }
 
@@ -558,7 +554,7 @@ void handleMachineState() {
                 machineState = kEmergencyStop;
             }
 
-            if (pidON == 0) {
+            if (!pidON) {
                 machineState = kPidDisabled;
             }
 
@@ -566,7 +562,7 @@ void handleMachineState() {
                 machineState = kWaterTankEmpty;
             }
 
-            if (tempSensor->hasError()) {
+            if (tempSensor != nullptr && tempSensor->hasError()) {
                 machineState = kSensorError;
             }
             break;
@@ -576,11 +572,11 @@ void handleMachineState() {
                 machineState = kPidNormal;
             }
 
-            if (pidON == 0) {
+            if (!pidON) {
                 machineState = kPidDisabled;
             }
 
-            if (tempSensor->hasError()) {
+            if (tempSensor != nullptr && tempSensor->hasError()) {
                 machineState = kSensorError;
             }
             break;
@@ -594,87 +590,91 @@ void handleMachineState() {
                 }
             }
 
-            if (pidON == 0) {
+            if (!pidON) {
                 machineState = kPidDisabled;
             }
 
-            if (tempSensor->hasError()) {
+            if (tempSensor != nullptr && tempSensor->hasError()) {
                 machineState = kSensorError;
             }
             break;
 
         case kPidDisabled:
-            if (pidON == 1) {
+            if (pidON) {
                 machineState = kPidNormal;
             }
 
-            if (tempSensor->hasError()) {
+            if (tempSensor != nullptr && tempSensor->hasError()) {
                 machineState = kSensorError;
             }
 
             break;
 
         case kStandby:
-            if (standbyModeRemainingTimeDisplayOffMillis == 0 && config.getOledEnabled()) {
-                u8g2->setPowerSave(1);
-            }
+            {
+                bool oledEnabled = config.get<bool>("hardware.oled.enabled");
 
-            if (pidON) {
-                machineState = kPidNormal;
-                resetStandbyTimer(machineState);
-
-                if (config.getOledEnabled()) {
-                    u8g2->setPowerSave(0);
-                }
-            }
-            if (steamON) {
-                setRuntimePidState(true);
-                machineState = kSteam;
-                resetStandbyTimer(machineState);
-
-                if (config.getOledEnabled()) {
-                    u8g2->setPowerSave(0);
-                }
-            }
-
-            if (brew()) {
-                setRuntimePidState(true);
-                machineState = kBrew;
-                resetStandbyTimer(machineState);
-
-                if (config.getOledEnabled()) {
-                    u8g2->setPowerSave(0);
-                }
-            }
-
-            if (manualFlush()) {
-                setRuntimePidState(true);
-                machineState = kManualFlush;
-                resetStandbyTimer(machineState);
-
-                if (config.getOledEnabled()) {
-                    u8g2->setPowerSave(0);
-                }
-            }
-
-            if (backflushOn) {
-                machineState = kBackflush;
-                resetStandbyTimer(machineState);
-
-                if (config.getOledEnabled()) {
-                    u8g2->setPowerSave(0);
-                }
-            }
-
-            if (tempSensor->hasError()) {
-                if (config.getOledEnabled()) {
-                    u8g2->setPowerSave(0);
+                if (standbyModeRemainingTimeDisplayOffMillis == 0 && oledEnabled) {
+                    u8g2->setPowerSave(1);
                 }
 
-                machineState = kSensorError;
-            }
+                if (pidON) {
+                    machineState = kPidNormal;
+                    resetStandbyTimer(machineState);
 
-            break;
+                    if (oledEnabled) {
+                        u8g2->setPowerSave(0);
+                    }
+                }
+                if (steamON) {
+                    setRuntimePidState(true);
+                    machineState = kSteam;
+                    resetStandbyTimer(machineState);
+
+                    if (oledEnabled) {
+                        u8g2->setPowerSave(0);
+                    }
+                }
+
+                if (brew()) {
+                    setRuntimePidState(true);
+                    machineState = kBrew;
+                    resetStandbyTimer(machineState);
+
+                    if (oledEnabled) {
+                        u8g2->setPowerSave(0);
+                    }
+                }
+
+                if (manualFlush()) {
+                    setRuntimePidState(true);
+                    machineState = kManualFlush;
+                    resetStandbyTimer(machineState);
+
+                    if (oledEnabled) {
+                        u8g2->setPowerSave(0);
+                    }
+                }
+
+                if (backflushOn) {
+                    machineState = kBackflush;
+                    resetStandbyTimer(machineState);
+
+                    if (oledEnabled) {
+                        u8g2->setPowerSave(0);
+                    }
+                }
+
+                if (tempSensor != nullptr && tempSensor->hasError()) {
+                    if (oledEnabled) {
+                        u8g2->setPowerSave(0);
+                    }
+
+                    machineState = kSensorError;
+                }
+
+                break;
+            }
 
         case kSensorError:
             machineState = kSensorError;
@@ -736,10 +736,12 @@ void wiFiSetup() {
     wm.setBreakAfterConfig(true);
     wm.setConnectRetries(3);
 
+    bool oledEnabled = config.get<bool>("hardware.oled.enabled");
+
     if (wm.getWiFiIsSaved()) {
         LOGF(INFO, "Connecting to WiFi: %s", hostname.c_str());
 
-        if (config.getOledEnabled()) {
+        if (oledEnabled) {
             displayLogo("Connecting to: ", hostname.c_str());
         }
     }
@@ -769,17 +771,17 @@ void wiFiSetup() {
     else {
         LOG(INFO, "WiFi connection timed out...");
 
-        if (config.getOledEnabled()) {
+        if (oledEnabled) {
             displayLogo(langstring_nowifi[0], langstring_nowifi[1]);
         }
 
         wm.disconnect();
         delay(1000);
 
-        offlineMode = 1;
+        offlineMode = true;
     }
 
-    if (config.getOledEnabled()) {
+    if (oledEnabled) {
         displayLogo(langstring_connectwifi1, wm.getWiFiSSID(true));
     }
 }
@@ -808,6 +810,8 @@ void setup() {
         LOG(ERROR, "Failed to load config from filesystem!");
     }
 
+    hostname = config.get<String>("system.hostname");
+
     ParameterRegistry::getInstance().initialize(config);
 
     if (!ParameterRegistry::getInstance().isReady()) {
@@ -816,13 +820,12 @@ void setup() {
     }
     else {
         ParameterRegistry::getInstance().syncGlobalVariables();
-        hostname = config.getHostname();
     }
 
     Wire.begin();
 
-    if (config.getOledEnabled()) {
-        switch (config.getOledType()) {
+    if (config.get<bool>("hardware.oled.enabled")) {
+        switch (config.get<int>("hardware.oled.type")) {
             case 0:
                 u8g2 = new U8G2_SH1106_128X64_NONAME_F_HW_I2C(U8G2_R0, U8X8_PIN_NONE, PIN_I2CSCL, PIN_I2CSDA);  // e.g. 1.3"
                 break;
@@ -843,14 +846,14 @@ void setup() {
 
             initLangStrings(config);
 
-            const int templateId = config.getDisplayTemplate();
+            const int templateId = config.get<int>("display.template");
             DisplayTemplateManager::initializeDisplay(templateId);
 
             displayLogo(String("Version "), String(sysVersion));
         }
         else {
             LOG(ERROR, "Error initializing the display!");
-            config.setOledEnabled(false);
+            config.set<bool>("hardware.oled.enabled", false);
         }
     }
 
@@ -889,7 +892,7 @@ void setup() {
         mqttSensors["currentKd"] = [] { return bPID.GetKd(); };
         mqttSensors["machineState"] = [] { return machineState; };
 
-        if (config.getBrewSwitchEnabled()) {
+        if (config.get<bool>("hardware.switches.brew.enabled")) {
             mqttVars["pidUseBD"] = "pid.bd.enabled";
             mqttVars["brewPidDelay"] = "brew.pid_delay";
             mqttSensors["currBrewTime"] = [] { return currBrewTime / 1000; };
@@ -903,11 +906,11 @@ void setup() {
         }
     }
 
-    if (config.getScaleEnabled()) {
+    if (config.get<bool>("hardware.sensors.scale.enabled")) {
         mqttVars["targetBrewWeight"] = "brew.target_weight";
         mqttVars["scaleCalibration"] = "hardware.sensors.scale.calibration";
 
-        if (config.getScaleType() == 0) {
+        if (config.get<int>("hardware.sensors.scale.type") == 0) {
             mqttVars["scale2Calibration"] = "hardware.sensors.scale.calibration2";
         }
 
@@ -919,73 +922,73 @@ void setup() {
         mqttSensors["currBrewWeight"] = [] { return currBrewWeight; };
     }
 
-    if (config.getPressureSensorEnabled()) {
+    if (config.get<bool>("hardware.sensors.pressure.enabled")) {
         mqttSensors["pressure"] = [] { return inputPressureFilter; };
     }
 
     initTimer1();
 
-    const auto heaterTriggerType = static_cast<Relay::TriggerType>(config.getHeaterRelayTriggerType());
+    const auto heaterTriggerType = static_cast<Relay::TriggerType>(config.get<int>("hardware.relays.heater.trigger_type"));
     heaterRelay = new Relay(heaterRelayPin, heaterTriggerType);
     heaterRelay->off();
 
-    const auto valvePumpTriggerType = static_cast<Relay::TriggerType>(config.getPumpValveRelayTriggerType());
+    const auto valvePumpTriggerType = static_cast<Relay::TriggerType>(config.get<int>("hardware.relays.pump_valve.trigger_type"));
     valveRelay = new Relay(valveRelayPin, valvePumpTriggerType);
     valveRelay->off();
     pumpRelay = new Relay(pumpRelayPin, valvePumpTriggerType);
     pumpRelay->off();
 
-    if (config.getPowerSwitchEnabled()) {
-        const auto type = static_cast<Switch::Type>(config.getPowerSwitchType());
-        const auto mode = static_cast<Switch::Mode>(config.getPowerSwitchMode());
+    if (config.get<bool>("hardware.switches.power.enabled")) {
+        const auto type = static_cast<Switch::Type>(config.get<int>("hardware.switches.power.type"));
+        const auto mode = static_cast<Switch::Mode>(config.get<int>("hardware.switches.power.mode"));
         powerSwitch = new IOSwitch(PIN_POWERSWITCH, GPIOPin::IN_HARDWARE, type, mode);
     }
 
-    if (config.getSteamSwitchEnabled()) {
-        const auto type = static_cast<Switch::Type>(config.getSteamSwitchType());
-        const auto mode = static_cast<Switch::Mode>(config.getSteamSwitchMode());
+    if (config.get<bool>("hardware.switches.steam.enabled")) {
+        const auto type = static_cast<Switch::Type>(config.get<int>("hardware.switches.steam.type"));
+        const auto mode = static_cast<Switch::Mode>(config.get<int>("hardware.switches.steam.mode"));
         steamSwitch = new IOSwitch(PIN_STEAMSWITCH, GPIOPin::IN_HARDWARE, type, mode);
     }
 
-    if (config.getBrewSwitchEnabled()) {
-        const auto type = static_cast<Switch::Type>(config.getBrewSwitchType());
-        const auto mode = static_cast<Switch::Mode>(config.getBrewSwitchMode());
+    if (config.get<bool>("hardware.switches.brew.enabled")) {
+        const auto type = static_cast<Switch::Type>(config.get<int>("hardware.switches.brew.type"));
+        const auto mode = static_cast<Switch::Mode>(config.get<int>("hardware.switches.brew.mode"));
         brewSwitch = new IOSwitch(PIN_BREWSWITCH, GPIOPin::IN_HARDWARE, type, mode);
     }
 
-    if (config.getStatusLedEnabled()) {
-        const bool inverted = config.getStatusLedInverted();
+    if (config.get<bool>("hardware.leds.status.enabled")) {
+        const bool inverted = config.get<bool>("hardware.leds.status.inverted");
         statusLedPin = new GPIOPin(PIN_STATUSLED, GPIOPin::OUT);
         statusLed = new StandardLED(*statusLedPin, inverted);
         statusLed->turnOff();
     }
 
-    if (config.getBrewLedEnabled()) {
-        const bool inverted = config.getBrewLedInverted();
+    if (config.get<bool>("hardware.leds.brew.enabled")) {
+        const bool inverted = config.get<bool>("hardware.leds.brew.inverted");
         brewLedPin = new GPIOPin(PIN_BREWLED, GPIOPin::OUT);
         brewLed = new StandardLED(*brewLedPin, inverted);
         brewLed->turnOff();
     }
-    if (config.getSteamLedEnabled()) {
-        const bool inverted = config.getSteamLedInverted();
+    if (config.get<bool>("hardware.leds.steam.enabled")) {
+        const bool inverted = config.get<bool>("hardware.leds.steam.inverted");
         steamLedPin = new GPIOPin(PIN_STEAMLED, GPIOPin::OUT);
         steamLed = new StandardLED(*steamLedPin, inverted);
         steamLed->turnOff();
     }
 
-    if (config.getWaterTankSensorEnabled()) {
-        const auto mode = static_cast<Switch::Mode>(config.getWaterTankSensorMode());
+    if (config.get<bool>("hardware.sensors.watertank.enabled")) {
+        const auto mode = static_cast<Switch::Mode>(config.get<int>("hardware.sensors.watertank.mode"));
         waterTankSensor = new IOSwitch(PIN_WATERTANKSENSOR, (mode == Switch::NORMALLY_OPEN ? GPIOPin::IN_PULLDOWN : GPIOPin::IN_PULLUP), Switch::TOGGLE, mode);
     }
 
     // Fallback offline
-    if (!config.getOfflineModeEnabled()) { // WiFi Mode
+    if (!config.get<bool>("system.offline_mode")) { // WiFi Mode
         wiFiSetup();
         serverSetup();
 
         // OTA Updates
         if (WiFi.status() == WL_CONNECTED) {
-            otaPass = config.getOtaPass();
+            otaPass = config.get<String>("system.ota_password");
             ArduinoOTA.setHostname(hostname.c_str()); //  Device name for OTA
             ArduinoOTA.setPassword(otaPass.c_str());  //  Password for OTA
             ArduinoOTA.begin();
@@ -1006,7 +1009,7 @@ void setup() {
     }
     else {
         wm.disconnect();
-        offlineMode = 1;
+        offlineMode = true;
         setRuntimePidState(true);
     }
 
@@ -1022,15 +1025,19 @@ void setup() {
     bPID.SetSmoothingFactor(emaFactor);
     bPID.SetMode(AUTOMATIC);
 
-    if (config.getTempSensorType() == 0) {
+    const int tempSensorType = config.get<int>("hardware.sensors.temperature.type");
+
+    if (tempSensorType == 0) {
         tempSensor = new TempSensorTSIC(PIN_TEMPSENSOR);
     }
-    else if (config.getTempSensorType() == 1) {
+    else if (tempSensorType == 1) {
         tempSensor = new TempSensorDallas(PIN_TEMPSENSOR);
     }
 
-    temperature = tempSensor->getCurrentTemperature();
-    temperature -= brewTempOffset;
+    if (tempSensor != nullptr) {
+        temperature = tempSensor->getCurrentTemperature();
+        temperature -= brewTempOffset;
+    }
 
     // Initialisation MUST be at the very end of the init(), otherwise the
     // time comparision in loop() will have a big offset
@@ -1041,12 +1048,12 @@ void setup() {
     lastMQTTConnectionAttempt = currentTime;
 
     // Init Scale
-    if (config.getScaleEnabled()) {
+    if (config.get<bool>("hardware.sensors.scale.enabled")) {
         initScale();
         previousMillisScale = currentTime;
     }
 
-    if (config.getPressureSensorEnabled()) {
+    if (config.get<bool>("hardware.sensors.pressure.enabled")) {
         previousMillisPressure = currentTime;
     }
 
@@ -1077,7 +1084,7 @@ void loop() {
 
 void loopPid() {
     // Only do Wifi stuff, if Wifi is connected
-    if (WiFi.status() == WL_CONNECTED && offlineMode == 0) {
+    if (WiFi.status() == WL_CONNECTED && !offlineMode) {
         if (mqtt_enabled) {
             checkMQTT();
             writeSysParamsToMQTT(true); // Continue on error
@@ -1118,7 +1125,9 @@ void loopPid() {
     }
 
     // Update the temperature:
-    temperature = tempSensor->getCurrentTemperature();
+    if (tempSensor != nullptr) {
+        temperature = tempSensor->getCurrentTemperature();
+    }
 
     if (machineState != kSteam) {
         temperature -= brewTempOffset;
@@ -1156,7 +1165,7 @@ void loopPid() {
         }
     }
 
-    if (config.getScaleEnabled()) {
+    if (config.get<bool>("hardware.sensors.scale.enabled")) {
         checkWeight();    // Check Weight Scale in the loop
         shotTimerScale(); // Calculation of weight of shot while brew is running
     }
@@ -1164,10 +1173,8 @@ void loopPid() {
     brew();
     manualFlush();
 
-    if (config.getPressureSensorEnabled()) {
-        unsigned long currentMillisPressure = millis();
-
-        if (currentMillisPressure - previousMillisPressure >= intervalPressure) {
+    if (config.get<bool>("hardware.sensors.pressure.enabled")) {
+        if (const unsigned long currentMillisPressure = millis(); currentMillisPressure - previousMillisPressure >= intervalPressure) {
             previousMillisPressure = currentMillisPressure;
             inputPressure = measurePressure();
             inputPressureFilter = filterPressureValue(inputPressure);
@@ -1188,12 +1195,12 @@ void loopPid() {
     updateStandbyTimer();
     handleMachineState();
 
-    if (config.getBrewSwitchEnabled()) {
+    if (config.get<bool>("hardware.switches.brew.enabled")) {
         shouldDisplayBrewTimer();
     }
 
     // Check if PID should run or not. If not, set to manual and force output to zero
-    if (config.getOledEnabled()) {
+    if (config.get<bool>("hardware.oled.enabled")) {
         printDisplayTimer();
     }
 
@@ -1265,7 +1272,7 @@ void loopPid() {
 }
 
 void loopLED() {
-    if (config.getStatusLedEnabled() && statusLed != nullptr) {
+    if (config.get<bool>("hardware.leds.status.enabled") && statusLed != nullptr) {
         if ((machineState == kPidNormal && (fabs(temperature - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) {
             statusLed->turnOn();
         }
@@ -1274,21 +1281,21 @@ void loopLED() {
         }
     }
 
-    if (config.getBrewLedEnabled() && brewLed != nullptr) {
+    if (config.get<bool>("hardware.leds.brew.enabled") && brewLed != nullptr) {
         brewLed->setGPIOState(machineState == kBrew);
     }
 
-    if (config.getSteamLedEnabled() && steamLed != nullptr) {
+    if (config.get<bool>("hardware.leds.steam.enabled") && steamLed != nullptr) {
         steamLed->setGPIOState(machineState == kSteam);
     }
 }
 
 void checkWaterTank() {
-    if (!config.getWaterTankSensorEnabled()) {
+    if (!config.get<bool>("hardware.sensors.watertank.enabled") || waterTankSensor == nullptr) {
         return;
     }
 
-    if (bool isWaterDetected = waterTankSensor->isPressed(); isWaterDetected && !waterTankFull) {
+    if (const bool isWaterDetected = waterTankSensor->isPressed(); isWaterDetected && !waterTankFull) {
         waterTankFull = true;
         LOG(INFO, "Water tank full");
     }
@@ -1298,32 +1305,20 @@ void checkWaterTank() {
     }
 }
 
-void setBackflush(const int backflush) {
-    backflushOn = backflush;
-}
-
-void setScaleCalibration(int calibration) {
-    scaleCalibrationOn = calibration;
-}
-
-void setScaleTare(int tare) {
-    scaleTareOn = tare;
-}
-
 void setRuntimePidState(const bool enabled) {
     pidON = enabled ? 1 : 0;
-    config.setPidEnabled(enabled);
+    config.set<bool>("pid.enabled", enabled);
 }
 
-void setSteamMode(const int steamMode) {
+void setSteamMode(bool steamMode) {
     steamON = steamMode;
 
-    if (steamON == 1) {
-        steamFirstON = 1;
+    if (steamON) {
+        steamFirstON = true;
     }
 
-    if (steamON == 0) {
-        steamFirstON = 0;
+    if (!steamON) {
+        steamFirstON = false;
     }
 }
 

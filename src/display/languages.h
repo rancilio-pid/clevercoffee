@@ -28,7 +28,7 @@ static const char* langstring_backflush_finish;
 inline void initLangStrings(Config& config) {
 
     // English
-    if (config.getDisplayLanguage() == 1) {
+    if (config.get<int>("display.language") == 1) {
         langstring_set_temp = "Set:   ";
         langstring_current_temp = "Temp:  ";
         langstring_brew = "Brew: ";
@@ -53,7 +53,7 @@ inline void initLangStrings(Config& config) {
         langstring_backflush_finish = "to finish...";
     }
     // Espanol
-    else if (config.getDisplayLanguage() == 2) {
+    else if (config.get<int>("display.language") == 2) {
         langstring_set_temp = "Obj:  ";
         langstring_current_temp = "T:    ";
         langstring_brew = "Brew: ";
