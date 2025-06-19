@@ -127,14 +127,23 @@ class Config {
         }
 
         template <typename T>
-        T get(const std::string& path) const {
+        T get(const String& path) const {
             auto current = _doc.as<JsonVariantConst>();
-            const String pathStr = path.c_str();
             int startIndex = 0;
             int dotIndex;
 
-            while ((dotIndex = pathStr.indexOf('.', startIndex)) != -1) {
-                if (String segment = pathStr.substring(startIndex, dotIndex); !current[segment].isNull()) {
+            while ((dotIndex = path.indexOf('.', startIndex)) != -1) {
+                char segment[64]; // Stack-allocated buffer
+                const int segmentLen = dotIndex - startIndex;
+
+                if (segmentLen >= 64) {
+                    return T{};
+                }
+
+                path.substring(startIndex, dotIndex).toCharArray(segment, segmentLen + 1);
+                segment[segmentLen] = '\0';
+
+                if (!current[segment].isNull()) {
                     current = current[segment];
                 }
                 else {
@@ -144,7 +153,17 @@ class Config {
                 startIndex = dotIndex + 1;
             }
 
-            const String finalSegment = pathStr.substring(startIndex);
+            char finalSegment[64];
+            const unsigned int pathLen = path.length();
+            const unsigned int finalLen = pathLen - static_cast<unsigned int>(startIndex);
+
+            if (finalLen >= 64) {
+                return T{};
+            }
+
+            path.substring(startIndex).toCharArray(finalSegment, finalLen + 1);
+            finalSegment[finalLen] = '\0';
+
             current = current[finalSegment];
 
             if constexpr (std::is_same_v<T, bool>) {
@@ -172,27 +191,43 @@ class Config {
         }
 
         template <typename T>
-        bool set(const std::string& path, const T& value) {
-            auto currentObj = _doc.as<JsonObject>();
-            const String pathStr = path.c_str();
+        void set(const String& path, const T& value) {
+            auto current = _doc.as<JsonVariant>();
             int startIndex = 0;
             int dotIndex;
 
-            while ((dotIndex = pathStr.indexOf('.', startIndex)) != -1) {
-                String segment = pathStr.substring(startIndex, dotIndex);
+            // Navigate to the parent object
+            while ((dotIndex = path.indexOf('.', startIndex)) != -1) {
+                char segment[64]; // Stack-allocated buffer
+                const int segmentLen = dotIndex - startIndex;
 
-                if (!currentObj[segment].is<JsonObject>()) {
-                    currentObj[segment] = currentObj.createNestedObject(segment);
+                if (segmentLen >= 64) {
+                    return;
                 }
 
-                currentObj = currentObj[segment];
+                path.substring(startIndex, dotIndex).toCharArray(segment, segmentLen + 1);
+                segment[segmentLen] = '\0';
+
+                if (!current[segment].is<JsonObject>()) {
+                    current[segment] = current.createNestedObject();
+                }
+                current = current[segment];
+
                 startIndex = dotIndex + 1;
             }
 
-            const String finalSegment = pathStr.substring(startIndex);
-            currentObj[finalSegment] = value;
+            char finalSegment[64];
+            const unsigned int pathLen = path.length();
+            const unsigned int finalLen = pathLen - static_cast<unsigned int>(startIndex);
 
-            return true;
+            if (finalLen >= 64) {
+                return;
+            }
+
+            path.substring(startIndex).toCharArray(finalSegment, finalLen + 1);
+            finalSegment[finalLen] = '\0';
+
+            current[finalSegment] = value;
         }
 
     private:

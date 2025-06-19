@@ -207,93 +207,89 @@ void ParameterRegistry::initialize(Config& config) {
     );
 
     // Brew Section
-    addBoolConfigParam(
-        "features.brew_control",
-        "Brew Control",
-        sBrewSection,
-        13,
-        &featureBrewControl,
-        "Enables brew-by-time or brew-by-weight"
-    );
+    if (config.get<bool>("hardware.switches.brew.enabled")) {
+        addBoolConfigParam(
+            "features.brew_control",
+            "Brew Control",
+            sBrewSection,
+            13,
+            &featureBrewControl,
+            "Enables brew-by-time or brew-by-weight"
+        );
 
-    addNumericConfigParam<double>(
-        "brew.target_time",
-        "Target Brew Time (s)",
-        kDouble,
-        sBrewSection,
-        14,
-        &targetBrewTime,
-        TARGET_BREW_TIME_MIN,
-        TARGET_BREW_TIME_MAX,
-        "Stop brew after this time. Set to 0 to deactivate brew-by-time-feature.",
-        [] { return featureBrewControl; }
-    );
+        addNumericConfigParam<double>(
+            "brew.target_time",
+            "Target Brew Time (s)",
+            kDouble,
+            sBrewSection,
+            14,
+            &targetBrewTime,
+            TARGET_BREW_TIME_MIN,
+            TARGET_BREW_TIME_MAX,
+            "Stop brew after this time. Set to 0 to deactivate brew-by-time-feature."
+        );
 
-    addNumericConfigParam<double>(
-        "brew.pre_infusion.pause",
-        "Preinfusion Pause Time (s)",
-        kDouble,
-        sBrewSection,
-        15,
-        &preinfusionPause,
-        PRE_INFUSION_PAUSE_MIN,
-        PRE_INFUSION_PAUSE_MAX,
-        "",
-        [] { return featureBrewControl; }
-    );
+        addNumericConfigParam<double>(
+            "brew.pre_infusion.pause",
+            "Preinfusion Pause Time (s)",
+            kDouble,
+            sBrewSection,
+            15,
+            &preinfusionPause,
+            PRE_INFUSION_PAUSE_MIN,
+            PRE_INFUSION_PAUSE_MAX,
+            "Pause to let the puck bloom after the initial pre-infusion while turning off the pump and leaving the 3-way valve open"
+        );
 
-    addNumericConfigParam<double>(
-        "brew.pre_infusion.time",
-        "Preinfusion Time (s)",
-        kDouble,
-        sBrewSection,
-        16,
-        &preinfusion,
-        PRE_INFUSION_TIME_MIN,
-        PRE_INFUSION_TIME_MAX,
-        "",
-        [] { return featureBrewControl; }
-    );
+        addNumericConfigParam<double>(
+            "brew.pre_infusion.time",
+            "Preinfusion Time (s)",
+            kDouble,
+            sBrewSection,
+            16,
+            &preinfusion,
+            PRE_INFUSION_TIME_MIN,
+            PRE_INFUSION_TIME_MAX,
+            "Time in seconds the pump is running during the pre-infusion"
+        );
 
-    // Maintenance Section
-    addNumericConfigParam<int>(
-        "backflush.cycles",
-        "Backflush Cycles",
-        kInteger,
-        sMaintenanceSection,
-        17,
-        &backflushCycles,
-        BACKFLUSH_CYCLES_MIN,
-        BACKFLUSH_CYCLES_MAX,
-        "Number of cycles of filling and flushing during a backflush",
-        [] { return featureBrewControl; }
-    );
+        // Maintenance Section
+        addNumericConfigParam<int>(
+            "backflush.cycles",
+            "Backflush Cycles",
+            kInteger,
+            sMaintenanceSection,
+            17,
+            &backflushCycles,
+            BACKFLUSH_CYCLES_MIN,
+            BACKFLUSH_CYCLES_MAX,
+            "Number of cycles of filling and flushing during a backflush"
+        );
 
-    addNumericConfigParam<double>(
-        "backflush.fill_time",
-        "Backflush Fill Time (s)",
-        kDouble,
-        sMaintenanceSection,
-        18,
-        &backflushFillTime,
-        BACKFLUSH_FILL_TIME_MIN,
-        BACKFLUSH_FILL_TIME_MAX,
-        "Time in seconds the pump is running during one backflush cycle",
-        [] { return featureBrewControl; }
-    );
+        addNumericConfigParam<double>(
+            "backflush.fill_time",
+            "Backflush Fill Time (s)",
+            kDouble,
+            sMaintenanceSection,
+            18,
+            &backflushFillTime,
+            BACKFLUSH_FILL_TIME_MIN,
+            BACKFLUSH_FILL_TIME_MAX,
+            "Time in seconds the pump is running during one backflush cycle"
+        );
 
-    addNumericConfigParam<double>(
-        "backflush.flush_time",
-        "Backflush Flush Time (s)",
-        kDouble,
-        sMaintenanceSection,
-        19,
-        &backflushFlushTime,
-        BACKFLUSH_FLUSH_TIME_MIN,
-        BACKFLUSH_FLUSH_TIME_MAX,
-        "Time in seconds the selenoid valve stays open during one backflush cycle",
-        [] { return featureBrewControl; }
-    );
+        addNumericConfigParam<double>(
+            "backflush.flush_time",
+            "Backflush Flush Time (s)",
+            kDouble,
+            sMaintenanceSection,
+            19,
+            &backflushFlushTime,
+            BACKFLUSH_FLUSH_TIME_MIN,
+            BACKFLUSH_FLUSH_TIME_MAX,
+            "Time in seconds the selenoid valve stays open during one backflush cycle"
+        );
+    }
 
     if (config.get<bool>("hardware.sensors.scale.enabled")) {
         addNumericConfigParam<double>(
@@ -381,66 +377,65 @@ void ParameterRegistry::initialize(Config& config) {
         );
     }
 
-    // Brew PID Section
-    addBoolConfigParam(
-        "pid.bd.enabled",
-        "Enable Brew PID",
-        sBrewPidSection,
-        26,
-        &useBDPID,
-        "Use separate PID parameters while brew is running"
-    );
+    if (config.get<bool>("hardware.switches.brew.enabled")) {
+        // Brew PID Section
+        addBoolConfigParam(
+            "pid.bd.enabled",
+            "Enable Brew PID",
+            sBrewPidSection,
+            26,
+            &useBDPID,
+            "Use separate PID parameters while brew is running"
+        );
 
-    addNumericConfigParam<double>(
-        "brew.pid_delay",
-        "Brew PID Delay (s)",
-        kDouble,
-        sBrewPidSection,
-        27,
-        &brewPIDDelay,
-        BREW_PID_DELAY_MIN,
-        BREW_PID_DELAY_MAX,
-        "Delay time in seconds during which the PID will be disabled once a brew is detected. This prevents too high brew temperatures with boiler machines like Rancilio Silvia. Set to 0 for thermoblock machines."
-    );
+        addNumericConfigParam<double>(
+            "brew.pid_delay",
+            "Brew PID Delay (s)",
+            kDouble,
+            sBrewPidSection,
+            27,
+            &brewPIDDelay,
+            BREW_PID_DELAY_MIN,
+            BREW_PID_DELAY_MAX,
+            "Delay time in seconds during which the PID will be disabled once a brew is detected. This prevents too high brew temperatures with boiler machines like Rancilio Silvia. Set to 0 for thermoblock machines."
+        );
 
-    addNumericConfigParam<double>(
-        "pid.bd.kp",
-        "BD Kp",
-        kDouble,
-        sBrewPidSection,
-        28,
-        &aggbKp,
-        PID_KP_BD_MIN,
-        PID_KP_BD_MAX,
-        "Proportional gain (in Watts/°C) for the PID when brewing has been detected. Use this controller to either increase heating during the brew to counter temperature drop from fresh cold water in the boiler. Some machines, e.g. Rancilio Silvia, actually need to heat less or not at all during the brew because of high temperature stability (<a href='https://www.kaffee-netz.de/threads/installation-eines-temperatursensors-in-silvia-bruehgruppe.111093/#post-1453641' target='_blank'>Details<a>)",
-        [] { return useBDPID; }
-    );
+        addNumericConfigParam<double>(
+            "pid.bd.kp",
+            "BD Kp",
+            kDouble,
+            sBrewPidSection,
+            28,
+            &aggbKp,
+            PID_KP_BD_MIN,
+            PID_KP_BD_MAX,
+            "Proportional gain (in Watts/°C) for the PID when brewing has been detected. Use this controller to either increase heating during the brew to counter temperature drop from fresh cold water in the boiler. Some machines, e.g. Rancilio Silvia, actually need to heat less or not at all during the brew because of high temperature stability (<a href='https://www.kaffee-netz.de/threads/installation-eines-temperatursensors-in-silvia-bruehgruppe.111093/#post-1453641' target='_blank'>Details<a>)"
+        );
 
-    addNumericConfigParam<double>(
-        "pid.bd.tn",
-        "BD Tn (=Kp/Ki)",
-        kDouble,
-        sBrewPidSection,
-        29,
-        &aggbTn,
-        PID_TN_BD_MIN,
-        PID_TN_BD_MAX,
-        "Integral time constant (in seconds) for the PID when brewing has been detected.",
-        [] { return useBDPID; }
-    );
+        addNumericConfigParam<double>(
+            "pid.bd.tn",
+            "BD Tn (=Kp/Ki)",
+            kDouble,
+            sBrewPidSection,
+            29,
+            &aggbTn,
+            PID_TN_BD_MIN,
+            PID_TN_BD_MAX,
+            "Integral time constant (in seconds) for the PID when brewing has been detected."
+        );
 
-    addNumericConfigParam<double>(
-        "pid.bd.tv",
-        "BD Tv (=Kd/Kp)",
-        kDouble,
-        sBrewPidSection,
-        30,
-        &aggbTv,
-        PID_TV_BD_MIN,
-        PID_TV_BD_MAX,
-        "Differential time constant (in seconds) for the PID when brewing has been detected.",
-        [] { return useBDPID; }
-    );
+        addNumericConfigParam<double>(
+            "pid.bd.tv",
+            "BD Tv (=Kd/Kp)",
+            kDouble,
+            sBrewPidSection,
+            30,
+            &aggbTv,
+            PID_TV_BD_MIN,
+            PID_TV_BD_MAX,
+            "Differential time constant (in seconds) for the PID when brewing has been detected."
+        );
+    }
 
     // Other Section (special parameters, e.g. runtime-only toggles)
     addParam(std::make_shared<Parameter>(
@@ -460,23 +455,25 @@ void ParameterRegistry::initialize(Config& config) {
         &steamON
     ));
 
-    addParam(std::make_shared<Parameter>(
-        "BACKFLUSH_ON",
-        "Backflush",
-        kUInt8,
-        sOtherSection,
-        32,
-        [&]() -> bool {
-            return backflushOn;
-        },
-        [](const bool val) {
-            backflushOn = val;
-        },
-        false,
-        "",
-        [] { return true; },
-        &backflushOn
-    ));
+    if (config.get<bool>("hardware.switches.brew.enabled")) {
+        addParam(std::make_shared<Parameter>(
+            "BACKFLUSH_ON",
+            "Backflush",
+            kUInt8,
+            sOtherSection,
+            32,
+            [&]() -> bool {
+                return backflushOn;
+            },
+            [](const bool val) {
+                backflushOn = val;
+            },
+            false,
+            "",
+            [] { return true; },
+            &backflushOn
+        ));
+    }
 
     // Power Section
     addBoolConfigParam(
@@ -571,6 +568,7 @@ void ParameterRegistry::initialize(Config& config) {
         "full screen logo will be shown if pid is disabled"
     );
 
+    // MQTT section
     addBoolConfigParam(
         "mqtt.enabled",
         "MQTT enabled",

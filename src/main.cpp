@@ -879,9 +879,6 @@ void setup() {
         mqttVars["aggIMax"] = "pid.regular.i_max";
         mqttVars["steamKp"] = "pid.steam.kp";
         mqttVars["standbyModeOn"] = "standby.enabled";
-        mqttVars["aggbKp"] = "pid.bd.kp";
-        mqttVars["aggbTn"] = "pid.bd.tn";
-        mqttVars["aggbTv"] = "pid.bd.tv";
 
         // Values reported to MQTT
         mqttSensors["temperature"] = [] { return temperature; };
@@ -893,6 +890,9 @@ void setup() {
         mqttSensors["machineState"] = [] { return machineState; };
 
         if (config.get<bool>("hardware.switches.brew.enabled")) {
+            mqttVars["aggbKp"] = "pid.bd.kp";
+            mqttVars["aggbTn"] = "pid.bd.tn";
+            mqttVars["aggbTv"] = "pid.bd.tv";
             mqttVars["pidUseBD"] = "pid.bd.enabled";
             mqttVars["brewPidDelay"] = "brew.pid_delay";
             mqttSensors["currBrewTime"] = [] { return currBrewTime / 1000; };
