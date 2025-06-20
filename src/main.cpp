@@ -1645,11 +1645,6 @@ void looppid() {
     shottimerscale(); // Calculation of weight of shot while brew is running
 #endif
 
-#if (FEATURE_BREWSWITCH == 1)
-    brew();
-    manualFlush();
-#endif
-
 #if (FEATURE_PRESSURESENSOR == 1)
     unsigned long currentMillisPressure = millis();
 
