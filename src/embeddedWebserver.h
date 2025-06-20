@@ -446,6 +446,7 @@ inline void serverSetup() {
         wiFiReset();
     });
 
+
     server.on("/download/config", HTTP_GET, [](AsyncWebServerRequest* request) {
         if (!LittleFS.exists("/config.json")) {
             request->send(404, "text/plain", "Config file not found");
@@ -459,12 +460,23 @@ inline void serverSetup() {
             return;
         }
 
-        AsyncWebServerResponse* response = request->beginResponse(LittleFS, "/config.json", "application/json", true);
-
-        response->addHeader("Content-Disposition", "attachment; filename=\"config.json\"");
-
-        request->send(response);
+        DynamicJsonDocument doc(4096);
+        const DeserializationError error = deserializeJson(doc, configFile);
         configFile.close();
+
+        if (error) {
+            request->send(500, "text/plain", "Failed to parse config file");
+            return;
+        }
+
+        // Serialize as pretty JSON
+        String prettifiedJson;
+        serializeJsonPretty(doc, prettifiedJson);
+
+        // Send the prettified JSON
+        AsyncWebServerResponse* response = request->beginResponse(200, "application/json", prettifiedJson);
+        response->addHeader("Content-Disposition", "attachment; filename=\"config.json\"");
+        request->send(response);
     });
 
     server.on(
