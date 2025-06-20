@@ -446,7 +446,6 @@ inline void serverSetup() {
         wiFiReset();
     });
 
-
     server.on("/download/config", HTTP_GET, [](AsyncWebServerRequest* request) {
         if (!LittleFS.exists("/config.json")) {
             request->send(404, "text/plain", "Config file not found");
