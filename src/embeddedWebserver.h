@@ -39,7 +39,7 @@ inline uint8_t flipUintValue(const uint8_t value) {
 }
 
 inline String getTempString() {
-    StaticJsonDocument<96> doc;
+    JsonDocument doc;
 
     doc["currentTemp"] = curTemp;
     doc["targetTemp"] = tTemp;
@@ -78,8 +78,8 @@ inline String getValue(const String& varName) {
     }
 }
 
-inline void paramToJson(const String& name, const std::shared_ptr<Parameter>& param, DynamicJsonDocument& doc) {
-    JsonObject paramObj = doc.createNestedObject();
+inline void paramToJson(const String& name, const std::shared_ptr<Parameter>& param, JsonDocument& doc) {
+    const auto paramObj = doc.add<JsonObject>();
     paramObj["type"] = param->getType();
     paramObj["name"] = name;
     paramObj["displayName"] = param->getDisplayName();
@@ -114,13 +114,13 @@ inline void paramToJson(const String& name, const std::shared_ptr<Parameter>& pa
             {
                 paramObj["value"] = static_cast<int>(param->getValue());
 
-                const JsonArray options = paramObj.createNestedArray("options");
+                const JsonArray options = paramObj["options"].to<JsonArray>();
 
                 const char* const* enumOptions = param->getEnumOptions();
                 const size_t enumCount = param->getEnumCount();
 
                 for (size_t i = 0; i < enumCount; i++) {
-                    JsonObject optionObj = options.createNestedObject();
+                    auto optionObj = options.add<JsonObject>();
                     optionObj["value"] = static_cast<int>(i);
                     optionObj["label"] = enumOptions[i];
                 }
@@ -138,9 +138,6 @@ inline void paramToJson(const String& name, const std::shared_ptr<Parameter>& pa
     paramObj["max"] = param->getMaxValue();
 }
 
-// Use libraries for the webinterface from the internet (0) or from the local filesystem (1). 0 has slightly faster load times
-#define NOINTERNET 1
-
 // hash strings at compile time to use in switch statement
 // (from https://stackoverflow.com/questions/2111667/compile-time-string-hashing)
 constexpr unsigned int str2int(const char* str, int h = 0) {
@@ -149,54 +146,36 @@ constexpr unsigned int str2int(const char* str, int h = 0) {
 
 inline String getHeader(const String& varName) {
     switch (str2int(varName.c_str())) {
-        case (str2int("FONTAWESOME")):
-#if NOINTERNET == 1
+        case str2int("FONTAWESOME"):
             return F("<link href=\"/css/fontawesome-6.2.1.min.css\" rel=\"stylesheet\">");
-#else
-            return F("<link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css\">");
-#endif
-        case (str2int("BOOTSTRAP")):
-#if NOINTERNET == 1
+
+        case str2int("BOOTSTRAP"):
             return F("<link href=\"/css/bootstrap-5.2.3.min.css\" rel=\"stylesheet\">");
-#else
-            return F("<link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css\" rel=\"stylesheet\" integrity=\"sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65\" "
-                     "crossorigin=\"anonymous\">");
-#endif
-        case (str2int("BOOTSTRAP_BUNDLE")):
-#if NOINTERNET == 1
+
+        case str2int("BOOTSTRAP_BUNDLE"):
             return F("<script src=\"/js/bootstrap.bundle.5.2.3.min.js\"></script>");
-#else
-            return F("<script src=\"https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js\" integrity=\"sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4\" "
-                     "crossorigin=\"anonymous\"></script>");
-#endif
-        case (str2int("VUEJS")):
-#if NOINTERNET == 1
+
+        case str2int("VUEJS"):
             return F("<script src=\"/js/vue.3.2.47.min.js\"></script>");
-#else
-            return F("<script src=\"https://cdn.jsdelivr.net/npm/vue@3.2.47/dist/vue.global.prod.min.js\"></script>");
-#endif
-        case (str2int("VUE_NUMBER_INPUT")):
-#if NOINTERNET == 1
+
+        case str2int("VUE_NUMBER_INPUT"):
             return F("<script src=\"/js/vue-number-input.min.js\"></script>");
-#else
-            return F("<script src=\"https://unpkg.com/@chenfengyuan/vue-number-input@2.0.1/dist/vue-number-input.min.js\"></script>");
-#endif
-        case (str2int("UPLOT")):
-#if NOINTERNET == 1
+
+        case str2int("UPLOT"):
             return F("<script src=\"/js/uPlot.1.6.28.min.js\"></script><link rel=\"stylesheet\" href=\"/css/uPlot.min.css\">");
-#else
-            return F("<script src=\"https://cdn.jsdelivr.net/npm/uplot@1.6.28/dist/uPlot.iife.min.js\"></script><link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/uplot@1.6.24/dist/uPlot.min.css\">");
-#endif
+
+        default:
+            return "";
     }
-    return "";
 }
 
 inline String staticProcessor(const String& var) {
     // try replacing var for variables in ParameterRegistry
     if (var.startsWith("VAR_SHOW_")) {
-        return getValue(var.substring(9));   // cut off "VAR_SHOW_"
+        return getValue(var.substring(9)); // cut off "VAR_SHOW_"
     }
-    else if (var.startsWith("VAR_HEADER_")) {
+
+    if (var.startsWith("VAR_HEADER_")) {
         return getHeader(var.substring(11)); // cut off "VAR_HEADER_"
     }
 
@@ -213,9 +192,8 @@ inline String staticProcessor(const String& var) {
             file.close();
             return ret;
         }
-        else {
-            LOGF(DEBUG, "Can't open file %s, not enough memory available", file.name());
-        }
+
+        LOGF(DEBUG, "Can't open file %s, not enough memory available", file.name());
     }
     else {
         LOGF(DEBUG, "Fragment %s not found", varLower.c_str());
@@ -288,10 +266,7 @@ inline void serverSetup() {
             }
         }
 
-        // Calculate document size dynamically based on actual parameter count
-        const size_t docSize = JSON_ARRAY_SIZE(webVisibleCount) + (webVisibleCount * JSON_OBJECT_SIZE(9)) + webVisibleCount * JSON_STRING_SIZE(55); // Estimated string sizes for name + displayName
-
-        DynamicJsonDocument doc(docSize);
+        JsonDocument doc;
 
         if (request->method() == 2) { // HTTP_POST - Update parameters
             const int requestParams = request->params();
@@ -381,7 +356,7 @@ inline void serverSetup() {
     });
 
     server.on("/parameterHelp", HTTP_GET, [](AsyncWebServerRequest* request) {
-        DynamicJsonDocument doc(1024);
+        JsonDocument doc;
         auto* p = request->getParam(0);
 
         if (p == nullptr) {
@@ -417,13 +392,12 @@ inline void serverSetup() {
     server.on("/timeseries", HTTP_GET, [](AsyncWebServerRequest* request) {
         AsyncResponseStream* response = request->beginResponseStream("application/json");
 
-        // set capacity of json doc for history structure
-        DynamicJsonDocument doc(JSON_ARRAY_SIZE(2) + JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(HISTORY_LENGTH) * 3);
+        JsonDocument doc;
 
         // for each value in mem history array, add json array element
-        JsonArray currentTemps = doc.createNestedArray("currentTemps");
-        JsonArray targetTemps = doc.createNestedArray("targetTemps");
-        JsonArray heaterPowers = doc.createNestedArray("heaterPowers");
+        auto currentTemps = doc["currentTemps"].to<JsonArray>();
+        auto targetTemps = doc["targetTemps"].to<JsonArray>();
+        auto heaterPowers = doc["heaterPowers"].to<JsonArray>();
 
         // go through history values backwards starting from currentIndex and
         // wrap around beginning to include valueCount many values
@@ -459,7 +433,7 @@ inline void serverSetup() {
             return;
         }
 
-        DynamicJsonDocument doc(4096);
+        JsonDocument doc;
         const DeserializationError error = deserializeJson(doc, configFile);
         configFile.close();
 

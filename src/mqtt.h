@@ -342,12 +342,12 @@ inline DiscoveryObject GenerateSwitchDevice(const String& name, const String& di
 
     switch_device.discovery_topic = SwitchDiscoveryTopic + unique_id + "-" + name + "" + "/config";
 
-    DynamicJsonDocument DeviceMapDoc(1024);
-    DeviceMapDoc["identifiers"] = hostname;
-    DeviceMapDoc["manufacturer"] = "CleverCoffee";
-    DeviceMapDoc["name"] = hostname;
+    JsonDocument deviceMapDoc;
+    deviceMapDoc["identifiers"] = hostname;
+    deviceMapDoc["manufacturer"] = "CleverCoffee";
+    deviceMapDoc["name"] = hostname;
 
-    DynamicJsonDocument switchConfigDoc(512);
+    JsonDocument switchConfigDoc;
     switchConfigDoc["name"] = displayName;
     switchConfigDoc["command_topic"] = switch_command_topic;
     switchConfigDoc["state_topic"] = switch_state_topic;
@@ -358,9 +358,9 @@ inline DiscoveryObject GenerateSwitchDevice(const String& name, const String& di
     switchConfigDoc["payload_not_available"] = "offline";
     switchConfigDoc["availability_topic"] = mqtt_topic + "/status";
 
-    JsonObject switchDeviceField = switchConfigDoc.createNestedObject("device");
+    auto switchDeviceField = switchConfigDoc["device"].to<JsonObject>();
 
-    for (JsonPair keyValue : DeviceMapDoc.as<JsonObject>()) {
+    for (JsonPair keyValue : deviceMapDoc.as<JsonObject>()) {
         switchDeviceField[keyValue.key()] = keyValue.value();
     }
 
@@ -393,12 +393,12 @@ inline DiscoveryObject GenerateButtonDevice(const String& name, const String& di
 
     button_device.discovery_topic = buttonDiscoveryTopic + unique_id + "-" + name + "" + "/config";
 
-    DynamicJsonDocument DeviceMapDoc(1024);
-    DeviceMapDoc["identifiers"] = hostname;
-    DeviceMapDoc["manufacturer"] = "CleverCoffee";
-    DeviceMapDoc["name"] = hostname;
+    JsonDocument deviceMapDoc;
+    deviceMapDoc["identifiers"] = hostname;
+    deviceMapDoc["manufacturer"] = "CleverCoffee";
+    deviceMapDoc["name"] = hostname;
 
-    DynamicJsonDocument buttonConfigDoc(512);
+    JsonDocument buttonConfigDoc;
     buttonConfigDoc["name"] = displayName;
     buttonConfigDoc["command_topic"] = button_command_topic;
     buttonConfigDoc["state_topic"] = button_state_topic;
@@ -408,9 +408,9 @@ inline DiscoveryObject GenerateButtonDevice(const String& name, const String& di
     buttonConfigDoc["payload_not_available"] = "offline";
     buttonConfigDoc["availability_topic"] = mqtt_topic + "/status";
 
-    JsonObject buttonDeviceField = buttonConfigDoc.createNestedObject("device");
+    auto buttonDeviceField = buttonConfigDoc["device"].to<JsonObject>();
 
-    for (JsonPair keyValue : DeviceMapDoc.as<JsonObject>()) {
+    for (JsonPair keyValue : deviceMapDoc.as<JsonObject>()) {
         buttonDeviceField[keyValue.key()] = keyValue.value();
     }
 
@@ -442,12 +442,12 @@ inline DiscoveryObject GenerateSensorDevice(const String& name, const String& di
     String sensor_state_topic = mqtt_topic + "/" + name;
     sensor_device.discovery_topic = SensorDiscoveryTopic + unique_id + "-" + name + "" + "/config";
 
-    DynamicJsonDocument DeviceMapDoc(1024);
-    DeviceMapDoc["identifiers"] = hostname;
-    DeviceMapDoc["manufacturer"] = "CleverCoffee";
-    DeviceMapDoc["name"] = hostname;
+    JsonDocument deviceMapDoc;
+    deviceMapDoc["identifiers"] = hostname;
+    deviceMapDoc["manufacturer"] = "CleverCoffee";
+    deviceMapDoc["name"] = hostname;
 
-    DynamicJsonDocument sensorConfigDoc(512);
+    JsonDocument sensorConfigDoc;
     sensorConfigDoc["name"] = displayName;
     sensorConfigDoc["state_topic"] = sensor_state_topic;
     sensorConfigDoc["unique_id"] = unique_id + "-" + name;
@@ -457,9 +457,9 @@ inline DiscoveryObject GenerateSensorDevice(const String& name, const String& di
     sensorConfigDoc["payload_not_available"] = "offline";
     sensorConfigDoc["availability_topic"] = mqtt_topic + "/status";
 
-    JsonObject sensorDeviceField = sensorConfigDoc.createNestedObject("device");
+    auto sensorDeviceField = sensorConfigDoc["device"].to<JsonObject>();
 
-    for (JsonPair keyValue : DeviceMapDoc.as<JsonObject>()) {
+    for (JsonPair keyValue : deviceMapDoc.as<JsonObject>()) {
         sensorDeviceField[keyValue.key()] = keyValue.value();
     }
 
@@ -493,12 +493,12 @@ inline DiscoveryObject GenerateNumberDevice(const String& name, const String& di
     String NumberDiscoveryTopic = String(mqtt_hassio_discovery_prefix) + "/number/";
     number_device.discovery_topic = NumberDiscoveryTopic + unique_id + "-" + name + "" + "/config";
 
-    DynamicJsonDocument DeviceMapDoc(1024);
-    DeviceMapDoc["identifiers"] = hostname;
-    DeviceMapDoc["manufacturer"] = "CleverCoffee";
-    DeviceMapDoc["name"] = hostname;
+    JsonDocument deviceMapDoc;
+    deviceMapDoc["identifiers"] = hostname;
+    deviceMapDoc["manufacturer"] = "CleverCoffee";
+    deviceMapDoc["name"] = hostname;
 
-    DynamicJsonDocument numberConfigDoc(512);
+    JsonDocument numberConfigDoc;
     numberConfigDoc["name"] = displayName;
     numberConfigDoc["command_topic"] = mqtt_topic + "/" + name + "/set";
     numberConfigDoc["state_topic"] = mqtt_topic + "/" + name;
@@ -512,9 +512,9 @@ inline DiscoveryObject GenerateNumberDevice(const String& name, const String& di
     numberConfigDoc["payload_not_available"] = "offline";
     numberConfigDoc["availability_topic"] = mqtt_topic + "/status";
 
-    JsonObject numberDeviceField = numberConfigDoc.createNestedObject("device");
+    auto numberDeviceField = numberConfigDoc["device"].to<JsonObject>();
 
-    for (JsonPair keyValue : DeviceMapDoc.as<JsonObject>()) {
+    for (JsonPair keyValue : deviceMapDoc.as<JsonObject>()) {
         numberDeviceField[keyValue.key()] = keyValue.value();
     }
 

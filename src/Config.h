@@ -111,7 +111,7 @@ class Config {
         }
 
         bool validateAndApplyFromJson(const String& jsonString) {
-            DynamicJsonDocument doc(4096);
+            JsonDocument doc;
             const DeserializationError error = deserializeJson(doc, jsonString);
 
             if (error) {
@@ -209,7 +209,7 @@ class Config {
                 segment[segmentLen] = '\0';
 
                 if (!current[segment].is<JsonObject>()) {
-                    current[segment] = current.createNestedObject();
+                    current[segment] = current.add<JsonObject>();
                 }
                 current = current[segment];
 
@@ -233,7 +233,7 @@ class Config {
     private:
         inline static auto CONFIG_FILE = "/config.json";
 
-        StaticJsonDocument<4096> _doc;
+        JsonDocument _doc;
 
         std::map<std::string, ConfigDef> _configDefs;
 
@@ -390,9 +390,10 @@ class Config {
                 }
 
                 // Get or create the nested object for this segment
-                if (!current.containsKey(segment)) {
+                if (current[segment].isNull()) {
                     // Create new nested object
-                    current = current.createNestedObject(segment);
+                    current = current[segment].to<JsonObject>();
+
                     if (current.isNull()) {
                         LOGF(ERROR, "Failed to create nested object for segment: %s", segment.c_str());
                         return false;
@@ -405,7 +406,8 @@ class Config {
                 else {
                     // Existing value is not an object - need to replace it
                     current.remove(segment);
-                    current = current.createNestedObject(segment);
+                    current = current[segment].to<JsonObject>();
+
                     if (current.isNull()) {
                         LOGF(ERROR, "Failed to replace value with nested object for segment: %s", segment.c_str());
                         return false;
@@ -416,7 +418,8 @@ class Config {
             }
 
             // Set the final value using the last segment as the key
-            String leafKey = path.substring(startIndex);
+            const String leafKey = path.substring(startIndex);
+
             if (leafKey.isEmpty()) {
                 LOGF(ERROR, "Empty leaf key in path: %s", path.c_str());
                 return false;
@@ -519,8 +522,8 @@ class Config {
 
             // Validate each path against _configDefs
             for (const auto& [path, value] : docPaths) {
-                // Check if this path exists in our config definitions
                 auto it = _configDefs.find(path.c_str());
+
                 if (it == _configDefs.end()) {
                     LOGF(WARNING, "Unknown parameter in config: %s - skipping", path.c_str());
                     continue;
@@ -548,7 +551,8 @@ class Config {
                     case ConfigDef::INT:
                         {
                             if (value.is<int>()) {
-                                int intVal = value.as<int>();
+                                auto intVal = value.as<int>();
+
                                 if (intVal >= def.minValue && intVal <= def.maxValue) {
                                     set<int>(path.c_str(), intVal);
                                     validationSuccess = true;
@@ -561,13 +565,15 @@ class Config {
                             else {
                                 LOGF(ERROR, "Invalid type for integer parameter %s", path.c_str());
                             }
+
                             break;
                         }
 
                     case ConfigDef::DOUBLE:
                         {
                             if (value.is<double>() || value.is<float>()) {
-                                double doubleVal = value.as<double>();
+                                auto doubleVal = value.as<double>();
+
                                 if (doubleVal >= def.minValue && doubleVal <= def.maxValue) {
                                     set<double>(path.c_str(), doubleVal);
                                     validationSuccess = true;
@@ -586,7 +592,8 @@ class Config {
                     case ConfigDef::STRING:
                         {
                             if (value.is<const char*>() || value.is<String>()) {
-                                String stringVal = value.as<String>();
+                                auto stringVal = value.as<String>();
+
                                 if (stringVal.length() <= def.maxLength) {
                                     set<String>(path.c_str(), stringVal);
                                     validationSuccess = true;
