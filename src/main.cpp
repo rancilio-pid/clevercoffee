@@ -174,7 +174,7 @@ double emaFactor = EMA_FACTOR;
 
 // Scale
 float scaleCalibration = SCALE_CALIBRATION_FACTOR;
-float scale2Calibration = SCALE_CALIBRATION_FACTOR;
+float scale2Calibration = SCALE2_CALIBRATION_FACTOR;
 float scaleKnownWeight = SCALE_KNOWN_WEIGHT;
 double targetBrewWeight = TARGET_BREW_WEIGHT;
 
@@ -1050,7 +1050,6 @@ void setup() {
     // Init Scale
     if (config.get<bool>("hardware.sensors.scale.enabled")) {
         initScale();
-        previousMillisScale = currentTime;
     }
 
     if (config.get<bool>("hardware.sensors.pressure.enabled")) {

@@ -7,6 +7,8 @@
 #pragma once
 
 inline void scaleCalibrate(HX711_ADC loadCell, int pin, bool isSecondCell, float* calibration) {
+    const int scaleSamples = config.get<int>("hardware.sensors.scale.samples");
+
     loadCell.setCalFactor(1.0);
 
     u8g2->clearBuffer();
@@ -39,7 +41,7 @@ inline void scaleCalibrate(HX711_ADC loadCell, int pin, bool isSecondCell, float
     loadCell.setSamplesInUse(128);
     loadCell.refreshDataSet();
     *calibration = loadCell.getNewCalibration(scaleKnownWeight);
-    loadCell.setSamplesInUse(SCALE_SAMPLES);
+    loadCell.setSamplesInUse(scaleSamples);
 
     LOGF(INFO, "New calibration: %f", *calibration);
 
@@ -66,35 +68,30 @@ inline float w2 = 0.0;
 
 /**
  * @brief Check measured weight
+ *
  */
 inline void checkWeight() {
-    static boolean newDataReady = 0;
-    unsigned long currentMillisScale = millis();
-
+    // boolean used to alternate reads of load cells as each getData call clocks both hx711 leading to corruption when the second cell is read after the first is read
+    static bool readSecondScale = false;
     if (scaleFailure) { // abort if scale is not working
         return;
     }
 
-    // check for new data/start next conversion:
-    if (LoadCell.update()) {
-        newDataReady = true;
-    }
-
     const int scaleType = config.get<int>("hardware.sensors.scale.type");
 
-    if (scaleType == 0) {
-        // weirdly, the library examples do not check for updates on the second cell before getting the values...
-        LoadCell2.update();
-    }
-
-    if (newDataReady) {
-        if (currentMillisScale - previousMillisScale >= intervalWeight) {
-            previousMillisScale = currentMillisScale;
-            newDataReady = false;
+    if (readSecondScale == false) {
+        if (LoadCell.update()) {
             w1 = LoadCell.getData();
-
             if (scaleType == 0) {
+                readSecondScale = true;
+            }
+        }
+    }
+    else if (readSecondScale == true) {
+        if (scaleType == 0) {
+            if (LoadCell2.update()) {
                 w2 = LoadCell2.getData();
+                readSecondScale = false;
             }
         }
     }
@@ -102,8 +99,9 @@ inline void checkWeight() {
     if (scaleType == 0) {
         currReadingWeight = w1 + w2;
     }
-
-    currReadingWeight = w1;
+    else {
+        currReadingWeight = w1;
+    }
 
     if (scaleCalibrationOn) {
         scaleCalibrate(LoadCell, PIN_HXDAT, false, &scaleCalibration);
@@ -141,6 +139,7 @@ inline void initScale() {
     LoadCell.begin();
 
     const int scaleType = config.get<int>("hardware.sensors.scale.type");
+    const int scaleSamples = config.get<int>("hardware.sensors.scale.samples");
 
     if (scaleType == 0) {
         LoadCell2.begin();
@@ -195,11 +194,11 @@ inline void initScale() {
     }
 
     LoadCell.setCalFactor(scaleCalibration);
-    LoadCell.setSamplesInUse(SCALE_SAMPLES);
+    LoadCell.setSamplesInUse(scaleSamples);
 
-    if (scaleType) {
+    if (scaleType == 0) {
         LoadCell2.setCalFactor(scale2Calibration);
-        LoadCell2.setSamplesInUse(SCALE_SAMPLES);
+        LoadCell2.setSamplesInUse(scaleSamples);
     }
 
     scaleCalibrationOn = 0;

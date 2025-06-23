@@ -71,14 +71,11 @@ inline int currBackflushCycles = 1;
 inline boolean scaleCalibrationOn = false;
 inline boolean scaleTareOn = false;
 inline int shottimerCounter = 10;
-inline float calibrationValue = SCALE_CALIBRATION_FACTOR; // use calibration example to get value
-inline float currReadingWeight = 0;                       // value from HX711
-inline float prewBrewWeight = 0;                          // value of scale before brew started
-inline float currBrewWeight = 0;                          // weight value of current brew
-inline float scaleDelayValue = 2.5;                       // value in gramm that takes still flows onto the scale after brew is stopped
+inline float currReadingWeight = 0; // value from HX711
+inline float prewBrewWeight = 0;    // value of scale before brew started
+inline float currBrewWeight = 0;    // weight value of current brew
+inline float scaleDelayValue = 2.5; // value in gramm that takes still flows onto the scale after brew is stopped
 inline bool scaleFailure = false;
-constexpr unsigned long intervalWeight = 200;             // weight scale
-inline unsigned long previousMillisScale;                 // initialisation at the end of init()
 inline HX711_ADC LoadCell(PIN_HXDAT, PIN_HXCLK);
 inline HX711_ADC LoadCell2(PIN_HXDAT2, PIN_HXCLK);
 
