@@ -176,7 +176,7 @@ void ParameterRegistry::initialize(Config& config) {
         "Setpoint (°C)",
         kDouble,
         sTempSection,
-        10,
+        1,
         &brewSetpoint,
         BREW_SETPOINT_MIN,
         BREW_SETPOINT_MAX,
@@ -188,7 +188,7 @@ void ParameterRegistry::initialize(Config& config) {
         "Offset (°C)",
         kDouble,
         sTempSection,
-        11,
+        2,
         &brewTempOffset,
         BREW_TEMP_OFFSET_MIN,
         BREW_TEMP_OFFSET_MAX,
@@ -200,7 +200,7 @@ void ParameterRegistry::initialize(Config& config) {
         "Steam Setpoint (°C)",
         kDouble,
         sTempSection,
-        12,
+        3,
         &steamSetpoint,
         STEAM_SETPOINT_MIN,
         STEAM_SETPOINT_MAX,
@@ -213,7 +213,7 @@ void ParameterRegistry::initialize(Config& config) {
             "features.brew_control",
             "Brew Control",
             sBrewSection,
-            13,
+            1,
             &featureBrewControl,
             "Enables brew-by-time or brew-by-weight"
         );
@@ -223,7 +223,7 @@ void ParameterRegistry::initialize(Config& config) {
             "Target Brew Time (s)",
             kDouble,
             sBrewSection,
-            14,
+            2,
             &targetBrewTime,
             TARGET_BREW_TIME_MIN,
             TARGET_BREW_TIME_MAX,
@@ -235,7 +235,7 @@ void ParameterRegistry::initialize(Config& config) {
             "Preinfusion Pause Time (s)",
             kDouble,
             sBrewSection,
-            15,
+            3,
             &preinfusionPause,
             PRE_INFUSION_PAUSE_MIN,
             PRE_INFUSION_PAUSE_MAX,
@@ -247,12 +247,27 @@ void ParameterRegistry::initialize(Config& config) {
             "Preinfusion Time (s)",
             kDouble,
             sBrewSection,
-            16,
+            4,
             &preinfusion,
             PRE_INFUSION_TIME_MIN,
             PRE_INFUSION_TIME_MAX,
             "Time in seconds the pump is running during the pre-infusion"
         );
+
+        if (config.get<bool>("hardware.sensors.scale.enabled")) {
+            addNumericConfigParam<double>(
+                "brew.target_weight",
+                "Brew weight target (g)",
+                kDouble,
+                sBrewSection,
+                5,
+                &targetBrewWeight,
+                TARGET_BREW_WEIGHT_MIN,
+                TARGET_BREW_WEIGHT_MAX,
+                "Brew is running until this weight has been measured. Set to 0 to deactivate brew-by-weight-feature.",
+                [] { return featureBrewControl; }
+            );
+        }
 
         // Maintenance Section
         addNumericConfigParam<int>(
@@ -260,7 +275,7 @@ void ParameterRegistry::initialize(Config& config) {
             "Backflush Cycles",
             kInteger,
             sMaintenanceSection,
-            17,
+            1,
             &backflushCycles,
             BACKFLUSH_CYCLES_MIN,
             BACKFLUSH_CYCLES_MAX,
@@ -272,7 +287,7 @@ void ParameterRegistry::initialize(Config& config) {
             "Backflush Fill Time (s)",
             kDouble,
             sMaintenanceSection,
-            18,
+            2,
             &backflushFillTime,
             BACKFLUSH_FILL_TIME_MIN,
             BACKFLUSH_FILL_TIME_MAX,
@@ -284,7 +299,7 @@ void ParameterRegistry::initialize(Config& config) {
             "Backflush Flush Time (s)",
             kDouble,
             sMaintenanceSection,
-            19,
+            3,
             &backflushFlushTime,
             BACKFLUSH_FLUSH_TIME_MIN,
             BACKFLUSH_FLUSH_TIME_MAX,
@@ -293,25 +308,12 @@ void ParameterRegistry::initialize(Config& config) {
     }
 
     if (config.get<bool>("hardware.sensors.scale.enabled")) {
-        addNumericConfigParam<double>(
-            "brew.target_weight",
-            "Brew weight target (g)",
-            kDouble,
-            sBrewSection,
-            20,
-            &targetBrewWeight,
-            TARGET_BREW_WEIGHT_MIN,
-            TARGET_BREW_WEIGHT_MAX,
-            "Brew is running until this weight has been measured. Set to 0 to deactivate brew-by-weight-feature.",
-            [] { return featureBrewControl; }
-        );
-
         addParam(std::make_shared<Parameter>(
             "TARE_ON",
             "Tare",
             kUInt8,
             sOtherSection,
-            21,
+            3,
             [&]() -> bool {
                 return scaleTareOn;
             },
@@ -329,7 +331,7 @@ void ParameterRegistry::initialize(Config& config) {
             "Calibration",
             kUInt8,
             sOtherSection,
-            22,
+            4,
             [&]() -> bool {
                 return scaleCalibrationOn;
             },
@@ -347,7 +349,7 @@ void ParameterRegistry::initialize(Config& config) {
             "Known weight in g",
             kFloat,
             sScaleSection,
-            23,
+            1,
             &scaleKnownWeight,
             0.0,
             2000.0
@@ -358,7 +360,7 @@ void ParameterRegistry::initialize(Config& config) {
             "Calibration factor scale 1",
             kFloat,
             sScaleSection,
-            24,
+            2,
             &scaleCalibration,
             -100000,
             100000
@@ -369,7 +371,7 @@ void ParameterRegistry::initialize(Config& config) {
             "Calibration factor scale 2",
             kFloat,
             sScaleSection,
-            25,
+            3,
             &scale2Calibration,
             -100000,
             100000,
@@ -384,7 +386,7 @@ void ParameterRegistry::initialize(Config& config) {
             "pid.bd.enabled",
             "Enable Brew PID",
             sBrewPidSection,
-            26,
+            1,
             &useBDPID,
             "Use separate PID parameters while brew is running"
         );
@@ -394,7 +396,7 @@ void ParameterRegistry::initialize(Config& config) {
             "Brew PID Delay (s)",
             kDouble,
             sBrewPidSection,
-            27,
+            2,
             &brewPIDDelay,
             BREW_PID_DELAY_MIN,
             BREW_PID_DELAY_MAX,
@@ -406,7 +408,7 @@ void ParameterRegistry::initialize(Config& config) {
             "BD Kp",
             kDouble,
             sBrewPidSection,
-            28,
+            3,
             &aggbKp,
             PID_KP_BD_MIN,
             PID_KP_BD_MAX,
@@ -418,7 +420,7 @@ void ParameterRegistry::initialize(Config& config) {
             "BD Tn (=Kp/Ki)",
             kDouble,
             sBrewPidSection,
-            29,
+            4,
             &aggbTn,
             PID_TN_BD_MIN,
             PID_TN_BD_MAX,
@@ -430,7 +432,7 @@ void ParameterRegistry::initialize(Config& config) {
             "BD Tv (=Kd/Kp)",
             kDouble,
             sBrewPidSection,
-            30,
+            5,
             &aggbTv,
             PID_TV_BD_MIN,
             PID_TV_BD_MAX,
@@ -444,7 +446,7 @@ void ParameterRegistry::initialize(Config& config) {
         "Steam Mode",
         kUInt8,
         sOtherSection,
-        31,
+        5,
         [&]() -> bool {
             return steamON;
         },
@@ -462,7 +464,7 @@ void ParameterRegistry::initialize(Config& config) {
             "Backflush",
             kUInt8,
             sOtherSection,
-            32,
+            6,
             [&]() -> bool {
                 return backflushOn;
             },
@@ -481,7 +483,7 @@ void ParameterRegistry::initialize(Config& config) {
         "standby.enabled",
         "Enable Standby Timer",
         sPowerSection,
-        33,
+        1,
         &standbyModeOn,
         "Turn heater off after standby time has elapsed."
     );
@@ -491,7 +493,7 @@ void ParameterRegistry::initialize(Config& config) {
         "Standby Time",
         kDouble,
         sPowerSection,
-        34,
+        2,
         &standbyModeTime,
         STANDBY_MODE_TIME_MIN,
         STANDBY_MODE_TIME_MAX,
@@ -503,7 +505,7 @@ void ParameterRegistry::initialize(Config& config) {
         "display.template",
         "Display Template",
         sDisplaySection,
-        35,
+        1,
         nullptr,
         (const char* const[]){"Standard", "Minimal", "Temp only", "Scale", "Upright"},
         5,
@@ -514,7 +516,7 @@ void ParameterRegistry::initialize(Config& config) {
         "display.inverted",
         "Invert Display",
         sDisplaySection,
-        36,
+        2,
         &featureInvertDisplay,
         "Set the display rotation, changes require a reboot"
     );
@@ -523,7 +525,7 @@ void ParameterRegistry::initialize(Config& config) {
         "display.language",
         "Display Language",
         sDisplaySection,
-        37,
+        3,
         nullptr,  // No global variable for this parameter
         (const char* const[]){"Deutsch", "English", "Español"},
         3,
@@ -534,7 +536,7 @@ void ParameterRegistry::initialize(Config& config) {
         "display.fullscreen_brew_timer",
         "Enable Fullscreen Brew Timer",
         sDisplaySection,
-        38,
+        4,
         &featureFullscreenBrewTimer,
         "Enable fullscreen overlay during brew"
     );
@@ -543,7 +545,7 @@ void ParameterRegistry::initialize(Config& config) {
         "display.fullscreen_manual_flush_timer",
         "Enable Fullscreen Manual Flush Timer",
         sDisplaySection,
-        39,
+        5,
         &featureFullscreenManualFlushTimer,
         "Enable fullscreen overlay during manual flush"
     );
@@ -553,7 +555,7 @@ void ParameterRegistry::initialize(Config& config) {
         "Post Brew Timer Duration (s)",
         kDouble,
         sDisplaySection,
-        40,
+        6,
         &postBrewTimerDuration,
         POST_BREW_TIMER_DURATION_MIN,
         POST_BREW_TIMER_DURATION_MAX,
@@ -564,7 +566,7 @@ void ParameterRegistry::initialize(Config& config) {
         "display.heating_logo",
         "Enable Heating Logo",
         sDisplaySection,
-        41,
+        7,
         &featureHeatingLogo,
         "full screen logo will be shown if temperature is 5°C below setpoint"
     );
@@ -573,7 +575,7 @@ void ParameterRegistry::initialize(Config& config) {
         "display.pid_off_logo",
         "Enable 'PID Disabled' Logo",
         sDisplaySection,
-        42,
+        8,
         &featurePidOffLogo,
         "full screen logo will be shown if pid is disabled"
     );
@@ -583,7 +585,7 @@ void ParameterRegistry::initialize(Config& config) {
         "mqtt.enabled",
         "MQTT enabled",
         sMqttSection,
-        43,
+        1,
         nullptr,
         "Enables MQTT, change requires a restart"
     );
@@ -592,7 +594,7 @@ void ParameterRegistry::initialize(Config& config) {
         "mqtt.broker",
         "Hostname",
         sMqttSection,
-        44,
+        2,
         nullptr,
         MQTT_BROKER_MAX_LENGTH,
         "IP addresss or hostname of your MQTT broker, changes require a restart"
@@ -603,7 +605,7 @@ void ParameterRegistry::initialize(Config& config) {
         "Port",
         kInteger,
         sMqttSection,
-        45,
+        3,
         nullptr,
         1,
         65535,
@@ -614,7 +616,7 @@ void ParameterRegistry::initialize(Config& config) {
         "mqtt.username",
         "Username",
         sMqttSection,
-        46,
+        4,
         nullptr,
         MQTT_USERNAME_MAX_LENGTH,
         "Username for your MQTT broker, changes require a restart"
@@ -624,7 +626,7 @@ void ParameterRegistry::initialize(Config& config) {
         "mqtt.password",
         "Password",
         sMqttSection,
-        47,
+        5,
         nullptr,
         MQTT_PASSWORD_MAX_LENGTH,
         "Password for your MQTT broker, changes require a restart"
@@ -634,7 +636,7 @@ void ParameterRegistry::initialize(Config& config) {
         "mqtt.topic",
         "Topic Prefix",
         sMqttSection,
-        48,
+        6,
         nullptr,
         MQTT_TOPIC_MAX_LENGTH,
         "Custom MQTT topic prefix, changes require a restart"
@@ -644,7 +646,7 @@ void ParameterRegistry::initialize(Config& config) {
         "mqtt.hassio.enabled",
         "Hass.io enabled",
         sMqttSection,
-        49,
+        7,
         nullptr,
         "Enables Home Assistant integration, requires a restart"
     );
@@ -653,7 +655,7 @@ void ParameterRegistry::initialize(Config& config) {
         "mqtt.hassio.prefix",
         "Hass.io Prefix",
         sMqttSection,
-        50,
+        8,
         nullptr,
         MQTT_HASSIO_PREFIX_MAX_LENGTH,
         "Custom MQTT topic prefix, changes require a restart"
@@ -663,7 +665,7 @@ void ParameterRegistry::initialize(Config& config) {
         "system.hostname",
         "Hostname",
         sSystemSection,
-        51,
+        1,
         nullptr,
         HOSTNAME_MAX_LENGTH,
         "Hostname of your machine, changes require a restart"
@@ -673,7 +675,7 @@ void ParameterRegistry::initialize(Config& config) {
         "system.ota_password",
         "OtA Password",
         sSystemSection,
-        52,
+        2,
         nullptr,
         OTAPASS_MAX_LENGTH,
         "Password for over-the-air updates, changes require a restart"
@@ -683,7 +685,7 @@ void ParameterRegistry::initialize(Config& config) {
         "system.log_level",
         "Log Level",
         sSystemSection,
-        53,
+        3,
         nullptr,
         (const char* const[]){"TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "FATAL", "SILENT"},
         7,
@@ -692,7 +694,7 @@ void ParameterRegistry::initialize(Config& config) {
 
     // clang-format on
 
-    addParam(std::make_shared<Parameter>("VERSION", "Version", kCString, sOtherSection, 54, [] { return sysVersion; }, nullptr, 64, false, "", [] { return false; }, nullptr));
+    addParam(std::make_shared<Parameter>("VERSION", "Version", kCString, sOtherSection, 7, [] { return sysVersion; }, nullptr, 64, false, "", [] { return false; }, nullptr));
 
     std::sort(_parameters.begin(), _parameters.end(), [](const std::shared_ptr<Parameter>& a, const std::shared_ptr<Parameter>& b) { return a->getPosition() < b->getPosition(); });
 
