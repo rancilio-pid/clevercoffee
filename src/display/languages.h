@@ -32,7 +32,7 @@ static const char* langstring_weight_ur;
 static const char* langstring_pressure_ur;
 static const char* langstring_error_tsensor_ur[5];
 
-inline void initLangStrings(Config& config) {
+inline void initLangStrings(const Config& config) {
 
     // English
     if (config.get<int>("display.language") == 1) {

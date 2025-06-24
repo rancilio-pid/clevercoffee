@@ -19,7 +19,7 @@ class Timer {
          * @brief COnstructor taking a function pointer and the desired interval
          *
          * @param func Function pointer for the callback to be executed upon timer expiry
-         * @param long Desired interval between calls in milliseconds
+         * @param interval long Desired interval between calls in milliseconds
          * @param start_paused Boolean to select if the timer should start paused or run right away
          */
         Timer(std::function<void()> func, unsigned long interval, bool start_paused = false);

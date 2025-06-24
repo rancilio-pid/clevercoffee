@@ -551,9 +551,7 @@ class Config {
                     case ConfigDef::INT:
                         {
                             if (value.is<int>()) {
-                                auto intVal = value.as<int>();
-
-                                if (intVal >= def.minValue && intVal <= def.maxValue) {
+                                if (auto intVal = value.as<int>(); intVal >= def.minValue && intVal <= def.maxValue) {
                                     set<int>(path.c_str(), intVal);
                                     validationSuccess = true;
                                     LOGF(TRACE, "Applied int %s = %d", path.c_str(), intVal);
@@ -572,9 +570,7 @@ class Config {
                     case ConfigDef::DOUBLE:
                         {
                             if (value.is<double>() || value.is<float>()) {
-                                auto doubleVal = value.as<double>();
-
-                                if (doubleVal >= def.minValue && doubleVal <= def.maxValue) {
+                                if (auto doubleVal = value.as<double>(); doubleVal >= def.minValue && doubleVal <= def.maxValue) {
                                     set<double>(path.c_str(), doubleVal);
                                     validationSuccess = true;
                                     LOGF(TRACE, "Applied double %s = %.4f", path.c_str(), doubleVal);

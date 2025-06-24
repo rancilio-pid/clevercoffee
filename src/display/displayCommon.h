@@ -49,7 +49,7 @@ inline void u8g2_prepare() {
 /**
  * @brief print error message for scales
  */
-void displayScaleFailed(void) {
+inline void displayScaleFailed() {
     if (config.get<int>("display.template") == 4) {
         u8g2->clearBuffer();
         u8g2->drawStr(0, 32, "Failed!");
@@ -143,7 +143,7 @@ inline void displayThermometerOutline(const int x, const int y) {
     u8g2->drawDisc(x + 6, y - 5, 6);
 
     // draw setpoint line
-    int height = map(setpoint, 0, 100, y - 9, y - 39);
+    const int height = map(static_cast<int>(setpoint), 0, 100, y - 9, y - 39);
     u8g2->drawLine(x + 11, height, x + 16, height);
 }
 
@@ -151,11 +151,11 @@ inline void displayThermometerOutline(const int x, const int y) {
  * @brief Draw temperature bar, e.g. inside the thermometer outline.
  *        Add 4 pixels to the x-coordinate and subtract 12 pixels from the y-coordinate of the thermometer.
  */
-inline void drawTemperaturebar(const int x, const int y, const int heightRange) {
-    int width = x + 5;
+inline void drawTemperaturebar(const int x, const int heightRange) {
+    const int width = x + 5;
 
     for (int i = x; i < width; i++) {
-        int height = map(temperature, 0, 100, 0, heightRange);
+        const int height = map(static_cast<int>(temperature), 0, 100, 0, heightRange);
         u8g2->drawVLine(i, 52 - height, height);
     }
 
@@ -422,6 +422,7 @@ inline void displayLogo(const String& displaymessagetext, const String& displaym
     if (config.get<int>("display.template") == 4) {
         int printrow = 47;
         u8g2->clearBuffer();
+
         // Create modifiable copies
         char text1[displaymessagetext.length() + 1];
         char text2[displaymessagetext2.length() + 1];
@@ -430,17 +431,21 @@ inline void displayLogo(const String& displaymessagetext, const String& displaym
         strcpy(text2, displaymessagetext2.c_str());
 
         char* token = strtok(text1, " ");
-        while (token != NULL) {
+
+        while (token != nullptr) {
             u8g2->drawStr(0, printrow, token);
-            token = strtok(NULL, " "); // Get the next token
+            token = strtok(nullptr, " "); // Get the next token
             printrow += 10;
         }
+
         token = strtok(text2, " ");
-        while (token != NULL) {
+
+        while (token != nullptr) {
             u8g2->drawStr(0, printrow, token);
-            token = strtok(NULL, " "); // Get the next token
+            token = strtok(nullptr, " "); // Get the next token
             printrow += 10;
         }
+
         u8g2->drawXBMP(11, 4, CleverCoffee_Logo_width, CleverCoffee_Logo_height, CleverCoffee_Logo);
     }
     else {
@@ -449,6 +454,7 @@ inline void displayLogo(const String& displaymessagetext, const String& displaym
         u8g2->drawStr(0, 55, displaymessagetext2.c_str());
         u8g2->drawXBMP(38, 0, CleverCoffee_Logo_width, CleverCoffee_Logo_height, CleverCoffee_Logo);
     }
+
     u8g2->sendBuffer();
 }
 
@@ -464,6 +470,7 @@ inline bool displayFullscreenBrewTimer() {
         u8g2->clearBuffer();
         if (config.get<int>("display.template") == 4) {
             u8g2->drawXBMP(12, 12, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
+
             if (config.get<bool>("hardware.sensors.scale.enabled")) {
                 u8g2->setFont(u8g2_font_profont22_tf);
                 u8g2->setCursor(5, 70);
@@ -655,7 +662,7 @@ inline bool displayMachineState() {
 
         // draw current temp in thermometer
         if (isrCounter < 500) {
-            drawTemperaturebar(8, 46, 30);
+            drawTemperaturebar(8, 30);
             u8g2->setCursor(32, 4);
             u8g2->print("PID STOPPED");
         }

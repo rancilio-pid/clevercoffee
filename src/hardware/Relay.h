@@ -9,7 +9,7 @@
 class GPIOPin;
 
 /**
- * @class Relay control class
+ * @file Relay.h Relay control class
  * @brief This class provides control for relay switches
  */
 class Relay {

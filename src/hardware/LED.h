@@ -7,7 +7,7 @@
 #pragma once
 
 /**
- * @class LED.h
+ * @file LED.h
  * @brief Abstract interface class for an LED
  */
 class LED {

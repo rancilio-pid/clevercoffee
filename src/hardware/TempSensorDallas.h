@@ -9,9 +9,9 @@
 #include "TempSensor.h"
 #include <DallasTemperature.h>
 
-class TempSensorDallas : public TempSensor {
+class TempSensorDallas final : public TempSensor {
     public:
-        TempSensorDallas(int GPIOPin);
+        explicit TempSensorDallas(int GPIOPin);
 
     protected:
         bool sample_temperature(double& temperature) const override;
@@ -19,5 +19,5 @@ class TempSensorDallas : public TempSensor {
     private:
         OneWire* oneWire_;
         DallasTemperature* dallasSensor_;
-        DeviceAddress sensorDeviceAddress_;
+        DeviceAddress sensorDeviceAddress_{};
 };

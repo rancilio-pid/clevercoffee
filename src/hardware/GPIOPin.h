@@ -51,13 +51,13 @@ class GPIOPin {
          *          value
          * @return Value read from GPIO pin
          */
-        int read() const;
+        [[nodiscard]] int read() const;
 
         /**
          * @brief Returns configured type of this GPIO pin
          * @return Configured type of this pin
          */
-        Type getType() const;
+        [[nodiscard]] Type getType() const;
 
     private:
         /**
@@ -65,7 +65,7 @@ class GPIOPin {
          *
          * @param pinType Desired type of the pin
          */
-        void setType(Type pinType);
+        void setType(Type pinType) const;
 
         int pin;
         Type pinType;

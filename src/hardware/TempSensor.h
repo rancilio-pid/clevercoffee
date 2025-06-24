@@ -22,7 +22,7 @@ class TempSensor {
          *          to detect consecutive reading errors
          */
         TempSensor() :
-            update_temperature(std::bind(&TempSensor::update_temperature_reading, this), 400) {
+            update_temperature([this] { update_temperature_reading(); }, 400) {
         }
 
         /**
@@ -51,7 +51,7 @@ class TempSensor {
          * @brief Returns error state of the temperature sensor
          * @return true if the sensor is in error, false otherwise
          */
-        bool hasError() {
+        [[nodiscard]] bool hasError() const {
             return error_;
         }
 
@@ -71,8 +71,7 @@ class TempSensor {
          */
         void update_temperature_reading() {
             // Update temperature and detect errors:
-            auto updated = sample_temperature(last_temperature_);
-            if (updated) {
+            if (sample_temperature(last_temperature_)) {
                 LOGF(TRACE, "Temperature reading successful: %.1f", last_temperature_);
 
                 // Reset error counter and error state
@@ -127,7 +126,7 @@ class TempSensor {
 
             tempChangeRates[valueIndex] = tempChangeRate;
 
-            double totalTempChangeRateSum = std::accumulate(std::begin(tempChangeRates), std::end(tempChangeRates), 0, std::plus<double>());
+            const double totalTempChangeRateSum = std::accumulate(std::begin(tempChangeRates), std::end(tempChangeRates), 0, std::plus<>());
             average_temp_rate_ = totalTempChangeRateSum / numValues * 100;
 
             if (valueIndex >= numValues - 1) {

@@ -6,7 +6,7 @@
 
 #pragma once
 
-inline void scaleCalibrate(HX711_ADC loadCell, int pin, bool isSecondCell, float* calibration) {
+inline void scaleCalibrate(HX711_ADC loadCell, const int pin, const bool isSecondCell, float* calibration) {
     const int scaleSamples = config.get<int>("hardware.sensors.scale.samples");
 
     loadCell.setCalFactor(1.0);
@@ -110,11 +110,11 @@ inline void checkWeight() {
             scaleCalibrate(LoadCell2, PIN_HXDAT2, true, &scale2Calibration);
         }
 
-        scaleCalibrationOn = 0;
+        scaleCalibrationOn = false;
     }
 
     if (scaleTareOn) {
-        scaleTareOn = 0;
+        scaleTareOn = false;
         u8g2->clearBuffer();
         u8g2->drawStr(0, 2, "Taring scale,");
         u8g2->drawStr(0, 12, "remove any load!");
@@ -145,8 +145,8 @@ inline void initScale() {
         LoadCell2.begin();
     }
 
-    unsigned long stabilizingtime = 5000; // tare preciscion can be improved by adding a few seconds of stabilizing time
-    boolean _tare = true;                 // set this to false if you don't want tare to be performed in the next step
+    constexpr unsigned long stabilizingtime = 5000; // tare preciscion can be improved by adding a few seconds of stabilizing time
+    constexpr boolean _tare = true;                 // set this to false if you don't want tare to be performed in the next step
 
     if (scaleType == 1) {
         while (!LoadCell.startMultiple(stabilizingtime, _tare))
@@ -158,7 +158,7 @@ inline void initScale() {
 
         // run startup, stabilization and tare, both modules simultaniously
         // this parallel start seems to be the most important part to get accurate readings with two HX711s connected
-        while ((loadCellReady + loadCell2Ready) < 2) {
+        while (loadCellReady + loadCell2Ready < 2) {
             if (!loadCellReady) {
                 loadCellReady = LoadCell.startMultiple(stabilizingtime, _tare);
             }
@@ -195,7 +195,7 @@ inline void initScale() {
         LoadCell2.setSamplesInUse(scaleSamples);
     }
 
-    scaleCalibrationOn = 0;
+    scaleCalibrationOn = false;
 }
 
 /**

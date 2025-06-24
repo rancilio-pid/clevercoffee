@@ -7,7 +7,7 @@
 #pragma once
 
 /**
- * @class Abstract interface class for a switch
+ * @file Switch.h Abstract interface class for a switch
  */
 class Switch {
     public:
@@ -39,8 +39,10 @@ class Switch {
          * @param type Switch type
          * @param mode Operation mode
          */
-        Switch(Type type, Mode mode) :
-            type_(type), mode_(mode) {};
+        Switch(const Type type, const Mode mode) :
+            type_(type), mode_(mode) {
+        }
+
         Switch() = delete;
         virtual ~Switch() = default;
 

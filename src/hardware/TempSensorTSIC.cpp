@@ -9,7 +9,7 @@
 
 #define MAX_CHANGERATE 15
 
-TempSensorTSIC::TempSensorTSIC(int GPIOPin) {
+TempSensorTSIC::TempSensorTSIC(const int GPIOPin) {
     // Set pin to receive signal from the TSic 306
     tsicSensor_ = new ZACwire(GPIOPin, 306);
     // Start sampling the TSic sensor
@@ -17,17 +17,19 @@ TempSensorTSIC::TempSensorTSIC(int GPIOPin) {
 }
 
 bool TempSensorTSIC::sample_temperature(double& temperature) const {
-    auto temp = tsicSensor_->getTemp(MAX_CHANGERATE);
+    const auto temp = tsicSensor_->getTemp(MAX_CHANGERATE);
 
     if (temp == 222) {
         LOG(WARNING, "Temperature reading failed");
         return false;
     }
-    else if (temp == 221) {
+
+    if (temp == 221) {
         LOG(WARNING, "Temperature sensor not connected");
         return false;
     }
 
     temperature = temp;
+
     return true;
 }

@@ -157,7 +157,7 @@ class ParameterRegistry {
         void addStringConfigParam(
             const char* configPath, const char* displayName, int section, int position, String* globalVar, double maxLength, const char* helpText = "", const std::function<bool()>& showCondition = [] { return true; }) {
 
-            auto param = std::make_shared<Parameter>(
+            const auto param = std::make_shared<Parameter>(
                 configPath, displayName, kCString, section, position, [this, configPath]() -> String { return _config->get<String>(configPath); },
                 [this, configPath, globalVar](const String& val) {
                     _config->set<String>(configPath, val);
@@ -171,7 +171,7 @@ class ParameterRegistry {
         // Convenience method for adding boolean config parameters
         void addBoolConfigParam(const char* configPath, const char* displayName, int section, int position, bool* globalVar, const char* helpText = "", const std::function<bool()>& showCondition = [] { return true; }) {
 
-            auto param = std::make_shared<Parameter>(
+            const auto param = std::make_shared<Parameter>(
                 configPath, displayName, kUInt8, section, position, [this, configPath]() -> bool { return _config->get<bool>(configPath); },
                 [this, configPath, globalVar](const bool val) {
                     _config->set<bool>(configPath, val);
@@ -213,7 +213,7 @@ class ParameterRegistry {
             const char* helpText = "",
             const std::function<bool()>& showCondition = [] { return true; }) {
 
-            auto param = std::make_shared<Parameter>(
+            const auto param = std::make_shared<Parameter>(
                 configPath, displayName, kEnum, section, position, [this, configPath]() -> double { return _config->get<int>(configPath); },
                 [this, configPath, globalVar](const double val) {
                     const int intVal = static_cast<int>(val);

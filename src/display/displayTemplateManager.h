@@ -34,8 +34,9 @@ class DisplayTemplateManager {
             UPRIGHT = 4,
         };
 
-        static void initializeDisplay(int templateId) {
+        static void initializeDisplay(const int templateId) {
             currentTemplate = templateId;
+
             switch (templateId) {
                 case STANDARD:
                     currentPrintScreen = &Templates::Standard::printScreen;

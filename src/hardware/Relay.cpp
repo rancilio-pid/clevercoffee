@@ -7,7 +7,7 @@
 #include "Relay.h"
 #include "GPIOPin.h"
 
-Relay::Relay(GPIOPin& gpioInstance, TriggerType trigger) :
+Relay::Relay(GPIOPin& gpioInstance, const TriggerType trigger) :
     gpio(gpioInstance), relayTrigger(trigger) {
 }
 

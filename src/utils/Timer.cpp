@@ -1,10 +1,13 @@
 #include "Timer.h"
 
+#include <utility>
+
 #include "Arduino.h"
 #include "Logger.h"
 
-Timer::Timer(std::function<void()> func, unsigned long interval, bool start_paused) :
-    callback_(func), interval_(interval), next_(millis()), running_(!start_paused) {};
+Timer::Timer(std::function<void()> func, const unsigned long interval, bool start_paused) :
+    callback_(std::move(func)), interval_(interval), next_(millis()), running_(!start_paused) {
+}
 
 void Timer::pause() {
     running_ = false;

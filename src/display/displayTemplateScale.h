@@ -40,11 +40,11 @@ inline void printScreen() {
     // Draw current temp in thermometer
     if (fabs(temperature - setpoint) < 0.3) {
         if (isrCounter < 500) {
-            drawTemperaturebar(8, 50, 30);
+            drawTemperaturebar(8, 30);
         }
     }
     else {
-        drawTemperaturebar(8, 50, 30);
+        drawTemperaturebar(8, 30);
     }
 
     // Draw current temp and temp setpoint

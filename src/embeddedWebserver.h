@@ -17,7 +17,6 @@
 #include <ESPAsyncWebServer.h>
 
 #include "LittleFS.h"
-#include <functional>
 
 inline AsyncWebServer server(80);
 inline AsyncEventSource events("/events");
@@ -61,7 +60,7 @@ inline int mod(const int a, const int b) {
 // example: round(3.14159) -> 3.14
 // (less characters when serialized to json)
 inline double round2(const double value) {
-    return static_cast<int>(value * 100 + 0.5) / 100.0;
+    return std::round(value * 100.0) / 100.0;
 }
 
 inline String getValue(const String& varName) {
@@ -73,7 +72,7 @@ inline String getValue(const String& varName) {
         }
 
         return e->getFormattedValue();
-    } catch (const std::out_of_range& exc) {
+    } catch (const std::out_of_range&) {
         return "(unknown variable " + varName + ")";
     }
 }
@@ -138,35 +137,14 @@ inline void paramToJson(const String& name, const std::shared_ptr<Parameter>& pa
     paramObj["max"] = param->getMaxValue();
 }
 
-// hash strings at compile time to use in switch statement
-// (from https://stackoverflow.com/questions/2111667/compile-time-string-hashing)
-constexpr unsigned int str2int(const char* str, int h = 0) {
-    return !str[h] ? 5381 : (str2int(str, h + 1) * 33) ^ str[h];
-}
-
 inline String getHeader(const String& varName) {
-    switch (str2int(varName.c_str())) {
-        case str2int("FONTAWESOME"):
-            return F("<link href=\"/css/fontawesome-6.2.1.min.css\" rel=\"stylesheet\">");
+    static const std::unordered_map<std::string, const char*> headers = {
+        {"FONTAWESOME", R"(<link href="/css/fontawesome-6.2.1.min.css" rel="stylesheet">)"}, {"BOOTSTRAP", R"(<link href="/css/bootstrap-5.2.3.min.css" rel="stylesheet">)"},
+        {"BOOTSTRAP_BUNDLE", "<script src=\"/js/bootstrap.bundle.5.2.3.min.js\"></script>"}, {"VUEJS", "<script src=\"/js/vue.3.2.47.min.js\"></script>"},
+        {"VUE_NUMBER_INPUT", "<script src=\"/js/vue-number-input.min.js\"></script>"},       {"UPLOT", R"(<script src="/js/uPlot.1.6.28.min.js"></script><link rel="stylesheet" href="/css/uPlot.min.css">)"}};
 
-        case str2int("BOOTSTRAP"):
-            return F("<link href=\"/css/bootstrap-5.2.3.min.css\" rel=\"stylesheet\">");
-
-        case str2int("BOOTSTRAP_BUNDLE"):
-            return F("<script src=\"/js/bootstrap.bundle.5.2.3.min.js\"></script>");
-
-        case str2int("VUEJS"):
-            return F("<script src=\"/js/vue.3.2.47.min.js\"></script>");
-
-        case str2int("VUE_NUMBER_INPUT"):
-            return F("<script src=\"/js/vue-number-input.min.js\"></script>");
-
-        case str2int("UPLOT"):
-            return F("<script src=\"/js/uPlot.1.6.28.min.js\"></script><link rel=\"stylesheet\" href=\"/css/uPlot.min.css\">");
-
-        default:
-            return "";
-    }
+    const auto it = headers.find(varName.c_str());
+    return it != headers.end() ? String(it->second) : String("");
 }
 
 inline String staticProcessor(const String& var) {
@@ -184,9 +162,7 @@ inline String staticProcessor(const String& var) {
     String varLower(var);
     varLower.toLowerCase();
 
-    File file = LittleFS.open("/html_fragments/" + varLower + ".html", "r");
-
-    if (file) {
+    if (File file = LittleFS.open("/html_fragments/" + varLower + ".html", "r")) {
         if (file.size() * 2 < ESP.getFreeHeap()) {
             String ret = file.readString();
             file.close();
@@ -222,7 +198,7 @@ inline void serverSetup() {
         const bool newPidState = !pidParam->getValueAs<bool>();
         ParameterRegistry::getInstance().setParameterValue("pid.enabled", newPidState);
 
-        pidON = newPidState ? 1 : 0;
+        pidON = newPidState;
 
         LOGF(DEBUG, "Toggle PID state: %d\n", newPidState);
 
@@ -269,9 +245,9 @@ inline void serverSetup() {
         JsonDocument doc;
 
         if (request->method() == 2) { // HTTP_POST - Update parameters
-            const int requestParams = request->params();
+            const auto requestParams = request->params();
 
-            for (int i = 0; i < requestParams; i++) {
+            for (auto i = 0u; i < requestParams; ++i) {
                 auto* p = request->getParam(i);
                 String varName;
 
@@ -296,21 +272,13 @@ inline void serverSetup() {
                     }
                     else {
                         double newVal = 0.0;
-
-                        if (param->getType() == kInteger || param->getType() == kUInt8) {
-                            newVal = static_cast<double>(atoi(p->value().c_str()));
-                        }
-                        else {
-                            newVal = atof(p->value().c_str());
-                        }
+                        newVal = std::stod(p->value().c_str());
 
                         if (registry.setParameterValue(varName.c_str(), newVal)) {
                             paramToJson(varName, param, doc);
                         }
                     }
-                } catch (const std::out_of_range& exc) {
-                    continue;
-                }
+                } catch (const std::out_of_range&) {}
             }
 
             registry.forceSave();
@@ -329,7 +297,7 @@ inline void serverSetup() {
             if (!paramId.isEmpty()) {
                 // Get specific parameter
 
-                if (std::shared_ptr<Parameter> param = registry.getParameterById(paramId.c_str()); param != nullptr && param->shouldShow()) {
+                if (const std::shared_ptr<Parameter> param = registry.getParameterById(paramId.c_str()); param != nullptr && param->shouldShow()) {
                     paramToJson(paramId, param, doc);
                 }
             }
@@ -382,7 +350,7 @@ inline void serverSetup() {
     });
 
     server.on("/temperatures", HTTP_GET, [](AsyncWebServerRequest* request) {
-        String json = getTempString();
+        const String json = getTempString();
         request->send(200, "application/json", json);
     });
 

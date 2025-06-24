@@ -11,7 +11,7 @@
 #include "GPIOPin.h"
 #include "Switch.h"
 
-class IOSwitch : public Switch {
+class IOSwitch final : public Switch {
     public:
         /**
          * @brief I/O Switch connected to a GPIO pin
@@ -22,6 +22,7 @@ class IOSwitch : public Switch {
          * @param pinType GPIO pin type
          * @param switchType Type of the switch
          * @param mode Operation mode of the switch
+         * @param initialState
          */
         IOSwitch(int pinNumber, GPIOPin::Type pinType, Type switchType = MOMENTARY, Mode mode = NORMALLY_OPEN, uint8_t initialState = LOW);
 

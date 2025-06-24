@@ -6,7 +6,7 @@
 
 #include "TempSensorDallas.h"
 
-TempSensorDallas::TempSensorDallas(int GPIOPin) {
+TempSensorDallas::TempSensorDallas(const int GPIOPin) {
     oneWire_ = new OneWire(GPIOPin);
     dallasSensor_ = new DallasTemperature(oneWire_);
     dallasSensor_->begin();
@@ -20,14 +20,15 @@ TempSensorDallas::TempSensorDallas(int GPIOPin) {
 bool TempSensorDallas::sample_temperature(double& temperature) const {
 
     // Read temperature from device
-    auto temp = dallasSensor_->getTempC(sensorDeviceAddress_);
+    const auto temp = dallasSensor_->getTempC(sensorDeviceAddress_);
 
     // Check error codes:
     if (temp == DEVICE_DISCONNECTED_C) {
         LOG(WARNING, "Temperature sensor not connected");
         return false;
     }
-    else if (temp == DEVICE_FAULT_OPEN_C || temp == DEVICE_FAULT_SHORTGND_C || temp == DEVICE_FAULT_SHORTVDD_C) {
+
+    if (temp == DEVICE_FAULT_OPEN_C || temp == DEVICE_FAULT_SHORTGND_C || temp == DEVICE_FAULT_SHORTVDD_C) {
         LOG(WARNING, "Issue with temperature sensor connection, check wiring");
         return false;
     }

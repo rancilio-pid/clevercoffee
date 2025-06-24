@@ -6,13 +6,13 @@
 
 #include "GPIOPin.h"
 
-GPIOPin::GPIOPin(int pinNumber, Type pinType) :
+GPIOPin::GPIOPin(const int pinNumber, const Type pinType) :
     pin(pinNumber), pinType(pinType) {
 
     setType(pinType);
 }
 
-void GPIOPin::write(bool value) const {
+void GPIOPin::write(const bool value) const {
     if (pinType == OUT) {
         digitalWrite(pin, value);
     }
@@ -22,16 +22,15 @@ int GPIOPin::read() const {
     if (pinType == IN_ANALOG) {
         return analogRead(pin);
     }
-    else {
-        return digitalRead(pin);
-    }
+
+    return digitalRead(pin);
 }
 
 GPIOPin::Type GPIOPin::getType() const {
     return pinType;
 }
 
-void GPIOPin::setType(Type pinType) {
+void GPIOPin::setType(const Type pinType) const {
     switch (pinType) {
         case OUT:
             pinMode(pin, OUTPUT);
@@ -48,8 +47,6 @@ void GPIOPin::setType(Type pinType) {
             digitalWrite(pin, LOW);
             break;
         case IN_HARDWARE:
-            pinMode(pin, INPUT);
-            break;
         case IN_ANALOG:
             pinMode(pin, INPUT);
             break;

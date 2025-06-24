@@ -10,7 +10,7 @@
 
 class GPIOPin;
 
-class StandardLED : public LED {
+class StandardLED final : public LED {
     public:
         StandardLED(GPIOPin& gpioInstance, bool inverted);
 

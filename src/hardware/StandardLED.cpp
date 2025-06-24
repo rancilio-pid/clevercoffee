@@ -8,7 +8,7 @@
 #include "GPIOPin.h"
 
 StandardLED::StandardLED(GPIOPin& gpioInstance, const bool inverted) :
-    gpio(gpioInstance), inverted(inverted), enabled(false) {
+    gpio(gpioInstance), inverted(inverted) {
 }
 
 void StandardLED::setGPIOState(const bool state) {

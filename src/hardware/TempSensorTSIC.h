@@ -9,9 +9,9 @@
 #include "TempSensor.h"
 #include <ZACwire.h>
 
-class TempSensorTSIC : public TempSensor {
+class TempSensorTSIC final : public TempSensor {
     public:
-        TempSensorTSIC(int GPIOPin);
+        explicit TempSensorTSIC(int GPIOPin);
 
     protected:
         bool sample_temperature(double& temperature) const override;

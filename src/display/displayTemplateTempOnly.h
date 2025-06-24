@@ -8,8 +8,8 @@
 #pragma once
 
 // Define some Displayoptions
-inline const int blinkingtemp = 1;           // 0: blinking near setpoint, 1: blinking far away from setpoint
-inline const float blinkingtempoffset = 0.3; // offset for blinking
+inline constexpr int blinkingTemp = 1;          // 0: blinking near setpoint, 1: blinking far away from setpoint
+inline constexpr float blinkingTempDelta = 0.3; // Delta from setpoint for blinking temperature display
 
 /**
  * @brief Send data to display
@@ -38,7 +38,7 @@ inline void printScreen() {
     u8g2->clearBuffer();
 
     // draw (blinking) temp
-    if (((fabs(temperature - setpoint) < blinkingtempoffset && blinkingtemp == 0) || (fabs(temperature - setpoint) >= blinkingtempoffset && blinkingtemp == 1)) && !config.get<bool>("hardware.leds.status.enabled")) {
+    if (((fabs(temperature - setpoint) < blinkingTempDelta && blinkingTemp == 0) || fabs(temperature - setpoint) >= blinkingTempDelta) && !config.get<bool>("hardware.leds.status.enabled")) {
         if (isrCounter < 500) {
             if (temperature < 99.999) {
                 u8g2->setCursor(8, 22);

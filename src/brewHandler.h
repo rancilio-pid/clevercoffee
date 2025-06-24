@@ -97,10 +97,9 @@ inline void checkBrewSwitch() {
     }
 
     loggedEmptyWaterTank = false;
-    const int brewSwitchType = config.get<int>("hardware.switches.brew.type");
 
     // Convert toggle brew switch input to brew switch state
-    if (brewSwitchType == Switch::TOGGLE) {
+    if (const int brewSwitchType = config.get<int>("hardware.switches.brew.type"); brewSwitchType == Switch::TOGGLE) {
         if (currReadingBrewSwitch != brewSwitchReading) {
             currReadingBrewSwitch = brewSwitchReading;
         }

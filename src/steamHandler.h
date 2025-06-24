@@ -17,12 +17,12 @@ inline void checkSteamSwitch() {
     if (config.get<int>("hardware.switches.steam.type") == Switch::TOGGLE) {
         // Set steamON to 1 when steamswitch is HIGH
         if (steamSwitchReading == HIGH) {
-            steamON = 1;
+            steamON = true;
         }
 
         // if activated via web interface then steamFirstON == 1, prevent override
         if (steamSwitchReading == LOW && !steamFirstON) {
-            steamON = 0;
+            steamON = false;
         }
     }
     else if (config.get<int>("hardware.switches.steam.type") == Switch::MOMENTARY) {
@@ -32,10 +32,10 @@ inline void checkSteamSwitch() {
             // only toggle heating power if the new button state is HIGH
             if (currStateSteamSwitch == HIGH) {
                 if (steamON == 0) {
-                    steamON = 1;
+                    steamON = true;
                 }
                 else {
-                    steamON = 0;
+                    steamON = false;
                 }
             }
         }
