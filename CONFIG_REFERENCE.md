@@ -119,7 +119,13 @@ This document describes all configuration parameters available in the `config.js
     - `1`: Minimal
     - `2`: Temp-only
     - `3`: Scale
+    - `4`: Upright
 - **Description**: Display template selection
+
+### `display.inverted`
+- **Type**: Boolean
+- **Default**: `false`
+- **Description**: Display rotation
 
 ---
 
@@ -146,16 +152,6 @@ This document describes all configuration parameters available in the `config.js
 - **Default**: `60` (0x3C)
 - **Range**: 0-255
 - **Description**: I2C address of OLED display
-
-### `hardware.oled.rotation`
-- **Type**: Integer (enum)
-- **Default**: `0`
-- **Valid Values**:
-    - `0`: 0° (normal)
-    - `1`: 90° clockwise
-    - `2`: 180° (upside down)
-    - `3`: 270° clockwise
-- **Description**: Display rotation
 
 ### `hardware.oled.type`
 - **Type**: Integer (enum)

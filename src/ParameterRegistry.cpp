@@ -32,6 +32,7 @@ extern double backflushFlushTime;
 extern bool standbyModeOn;
 extern double standbyModeTime;
 extern bool featureBrewControl;
+extern bool featureInvertDisplay;
 extern bool featureFullscreenBrewTimer;
 extern bool featureFullscreenManualFlushTimer;
 extern double postBrewTimerDuration;
@@ -504,16 +505,25 @@ void ParameterRegistry::initialize(Config& config) {
         sDisplaySection,
         35,
         nullptr,
-        (const char* const[]){"Standard", "Minimal", "Temp only", "Scale"},
-        4,
+        (const char* const[]){"Standard", "Minimal", "Temp only", "Scale", "Upright"},
+        5,
         "Set the display template, changes require a reboot"
+    );
+
+    addBoolConfigParam(
+        "display.inverted",
+        "Invert Display",
+        sDisplaySection,
+        36,
+        &featureInvertDisplay,
+        "Set the display rotation, changes require a reboot"
     );
 
     addEnumConfigParam(
         "display.language",
         "Display Language",
         sDisplaySection,
-        36,
+        37,
         nullptr,  // No global variable for this parameter
         (const char* const[]){"Deutsch", "English", "Español"},
         3,
@@ -524,7 +534,7 @@ void ParameterRegistry::initialize(Config& config) {
         "display.fullscreen_brew_timer",
         "Enable Fullscreen Brew Timer",
         sDisplaySection,
-        37,
+        38,
         &featureFullscreenBrewTimer,
         "Enable fullscreen overlay during brew"
     );
@@ -533,7 +543,7 @@ void ParameterRegistry::initialize(Config& config) {
         "display.fullscreen_manual_flush_timer",
         "Enable Fullscreen Manual Flush Timer",
         sDisplaySection,
-        38,
+        39,
         &featureFullscreenManualFlushTimer,
         "Enable fullscreen overlay during manual flush"
     );
@@ -543,7 +553,7 @@ void ParameterRegistry::initialize(Config& config) {
         "Post Brew Timer Duration (s)",
         kDouble,
         sDisplaySection,
-        39,
+        40,
         &postBrewTimerDuration,
         POST_BREW_TIMER_DURATION_MIN,
         POST_BREW_TIMER_DURATION_MAX,
@@ -554,7 +564,7 @@ void ParameterRegistry::initialize(Config& config) {
         "display.heating_logo",
         "Enable Heating Logo",
         sDisplaySection,
-        40,
+        41,
         &featureHeatingLogo,
         "full screen logo will be shown if temperature is 5°C below setpoint"
     );
@@ -563,7 +573,7 @@ void ParameterRegistry::initialize(Config& config) {
         "display.pid_off_logo",
         "Enable 'PID Disabled' Logo",
         sDisplaySection,
-        41,
+        42,
         &featurePidOffLogo,
         "full screen logo will be shown if pid is disabled"
     );
@@ -573,7 +583,7 @@ void ParameterRegistry::initialize(Config& config) {
         "mqtt.enabled",
         "MQTT enabled",
         sMqttSection,
-        42,
+        43,
         nullptr,
         "Enables MQTT, change requires a restart"
     );
@@ -582,7 +592,7 @@ void ParameterRegistry::initialize(Config& config) {
         "mqtt.broker",
         "Hostname",
         sMqttSection,
-        43,
+        44,
         nullptr,
         MQTT_BROKER_MAX_LENGTH,
         "IP addresss or hostname of your MQTT broker, changes require a restart"
@@ -593,7 +603,7 @@ void ParameterRegistry::initialize(Config& config) {
         "Port",
         kInteger,
         sMqttSection,
-        44,
+        45,
         nullptr,
         1,
         65535,
@@ -604,7 +614,7 @@ void ParameterRegistry::initialize(Config& config) {
         "mqtt.username",
         "Username",
         sMqttSection,
-        45,
+        46,
         nullptr,
         MQTT_USERNAME_MAX_LENGTH,
         "Username for your MQTT broker, changes require a restart"
@@ -614,7 +624,7 @@ void ParameterRegistry::initialize(Config& config) {
         "mqtt.password",
         "Password",
         sMqttSection,
-        46,
+        47,
         nullptr,
         MQTT_PASSWORD_MAX_LENGTH,
         "Password for your MQTT broker, changes require a restart"
@@ -624,7 +634,7 @@ void ParameterRegistry::initialize(Config& config) {
         "mqtt.topic",
         "Topic Prefix",
         sMqttSection,
-        47,
+        48,
         nullptr,
         MQTT_TOPIC_MAX_LENGTH,
         "Custom MQTT topic prefix, changes require a restart"
@@ -634,7 +644,7 @@ void ParameterRegistry::initialize(Config& config) {
         "mqtt.hassio.enabled",
         "Hass.io enabled",
         sMqttSection,
-        48,
+        49,
         nullptr,
         "Enables Home Assistant integration, requires a restart"
     );
@@ -643,7 +653,7 @@ void ParameterRegistry::initialize(Config& config) {
         "mqtt.hassio.prefix",
         "Hass.io Prefix",
         sMqttSection,
-        49,
+        50,
         nullptr,
         MQTT_HASSIO_PREFIX_MAX_LENGTH,
         "Custom MQTT topic prefix, changes require a restart"
@@ -653,7 +663,7 @@ void ParameterRegistry::initialize(Config& config) {
         "system.hostname",
         "Hostname",
         sSystemSection,
-        50,
+        51,
         nullptr,
         HOSTNAME_MAX_LENGTH,
         "Hostname of your machine, changes require a restart"
@@ -663,7 +673,7 @@ void ParameterRegistry::initialize(Config& config) {
         "system.ota_password",
         "OtA Password",
         sSystemSection,
-        51,
+        52,
         nullptr,
         OTAPASS_MAX_LENGTH,
         "Password for over-the-air updates, changes require a restart"
@@ -673,7 +683,7 @@ void ParameterRegistry::initialize(Config& config) {
         "system.log_level",
         "Log Level",
         sSystemSection,
-        52,
+        53,
         nullptr,
         (const char* const[]){"TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "FATAL", "SILENT"},
         7,
@@ -682,7 +692,7 @@ void ParameterRegistry::initialize(Config& config) {
 
     // clang-format on
 
-    addParam(std::make_shared<Parameter>("VERSION", "Version", kCString, sOtherSection, 53, [] { return sysVersion; }, nullptr, 64, false, "", [] { return false; }, nullptr));
+    addParam(std::make_shared<Parameter>("VERSION", "Version", kCString, sOtherSection, 54, [] { return sysVersion; }, nullptr, 64, false, "", [] { return false; }, nullptr));
 
     std::sort(_parameters.begin(), _parameters.end(), [](const std::shared_ptr<Parameter>& a, const std::shared_ptr<Parameter>& b) { return a->getPosition() < b->getPosition(); });
 

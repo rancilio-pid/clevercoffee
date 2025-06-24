@@ -18,6 +18,10 @@ namespace Templates {
     namespace Scale {
 #include "displayTemplateScale.h"
     }
+
+    namespace Upright {
+#include "displayTemplateUpright.h"
+    }
 } // namespace Templates
 
 class DisplayTemplateManager {
@@ -27,6 +31,7 @@ class DisplayTemplateManager {
             MINIMAL = 1,
             TEMP_ONLY = 2,
             SCALE = 3,
+            UPRIGHT = 4,
         };
 
         static void initializeDisplay(int templateId) {
@@ -43,6 +48,9 @@ class DisplayTemplateManager {
                     break;
                 case SCALE:
                     currentPrintScreen = &Templates::Scale::printScreen;
+                    break;
+                case UPRIGHT:
+                    currentPrintScreen = &Templates::Upright::printScreen;
                     break;
                 default:
                     currentPrintScreen = &Templates::Standard::printScreen;

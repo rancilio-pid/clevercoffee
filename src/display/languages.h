@@ -24,6 +24,13 @@ static const char* langstring_scale_Failure;
 static const char* langstring_backflush_press;
 static const char* langstring_backflush_start;
 static const char* langstring_backflush_finish;
+static const char* langstring_set_temp_ur;
+static const char* langstring_current_temp_ur;
+static const char* langstring_brew_ur;
+static const char* langstring_manual_flush_ur;
+static const char* langstring_weight_ur;
+static const char* langstring_pressure_ur;
+static const char* langstring_error_tsensor_ur[5];
 
 inline void initLangStrings(Config& config) {
 
@@ -37,6 +44,13 @@ inline void initLangStrings(Config& config) {
         langstring_pressure = "Pressure: ";
         langstring_uptime = "Uptime:  ";
 
+        langstring_set_temp_ur = "S: ";
+        langstring_current_temp_ur = "T: ";
+        langstring_brew_ur = "B: ";
+        langstring_manual_flush_ur = "F: ";
+        langstring_weight_ur = "W: ";
+        langstring_pressure_ur = "P: ";
+
         langstring_offlinemode = "Offline";
         langstring_wifirecon = "Wifi reconnect:";
         langstring_connectwifi1 = "1: Connecting to WiFi:";
@@ -45,8 +59,12 @@ inline void initLangStrings(Config& config) {
 
         langstring_error_tsensor[0] = "Error, Temp: ";
         langstring_error_tsensor[1] = "Check Temp. sensor!";
-
         langstring_scale_Failure = "Fault";
+        langstring_error_tsensor_ur[0] = "Error";
+        langstring_error_tsensor_ur[1] = "Temp: ";
+        langstring_error_tsensor_ur[2] = "check";
+        langstring_error_tsensor_ur[3] = "temp.";
+        langstring_error_tsensor_ur[4] = "sensor!";
 
         langstring_backflush_press = "Press brew switch";
         langstring_backflush_start = "to start...";
@@ -62,6 +80,13 @@ inline void initLangStrings(Config& config) {
         langstring_pressure = "Presión: ";
         langstring_uptime = "Uptime:  ";
 
+        langstring_set_temp_ur = "O: ";
+        langstring_current_temp_ur = "T: ";
+        langstring_brew_ur = "B: ";
+        langstring_manual_flush_ur = "F: ";
+        langstring_weight_ur = "P: ";
+        langstring_pressure_ur = "Pr: ";
+
         langstring_offlinemode = "Offline";
         langstring_wifirecon = "Reconecta wifi:";
         langstring_connectwifi1 = "1: Wifi conectado :";
@@ -71,6 +96,11 @@ inline void initLangStrings(Config& config) {
         langstring_error_tsensor[0] = "Error, Temp: ";
         langstring_error_tsensor[1] = "Comprueba sensor T!";
         langstring_scale_Failure = "falla";
+        langstring_error_tsensor_ur[0] = "Error";
+        langstring_error_tsensor_ur[1] = "Temp: ";
+        langstring_error_tsensor_ur[2] = "Comprueba";
+        langstring_error_tsensor_ur[3] = "sensor";
+        langstring_error_tsensor_ur[4] = "T!";
 
         langstring_backflush_press = "Pulsa boton de cafe";
         langstring_backflush_start = "para empezar...";
@@ -86,6 +116,13 @@ inline void initLangStrings(Config& config) {
         langstring_pressure = "Druck: ";
         langstring_uptime = "Uptime:  ";
 
+        langstring_set_temp_ur = "S: ";
+        langstring_current_temp_ur = "I: ";
+        langstring_brew_ur = "B: ";
+        langstring_manual_flush_ur = "S: ";
+        langstring_weight_ur = "G: ";
+        langstring_pressure_ur = "D: ";
+
         langstring_offlinemode = "Offline";
         langstring_wifirecon = "Wifi reconnect:";
         langstring_connectwifi1 = "1: Verbinde WLAN:";
@@ -94,6 +131,11 @@ inline void initLangStrings(Config& config) {
         langstring_error_tsensor[0] = "Fehler, Temp: ";
         langstring_error_tsensor[1] = "Temp.-Sensor ueberpruefen!";
         langstring_scale_Failure = "Fehler";
+        langstring_error_tsensor_ur[0] = "Fehler";
+        langstring_error_tsensor_ur[1] = "Temp: ";
+        langstring_error_tsensor_ur[2] = "Temp.";
+        langstring_error_tsensor_ur[3] = "Sensor";
+        langstring_error_tsensor_ur[4] = "ueberpruefen!";
 
         langstring_backflush_press = "Bruehsch. druecken";
         langstring_backflush_start = "um zu starten...";

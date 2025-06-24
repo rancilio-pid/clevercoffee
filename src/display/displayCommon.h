@@ -9,6 +9,8 @@
 #include "bitmaps.h"
 #include "languages.h"
 
+inline bool featureInvertDisplay = false;
+
 inline const u8g2_cb_t* getU8G2Rotation(const int rotationValue) {
     switch (rotationValue) {
         case 0:
@@ -28,12 +30,40 @@ inline const u8g2_cb_t* getU8G2Rotation(const int rotationValue) {
  * @brief initialize display
  */
 inline void u8g2_prepare() {
+    int rotation = 0;
     u8g2->clearBuffer();
     u8g2->setFont(u8g2_font_profont11_tf);
     u8g2->setFontRefHeightExtendedText();
     u8g2->setDrawColor(1);
     u8g2->setFontPosTop();
     u8g2->setFontDirection(0);
+    if (featureInvertDisplay) {
+        rotation += 2;
+    }
+    if (config.get<int>("display.template") == 4) {
+        rotation++;
+    }
+    u8g2->setDisplayRotation(getU8G2Rotation(rotation));
+}
+
+/**
+ * @brief print error message for scales
+ */
+void displayScaleFailed(void) {
+    if (config.get<int>("display.template") == 4) {
+        u8g2->clearBuffer();
+        u8g2->drawStr(0, 32, "Failed!");
+        u8g2->drawStr(0, 42, "Scale");
+        u8g2->drawStr(0, 52, "not");
+        u8g2->drawStr(0, 62, "working...");
+        u8g2->sendBuffer();
+    }
+    else {
+        u8g2->clearBuffer();
+        u8g2->drawStr(0, 32, "failed!");
+        u8g2->drawStr(0, 42, "Scale not working..."); // scale timeout will most likely trigger after OTA update, but will still work after boot
+        u8g2->sendBuffer();
+    }
 }
 
 /**
@@ -206,17 +236,30 @@ inline bool shouldDisplayBrewTimer() {
  * @param totalTargetBrewTime  Target brew time in milliseconds (optional, default -1)
  */
 inline void displayBrewTime(const int x, const int y, const char* label, const double currBrewTime, const double totalTargetBrewTime = -1) {
-    u8g2->setCursor(x, y);
-    u8g2->print(label);
-    u8g2->setCursor(x + 50, y);
-    u8g2->print(currBrewTime / 1000, 0);
+    if (config.get<int>("display.template") == 4) {
+        u8g2->setCursor(x, y);
+        u8g2->print(label);
+        u8g2->print(currBrewTime / 1000, 0);
 
-    if (totalTargetBrewTime > 0) {
-        u8g2->print("/");
-        u8g2->print(totalTargetBrewTime / 1000, 0);
+        if (totalTargetBrewTime > 0) {
+            u8g2->print("/");
+            u8g2->print(totalTargetBrewTime / 1000, 0);
+        }
+        u8g2->print(" s");
     }
+    else {
+        u8g2->setCursor(x, y);
+        u8g2->print(label);
+        u8g2->setCursor(x + 50, y);
+        u8g2->print(currBrewTime / 1000, 0);
 
-    u8g2->print(" s");
+        if (totalTargetBrewTime > 0) {
+            u8g2->print("/");
+            u8g2->print(totalTargetBrewTime / 1000, 0);
+        }
+
+        u8g2->print(" s");
+    }
 }
 
 /**
@@ -234,51 +277,87 @@ inline void displayBrewTime(const int x, const int y, const char* label, const d
  * @param fault    Indicates if the scale has an error (optional, default false)
  */
 inline void displayBrewWeight(const int x, const int y, const float weight, const float setpoint = -1, const bool fault = false) {
-    if (fault) {
+    if (config.get<int>("display.template") == 4) {
+        if (fault) {
+            u8g2->setCursor(x, y);
+            u8g2->print(langstring_weight_ur);
+            u8g2->print(langstring_scale_Failure);
+            return;
+        }
+
+        u8g2->setCursor(x, y);
+        u8g2->print(langstring_weight_ur);
+        u8g2->print(weight, 0);
+
+        if (setpoint > 0) {
+            u8g2->print("/");
+            u8g2->print(setpoint, 0);
+        }
+
+        u8g2->print(" g");
+    }
+    else {
+        if (fault) {
+            u8g2->setCursor(x, y);
+            u8g2->print(langstring_weight);
+            u8g2->setCursor(x + 50, y);
+            u8g2->print(langstring_scale_Failure);
+            return;
+        }
+
         u8g2->setCursor(x, y);
         u8g2->print(langstring_weight);
         u8g2->setCursor(x + 50, y);
-        u8g2->print(langstring_scale_Failure);
-        return;
+        u8g2->print(weight, 0);
+
+        if (setpoint > 0) {
+            u8g2->print("/");
+            u8g2->print(setpoint, 0);
+        }
+
+        u8g2->print(" g");
     }
-
-    u8g2->setCursor(x, y);
-    u8g2->print(langstring_weight);
-    u8g2->setCursor(x + 50, y);
-    u8g2->print(weight, 0);
-
-    if (setpoint > 0) {
-        u8g2->print("/");
-        u8g2->print(setpoint, 0);
-    }
-
-    u8g2->print(" g");
 }
 
 /**
  * @brief Draw the brew time at given position (fullscreen brewtimer)
  */
 inline void displayBrewtimeFs(const int x, const int y, const double brewtime) {
-    u8g2->setFont(u8g2_font_fub25_tf);
-
-    if (brewtime < 10000.000) {
-        u8g2->setCursor(x + 16, y);
+    if (config.get<int>("display.template") == 4) {
+        u8g2->setFont(u8g2_font_fub20_tf);
+        if (brewtime < 9950.000) {
+            u8g2->setCursor(x + 15, y);
+        }
+        else {
+            u8g2->setCursor(x, y);
+        }
+        u8g2->print(brewtime / 1000, 1);
+        u8g2->setFont(u8g2_font_profont11_tf);
+        u8g2->setCursor(x + 56, y + 12);
+        u8g2->print("s");
     }
     else {
-        u8g2->setCursor(x, y);
-    }
+        u8g2->setFont(u8g2_font_fub25_tf);
 
-    u8g2->print(brewtime / 1000, 1);
-    u8g2->setFont(u8g2_font_profont15_tf);
+        if (brewtime < 9950.000) {
+            u8g2->setCursor(x + 16, y);
+        }
+        else {
+            u8g2->setCursor(x, y);
+        }
 
-    if (brewtime < 10000.000) {
-        u8g2->setCursor(x + 67, y + 14);
-    }
-    else {
-        u8g2->setCursor(x + 69, y + 14);
-    }
+        u8g2->print(brewtime / 1000, 1);
+        u8g2->setFont(u8g2_font_profont15_tf);
 
-    u8g2->print("s");
+        if (brewtime < 9950.000) {
+            u8g2->setCursor(x + 67, y + 14);
+        }
+        else {
+            u8g2->setCursor(x + 69, y + 14);
+        }
+
+        u8g2->print("s");
+    }
     u8g2->setFont(u8g2_font_profont11_tf);
 }
 
@@ -340,12 +419,36 @@ inline void displayMessage(const String& text1, const String& text2, const Strin
  * @brief print logo and message at boot
  */
 inline void displayLogo(const String& displaymessagetext, const String& displaymessagetext2) {
-    u8g2->clearBuffer();
-    u8g2->drawStr(0, 45, displaymessagetext.c_str());
-    u8g2->drawStr(0, 55, displaymessagetext2.c_str());
+    if (config.get<int>("display.template") == 4) {
+        int printrow = 47;
+        u8g2->clearBuffer();
+        // Create modifiable copies
+        char text1[displaymessagetext.length() + 1];
+        char text2[displaymessagetext2.length() + 1];
 
-    u8g2->drawXBMP(38, 0, CleverCoffee_Logo_width, CleverCoffee_Logo_height, CleverCoffee_Logo);
+        strcpy(text1, displaymessagetext.c_str());
+        strcpy(text2, displaymessagetext2.c_str());
 
+        char* token = strtok(text1, " ");
+        while (token != NULL) {
+            u8g2->drawStr(0, printrow, token);
+            token = strtok(NULL, " "); // Get the next token
+            printrow += 10;
+        }
+        token = strtok(text2, " ");
+        while (token != NULL) {
+            u8g2->drawStr(0, printrow, token);
+            token = strtok(NULL, " "); // Get the next token
+            printrow += 10;
+        }
+        u8g2->drawXBMP(11, 4, CleverCoffee_Logo_width, CleverCoffee_Logo_height, CleverCoffee_Logo);
+    }
+    else {
+        u8g2->clearBuffer();
+        u8g2->drawStr(0, 45, displaymessagetext.c_str());
+        u8g2->drawStr(0, 55, displaymessagetext2.c_str());
+        u8g2->drawXBMP(38, 0, CleverCoffee_Logo_width, CleverCoffee_Logo_height, CleverCoffee_Logo);
+    }
     u8g2->sendBuffer();
 }
 
@@ -359,23 +462,42 @@ inline bool displayFullscreenBrewTimer() {
 
     if (shouldDisplayBrewTimer()) {
         u8g2->clearBuffer();
-        u8g2->drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
-
-        if (config.get<bool>("hardware.sensors.scale.enabled")) {
-            u8g2->setFont(u8g2_font_profont22_tf);
-            u8g2->setCursor(64, 15);
-            u8g2->print(currBrewTime / 1000, 1);
-            u8g2->print("s");
-            u8g2->setCursor(64, 38);
-            u8g2->print(currBrewWeight, 1);
-            u8g2->print("g");
-            u8g2->setFont(u8g2_font_profont11_tf);
+        if (config.get<int>("display.template") == 4) {
+            u8g2->drawXBMP(12, 12, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
+            if (config.get<bool>("hardware.sensors.scale.enabled")) {
+                u8g2->setFont(u8g2_font_profont22_tf);
+                u8g2->setCursor(5, 70);
+                u8g2->print(currBrewTime / 1000, 1);
+                u8g2->print("s");
+                u8g2->setCursor(5, 100);
+                u8g2->print(currBrewWeight, 1);
+                u8g2->print("g");
+                u8g2->setFont(u8g2_font_profont11_tf);
+            }
+            else {
+                displayBrewtimeFs(1, 80, currBrewTime);
+            }
+            displayWaterIcon(55, 1);
         }
         else {
-            displayBrewtimeFs(48, 25, currBrewTime);
-        }
+            u8g2->drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
 
-        displayWaterIcon(119, 1);
+            if (config.get<bool>("hardware.sensors.scale.enabled")) {
+                u8g2->setFont(u8g2_font_profont22_tf);
+                u8g2->setCursor(64, 15);
+                u8g2->print(currBrewTime / 1000, 1);
+                u8g2->print("s");
+                u8g2->setCursor(64, 38);
+                u8g2->print(currBrewWeight, 1);
+                u8g2->print("g");
+                u8g2->setFont(u8g2_font_profont11_tf);
+            }
+            else {
+                displayBrewtimeFs(48, 25, currBrewTime);
+            }
+
+            displayWaterIcon(119, 1);
+        }
         u8g2->sendBuffer();
         return true;
     }
@@ -393,13 +515,19 @@ inline bool displayFullscreenManualFlushTimer() {
 
     if (machineState == kManualFlush) {
         u8g2->clearBuffer();
-        u8g2->drawXBMP(0, 12, Manual_Flush_Logo_width, Manual_Flush_Logo_height, Manual_Flush_Logo);
-        displayBrewtimeFs(48, 25, currBrewTime);
-        displayWaterIcon(119, 1);
+        if (config.get<int>("display.template") == 4) {
+            u8g2->drawXBMP(12, 12, Manual_Flush_Logo_width, Manual_Flush_Logo_height, Manual_Flush_Logo);
+            displayBrewtimeFs(1, 80, currBrewTime);
+            displayWaterIcon(55, 1);
+        }
+        else {
+            u8g2->drawXBMP(0, 12, Manual_Flush_Logo_width, Manual_Flush_Logo_height, Manual_Flush_Logo);
+            displayBrewtimeFs(48, 25, currBrewTime);
+            displayWaterIcon(119, 1);
+        }
         u8g2->sendBuffer();
         return true;
     }
-
     return false;
 }
 
