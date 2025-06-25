@@ -1,17 +1,10 @@
 %HEADER%
     %VAR_HEADER_VUE_NUMBER_INPUT%
-    %VAR_HEADER_UPLOT%    
+    %VAR_HEADER_UPLOT%
 
     <script type="module">
-        if (window.appCreated == true) {
-            vueApp.component(VueNumberInput.name, VueNumberInput);
-            vueApp.mount('#content')
-        } else {
-            window.addEventListener('appCreated', () => {
-                vueApp.component(VueNumberInput.name, VueNumberInput);
-                vueApp.mount('#content')
-            })
-        }
+        (window.appCreated ? Promise.resolve() : new Promise(resolve => window.addEventListener('appCreated', resolve)))
+            .then(() => vueApp.mount('#content'));
     </script>
 
     <div class="content-wrapper">
@@ -43,7 +36,7 @@
                                     </div>
                                 </template>
                             </template>
-                            <div class="col-md-3 pt-5 pe-5">
+                            <div class="col-md-3 pt-5 pe-5 clearfix">
                                 <button type="submit" class="btn btn-primary float-end" :disabled="isPostingForm">
                                     <span v-show="showPostSucceeded" class="fa-solid fa-check me-1"></span>
                                     <span v-show="isPostingForm" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>

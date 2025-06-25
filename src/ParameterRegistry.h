@@ -18,7 +18,12 @@ enum ParameterSection {
     sPowerSection = 7,
     sMqttSection = 8,
     sSystemSection = 9,
-    sOtherSection = 10
+    sOtherSection = 10,
+    sHardwareOledSection = 11,
+    sHardwareRelaySection = 12,
+    sHardwareSwitchSection = 13,
+    sHardwareLedSection = 14,
+    sHardwareSensorSection = 15
 };
 
 inline const char* getSectionName(const int sectionId) {
@@ -45,6 +50,16 @@ inline const char* getSectionName(const int sectionId) {
             return "System";
         case sOtherSection:
             return "Other";
+        case sHardwareOledSection:
+            return "OLED";
+        case sHardwareRelaySection:
+            return "Relays";
+        case sHardwareSwitchSection:
+            return "Switches";
+        case sHardwareLedSection:
+            return "LEDs";
+        case sHardwareSensorSection:
+            return "Sensors";
         default:
             return "Unknown Section";
     }
@@ -139,6 +154,7 @@ class ParameterRegistry {
 
         void forceSave() {
             if (!_config || !_pendingChanges) {
+                LOG(INFO, "No pending changes, configuration not written to filesystem");
                 return;
             }
 

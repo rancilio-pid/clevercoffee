@@ -692,6 +692,317 @@ void ParameterRegistry::initialize(Config& config) {
         "Set the logging verbosity level"
     );
 
+    // Hardware section
+
+    // OLED
+    addBoolConfigParam(
+        "hardware.oled.enabled",
+        "Enable OLED Display",
+        sHardwareOledSection,
+        100,
+        nullptr,
+        "Enable or disable the OLED display"
+    );
+
+    addEnumConfigParam(
+        "hardware.oled.type",
+        "OLED Type",
+        sHardwareOledSection,
+        101,
+        nullptr,
+        (const char* const[]){"SSD1306", "SH1106"},
+        2,
+        "Select your OLED display type"
+    );
+
+    addNumericConfigParam<int>(
+        "hardware.oled.address",
+        "I2C Address",
+        kInteger,
+        sHardwareOledSection,
+        102,
+        nullptr,
+        0x00, 0xFF,
+        "I2C address of the OLED display (usually 0x3C or 0x3D)"
+    );
+
+    // Relays
+    addEnumConfigParam(
+        "hardware.relays.heater.trigger_type",
+        "Heater Relay Trigger Type",
+        sHardwareRelaySection,
+        101,
+        nullptr,
+        (const char* const[]){"Low Trigger", "High Trigger"},
+        2,
+        "Relay trigger type for heater control"
+    );
+
+    addEnumConfigParam(
+        "hardware.relays.pump_valve.trigger_type",
+        "Pump/Valve Relay Trigger Type",
+        sHardwareRelaySection,
+        102,
+        nullptr,
+        (const char* const[]){"Low Trigger", "High Trigger"},
+        2,
+        "Relay trigger type for pump and valve control"
+    );
+
+    // Switches
+    addBoolConfigParam(
+        "hardware.switches.brew.enabled",
+        "Enable Brew Switch",
+        sHardwareSwitchSection,
+        101,
+        nullptr,
+        "Enable physical brew switch"
+    );
+
+    addEnumConfigParam(
+        "hardware.switches.brew.type",
+        "Brew Switch Type",
+        sHardwareSwitchSection,
+        102,
+        nullptr,
+        (const char* const[]){"Momentary", "Toggle"},
+        2,
+        "Type of brew switch connected"
+    );
+
+    addEnumConfigParam(
+        "hardware.switches.brew.mode",
+        "Brew Switch Mode",
+        sHardwareSwitchSection,
+        103,
+        nullptr,
+        (const char* const[]){"Normally Open", "Normally Closed"},
+        2,
+        "Electrical configuration of brew switch"
+    );
+
+    addBoolConfigParam(
+        "hardware.switches.steam.enabled",
+        "Enable Steam Switch",
+        sHardwareSwitchSection,
+        104,
+        nullptr,
+        "Enable physical steam switch"
+    );
+
+    addEnumConfigParam(
+        "hardware.switches.steam.type",
+        "Steam Switch Type",
+        sHardwareSwitchSection,
+        105,
+        nullptr,
+        (const char* const[]){"Momentary", "Toggle"},
+        2,
+        "Type of steam switch connected"
+    );
+
+    addEnumConfigParam(
+        "hardware.switches.steam.mode",
+        "Steam Switch Mode",
+        sHardwareSwitchSection,
+        106,
+        nullptr,
+        (const char* const[]){"Normally Open", "Normally Closed"},
+        2,
+        "Electrical configuration of steam switch"
+    );
+
+    addBoolConfigParam(
+        "hardware.switches.power.enabled",
+        "Enable Power Switch",
+        sHardwareSwitchSection,
+        107,
+        nullptr,
+        "Enable physical power switch"
+    );
+
+    addEnumConfigParam(
+        "hardware.switches.power.type",
+        "Power Switch Type",
+        sHardwareSwitchSection,
+        108,
+        nullptr,
+        (const char* const[]){"Momentary", "Toggle"},
+        3,
+        "Type of power switch connected"
+    );
+
+    addEnumConfigParam(
+        "hardware.switches.power.mode",
+        "Power Switch Mode",
+        sHardwareSwitchSection,
+        109,
+        nullptr,
+        (const char* const[]){"Normally Open", "Normally Closed"},
+        2,
+        "Electrical configuration of power switch"
+    );
+
+    // LEDs
+    addBoolConfigParam(
+        "hardware.leds.status.enabled",
+        "Enable Status LED",
+        sHardwareLedSection,
+        101,
+        nullptr,
+        "Enable status indicator LED"
+    );
+
+    addBoolConfigParam(
+        "hardware.leds.status.inverted",
+        "Invert Status LED",
+        sHardwareLedSection,
+        102,
+        nullptr,
+        "Invert the status LED logic (for common anode LEDs)"
+    );
+
+    addBoolConfigParam(
+        "hardware.leds.brew.enabled",
+        "Enable Brew LED",
+        sHardwareLedSection,
+        103,
+        nullptr,
+        "Enable brew indicator LED"
+    );
+
+    addBoolConfigParam(
+        "hardware.leds.brew.inverted",
+        "Invert Brew LED",
+        sHardwareLedSection,
+        104,
+        nullptr,
+        "Invert the brew LED logic (for common anode LEDs)"
+    );
+
+    addBoolConfigParam(
+        "hardware.leds.steam.enabled",
+        "Enable Steam LED",
+        sHardwareLedSection,
+        105,
+        nullptr,
+        "Enable steam indicator LED"
+    );
+
+    addBoolConfigParam(
+        "hardware.leds.steam.inverted",
+        "Invert Steam LED",
+        sHardwareLedSection,
+        106,
+        nullptr,
+        "Invert the steam LED logic (for common anode LEDs)"
+    );
+
+    // Sensors
+    addEnumConfigParam(
+        "hardware.sensors.temperature.type",
+        "Temperature Sensor Type",
+        sHardwareSensorSection,
+        101,
+        nullptr,
+        (const char* const[]){"TSIC306", "Dallas DS18B20"},
+        2,
+        "Type of temperature sensor connected"
+    );
+
+    addBoolConfigParam(
+        "hardware.sensors.pressure.enabled",
+        "Enable Pressure Sensor",
+        sHardwareSensorSection,
+        102,
+        nullptr,
+        "Enable pressure sensor for monitoring brew pressure"
+    );
+
+    addBoolConfigParam(
+        "hardware.sensors.watertank.enabled",
+        "Enable Water Tank Sensor",
+        sHardwareSensorSection,
+        103,
+        nullptr,
+        "Enable water tank level sensor"
+    );
+
+    addEnumConfigParam(
+        "hardware.sensors.watertank.mode",
+        "Water Tank Sensor Mode",
+        sHardwareSensorSection,
+        104,
+        nullptr,
+        (const char* const[]){"Normally Open", "Normally Closed"},
+        2,
+        "Electrical configuration of water tank sensor"
+    );
+
+    addBoolConfigParam(
+        "hardware.sensors.scale.enabled",
+        "Enable Scale",
+        sHardwareSensorSection,
+        105,
+        nullptr,
+        "Enable integrated scale for weight-based brewing"
+    );
+
+    addEnumConfigParam(
+        "hardware.sensors.scale.type",
+        "Scale Setup Type",
+        sHardwareSensorSection,
+        106,
+        nullptr,
+        (const char* const[]){"2 load cells", "1 load cell"},
+        2,
+        "Scale load cell configuration"
+    );
+
+    addNumericConfigParam<int>(
+        "hardware.sensors.scale.samples",
+        "Scale Samples",
+        kInteger,
+        sHardwareSensorSection,
+        107,
+        nullptr,
+        1, 20,
+        "Number of samples to average for scale readings (higher = more stable but slower)"
+    );
+
+    addNumericConfigParam<double>(
+        "hardware.sensors.scale.calibration",
+        "Scale Calibration Factor",
+        kDouble,
+        sHardwareSensorSection,
+        108,
+        nullptr,
+        -10000.0, 10000.0,
+        "Primary scale calibration factor (adjust during calibration process)"
+    );
+
+    addNumericConfigParam<double>(
+        "hardware.sensors.scale.calibration2",
+        "Scale Calibration Factor 2",
+        kDouble,
+        sHardwareSensorSection,
+        109,
+        nullptr,
+        -10000.0, 10000.0,
+        "Secondary scale calibration factor (for dual load cell setups)"
+    );
+
+    addNumericConfigParam<double>(
+        "hardware.sensors.scale.known_weight",
+        "Known Calibration Weight",
+        kDouble,
+        sHardwareSensorSection,
+        110,
+        nullptr,
+        1.0, 5000.0,
+        "Weight in grams of the known calibration weight used for scale setup"
+    );
+
     // clang-format on
 
     addParam(std::make_shared<Parameter>("VERSION", "Version", kCString, sOtherSection, 7, [] { return sysVersion; }, nullptr, 64, false, "", [] { return false; }, nullptr));

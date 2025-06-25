@@ -1,26 +1,20 @@
-
 %HEADER%
 
     <script type="module">
-        if (window.appCreated == true) {
-            vueApp.mount('#parameters')
-        } else {
-            window.addEventListener('appCreated', () => {
-                vueApp.mount('#parameters')
-            })
-        }
+        (window.appCreated ? Promise.resolve() : new Promise(resolve => window.addEventListener('appCreated', resolve)))
+            .then(() => vueApp.mount('#content'));
     </script>
 
     <div class="content-wrapper">
         <div class="container my-5">
-            <div id="parameters">
+            <div id="content">
                 <div class="card card-accent-dark mb-5 shadow-sm rounded">
-                    <template v-for="(section, sectionKey, sectionIndex) in parameterSections">
-                        <div class="card-body bg-light pb-1 rounded">
-                            <h5 class="card-title"> {{ sectionName(sectionKey) }} </h5>
-                        </div>
-                        <div class="card-body">
-                            <form @submit.prevent="postParameters">
+                    <form @submit.prevent="postParameters">
+                        <template v-for="(section, sectionKey) in parameterSectionsComputed">
+                            <div class="card-body bg-light pb-1 rounded">
+                                <h5 class="card-title"> {{ sectionName(sectionKey) }} </h5>
+                            </div>
+                            <div class="card-body">
                                 <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3">
                                     <template v-for="param in section">
                                         <template v-if="param.show">
@@ -86,17 +80,19 @@
                                         </template>
                                     </template>
                                 </div>
-                                <br>
-                                <div v-if="sectionIndex == Object.keys(parameterSections).length-1" class="float-end me-2">
-                                    <button type="submit" class="btn btn-primary" :disabled="isPostingForm">
-                                        <span v-show="showPostSucceeded" class="fa-solid fa-check me-1"></span>
-                                        <span v-show="isPostingForm" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                        Save
-                                    </button>
-                                </div>
-                            </form>
+                            </div>
+                        </template>
+
+                        <div class="card-body clearfix">
+                            <div class="float-end me-2">
+                                <button type="submit" class="btn btn-primary" :disabled="isPostingForm">
+                                    <span v-show="showPostSucceeded" class="fa-solid fa-check me-1"></span>
+                                    <span v-show="isPostingForm" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                    Save
+                                </button>
+                            </div>
                         </div>
-                    </template>
+                    </form>
                 </div>
             </div>
         </div>

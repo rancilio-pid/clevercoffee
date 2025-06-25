@@ -78,43 +78,41 @@ inline String getValue(const String& varName) {
 }
 
 inline void paramToJson(const String& name, const std::shared_ptr<Parameter>& param, JsonDocument& doc) {
-    const auto paramObj = doc.add<JsonObject>();
-    paramObj["type"] = param->getType();
-    paramObj["name"] = name;
-    paramObj["displayName"] = param->getDisplayName();
-    paramObj["section"] = param->getSection();
-    paramObj["position"] = param->getPosition();
-    paramObj["hasHelpText"] = param->hasHelpText();
-    paramObj["show"] = param->shouldShow();
+    doc["type"] = param->getType();
+    doc["name"] = name;
+    doc["displayName"] = param->getDisplayName();
+    doc["section"] = param->getSection();
+    doc["position"] = param->getPosition();
+    doc["hasHelpText"] = param->hasHelpText();
+    doc["show"] = param->shouldShow();
 
     // Set parameter value using the appropriate method based on type
     switch (param->getType()) {
         case kInteger:
-            paramObj["value"] = static_cast<int>(param->getValue());
+            doc["value"] = static_cast<int>(param->getValue());
             break;
 
         case kUInt8:
-            paramObj["value"] = static_cast<uint8_t>(param->getValue());
+            doc["value"] = static_cast<uint8_t>(param->getValue());
             break;
 
         case kDouble:
-            paramObj["value"] = round2(param->getValue());
+            doc["value"] = round2(param->getValue());
             break;
 
         case kFloat:
-            paramObj["value"] = round2(static_cast<float>(param->getValue()));
+            doc["value"] = round2(static_cast<float>(param->getValue()));
             break;
 
         case kCString:
-            paramObj["value"] = param->getStringValue();
+            doc["value"] = param->getStringValue();
             break;
 
         case kEnum:
             {
-                paramObj["value"] = static_cast<int>(param->getValue());
+                doc["value"] = static_cast<int>(param->getValue());
 
-                const JsonArray options = paramObj["options"].to<JsonArray>();
-
+                const JsonArray options = doc["options"].to<JsonArray>();
                 const char* const* enumOptions = param->getEnumOptions();
                 const size_t enumCount = param->getEnumCount();
 
@@ -128,13 +126,12 @@ inline void paramToJson(const String& name, const std::shared_ptr<Parameter>& pa
             }
 
         default:
-            // Handle unknown types gracefully
-            paramObj["value"] = param->getValue();
+            doc["value"] = param->getValue();
             break;
     }
 
-    paramObj["min"] = param->getMinValue();
-    paramObj["max"] = param->getMaxValue();
+    doc["min"] = param->getMinValue();
+    doc["max"] = param->getMaxValue();
 }
 
 inline String getHeader(const String& varName) {
@@ -230,97 +227,99 @@ inline void serverSetup() {
         });
     }
 
-    server.on("/parameters", HTTP_GET | HTTP_POST, [](AsyncWebServerRequest* request) {
-        auto& registry = ParameterRegistry::getInstance();
+    server.on("/parameters", [](AsyncWebServerRequest* request) {
+        if (request->method() == 1) { // HTTP_GET
+            const auto& registry = ParameterRegistry::getInstance();
+            const auto& parameters = registry.getParameters();
 
-        size_t webVisibleCount = 0;
-        const auto& parameters = registry.getParameters();
+            JsonDocument doc;
+            auto array = doc.to<JsonArray>();
 
-        for (const auto& param : parameters) {
-            if (param->shouldShow()) {
-                webVisibleCount++;
+            // Check for filter parameter
+            String filterType = "";
+            if (request->hasParam("filter")) {
+                filterType = request->getParam("filter")->value();
             }
-        }
 
-        JsonDocument doc;
+            // Get parameters based on filter
+            for (const auto& param : parameters) {
+                if (!param->shouldShow()) continue;
 
-        if (request->method() == 2) { // HTTP_POST - Update parameters
-            const auto requestParams = request->params();
+                bool includeParam = false;
 
-            for (auto i = 0u; i < requestParams; ++i) {
-                auto* p = request->getParam(i);
-                String varName;
-
-                if (p->name().startsWith("var")) {
-                    varName = p->name().substring(3);
+                if (filterType == "hardware") {
+                    includeParam = param->getSection() >= 11 && param->getSection() <= 15;
+                }
+                else if (filterType == "behavior") {
+                    includeParam = param->getSection() >= 0 && param->getSection() <= 9;
+                }
+                else if (filterType == "other") {
+                    includeParam = param->getSection() == 10;
                 }
                 else {
-                    varName = p->name();
+                    includeParam = true;
                 }
 
-                try {
-                    std::shared_ptr<Parameter> param = registry.getParameterById(varName.c_str());
+                if (includeParam) {
+                    JsonDocument paramDoc;
+                    paramToJson(param->getId(), param, paramDoc);
 
-                    if (param == nullptr || !param->shouldShow()) {
-                        continue;
+                    if (const bool success = array.add(paramDoc); !success) {
+                        LOGF(ERROR, "Failed to add parameter %s to JSON array", param->getId());
                     }
-
-                    if (param->getType() == kCString) {
-                        if (registry.setParameterValue(varName.c_str(), p->value())) {
-                            paramToJson(varName, param, doc);
-                        }
-                    }
-                    else {
-                        double newVal = 0.0;
-                        newVal = std::stod(p->value().c_str());
-
-                        if (registry.setParameterValue(varName.c_str(), newVal)) {
-                            paramToJson(varName, param, doc);
-                        }
-                    }
-                } catch (const std::out_of_range&) {}
+                }
             }
-
-            registry.forceSave();
 
             String paramsJson;
             serializeJson(doc, paramsJson);
             request->send(200, "application/json", paramsJson);
-
-            // Write the new values to MQTT
-            writeSysParamsToMQTT(true);
         }
-        else if (request->method() == 1) { // HTTP_GET - Retrieve parameters
-            const size_t paramCount = request->params();
-            const String paramId = paramCount > 0 ? request->getParam(0)->value() : "";
+        else if (request->method() == 2) { // HTTP_POST
+            auto& registry = ParameterRegistry::getInstance();
 
-            if (!paramId.isEmpty()) {
-                // Get specific parameter
+            // Create a temporary copy of parameter data to avoid accessing request after response
+            std::vector<std::pair<String, String>> paramUpdates;
+            const auto requestParams = request->params();
 
-                if (const std::shared_ptr<Parameter> param = registry.getParameterById(paramId.c_str()); param != nullptr && param->shouldShow()) {
-                    paramToJson(paramId, param, doc);
+            for (auto i = 0u; i < requestParams; ++i) {
+                if (auto* p = request->getParam(i); p && p->name().length() > 0 && p->value().length() > 0) {
+                    paramUpdates.emplace_back(p->name(), p->value());
                 }
             }
-            else {
-                // Get all web-visible parameters
-                for (const auto& param : parameters) {
-                    if (param->shouldShow()) {
-                        paramToJson(param->getId(), param, doc);
+
+            // Process parameters using the copied data
+            for (const auto& param : paramUpdates) {
+                const String& varName = param.first;
+                const String& value = param.second;
+
+                try {
+                    std::shared_ptr<Parameter> paramPtr = registry.getParameterById(varName.c_str());
+
+                    if (paramPtr == nullptr || !paramPtr->shouldShow()) {
+                        continue;
                     }
+
+                    if (paramPtr->getType() == kCString) {
+                        registry.setParameterValue(varName.c_str(), value);
+                    }
+                    else {
+                        double newVal = std::stod(value.c_str());
+                        registry.setParameterValue(varName.c_str(), newVal);
+                    }
+                } catch (const std::out_of_range&) {
+                    LOGF(INFO, "Parameter %s out of range, ignoring", varName.c_str());
                 }
             }
-        }
 
-        if (doc.size() == 0) {
-            request->send(404, "application/json",
-                          F("{ \"code\": 404, \"message\": "
-                            "\"Parameter not found\"}"));
-            return;
-        }
+            registry.forceSave();
+            writeSysParamsToMQTT(true);
 
-        String paramsJson;
-        serializeJson(doc, paramsJson);
-        request->send(200, "application/json", paramsJson);
+            request->send(200, "text/plain", "OK");
+        }
+        else {
+            LOGF(ERROR, "Unsupported HTTP method %d for /parameters", request->method());
+            request->send(405, "text/plain", "Method Not Allowed");
+        }
     });
 
     server.on("/parameterHelp", HTTP_GET, [](AsyncWebServerRequest* request) {

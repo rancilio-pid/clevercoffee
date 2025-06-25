@@ -1,4 +1,3 @@
-
 const appCreatedEvent = new Event('appCreated')
 
 const vueApp = Vue.createApp({
@@ -8,6 +7,7 @@ const vueApp = Vue.createApp({
             parametersHelpTexts: [],
             isPostingForm: false,
             showPostSucceeded: false,
+            filter: 'behavior',
 
             // Config upload properties
             selectedFile: null,
@@ -16,32 +16,76 @@ const vueApp = Vue.createApp({
             uploadSuccess: false,
 
             // Factory reset properties
-            factoryResetMessage: ''
+            factoryResetMessage: '',
+            factoryResetSuccess: false
         }
     },
 
+    mounted() {
+        // Get filter from URL parameter if available
+        const urlParams = new URLSearchParams(window.location.search);
+        let filter = urlParams.get('filter');
+
+        // If no filter specified and we're on index page, use empty filter to get all parameters
+        if (!filter && (window.location.pathname === '/' || window.location.pathname === '/index.html')) {
+            filter = '';
+        } else if (!filter) {
+            filter = this.filter; // use default
+        }
+
+        this.filter = filter;
+
+        // Fetch parameters with the determined filter
+        this.fetchParameters(this.filter);
+    },
+
     methods: {
-        fetchParameters() {
-            fetch("/parameters")
+        fetchParameters(filter = 'behavior') {
+            let url = "/parameters";
+
+            if (filter) {
+                url += "?filter=" + filter;
+            }
+
+            fetch(url)
                 .then(response => response.json())
                 .then(data => {
-                    this.parameters = data.sort((a,b) => a["position"] - b["position"])
+                    this.parameters = data.sort((a,b) => a["position"] - b["position"]);
                 })
-                .catch(err => console.log(err.messages))
+                .catch(err => {
+                    console.error("Error fetching parameters:", err);
+                })
         },
-
         postParameters() {
-            // post parameter array the same as if it was posted from a form (the values are already updated
-            // from the v-model bindings)
-            var formBody = [];
+            // Only post parameters that are currently displayed (filtered parameters)
+            const formBody = [];
 
-            this.parameters.forEach(param => {
-                var encodedKey = encodeURIComponent(param.name);
-                var encodedValue = encodeURIComponent(param.value);
-                formBody.push(encodedKey + "=" + encodedValue);
+            // Get currently displayed parameters from the computed property
+            const displayedSections = this.parameterSectionsComputed;
+
+            // Flatten all displayed parameters
+            const displayedParameters = [];
+            Object.values(displayedSections).forEach(section => {
+                section.forEach(param => {
+                    if (param.show) {
+                        displayedParameters.push(param);
+                    }
+                });
             });
 
-            formBody = formBody.join("&");
+            // Build form data from displayed parameters
+            displayedParameters.forEach(param => {
+                const key = param.name;
+                const encodedValue = encodeURIComponent(param.value);
+                formBody.push(key + "=" + encodedValue);
+            });
+
+            if (formBody.length === 0) {
+                console.log("No parameters to save");
+                return;
+            }
+
+            const formBodyString = formBody.join("&");
 
             const requestOptions = {
                 method: "POST",
@@ -49,28 +93,33 @@ const vueApp = Vue.createApp({
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
                 cache: 'no-cache',
-                body: formBody
+                body: formBodyString
             };
 
-            this.isPostingForm = true
+            this.isPostingForm = true;
 
-            fetch("/parameters", requestOptions)
-                .then(response => 0)
+            const url = "/parameters";
+
+            fetch(url, requestOptions)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    // Parameters saved successfully
+                })
                 .catch(err => {
-                    console.log(err.messages)
-                    // TODO: show (red) error symbol
+                    console.error("Error saving parameters:", err);
                 })
                 .finally(() => {
-                    this.isPostingForm = false
-                    // show checkmark, hide after timeout
-                    this.showPostSucceeded = true
+                    this.isPostingForm = false;
+                    this.showPostSucceeded = true;
                     setTimeout(() => {
-                        this.showPostSucceeded = false
-                    }, 3000)
-
-                    //refresh parameters to be shown
-                    this.fetchParameters()
-                })
+                        this.showPostSucceeded = false;
+                    }, 2000);
+                });
         },
 
         fetchHelpText(paramName) {
@@ -92,7 +141,13 @@ const vueApp = Vue.createApp({
                 6: 'Maintenance',
                 7: 'Power Settings',
                 8: 'MQTT Settings',
-                9: 'System Settings'
+                9: 'System Settings',
+                10: 'Other',
+                11: 'OLED Display',
+                12: 'Relays',
+                13: 'Switches',
+                14: 'LEDs',
+                15: 'Sensors'
             }
 
             return sectionNames[sectionId]
@@ -190,7 +245,6 @@ const vueApp = Vue.createApp({
                 this.uploadSuccess = true;
             }
         },
-
 
         async uploadConfig() {
             if (!this.selectedFile) {
@@ -326,17 +380,18 @@ const vueApp = Vue.createApp({
     },
 
     computed: {
-        parameterSections() {
-            const excludedSections = [10] // Don't show sOtherSection
+        parameterSectionsComputed() {
+            const excludedSections = [10]
             const filteredParameters = this.parameters.filter(param => !excludedSections.includes(param.section))
             return groupBy(filteredParameters, "section")
         }
-    },
-
-    mounted() {
-        this.fetchParameters()
     }
 })
+
+// Register VueNumberInput component globally if it exists
+if (typeof VueNumberInput !== 'undefined') {
+    vueApp.component(VueNumberInput.name, VueNumberInput);
+}
 
 window.vueApp = vueApp
 window.dispatchEvent(appCreatedEvent)
