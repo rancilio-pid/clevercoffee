@@ -66,10 +66,12 @@ const vueApp = Vue.createApp({
             // Flatten all displayed parameters
             const displayedParameters = [];
             Object.values(displayedSections).forEach(section => {
-                section.forEach(param => {
-                    if (param.show) {
-                        displayedParameters.push(param);
-                    }
+                Object.values(section).forEach(group => {
+                    group.forEach(param => {
+                        if (param.show) {
+                            displayedParameters.push(param);
+                        }
+                    });
                 });
             });
 
@@ -151,6 +153,11 @@ const vueApp = Vue.createApp({
             }
 
             return sectionNames[sectionId]
+        },
+
+        // Extract group number from position (second digit)
+        getGroupFromPosition(position) {
+            return Math.floor((position % 100) / 10);
         },
 
         // Helper method to determine input type for parameters
@@ -383,7 +390,17 @@ const vueApp = Vue.createApp({
         parameterSectionsComputed() {
             const excludedSections = [10]
             const filteredParameters = this.parameters.filter(param => !excludedSections.includes(param.section))
-            return groupBy(filteredParameters, "section")
+
+            // First group by section
+            const sections = groupBy(filteredParameters, "section")
+
+            // Then group each section by the group number (second digit of position)
+            const result = {}
+            Object.keys(sections).forEach(sectionKey => {
+                result[sectionKey] = groupBy(sections[sectionKey], param => this.getGroupFromPosition(param.position))
+            })
+
+            return result
         }
     }
 })
@@ -404,11 +421,13 @@ function groupBy(array, key) {
     const result = {}
 
     array.forEach(item => {
-        if (!result[item[key]]) {
-            result[item[key]] = []
+        const groupKey = typeof key === 'function' ? key(item) : item[key]
+
+        if (!result[groupKey]) {
+            result[groupKey] = []
         }
 
-        result[item[key]].push(item)
+        result[groupKey].push(item)
     })
 
     return result

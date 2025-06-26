@@ -177,8 +177,6 @@ inline String staticProcessor(const String& var) {
 }
 
 inline void serverSetup() {
-    // set up dynamic routes (endpoints)
-
     server.on("/toggleSteam", HTTP_POST, [](AsyncWebServerRequest* request) {
         const bool steamMode = !steamON;
         setSteamMode(steamMode);
@@ -270,55 +268,57 @@ inline void serverSetup() {
                 }
             }
 
-            String paramsJson;
-            serializeJson(doc, paramsJson);
-            request->send(200, "application/json", paramsJson);
+            AsyncResponseStream* response = request->beginResponseStream("application/json");
+            response->addHeader("Connection", "close"); // Force connection close
+            serializeJson(doc, *response);
+            request->send(response);
         }
         else if (request->method() == 2) { // HTTP_POST
             auto& registry = ParameterRegistry::getInstance();
 
-            // Create a temporary copy of parameter data to avoid accessing request after response
-            std::vector<std::pair<String, String>> paramUpdates;
+            String responseMessage = "OK";
+            bool hasErrors = false;
+
             const auto requestParams = request->params();
 
             for (auto i = 0u; i < requestParams; ++i) {
                 if (auto* p = request->getParam(i); p && p->name().length() > 0 && p->value().length() > 0) {
-                    paramUpdates.emplace_back(p->name(), p->value());
-                }
-            }
+                    const String& varName = p->name();
+                    const String& value = p->value();
 
-            // Process parameters using the copied data
-            for (const auto& param : paramUpdates) {
-                const String& varName = param.first;
-                const String& value = param.second;
+                    try {
+                        std::shared_ptr<Parameter> paramPtr = registry.getParameterById(varName.c_str());
 
-                try {
-                    std::shared_ptr<Parameter> paramPtr = registry.getParameterById(varName.c_str());
+                        if (paramPtr == nullptr || !paramPtr->shouldShow()) {
+                            continue;
+                        }
 
-                    if (paramPtr == nullptr || !paramPtr->shouldShow()) {
-                        continue;
+                        if (paramPtr->getType() == kCString) {
+                            registry.setParameterValue(varName.c_str(), value);
+                        }
+                        else {
+                            double newVal = std::stod(value.c_str());
+                            registry.setParameterValue(varName.c_str(), newVal);
+                        }
+                    } catch (const std::exception& e) {
+                        LOGF(INFO, "Parameter %s processing failed: %s", varName.c_str(), e.what());
+                        hasErrors = true;
                     }
-
-                    if (paramPtr->getType() == kCString) {
-                        registry.setParameterValue(varName.c_str(), value);
-                    }
-                    else {
-                        double newVal = std::stod(value.c_str());
-                        registry.setParameterValue(varName.c_str(), newVal);
-                    }
-                } catch (const std::out_of_range&) {
-                    LOGF(INFO, "Parameter %s out of range, ignoring", varName.c_str());
                 }
             }
 
             registry.forceSave();
             writeSysParamsToMQTT(true);
 
-            request->send(200, "text/plain", "OK");
+            AsyncWebServerResponse* response = request->beginResponse(200, "text/plain", hasErrors ? "Partial Success" : "OK");
+            response->addHeader("Connection", "close");
+            request->send(response);
         }
         else {
             LOGF(ERROR, "Unsupported HTTP method %d for /parameters", request->method());
-            request->send(405, "text/plain", "Method Not Allowed");
+            AsyncWebServerResponse* response = request->beginResponse(405, "text/plain", "Method Not Allowed");
+            response->addHeader("Connection", "close");
+            request->send(response);
         }
     });
 
@@ -358,6 +358,7 @@ inline void serverSetup() {
     // https://stackoverflow.com/questions/61559745/espasyncwebserver-serve-large-array-from-ram
     server.on("/timeseries", HTTP_GET, [](AsyncWebServerRequest* request) {
         AsyncResponseStream* response = request->beginResponseStream("application/json");
+        response->addHeader("Connection", "close"); // Force connection close
 
         JsonDocument doc;
 
