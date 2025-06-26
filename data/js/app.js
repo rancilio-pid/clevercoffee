@@ -383,6 +383,48 @@ const vueApp = Vue.createApp({
             } catch (e) {
                 // Expected - machine is restarting
             }
+        },
+
+        toggleFunction(endpoint, paramName, param) {
+            const formData = new FormData();
+            formData.append(`var${paramName}`, param.value == 1 ? '0' : '1');
+
+            fetch(endpoint, {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => {
+                    if (response.ok) {
+                        // Update the parameter value
+                        param.value = param.value == 1 ? 0 : 1;
+                    } else {
+                        console.error('Toggle failed');
+                        setTimeout(() => {
+                            document.getElementById(event.target.id).checked = param.value == 1;
+                        }, 100);
+                    }
+                })
+                .catch(error => {
+                    console.error('Toggle error:', error);
+                    setTimeout(() => {
+                        document.getElementById(event.target.id).checked = param.value == 1;
+                    }, 100);
+                });
+        },
+
+        confirmCalibrationToggle(param) {
+            if (param.value == 0) {
+                if (confirm('Are you sure you want to enter calibration mode?')) {
+                    this.toggleFunction('/toggleCalibration', 'CALIBRATION_ON', param);
+                } else {
+                    // Revert the switch
+                    setTimeout(() => {
+                        document.getElementById('calibration_toggle').checked = false;
+                    }, 100);
+                }
+            } else {
+                this.toggleFunction('/toggleCalibration', 'CALIBRATION_ON', param);
+            }
         }
     },
 
