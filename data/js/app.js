@@ -1,4 +1,4 @@
-const appCreatedEvent = new Event('appCreated')
+const appCreatedEvent = new CustomEvent('appCreated')
 
 const vueApp = Vue.createApp({
     data() {
@@ -385,9 +385,9 @@ const vueApp = Vue.createApp({
             }
         },
 
-        toggleFunction(endpoint, paramName, param) {
+        toggleFunction(endpoint, paramName, param, targetElement) {
             const formData = new FormData();
-            formData.append(`var${paramName}`, param.value == 1 ? '0' : '1');
+            formData.append(`var${paramName}`, param.value === 1 ? '0' : '1');
 
             fetch(endpoint, {
                 method: 'POST',
@@ -396,26 +396,30 @@ const vueApp = Vue.createApp({
                 .then(response => {
                     if (response.ok) {
                         // Update the parameter value
-                        param.value = param.value == 1 ? 0 : 1;
+                        param.value = param.value === 1 ? 0 : 1;
                     } else {
                         console.error('Toggle failed');
                         setTimeout(() => {
-                            document.getElementById(event.target.id).checked = param.value == 1;
+                            if (targetElement) {
+                                targetElement.checked = param.value === 1;
+                            }
                         }, 100);
                     }
                 })
                 .catch(error => {
                     console.error('Toggle error:', error);
                     setTimeout(() => {
-                        document.getElementById(event.target.id).checked = param.value == 1;
+                        if (targetElement) {
+                            targetElement.checked = param.value === 1;
+                        }
                     }, 100);
                 });
         },
 
-        confirmCalibrationToggle(param) {
-            if (param.value == 0) {
+        confirmCalibrationToggle(param, event) {
+            if (param.value === 0) {
                 if (confirm('Are you sure you want to enter calibration mode?')) {
-                    this.toggleFunction('/toggleCalibration', 'CALIBRATION_ON', param);
+                    this.toggleFunction('/toggleScaleCalibration', 'CALIBRATION_ON', param, event.target);
                 } else {
                     // Revert the switch
                     setTimeout(() => {
@@ -423,7 +427,7 @@ const vueApp = Vue.createApp({
                     }, 100);
                 }
             } else {
-                this.toggleFunction('/toggleCalibration', 'CALIBRATION_ON', param);
+                this.toggleFunction('/toggleScaleCalibration', 'CALIBRATION_ON', param, event.target);
             }
         }
     },
@@ -484,7 +488,7 @@ document.querySelector('body').addEventListener('click', function (e) {
             document.querySelectorAll('[data-bs-toggle="popover"]').forEach(function(el) {
                 const popover = bootstrap.Popover.getInstance(el);
 
-                if (popover != null) {
+                if (popover !== null) {
                     popover.hide();
                 }
             });
