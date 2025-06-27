@@ -416,20 +416,22 @@ const vueApp = Vue.createApp({
                 });
         },
 
-        confirmCalibrationToggle(param, event) {
-            if (param.value === 0) {
-                if (confirm('Are you sure you want to enter calibration mode?')) {
-                    this.toggleFunction('/toggleScaleCalibration', 'CALIBRATION_ON', param, event.target);
-                } else {
-                    // Revert the switch
-                    setTimeout(() => {
-                        document.getElementById('calibration_toggle').checked = false;
-                    }, 100);
-                }
-            } else {
-                this.toggleFunction('/toggleScaleCalibration', 'CALIBRATION_ON', param, event.target);
+        confirmCalibration() {
+            if (confirm('Are you sure you want to start the scale calibration?')) {
+                this.executeAction('/toggleScaleCalibration', 'CALIBRATION_ON');
             }
-        }
+        },
+
+        executeAction(endpoint, paramName) {
+            fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `var${paramName}=1`
+            });
+        },
+
     },
 
     computed: {

@@ -81,80 +81,78 @@
                     <div class="table-responsive pb-0">
                         <table class="table table-borderless pb-0 mb-0">
                             <tbody>
-                            <template v-for="param in parameters">
-                                <tr>
-                                    <template v-if="param.name == 'pid.enabled'">
-                                        <td class="align-middle"><b>PID Controller</b></td>
-                                        <td class="align-middle text-end">
-                                            <div class="form-check form-switch form-switch-lg">
-                                                <input class="form-check-input"
-                                                       type="checkbox"
-                                                       role="switch"
-                                                       id="pid_toggle"
-                                                       :checked="param.value == 1"
-                                                       @change="toggleFunction('/togglePid', 'pid.enabled', param)">
-                                                <label class="form-check-label" for="pid_toggle"></label>
-                                            </div>
-                                        </td>
-                                    </template>
-                                    <template v-if="param.name == 'STEAM_MODE'">
-                                        <td class="align-middle"><b>Steam Mode</b></td>
-                                        <td class="align-middle text-end">
-                                            <div class="form-check form-switch form-switch-lg">
-                                                <input class="form-check-input"
-                                                       type="checkbox"
-                                                       role="switch"
-                                                       id="steam_toggle"
-                                                       :checked="param.value == 1"
-                                                       @change="toggleFunction('/toggleSteam', 'STEAM_MODE', param)">
-                                                <label class="form-check-label" for="steam_toggle"></label>
-                                            </div>
-                                        </td>
-                                    </template>
-                                    <template v-if="param.name == 'BACKFLUSH_ON'">
-                                        <td class="align-middle"><b>Backflush Mode</b></td>
-                                        <td class="align-middle text-end">
-                                            <div class="form-check form-switch form-switch-lg">
-                                                <input class="form-check-input"
-                                                       type="checkbox"
-                                                       role="switch"
-                                                       id="backflush_toggle"
-                                                       :checked="param.value == 1"
-                                                       @change="toggleFunction('/toggleBackflush', 'BACKFLUSH_ON', param)">
-                                                <label class="form-check-label" for="backflush_toggle"></label>
-                                            </div>
-                                        </td>
-                                    </template>
-                                    <template v-if="param.name == 'TARE_ON'">
-                                        <td class="align-middle"><b>Tare Scale</b></td>
-                                        <td class="align-middle text-end">
-                                            <div class="form-check form-switch form-switch-lg">
-                                                <input class="form-check-input"
-                                                       type="checkbox"
-                                                       role="switch"
-                                                       id="tare_toggle"
-                                                       :checked="param.value == 1"
-                                                       @change="toggleFunction('/toggleTareScale', 'TARE_ON', param)">
-                                                <label class="form-check-label" for="tare_toggle"></label>
-                                            </div>
-                                        </td>
-                                    </template>
-                                    <template v-if="param.name == 'CALIBRATION_ON'">
-                                        <td class="align-middle"><b>Scale Calibration Mode</b></td>
-                                        <td class="align-middle text-end">
-                                            <div class="form-check form-switch form-switch-lg">
-                                                <input class="form-check-input"
-                                                       type="checkbox"
-                                                       role="switch"
-                                                       id="calibration_toggle"
-                                                       :checked="param.value == 1"
-                                                       @change="confirmCalibrationToggle(param)">
-                                                <label class="form-check-label" for="calibration_toggle"></label>
-                                            </div>
-                                        </td>
-                                    </template>
-                                </tr>
-                            </template>
+                                <template v-for="param in parameters">
+                                    <tr>
+                                        <template v-if="param.name == 'pid.enabled'">
+                                            <td class="align-middle"><b>PID Controller</b></td>
+                                            <td class="align-middle text-center">
+                                                <div class="form-check form-switch form-switch-lg d-flex justify-content-center">
+                                                    <input class="form-check-input"
+                                                           type="checkbox"
+                                                           role="switch"
+                                                           id="pid_toggle"
+                                                           :checked="param.value == 1"
+                                                           @change="toggleFunction('/togglePid', 'pid.enabled', param)">
+                                                    <label class="form-check-label" for="pid_toggle"></label>
+                                                </div>
+                                            </td>
+                                        </template>
+                                        <template v-if="param.name == 'STEAM_MODE'">
+                                            <td class="align-middle"><b>Steam Mode</b></td>
+                                            <td class="align-middle text-center">
+                                                <div class="form-check form-switch form-switch-lg d-flex justify-content-center">
+                                                    <input class="form-check-input"
+                                                           type="checkbox"
+                                                           role="switch"
+                                                           id="steam_toggle"
+                                                           :checked="param.value == 1"
+                                                           @change="toggleFunction('/toggleSteam', 'STEAM_MODE', param)">
+                                                    <label class="form-check-label" for="steam_toggle"></label>
+                                                </div>
+                                            </td>
+                                        </template>
+                                        <template v-if="param.name == 'BACKFLUSH_ON'">
+                                            <td class="align-middle"><b>Backflush Mode</b></td>
+                                            <td class="align-middle text-center">
+                                                <div class="form-check form-switch form-switch-lg d-flex justify-content-center">
+                                                    <input class="form-check-input"
+                                                           type="checkbox"
+                                                           role="switch"
+                                                           id="backflush_toggle"
+                                                           :checked="param.value == 1"
+                                                           @change="toggleFunction('/toggleBackflush', 'BACKFLUSH_ON', param)">
+                                                    <label class="form-check-label" for="backflush_toggle"></label>
+                                                </div>
+                                            </td>
+                                        </template>
+                                    </tr>
+                                </template>
+                                <!-- Scale functions -->
+                                <template v-if="parameters.some(p => p.name === 'TARE_ON' || p.name === 'CALIBRATION_ON')">
+                                    <tr><td colspan="2"><hr class="my-3"></td></tr>
+                                </template>
+                                <template v-for="param in parameters">
+                                    <tr>
+                                        <template v-if="param.name == 'TARE_ON'">
+                                            <td class="align-middle"><b>Tare Scale</b></td>
+                                            <td class="align-middle text-center">
+                                                <button class="btn btn-outline-primary"
+                                                        @click="executeAction('/toggleTareScale', 'TARE_ON')">
+                                                    Tare Scale
+                                                </button>
+                                            </td>
+                                        </template>
+                                        <template v-if="param.name == 'CALIBRATION_ON'">
+                                            <td class="align-middle"><b>Scale Calibration</b></td>
+                                            <td class="align-middle text-center">
+                                                <button class="btn btn-outline-primary"
+                                                        @click="confirmCalibration()">
+                                                    Start Calibration
+                                                </button>
+                                            </td>
+                                        </template>
+                                    </tr>
+                                </template>
                             </tbody>
                         </table>
                     </div>
