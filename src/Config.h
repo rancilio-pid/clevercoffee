@@ -315,7 +315,7 @@ class Config {
             // Hardware - OLED
             _configDefs.emplace("hardware.oled.enabled", ConfigDef::forBool(true));
             _configDefs.emplace("hardware.oled.type", ConfigDef::forInt(0, 0, 1));
-            _configDefs.emplace("hardware.oled.address", ConfigDef::forInt(0x3C, 0x00, 0xFF));
+            _configDefs.emplace("hardware.oled.address", ConfigDef::forInt(0, 0, 1));
 
             // Hardware - Relays
             _configDefs.emplace("hardware.relays.heater.trigger_type", ConfigDef::forInt(Relay::HIGH_TRIGGER, 0, 1));

@@ -710,20 +710,20 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareOledSection,
         2002,
         nullptr,
-        (const char* const[]){"SSD1306", "SH1106"},
+        (const char* const[]){"SH1106", "SSD1306"},
         2,
         "Select your OLED display type"
     );
 
-    addNumericConfigParam<int>(
+    addEnumConfigParam(
         "hardware.oled.address",
         "I2C Address",
-        kInteger,
         sHardwareOledSection,
         2003,
         nullptr,
-        0x00, 0xFF,
-        "I2C address of the OLED display (usually 0x3C or 0x3D)"
+        (const char* const[]){"0x3C", "0x3D"},
+        2,
+        "I2C address of the OLED display, should be 0x3C in most cases, if in doubt check the datasheet"
     );
 
     // Relays

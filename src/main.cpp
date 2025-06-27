@@ -837,8 +837,13 @@ void setup() {
         }
 
         if (u8g2 != nullptr) {
-            // TODO This line doesn't work for some reason
-            // u8g2->setI2CAddress(0x3C);
+            if (const int i2cAddress = config.get<int>("hardware.oled.i2c_address"); i2cAddress == 0) {
+                u8g2->setI2CAddress(0x3C * 2);
+            }
+            else {
+                u8g2->setI2CAddress(0x3D * 2);
+            }
+
             u8g2->begin();
             u8g2->clearBuffer();
 
