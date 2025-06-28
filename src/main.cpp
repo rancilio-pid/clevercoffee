@@ -6,12 +6,6 @@
  * @version 4.0.0 Master
  */
 
-// Firmware version
-#define FW_VERSION    4
-#define FW_SUBVERSION 0
-#define FW_HOTFIX     0
-#define FW_BRANCH     "MASTER"
-
 // STL includes
 #include <map>
 
@@ -804,7 +798,7 @@ void wiFiReset() {
     ESP.restart();
 }
 
-extern const char sysVersion[] = (STR(FW_VERSION) "." STR(FW_SUBVERSION) "." STR(FW_HOTFIX) " " FW_BRANCH " " AUTO_VERSION);
+extern const char sysVersion[] = STR(AUTO_VERSION);
 
 void setup() {
     // Start serial console
