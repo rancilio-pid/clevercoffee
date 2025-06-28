@@ -10,10 +10,18 @@
 #include "Parameter.h"
 #include <Arduino.h>
 #include <PubSubClient.h>
+#include <map>
 #include <os.h>
+#include <string>
+
+extern bool timingMaster;
+
+std::map<const char*, std::string> mqttLastSent;
 
 inline unsigned long previousMillisMQTT;
-constexpr unsigned long intervalMQTT = 5000;
+const unsigned long intervalMQTT = 5000;
+const unsigned long intervalMQTTbrew = 500;
+const unsigned long intervalMQTTstandby = 10000;
 
 inline WiFiClient net;
 inline PubSubClient mqtt(net);
@@ -32,6 +40,8 @@ inline char topic_set[256];
 
 inline unsigned long lastMQTTConnectionAttempt = millis();
 inline unsigned int MQTTReCnctCount = 0;
+unsigned long previousMqttConnection = millis();
+unsigned long mqttReconnectInterval = 300000; // 5 minutes
 
 extern std::map<const char*, const char*, cmp_str> mqttVars;
 extern std::map<const char*, std::function<double()>, cmp_str> mqttSensors;
@@ -77,12 +87,18 @@ inline void checkMQTT() {
             if (mqtt.connect(hostname.c_str(), mqtt_username.c_str(), mqtt_password.c_str(), topic_will, 0, true, "offline")) {
                 mqtt.subscribe(topic_set);
                 LOGF(DEBUG, "Subscribed to MQTT Topic: %s", topic_set);
+                MQTTReCnctCount = 0; // reset MQTT reconnect count to zero after a successful connection
             } // Try to reconnect to the server; connect() is a blocking
               // function, watch the timeout!
             else {
                 LOGF(DEBUG, "Failed to connect to MQTT due to reason: %i", mqtt.state());
             }
         }
+    }
+    // reset MQTT reconnect count to zero after mqttReconnectInterval so it can try to connect again
+    else if (millis() - previousMqttConnection >= mqttReconnectInterval) {
+        MQTTReCnctCount = 0;
+        previousMqttConnection = millis();
     }
 }
 
@@ -234,62 +250,84 @@ inline void mqtt_callback(const char* topic, const byte* data, const unsigned in
  */
 
 inline int writeSysParamsToMQTT(const bool continueOnError = true) {
+    static auto mqttVarsIt = mqttVars.begin();
+    static auto mqttSensorsIt = mqttSensors.begin();
+    static bool inSensors = false;
+
     unsigned long currentMillisMQTT = millis();
+    unsigned long interval = intervalMQTT;
+    unsigned long timeBudget = 1000; // milliseconds to spend in this call, is high to simulate no changes
 
-    if (currentMillisMQTT - previousMillisMQTT >= intervalMQTT && mqtt_enabled) {
+    if (timingMaster) {
+        interval = (machineState == kBrew) ? intervalMQTTbrew : (machineState == kStandby) ? intervalMQTTstandby : intervalMQTT;
+        timeBudget = 10; // milliseconds to spend in this call, if timingMaster active it splits into calls of this amount
+    }
+
+    if ((currentMillisMQTT - previousMillisMQTT < interval) || !mqtt_enabled || !mqtt.connected()) {
+        return 0;
+    }
+
+    if (!inSensors && mqttVarsIt == mqttVars.begin()) {
         previousMillisMQTT = currentMillisMQTT;
+        mqtt_publish("status", (char*)"online");
+    }
 
-        if (mqtt.connected()) {
-            mqtt_publish("status", (char*)"online");
+    mqttUpdateRunning = true;
+    unsigned long start = millis();
 
-            char data[256];
-            int errorState = 0;
-            auto& registry = ParameterRegistry::getInstance();
+    char data[256];
+    int errorState = 0;
+    auto& registry = ParameterRegistry::getInstance();
 
-            // Iterate through the mqttVars mapping to publish parameters
-            for (const auto& [fst, snd] : mqttVars) {
-                const char* mqttTopic = fst;   // MQTT topic name
-                const char* parameterId = snd; // Parameter ID
+    if (!inSensors) {
+        // Iterate through the mqttVars mapping to publish parameters
+        while (mqttVarsIt != mqttVars.end()) {
+            const char* mqttTopic = mqttVarsIt->first;
+            const char* parameterId = mqttVarsIt->second;
 
-                std::shared_ptr<Parameter> param = registry.getParameterById(parameterId);
+            std::shared_ptr<Parameter> param = registry.getParameterById(parameterId);
 
-                if (param == nullptr) {
+            if (param == nullptr) {
+                if (!continueOnError) {
+                    LOGF(ERROR, "Parameter %s not found for MQTT topic %s", parameterId, mqttTopic);
+                    return 1;
+                }
+
+                LOGF(WARNING, "Parameter %s not found for MQTT topic %s, skipping", parameterId, mqttTopic);
+                continue;
+            }
+
+            // Get value based on parameter type and format as string
+            switch (param->getType()) {
+                case kInteger:
+                    snprintf(data, sizeof(data), "%d", param->getValueAs<int>());
+                    break;
+                case kUInt8:
+                    snprintf(data, sizeof(data), "%u", param->getValueAs<uint8_t>());
+                    break;
+                case kDouble:
+                    snprintf(data, sizeof(data), "%.2f", param->getValueAs<double>());
+                    break;
+                case kFloat:
+                    snprintf(data, sizeof(data), "%.2f", param->getValueAs<float>());
+                    break;
+                case kCString:
+                    snprintf(data, sizeof(data), "%s", param->getValueAs<String>().c_str());
+                    break;
+                default:
+
                     if (!continueOnError) {
-                        LOGF(ERROR, "Parameter %s not found for MQTT topic %s", parameterId, mqttTopic);
+                        LOGF(ERROR, "Unknown parameter type for topic %s", mqttTopic);
                         return 1;
                     }
 
-                    LOGF(WARNING, "Parameter %s not found for MQTT topic %s, skipping", parameterId, mqttTopic);
+                    LOGF(WARNING, "Skipping unknown parameter type for topic %s", mqttTopic);
                     continue;
-                }
+            }
 
-                // Get value based on parameter type and format as string
-                switch (param->getType()) {
-                    case kInteger:
-                        snprintf(data, sizeof(data), "%d", param->getValueAs<int>());
-                        break;
-                    case kUInt8:
-                        snprintf(data, sizeof(data), "%u", param->getValueAs<uint8_t>());
-                        break;
-                    case kDouble:
-                        snprintf(data, sizeof(data), "%.2f", param->getValueAs<double>());
-                        break;
-                    case kFloat:
-                        snprintf(data, sizeof(data), "%.2f", param->getValueAs<float>());
-                        break;
-                    case kCString:
-                        snprintf(data, sizeof(data), "%s", param->getValueAs<String>().c_str());
-                        break;
-                    default:
-                        if (!continueOnError) {
-                            LOGF(ERROR, "Unknown parameter type for topic %s", mqttTopic);
-                            return 1;
-                        }
+            std::string value = std::string(data);
 
-                        LOGF(WARNING, "Skipping unknown parameter type for topic %s", mqttTopic);
-                        continue;
-                }
-
+            if (mqttLastSent[mqttTopic] != value || !timingMaster) {
                 if (!mqtt_publish(mqttTopic, data, true)) {
                     errorState = mqtt.state();
 
@@ -301,23 +339,55 @@ inline int writeSysParamsToMQTT(const bool continueOnError = true) {
                     LOGF(WARNING, "Failed to publish parameter %s to MQTT, error: %d", mqttTopic, errorState);
                 }
                 else {
+                    mqttLastSent[mqttTopic] = value; // Update only if sent successfully
                     IFLOG(DEBUG) {
                         LOGF(DEBUG, "Published %s = %s to MQTT", mqttTopic, data);
                     }
                 }
             }
 
-            for (const auto& [fst, snd] : mqttSensors) {
-                if (!mqtt_publish(fst, number2string(snd()))) {
-                    errorState = mqtt.state();
+            ++mqttVarsIt;
 
-                    if (!continueOnError) {
-                        return errorState;
-                    }
-                }
+            // Return early, continue next time
+            if (millis() - start >= timeBudget) {
+                return 0;
             }
         }
+
+        // Done with mqttVars, start sensors
+        mqttVarsIt = mqttVars.begin();
+        inSensors = true;
     }
+
+    while (mqttSensorsIt != mqttSensors.end()) {
+        const char* topic = mqttSensorsIt->first;
+        const auto& sensorFunc = mqttSensorsIt->second;
+        std::string value = number2string(sensorFunc());
+
+        if (mqttLastSent[topic] != value || !timingMaster) {
+
+            if (!mqtt_publish(topic, value.c_str())) {
+                errorState = mqtt.state();
+
+                if (!continueOnError) {
+                    return errorState;
+                }
+            }
+            else {
+                mqttLastSent[topic] = value;
+            }
+        }
+
+        ++mqttSensorsIt;
+
+        if (millis() - start >= timeBudget) {
+            return 0; // Return early, continue next time
+        }
+    }
+
+    // Done with both loops
+    mqttSensorsIt = mqttSensors.begin();
+    inSensors = false;
 
     return 0;
 }
@@ -533,8 +603,9 @@ inline DiscoveryObject GenerateNumberDevice(const String& name, const String& di
  * @return 0 if successful, MQTT connection error code if failed to send messages
  */
 inline int sendHASSIODiscoveryMsg() {
-    // Sensor, number and switch objects which will always be published
+    hassioUpdateRunning = true;
 
+    // Sensor, number and switch objects which will always be published
     DiscoveryObject machineStateDevice = GenerateSensorDevice("machineState", "Machine State", "", "enum");
     DiscoveryObject actual_temperature = GenerateSensorDevice("temperature", "Boiler Temperature", "°C", "temperature");
     DiscoveryObject heaterPower = GenerateSensorDevice("heaterPower", "Heater Power", "%", "power_factor");

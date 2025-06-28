@@ -48,6 +48,9 @@ extern bool scaleTareOn;
 extern bool scaleCalibrationOn;
 extern int logLevel;
 extern const char sysVersion[64];
+extern bool timingMaster;         // if set to false it lets processes run together, if true it limits how many processes run per loop
+extern bool includeDisplayInLogs; // if set to true it shows every display update, if false it only shows if > 45ms or if running in the same loop as another process
+extern bool timingDebugActive;
 
 void ParameterRegistry::initialize(Config& config) {
     if (_ready) {
@@ -722,6 +725,43 @@ void ParameterRegistry::initialize(Config& config) {
         "Password for accessing the website and authenticating web requests."
     );
 
+    // Debugging Checkboxes
+    addBoolConfigParam(
+        "system.timing_debug.enabled",
+        "Loop timing in console",
+        sSystemSection,
+        1301,
+        &timingDebugActive,
+        "Enable or disable the process loop time debugging in console.<br>"
+        "r=draw display buffer<br>"
+        "D=display refresh<br>"
+        "W=website<br>"
+        "M=MQTT<br>"
+        "H=hassio<br>"
+        "T=temperature",
+        [&config] { return config.get<int>("system.log_level") == static_cast<int>(Logger::Level::DEBUG); }
+    );
+    
+    addBoolConfigParam(
+        "system.timing.enabled",
+        "Activate loop process limit",
+        sSystemSection,
+        1302,
+        &timingMaster,
+        "Enable or disable the process limit per loop",
+        [&config] { return config.get<int>("system.log_level") == static_cast<int>(Logger::Level::DEBUG); }
+    );
+
+    addBoolConfigParam(
+        "system.showdisplay.enabled",
+        "Activate display recording in debug logs",
+        sSystemSection,
+        1303,
+        &includeDisplayInLogs,
+        "Enable or disable showing sendBuffer loops in debug logs",
+        [&config] { return config.get<int>("system.log_level") == static_cast<int>(Logger::Level::DEBUG); }
+    );
+    
     // Hardware section
 
     // OLED
@@ -858,7 +898,7 @@ void ParameterRegistry::initialize(Config& config) {
         2222,
         nullptr,
         (const char* const[]){"Momentary", "Toggle"},
-        3,
+        2,
         "Type of power switch connected"
     );
 

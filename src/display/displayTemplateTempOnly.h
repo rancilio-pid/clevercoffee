@@ -71,5 +71,5 @@ inline void printScreen() {
 
     displayStatusbar();
 
-    u8g2->sendBuffer();
+    displayBufferReady = true;
 }

@@ -305,6 +305,11 @@ class Config {
             _configDefs.emplace("system.auth.username", ConfigDef::forString(AUTH_USERNAME, USERNAME_MAX_LENGTH));
             _configDefs.emplace("system.auth.password", ConfigDef::forString(AUTH_PASSWORD, PASSWORD_MAX_LENGTH));
 
+            // Debugging
+            _configDefs.emplace("system.timing_debug.enabled", ConfigDef::forBool(false));
+            _configDefs.emplace("system.timing.enabled", ConfigDef::forBool(false));
+            _configDefs.emplace("system.showdisplay.enabled", ConfigDef::forBool(true));
+
             // Display
             _configDefs.emplace("display.template", ConfigDef::forInt(0, 0, 4));
             _configDefs.emplace("display.inverted", ConfigDef::forBool(false));

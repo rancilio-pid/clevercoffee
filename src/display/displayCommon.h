@@ -35,12 +35,15 @@ inline void u8g2_prepare() {
     u8g2->setDrawColor(1);
     u8g2->setFontPosTop();
     u8g2->setFontDirection(0);
+
     if (config.get<bool>("display.inverted")) {
         rotation += 2;
     }
+
     if (config.get<int>("display.template") == 4) {
         rotation++;
     }
+
     u8g2->setDisplayRotation(getU8G2Rotation(rotation));
 }
 
@@ -357,6 +360,7 @@ inline void displayBrewtimeFs(const int x, const int y, const double brewtime) {
 
         u8g2->print("s");
     }
+
     u8g2->setFont(u8g2_font_profont11_tf);
 }
 
@@ -467,6 +471,7 @@ inline bool displayFullscreenBrewTimer() {
 
     if (shouldDisplayBrewTimer()) {
         u8g2->clearBuffer();
+
         if (config.get<int>("display.template") == 4) {
             u8g2->drawXBMP(12, 12, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
 
@@ -483,6 +488,7 @@ inline bool displayFullscreenBrewTimer() {
             else {
                 displayBrewtimeFs(1, 80, currBrewTime);
             }
+
             displayWaterIcon(55, 2);
         }
         else {
@@ -504,7 +510,8 @@ inline bool displayFullscreenBrewTimer() {
 
             displayWaterIcon(119, 1);
         }
-        u8g2->sendBuffer();
+
+        displayBufferReady = true;
         return true;
     }
 
@@ -521,6 +528,7 @@ inline bool displayFullscreenManualFlushTimer() {
 
     if (machineState == kManualFlush) {
         u8g2->clearBuffer();
+
         if (config.get<int>("display.template") == 4) {
             u8g2->drawXBMP(12, 12, Manual_Flush_Logo_width, Manual_Flush_Logo_height, Manual_Flush_Logo);
             displayBrewtimeFs(1, 80, currBrewTime);
@@ -531,7 +539,8 @@ inline bool displayFullscreenManualFlushTimer() {
             displayBrewtimeFs(48, 25, currBrewTime);
             displayWaterIcon(119, 1);
         }
-        u8g2->sendBuffer();
+
+        displayBufferReady = true;
         return true;
     }
     return false;
@@ -541,11 +550,13 @@ inline bool displayFullscreenManualFlushTimer() {
  * @brief display offline message
  */
 inline bool displayOfflineMode() {
+
     if (displayOffline > 0 && displayOffline < 20) {
         displayMessage("", "", "", "", "Begin Fallback,", "No Wifi");
         displayOffline++;
         return true;
     }
+
     return false;
 }
 
@@ -553,6 +564,7 @@ inline bool displayOfflineMode() {
  * @brief display heating logo
  */
 inline bool displayMachineState() {
+
     if (displayOfflineMode()) {
         return true;
     }

@@ -221,5 +221,5 @@ inline void printScreen() {
         displayWaterIcon(55, 2);
     }
 
-    u8g2->sendBuffer();
+    displayBufferReady = true;
 }
