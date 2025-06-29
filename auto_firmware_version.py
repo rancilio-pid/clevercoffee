@@ -42,8 +42,13 @@ def get_version_build_flag() -> str:
     # Get the git commit hash
     commit_hash = r.head().decode("utf-8")[0:7]
 
-    branch_name = active_branch(r).decode("utf-8")
-    sanitized_branch = sanitize_branch_name(branch_name)
+    try:
+        branch_name = active_branch(r).decode("utf-8")
+        sanitized_branch = sanitize_branch_name(branch_name)
+    except (IndexError, KeyError):
+        # Try to get branch from environment variable or use 'detached'
+        branch_name = os.environ.get('GITHUB_REF_NAME', 'detached')
+        sanitized_branch = sanitize_branch_name(branch_name)
 
     # Read version from VERSION.txt file
     version_file = "VERSION.txt"
