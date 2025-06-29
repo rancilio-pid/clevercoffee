@@ -73,7 +73,7 @@ inline void setupMqtt() {
  *      MQTT is also using maxWifiReconnects!
  */
 inline void checkMQTT() {
-    if (offlineMode || currBrewState > kBrewIdle) {
+    if (offlineMode || checkBrewActive()) {
         return;
     }
 

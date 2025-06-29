@@ -204,13 +204,13 @@ inline bool shouldDisplayBrewTimer() {
 
     switch (currBrewTimerState) {
         case kBrewTimerIdle:
-            if (brew()) {
+            if (checkBrewActive()) {
                 currBrewTimerState = kBrewTimerRunning;
             }
             break;
 
         case kBrewTimerRunning:
-            if (!brew()) {
+            if (!checkBrewActive()) {
                 currBrewTimerState = kBrewTimerPostBrew;
                 brewEndTime = millis();
             }

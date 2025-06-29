@@ -80,6 +80,31 @@ inline HX711_ADC LoadCell(PIN_HXDAT, PIN_HXCLK);
 inline HX711_ADC LoadCell2(PIN_HXDAT2, PIN_HXCLK);
 
 /**
+ * @brief True if in an intermediate brew state, false if idle or finished
+ * if in an error state during brew return false
+ */
+bool checkBrewActive() {
+    return ((currBrewState != kBrewIdle && currBrewState != kBrewFinished) && !(machineState >= kEmergencyStop));
+}
+
+/**
+ * @brief True if in a machine state related to brew or flush, false if in other states
+ */
+bool checkBrewStates() {
+    return (machineState == kBrew || machineState == kBackflush || machineState == kManualFlush);
+}
+
+/**
+ * @brief turns off valve if not in an active brew state or if machineState changes away from one related to brewing or flushing
+ */
+inline void valveSafetyShutdownCheck() {
+    if (!checkBrewActive() || !checkBrewStates()) {
+        currBrewState == kBrewIdle; // reset state to idle if not in an active brew/flush state
+        valveRelay->off();
+    }
+}
+
+/**
  * @brief Toggle or momentary input for Brew Switch
  */
 inline void checkBrewSwitch() {
@@ -194,16 +219,17 @@ inline void checkBrewSwitch() {
         }
     }
 }
+
 /**
  * @brief If set to publish debug messages then list what the current action is and what triggered it
  * @return void
  */
 void debugPumpState(String label, String state) {
-    waterStateDebug = state;
+    hotWaterStateDebug = state;
     IFLOG(DEBUG) {
-        if (waterStateDebug != lastWaterStateDebug) {
-            LOGF(DEBUG, "Water state: %s - BrewHandler: %s", waterStateDebug, label);
-            lastWaterStateDebug = waterStateDebug;
+        if (hotWaterStateDebug != lastHotWaterStateDebug) {
+            LOGF(DEBUG, "Hot water state: %s - BrewHandler: %s", hotWaterStateDebug, label);
+            lastHotWaterStateDebug = hotWaterStateDebug;
         }
     }
 }
@@ -213,8 +239,7 @@ void debugPumpState(String label, String state) {
  * @return true if brew is running, false otherwise
  */
 inline bool brew() {
-    if (!config.get<bool>("hardware.switches.brew.enabled") || brewSwitch == nullptr || machineState >= kEmergencyStop) {
-        valveRelay->off();
+    if (!config.get<bool>("hardware.switches.brew.enabled") || brewSwitch == nullptr) {
         return false; // brew switch is not enabled, so no brew process running
     }
 
@@ -366,7 +391,7 @@ inline bool brew() {
         }
     }
 
-    return currBrewState != kBrewIdle && currBrewState != kBrewFinished;
+    return checkBrewActive();
 }
 
 /**

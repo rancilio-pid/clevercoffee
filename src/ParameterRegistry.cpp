@@ -914,7 +914,7 @@ void ParameterRegistry::initialize(Config& config) {
     );
 
     addBoolConfigParam(
-        "hardware.switches.water.enabled",
+        "hardware.switches.hot_water.enabled",
         "Enable Water Switch",
         sHardwareSwitchSection,
         2231,
@@ -923,7 +923,7 @@ void ParameterRegistry::initialize(Config& config) {
     );
 
     addEnumConfigParam(
-        "hardware.switches.water.type",
+        "hardware.switches.hot_water.type",
         "Water Switch Type",
         sHardwareSwitchSection,
         2232,
@@ -934,7 +934,7 @@ void ParameterRegistry::initialize(Config& config) {
     );
 
     addEnumConfigParam(
-        "hardware.switches.water.mode",
+        "hardware.switches.hot_water.mode",
         "Water Switch Mode",
         sHardwareSwitchSection,
         2233,

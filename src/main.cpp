@@ -61,9 +61,9 @@ enum MachineState {
     kPidNormal = 20,
     kBrew = 30,
     kManualFlush = 35,
-    kSteam = 40,
-    kWater = 45,
-    kBackflush = 50,
+    kHotWater = 40,
+    kSteam = 50,
+    kBackflush = 60,
     kWaterTankEmpty = 70,
     kEmergencyStop = 80,
     kPidDisabled = 90,
@@ -140,7 +140,7 @@ Relay* valveRelay = nullptr;
 Switch* powerSwitch = nullptr;
 Switch* brewSwitch = nullptr;
 Switch* steamSwitch = nullptr;
-Switch* waterSwitch = nullptr;
+Switch* hotWaterSwitch = nullptr;
 
 TempSensor* tempSensor = nullptr;
 
@@ -168,8 +168,8 @@ void resetStandbyTimer();
 void wiFiReset();
 
 // debugging water pump actions
-String waterStateDebug = "off";
-String lastWaterStateDebug = "off";
+String hotWaterStateDebug = "off";
+String lastHotWaterStateDebug = "off";
 
 // system parameters
 bool pidON = false;
@@ -298,12 +298,12 @@ void u8g2_prepare();
 Timer printDisplayTimer(&DisplayTemplateManager::printScreen, 100);
 
 // initialise water switch variable
-int waterON = 0;
+int hotWaterON = 0;
 
 #include "powerHandler.h"
 #include "scaleHandler.h"
 #include "steamHandler.h"
-#include "waterHandler.h"
+#include "hotWaterHandler.h"
 
 // Emergency stop if temp is too high
 void testEmergencyStop() {
@@ -333,7 +333,7 @@ void initOfflineMode() {
 void checkWifi() {
     static int wifiConnectCounter = 1;
     static bool wifiConnectedHandled = false;
-    if (offlineMode || currBrewState > kBrewIdle) return;
+    if (offlineMode || checkBrewActive()) return;
 
     // Try to connect and if it does not succeed, enter offline mode
 
@@ -481,8 +481,8 @@ void handleMachineState() {
                 }
             }
 
-            if (waterON == 1) {
-                machineState = kWater;
+            if (hotWaterON == 1) {
+                machineState = kHotWater;
 
                 if (standbyModeOn) {
                     resetStandbyTimer(machineState);
@@ -555,30 +555,13 @@ void handleMachineState() {
             }
             break;
 
-        case kSteam:
-            if (!steamON) {
+        case kHotWater:
+
+            if (!hotWaterON) {
                 machineState = kPidNormal;
             }
 
-            if (emergencyStop) {
-                machineState = kEmergencyStop;
-            }
-
-            if (pidON == 0) {
-                machineState = kPidDisabled;
-            }
-
-            if (tempSensor->hasError()) {
-                machineState = kSensorError;
-            }
-            break;
-
-        case kWater:
-            if (waterON == 0) {
-                machineState = kPidNormal;
-            }
-
-            if (steamON == 1) {
+            if (steamON) {
                 machineState = kSteam;
 
                 if (standbyModeOn) {
@@ -607,6 +590,25 @@ void handleMachineState() {
             }
 
             if (tempSensor != nullptr && tempSensor->hasError()) {
+                machineState = kSensorError;
+            }
+            break;
+
+        case kSteam:
+
+            if (!steamON) {
+                machineState = kPidNormal;
+            }
+
+            if (emergencyStop) {
+                machineState = kEmergencyStop;
+            }
+
+            if (pidON == 0) {
+                machineState = kPidDisabled;
+            }
+
+            if (tempSensor->hasError()) {
                 machineState = kSensorError;
             }
             break;
@@ -705,9 +707,9 @@ void handleMachineState() {
                     }
                 }
 
-                if (waterON) {
+                if (hotWaterON) {
                     setRuntimePidState(true);
-                    machineState = kWater;
+                    machineState = kHotWater;
                     resetStandbyTimer(machineState);
 
                     if (oledEnabled) {
@@ -788,10 +790,10 @@ char const* machinestateEnumToString(const MachineState machineState) {
             return "Brew";
         case kManualFlush:
             return "Manual Flush";
+        case kHotWater:
+            return "Hot Water";
         case kSteam:
             return "Steam";
-        case kWater:
-            return "Water";
         case kBackflush:
             return "Backflush";
         case kWaterTankEmpty:
@@ -1049,10 +1051,10 @@ void setup() {
         brewSwitch = new IOSwitch(PIN_BREWSWITCH, GPIOPin::IN_HARDWARE, type, mode);
     }
 
-    if (config.get<bool>("hardware.switches.water.enabled")) {
-        const auto type = static_cast<Switch::Type>(config.get<int>("hardware.switches.water.type"));
-        const auto mode = static_cast<Switch::Mode>(config.get<int>("hardware.switches.water.mode"));
-        waterSwitch = new IOSwitch(PIN_WATERSWITCH, GPIOPin::IN_HARDWARE, type, mode);
+    if (config.get<bool>("hardware.switches.hot_water.enabled")) {
+        const auto type = static_cast<Switch::Type>(config.get<int>("hardware.switches.hot_water.type"));
+        const auto mode = static_cast<Switch::Mode>(config.get<int>("hardware.switches.hot_water.mode"));
+        hotWaterSwitch = new IOSwitch(PIN_WATERSWITCH, GPIOPin::IN_HARDWARE, type, mode);
     }
 
     if (config.get<bool>("hardware.leds.status.enabled")) {
@@ -1296,7 +1298,7 @@ void loopPid() {
             LOGF(TRACE, "Current Machinestate: %s", machinestateEnumToString(machineState));
             // Brew
             LOGF(TRACE, "currBrewTime %f", currBrewTime);
-            LOGF(TRACE, "Brew detected %i", brew());
+            LOGF(TRACE, "Brew detected %i", checkBrewActive());
             LOGF(TRACE, "brewPIDdisabled %i", brewPIDDisabled);
         }
     }
@@ -1316,7 +1318,6 @@ void loopPid() {
 
     checkSteamSwitch();
     checkPowerSwitch();
-    checkWaterSwitch();
 
     // set setpoint depending on steam or brew mode
     if (steamON == 1) {
@@ -1328,7 +1329,8 @@ void loopPid() {
 
     updateStandbyTimer();
     handleMachineState();
-    waterHandler();
+    hotWaterHandler();
+    valveSafetyShutdownCheck();
 
     if (config.get<bool>("hardware.switches.brew.enabled")) {
         shouldDisplayBrewTimer();
