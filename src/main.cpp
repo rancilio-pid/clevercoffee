@@ -44,16 +44,6 @@ hw_timer_t* timer = nullptr;
 #include "hardware/pressureSensor.h"
 #include <Wire.h>
 
-#define HX711_ADC_config_h
-#define SAMPLES                32
-#define IGN_HIGH_SAMPLE        1
-#define IGN_LOW_SAMPLE         1
-#define SCK_DELAY              1
-#define SCK_DISABLE_INTERRUPTS 0
-#include <HX711_ADC.h>
-
-#define HIGH_ACCURACY
-
 Config config;
 
 enum MachineState {

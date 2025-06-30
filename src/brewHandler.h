@@ -12,33 +12,8 @@
 
 #pragma once
 
-enum BrewSwitchState {
-    kBrewSwitchIdle = 10,
-    kBrewSwitchPressed = 20,
-    kBrewSwitchShortPressed = 30,
-    kBrewSwitchLongPressed = 40,
-    kBrewSwitchWaitForRelease = 50
-};
-
-enum BrewState {
-    kBrewIdle = 10,
-    kPreinfusion = 20,
-    kPreinfusionPause = 30,
-    kBrewRunning = 40,
-    kBrewFinished = 50,
-};
-
-enum ManualFlushState {
-    kManualFlushIdle = 10,
-    kManualFlushRunning = 20,
-};
-
-enum BackflushState {
-    kBackflushIdle = 10,
-    kBackflushFilling = 20,
-    kBackflushFlushing = 30,
-    kBackflushFinished = 40
-};
+#include "brewStates.h"
+#include "scaleHandler.h"
 
 // Brew control states
 inline BrewSwitchState currBrewSwitchState = kBrewSwitchIdle;
@@ -65,18 +40,6 @@ inline double backflushFillTime = BACKFLUSH_FILL_TIME;
 inline double backflushFlushTime = BACKFLUSH_FLUSH_TIME;
 inline bool backflushOn = false;
 inline int currBackflushCycles = 1;
-
-// Shot timer with or without scale
-inline boolean scaleCalibrationOn = false;
-inline boolean scaleTareOn = false;
-inline int shottimerCounter = 10;
-inline float currReadingWeight = 0; // value from HX711
-inline float prewBrewWeight = 0;    // value of scale before brew started
-inline float currBrewWeight = 0;    // weight value of current brew
-inline float scaleDelayValue = 2.5; // value in gramm that takes still flows onto the scale after brew is stopped
-inline bool scaleFailure = false;
-inline HX711_ADC LoadCell(PIN_HXDAT, PIN_HXCLK);
-inline HX711_ADC LoadCell2(PIN_HXDAT2, PIN_HXCLK);
 
 bool isPowerSwitchOperationAllowed();
 
