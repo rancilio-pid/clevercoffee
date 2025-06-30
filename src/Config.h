@@ -290,17 +290,20 @@ class Config {
             _configDefs.emplace("mqtt.enabled", ConfigDef::forBool(false));
             _configDefs.emplace("mqtt.broker", ConfigDef::forString("", MQTT_BROKER_MAX_LENGTH));
             _configDefs.emplace("mqtt.port", ConfigDef::forInt(1883, 1, 65535));
-            _configDefs.emplace("mqtt.username", ConfigDef::forString(MQTT_USERNAME, MQTT_USERNAME_MAX_LENGTH));
-            _configDefs.emplace("mqtt.password", ConfigDef::forString(MQTT_PASSWORD, MQTT_PASSWORD_MAX_LENGTH));
+            _configDefs.emplace("mqtt.username", ConfigDef::forString(MQTT_USERNAME, USERNAME_MAX_LENGTH));
+            _configDefs.emplace("mqtt.password", ConfigDef::forString(MQTT_PASSWORD, PASSWORD_MAX_LENGTH));
             _configDefs.emplace("mqtt.topic", ConfigDef::forString(MQTT_TOPIC, MQTT_TOPIC_MAX_LENGTH));
             _configDefs.emplace("mqtt.hassio.enabled", ConfigDef::forBool(false));
             _configDefs.emplace("mqtt.hassio.prefix", ConfigDef::forString(MQTT_HASSIO_PREFIX, MQTT_HASSIO_PREFIX_MAX_LENGTH));
 
             // System
             _configDefs.emplace("system.hostname", ConfigDef::forString(HOSTNAME, HOSTNAME_MAX_LENGTH));
-            _configDefs.emplace("system.ota_password", ConfigDef::forString(OTAPASS, OTAPASS_MAX_LENGTH));
+            _configDefs.emplace("system.ota_password", ConfigDef::forString(OTAPASS, PASSWORD_MAX_LENGTH));
             _configDefs.emplace("system.offline_mode", ConfigDef::forBool(false));
             _configDefs.emplace("system.log_level", ConfigDef::forInt(static_cast<int>(Logger::Level::INFO), 0, 5));
+            _configDefs.emplace("system.auth.enabled", ConfigDef::forBool(false));
+            _configDefs.emplace("system.auth.username", ConfigDef::forString(AUTH_USERNAME, USERNAME_MAX_LENGTH));
+            _configDefs.emplace("system.auth.password", ConfigDef::forString(AUTH_PASSWORD, PASSWORD_MAX_LENGTH));
 
             // Display
             _configDefs.emplace("display.template", ConfigDef::forInt(0, 0, 4));

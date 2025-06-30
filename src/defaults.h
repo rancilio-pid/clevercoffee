@@ -49,6 +49,8 @@
 #define MQTT_HASSIO_PREFIX        "homeassistant"   // default MQTT prefix for Home Assistant
 #define SCREEN_WIDTH              128               // OLED display width, in pixels
 #define SCREEN_HEIGHT             64                // OLED display height, in pixels
+#define AUTH_PASSWORD             "admin"           // default password for web authentication
+#define AUTH_USERNAME             "admin"           // default username for web authentication
 
 #define PID_KP_REGULAR_MIN            0.0
 #define PID_KP_REGULAR_MAX            999.0
@@ -101,9 +103,8 @@
 #define SCALE_KNOWN_WEIGHT_MIN        0.0
 #define SCALE_KNOWN_WEIGHT_MAX        2000.0
 #define MQTT_BROKER_MAX_LENGTH        64
-#define MQTT_USERNAME_MAX_LENGTH      32
-#define MQTT_PASSWORD_MAX_LENGTH      64
+#define USERNAME_MAX_LENGTH           32
+#define PASSWORD_MAX_LENGTH           64
 #define MQTT_TOPIC_MAX_LENGTH         48
 #define MQTT_HASSIO_PREFIX_MAX_LENGTH 24
 #define HOSTNAME_MAX_LENGTH           64
-#define OTAPASS_MAX_LENGTH            64

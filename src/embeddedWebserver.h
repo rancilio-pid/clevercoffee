@@ -33,6 +33,32 @@ inline int historyValueCount = 0;
 
 void serverSetup();
 
+inline bool authenticate(AsyncWebServerRequest* request) {
+    if (!config.get<bool>("system.auth.enabled")) {
+        return true;
+    }
+
+    const auto clientIP = request->client()->remoteIP().toString();
+    const auto requestedPath = request->url();
+    const auto username = config.get<String>("system.auth.username");
+    const auto password = config.get<String>("system.auth.password");
+
+    if (request->authenticate(username.c_str(), password.c_str())) {
+        LOGF(DEBUG, "Web auth OK: %s -> %s", clientIP.c_str(), requestedPath.c_str());
+
+        return true;
+    }
+
+    if (request->hasHeader("Authorization")) {
+        LOGF(WARNING, "Web auth FAIL: %s -> %s (wrong credentials)", clientIP.c_str(), requestedPath.c_str());
+    }
+    else {
+        LOGF(DEBUG, "Web auth required: %s -> %s", clientIP.c_str(), requestedPath.c_str());
+    }
+
+    return false;
+}
+
 inline uint8_t flipUintValue(const uint8_t value) {
     return (value + 3) % 2;
 }
@@ -178,6 +204,10 @@ inline String staticProcessor(const String& var) {
 
 inline void serverSetup() {
     server.on("/toggleSteam", HTTP_POST, [](AsyncWebServerRequest* request) {
+        if (!authenticate(request)) {
+            return request->requestAuthentication();
+        }
+
         const bool steamMode = !steamON;
         setSteamMode(steamMode);
 
@@ -187,6 +217,10 @@ inline void serverSetup() {
     });
 
     server.on("/togglePid", HTTP_POST, [](AsyncWebServerRequest* request) {
+        if (!authenticate(request)) {
+            return request->requestAuthentication();
+        }
+
         LOGF(DEBUG, "/togglePid requested, method: %d", request->method());
 
         const auto pidParam = ParameterRegistry::getInstance().getParameterById("pid.enabled");
@@ -201,6 +235,10 @@ inline void serverSetup() {
     });
 
     server.on("/toggleBackflush", HTTP_POST, [](AsyncWebServerRequest* request) {
+        if (!authenticate(request)) {
+            return request->requestAuthentication();
+        }
+
         backflushOn = !backflushOn;
         LOGF(DEBUG, "Toggle backflush mode: %s", backflushOn ? "on" : "off");
 
@@ -209,6 +247,10 @@ inline void serverSetup() {
 
     if (config.get<bool>("hardware.sensors.scale.enabled")) {
         server.on("/toggleTareScale", HTTP_POST, [](AsyncWebServerRequest* request) {
+            if (!authenticate(request)) {
+                return request->requestAuthentication();
+            }
+
             scaleTareOn = !scaleTareOn;
 
             LOGF(DEBUG, "Toggle scale tare mode: %s", scaleTareOn ? "on" : "off");
@@ -217,6 +259,10 @@ inline void serverSetup() {
         });
 
         server.on("/toggleScaleCalibration", HTTP_POST, [](AsyncWebServerRequest* request) {
+            if (!authenticate(request)) {
+                return request->requestAuthentication();
+            }
+
             scaleCalibrationOn = !scaleCalibrationOn;
 
             LOGF(DEBUG, "Toggle scale calibration mode: %s", scaleCalibrationOn ? "on" : "off");
@@ -226,6 +272,10 @@ inline void serverSetup() {
     }
 
     server.on("/parameters", [](AsyncWebServerRequest* request) {
+        if (!authenticate(request)) {
+            return request->requestAuthentication();
+        }
+
         if (request->method() == 1) { // HTTP_GET
             const auto& registry = ParameterRegistry::getInstance();
             const auto& parameters = registry.getParameters();
@@ -380,6 +430,10 @@ inline void serverSetup() {
     });
 
     server.on("/wifireset", HTTP_POST, [](AsyncWebServerRequest* request) {
+        if (!authenticate(request)) {
+            return request->requestAuthentication();
+        }
+
         request->send(200, "text/plain", "WiFi settings are being reset. Rebooting...");
 
         // Defer slightly so the response gets sent before reboot
@@ -389,6 +443,10 @@ inline void serverSetup() {
     });
 
     server.on("/download/config", HTTP_GET, [](AsyncWebServerRequest* request) {
+        if (!authenticate(request)) {
+            return request->requestAuthentication();
+        }
+
         if (!LittleFS.exists("/config.json")) {
             request->send(404, "text/plain", "Config file not found");
             return;
@@ -426,6 +484,10 @@ inline void serverSetup() {
             // This response will be set by the upload handler
         },
         [](AsyncWebServerRequest* request, const String& filename, const size_t index, const uint8_t* data, const size_t len, const bool final) {
+            if (!authenticate(request)) {
+                return request->requestAuthentication();
+            }
+
             static String uploadBuffer;
             static size_t totalSize = 0;
 
@@ -466,12 +528,20 @@ inline void serverSetup() {
         });
 
     server.on("/restart", HTTP_POST, [](AsyncWebServerRequest* request) {
+        if (!authenticate(request)) {
+            return request->requestAuthentication();
+        }
+
         request->send(200, "text/plain", "Restarting...");
         delay(100);
         ESP.restart();
     });
 
     server.on("/factoryreset", HTTP_POST, [](AsyncWebServerRequest* request) {
+        if (!authenticate(request)) {
+            return request->requestAuthentication();
+        }
+
         const bool removed = LittleFS.remove("/config.json");
 
         request->send(200, "text/plain", removed ? "Factory reset. Restarting..." : "Could not delete config.json. Restarting...");

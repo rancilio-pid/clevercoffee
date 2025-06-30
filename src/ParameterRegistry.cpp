@@ -1,6 +1,7 @@
 
 #include "ParameterRegistry.h"
 #include "Logger.h"
+
 #include <algorithm>
 
 ParameterRegistry ParameterRegistry::_singleton;
@@ -617,7 +618,7 @@ void ParameterRegistry::initialize(Config& config) {
         sMqttSection,
         1013,
         nullptr,
-        MQTT_USERNAME_MAX_LENGTH,
+        USERNAME_MAX_LENGTH,
         "Username for your MQTT broker, changes require a restart"
     );
 
@@ -627,7 +628,7 @@ void ParameterRegistry::initialize(Config& config) {
         sMqttSection,
         1014,
         nullptr,
-        MQTT_PASSWORD_MAX_LENGTH,
+        PASSWORD_MAX_LENGTH,
         "Password for your MQTT broker, changes require a restart"
     );
 
@@ -672,11 +673,11 @@ void ParameterRegistry::initialize(Config& config) {
 
     addStringConfigParam(
         "system.ota_password",
-        "OtA Password",
+        "OTA Password",
         sSystemSection,
         1102,
         nullptr,
-        OTAPASS_MAX_LENGTH,
+        PASSWORD_MAX_LENGTH,
         "Password for over-the-air updates, changes require a restart"
     );
 
@@ -689,6 +690,36 @@ void ParameterRegistry::initialize(Config& config) {
         (const char* const[]){"TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "FATAL", "SILENT"},
         7,
         "Set the logging verbosity level"
+    );
+
+    addBoolConfigParam(
+        "system.auth.enabled",
+        "Enable Website Authentication",
+        sSystemSection,
+        1201,
+        nullptr,
+        "Enables authentication for accessing certain parts of the website and for web requests in general. "
+            "This setting secures the calls to sensitive url endpoints, e.g. for config parameters, hardware settings, factory reset, etc."
+    );
+
+    addStringConfigParam(
+        "system.auth.username",
+        "Website Username",
+        sSystemSection,
+        1202,
+        nullptr,
+        USERNAME_MAX_LENGTH,
+        "Username for accessing the website and authenticating web requests. "
+    );
+
+    addStringConfigParam(
+        "system.auth.password",
+        "Website Password",
+        sSystemSection,
+        1203,
+        nullptr,
+        PASSWORD_MAX_LENGTH,
+        "Password for accessing the website and authenticating web requests."
     );
 
     // Hardware section
