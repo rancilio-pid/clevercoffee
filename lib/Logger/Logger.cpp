@@ -3,6 +3,8 @@
 
 #include "Logger.h"
 
+int logLevel;
+
 Logger::Logger(const uint16_t port) :
     port_(port), server_(port) {
 }
@@ -40,6 +42,15 @@ bool Logger::update() {
             Logger::getInstance().client_ = Logger::getInstance().server_.available();
         }
     }
+
+    // update if the loglevel has changed
+    Logger::Level level = static_cast<Logger::Level>(logLevel);
+
+    if (Logger::getCurrentLevel() != level) {
+        Logger::setLevel(level);
+        LOGF(INFO, "Log level changed to %d", level);
+    }
+
     return true;
 }
 

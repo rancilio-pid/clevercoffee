@@ -685,7 +685,7 @@ void ParameterRegistry::initialize(Config& config) {
         "Log Level",
         sSystemSection,
         1103,
-        nullptr,
+        &logLevel,
         (const char* const[]){"TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "FATAL", "SILENT"},
         7,
         "Set the logging verbosity level"
