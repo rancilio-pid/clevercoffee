@@ -87,7 +87,7 @@ inline void printScreen() {
             u8g2->print(temperature, 1);
         }
         else {
-            
+
             // print status
             if (scaleEnabled && pressureEnabled) {
                 u8g2->setCursor(1, 65);
@@ -115,7 +115,6 @@ inline void printScreen() {
                 else {
                     u8g2->print("");
                 }
-
             }
             else {
                 u8g2->print("WAIT");

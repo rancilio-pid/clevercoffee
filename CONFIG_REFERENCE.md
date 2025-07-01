@@ -9,19 +9,19 @@ This document describes all configuration parameters available in the `config.js
 ### `backflush.cycles`
 - **Type**: Integer
 - **Default**: `5`
-- **Range**: 1-20
+- **Range**: 2-20
 - **Description**: Number of backflush cycles to perform during cleaning
 
 ### `backflush.fill_time`
 - **Type**: Double (seconds)
 - **Default**: `5.0`
-- **Range**: 1.0-30.0
+- **Range**: 3.0-10.0
 - **Description**: Time to fill the group head with cleaning solution
 
 ### `backflush.flush_time`
 - **Type**: Double (seconds)
 - **Default**: `10.0`
-- **Range**: 1.0-60.0
+- **Range**: 5.0-20.0
 - **Description**: Time to flush cleaning solution back through the 3-way valve into the drip tray
 
 ---
@@ -43,7 +43,7 @@ This document describes all configuration parameters available in the `config.js
 ### `brew.temp_offset`
 - **Type**: Double (°C)
 - **Default**: `0.0`
-- **Range**: -25.0-25.0
+- **Range**: 0.0-20.0
 - **Description**: Temperature offset to compensate for sensor placement or other dropoff
 
 ### `brew.target_time`
@@ -55,7 +55,7 @@ This document describes all configuration parameters available in the `config.js
 ### `brew.target_weight`
 - **Type**: Double (grams)
 - **Default**: `30.0`
-- **Range**: 0.1-500.0
+- **Range**: 0.0-500.0
 - **Description**: Target output weight for automatic brewing (requires scale)
 
 ## Pre-Infusion Settings
@@ -63,7 +63,7 @@ This document describes all configuration parameters available in the `config.js
 ### `brew.pre_infusion.time`
 - **Type**: Double (seconds)
 - **Default**: `2.0`
-- **Range**: 0.0-30.0
+- **Range**: 0.0-60.0
 - **Description**: Duration of pre-infusion phase
 
 ### `brew.pre_infusion.pause`
@@ -108,7 +108,7 @@ This document describes all configuration parameters available in the `config.js
 ### `display.post_brew_timer_duration`
 - **Type**: Double (seconds)
 - **Default**: `3.0`
-- **Range**: 0.0-30.0
+- **Range**: 0.0-60.0
 - **Description**: Duration to show shot timer post-brew
 
 ### `display.template`
@@ -231,7 +231,7 @@ For each LED type (status, brew, steam):
 ##### `hardware.sensors.scale.known_weight`
 - **Type**: Double (grams)
 - **Default**: `267.0`
-- **Range**: 1.0-10000.0
+- **Range**: 1.0-2000.0
 - **Description**: Known weight for calibration
 
 ##### `hardware.sensors.scale.samples`
@@ -370,13 +370,13 @@ For each switch type (brew, power, steam):
 ### `pid.regular.tn`
 - **Type**: Double (seconds)
 - **Default**: `52.0`
-- **Range**: 0.0-9999.0
+- **Range**: 0.0-200.0
 - **Description**: Integral time constant
 
 ### `pid.regular.tv`
 - **Type**: Double (seconds)
 - **Default**: `11.5`
-- **Range**: 0.0-9999.0
+- **Range**: 0.0-200.0
 - **Description**: Derivative time constant
 
 ### `pid.regular.i_max`
@@ -401,13 +401,13 @@ For each switch type (brew, power, steam):
 ### `pid.bd.tn`
 - **Type**: Double (seconds)
 - **Default**: `0.0`
-- **Range**: 0.0-9999.0
+- **Range**: 0.0-200.0
 - **Description**: Brew detection integral time constant
 
 ### `pid.bd.tv`
 - **Type**: Double (seconds)
 - **Default**: `20.0`
-- **Range**: 0.0-9999.0
+- **Range**: 0.0-200.0
 - **Description**: Brew detection derivative time constant
 
 ## Steam PID Parameters
@@ -430,7 +430,7 @@ For each switch type (brew, power, steam):
 ### `standby.time`
 - **Type**: Double (minutes)
 - **Default**: `30.0`
-- **Range**: 1.0-999.0
+- **Range**: 1.0-120.0
 - **Description**: Time before entering standby mode
 
 ---

@@ -110,7 +110,8 @@ const vueApp = Vue.createApp({
                     return response.text();
                 })
                 .then(data => {
-                    // Parameters saved successfully
+                    // Parameters saved successfully - now re-fetch to get updated show conditions
+                    this.fetchParameters(this.filter);
                 })
                 .catch(err => {
                     console.error("Error saving parameters:", err);
