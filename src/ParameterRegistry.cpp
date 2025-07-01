@@ -48,8 +48,7 @@ extern bool scaleTareOn;
 extern bool scaleCalibrationOn;
 extern int logLevel;
 extern const char sysVersion[64];
-extern bool timingMaster;         // if set to false it lets processes run together, if true it limits how many processes run per loop
-extern bool includeDisplayInLogs; // if set to true it shows every display update, if false it only shows if > 45ms or if running in the same loop as another process
+extern bool includeDisplayInLogs;
 extern bool timingDebugActive;
 
 void ParameterRegistry::initialize(Config& config) {
@@ -741,16 +740,6 @@ void ParameterRegistry::initialize(Config& config) {
         "T=temperature",
         [&config] { return config.get<int>("system.log_level") == static_cast<int>(Logger::Level::DEBUG); }
     );
-    
-    addBoolConfigParam(
-        "system.timing.enabled",
-        "Activate loop process limit",
-        sSystemSection,
-        1302,
-        &timingMaster,
-        "Enable or disable the process limit per loop",
-        [&config] { return config.get<int>("system.log_level") == static_cast<int>(Logger::Level::DEBUG); }
-    );
 
     addBoolConfigParam(
         "system.showdisplay.enabled",
@@ -761,7 +750,7 @@ void ParameterRegistry::initialize(Config& config) {
         "Enable or disable showing sendBuffer loops in debug logs",
         [&config] { return config.get<int>("system.log_level") == static_cast<int>(Logger::Level::DEBUG); }
     );
-    
+
     // Hardware section
 
     // OLED

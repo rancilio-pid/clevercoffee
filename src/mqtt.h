@@ -14,14 +14,13 @@
 #include <os.h>
 #include <string>
 
-extern bool timingMaster;
-
 std::map<const char*, std::string> mqttLastSent;
 
 inline unsigned long previousMillisMQTT;
 const unsigned long intervalMQTT = 5000;
 const unsigned long intervalMQTTbrew = 500;
 const unsigned long intervalMQTTstandby = 10000;
+unsigned long timeBudget = 10; // milliseconds per loop until all data is sent
 
 inline WiFiClient net;
 inline PubSubClient mqtt(net);
@@ -243,7 +242,7 @@ inline void mqtt_callback(const char* topic, const byte* data, const unsigned in
 }
 
 /**
- * @brief Send all current system parameter values to MQTT
+ * @brief Send all current system parameter values to MQTT if changed, exit early if process is taking too long and return next loop
  *
  * @param continueOnError Flag to specify whether to continue publishing messages in case of an error (default: true)
  * @return 0 = success, MQTT error code = failure
@@ -255,13 +254,7 @@ inline int writeSysParamsToMQTT(const bool continueOnError = true) {
     static bool inSensors = false;
 
     unsigned long currentMillisMQTT = millis();
-    unsigned long interval = intervalMQTT;
-    unsigned long timeBudget = 1000; // milliseconds to spend in this call, is high to simulate no changes
-
-    if (timingMaster) {
-        interval = (machineState == kBrew) ? intervalMQTTbrew : (machineState == kStandby) ? intervalMQTTstandby : intervalMQTT;
-        timeBudget = 10; // milliseconds to spend in this call, if timingMaster active it splits into calls of this amount
-    }
+    unsigned long interval = (machineState == kBrew) ? intervalMQTTbrew : (machineState == kStandby) ? intervalMQTTstandby : intervalMQTT;
 
     if ((currentMillisMQTT - previousMillisMQTT < interval) || !mqtt_enabled || !mqtt.connected()) {
         return 0;
@@ -327,7 +320,7 @@ inline int writeSysParamsToMQTT(const bool continueOnError = true) {
 
             std::string value = std::string(data);
 
-            if (mqttLastSent[mqttTopic] != value || !timingMaster) {
+            if (mqttLastSent[mqttTopic] != value) {
                 if (!mqtt_publish(mqttTopic, data, true)) {
                     errorState = mqtt.state();
 
@@ -364,7 +357,7 @@ inline int writeSysParamsToMQTT(const bool continueOnError = true) {
         const auto& sensorFunc = mqttSensorsIt->second;
         std::string value = number2string(sensorFunc());
 
-        if (mqttLastSent[topic] != value || !timingMaster) {
+        if (mqttLastSent[topic] != value) {
 
             if (!mqtt_publish(topic, value.c_str())) {
                 errorState = mqtt.state();

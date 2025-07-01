@@ -107,7 +107,6 @@ unsigned long previousMillisPressure; // initialisation at the end of init()
 
 // timing flags
 bool timingDebugActive = false;
-bool timingMaster = false;
 bool includeDisplayInLogs = false;
 bool displayBufferReady = false;
 bool displayUpdateRunning = false;
@@ -1142,7 +1141,7 @@ void loopPid() {
                 checkMQTT();
 
                 // if screen is ready to refresh wait for next loop
-                if ((!displayBufferReady && !temperatureUpdateRunning) || !timingMaster) {
+                if (!displayBufferReady && !temperatureUpdateRunning) {
                     writeSysParamsToMQTT(true); // Continue on error
                 }
             }
@@ -1156,7 +1155,7 @@ void loopPid() {
                 if (mqtt_hassio_enabled) {
                     // resend discovery messages if not during a main function and MQTT has been disconnected but has now reconnected
                     // this could mean mqtt_was_connected stays false for up to 5 mins but mqtt retains old HASSIO messages
-                    if (!((machineState >= kBrew) && (machineState <= kBackflush)) && ((!mqtt_was_connected && !displayBufferReady && !temperatureUpdateRunning) || !timingMaster)) {
+                    if (!(machineState >= kBrew && machineState <= kBackflush) && (!mqtt_was_connected && !displayBufferReady && !temperatureUpdateRunning)) {
                         hassioDiscoveryTimer();
                     }
                 }
@@ -1196,7 +1195,7 @@ void loopPid() {
     websiteUpdateRunning = false;
 
     // refresh website if loop does not have anoth long running process already
-    if (((millis() - lastTempEvent) > tempEventInterval) && ((!mqttUpdateRunning && !hassioUpdateRunning && !displayBufferReady && !temperatureUpdateRunning) || !timingMaster)) {
+    if (((millis() - lastTempEvent) > tempEventInterval) && (!mqttUpdateRunning && !hassioUpdateRunning && !displayBufferReady && !temperatureUpdateRunning)) {
         websiteUpdateRunning = true;
 
         // send temperatures to website endpoint
@@ -1266,7 +1265,7 @@ void loopPid() {
     if (config.get<bool>("hardware.oled.enabled")) {
 
         // update display on loops that have not had other major tasks running, if blocked it will send in the next loop (average 0.5ms)
-        if ((((!websiteUpdateRunning) && (!mqttUpdateRunning) && (!hassioUpdateRunning) && (!temperatureUpdateRunning)) || !timingMaster) && (standbyModeRemainingTimeDisplayOffMillis > 0)) {
+        if (!websiteUpdateRunning && !mqttUpdateRunning && !hassioUpdateRunning && !temperatureUpdateRunning && (standbyModeRemainingTimeDisplayOffMillis > 0)) {
 
             // displayUpdateRunning currently doesn't block anything as it is near the end of the loop, but if this code block moves it can be used to block other processes
             // sendBuffer() takes around 35ms so it flags that it has happened
