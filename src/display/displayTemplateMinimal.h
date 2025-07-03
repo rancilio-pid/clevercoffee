@@ -24,6 +24,12 @@ inline void printScreen() {
         return;
     }
 
+    // Show fullscreen hot water on timer:
+    if (displayFullscreenHotWaterOnTimer()) {
+        // Display was updated, end here
+        return;
+    }
+
     // If no specific machine state was printed, print default:
     u8g2->clearBuffer();
 

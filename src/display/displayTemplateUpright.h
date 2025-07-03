@@ -25,6 +25,12 @@ inline void printScreen() {
         return;
     }
 
+    // Show fullscreen hot water on timer:
+    if (displayFullscreenHotWaterOnTimer()) {
+        // Display was updated, end here
+        return;
+    }
+
     if (displayOfflineMode()) {
         // Display was updated, end here
         return;

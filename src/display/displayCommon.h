@@ -74,6 +74,9 @@ inline void displayWaterIcon(const int x, const int y) {
     if (!waterTankFull) {
         u8g2->drawXBMP(x, y, 8, 8, Water_Tank_Empty_Icon);
     }
+    else if (checkHotWaterStates() && !featureFullscreenHotWaterTimer) {
+        u8g2->drawXBMP(x, y, 8, 8, Hot_Water_On_Icon);
+    }
 }
 
 /**
@@ -396,6 +399,7 @@ inline void displayStatusbar() {
 
     const auto format = "%02luh %02lum";
     displayUptime(84, 0, format);
+    displayWaterIcon(72, 2);
 }
 
 /**
@@ -537,6 +541,34 @@ inline bool displayFullscreenManualFlushTimer() {
         else {
             u8g2->drawXBMP(0, 12, Manual_Flush_Logo_width, Manual_Flush_Logo_height, Manual_Flush_Logo);
             displayBrewtimeFs(48, 25, currBrewTime);
+            displayWaterIcon(119, 1);
+        }
+
+        displayBufferReady = true;
+        return true;
+    }
+    return false;
+}
+
+/**
+ * @brief display fullscreen hot water on timer
+ */
+inline bool displayFullscreenHotWaterOnTimer() {
+    if (!featureFullscreenHotWaterTimer) {
+        return false;
+    }
+
+    if (machineState == kHotWater) {
+        u8g2->clearBuffer();
+
+        if (config.get<int>("display.template") == 4) {
+            u8g2->drawXBMP(12, 12, Hot_Water_Logo_width, Hot_Water_Logo_height, Hot_Water_Logo);
+            displayBrewtimeFs(1, 80, currPumpOnTime);
+            displayWaterIcon(55, 2);
+        }
+        else {
+            u8g2->drawXBMP(0, 12, Hot_Water_Logo_width, Hot_Water_Logo_height, Hot_Water_Logo);
+            displayBrewtimeFs(48, 25, currPumpOnTime);
             displayWaterIcon(119, 1);
         }
 

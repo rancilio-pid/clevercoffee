@@ -81,10 +81,9 @@ inline HX711_ADC LoadCell2(PIN_HXDAT2, PIN_HXCLK);
 
 /**
  * @brief True if in an intermediate brew state, false if idle or finished
- * if in an error state during brew return false
  */
 bool checkBrewActive() {
-    return ((currBrewState != kBrewIdle && currBrewState != kBrewFinished) && !(machineState >= kEmergencyStop));
+    return (currBrewState != kBrewIdle && currBrewState != kBrewFinished); // removed && !(machineState >= kEmergencyStop)
 }
 
 /**

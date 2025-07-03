@@ -35,6 +35,7 @@ extern double standbyModeTime;
 extern bool featureBrewControl;
 extern bool featureFullscreenBrewTimer;
 extern bool featureFullscreenManualFlushTimer;
+extern bool featureFullscreenHotWaterTimer;
 extern double postBrewTimerDuration;
 extern bool featureHeatingLogo;
 extern bool featurePidOffLogo;
@@ -551,13 +552,22 @@ void ParameterRegistry::initialize(Config& config) {
         &featureFullscreenManualFlushTimer,
         "Enable fullscreen overlay during manual flush"
     );
+    
+    addBoolConfigParam(
+        "display.fullscreen_hot_water_timer",
+        "Enable Fullscreen Hot Water Timer",
+        sDisplaySection,
+        906,
+        &featureFullscreenHotWaterTimer,
+        "Enable fullscreen overlay during hot water mode"
+    );
 
     addNumericConfigParam(
         "display.post_brew_timer_duration",
         "Post Brew Timer Duration (s)",
         kDouble,
         sDisplaySection,
-        906,
+        907,
         &postBrewTimerDuration,
         POST_BREW_TIMER_DURATION_MIN,
         POST_BREW_TIMER_DURATION_MAX,
@@ -568,7 +578,7 @@ void ParameterRegistry::initialize(Config& config) {
         "display.heating_logo",
         "Enable Heating Logo",
         sDisplaySection,
-        907,
+        908,
         &featureHeatingLogo,
         "full screen logo will be shown if temperature is 5°C below setpoint"
     );
@@ -577,7 +587,7 @@ void ParameterRegistry::initialize(Config& config) {
         "display.pid_off_logo",
         "Enable 'PID Disabled' Logo",
         sDisplaySection,
-        908,
+        909,
         &featurePidOffLogo,
         "full screen logo will be shown if pid is disabled"
     );

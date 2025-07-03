@@ -28,6 +28,12 @@ inline void printScreen() {
         return;
     }
 
+    // Show fullscreen hot water on timer:
+    if (displayFullscreenHotWaterOnTimer()) {
+        // Display was updated, end here
+        return;
+    }
+
     // Print the machine state
     if (displayMachineState()) {
         // Display was updated, end here

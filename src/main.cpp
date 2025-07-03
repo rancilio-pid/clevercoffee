@@ -84,6 +84,7 @@ U8G2* u8g2 = nullptr;
 
 bool featureFullscreenBrewTimer = false;
 bool featureFullscreenManualFlushTimer = false;
+bool featureFullscreenHotWaterTimer = false;
 double postBrewTimerDuration = POST_BREW_TIMER_DURATION;
 bool featureHeatingLogo = false;
 bool featurePidOffLogo = false;
@@ -216,6 +217,7 @@ bool steamFirstON = false;
 PID bPID(&temperature, &pidOutput, &setpoint, aggKp, aggKi, aggKd, 1, DIRECT);
 
 #include "brewHandler.h"
+#include "hotWaterHandler.h"
 
 // Other variables
 boolean emergencyStop = false;                // Emergency stop if temperature is too high
@@ -297,13 +299,9 @@ void u8g2_prepare();
 
 Timer printDisplayTimer(&DisplayTemplateManager::printScreen, 100);
 
-// initialise water switch variable
-int hotWaterON = 0;
-
 #include "powerHandler.h"
 #include "scaleHandler.h"
 #include "steamHandler.h"
-#include "hotWaterHandler.h"
 
 // Emergency stop if temp is too high
 void testEmergencyStop() {
@@ -430,6 +428,7 @@ float filterPressureValue(const float input) {
 void handleMachineState() {
     switch (machineState) {
         case kInit:
+
             if (!waterTankFull) {
                 machineState = kWaterTankEmpty;
             }
@@ -473,7 +472,7 @@ void handleMachineState() {
                 }
             }
 
-            if (steamON == 1) {
+            if (steamON) {
                 machineState = kSteam;
 
                 if (standbyModeOn) {
@@ -481,7 +480,7 @@ void handleMachineState() {
                 }
             }
 
-            if (hotWaterON == 1) {
+            if (checkHotWaterStates()) {
                 machineState = kHotWater;
 
                 if (standbyModeOn) {
@@ -557,7 +556,7 @@ void handleMachineState() {
 
         case kHotWater:
 
-            if (!hotWaterON) {
+            if (!checkHotWaterStates()) {
                 machineState = kPidNormal;
             }
 
@@ -639,6 +638,7 @@ void handleMachineState() {
             break;
 
         case kEmergencyStop:
+
             if (!emergencyStop) {
                 machineState = kPidNormal;
             }
@@ -650,9 +650,11 @@ void handleMachineState() {
             if (tempSensor != nullptr && tempSensor->hasError()) {
                 machineState = kSensorError;
             }
+
             break;
 
         case kWaterTankEmpty:
+
             if (waterTankFull) {
                 machineState = kPidNormal;
 
@@ -668,9 +670,11 @@ void handleMachineState() {
             if (tempSensor != nullptr && tempSensor->hasError()) {
                 machineState = kSensorError;
             }
+
             break;
 
         case kPidDisabled:
+
             if (pidON) {
                 machineState = kPidNormal;
             }
@@ -707,7 +711,7 @@ void handleMachineState() {
                     }
                 }
 
-                if (hotWaterON) {
+                if (checkHotWaterStates()) {
                     setRuntimePidState(true);
                     machineState = kHotWater;
                     resetStandbyTimer(machineState);
@@ -762,10 +766,12 @@ void handleMachineState() {
             }
 
         case kSensorError:
+
             machineState = kSensorError;
             break;
 
         case kEepromError:
+
             machineState = kEepromError;
             break;
     }
