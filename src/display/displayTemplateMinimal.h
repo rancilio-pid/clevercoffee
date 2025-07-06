@@ -99,7 +99,7 @@ inline void printScreen() {
                 u8g2->print(langstring_brew);
                 u8g2->print(currBrewTime / 1000, 0);
 
-                if (config.get<bool>("brew.by_time")) {
+                if (config.get<bool>("brew.by_time") && config.get<int>("brew.mode") == 1) {
                     u8g2->print("/");
                     u8g2->print(totalTargetBrewTime / 1000, 0);
                 }

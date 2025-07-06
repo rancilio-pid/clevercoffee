@@ -80,8 +80,10 @@ inline void printScreen() {
             displayBrewTime(32, 36, langstring_manual_flush, currBrewTime);
         }
         else if (shouldDisplayBrewTimer()) {
+            const bool automaticBrewingEnabled = config.get<bool>("brew.mode") == 1;
+
             // Time
-            if (config.get<bool>("brew.by_time")) {
+            if (automaticBrewingEnabled && config.get<bool>("brew.by_time")) {
                 displayBrewTime(32, 36, langstring_brew, currBrewTime, totalTargetBrewTime);
             }
             else {
@@ -94,7 +96,7 @@ inline void printScreen() {
                 u8g2->drawBox(32, 27, 100, 10);
                 u8g2->setDrawColor(1);
 
-                if (config.get<bool>("brew.by_weight")) {
+                if (automaticBrewingEnabled && config.get<bool>("brew.by_weight")) {
                     displayBrewWeight(32, 26, currBrewWeight, targetBrewWeight, scaleFailure);
                 }
                 else {

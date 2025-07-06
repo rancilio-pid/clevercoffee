@@ -81,7 +81,7 @@ inline void printScreen() {
         }
         else {
             if (shouldDisplayBrewTimer()) {
-                if (config.get<bool>("brew.by_time")) {
+                if (config.get<bool>("brew.by_time") && config.get<int>("brew.mode") == 1) {
                     displayBrewTime(34, 36, langstring_brew, currBrewTime, totalTargetBrewTime);
                 }
                 else {
