@@ -59,6 +59,11 @@ inline void setupMqtt() {
     }
 
     mqtt_enabled = registry.getParameterById("mqtt.enabled")->getValueAs<bool>();
+
+    if (!mqtt_enabled) {
+        return;
+    }
+
     mqtt_server_ip = registry.getParameterById("mqtt.broker")->getValueAs<String>();
     mqtt_server_port = registry.getParameterById("mqtt.port")->getValueAs<int>();
     mqtt_username = registry.getParameterById("mqtt.username")->getValueAs<String>();

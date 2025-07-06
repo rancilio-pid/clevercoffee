@@ -95,7 +95,7 @@ bool featurePidOffLogo = false;
 WiFiManager wm;
 constexpr unsigned long wifiConnectionDelay = WIFICONNECTIONDELAY;
 constexpr unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
-String hostname;
+String hostname = "silvia";
 auto pass = WM_PASS;
 unsigned long lastWifiConnectionAttempt = millis();
 unsigned int wifiReconnects = 0; // actual number of reconnects
@@ -957,69 +957,6 @@ void setup() {
     aggbKi = aggbTn > 0 ? aggbKp / aggbTn : 0;
     aggbKd = aggbTv * aggbKp;
 
-    setupMqtt();
-
-    if (mqtt_enabled) {
-        // Editable values reported to MQTT
-        mqttVars["pidON"] = "pid.enabled";
-        mqttVars["brewSetpoint"] = "brew.setpoint";
-        mqttVars["brewTempOffset"] = "brew.temp_offset";
-        mqttVars["steamON"] = "STEAM_MODE";
-        mqttVars["steamSetpoint"] = "steam.setpoint";
-        mqttVars["pidUsePonM"] = "pid.use_ponm";
-        mqttVars["aggKp"] = "pid.regular.kp";
-        mqttVars["aggTn"] = "pid.regular.tn";
-        mqttVars["aggTv"] = "pid.regular.tv";
-        mqttVars["aggIMax"] = "pid.regular.i_max";
-        mqttVars["steamKp"] = "pid.steam.kp";
-        mqttVars["standbyModeOn"] = "standby.enabled";
-
-        // Values reported to MQTT
-        mqttSensors["temperature"] = [] { return temperature; };
-        mqttSensors["heaterPower"] = [] { return pidOutput / 10; };
-        mqttSensors["standbyModeTimeRemaining"] = [] { return standbyModeRemainingTimeMillis / 1000; };
-        mqttSensors["currentKp"] = [] { return bPID.GetKp(); };
-        mqttSensors["currentKi"] = [] { return bPID.GetKi(); };
-        mqttSensors["currentKd"] = [] { return bPID.GetKd(); };
-        mqttSensors["machineState"] = [] { return machineState; };
-
-        if (config.get<bool>("hardware.switches.brew.enabled")) {
-            mqttVars["aggbKp"] = "pid.bd.kp";
-            mqttVars["aggbTn"] = "pid.bd.tn";
-            mqttVars["aggbTv"] = "pid.bd.tv";
-            mqttVars["pidUseBD"] = "pid.bd.enabled";
-            mqttVars["brewPidDelay"] = "brew.pid_delay";
-            mqttSensors["currBrewTime"] = [] { return currBrewTime / 1000; };
-            mqttVars["targetBrewTime"] = "brew.target_time";
-            mqttVars["preinfusion"] = "brew.pre_infusion.time";
-            mqttVars["preinfusionPause"] = "brew.pre_infusion.pause";
-            mqttVars["backflushOn"] = "BACKFLUSH_ON";
-            mqttVars["backflushCycles"] = "backflush.cycles";
-            mqttVars["backflushFillTime"] = "backflush.fill_time";
-            mqttVars["backflushFlushTime"] = "backflush.flush_time";
-        }
-    }
-
-    if (config.get<bool>("hardware.sensors.scale.enabled")) {
-        mqttVars["targetBrewWeight"] = "brew.target_weight";
-        mqttVars["scaleCalibration"] = "hardware.sensors.scale.calibration";
-
-        if (config.get<int>("hardware.sensors.scale.type") == 0) {
-            mqttVars["scale2Calibration"] = "hardware.sensors.scale.calibration2";
-        }
-
-        mqttVars["scaleKnownWeight"] = "hardware.sensors.scale.known_weight";
-        mqttVars["scaleTareOn"] = "TARE_ON";
-        mqttVars["scaleCalibrationOn"] = "CALIBRATION_ON";
-
-        mqttSensors["currReadingWeight"] = [] { return currReadingWeight; };
-        mqttSensors["currBrewWeight"] = [] { return currBrewWeight; };
-    }
-
-    if (config.get<bool>("hardware.sensors.pressure.enabled")) {
-        mqttSensors["pressure"] = [] { return inputPressureFilter; };
-    }
-
     initTimer1();
 
     const auto heaterTriggerType = static_cast<Relay::TriggerType>(config.get<int>("hardware.relays.heater.trigger_type"));
@@ -1083,7 +1020,6 @@ void setup() {
         waterTankSensor = new IOSwitch(PIN_WATERTANKSENSOR, (mode == Switch::NORMALLY_OPEN ? GPIOPin::IN_PULLDOWN : GPIOPin::IN_PULLUP), Switch::TOGGLE, mode);
     }
 
-    // Fallback offline
     if (!config.get<bool>("system.offline_mode")) { // WiFi Mode
         wiFiSetup();
         serverSetup();
@@ -1096,7 +1032,68 @@ void setup() {
             ArduinoOTA.begin();
         }
 
+        setupMqtt();
+
         if (mqtt_enabled) {
+            // Editable values reported to MQTT
+            mqttVars["pidON"] = "pid.enabled";
+            mqttVars["brewSetpoint"] = "brew.setpoint";
+            mqttVars["brewTempOffset"] = "brew.temp_offset";
+            mqttVars["steamON"] = "STEAM_MODE";
+            mqttVars["steamSetpoint"] = "steam.setpoint";
+            mqttVars["pidUsePonM"] = "pid.use_ponm";
+            mqttVars["aggKp"] = "pid.regular.kp";
+            mqttVars["aggTn"] = "pid.regular.tn";
+            mqttVars["aggTv"] = "pid.regular.tv";
+            mqttVars["aggIMax"] = "pid.regular.i_max";
+            mqttVars["steamKp"] = "pid.steam.kp";
+            mqttVars["standbyModeOn"] = "standby.enabled";
+
+            // Values reported to MQTT
+            mqttSensors["temperature"] = [] { return temperature; };
+            mqttSensors["heaterPower"] = [] { return pidOutput / 10; };
+            mqttSensors["standbyModeTimeRemaining"] = [] { return standbyModeRemainingTimeMillis / 1000; };
+            mqttSensors["currentKp"] = [] { return bPID.GetKp(); };
+            mqttSensors["currentKi"] = [] { return bPID.GetKi(); };
+            mqttSensors["currentKd"] = [] { return bPID.GetKd(); };
+            mqttSensors["machineState"] = [] { return machineState; };
+
+            if (config.get<bool>("hardware.switches.brew.enabled")) {
+                mqttVars["aggbKp"] = "pid.bd.kp";
+                mqttVars["aggbTn"] = "pid.bd.tn";
+                mqttVars["aggbTv"] = "pid.bd.tv";
+                mqttVars["pidUseBD"] = "pid.bd.enabled";
+                mqttVars["brewPidDelay"] = "brew.pid_delay";
+                mqttSensors["currBrewTime"] = [] { return currBrewTime / 1000; };
+                mqttVars["targetBrewTime"] = "brew.target_time";
+                mqttVars["preinfusion"] = "brew.pre_infusion.time";
+                mqttVars["preinfusionPause"] = "brew.pre_infusion.pause";
+                mqttVars["backflushOn"] = "BACKFLUSH_ON";
+                mqttVars["backflushCycles"] = "backflush.cycles";
+                mqttVars["backflushFillTime"] = "backflush.fill_time";
+                mqttVars["backflushFlushTime"] = "backflush.flush_time";
+            }
+
+            if (config.get<bool>("hardware.sensors.scale.enabled")) {
+                mqttVars["targetBrewWeight"] = "brew.target_weight";
+                mqttVars["scaleCalibration"] = "hardware.sensors.scale.calibration";
+
+                if (config.get<int>("hardware.sensors.scale.type") == 0) {
+                    mqttVars["scale2Calibration"] = "hardware.sensors.scale.calibration2";
+                }
+
+                mqttVars["scaleKnownWeight"] = "hardware.sensors.scale.known_weight";
+                mqttVars["scaleTareOn"] = "TARE_ON";
+                mqttVars["scaleCalibrationOn"] = "CALIBRATION_ON";
+
+                mqttSensors["currReadingWeight"] = [] { return currReadingWeight; };
+                mqttSensors["currBrewWeight"] = [] { return currBrewWeight; };
+            }
+
+            if (config.get<bool>("hardware.sensors.pressure.enabled")) {
+                mqttSensors["pressure"] = [] { return inputPressureFilter; };
+            }
+
             snprintf(topic_will, sizeof(topic_will), "%s%s/%s", mqtt_topic_prefix.c_str(), hostname.c_str(), "status");
             snprintf(topic_set, sizeof(topic_set), "%s%s/+/%s", mqtt_topic_prefix.c_str(), hostname.c_str(), "set");
             mqtt.setServer(mqtt_server_ip.c_str(), mqtt_server_port);
