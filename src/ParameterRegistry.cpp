@@ -232,7 +232,8 @@ void ParameterRegistry::initialize(Config& config) {
             sBrewSection,
             311,
             nullptr,
-            "Enables brew by time, so the pump stops automatically when the target brew time is reached. Only available when Brew Mode is set to Automatic"
+            "Enables brew by time, so the pump stops automatically when the target brew time is reached. Only available when Brew Mode is set to Automatic",
+            [&config] { return config.get<int>("brew.mode") == 1; }
         );
 
         addNumericConfigParam<double>(
@@ -244,7 +245,8 @@ void ParameterRegistry::initialize(Config& config) {
             &targetBrewTime,
             TARGET_BREW_TIME_MIN,
             TARGET_BREW_TIME_MAX,
-            "Stop brew automatically after this amount of time"
+            "Stop brew automatically after this amount of time",
+            [&config] { return config.get<int>("brew.mode") == 1; }
         );
 
         if (config.get<bool>("hardware.sensors.scale.enabled")) {
@@ -254,7 +256,8 @@ void ParameterRegistry::initialize(Config& config) {
                 sBrewSection,
                 321,
                 nullptr,
-                "Enables brew by weight, so the pump stops automatically when the target weight is reached. Only available when Brew Mode is set to Automatic"
+                "Enables brew by weight, so the pump stops automatically when the target weight is reached. Only available when Brew Mode is set to Automatic",
+                [&config] { return config.get<int>("brew.mode") == 1; }
             );
 
             addNumericConfigParam<double>(
@@ -266,7 +269,8 @@ void ParameterRegistry::initialize(Config& config) {
                 &targetBrewWeight,
                 TARGET_BREW_WEIGHT_MIN,
                 TARGET_BREW_WEIGHT_MAX,
-                "Brew is running until this weight has been measured"
+                "Brew is running until this weight has been measured",
+                [&config] { return config.get<int>("brew.mode") == 1; }
             );
         }
 
