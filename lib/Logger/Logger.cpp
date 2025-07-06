@@ -48,7 +48,7 @@ bool Logger::update() {
 
     if (Logger::getCurrentLevel() != level) {
         Logger::setLevel(level);
-        LOGF(INFO, "Log level changed to %d", level);
+        LOGF(INFO, "Log level changed to %s", Logger::get_level_identifier(level).c_str());
     }
 
     return true;

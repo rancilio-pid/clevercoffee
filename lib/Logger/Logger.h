@@ -104,7 +104,7 @@ class Logger {
 
         void current_time(char* timestamp);
 
-        String get_level_identifier(Level lvl);
+        static String get_level_identifier(Level lvl);
 
         // Logging level
         Level level_{Level::INFO};
