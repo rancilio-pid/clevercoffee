@@ -7,6 +7,9 @@
 
 inline bool currStatePowerSwitchPressed = false;
 inline bool lastPowerSwitchPressed = false;
+inline unsigned long systemInitializedTime = 0;
+inline unsigned long firstSwitchPressTime = 0;
+inline bool trackingPressTime = false;
 
 extern bool systemInitialized;
 
@@ -18,6 +21,12 @@ inline void checkPowerSwitch() {
     }
 
     const bool powerSwitchPressed = powerSwitch->isPressed();
+    const long currentMillis = millis();
+
+    // Record when system was first initialized
+    if (systemInitialized && systemInitializedTime == 0) {
+        systemInitializedTime = currentMillis;
+    }
 
     if (const int powerSwitchType = config.get<int>("hardware.switches.power.type"); powerSwitchType == Switch::TOGGLE) {
         if (powerSwitchPressed != lastPowerSwitchPressed) {
@@ -46,6 +55,12 @@ inline void checkPowerSwitch() {
             currStatePowerSwitchPressed = powerSwitchPressed;
 
             if (currStatePowerSwitchPressed && systemInitialized) {
+                // Only start tracking press time if system has been initialized for at least 5 seconds
+                if (currentMillis - systemInitializedTime > 5000) {
+                    firstSwitchPressTime = currentMillis;
+                    trackingPressTime = true;
+                }
+
                 if (machineState == kStandby) {
                     machineState = kPidNormal;
                     resetStandbyTimer(kPidNormal);
@@ -59,10 +74,21 @@ inline void checkPowerSwitch() {
                     standbyModeRemainingTimeDisplayOffMillis = 0;
                 }
             }
+            else if (!currStatePowerSwitchPressed) {
+                // Switch released - stop tracking
+                trackingPressTime = false;
+                firstSwitchPressTime = 0;
+            }
         }
 
         // Check for long press to trigger reboot (only for momentary switches)
-        if (powerSwitchPressed && systemInitialized && powerSwitch->longPressDetected()) {
+        // Only reboot when:
+        // 1. System is initialized
+        // 2. At least 5 seconds have passed since initialization
+        // 3. A press that started after initialization is actively tracked
+        // 4. The press has lasted long enough for longPressDetected()
+        if (powerSwitchPressed && systemInitialized && (currentMillis - systemInitializedTime > 5000) && trackingPressTime && (currentMillis - firstSwitchPressTime > 1000) && // Minimum 1 second actual press
+            powerSwitch->longPressDetected()) {
             LOG(INFO, "Power switch long press detected - initiating system reboot");
             u8g2->setPowerSave(0);
 
