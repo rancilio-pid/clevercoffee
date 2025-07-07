@@ -74,10 +74,11 @@ inline void printScreen() {
     if (config.get<bool>("hardware.switches.brew.enabled")) {
         // Show flush time
         if (machineState == kManualFlush) {
-            u8g2->setDrawColor(0);
-            u8g2->drawBox(32, 37, 100, 10);
-            u8g2->setDrawColor(1);
             displayBrewTime(32, 36, langstring_manual_flush, currBrewTime);
+        }
+        // Show hot water time
+        else if (machineState == kHotWater) {
+            displayBrewTime(32, 36, langstring_hot_water, currPumpOnTime);
         }
         else if (shouldDisplayBrewTimer()) {
             const bool automaticBrewingEnabled = config.get<bool>("brew.mode") == 1;
@@ -92,10 +93,6 @@ inline void printScreen() {
 
             // Weight
             if (scaleEnabled) {
-                u8g2->setDrawColor(0);
-                u8g2->drawBox(32, 27, 100, 10);
-                u8g2->setDrawColor(1);
-
                 if (automaticBrewingEnabled && config.get<bool>("brew.by_weight")) {
                     displayBrewWeight(32, 26, currBrewWeight, targetBrewWeight, scaleFailure);
                 }

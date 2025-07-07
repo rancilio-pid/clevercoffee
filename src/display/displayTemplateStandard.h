@@ -74,10 +74,11 @@ inline void printScreen() {
     if (config.get<bool>("hardware.switches.brew.enabled")) {
         // Show flush time
         if (machineState == kManualFlush) {
-            u8g2->setDrawColor(0);
-            u8g2->drawBox(34, 37, 100, 10);
-            u8g2->setDrawColor(1);
             displayBrewTime(34, 36, langstring_manual_flush, currBrewTime);
+        }
+        // Show hot water time
+        else if (machineState == kHotWater) {
+            displayBrewTime(34, 36, langstring_hot_water, currPumpOnTime);
         }
         else {
             if (shouldDisplayBrewTimer()) {

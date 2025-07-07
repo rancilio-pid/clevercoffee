@@ -70,12 +70,9 @@ inline void displayScaleFailed() {
 /**
  * @brief Draw a water empty icon at the given coordinates if water supply is low
  */
-inline void displayWaterIcon(const int x, const int y) {
+inline void displayWaterTankEmptyIcon(const int x, const int y) {
     if (!waterTankFull) {
         u8g2->drawXBMP(x, y, 8, 8, Water_Tank_Empty_Icon);
-    }
-    else if (checkHotWaterStates() && !featureFullscreenHotWaterTimer) {
-        u8g2->drawXBMP(x, y, 8, 8, Hot_Water_On_Icon);
     }
 }
 
@@ -241,6 +238,17 @@ inline bool shouldDisplayBrewTimer() {
  * @param totalTargetBrewTime  Target brew time in milliseconds (optional, default -1)
  */
 inline void displayBrewTime(const int x, const int y, const char* label, const double currBrewTime, const double totalTargetBrewTime = -1) {
+    u8g2->setDrawColor(0);
+
+    if (config.get<int>("display.template") == 1) {
+        u8g2->drawBox(x, y, 100, 15);
+    }
+    else {
+        u8g2->drawBox(x, y + 1, 100, 10);
+    }
+
+    u8g2->setDrawColor(1);
+
     if (config.get<int>("display.template") == 4) {
         u8g2->setCursor(x, y);
         u8g2->print(label);
@@ -282,6 +290,10 @@ inline void displayBrewTime(const int x, const int y, const char* label, const d
  * @param fault    Indicates if the scale has an error (optional, default false)
  */
 inline void displayBrewWeight(const int x, const int y, const float weight, const float setpoint = -1, const bool fault = false) {
+    u8g2->setDrawColor(0);
+    u8g2->drawBox(x, y + 1, 100, 10);
+    u8g2->setDrawColor(1);
+
     if (config.get<int>("display.template") == 4) {
         if (fault) {
             u8g2->setCursor(x, y);
@@ -399,7 +411,7 @@ inline void displayStatusbar() {
 
     const auto format = "%02luh %02lum";
     displayUptime(84, 0, format);
-    displayWaterIcon(72, 2);
+    displayWaterTankEmptyIcon(72, 2);
 }
 
 /**
@@ -493,7 +505,7 @@ inline bool displayFullscreenBrewTimer() {
                 displayBrewtimeFs(1, 80, currBrewTime);
             }
 
-            displayWaterIcon(55, 2);
+            displayWaterTankEmptyIcon(55, 2);
         }
         else {
             u8g2->drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
@@ -512,7 +524,7 @@ inline bool displayFullscreenBrewTimer() {
                 displayBrewtimeFs(48, 25, currBrewTime);
             }
 
-            displayWaterIcon(119, 1);
+            displayWaterTankEmptyIcon(119, 1);
         }
 
         displayBufferReady = true;
@@ -536,12 +548,12 @@ inline bool displayFullscreenManualFlushTimer() {
         if (config.get<int>("display.template") == 4) {
             u8g2->drawXBMP(12, 12, Manual_Flush_Logo_width, Manual_Flush_Logo_height, Manual_Flush_Logo);
             displayBrewtimeFs(1, 80, currBrewTime);
-            displayWaterIcon(55, 2);
+            displayWaterTankEmptyIcon(55, 2);
         }
         else {
             u8g2->drawXBMP(0, 12, Manual_Flush_Logo_width, Manual_Flush_Logo_height, Manual_Flush_Logo);
             displayBrewtimeFs(48, 25, currBrewTime);
-            displayWaterIcon(119, 1);
+            displayWaterTankEmptyIcon(119, 1);
         }
 
         displayBufferReady = true;
@@ -564,12 +576,12 @@ inline bool displayFullscreenHotWaterTimer() {
         if (config.get<int>("display.template") == 4) {
             u8g2->drawXBMP(12, 12, Hot_Water_Logo_width, Hot_Water_Logo_height, Hot_Water_Logo);
             displayBrewtimeFs(1, 80, currPumpOnTime);
-            displayWaterIcon(55, 2);
+            displayWaterTankEmptyIcon(55, 2);
         }
         else {
             u8g2->drawXBMP(0, 12, Hot_Water_Logo_width, Hot_Water_Logo_height, Hot_Water_Logo);
             displayBrewtimeFs(48, 25, currPumpOnTime);
-            displayWaterIcon(119, 1);
+            displayWaterTankEmptyIcon(119, 1);
         }
 
         displayBufferReady = true;
@@ -625,7 +637,7 @@ inline bool displayMachineState() {
         u8g2->setCursor(0, 55);
         u8g2->setFont(u8g2_font_profont10_tf);
         u8g2->print("PID is disabled manually");
-        displayWaterIcon(119, 1);
+        displayWaterTankEmptyIcon(119, 1);
         u8g2->sendBuffer();
         return true;
     }
@@ -636,7 +648,7 @@ inline bool displayMachineState() {
         u8g2->setCursor(36, 55);
         u8g2->setFont(u8g2_font_profont10_tf);
         u8g2->print("Standby mode");
-        displayWaterIcon(119, 1);
+        displayWaterTankEmptyIcon(119, 1);
         u8g2->sendBuffer();
         return true;
     }
@@ -648,7 +660,7 @@ inline bool displayMachineState() {
 
         displayTemperature(48, 16);
 
-        displayWaterIcon(119, 1);
+        displayWaterTankEmptyIcon(119, 1);
         u8g2->sendBuffer();
         return true;
     }
@@ -695,7 +707,7 @@ inline bool displayMachineState() {
                 break;
         }
 
-        displayWaterIcon(119, 1);
+        displayWaterTankEmptyIcon(119, 1);
         u8g2->sendBuffer();
         return true;
     }
@@ -726,7 +738,7 @@ inline bool displayMachineState() {
             u8g2->print("PID STOPPED");
         }
 
-        displayWaterIcon(119, 1);
+        displayWaterTankEmptyIcon(119, 1);
 
         u8g2->sendBuffer();
 

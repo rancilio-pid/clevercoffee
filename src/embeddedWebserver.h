@@ -280,7 +280,7 @@ inline void serverSetup() {
             const auto& registry = ParameterRegistry::getInstance();
             const auto& parameters = registry.getParameters();
 
-            JsonDocument doc;
+            StaticJsonDocument<8192> doc;
             auto array = doc.to<JsonArray>();
 
             // Check for filter parameter
@@ -309,7 +309,7 @@ inline void serverSetup() {
                 }
 
                 if (includeParam) {
-                    JsonDocument paramDoc;
+                    StaticJsonDocument<256> paramDoc;
                     paramToJson(param->getId(), param, paramDoc);
 
                     if (const bool success = array.add(paramDoc); !success) {
@@ -318,10 +318,17 @@ inline void serverSetup() {
                 }
             }
 
-            AsyncResponseStream* response = request->beginResponseStream("application/json");
-            response->addHeader("Connection", "close"); // Force connection close
-            serializeJson(doc, *response);
-            request->send(response);
+            if (doc.overflowed()) {
+                LOG(ERROR, "/parameters JSON overflowed - increase StaticJsonDocument size");
+                request->send(500, "text/plain", "Internal error: JSON too large");
+                return;
+            }
+
+            size_t len = measureJson(doc);
+            String payload;
+            payload.reserve(len + 16);
+            serializeJson(doc, payload);
+            request->send(200, "application/json", payload);
         }
         else if (request->method() == 2) { // HTTP_POST
             auto& registry = ParameterRegistry::getInstance();
@@ -410,7 +417,7 @@ inline void serverSetup() {
         AsyncResponseStream* response = request->beginResponseStream("application/json");
         response->addHeader("Connection", "close"); // Force connection close
 
-        JsonDocument doc;
+        StaticJsonDocument<8192> doc;
 
         // for each value in mem history array, add json array element
         auto currentTemps = doc["currentTemps"].to<JsonArray>();
@@ -425,8 +432,15 @@ inline void serverSetup() {
             heaterPowers.add(round2(tempHistory[2][i]));
         }
 
-        serializeJson(doc, *response);
-        request->send(response);
+        if (doc.overflowed()) {
+            request->send(500, "text/plain", "timeseries JSON overflowed");
+            return;
+        }
+
+        String out;
+        out.reserve(measureJson(doc) + 16);
+        serializeJson(doc, out);
+        request->send(200, "application/json", out);
     });
 
     server.on("/wifireset", HTTP_POST, [](AsyncWebServerRequest* request) {

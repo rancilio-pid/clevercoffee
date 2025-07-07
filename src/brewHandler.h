@@ -325,7 +325,7 @@ inline bool brew() {
         case kPreinfusionPause:
             valveRelay->on();
             pumpRelay->off();
-            debugPumpState("PreinfusionPause", "off");
+            debugPumpState("Pause", "off");
 
             if (currBrewTime > (preinfusion + preinfusionPause) * 1000) {
                 LOG(INFO, "Brew running");

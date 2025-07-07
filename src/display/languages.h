@@ -13,6 +13,7 @@ static const char* langstring_current_temp;
 static const char* langstring_brew;
 static const char* langstring_weight;
 static const char* langstring_manual_flush;
+static const char* langstring_hot_water;
 static const char* langstring_pressure;
 static const char* langstring_uptime;
 static const char* langstring_offlinemode;
@@ -28,6 +29,7 @@ static const char* langstring_set_temp_ur;
 static const char* langstring_current_temp_ur;
 static const char* langstring_brew_ur;
 static const char* langstring_manual_flush_ur;
+static const char* langstring_hot_water_ur;
 static const char* langstring_weight_ur;
 static const char* langstring_pressure_ur;
 static const char* langstring_error_tsensor_ur[5];
@@ -41,6 +43,7 @@ inline void initLangStrings(const Config& config) {
         langstring_brew = "Brew: ";
         langstring_weight = "Weight: ";
         langstring_manual_flush = "Flush: ";
+        langstring_hot_water = "Water: ";
         langstring_pressure = "Pressure: ";
         langstring_uptime = "Uptime:  ";
 
@@ -48,6 +51,7 @@ inline void initLangStrings(const Config& config) {
         langstring_current_temp_ur = "T: ";
         langstring_brew_ur = "B: ";
         langstring_manual_flush_ur = "F: ";
+        langstring_hot_water_ur = "Wp: ";
         langstring_weight_ur = "W: ";
         langstring_pressure_ur = "P: ";
 
@@ -77,6 +81,7 @@ inline void initLangStrings(const Config& config) {
         langstring_brew = "Brew: ";
         langstring_weight = "Peso: ";
         langstring_manual_flush = "Fregar: ";
+        langstring_hot_water = "Agua: ";
         langstring_pressure = "Presión: ";
         langstring_uptime = "Uptime:  ";
 
@@ -84,6 +89,7 @@ inline void initLangStrings(const Config& config) {
         langstring_current_temp_ur = "T: ";
         langstring_brew_ur = "B: ";
         langstring_manual_flush_ur = "F: ";
+        langstring_hot_water_ur = "A: ";
         langstring_weight_ur = "P: ";
         langstring_pressure_ur = "Pr: ";
 
@@ -113,6 +119,7 @@ inline void initLangStrings(const Config& config) {
         langstring_brew = "Bezug: ";
         langstring_weight = "Gewicht: ";
         langstring_manual_flush = "Spuelen: ";
+        langstring_hot_water = "Wasser: ";
         langstring_pressure = "Druck: ";
         langstring_uptime = "Uptime:  ";
 
@@ -120,6 +127,7 @@ inline void initLangStrings(const Config& config) {
         langstring_current_temp_ur = "I: ";
         langstring_brew_ur = "B: ";
         langstring_manual_flush_ur = "S: ";
+        langstring_hot_water_ur = "W: ";
         langstring_weight_ur = "G: ";
         langstring_pressure_ur = "D: ";
 

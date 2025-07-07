@@ -177,13 +177,13 @@ inline void printScreen() {
 
             // Brew time
             if (brewEnabled) {
-                u8g2->setDrawColor(0);
-                u8g2->drawBox(1, 35, 100, 10);
-                u8g2->setDrawColor(1);
-
                 // Show flush time
                 if (machineState == kManualFlush) {
                     displayBrewTime(1, 34, langstring_manual_flush_ur, currBrewTime);
+                }
+                // Show hot water time
+                else if (machineState == kHotWater) {
+                    displayBrewTime(1, 34, langstring_hot_water_ur, currPumpOnTime);
                 }
                 else {
                     const bool automaticBrewingEnabled = config.get<bool>("brew.mode") == 1;
@@ -198,10 +198,6 @@ inline void printScreen() {
                         }
 
                         if (scaleEnabled) {
-                            u8g2->setDrawColor(0);
-                            u8g2->drawBox(1, 45, 100, 10);
-                            u8g2->setDrawColor(1);
-
                             if (automaticBrewingEnabled && config.get<bool>("brew.by_weight")) {
                                 displayBrewWeight(1, 44, currBrewWeight, targetBrewWeight, scaleFailure);
                             }
@@ -215,7 +211,7 @@ inline void printScreen() {
         }
 
         // Status info in top bar
-        u8g2->drawFrame(0, 0, 64, 12);
+        u8g2->drawLine(0, 12, 64, 12);
         if (!offlineMode) {
             displayWiFiStatus(4, 2);
             displayMQTTStatus(21, 0);
@@ -225,7 +221,7 @@ inline void printScreen() {
             u8g2->setFont(u8g2_font_profont11_tf);
             u8g2->print(langstring_offlinemode);
         }
-        displayWaterIcon(55, 2);
+        displayWaterTankEmptyIcon(55, 2);
     }
 
     displayBufferReady = true;

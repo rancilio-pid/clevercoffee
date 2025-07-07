@@ -41,7 +41,7 @@ inline void updateStandbyTimer() {
                 standbyModeRemainingTimeMillis = standbyModeTimeMillis - elapsedTime;
 
                 if (elapsedTime % 60000 < 1000) {
-                    LOGF(INFO, "Standby time remaining: %i minutes", standbyModeRemainingTimeMillis / 60000);
+                    LOGF(INFO, "Standby time remaining: %i minutes", (standbyModeRemainingTimeMillis / 60000) + 1);
                 }
             }
             else {
@@ -57,7 +57,7 @@ inline void updateStandbyTimer() {
                 standbyModeRemainingTimeDisplayOffMillis = standbyModeTimeMillis - elapsedTime;
 
                 if (elapsedTime % 60000 < 1000) {
-                    LOGF(INFO, "Standby time until display is turned off: %i minutes", standbyModeRemainingTimeDisplayOffMillis / 60000);
+                    LOGF(INFO, "Standby time until display is turned off: %i minutes", (standbyModeRemainingTimeDisplayOffMillis / 60000) + 1);
                 }
             }
             else {

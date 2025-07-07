@@ -567,24 +567,12 @@ void handleMachineState() {
                 }
             }
 
-            if (brew()) {
-                machineState = kBrew;
-
-                if (standbyModeOn) {
-                    resetStandbyTimer(machineState);
-                }
-            }
-
             if (emergencyStop) {
                 machineState = kEmergencyStop;
             }
 
             if (!pidON) {
                 machineState = kPidDisabled;
-            }
-
-            if (!waterTankFull) {
-                machineState = kWaterTankEmpty;
             }
 
             if (tempSensor != nullptr && tempSensor->hasError()) {
@@ -1017,7 +1005,7 @@ void setup() {
 
     if (config.get<bool>("hardware.sensors.watertank.enabled")) {
         const auto mode = static_cast<Switch::Mode>(config.get<int>("hardware.sensors.watertank.mode"));
-        waterTankSensor = new IOSwitch(PIN_WATERTANKSENSOR, (mode == Switch::NORMALLY_OPEN ? GPIOPin::IN_PULLDOWN : GPIOPin::IN_PULLUP), Switch::TOGGLE, mode);
+        waterTankSensor = new IOSwitch(PIN_WATERTANKSENSOR, (mode == Switch::NORMALLY_OPEN ? GPIOPin::IN_PULLDOWN : GPIOPin::IN_PULLUP), Switch::TOGGLE, mode, mode);
     }
 
     if (!config.get<bool>("system.offline_mode")) { // WiFi Mode
@@ -1197,13 +1185,10 @@ void loopPid() {
     temperatureUpdateRunning = false;
 
     if (tempSensor != nullptr) {
+        temperature = tempSensor->getCurrentTemperature();
 
         if (machineState != kSteam) {
-            temperature = tempSensor->getCurrentTemperature();
             temperature -= brewTempOffset;
-        }
-        else {
-            temperature = tempSensor->getCurrentTemperature();
         }
     }
 
