@@ -221,7 +221,6 @@ inline void printScreen() {
             u8g2->setFont(u8g2_font_profont11_tf);
             u8g2->print(langstring_offlinemode);
         }
-        displayWaterTankEmptyIcon(55, 2);
     }
 
     displayBufferReady = true;

@@ -48,17 +48,6 @@ static const unsigned char Antenna_NOK_Icon[] U8X8_PROGMEM = {
     B10001000
 };
 
-static const unsigned char Water_Tank_Empty_Icon[] U8X8_PROGMEM = {
-    B00001001,
-    B00001010,
-    B00011100,
-    B00010100,
-    B00101110,
-    B00111110,
-    B01011100,
-    B10000000
-};
-
 static const unsigned char CleverCoffee_Logo[] U8X8_PROGMEM = {
     0x00, 0x00, 0x30, 0x00, 0x00, 0x00, 0x00, 0x60, 0x06, 0x00, 0x00, 0x00,
     0xc0, 0x0c, 0x00, 0x00, 0x00, 0xc0, 0x19, 0x00, 0x00, 0x00, 0x80, 0x19,
