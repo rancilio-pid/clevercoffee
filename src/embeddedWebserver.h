@@ -14,6 +14,7 @@
 #include <WiFi.h>
 
 #include <ArduinoJson.h>
+#include <AsyncJson.h>
 #include <ESPAsyncWebServer.h>
 
 #include "LittleFS.h"
@@ -103,7 +104,7 @@ inline String getValue(const String& varName) {
     }
 }
 
-inline void paramToJson(const String& name, const std::shared_ptr<Parameter>& param, JsonDocument& doc) {
+inline void paramToJson(const String& name, const std::shared_ptr<Parameter>& param, JsonVariant doc) {
     doc["type"] = param->getType();
     doc["name"] = name;
     doc["displayName"] = param->getDisplayName();
@@ -280,14 +281,16 @@ inline void serverSetup() {
             const auto& registry = ParameterRegistry::getInstance();
             const auto& parameters = registry.getParameters();
 
-            StaticJsonDocument<8192> doc;
-            auto array = doc.to<JsonArray>();
-
             // Check for filter parameter
             String filterType = "";
             if (request->hasParam("filter")) {
                 filterType = request->getParam("filter")->value();
             }
+
+            AsyncJsonResponse* response = new AsyncJsonResponse(false);
+            JsonArray array = response->getRoot().to<JsonArray>();
+
+            int filteredParameterCount = 0;
 
             // Get parameters based on filter
             for (const auto& param : parameters) {
@@ -304,31 +307,23 @@ inline void serverSetup() {
                 else if (filterType == "other") {
                     includeParam = param->getSection() == 10;
                 }
-                else {
+                else if (filterType == "all") {
                     includeParam = true;
+                }
+                else {
+                    includeParam = param->getSection() == 0 || param->getSection() == 1 || param->getSection() == 10;
                 }
 
                 if (includeParam) {
-                    StaticJsonDocument<256> paramDoc;
-                    paramToJson(param->getId(), param, paramDoc);
-
-                    if (const bool success = array.add(paramDoc); !success) {
-                        LOGF(ERROR, "Failed to add parameter %s to JSON array", param->getId());
-                    }
+                    JsonObject paramObj = array.add<JsonObject>();
+                    paramToJson(param->getId(), param, paramObj);
+                    filteredParameterCount++;
                 }
             }
 
-            if (doc.overflowed()) {
-                LOG(ERROR, "/parameters JSON overflowed - increase StaticJsonDocument size");
-                request->send(500, "text/plain", "Internal error: JSON too large");
-                return;
-            }
-
-            size_t len = measureJson(doc);
-            String payload;
-            payload.reserve(len + 16);
-            serializeJson(doc, payload);
-            request->send(200, "application/json", payload);
+            LOGF(DEBUG, "/parameters returning %d parameters", filteredParameterCount);
+            response->setLength();
+            request->send(response);
         }
         else if (request->method() == 2) { // HTTP_POST
             auto& registry = ParameterRegistry::getInstance();
@@ -417,7 +412,7 @@ inline void serverSetup() {
         AsyncResponseStream* response = request->beginResponseStream("application/json");
         response->addHeader("Connection", "close"); // Force connection close
 
-        StaticJsonDocument<8192> doc;
+        JsonDocument doc;
 
         // for each value in mem history array, add json array element
         auto currentTemps = doc["currentTemps"].to<JsonArray>();
@@ -430,11 +425,6 @@ inline void serverSetup() {
             currentTemps.add(round2(tempHistory[0][i]));
             targetTemps.add(round2(tempHistory[1][i]));
             heaterPowers.add(round2(tempHistory[2][i]));
-        }
-
-        if (doc.overflowed()) {
-            request->send(500, "text/plain", "timeseries JSON overflowed");
-            return;
         }
 
         String out;
