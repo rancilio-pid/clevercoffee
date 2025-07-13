@@ -10,14 +10,11 @@ inline void scaleCalibrate(HX711_ADC loadCell, const int pin, const bool isSecon
     const int scaleSamples = config.get<int>("hardware.sensors.scale.samples");
 
     loadCell.setCalFactor(1.0);
+    String msg = langstring_calibrate_start + String((int)isSecondCell + 1) + "\n";
+    displayWrappedMessage(msg);
+    delay(2000);
 
-    u8g2->clearBuffer();
-    u8g2->drawStr(0, 22, "Calibration coming up");
-    u8g2->drawStr(0, 32, "Empty scale ");
-    u8g2->print(pin, 0);
-    u8g2->sendBuffer();
-
-    LOGF(INFO, "Taking scale %d to zero point", pin);
+    LOGF(INFO, "Taking scale %d, pin %d to zero point", (int)isSecondCell + 1, pin);
 
     loadCell.update();
     loadCell.tare();
@@ -26,13 +23,8 @@ inline void scaleCalibrate(HX711_ADC loadCell, const int pin, const bool isSecon
 
     const auto scaleKnownWeight = ParameterRegistry::getInstance().getParameterById("hardware.sensors.scale.known_weight")->getValueAs<float>();
 
-    u8g2->clearBuffer();
-    u8g2->drawStr(2, 2, "Calibration in progress.");
-    u8g2->drawStr(2, 12, "Place known weight");
-    u8g2->drawStr(2, 22, "on scale in next");
-    u8g2->drawStr(2, 32, "10 seconds");
-    u8g2->drawStr(2, 42, number2string(scaleKnownWeight));
-    u8g2->sendBuffer();
+    msg = langstring_calibrate_in_progress + String(number2string(scaleKnownWeight)) + "g\n";
+    displayWrappedMessage(msg);
     delay(10000);
 
     LOG(INFO, "Taking scale load point");
@@ -54,12 +46,8 @@ inline void scaleCalibrate(HX711_ADC loadCell, const int pin, const bool isSecon
         ParameterRegistry::getInstance().setParameterValue("hardware.sensors.scale.calibration", *calibration);
     }
 
-    u8g2->clearBuffer();
-    u8g2->drawStr(2, 2, "Calibration done!");
-    u8g2->drawStr(2, 12, "New calibration:");
-    u8g2->drawStr(2, 22, number2string(*calibration));
-    u8g2->sendBuffer();
-
+    msg = langstring_calibrate_complete + String(number2string(*calibration)) + "\n";
+    displayWrappedMessage(msg);
     delay(2000);
 }
 

@@ -19,8 +19,8 @@ static const char* langstring_uptime;
 static const char* langstring_offlinemode;
 static const char* langstring_wifirecon;
 static const char* langstring_connectwifi1;
-static const char* langstring_nowifi[32];
-static const char* langstring_error_tsensor[64];
+static const char* langstring_nowifi[2];
+static const char* langstring_error_tsensor[5];
 static const char* langstring_scale_Failure;
 static const char* langstring_backflush_press;
 static const char* langstring_backflush_start;
@@ -33,6 +33,9 @@ static const char* langstring_hot_water_ur;
 static const char* langstring_weight_ur;
 static const char* langstring_pressure_ur;
 static const char* langstring_error_tsensor_ur[5];
+static const char* langstring_calibrate_start;
+static const char* langstring_calibrate_in_progress;
+static const char* langstring_calibrate_complete;
 
 inline void initLangStrings(const Config& config) {
 
@@ -73,6 +76,10 @@ inline void initLangStrings(const Config& config) {
         langstring_backflush_press = "Press brew switch";
         langstring_backflush_start = "to start...";
         langstring_backflush_finish = "to finish...";
+
+        langstring_calibrate_start = "Calibration coming up\n\nEmpty scale ";
+        langstring_calibrate_in_progress = "Calibration in progress. Place known weight on scale in next 10 seconds ";
+        langstring_calibrate_complete = "Calibration done!\nNew result: ";
     }
     // Espanol
     else if (config.get<int>("display.language") == 2) {
@@ -111,6 +118,10 @@ inline void initLangStrings(const Config& config) {
         langstring_backflush_press = "Pulsa boton de cafe";
         langstring_backflush_start = "para empezar...";
         langstring_backflush_finish = "para terminar...";
+
+        langstring_calibrate_start = "Calibración iniciando\n\nVaciar la balanza ";
+        langstring_calibrate_in_progress = "Calibrando. Coloque un peso conocido en la balanza en los próximos 10 segundos ";
+        langstring_calibrate_complete = "Calibración completa!\nNuevo resultado: ";
     }
     // German (default)
     else {
@@ -148,5 +159,9 @@ inline void initLangStrings(const Config& config) {
         langstring_backflush_press = "Bruehsch. druecken";
         langstring_backflush_start = "um zu starten...";
         langstring_backflush_finish = "um zu beenden...";
+
+        langstring_calibrate_start = "Kalibrierung startet\n\nWaage leeren ";
+        langstring_calibrate_in_progress = "Kalibrierung läuft. Bitte in den nächsten 10 Sekunden ein bekanntes Gewicht auflegen ";
+        langstring_calibrate_complete = "Kalibrierung abgeschlossen!\nNeues Ergebnis: ";
     }
 }

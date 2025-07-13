@@ -737,3 +737,72 @@ inline bool displayMachineState() {
 
     return false;
 }
+
+inline void displayWrappedMessage(const String& message) {
+    u8g2->clearBuffer();
+
+    if (config.get<int>("display.template") == 4) {
+        u8g2->setFont(u8g2_font_profont10_tf);
+    }
+    else {
+        u8g2->setFont(u8g2_font_profont11_tf);
+    }
+
+    int lineHeight = u8g2->getMaxCharHeight() + 2;
+    int displayWidth = u8g2->getDisplayWidth();
+    int displayHeight = u8g2->getDisplayHeight();
+    int maxLines = displayHeight / lineHeight;
+
+    int x = 0;
+    int y = 0;
+    int wordCount = 0;
+
+    String word;
+    String line;
+
+    for (size_t i = 0; i <= message.length(); ++i) {
+        char c = message[i];
+
+        if (c == ' ' || c == '\n' || c == '\0') {
+            if (u8g2->getUTF8Width((line + word).c_str()) > displayWidth) {
+                u8g2->setCursor(x, y);
+
+                if (wordCount == 0) {
+                    u8g2->drawUTF8(x, y, word.c_str());
+                    y += lineHeight;
+                    line = "";
+                }
+                else {
+                    u8g2->drawUTF8(x, y, line.c_str());
+                    y += lineHeight;
+                    line = word + " ";
+                    wordCount = 1;
+                }
+            }
+            else {
+                line += word + " ";
+                wordCount += 1;
+            }
+
+            word = "";
+
+            if (c == '\n') {
+                u8g2->setCursor(x, y);
+                u8g2->drawUTF8(x, y, line.c_str());
+                y += lineHeight;
+                line = "";
+                wordCount = 0;
+            }
+        }
+        else {
+            word += c;
+        }
+    }
+
+    if (line.length() > 0 && y + lineHeight <= displayHeight) {
+        u8g2->setCursor(x, y);
+        u8g2->drawUTF8(x, y, line.c_str());
+    }
+
+    u8g2->sendBuffer();
+}

@@ -105,7 +105,9 @@ inline void printScreen() {
 
     if (config.get<bool>("hardware.sensors.pressure.enabled")) {
         u8g2->setCursor(32, 46);
-        u8g2->print(langstring_pressure);
+        u8g2->drawUTF8(32, 46, langstring_pressure);
+        int labelWidth = u8g2->getUTF8Width(langstring_pressure);
+        u8g2->setCursor(32 + labelWidth, 46);
         u8g2->print(inputPressure, 1);
     }
 
