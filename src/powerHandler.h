@@ -33,7 +33,7 @@ inline void checkPowerSwitch() {
             lastPowerSwitchPressed = powerSwitchPressed;
 
             if (powerSwitchPressed) {
-                if (machineState == kStandby) {
+                if (machineState == kStandby || machineState == kPidDisabled) {
                     machineState = kPidNormal;
                     resetStandbyTimer(kPidNormal);
                     setRuntimePidState(true);

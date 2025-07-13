@@ -1157,6 +1157,18 @@ void setup() {
         machineState = kPidNormal;
         setRuntimePidState(true);
     }
+
+    // For toggle switches, force PidOn to switch state mode
+    if (config.get<bool>("hardware.switches.power.enabled") && config.get<int>("hardware.switches.power.type") == Switch::TOGGLE) {
+        if (powerSwitch->isPressed()) {
+            setRuntimePidState(true);
+            machineState = kPidNormal;
+        }
+        else {
+            setRuntimePidState(false);
+            machineState = kPidDisabled;
+        }
+    }
 }
 
 void loop() {
