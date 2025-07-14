@@ -274,6 +274,7 @@ inline void serverSetup() {
 
             // Check for filter parameter
             String filterType = "";
+
             if (request->hasParam("filter")) {
                 filterType = request->getParam("filter")->value();
             }
@@ -306,19 +307,19 @@ inline void serverSetup() {
                 bool includeParam = false;
 
                 if (filterType == "hardware") {
-                    includeParam = param->getSection() >= 11 && param->getSection() <= 15;
+                    includeParam = param->getSection() >= 12 && param->getSection() <= 16;
                 }
                 else if (filterType == "behavior") {
-                    includeParam = param->getSection() >= 0 && param->getSection() <= 9;
+                    includeParam = param->getSection() >= 0 && param->getSection() <= 10;
                 }
                 else if (filterType == "other") {
-                    includeParam = param->getSection() == 10;
+                    includeParam = param->getSection() == 11;
                 }
                 else if (filterType == "all") {
                     includeParam = true;
                 }
                 else {
-                    includeParam = param->getSection() == 0 || param->getSection() == 1 || param->getSection() == 10;
+                    includeParam = param->getSection() == 0 || param->getSection() == 1 || param->getSection() == 11;
                 }
 
                 if (includeParam) {
@@ -418,9 +419,13 @@ inline void serverSetup() {
         doc["name"] = varValue;
         doc["helpText"] = param->getHelpText();
 
-        String helpJson;
-        serializeJson(doc, helpJson);
-        request->send(200, "application/json", helpJson);
+        // String helpJson;
+        // serializeJson(doc, helpJson);
+        // request->send(200, "application/json", helpJson);
+
+        AsyncResponseStream* response = request->beginResponseStream("application/json");
+        serializeJson(doc, *response);
+        request->send(response);
     });
 
     server.on("/temperatures", HTTP_GET, [](AsyncWebServerRequest* request) {
@@ -477,6 +482,8 @@ inline void serverSetup() {
 
         request->send(response);
     });
+
+    server.on("/graph", HTTP_GET, [](AsyncWebServerRequest* request) { request->send(LittleFS, "/graph.html", "text/html"); });
 
     server.on("/wifireset", HTTP_POST, [](AsyncWebServerRequest* request) {
         if (!authenticate(request)) {
@@ -620,6 +627,8 @@ inline void serverSetup() {
         }
 
         client->send("hello", nullptr, millis(), 10000);
+
+        updateMetadata = true;
     });
 
     server.addHandler(&events);
@@ -672,4 +681,45 @@ inline void sendTempEvent(const double currentTemp, const double targetTemp, con
         events.send("ping", nullptr, millis());
         events.send(getTempString().c_str(), "new_temps", millis());
     }
+}
+
+void sendBrewEvent(float time, float inputPressure, float setPressure, float pumpFlowRate, float setPumpFlowRate, float currBrewWeight, int dimmerPower) {
+    JsonDocument doc;
+
+    doc["currBrewTime"] = time;
+    doc["inputPressure"] = inputPressure;
+    doc["setPressure"] = setPressure;
+    doc["pumpFlowRate"] = pumpFlowRate;
+    doc["setPumpFlowRate"] = setPumpFlowRate;
+    doc["currBrewWeight"] = currBrewWeight;
+    doc["dimmerPower"] = dimmerPower;
+
+    char jsonBuf[256];
+    size_t len = serializeJson(doc, jsonBuf, sizeof(jsonBuf));
+    events.send(jsonBuf, "brew_event", millis());
+    // LOGF(DEBUG, "%s", jsonBuf);
+}
+
+void sendBrewMetadata(const char* profile, const char* phase, const char* profileDesc, const char* phaseDesc, const char* control, const char* autoStop) {
+    JsonDocument doc;
+
+    doc["profile"] = profile;
+    doc["phase"] = phase;
+    doc["profileDesc"] = profileDesc;
+    doc["phaseDesc"] = phaseDesc;
+    doc["control"] = control;
+    doc["autoStop"] = autoStop;
+
+    char jsonBuf[1024];
+    size_t len = serializeJson(doc, jsonBuf, sizeof(jsonBuf));
+    events.send(jsonBuf, "brew_meta", millis());
+    // LOGF(DEBUG, "%s", jsonBuf);
+}
+
+void startBrewEvent() {
+    events.send("start", "brew_state", millis());
+}
+
+void stopBrewEvent() {
+    events.send("stop", "brew_state", millis());
 }

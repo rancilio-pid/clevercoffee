@@ -1,0 +1,453 @@
+%HEADER%
+
+  <div class="content-wrapper">
+    <div id="content" class="container my-5">
+
+      <div class="card card-accent-dark mb-5 pb-0 shadow-sm rounded">
+        <div class="card-body bg-light pb-1 rounded">
+          <h5 class="card-title">Pump Control Settings</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-12 mb-4">
+              <div><strong>Control Method:</strong> <span id="controlMethod">--</span></div>
+              <div><strong>Profile:</strong> <span id="profileName">--</span></div>
+              <div><strong>Profile Description:</strong></div>
+              <div id="profileDesc" class="d-block w-100" style="white-space: pre-wrap; min-height: 1em;"></div>
+              <div><strong>Phase:</strong> <span id="phaseName">--</span></div>
+              <div><strong>Phase Description:</strong></div>
+              <div id="phaseDesc" class="d-block w-100" style="white-space: pre-wrap; min-height: 1em;"></div>
+              <div><strong>Auto Stop:</strong> <span id="autoStop">--</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-accent-dark mb-5 pb-0 shadow-sm rounded">
+        <div class="card-body bg-light pb-1 rounded">
+          <h5 class="card-title">Brew Telemetry</h5>
+        </div>
+        <div class="card-body">
+          <div id="telemetryLegend" class="mt-2"></div>
+          <div id="telemetryChart" style="width: 100%; height: 300px;"></div>
+        </div> 
+      </div> 
+
+      <div class="card card-accent-dark mb-5 pb-0 shadow-sm rounded">
+        <div class="card-body bg-light pb-1 rounded">
+          <h5 class="card-title">Telemetry Export</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-12 mb-4">
+              <p class="card-text text-muted">Download the latest brew measurements</p>
+              <button class="btn btn-outline-success me-2" onclick="exportJSON()">JSON</button>
+              <button class="btn btn-outline-success me-2" onclick="exportCSV()">CSV</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    let data = [
+      [], [], [], [], [], [], []
+    ];
+    let chart; 
+    let isBrewing = false;
+    let brewStartTime = null;
+
+    function waitForLibs(cb) {
+      if (window.onLibsReady) {
+        window.onLibsReady(cb);
+      } 
+      else {
+        setTimeout(() => waitForLibs(cb), 10);
+      }
+    }
+
+    waitForLibs(() => {
+      console.log("Initializing graph page");
+      const chartRef = document.getElementById("telemetryChart");
+      const legendRef = document.getElementById("telemetryLegend");
+
+      data = [
+        [0.0], // time
+        [0.0], // inputPressure
+        [0.0], // setPressure
+        [0.0], // pumpFlowRate
+        [0.0], // setPumpFlowRate
+        [0.0], // currBrewWeight
+        [0.0], // dimmerPower
+      ];
+
+      const options = {
+        width: chartRef.clientWidth,
+        height: 300,
+        plugins: [tooltipsPlugin()],
+        series: [
+          { 
+            label: "Time (s)" 
+          },
+          { 
+            label: "Input Pressure", 
+            stroke: "red", 
+            points: { 
+              show: false 
+            }  
+          },
+          { 
+            label: "Set Pressure", 
+            stroke: "darkred", 
+            dash: [5, 5], 
+            points: { 
+              show: false 
+            }  
+          },
+          { 
+            label: "Pump Flow", 
+            stroke: "green", 
+            points: { 
+              show: false 
+            }  
+          },
+          { 
+            label: "Set Pump Flow", 
+            stroke: "darkgreen", 
+            dash: [5, 5], 
+            points: { 
+              show: false 
+            }  
+          },
+          { 
+            label: "Weight Brewed", 
+            stroke: "blue", 
+            scale: "right", 
+            points: { 
+              show: false 
+            }  
+          },
+          { 
+            label: "Pump Power Pct", 
+            stroke: "purple", 
+            scale: "right", 
+            points: { 
+              show: false 
+            }  
+          },
+        ],
+        scales: {
+          x: { 
+            time: false, 
+            show: true,
+          },
+          y: { 
+            auto: false,
+            range: [0, 11],
+            show: true,
+          },        
+          right: { 
+            auto: false,
+            range: [0, 110],
+            show: true,
+            grid: false,
+          },   
+        },
+        axes: [
+          {
+            label: "Time (s)",
+            values: (u, ticks) => ticks.map(v => v.toFixed(1)),  // 1 decimal place
+          },
+          { 
+            label: "Pressure/Flow"
+          },                       
+          { 
+            label: "Weight/Power Pct",
+            scale: "right", 
+            side: 1 
+          }, 
+        ],
+        legend: {
+          show: false,
+        },
+      };
+
+      chart = new uPlot(options, data, chartRef);
+
+      function createLegend(series, container) {
+        container.innerHTML = "";
+        for (let i = 0; i < series.length; i++) {
+          const s = series[i];
+
+          const item = document.createElement("div");
+          item.style.display = "inline-block";
+          item.style.marginRight = "15px";
+
+          const swatch = document.createElement("span");
+          swatch.style.display = "inline-block";
+          swatch.style.width = "12px";
+          swatch.style.height = "12px";
+          swatch.style.marginRight = "6px";
+          swatch.style.verticalAlign = "middle";
+          swatch.style.backgroundColor = s.stroke || "#000";
+          swatch.style.border = "1px solid #aaa";
+
+          if (s.dash) {
+            swatch.style.backgroundImage = `repeating-linear-gradient(
+              90deg,
+              ${s.stroke},
+              ${s.stroke} 3px,
+              white 3px,
+              white 6px
+            )`;
+            swatch.style.backgroundSize = "6px 100%";
+          }
+
+          const label = document.createElement("span");
+          label.textContent = s.label + ": ";
+
+          const value = document.createElement("span");
+          value.id = `live-value-${i}`;
+          value.textContent = "--";
+
+          item.appendChild(swatch);
+          item.appendChild(label);
+          item.appendChild(value);
+          container.appendChild(item);
+        }
+      }
+
+      createLegend(options.series, legendRef);
+
+      function tooltipsPlugin() {
+        let tooltip;
+
+        function init(u) {
+          const over = u.over;
+
+          tooltip = document.createElement("div");
+          tooltip.className = "uplot-tooltip";
+          tooltip.style.position = "absolute";
+          tooltip.style.pointerEvents = "none";
+          tooltip.style.background = "rgba(0,0,0,0.7)";
+          tooltip.style.color = "#fff";
+          tooltip.style.fontSize = "11px";
+          tooltip.style.padding = "6px 8px";
+          tooltip.style.borderRadius = "4px";
+          tooltip.style.whiteSpace = "pre";
+          tooltip.style.display = "none";
+
+          over.appendChild(tooltip);
+
+          over.addEventListener("mouseleave", () => {
+            tooltip.style.display = "none";
+          });
+        }
+
+        function setCursor(u) {
+          const { idx } = u.cursor;
+          if (idx == null) return;
+
+          const xVal = u.data[0][idx];
+          if (xVal == null) return;
+
+          let text = `t=${xVal.toFixed(2)}s\n`;
+
+          for (let i = 1; i < u.series.length; i++) {
+            const s = u.series[i];
+            const yVal = u.data[i][idx];
+            if (yVal == null) continue;
+
+            text += `${s.label}: ${yVal.toFixed(2)}\n`;
+          }
+
+          tooltip.textContent = text;
+          tooltip.style.display = "block";
+
+          const xPos = u.valToPos(xVal, "x");
+          const yPos = u.cursor.top;
+
+          tooltip.style.left = `${xPos + 12}px`;
+          tooltip.style.top = `${yPos - 12}px`;
+        }
+
+        return {
+          hooks: {
+            init,
+            setCursor,
+          }
+        };
+      }
+
+      const eventSource = new EventSource("/events");
+
+      eventSource.addEventListener("brew_state", (event) => {
+        const state = event.data;
+
+        if (state === "start") {
+          isBrewing = true;
+          brewStartTime = new Date();
+
+          for (let i = 0; i < data.length; i++) data[i].length = 0;
+          chart.setData(data);
+        } 
+        else if (state === "stop") {
+          isBrewing = false;
+        }
+
+        // Update legend live values
+        const latestIndex = data[0].length - 1;
+
+        for (let i = 0; i < data.length; i++) {
+          const val = data[i][latestIndex];
+          const el = document.getElementById(`live-value-${i}`);
+          if (el) el.textContent = val !== null && val !== undefined ? val.toFixed(2) : "--";
+        }
+      });
+
+      eventSource.addEventListener("brew_meta", (event) => {
+        try {
+          const json = JSON.parse(event.data);
+          
+          // Update UI elements
+          if (json.control) document.getElementById("controlMethod").textContent = json.control;
+          if (json.profile) document.getElementById("profileName").textContent = json.profile;
+          if (json.profileDesc) document.getElementById("profileDesc").innerText = json.profileDesc || "--";
+          if (json.phase) document.getElementById("phaseName").textContent = json.phase;
+          if (json.phaseDesc) document.getElementById("phaseDesc").innerText = json.phaseDesc || "--";
+          if (json.autoStop) document.getElementById("autoStop").textContent = json.autoStop;
+        } 
+        catch (err) {
+          console.warn("Bad JSON:", event.data);
+        }
+      });
+
+      eventSource.addEventListener("brew_event", (event) => {
+        if (!isBrewing) return;
+
+        try {
+          const json = JSON.parse(event.data);
+
+          data[0].push(json.currBrewTime ?? 0);
+          data[1].push(json.inputPressure ?? null);
+          data[2].push(json.setPressure ?? null);
+          data[3].push(json.pumpFlowRate ?? null);
+          data[4].push(json.setPumpFlowRate ?? null);
+          data[5].push(json.currBrewWeight ?? null);
+          data[6].push(json.dimmerPower ?? null);
+
+          // Keep only last 1000 points
+          if (data[0].length > 1000) {
+            for (let i = 0; i < data.length; i++) data[i].shift();
+          }
+          
+          //console.log("data before update", JSON.stringify(data));
+          chart.setData(data);
+
+          // Update legend live values again
+          const latestIndex = data[0].length - 1;
+          for (let i = 0; i < data.length; i++) {
+            const val = data[i][latestIndex];
+            const el = document.getElementById(`live-value-${i}`);
+            if (el) el.textContent = val !== null && val !== undefined ? val.toFixed(2) : "--";
+          }
+        } 
+        catch (err) {
+          console.warn("Bad JSON:", event.data);
+        }
+      });
+    });
+
+    function exportJSON() {
+      const payload = {
+        meta: {
+          control: document.getElementById("controlMethod").textContent,
+          profile: document.getElementById("profileName").textContent,
+          phase: document.getElementById("phaseName").textContent,
+          autoStop: document.getElementById("autoStop").textContent
+        },
+        telemetry: buildTelemetryArray()
+      };
+
+      const blob = new Blob(
+        [JSON.stringify(payload, null, 2)],
+        { type: "application/json" }
+      );
+
+      const filename = `clevercoffee-brew-${getTimestampString()}.json`;
+      downloadBlob(blob, filename);
+    }
+
+    function exportCSV() {
+      const rows = buildTelemetryArray();
+
+      const header = [
+        "time",
+        "inputPressure",
+        "setPressure",
+        "pumpFlowRate",
+        "setPumpFlowRate",
+        "currBrewWeight",
+        "dimmerPower"
+      ];
+
+      let csv = header.join(",") + "\n";
+
+      rows.forEach(row => {
+        csv += header.map(h => row[h] ?? "").join(",") + "\n";
+      });
+
+      const blob = new Blob([csv], { type: "text/csv" });
+      const filename = `clevercoffee-brew-${getTimestampString()}.csv`;
+      downloadBlob(blob, filename);
+    }
+
+    function buildTelemetryArray() {
+      const result = [];
+      const len = data[0].length;
+
+      for (let i = 0; i < len; i++) {
+        result.push({
+          time: data[0][i],
+          inputPressure: data[1][i],
+          setPressure: data[2][i],
+          pumpFlowRate: data[3][i],
+          setPumpFlowRate: data[4][i],
+          currBrewWeight: data[5][i],
+          dimmerPower: data[6][i],
+        });
+      }
+
+      return result;
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function getTimestampString() {
+      const base = brewStartTime || new Date();
+      const pad = (n) => n.toString().padStart(2, "0");
+
+      return (
+        base.getFullYear() + "-" +
+        pad(base.getMonth() + 1) + "-" +
+        pad(base.getDate()) + "_" +
+        pad(base.getHours()) + "-" +
+        pad(base.getMinutes()) + "-" +
+        pad(base.getSeconds())
+      );
+    }
+  </script>
+
+</div>
+
+</body>
+</html>

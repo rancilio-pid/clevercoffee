@@ -11,18 +11,19 @@ enum ParameterSection {
     sTempSection = 1,
     sBrewPidSection = 2,
     sBrewSection = 3,
-    sScaleSection = 4,
-    sDisplaySection = 5,
-    sMaintenanceSection = 6,
-    sPowerSection = 7,
-    sMqttSection = 8,
-    sSystemSection = 9,
-    sOtherSection = 10,
-    sHardwareOledSection = 11,
-    sHardwareRelaySection = 12,
-    sHardwareSwitchSection = 13,
-    sHardwareLedSection = 14,
-    sHardwareSensorSection = 15
+    sPumpPidSection = 4,
+    sScaleSection = 5,
+    sDisplaySection = 6,
+    sMaintenanceSection = 7,
+    sPowerSection = 8,
+    sMqttSection = 9,
+    sSystemSection = 10,
+    sOtherSection = 11,
+    sHardwareOledSection = 12,
+    sHardwareRelaySection = 13,
+    sHardwareSwitchSection = 14,
+    sHardwareLedSection = 15,
+    sHardwareSensorSection = 16
 };
 
 inline const char* getSectionName(const int sectionId) {
@@ -35,6 +36,8 @@ inline const char* getSectionName(const int sectionId) {
             return "Brew Control";
         case sBrewPidSection:
             return "Brew PID";
+        case sPumpPidSection:
+            return "Pump Dimmer PID";
         case sDisplaySection:
             return "Display";
         case sPowerSection:

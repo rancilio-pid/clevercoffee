@@ -165,3 +165,23 @@ void debugTimingLoop() {
         }
     }
 }
+
+void printLoopPidAsList() {
+    IFLOG(DEBUG) {
+        char buffer[512]; // Make sure this is large enough
+        for (int j = 0; j < TYPE_HISTORY_SIZE; j++) {
+            int len = 0;
+            len += snprintf(buffer + len, sizeof(buffer) - len, "PID ");
+            len += snprintf(buffer + len, sizeof(buffer) - len, "%d", j);
+            len += snprintf(buffer + len, sizeof(buffer) - len, ": [");
+            for (int i = 0; i < LOOP_HISTORY_SIZE; i++) {
+                len += snprintf(buffer + len, sizeof(buffer) - len, "%0.2f", PidResults[i][j]);
+                if (i < LOOP_HISTORY_SIZE - 1) {
+                    len += snprintf(buffer + len, sizeof(buffer) - len, ", ");
+                }
+            }
+            len += snprintf(buffer + len, sizeof(buffer) - len, "]");
+            LOGF(DEBUG, "%s", buffer);
+        }
+    }
+}

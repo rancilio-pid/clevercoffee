@@ -51,6 +51,25 @@
 #define SCREEN_HEIGHT            64                // OLED display height, in pixels
 #define AUTH_PASSWORD            "admin"           // default password for web authentication
 #define AUTH_USERNAME            "admin"           // default username for web authentication
+#define PSM_PRESSURE_KP          20.0              // PID PSM control Pressure target Kp
+#define PSM_PRESSURE_KI          10.0              // PID PSM control Pressure target Ki
+#define PSM_PRESSURE_KD          1.5               // PID PSM control Pressure target Kd
+#define PSM_FLOW_KP              8.0               // PID PSM control Flow target Kp
+#define PSM_FLOW_KI              30.0              // PID PSM control Flow target Ki
+#define PSM_FLOW_KD              0.0               // PID PSM control Flow target Kd
+#define PHASE_PRESSURE_KP        10.0              // PID Phase control Pressure target Kp
+#define PHASE_PRESSURE_KI        20.0              // PID Phase control Pressure target Ki
+#define PHASE_PRESSURE_KD        1.0               // PID Phase control Pressure target Kd
+#define PHASE_FLOW_KP            2.0               // PID Phase control Flow target Kp
+#define PHASE_FLOW_KI            15.0              // PID Phase control Flow target Ki
+#define PHASE_FLOW_KD            0.0               // PID Phase control Flow target Kd
+#define PUMP_I_MAX               100.0             // PID Dimmer integral anti windup
+#define PUMP_POWER_SETPOINT      100.0             // PID Power target
+#define PUMP_PRESSURE_SETPOINT   9.0               // PID Pressure target
+#define PUMP_FLOW_SETPOINT       8.0               // PID Flow target
+#define PUMP_CALIBRATE_FLOW1     292.4             // Weight of water out of the group head in 30s
+#define PUMP_CALIBRATE_FLOW2     124.4             // Weight of water out of the return line in 30s
+#define PUMP_OPV_PRESSURE        10.0              // Pressure when OPV valve is open
 
 #define PID_KP_REGULAR_MIN            0.0
 #define PID_KP_REGULAR_MAX            999.0
@@ -110,3 +129,19 @@
 #define MQTT_TOPIC_MAX_LENGTH         48
 #define MQTT_HASSIO_PREFIX_MAX_LENGTH 24
 #define HOSTNAME_MAX_LENGTH           64
+#define PUMP_KP_MIN                   0.0
+#define PUMP_KP_MAX                   50.0
+#define PUMP_KI_MIN                   0.0
+#define PUMP_KI_MAX                   50.0
+#define PUMP_KD_MIN                   0.0
+#define PUMP_KD_MAX                   50.0
+#define PUMP_I_MAX_MIN                0.0
+#define PUMP_I_MAX_MAX                100.0
+#define PUMP_POWER_SETPOINT_MIN       0.0
+#define PUMP_POWER_SETPOINT_MAX       100.0
+#define PUMP_PRESSURE_SETPOINT_MIN    0.0
+#define PUMP_PRESSURE_SETPOINT_MAX    12.0
+#define PUMP_FLOW_SETPOINT_MIN        0.0
+#define PUMP_FLOW_SETPOINT_MAX        12.0
+#define PUMP_CALIBRATION_FLOW_MIN     0.0
+#define PUMP_CALIBRATION_FLOW_MAX     600.0

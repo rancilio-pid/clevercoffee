@@ -49,6 +49,9 @@ extern bool timingDebugActive;
 const char* switchTypes[2] = {"Momentary", "Toggle"};
 const char* switchModes[2] = {"Normally Open", "Normally Closed"};
 const char* relayTriggerTypes[2] = {"Low Trigger", "High Trigger"};
+const char* dimmerTypes[2] = {"Pulse Skip Modulation", "Phase"};
+const char* dimmerModes[4] = {"Power", "Pressure", "Flow", "Profile"};
+const char* profileSelector[10] = {"Spring Lever", "Adaptive", "Londinium R24", "Londinium Vectis", "Light Roast", "Six Bar Espresso", "Gentle Bloom", "Pressurized Bloom", "Test Flow Step", "Test Flow Ramp"};
 
 static constexpr const char* const brewModes[] = {"Manual", "Automatic"};
 static constexpr const char* const displayTemplates[] = {"Standard", "Minimal", "Temp only", "Scale", "Upright"};
@@ -458,6 +461,309 @@ void ParameterRegistry::initialize(Config& config) {
         );
     }
 
+    addBoolConfigParam(
+        "dimmer.enabled",
+        "Enable Pump Dimmer",
+        sPumpPidSection,
+        1401,
+        nullptr,
+        "Enable dimmer control of pump, requires hardware dimmer"
+    );
+
+    addBoolConfigParam(
+        "dimmer.frequency",
+        "Set 60hz",
+        sPumpPidSection,
+        1402,
+        nullptr,
+        "Enable if using 60hz, default 50hz",
+        [&config] { return config.get<bool>("dimmer.enabled") && config.get<bool>("hardware.sensors.pressure.enabled"); }
+    );
+
+    addEnumConfigParam(
+        "dimmer.type",
+        "Dimmer Control Type",
+        sPumpPidSection,
+        1403,
+        nullptr,
+        dimmerTypes,
+        2,
+        "Software method of varying of dimmer. Pulse Skip has more accurate flow, while Phase is smoother but less accurate flow",
+        [&config] { return config.get<bool>("dimmer.enabled") && config.get<bool>("hardware.sensors.pressure.enabled"); }
+    );
+
+    addEnumConfigParam(
+        "dimmer.mode",
+        "Dimmer Control Method",
+        sPumpPidSection,
+        1411,
+        nullptr,
+        dimmerModes,
+        4,
+        "Control setpoint the dimmer targets",
+        [&config] { return config.get<bool>("dimmer.enabled") && config.get<bool>("hardware.sensors.pressure.enabled"); }
+    );
+
+    addEnumConfigParam(
+        "dimmer.profile",
+        "Dimmer Profile Selection",
+        sPumpPidSection,
+        1412,
+        nullptr,
+        profileSelector,
+        10,
+        "Profile to control the pump during brew",
+        [&config] { return config.get<bool>("dimmer.enabled") && config.get<bool>("hardware.sensors.pressure.enabled"); }
+    );
+
+    addNumericConfigParam<float>(
+        "dimmer.setpoint.pressure",
+        "Pump Pressure Setpoint",
+        kFloat,
+        sPumpPidSection,
+        1422,
+        nullptr,
+        PUMP_PRESSURE_SETPOINT_MIN,
+        PUMP_PRESSURE_SETPOINT_MAX,
+        "Pressure the PID controller will target",
+        [&config] { return config.get<bool>("dimmer.enabled") && config.get<bool>("hardware.sensors.pressure.enabled"); }
+    );
+
+    addNumericConfigParam<float>(
+        "dimmer.setpoint.flow",
+        "Pump Flow Setpoint",
+        kFloat,
+        sPumpPidSection,
+        1423,
+        nullptr,
+        PUMP_FLOW_SETPOINT_MIN,
+        PUMP_FLOW_SETPOINT_MAX,
+        "Flow rate the PID controller will target",
+        [&config] { return config.get<bool>("dimmer.enabled") && config.get<bool>("hardware.sensors.pressure.enabled"); }
+    );
+
+    addNumericConfigParam<float>(
+        "dimmer.setpoint.power",
+        "Pump Power Setpoint",
+        kFloat,
+        sPumpPidSection,
+        1421,
+        nullptr,
+        PUMP_POWER_SETPOINT_MIN,
+        PUMP_POWER_SETPOINT_MAX,
+        "Percent of output power the pump will run at",
+        [&config] { return config.get<bool>("dimmer.enabled"); }
+    );
+        
+    addNumericConfigParam<float>(
+        "dimmer.psm.pressure.kp",
+        "PSM Pressure Kp",
+        kFloat,
+        sPumpPidSection,
+        1431,
+        nullptr,
+        PUMP_KP_MIN,
+        PUMP_KP_MAX,
+        "Proportional gain for Pulse Skip control with pressure target",
+        [&config] { return config.get<bool>("dimmer.enabled") && config.get<bool>("hardware.sensors.pressure.enabled"); }
+    );
+
+    addNumericConfigParam<float>(
+        "dimmer.psm.pressure.ki",
+        "PSM Pressure Ki",
+        kFloat,
+        sPumpPidSection,
+        1432,
+        nullptr,
+        PUMP_KI_MIN,
+        PUMP_KI_MAX,
+        "Integral gain for Pulse Skip control with pressure target",
+        [&config] { return config.get<bool>("dimmer.enabled") && config.get<bool>("hardware.sensors.pressure.enabled"); }
+    );
+
+    addNumericConfigParam<float>(
+        "dimmer.psm.pressure.kd",
+        "PSM Pressure Kd",
+        kFloat,
+        sPumpPidSection,
+        1433,
+        nullptr,
+        PUMP_KD_MIN,
+        PUMP_KD_MAX,
+        "Derivative gain for Pulse Skip control with pressure target",
+        [&config] { return config.get<bool>("dimmer.enabled") && config.get<bool>("hardware.sensors.pressure.enabled"); }
+    );
+
+    addNumericConfigParam<float>(
+        "dimmer.psm.flow.kp",
+        "PSM Flow Kp",
+        kFloat,
+        sPumpPidSection,
+        1441,
+        nullptr,
+        PUMP_KP_MIN,
+        PUMP_KP_MAX,
+        "Proportional gain for Pulse Skip control with flow target",
+        [&config] { return config.get<bool>("dimmer.enabled") && config.get<bool>("hardware.sensors.pressure.enabled"); }
+    );
+
+    addNumericConfigParam<float>(
+        "dimmer.psm.flow.ki",
+        "PSM Flow Ki",
+        kFloat,
+        sPumpPidSection,
+        1442,
+        nullptr,
+        PUMP_KI_MIN,
+        PUMP_KI_MAX,
+        "Integral gain for Pulse Skip control with flow target",
+        [&config] { return config.get<bool>("dimmer.enabled") && config.get<bool>("hardware.sensors.pressure.enabled"); }
+    );
+
+    addNumericConfigParam<float>(
+        "dimmer.psm.flow.kd",
+        "PSM Flow Kd",
+        kFloat,
+        sPumpPidSection,
+        1443,
+        nullptr,
+        PUMP_KD_MIN,
+        PUMP_KD_MAX,
+        "Derivative gain for Pulse Skip control with flow target",
+        [&config] { return config.get<bool>("dimmer.enabled") && config.get<bool>("hardware.sensors.pressure.enabled"); }
+    );
+
+    addNumericConfigParam<float>(
+        "dimmer.phase.pressure.kp",
+        "Phase Pressure Kp",
+        kFloat,
+        sPumpPidSection,
+        1451,
+        nullptr,
+        PUMP_KP_MIN,
+        PUMP_KP_MAX,
+        "Proportional gain for Phase control with pressure target",
+        [&config] { return config.get<bool>("dimmer.enabled") && config.get<bool>("hardware.sensors.pressure.enabled"); }
+    );
+
+    addNumericConfigParam<float>(
+        "dimmer.phase.pressure.ki",
+        "Phase Pressure Ki",
+        kFloat,
+        sPumpPidSection,
+        1452,
+        nullptr,
+        PUMP_KI_MIN,
+        PUMP_KI_MAX,
+        "Integral gain for Phase control with pressure target",
+        [&config] { return config.get<bool>("dimmer.enabled") && config.get<bool>("hardware.sensors.pressure.enabled"); }
+    );
+
+    addNumericConfigParam<float>(
+        "dimmer.phase.pressure.kd",
+        "Phase Pressure Kd",
+        kFloat,
+        sPumpPidSection,
+        1453,
+        nullptr,
+        PUMP_KD_MIN,
+        PUMP_KD_MAX,
+        "Derivative gain for Phase control with pressure target",
+        [&config] { return config.get<bool>("dimmer.enabled") && config.get<bool>("hardware.sensors.pressure.enabled"); }
+    );
+
+    addNumericConfigParam<float>(
+        "dimmer.phase.flow.kp",
+        "Phase Flow Kp",
+        kFloat,
+        sPumpPidSection,
+        1461,
+        nullptr,
+        PUMP_KP_MIN,
+        PUMP_KP_MAX,
+        "Proportional gain for Phase control with flow target",
+        [&config] { return config.get<bool>("dimmer.enabled") && config.get<bool>("hardware.sensors.pressure.enabled"); }
+    );
+
+    addNumericConfigParam<float>(
+        "dimmer.phase.flow.ki",
+        "Phase Flow Ki",
+        kFloat,
+        sPumpPidSection,
+        1462,
+        nullptr,
+        PUMP_KI_MIN,
+        PUMP_KI_MAX,
+        "Integral gain for Phase control with flow target",
+        [&config] { return config.get<bool>("dimmer.enabled") && config.get<bool>("hardware.sensors.pressure.enabled"); }
+    );
+
+    addNumericConfigParam<float>(
+        "dimmer.phase.flow.kd",
+        "Phase Flow Kd",
+        kFloat,
+        sPumpPidSection,
+        1463,
+        nullptr,
+        PUMP_KD_MIN,
+        PUMP_KD_MAX,
+        "Derivative gain for Phase control with flow target",
+        [&config] { return config.get<bool>("dimmer.enabled") && config.get<bool>("hardware.sensors.pressure.enabled"); }
+    );
+
+    addNumericConfigParam<float>(
+        "dimmer.i_max",
+        "Pump PID Integrator Max",
+        kFloat,
+        sPumpPidSection,
+        1471,
+        nullptr,
+        PUMP_I_MAX_MIN,
+        PUMP_I_MAX_MAX,
+        "Limit on the integration accumulator",
+        [&config] { return config.get<bool>("dimmer.enabled") && config.get<bool>("hardware.sensors.pressure.enabled"); }
+    );
+
+    addNumericConfigParam<float>(
+        "dimmer.calibration.flow_rate1",
+        "Flow rate calibration no pressure",
+        kFloat,
+        sPumpPidSection,
+        1481,
+        nullptr,
+        PUMP_CALIBRATION_FLOW_MIN,
+        PUMP_CALIBRATION_FLOW_MAX,
+        "Water flow in 30s from group head, use brew or flush function. Requires a restart to apply",
+        [&config] { return config.get<bool>("dimmer.enabled") && config.get<bool>("hardware.sensors.pressure.enabled"); }
+    );
+
+    addNumericConfigParam<float>(
+        "dimmer.calibration.flow_rate2",
+        "Flow rate calibration OPV pressure",
+        kFloat,
+        sPumpPidSection,
+        1482,
+        nullptr,
+        PUMP_CALIBRATION_FLOW_MIN,
+        PUMP_CALIBRATION_FLOW_MAX,
+        "Water flow in 30s from return line, use water switch function. Requires a restart to apply",
+        [&config] { return config.get<bool>("dimmer.enabled") && config.get<bool>("hardware.sensors.pressure.enabled"); }
+    );
+
+    addNumericConfigParam<float>(
+        "dimmer.calibration.opv_pressure",
+        "OPV Pressure",
+        kFloat,
+        sPumpPidSection,
+        1483,
+        nullptr,
+        PUMP_PRESSURE_SETPOINT_MIN, 
+        PUMP_PRESSURE_SETPOINT_MAX,
+        "Pressure sensor value when water switch is active and water is returning to the tank. Requires a restart to apply",
+        [&config] { return config.get<bool>("dimmer.enabled") && config.get<bool>("hardware.sensors.pressure.enabled"); }
+    );
+
+
     // Other Section (special parameters, e.g. runtime-only toggles)
     addParam(std::make_shared<Parameter>(
         "STEAM_MODE",
@@ -834,6 +1140,16 @@ void ParameterRegistry::initialize(Config& config) {
         1303,
         &includeDisplayInLogs,
         "Enable or disable showing sendBuffer loops in debug logs",
+        [&config] { return config.get<int>("system.log_level") == static_cast<int>(Logger::Level::DEBUG); }
+    );
+        
+    addBoolConfigParam(
+        "system.show_brewdata.enabled",
+        "Enable brew data logs",
+        sSystemSection,
+        1304,
+        nullptr,
+        "Enable arrays of brew data in debug logs if dimmer is enabled",
         [&config] { return config.get<int>("system.log_level") == static_cast<int>(Logger::Level::DEBUG); }
     );
 
