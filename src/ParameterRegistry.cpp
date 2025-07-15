@@ -1096,13 +1096,13 @@ void ParameterRegistry::initialize(Config& config) {
 
     addEnumConfigParam(
         "hardware.sensors.scale.type",
-        "Scale Setup Type",
+        "Scale Type",
         sHardwareSensorSection,
         2432,
         nullptr,
-        (const char* const[]){"2 load cells", "1 load cell"},
-        2,
-        "Scale load cell configuration"
+        (const char* const[]){"HX711 (2 load cells)", "HX711 (1 load cell)", "Bluetooth"},
+        3,
+        "Integrated HX711-based scale with different load cell configurations or Bluetooth Low Energy scales"
     );
 
     addNumericConfigParam<int>(

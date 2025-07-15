@@ -1,13 +1,14 @@
 /**
  * @file scaleHandler.h
  *
- * @brief Implementation of scale initialization and weight measurement
+ * @brief Implementation of scale initialization and weight measurement with Bluetooth support
  */
 
 #pragma once
 
 #include "brewStates.h"
 #include "display/languages.h"
+#include "hardware/BluetoothScale.h"
 #include "hardware/HX711Scale.h"
 
 void displayScaleFailed();
@@ -16,20 +17,131 @@ void displayWrappedMessage(const String& msg);
 inline bool scaleCalibrationOn = false;
 inline bool scaleTareOn = false;
 inline int shottimerCounter = 10;
-inline float currReadingWeight = 0; // value from HX711
-inline float prewBrewWeight = 0;    // value of scale before brew started
-inline float currBrewWeight = 0;    // weight value of current brew
-inline float scaleDelayValue = 2.5; // value in gramm that takes still flows onto the scale after brew is stopped
+inline float currReadingWeight = 0; // current weight reading
+inline float prewBrewWeight = 0;    // weight before brew started
+inline float currBrewWeight = 0;    // weight of current brew
+inline float scaleDelayValue = 2.5; // delay compensation in grams
 inline bool scaleFailure = false;
 
-inline HX711Scale* scale = nullptr;
+// Bluetooth scale connection handling
+inline unsigned long lastScaleConnectionCheck = 0;
+inline unsigned long scaleConnectionFailureTime = 0;
+inline bool scaleConnectionLost = false;
+inline float lastValidWeight = 0;
+inline bool brewByWeightFallbackActive = false;
+
+// Scale connection constants
+constexpr unsigned long SCALE_CONNECTION_CHECK_INTERVAL = 1000; // Check every second
+constexpr unsigned long SCALE_CONNECTION_TIMEOUT = 5000;        // 5 seconds timeout
+constexpr unsigned long SCALE_RECONNECTION_TIMEOUT = 30000;     // 30 seconds before giving up
+
+inline Scale* scale = nullptr;
+inline bool isBluetoothScale = false;
 
 extern BrewState currBrewState;
 
+/**
+ * @brief Check Bluetooth scale connection status and handle failures
+ */
+inline void checkBluetoothScaleConnection() {
+    if (!isBluetoothScale || !scale) {
+        return;
+    }
+
+    // Check connection status periodically
+    if (const unsigned long currentTime = millis(); currentTime - lastScaleConnectionCheck > SCALE_CONNECTION_CHECK_INTERVAL) {
+        lastScaleConnectionCheck = currentTime;
+
+        if (const bool connected = scale->isConnected(); !connected) {
+            if (!scaleConnectionLost) {
+                // Connection just lost
+                scaleConnectionLost = true;
+                scaleConnectionFailureTime = currentTime;
+                LOG(WARNING, "Bluetooth scale connection lost");
+
+                // During active brew, activate fallback mechanism
+                if (currBrewState != kBrewIdle && currBrewState != kBrewFinished) {
+                    const bool brewByWeightEnabled = config.get<bool>("brew.by_weight");
+                    const bool brewByTimeEnabled = config.get<bool>("brew.by_time");
+
+                    if (brewByWeightEnabled && brewByTimeEnabled) {
+                        LOG(INFO, "Activating brew-by-time fallback due to scale connection loss");
+                        brewByWeightFallbackActive = true;
+                    }
+                    else if (brewByWeightEnabled && !brewByTimeEnabled) {
+                        LOG(WARNING, "Scale connection lost during brew-by-weight only mode - setting weight to target");
+                        currBrewWeight = targetBrewWeight; // This will trigger brew completion
+                    }
+                }
+            }
+
+            // Check if we should give up reconnecting
+            if (currentTime - scaleConnectionFailureTime > SCALE_RECONNECTION_TIMEOUT) {
+                if (!scaleFailure) {
+                    LOG(ERROR, "Bluetooth scale connection timeout - marking as failed");
+                    scaleFailure = true;
+                }
+            }
+        }
+        else {
+            // Connection restored
+            if (scaleConnectionLost) {
+                scaleConnectionLost = false;
+                scaleFailure = false;
+                brewByWeightFallbackActive = false;
+                LOG(INFO, "Bluetooth scale connection restored");
+            }
+        }
+    }
+}
+
+/**
+ * @brief Get weight with connection error handling
+ */
+inline float getScaleWeight() {
+    if (!scale || scaleFailure) {
+        return lastValidWeight;
+    }
+
+    if (isBluetoothScale) {
+        checkBluetoothScaleConnection();
+
+        if (scaleConnectionLost) {
+            // Return last valid weight during connection issues
+            return lastValidWeight;
+        }
+    }
+
+    // Update scale and get weight
+    if (scale->update()) {
+        float weight = scale->getWeight();
+        lastValidWeight = weight;
+        return weight;
+    }
+
+    return lastValidWeight;
+}
+
+/**
+ * @brief Check if brew-by-weight should be used (considering fallback state)
+ */
+inline bool shouldUseBrewByWeight() {
+    const bool brewByWeightEnabled = config.get<bool>("brew.by_weight");
+    return brewByWeightEnabled && !brewByWeightFallbackActive && !scaleConnectionLost;
+}
+
 inline void scaleCalibrate(const int cellNumber, const int pin) {
+    if (isBluetoothScale) {
+        // Bluetooth scales handle calibration internally
+        displayWrappedMessage("Bluetooth scales\nhandle calibration\ninternally");
+        delay(2000);
+        return;
+    }
+
     const int scaleSamples = config.get<int>("hardware.sensors.scale.samples");
 
-    HX711_ADC* loadCell = scale->getLoadCell(cellNumber);
+    auto* hx711Scale = static_cast<HX711Scale*>(scale);
+    HX711_ADC* loadCell = hx711Scale->getLoadCell(cellNumber);
 
     if (!loadCell) {
         return;
@@ -66,7 +178,7 @@ inline void scaleCalibrate(const int cellNumber, const int pin) {
 
     u8g2->sendBuffer();
 
-    scale->setCalibrationFactor(calibration, cellNumber);
+    hx711Scale->setCalibrationFactor(calibration, cellNumber);
 
     // Save calibration to parameter registry
     if (cellNumber == 2) {
@@ -85,24 +197,21 @@ inline float w1 = 0.0;
 inline float w2 = 0.0;
 
 inline void checkWeight() {
-    if (scaleFailure || !scale) { // abort if scale is not working
+    if (scaleFailure || !scale) {
         return;
     }
 
-    // Update the scale and get current weight
-    if (scale->update()) {
-        currReadingWeight = scale->getWeight();
-    }
+    // Get weight with connection handling
+    currReadingWeight = getScaleWeight();
 
     if (scaleCalibrationOn) {
-        const int scaleType = config.get<int>("hardware.sensors.scale.type");
-
-        // Calibrate first cell
         scaleCalibrate(1, PIN_HXDAT);
 
-        // Calibrate second cell if dual scale
-        if (scaleType == 0) {
-            scaleCalibrate(2, PIN_HXDAT2);
+        // Calibrate second cell if dual HX711 scale
+        if (!isBluetoothScale) {
+            if (const int scaleType = config.get<int>("hardware.sensors.scale.type"); scaleType == 0) {
+                scaleCalibrate(2, PIN_HXDAT2);
+            }
         }
 
         scaleCalibrationOn = false;
@@ -129,15 +238,32 @@ inline void initScale() {
     const int scaleType = config.get<int>("hardware.sensors.scale.type");
     const int scaleSamples = config.get<int>("hardware.sensors.scale.samples");
 
-    // Get calibration factors from config
-    float cal1 = scaleCalibration; // These should be defined somewhere in main.cpp
-    float cal2 = scale2Calibration;
-
-    if (scaleType == 0) {          // Dual load cell
-        scale = new HX711Scale(PIN_HXDAT, PIN_HXDAT2, PIN_HXCLK, cal1, cal2);
+    // Clean up existing scale
+    if (scale) {
+        delete scale;
+        scale = nullptr;
     }
-    else {                         // Single load cell
-        scale = new HX711Scale(PIN_HXDAT, PIN_HXCLK, cal1);
+
+    if (scaleType == 2) { // Bluetooth scale
+        scale = new BluetoothScale();
+        isBluetoothScale = true;
+
+        LOG(INFO, "Initializing Bluetooth scale");
+    }
+    else {
+        // HX711 scale types
+        const float cal1 = scaleCalibration;
+        const float cal2 = scale2Calibration;
+
+        if (scaleType == 0) { // Dual load cell
+            scale = new HX711Scale(PIN_HXDAT, PIN_HXDAT2, PIN_HXCLK, cal1, cal2);
+        }
+        else {                // Single load cell
+            scale = new HX711Scale(PIN_HXDAT, PIN_HXCLK, cal1);
+        }
+
+        isBluetoothScale = false;
+        LOG(INFO, "Initializing HX711 scale");
     }
 
     // Initialize the scale
@@ -148,17 +274,30 @@ inline void initScale() {
         scaleFailure = true;
         delete scale;
         scale = nullptr;
+
         return;
     }
 
-    scale->setSamples(scaleSamples);
+    // Set samples for HX711 scales
+    if (!isBluetoothScale) {
+        scale->setSamples(scaleSamples);
+    }
+
+    // Reset connection state
+    scaleConnectionLost = false;
+    scaleFailure = false;
+    brewByWeightFallbackActive = false;
+    lastScaleConnectionCheck = 0;
+    scaleConnectionFailureTime = 0;
+    lastValidWeight = 0;
 
     scaleCalibrationOn = false;
-    scaleFailure = false;
+
+    LOG(INFO, "Scale initialized successfully");
 }
 
 /**
- * @brief Scale with shot timer
+ * @brief Scale with shot timer and connection handling
  */
 inline void shotTimerScale() {
     switch (shottimerCounter) {
@@ -166,6 +305,9 @@ inline void shotTimerScale() {
             if (currBrewState != kBrewIdle) {
                 prewBrewWeight = currReadingWeight;
                 shottimerCounter = 20;
+
+                // Reset fallback state at start of new brew
+                brewByWeightFallbackActive = false;
             }
             break;
 
@@ -174,9 +316,30 @@ inline void shotTimerScale() {
 
             if (currBrewState == kBrewIdle) {
                 shottimerCounter = 10;
+
+                // Reset fallback state when brew ends
+                brewByWeightFallbackActive = false;
             }
             break;
 
         default:;
     }
+}
+
+/**
+ * @brief Get scale connection status for display
+ */
+inline bool getScaleConnectionStatus() {
+    if (!isBluetoothScale || !scale) {
+        return true; // Not applicable for HX711 scales
+    }
+
+    return scale->isConnected();
+}
+
+/**
+ * @brief Check if scale is in fallback mode
+ */
+inline bool isScaleInFallbackMode() {
+    return brewByWeightFallbackActive;
 }

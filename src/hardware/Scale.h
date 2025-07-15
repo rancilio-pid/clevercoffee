@@ -29,7 +29,7 @@ class Scale {
          * @brief Get the current weight reading
          * @return Weight in grams
          */
-        virtual float getWeight() const = 0;
+        [[nodiscard]] virtual float getWeight() const = 0;
 
         /**
          * @brief Tare the scale (set current weight as zero point)
@@ -37,15 +37,16 @@ class Scale {
         virtual void tare() = 0;
 
         /**
-         * @brief Start calibration process
-         * @param knownWeight The known weight to use for calibration
-         * @return true if calibration started successfully
-         */
-        virtual bool startCalibration(float knownWeight) = 0;
-
-        /**
          * @brief Set the number of samples to use for readings
          * @param samples Number of samples
          */
         virtual void setSamples(int samples) = 0;
+
+        /**
+         * @brief Check if scale is connected (for Bluetooth scales)
+         * @return true if connected, false for wired scales or if not connected
+         */
+        [[nodiscard]] virtual bool isConnected() const {
+            return true;
+        }
 };

@@ -115,18 +115,6 @@ void HX711Scale::tare() {
     }
 }
 
-bool HX711Scale::startCalibration(float knownWeight) {
-    // Calibrate first cell
-    calibrateCell(loadCell1, 1, knownWeight);
-
-    // Calibrate second cell if dual scale
-    if (isDualCell) {
-        calibrateCell(loadCell2, 2, knownWeight);
-    }
-
-    return true;
-}
-
 void HX711Scale::setSamples(int samples) {
     if (loadCell1) {
         loadCell1->setSamplesInUse(samples);
@@ -163,20 +151,4 @@ HX711_ADC* HX711Scale::getLoadCell(int cellNumber) {
         return loadCell2;
     }
     return nullptr;
-}
-
-void HX711Scale::calibrateCell(HX711_ADC* cell, int cellNumber, float knownWeight) {
-    float& calibrationFactor = (cellNumber == 1) ? calibrationFactor1 : calibrationFactor2;
-
-    cell->setCalFactor(1.0);
-    cell->update();
-    cell->tare();
-
-    delay(10000);
-
-    const int originalSamples = 16; // HX711_ADC default
-    cell->setSamplesInUse(128);
-    cell->refreshDataSet();
-    calibrationFactor = cell->getNewCalibration(knownWeight);
-    cell->setSamplesInUse(originalSamples);
 }
