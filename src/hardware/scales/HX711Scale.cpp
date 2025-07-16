@@ -5,7 +5,7 @@
 
 #include "HX711Scale.h"
 
-HX711Scale::HX711Scale(int dataPin, int clkPin, float calibrationFactor) :
+HX711Scale::HX711Scale(const int dataPin, const int clkPin, const float calibrationFactor) :
     loadCell1(new HX711_ADC(dataPin, clkPin)), loadCell2(nullptr), currentWeight(0.0), calibrationFactor1(calibrationFactor), calibrationFactor2(1.0), isDualCell(false), readSecondScale(false), weight1(0.0), weight2(0.0) {
 }
 
@@ -115,7 +115,7 @@ void HX711Scale::tare() {
     }
 }
 
-void HX711Scale::setSamples(int samples) {
+void HX711Scale::setSamples(const int samples) {
     if (loadCell1) {
         loadCell1->setSamplesInUse(samples);
     }
@@ -124,31 +124,35 @@ void HX711Scale::setSamples(int samples) {
     }
 }
 
-float HX711Scale::getCalibrationFactor(int cellNumber) const {
-    return (cellNumber == 1) ? calibrationFactor1 : calibrationFactor2;
+float HX711Scale::getCalibrationFactor(const int cellNumber) const {
+    return cellNumber == 1 ? calibrationFactor1 : calibrationFactor2;
 }
 
-void HX711Scale::setCalibrationFactor(float factor, int cellNumber) {
+void HX711Scale::setCalibrationFactor(const float factor, const int cellNumber) {
     if (cellNumber == 1) {
         calibrationFactor1 = factor;
+
         if (loadCell1) {
             loadCell1->setCalFactor(factor);
         }
     }
     else if (cellNumber == 2 && isDualCell) {
         calibrationFactor2 = factor;
+
         if (loadCell2) {
             loadCell2->setCalFactor(factor);
         }
     }
 }
 
-HX711_ADC* HX711Scale::getLoadCell(int cellNumber) {
+HX711_ADC* HX711Scale::getLoadCell(const int cellNumber) const {
     if (cellNumber == 1) {
         return loadCell1;
     }
-    else if (cellNumber == 2 && isDualCell) {
+
+    if (cellNumber == 2 && isDualCell) {
         return loadCell2;
     }
+
     return nullptr;
 }

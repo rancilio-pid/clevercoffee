@@ -255,10 +255,12 @@ inline bool brew() {
 
     // state machine for brew
     switch (currBrewState) {
-        case kBrewIdle:           // waiting step for brew switch turning on
+        case kBrewIdle:             // waiting step for brew switch turning on
             if (currBrewSwitchState == kBrewSwitchShortPressed && brewSwitchWasOff && !backflushOn && machineState != kBackflush) {
                 startingTime = millis();
-                currBrewTime = 0; // reset currBrewTime, last brew is still stored
+                currBrewTime = 0;   // reset currBrewTime, last brew is still stored
+                currBrewWeight = 0; // reset currBrewWeight for new brew
+
                 LOG(INFO, "Brew started");
 
                 if (!preinfusionEnabled) {

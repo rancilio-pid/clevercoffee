@@ -70,7 +70,7 @@ class HX711Scale : public Scale {
          * @param cellNumber Cell number (1 or 2)
          * @return Pointer to HX711_ADC object or nullptr if invalid
          */
-        HX711_ADC* getLoadCell(int cellNumber = 1);
+        [[nodiscard]] HX711_ADC* getLoadCell(int cellNumber = 1) const;
 
     private:
         HX711_ADC* loadCell1;
