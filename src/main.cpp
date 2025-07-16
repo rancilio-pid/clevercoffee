@@ -32,9 +32,9 @@
 #include "hardware/Relay.h"
 #include "hardware/StandardLED.h"
 #include "hardware/Switch.h"
-#include "hardware/TempSensorDallas.h"
-#include "hardware/TempSensorTSIC.h"
 #include "hardware/pinmapping.h"
+#include "hardware/tempsensors/TempSensorDallas.h"
+#include "hardware/tempsensors/TempSensorTSIC.h"
 
 // User configuration & defaults
 #include "defaults.h"

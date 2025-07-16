@@ -19,10 +19,13 @@ class BluetoothScale : public Scale {
 
         bool init() override;
         bool update() override;
-        float getWeight() const override;
+        [[nodiscard]] float getWeight() const override;
         void tare() override;
         void setSamples(int samples) override;
-        bool isConnected() const override;
+        [[nodiscard]] bool isConnected() const override;
+
+        void updateConnection();
+        [[nodiscard]] bool isConnecting() const;
 
     private:
         AcaiaArduinoBLE* bleScale;
@@ -34,7 +37,4 @@ class BluetoothScale : public Scale {
         bool bleInitialized;
         unsigned long lastConnectionAttempt;
         unsigned long connectionAttemptInterval;
-
-        // Helper methods
-        bool attemptConnection();
 };

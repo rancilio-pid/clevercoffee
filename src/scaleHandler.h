@@ -8,8 +8,8 @@
 
 #include "brewStates.h"
 #include "display/languages.h"
-#include "hardware/BluetoothScale.h"
-#include "hardware/HX711Scale.h"
+#include "hardware/scales/BluetoothScale.h"
+#include "hardware/scales/HX711Scale.h"
 
 void displayScaleFailed();
 void displayWrappedMessage(const String& msg);
@@ -31,9 +31,9 @@ inline float lastValidWeight = 0;
 inline bool brewByWeightFallbackActive = false;
 
 // Scale connection constants
-constexpr unsigned long SCALE_CONNECTION_CHECK_INTERVAL = 1000; // Check every second
-constexpr unsigned long SCALE_CONNECTION_TIMEOUT = 5000;        // 5 seconds timeout
-constexpr unsigned long SCALE_RECONNECTION_TIMEOUT = 30000;     // 30 seconds before giving up
+constexpr unsigned long SCALE_CONNECTION_CHECK_INTERVAL = 500; // Check every 500 milliseconds
+constexpr unsigned long SCALE_CONNECTION_TIMEOUT = 5000;       // 5 seconds timeout
+constexpr unsigned long SCALE_RECONNECTION_TIMEOUT = 30000;    // 30 seconds before giving up
 
 inline Scale* scale = nullptr;
 inline bool isBluetoothScale = false;
@@ -48,8 +48,10 @@ inline void checkBluetoothScaleConnection() {
         return;
     }
 
-    // Check connection status periodically
+    // Check connection status periodically for logging/fallback logic
     if (const unsigned long currentTime = millis(); currentTime - lastScaleConnectionCheck > SCALE_CONNECTION_CHECK_INTERVAL) {
+        static_cast<BluetoothScale*>(scale)->updateConnection();
+
         lastScaleConnectionCheck = currentTime;
 
         if (const bool connected = scale->isConnected(); !connected) {
@@ -57,6 +59,7 @@ inline void checkBluetoothScaleConnection() {
                 // Connection just lost
                 scaleConnectionLost = true;
                 scaleConnectionFailureTime = currentTime;
+
                 LOG(WARNING, "Bluetooth scale connection lost");
 
                 // During active brew, activate fallback mechanism
@@ -68,7 +71,7 @@ inline void checkBluetoothScaleConnection() {
                         LOG(INFO, "Activating brew-by-time fallback due to scale connection loss");
                         brewByWeightFallbackActive = true;
                     }
-                    else if (brewByWeightEnabled && !brewByTimeEnabled) {
+                    else if (brewByWeightEnabled) {
                         LOG(WARNING, "Scale connection lost during brew-by-weight only mode - setting weight to target");
                         currBrewWeight = targetBrewWeight; // This will trigger brew completion
                     }
@@ -99,11 +102,12 @@ inline void checkBluetoothScaleConnection() {
  * @brief Get weight with connection error handling
  */
 inline float getScaleWeight() {
-    if (!scale || scaleFailure) {
+    if (!scale) {
         return lastValidWeight;
     }
 
     if (isBluetoothScale) {
+        // Always check connection - even if we've marked it as failed
         checkBluetoothScaleConnection();
 
         if (scaleConnectionLost) {
@@ -112,9 +116,8 @@ inline float getScaleWeight() {
         }
     }
 
-    // Update scale and get weight
     if (scale->update()) {
-        float weight = scale->getWeight();
+        const float weight = scale->getWeight();
         lastValidWeight = weight;
         return weight;
     }
@@ -197,12 +200,15 @@ inline float w1 = 0.0;
 inline float w2 = 0.0;
 
 inline void checkWeight() {
-    if (scaleFailure || !scale) {
+    if (!scale) {
         return;
     }
 
-    // Get weight with connection handling
     currReadingWeight = getScaleWeight();
+
+    if (scaleFailure) {
+        return;
+    }
 
     if (scaleCalibrationOn) {
         scaleCalibrate(1, PIN_HXDAT);
@@ -249,6 +255,8 @@ inline void initScale() {
         isBluetoothScale = true;
 
         LOG(INFO, "Initializing Bluetooth scale");
+
+        scale->init();
     }
     else {
         // HX711 scale types
@@ -264,22 +272,18 @@ inline void initScale() {
 
         isBluetoothScale = false;
         LOG(INFO, "Initializing HX711 scale");
-    }
 
-    // Initialize the scale
-    if (!scale->init()) {
-        LOG(ERROR, "Scale initialization failed");
-        displayScaleFailed();
-        delay(5000);
-        scaleFailure = true;
-        delete scale;
-        scale = nullptr;
+        if (!scale->init()) {
+            LOG(ERROR, "Scale initialization failed");
+            displayScaleFailed();
+            delay(5000);
+            scaleFailure = true;
+            delete scale;
+            scale = nullptr;
+            return;
+        }
 
-        return;
-    }
-
-    // Set samples for HX711 scales
-    if (!isBluetoothScale) {
+        // Set samples for HX711 scales
         scale->setSamples(scaleSamples);
     }
 
@@ -342,4 +346,15 @@ inline bool getScaleConnectionStatus() {
  */
 inline bool isScaleInFallbackMode() {
     return brewByWeightFallbackActive;
+}
+
+/**
+ * @brief Check if Bluetooth scale is currently trying to connect
+ */
+inline bool isBluetoothScaleConnecting() {
+    if (!isBluetoothScale || !scale) {
+        return false;
+    }
+
+    return static_cast<BluetoothScale*>(scale)->isConnecting();
 }
