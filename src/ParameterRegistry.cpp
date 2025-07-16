@@ -378,44 +378,9 @@ void ParameterRegistry::initialize(Config& config) {
             },
             false,
             "",
-            [] { return true; },
+            [&config] { return config.get<int>("hardware.sensors.scale.type") < 2; },
             &scaleCalibrationOn
         ));
-
-        addNumericConfigParam<float>(
-            "hardware.sensors.scale.known_weight",
-            "Known weight in g",
-            kFloat,
-            sScaleSection,
-            601,
-            &scaleKnownWeight,
-            0.0,
-            2000.0
-        );
-
-        addNumericConfigParam<float>(
-            "hardware.sensors.scale.calibration",
-            "Calibration factor scale 1",
-            kFloat,
-            sScaleSection,
-            602,
-            &scaleCalibration,
-            -100000,
-            100000
-        );
-
-        addNumericConfigParam<float>(
-            "hardware.sensors.scale.calibration2",
-            "Calibration factor scale 2",
-            kFloat,
-            sScaleSection,
-            603,
-            &scale2Calibration,
-            -100000,
-            100000,
-            "",
-            [this] { return _config->get<int>("hardware.sensors.scale.type") == 0; }
-        );
     }
 
     if (config.get<bool>("hardware.switches.brew.enabled")) {
@@ -1113,7 +1078,8 @@ void ParameterRegistry::initialize(Config& config) {
         2433,
         nullptr,
         1, 20,
-        "Number of samples to average for scale readings (higher = more stable but slower)"
+        "Number of samples to average for scale readings (higher = more stable but slower)",
+        [&config] { return config.get<int>("hardware.sensors.scale.type") < 2; }
     );
 
     addNumericConfigParam<double>(
@@ -1124,7 +1090,8 @@ void ParameterRegistry::initialize(Config& config) {
         2434,
         nullptr,
         -10000.0, 10000.0,
-        "Primary scale calibration factor (adjust during calibration process)"
+        "Primary scale calibration factor (adjust during calibration process)",
+        [&config] { return config.get<int>("hardware.sensors.scale.type") < 2; }
     );
 
     addNumericConfigParam<double>(
@@ -1135,7 +1102,8 @@ void ParameterRegistry::initialize(Config& config) {
         2435,
         nullptr,
         -10000.0, 10000.0,
-        "Secondary scale calibration factor (for dual load cell setups)"
+        "Secondary scale calibration factor (for dual load cell setups)",
+        [&config] { return config.get<int>("hardware.sensors.scale.type") < 2; }
     );
 
     addNumericConfigParam<double>(
@@ -1146,7 +1114,8 @@ void ParameterRegistry::initialize(Config& config) {
         2436,
         nullptr,
         1.0, 5000.0,
-        "Weight in grams of the known calibration weight used for scale setup"
+        "Weight in grams of the known calibration weight used for scale setup",
+        [&config] { return config.get<int>("hardware.sensors.scale.type") < 2; }
     );
 
     // clang-format on
