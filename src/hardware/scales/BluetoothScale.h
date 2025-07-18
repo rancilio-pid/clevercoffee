@@ -37,4 +37,7 @@ class BluetoothScale : public Scale {
         bool bleInitialized;
         unsigned long lastConnectionAttempt;
         unsigned long connectionAttemptInterval;
+
+        bool isUpdatingConnection;
+        unsigned long maxConnectionAttemptInterval;
 };

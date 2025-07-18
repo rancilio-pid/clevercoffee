@@ -8,7 +8,7 @@
 #include <Arduino.h>
 
 BluetoothScale::BluetoothScale() :
-    currentWeight(0.0), lastUpdateTime(0), connected(false), bleInitialized(false), lastConnectionAttempt(0), connectionAttemptInterval(5000) {
+    currentWeight(0.0), lastUpdateTime(0), connected(false), bleInitialized(false), lastConnectionAttempt(0), connectionAttemptInterval(5000), isUpdatingConnection(false), maxConnectionAttemptInterval(30000) {
     bleScale = new AcaiaArduinoBLE(false);
 }
 
@@ -39,17 +39,42 @@ void BluetoothScale::updateConnection() {
         return;
     }
 
+    const unsigned long currentTime = millis();
+
+    const bool wasConnecting = bleScale->isConnecting();
     bleScale->updateConnection();
 
+    // Only update timing if we're not in a connection process or if connection just started
+    if (!wasConnecting || bleScale->isConnecting()) {
+        lastConnectionAttempt = currentTime;
+    }
+
+    // Check for connection state changes
     if (const bool newConnected = bleScale->isConnected(); newConnected != connected) {
         connected = newConnected;
 
         if (connected) {
             LOG(INFO, "Bluetooth scale connected");
+            // Reset connection attempt interval on successful connection
+            connectionAttemptInterval = 5000;
         }
         else {
             LOG(INFO, "Bluetooth scale disconnected");
+            // Only increase interval if we're not actively connecting
+            if (!bleScale->isConnecting()) {
+                connectionAttemptInterval = min(connectionAttemptInterval * 2, 30000UL);
+            }
         }
+    }
+
+    // If connection failed and we're not connecting, wait before retry
+    if (!connected && !bleScale->isConnecting()) {
+        if (currentTime - lastConnectionAttempt < connectionAttemptInterval) {
+            return;
+        }
+
+        // Restart connection process by calling init again
+        bleScale->init();
     }
 }
 
