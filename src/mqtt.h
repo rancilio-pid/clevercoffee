@@ -410,7 +410,7 @@ inline DiscoveryObject GenerateSwitchDevice(const String& name, const String& di
     String switch_command_topic = mqtt_topic + "/" + name + "/set";
     String switch_state_topic = mqtt_topic + "/" + name;
 
-    switch_device.discovery_topic = SwitchDiscoveryTopic + unique_id + "-" + name + "" + "/config";
+    switch_device.discovery_topic = SwitchDiscoveryTopic + unique_id + "/" + name;
 
     JsonDocument deviceMapDoc;
     deviceMapDoc["identifiers"] = hostname;
@@ -461,7 +461,7 @@ inline DiscoveryObject GenerateButtonDevice(const String& name, const String& di
     String button_command_topic = mqtt_topic + "/" + name + "/set";
     String button_state_topic = mqtt_topic + "/" + name;
 
-    button_device.discovery_topic = buttonDiscoveryTopic + unique_id + "-" + name + "" + "/config";
+    button_device.discovery_topic = buttonDiscoveryTopic + unique_id + "/" + name;
 
     JsonDocument deviceMapDoc;
     deviceMapDoc["identifiers"] = hostname;
@@ -510,7 +510,7 @@ inline DiscoveryObject GenerateSensorDevice(const String& name, const String& di
     String SensorDiscoveryTopic = mqtt_hassio_discovery_prefix + "/sensor/";
 
     String sensor_state_topic = mqtt_topic + "/" + name;
-    sensor_device.discovery_topic = SensorDiscoveryTopic + unique_id + "-" + name + "" + "/config";
+    sensor_device.discovery_topic = SensorDiscoveryTopic + unique_id + "/" + name;
 
     JsonDocument deviceMapDoc;
     deviceMapDoc["identifiers"] = hostname;
@@ -561,7 +561,7 @@ inline DiscoveryObject GenerateNumberDevice(const String& name, const String& di
     String unique_id = "clevercoffee-" + hostname;
 
     String NumberDiscoveryTopic = String(mqtt_hassio_discovery_prefix) + "/number/";
-    number_device.discovery_topic = NumberDiscoveryTopic + unique_id + "-" + name + "" + "/config";
+    number_device.discovery_topic = NumberDiscoveryTopic + unique_id + "/" + name;
 
     JsonDocument deviceMapDoc;
     deviceMapDoc["identifiers"] = hostname;
@@ -600,92 +600,92 @@ inline DiscoveryObject GenerateNumberDevice(const String& name, const String& di
  * @brief Send MQTT Homeassistant Discovery Messages
  * @return 0 if successful, MQTT connection error code if failed to send messages
  */
+inline int publishDiscovery(const DiscoveryObject& obj) {
+    if (obj.discovery_topic.isEmpty() || obj.payload_json.isEmpty()) {
+        LOGF(WARNING, "[MQTT] Skipping invalid discovery message: topic or payload is empty");
+        return 1;
+    }
+
+    IFLOG(DEBUG) {
+        LOGF(DEBUG, "Publishing topic: %s, payload length: %d", obj.discovery_topic.c_str(), obj.payload_json.length());
+    }
+
+    int result = PublishLargeMessage(obj.discovery_topic.c_str(), obj.payload_json.c_str());
+
+    if (result != 0) {
+        LOGF(ERROR, "[MQTT] Failed to publish discovery message. Error code: %d", result);
+        return 1;
+    }
+    return 0;
+}
+
+/**
+ * @brief Send MQTT Homeassistant Discovery Messages
+ * @return 0 if successful, MQTT connection error code if failed to send messages. Sets failed flag for later retry
+ */
 inline int sendHASSIODiscoveryMsg() {
     hassioUpdateRunning = true;
 
-    // Sensor, number and switch objects which will always be published
-    DiscoveryObject machineStateDevice = GenerateSensorDevice("machineState", "Machine State", "", "enum");
-    DiscoveryObject actual_temperature = GenerateSensorDevice("temperature", "Boiler Temperature", "°C", "temperature");
-    DiscoveryObject heaterPower = GenerateSensorDevice("heaterPower", "Heater Power", "%", "power_factor");
+    if (!mqtt.connected()) {
+        LOG(DEBUG, "[MQTT] Failed to send Hassio Discover, MQTT Client is not connected");
+        hassioFailed = true;
+        return -1;
+    }
 
-    DiscoveryObject brewSetpoint = GenerateNumberDevice("brewSetpoint", "Brew setpoint", BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, 0.1, "°C");
-    DiscoveryObject steamSetpoint = GenerateNumberDevice("steamSetpoint", "Steam setpoint", STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, 0.1, "°C");
-    DiscoveryObject brewTempOffset = GenerateNumberDevice("brewTempOffset", "Brew Temp. Offset", BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, 0.1, "°C");
-    DiscoveryObject steamKp = GenerateNumberDevice("steamKp", "Steam Kp", PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, 0.1, "");
-    DiscoveryObject aggKp = GenerateNumberDevice("aggKp", "aggKp", PID_KP_REGULAR_MIN, PID_KP_REGULAR_MAX, 0.1, "");
-    DiscoveryObject aggTn = GenerateNumberDevice("aggTn", "aggTn", PID_TN_REGULAR_MIN, PID_TN_REGULAR_MAX, 0.1, "");
-    DiscoveryObject aggTv = GenerateNumberDevice("aggTv", "aggTv", PID_TV_REGULAR_MIN, PID_TV_REGULAR_MAX, 0.1, "");
-    DiscoveryObject aggIMax = GenerateNumberDevice("aggIMax", "aggIMax", PID_I_MAX_REGULAR_MIN, PID_I_MAX_REGULAR_MAX, 0.1, "");
+    int failures = 0;
 
-    DiscoveryObject pidOn = GenerateSwitchDevice("pidON", "Use PID");
-    DiscoveryObject steamON = GenerateSwitchDevice("steamON", "Steam");
-    DiscoveryObject usePonM = GenerateSwitchDevice("usePonM", "Use PonM");
+    // Always published devices
+    failures += publishDiscovery(GenerateSensorDevice("machineState", "Machine State", "", "enum"));
+    failures += publishDiscovery(GenerateSensorDevice("temperature", "Boiler Temperature", "°C", "temperature"));
+    failures += publishDiscovery(GenerateSensorDevice("heaterPower", "Heater Power", "%", "power_factor"));
 
-    // List of all DiscoveryObjects, will be always published
-    std::vector discoveryObjects = {machineStateDevice, actual_temperature, heaterPower, brewSetpoint, steamSetpoint, brewTempOffset, steamKp, aggKp, aggTn, aggTv, aggIMax, pidOn, steamON, usePonM};
+    failures += publishDiscovery(GenerateNumberDevice("brewSetpoint", "Brew setpoint", BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, 0.1, "°C"));
+    failures += publishDiscovery(GenerateNumberDevice("steamSetpoint", "Steam setpoint", STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, 0.1, "°C"));
+    failures += publishDiscovery(GenerateNumberDevice("brewTempOffset", "Brew Temp. Offset", BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, 0.1, "°C"));
+    failures += publishDiscovery(GenerateNumberDevice("steamKp", "Steam Kp", PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, 0.1, ""));
+    failures += publishDiscovery(GenerateNumberDevice("aggKp", "aggKp", PID_KP_REGULAR_MIN, PID_KP_REGULAR_MAX, 0.1, ""));
+    failures += publishDiscovery(GenerateNumberDevice("aggTn", "aggTn", PID_TN_REGULAR_MIN, PID_TN_REGULAR_MAX, 0.1, ""));
+    failures += publishDiscovery(GenerateNumberDevice("aggTv", "aggTv", PID_TV_REGULAR_MIN, PID_TV_REGULAR_MAX, 0.1, ""));
+    failures += publishDiscovery(GenerateNumberDevice("aggIMax", "aggIMax", PID_I_MAX_REGULAR_MIN, PID_I_MAX_REGULAR_MAX, 0.1, ""));
 
-    // Sensor, number and switch object which will be published based on feature set
+    failures += publishDiscovery(GenerateSwitchDevice("pidON", "Use PID"));
+    failures += publishDiscovery(GenerateSwitchDevice("steamON", "Steam"));
+    failures += publishDiscovery(GenerateSwitchDevice("usePonM", "Use PonM"));
 
+    // Conditional devices
     if (config.get<bool>("hardware.switches.brew.enabled")) {
-        DiscoveryObject currBrewTime = GenerateSensorDevice("currBrewTime", "Current Brew Time ", "s", "duration");
-
-        DiscoveryObject brewPidDelay = GenerateNumberDevice("brewPidDelay", "Brew Pid Delay", BREW_PID_DELAY_MIN, BREW_PID_DELAY_MAX, 0.1, "s");
-        DiscoveryObject targetBrewTime = GenerateNumberDevice("targetBrewTime", "Target Brew time", TARGET_BREW_TIME_MIN, TARGET_BREW_TIME_MAX, 0.1, "s");
-        DiscoveryObject preinfusion = GenerateNumberDevice("preinfusion", "Preinfusion filling time", PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX, 0.1, "s");
-        DiscoveryObject preinfusionPause = GenerateNumberDevice("preinfusionPause", "Preinfusion pause time", PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, 0.1, "s");
-        DiscoveryObject backflushCycles = GenerateNumberDevice("backflushCycles", "Backflush Cycles", BACKFLUSH_CYCLES_MIN, BACKFLUSH_CYCLES_MAX, 1, "");
-        DiscoveryObject backflushFillTime = GenerateNumberDevice("backflushFillTime", "Backflush filling time", BACKFLUSH_FILL_TIME_MIN, BACKFLUSH_FILL_TIME_MAX, 0.1, "s");
-        DiscoveryObject backflushFlushTime = GenerateNumberDevice("backflushFlushTime", "Backflush flushing time", BACKFLUSH_FLUSH_TIME_MIN, BACKFLUSH_FLUSH_TIME_MAX, 0.1, "s");
-
-        DiscoveryObject backflushOn = GenerateSwitchDevice("backflushOn", "Backflush");
-
-        discoveryObjects.push_back(currBrewTime);
-        discoveryObjects.push_back(brewPidDelay);
-        discoveryObjects.push_back(targetBrewTime);
-        discoveryObjects.push_back(preinfusion);
-        discoveryObjects.push_back(preinfusionPause);
-        discoveryObjects.push_back(backflushCycles);
-        discoveryObjects.push_back(backflushFillTime);
-        discoveryObjects.push_back(backflushFlushTime);
-        discoveryObjects.push_back(backflushOn);
+        failures += publishDiscovery(GenerateSensorDevice("currBrewTime", "Current Brew Time ", "s", "duration"));
+        failures += publishDiscovery(GenerateNumberDevice("brewPidDelay", "Brew Pid Delay", BREW_PID_DELAY_MIN, BREW_PID_DELAY_MAX, 0.1, "s"));
+        failures += publishDiscovery(GenerateNumberDevice("targetBrewTime", "Target Brew time", TARGET_BREW_TIME_MIN, TARGET_BREW_TIME_MAX, 0.1, "s"));
+        failures += publishDiscovery(GenerateNumberDevice("preinfusion", "Preinfusion filling time", PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX, 0.1, "s"));
+        failures += publishDiscovery(GenerateNumberDevice("preinfusionPause", "Preinfusion pause time", PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX, 0.1, "s"));
+        failures += publishDiscovery(GenerateNumberDevice("backflushCycles", "Backflush Cycles", BACKFLUSH_CYCLES_MIN, BACKFLUSH_CYCLES_MAX, 1, ""));
+        failures += publishDiscovery(GenerateNumberDevice("backflushFillTime", "Backflush filling time", BACKFLUSH_FILL_TIME_MIN, BACKFLUSH_FILL_TIME_MAX, 0.1, "s"));
+        failures += publishDiscovery(GenerateNumberDevice("backflushFlushTime", "Backflush flushing time", BACKFLUSH_FLUSH_TIME_MIN, BACKFLUSH_FLUSH_TIME_MAX, 0.1, "s"));
+        failures += publishDiscovery(GenerateSwitchDevice("backflushOn", "Backflush"));
     }
 
     if (config.get<bool>("hardware.sensors.scale.enabled")) {
-        DiscoveryObject currReadingWeight = GenerateSensorDevice("currReadingWeight", "Weight", "g", "weight");
-        DiscoveryObject currBrewWeight = GenerateSensorDevice("currBrewWeight", "current Brew Weight", "g", "weight");
-
-        DiscoveryObject scaleCalibrateButton = GenerateButtonDevice("scaleCalibrationOn", "Calibrate Scale");
-        DiscoveryObject scaleTareButton = GenerateButtonDevice("scaleTareOn", "Tare Scale");
-
-        DiscoveryObject targetBrewWeight = GenerateNumberDevice("targetBrewWeight", "Brew Weight Target", TARGET_BREW_WEIGHT_MIN, TARGET_BREW_WEIGHT_MAX, 0.1, "g");
-
-        discoveryObjects.push_back(currReadingWeight);
-        discoveryObjects.push_back(currBrewWeight);
-        discoveryObjects.push_back(scaleCalibrateButton);
-        discoveryObjects.push_back(scaleTareButton);
-        discoveryObjects.push_back(targetBrewWeight);
+        failures += publishDiscovery(GenerateSensorDevice("currReadingWeight", "Weight", "g", "weight"));
+        failures += publishDiscovery(GenerateSensorDevice("currBrewWeight", "current Brew Weight", "g", "weight"));
+        failures += publishDiscovery(GenerateButtonDevice("scaleCalibrationOn", "Calibrate Scale"));
+        failures += publishDiscovery(GenerateButtonDevice("scaleTareOn", "Tare Scale"));
+        failures += publishDiscovery(GenerateNumberDevice("targetBrewWeight", "Brew Weight Target", TARGET_BREW_WEIGHT_MIN, TARGET_BREW_WEIGHT_MAX, 0.1, "g"));
     }
 
     if (config.get<bool>("hardware.sensors.pressure.enabled")) {
-        DiscoveryObject pressure = GenerateSensorDevice("pressure", "Pressure", "bar", "pressure");
-
-        discoveryObjects.push_back(pressure);
+        failures += publishDiscovery(GenerateSensorDevice("pressure", "Pressure", "bar", "pressure"));
     }
 
-    // Send the Objects to Hassio
-    if (mqtt.connected()) {
-        for (const auto& [discovery_topic, payload_json] : discoveryObjects) {
-
-            if (int publishResult = PublishLargeMessage(discovery_topic.c_str(), payload_json.c_str()); publishResult != 0) {
-                LOGF(ERROR, "[MQTT] Failed to publish discovery message. Error code: %d\n", publishResult);
-                return publishResult;
-            }
-        }
-
+    if (failures > 0) {
+        LOGF(DEBUG, "Hassio failed to send %d entries", failures);
+        hassioFailed = true;
+    }
+    else {
+        LOG(DEBUG, "Hassio send successful");
+        hassioFailed = false;
         return 0;
     }
-
-    LOG(DEBUG, "[MQTT] Failed to send Hassio Discover, MQTT Client is not connected");
 
     return -1;
 }

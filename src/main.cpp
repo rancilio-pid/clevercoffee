@@ -249,6 +249,9 @@ struct cmp_str {
 };
 
 // MQTT
+bool hassioFailed = false;
+bool mqtt_was_connected = false;
+
 #include "mqtt.h"
 
 std::map<const char*, const char*, cmp_str> mqttVars;
@@ -258,8 +261,6 @@ unsigned long lastTempEvent = 0;
 unsigned long tempEventInterval = 1000;
 
 Timer hassioDiscoveryTimer(&sendHASSIODiscoveryMsg, 300000);
-
-bool mqtt_was_connected = false;
 
 /**
  * @brief Get Wifi signal strength and set signalBars for display
@@ -1233,9 +1234,8 @@ void loopPid() {
                 previousMqttConnection = millis();
 
                 if (mqtt_hassio_enabled) {
-                    // resend discovery messages if not during a main function and MQTT has been disconnected but has now reconnected
-                    // this could mean mqtt_was_connected stays false for up to 5 mins but mqtt retains old HASSIO messages
-                    if (!(machineState >= kBrew && machineState <= kBackflush) && (!mqtt_was_connected && !displayBufferReady && !temperatureUpdateRunning)) {
+                    // resend discovery messages if not during a main function and MQTT has been disconnected but has now reconnected, or if last send failed
+                    if (!(machineState >= kBrew && machineState <= kBackflush) && ((!mqtt_was_connected || hassioFailed) && !displayBufferReady && !temperatureUpdateRunning)) {
                         hassioDiscoveryTimer();
                     }
                 }
