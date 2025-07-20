@@ -2,64 +2,62 @@
 (formerly Rancilio PID)
 
 <div align="center">
-<img src="https://img.shields.io/github/actions/workflow/status/rancilio-pid/clevercoffee/main.yml?branch=master">
-<img src="https://img.shields.io/github/last-commit/rancilio-pid/clevercoffee/master"><br>
+<img src="https://img.shields.io/github/actions/workflow/status/rancilio-pid/clevercoffee/main.yml?branch=master" alt="pipeline status">
+<img src="https://img.shields.io/github/last-commit/rancilio-pid/clevercoffee/master" alt="master branch"><br>
 <a href="https://ko-fi.com/clevercoffee" target="_blank" style="color: black; text-decoration: none;">Buy Me a Coffee at ko-fi.com</a>
 </div>
 
 # About
 
-This project implements a PID controller for stable and accurate temperature control, originally for Rancilio Silvia espresso machines but also includes support for Gaggia and Quickmill machines. Others can easily be added or are already compatible.
+This project implements a PID controller for stable and accurate temperature control, originally designed for Rancilio Silvia espresso machines but also supporting Gaggia and Quickmill machines. Other machines can easily be added or may already be compatible.
 
 Additional features include:
 
-* shot timer
-* pre-infusion (wip: reduced initial pressure using a dimmer for the pump)
-* brew by weight (using weight cells, no support for external scales yet)
-* brew by time
-* pressure monitoring
+* Shot timer
+* Pre-infusion (work in progress: reduced initial pressure using a dimmer for the pump)
+* Brew by weight (using HX711-based load cells under the drip tray or Bluetooth scales)
+  * Currently supported Bluetooth scales:
+    * [EspressiScale](https://www.espressiscale.com/)
+    * Acaia Lunar (only tested with pre-2021 model)
+    * Acaia Pearl (only tested with pre-2021 model)
+    * Decent Scale
+    * Bookoo Themis (untested)
+    * Felicita Arc (untested)
+* Brew by time
+* Pressure monitoring
 
-The hardware has a small footprint and can easily fit into most smaller espresso machines. The original wiring of the machine (mostly) remains and is only extended. The machine can be easily reversed to the original state after the conversion.
+The hardware has a compact footprint and can easily fit into most smaller espresso machines. The original machine wiring remains largely intact and is only extended. The machine can be easily restored to its original state after conversion.
 
-The project has been in active development and supported for 4 years with continuous improvements. Hundreds of machines have been converted to PID control already.
+The project has been in active development and supported for 4 years with continuous improvements. Hundreds of machines have been successfully converted to PID control.
 
 You can find our project website here: [Clever Coffee Website](https://clevercoffee.de).
 
-This software is Open Source: free of charge for you and customizable to your personal needs.
+This software is Open Source: free of charge and customizable to your personal needs.
 
-We recommend you have a look at the manual before starting a build, you can find the german one [here](https://rancilio-pid.github.io/ranciliopid-handbook/). It is currently being reworked to include all the latest features. The english one is sadly still very outdated but will also be updated soon.
+We recommend reviewing the manual before starting a build. You can find the German manual [here](https://rancilio-pid.github.io/ranciliopid-handbook/). It is currently being updated to include all the latest features. The English manual is outdated but will also be updated soon.
+
+The firmware can then be flashed with our dedicated [Web Flasher](https://rancilio-pid.github.io/clevercoffee-flasher/)
 
 ## Chat and Support
 You will find more information, discussions, and support on our [Discord](https://discord.gg/Kq5RFznuU4) server.
-If you want to be part of the project and help with development of hardware, software and documentation you will also find the right channels there.
-**Please keep in mind that we only can give support for our own pcbs. We will not help with any hardware solutions that are not based on our own pcbs.**
-**Please do not offer any kind of pcb derivatives of our design or own developments without contacting us before.
-This can cause a ban on our discord server.**
+If you want to contribute to the project and help with hardware, software, and documentation development, you will find the appropriate channels there.
 
-Video tutorial on how to flash the firmware (a little outdated but mostly still valid):<br>
-https://youtu.be/KZPjisOEcQ4
+**Please note that we can only provide support for our own PCBs. We will not provide assistance with solutions that are not based on our own hardware.**
+**Please do not offer PCB derivatives of our design or independent developments without contacting us first. This may result in a ban from our Discord server.**
 
-## Version
-With Version 3.3.0 we bring the last major release with support for ESP8266 and ESP32.
-There will only be bug fix releases for ESP8266 from there on. 
-Further development, with new features, will only be done for ESP32.
-"master" branch contains the current development only for esp32.
-"master-esp8266" branch contains last version for ESP8266 and ESP32.
+## What is possible after Installation into your Espresso Machine?
+* Control brew temperature with accuracy up to ±0.1°C
+* Reach target temperature within 5 to 10 minutes after switching on (however, you should wait longer, approximately 20 minutes depending on the machine, to heat up the group head)
+* Set PID parameters and monitor current temperature and heater output on a web page hosted on the ESP controller
+* Separate PID for steam mode with independent parameters and target temperature (can be enabled via web interface/MQTT or using the steam switch)
+* Automatic brewing by set time including pre-infusion timing
+* Automatic brewing by weight when scale components are installed or a Bluetooth scale is connected
+* Option to change brew and steam switches to push buttons (brew push button has two actions: short press for brew, long press to flush)
+* Brew switch detection (for shot timer functionality) using an optocoupler module when not controlling the pump from the ESP ([details](https://rancilio-pid.github.io/ranciliopid-handbook/de/customization/brueherkennung.html#konfiguration-der-erkennung))
+* MQTT (IoT) support to monitor and control all important parameters
+* Multiple display design options (including vertical orientation) with possibility to integrate custom designs
+* Over-the-air firmware updates via WiFi using our [OTA Flash Tool](https://github.com/rancilio-pid/clevercoffee-otaflasher)
 
-## What is possible after installation into your espresso machine?
- * Control of the brew temperature with an accuracy of up to +/- 0,1°.
- * Reaches the target temperature within 5 to 10 minutes after switching on (you should, however, wait a bit longer, e.g. 20 min depending on the machine to heat up the group head etc.)
- * Set PID parameters and monitor current temperature and heater output on a web page hosted on the ESP controller
- * Separate PID for steam mode with own parameters and target temperature (can be enabled in the web interface/MQTT or using the steam switch)
- * Automatically brew by set time including pre-infusion timing.
- * Automatically brew by weight when scale components are built in.
- * Possible to change brew and steam switches to push buttons. Brew push button then has two actions: short press for brew, long press to flush.
- * Allows brew switch detection (e.g. for the shot timer) by using an optocoupler module when deciding not to control the pump from the ESP ([details](https://rancilio-pid.github.io/ranciliopid-handbook/de/customization/brueherkennung.html#konfiguration-der-erkennung)).
-* MQTT (IoT) support to monitor and manipulate all important parameters.
- * Choose from multiple designs for the display (including vertical), possibility to integrate custom designs
- * Over-The-Air updates of the firmware (WiFi)
+User feedback and suggestions for further software development are welcome. We encourage you to help us in our mission to make better espresso.
 
-User feedback and suggestions for further development of the software are most welcome.
-You are welcome to help us in our mission to make better espresso. :)
-
-Thanks to every single supporter!
+Thanks to every supporter!
