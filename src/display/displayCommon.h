@@ -382,6 +382,14 @@ inline void displayProgressbar(const int value, const int x, const int y, const 
     }
 }
 
+inline void displayBluetoothStatus(const int x, const int y) {
+    if (scale) {
+        if (const bool connected = scale->isConnected(); connected) {
+            u8g2->drawXBMP(x, y, 8, 9, Bluetooth_Icon);
+        }
+    }
+}
+
 /**
  * @brief Draw a status bar at the top of the screen with icons for WiFi, MQTT,
  *        the system uptime and a separator line underneath
@@ -392,12 +400,16 @@ inline void displayStatusbar() {
 
     if (!offlineMode) {
         displayWiFiStatus(4, 1);
-        displayMQTTStatus(38, 0);
+        displayMQTTStatus(40, 0);
     }
     else {
-        u8g2->setCursor(4, 0);
+        u8g2->setCursor(40, 0);
         u8g2->setFont(u8g2_font_profont11_tf);
         u8g2->print(langstring_offlinemode);
+    }
+
+    if (config.get<bool>("hardware.sensors.scale.enabled") && config.get<int>("hardware.sensors.scale.type") == 2) {
+        displayBluetoothStatus(24, 1);
     }
 
     const auto format = "%02luh %02lum";

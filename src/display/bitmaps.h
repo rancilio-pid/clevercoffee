@@ -48,6 +48,18 @@ static const unsigned char Antenna_NOK_Icon[] U8X8_PROGMEM = {
     B10001000
 };
 
+static const unsigned char Bluetooth_Icon[] U8X8_PROGMEM = {
+    B00011000,
+    B00101000,
+    B01001010,
+    B00101100,
+    B00011000,
+    B00101100,
+    B01001010,
+    B00101000,
+    B00011000
+};
+
 static const unsigned char CleverCoffee_Logo[] U8X8_PROGMEM = {
     0x00, 0x00, 0x30, 0x00, 0x00, 0x00, 0x00, 0x60, 0x06, 0x00, 0x00, 0x00,
     0xc0, 0x0c, 0x00, 0x00, 0x00, 0xc0, 0x19, 0x00, 0x00, 0x00, 0x80, 0x19,
