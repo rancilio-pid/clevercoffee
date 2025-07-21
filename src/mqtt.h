@@ -410,7 +410,7 @@ inline DiscoveryObject GenerateSwitchDevice(const String& name, const String& di
     String switch_command_topic = mqtt_topic + "/" + name + "/set";
     String switch_state_topic = mqtt_topic + "/" + name;
 
-    switch_device.discovery_topic = SwitchDiscoveryTopic + unique_id + "/" + name;
+    switch_device.discovery_topic = SwitchDiscoveryTopic + unique_id + "/" + name + "/config";
 
     JsonDocument deviceMapDoc;
     deviceMapDoc["identifiers"] = hostname;
@@ -461,7 +461,7 @@ inline DiscoveryObject GenerateButtonDevice(const String& name, const String& di
     String button_command_topic = mqtt_topic + "/" + name + "/set";
     String button_state_topic = mqtt_topic + "/" + name;
 
-    button_device.discovery_topic = buttonDiscoveryTopic + unique_id + "/" + name;
+    button_device.discovery_topic = buttonDiscoveryTopic + unique_id + "/" + name + "/config";
 
     JsonDocument deviceMapDoc;
     deviceMapDoc["identifiers"] = hostname;
@@ -510,7 +510,7 @@ inline DiscoveryObject GenerateSensorDevice(const String& name, const String& di
     String SensorDiscoveryTopic = mqtt_hassio_discovery_prefix + "/sensor/";
 
     String sensor_state_topic = mqtt_topic + "/" + name;
-    sensor_device.discovery_topic = SensorDiscoveryTopic + unique_id + "/" + name;
+    sensor_device.discovery_topic = SensorDiscoveryTopic + unique_id + "/" + name + "/config";
 
     JsonDocument deviceMapDoc;
     deviceMapDoc["identifiers"] = hostname;
@@ -561,7 +561,7 @@ inline DiscoveryObject GenerateNumberDevice(const String& name, const String& di
     String unique_id = "clevercoffee-" + hostname;
 
     String NumberDiscoveryTopic = String(mqtt_hassio_discovery_prefix) + "/number/";
-    number_device.discovery_topic = NumberDiscoveryTopic + unique_id + "/" + name;
+    number_device.discovery_topic = NumberDiscoveryTopic + unique_id + "/" + name + "/config";
 
     JsonDocument deviceMapDoc;
     deviceMapDoc["identifiers"] = hostname;
