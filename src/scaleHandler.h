@@ -72,8 +72,8 @@ inline void checkBluetoothScaleConnection() {
                         brewByWeightFallbackActive = true;
                     }
                     else if (brewByWeightEnabled) {
-                        LOG(WARNING, "Scale connection lost during brew-by-weight only mode - setting weight to target");
-                        currBrewWeight = targetBrewWeight; // This will trigger brew completion
+                        LOG(WARNING, "BLE Scale connection lost during brew-by-weight only mode, stopping brew");
+                        currBrewState = kBrewFinished;
                     }
                 }
             }
@@ -260,8 +260,8 @@ inline void initScale() {
     }
     else {
         // HX711 scale types
-        const float cal1 = scaleCalibration;
-        const float cal2 = scale2Calibration;
+        const float cal1 = ParameterRegistry::getInstance().getParameterById("hardware.sensors.scale.calibration")->getValueAs<float>();
+        const float cal2 = ParameterRegistry::getInstance().getParameterById("hardware.sensors.scale.calibration2")->getValueAs<float>();
 
         if (scaleType == 0) { // Dual load cell
             scale = new HX711Scale(PIN_HXDAT, PIN_HXDAT2, PIN_HXCLK, cal1, cal2);

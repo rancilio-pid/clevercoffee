@@ -199,6 +199,7 @@ inline void printScreen() {
 
                         if (scaleEnabled) {
                             if (automaticBrewingEnabled && config.get<bool>("brew.by_weight")) {
+                                const auto targetBrewWeight = ParameterRegistry::getInstance().getParameterById("brew.target_weight")->getValueAs<float>();
                                 displayBrewWeight(1, 44, currBrewWeight, targetBrewWeight, scaleFailure);
                             }
                             else {
@@ -220,6 +221,10 @@ inline void printScreen() {
             u8g2->setCursor(4, 1);
             u8g2->setFont(u8g2_font_profont11_tf);
             u8g2->print(langstring_offlinemode);
+        }
+
+        if (config.get<bool>("hardware.sensors.scale.enabled") && config.get<int>("hardware.sensors.scale.type") == 2) {
+            displayBluetoothStatus(54, 1);
         }
     }
 

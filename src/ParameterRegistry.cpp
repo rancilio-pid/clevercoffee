@@ -26,7 +26,6 @@ extern double steamSetpoint;
 extern double targetBrewTime;
 extern double preinfusion;
 extern double preinfusionPause;
-extern double targetBrewWeight;
 extern int backflushCycles;
 extern double backflushFillTime;
 extern double backflushFlushTime;
@@ -38,9 +37,6 @@ extern bool featureFullscreenHotWaterTimer;
 extern double postBrewTimerDuration;
 extern bool featureHeatingLogo;
 extern bool featurePidOffLogo;
-extern float scaleCalibration;
-extern float scale2Calibration;
-extern float scaleKnownWeight;
 extern bool steamON;
 extern bool backflushOn;
 extern double temperature;
@@ -266,7 +262,7 @@ void ParameterRegistry::initialize(Config& config) {
                 kDouble,
                 sBrewSection,
                 322,
-                &targetBrewWeight,
+                nullptr,
                 TARGET_BREW_WEIGHT_MIN,
                 TARGET_BREW_WEIGHT_MAX,
                 "Brew is running until this weight has been measured",

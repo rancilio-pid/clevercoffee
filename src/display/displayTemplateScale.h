@@ -94,6 +94,7 @@ inline void printScreen() {
             // Weight
             if (scaleEnabled) {
                 if (automaticBrewingEnabled && config.get<bool>("brew.by_weight")) {
+                    const auto targetBrewWeight = ParameterRegistry::getInstance().getParameterById("brew.target_weight")->getValueAs<float>();
                     displayBrewWeight(32, 26, currBrewWeight, targetBrewWeight, scaleFailure);
                 }
                 else {

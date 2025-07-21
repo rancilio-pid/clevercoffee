@@ -97,7 +97,8 @@ bool BluetoothScale::update() {
         }
 
         if (bleScale->newWeightAvailable()) {
-            if (const float newWeight = bleScale->getWeight(); newWeight >= 0 && newWeight < 10000) {
+            // Allow negative values (post-tare) but filter out clearly invalid readings
+            if (const float newWeight = bleScale->getWeight(); newWeight > -1000.0f && newWeight < 10000.0f) {
                 currentWeight = newWeight;
                 return true;
             }

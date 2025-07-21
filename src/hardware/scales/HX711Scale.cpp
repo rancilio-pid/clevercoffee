@@ -82,19 +82,26 @@ bool HX711Scale::update() {
         }
     }
     else {
+        bool updated = false;
+
         if (!readSecondScale) {
             if (loadCell1->update()) {
                 weight1 = loadCell1->getData();
                 readSecondScale = true;
+                updated = true;
             }
         }
         else {
             if (loadCell2->update()) {
                 weight2 = loadCell2->getData();
-                currentWeight = weight1 + weight2;
                 readSecondScale = false;
-                return true;
+                updated = true;
             }
+        }
+
+        if (updated) {
+            currentWeight = weight1 + weight2;
+            return true;
         }
     }
 

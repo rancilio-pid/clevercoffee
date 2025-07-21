@@ -178,12 +178,6 @@ double aggTv = AGGTV;
 double aggIMax = AGGIMAX;
 double emaFactor = EMA_FACTOR;
 
-// Scale
-float scaleCalibration = SCALE_CALIBRATION_FACTOR;
-float scale2Calibration = SCALE2_CALIBRATION_FACTOR;
-float scaleKnownWeight = SCALE_KNOWN_WEIGHT;
-double targetBrewWeight = TARGET_BREW_WEIGHT;
-
 // PID - values for offline brew detection
 bool useBDPID = false;
 double aggbKp = AGGBKP;
