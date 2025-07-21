@@ -299,24 +299,25 @@ inline bool brew() {
 
             break;
 
-        case kBrewRunning: {
-            valveRelay->on();
-            pumpRelay->on();
-            debugPumpState("BrewRunning", "on");
+        case kBrewRunning:
+            {
+                valveRelay->on();
+                pumpRelay->on();
+                debugPumpState("BrewRunning", "on");
 
-            const auto targetBrewWeight = ParameterRegistry::getInstance().getParameterById("brew.target_weight")->getValueAs<float>();
+                const auto targetBrewWeight = ParameterRegistry::getInstance().getParameterById("brew.target_weight")->getValueAs<float>();
 
-            if (currBrewTime > totalTargetBrewTime && brewByTimeEnabled) {
-                LOG(INFO, "Brew reached time target");
-                currBrewState = kBrewFinished;
+                if (currBrewTime > totalTargetBrewTime && brewByTimeEnabled) {
+                    LOG(INFO, "Brew reached time target");
+                    currBrewState = kBrewFinished;
+                }
+                else if (config.get<bool>("hardware.sensors.scale.enabled") && currBrewWeight > targetBrewWeight && brewByWeightEnabled) {
+                    LOG(INFO, "Brew reached weight target");
+                    currBrewState = kBrewFinished;
+                }
+
+                break;
             }
-            else if (config.get<bool>("hardware.sensors.scale.enabled") && currBrewWeight > targetBrewWeight && brewByWeightEnabled) {
-                LOG(INFO, "Brew reached weight target");
-                currBrewState = kBrewFinished;
-            }
-
-            break;
-        }
 
         case kBrewFinished:
             valveRelay->off();

@@ -12,45 +12,44 @@
 #define STR(x)        STR_HELPER(x)
 
 // default parameters
-#define HOSTNAME                  "silvia"          // default hostname
-#define OTAPASS                   "otapass"         // default password for over-the-air updates
-#define WM_PASS                   "CleverCoffee"    // default password for WiFiManager
-#define SETPOINT                  95.0              // brew temperature setpoint
-#define TEMPOFFSET                0.0               // brew temperature setpoint
-#define STEAMSETPOINT             120.0             // steam temperature setpoint
-#define SCALE_CALIBRATION_FACTOR  1.00              // Raw data is divided by this value to convert to readable data
-#define SCALE2_CALIBRATION_FACTOR 1.00              // Raw data is divided by this value to convert to readable data
-#define SCALE_KNOWN_WEIGHT        267.00            // Calibration weight for scale (weight of the tray)
-#define SCALE_SAMPLES             2                 // Number of samples used for calibration
-#define AGGKP                     62.0              // PID Kp (regular phase)
-#define AGGTN                     52.0              // PID Tn (regular phase)
-#define AGGTV                     11.5              // PID Tv (regular phase)
-#define AGGIMAX                   55.0              // PID Integrator Max (regular phase)
-#define STEAMKP                   150.0             // PID kp (steam phase)
-#define AGGBKP                    50.0              // PID Kp (brew detection phase)
-#define AGGBTN                    0.0               // PID Tn (brew detection phase)
-#define AGGBTV                    20.0              // PID Tv (brew detection phase)
-#define EMA_FACTOR                0.6               // Smoothing of input that is used for Tv (derivative component of PID). Smaller means less smoothing but also less delay, 0 means no filtering
-#define TARGET_BREW_TIME          25.0              // brew time in seconds (only used if pump is being controlled)
-#define BREW_PID_DELAY            10.0              // delay until enabling PID controller during brew (no heating during this time)
-#define PRE_INFUSION_TIME         2.0               // pre-infusion time in seconds
-#define PRE_INFUSION_PAUSE_TIME   5.0               // pre-infusion pause time in seconds
-#define TARGET_BREW_WEIGHT        36.0              // Target weight in grams
-#define STANDBY_MODE_TIME         35.0              // Time in minutes until the heater is turned off
-#define BACKFLUSH_CYCLES          5                 // number of cycles the backflush should run
-#define BACKFLUSH_FILL_TIME       5.0               // time in seconds the pump is running during backflush
-#define BACKFLUSH_FLUSH_TIME      10.0              // time in seconds the 3-way valve is open during backflush
-#define POST_BREW_TIMER_DURATION  3.0               // time in seconds that brew timer will be shown after brew finished
-#define MAXWIFIRECONNECTS         5                 // maximum number of reconnection attempts, use -1 to deactivate
-#define WIFICONNECTIONDELAY       10000             // delay between reconnects in ms
-#define MQTT_USERNAME             "rancilio"        // default MQTT username
-#define MQTT_PASSWORD             "silvia"          // default MQTT password
-#define MQTT_TOPIC                "custom/kitchen/" // default MQTT topic prefix
-#define MQTT_HASSIO_PREFIX        "homeassistant"   // default MQTT prefix for Home Assistant
-#define SCREEN_WIDTH              128               // OLED display width, in pixels
-#define SCREEN_HEIGHT             64                // OLED display height, in pixels
-#define AUTH_PASSWORD             "admin"           // default password for web authentication
-#define AUTH_USERNAME             "admin"           // default username for web authentication
+#define HOSTNAME                 "silvia"          // default hostname
+#define OTAPASS                  "otapass"         // default password for over-the-air updates
+#define WM_PASS                  "CleverCoffee"    // default password for WiFiManager
+#define SETPOINT                 95.0              // brew temperature setpoint
+#define TEMPOFFSET               0.0               // brew temperature setpoint
+#define STEAMSETPOINT            120.0             // steam temperature setpoint
+#define SCALE_CALIBRATION_FACTOR 1.00              // Raw data is divided by this value to convert to readable data
+#define SCALE_KNOWN_WEIGHT       267.00            // Calibration weight for scale (weight of the tray)
+#define SCALE_SAMPLES            2                 // Number of samples used for calibration
+#define AGGKP                    62.0              // PID Kp (regular phase)
+#define AGGTN                    52.0              // PID Tn (regular phase)
+#define AGGTV                    11.5              // PID Tv (regular phase)
+#define AGGIMAX                  55.0              // PID Integrator Max (regular phase)
+#define STEAMKP                  150.0             // PID kp (steam phase)
+#define AGGBKP                   50.0              // PID Kp (brew detection phase)
+#define AGGBTN                   0.0               // PID Tn (brew detection phase)
+#define AGGBTV                   20.0              // PID Tv (brew detection phase)
+#define EMA_FACTOR               0.6               // Smoothing of input that is used for Tv (derivative component of PID). Smaller means less smoothing but also less delay, 0 means no filtering
+#define TARGET_BREW_TIME         25.0              // brew time in seconds (only used if pump is being controlled)
+#define BREW_PID_DELAY           10.0              // delay until enabling PID controller during brew (no heating during this time)
+#define PRE_INFUSION_TIME        2.0               // pre-infusion time in seconds
+#define PRE_INFUSION_PAUSE_TIME  5.0               // pre-infusion pause time in seconds
+#define TARGET_BREW_WEIGHT       36.0              // Target weight in grams
+#define STANDBY_MODE_TIME        35.0              // Time in minutes until the heater is turned off
+#define BACKFLUSH_CYCLES         5                 // number of cycles the backflush should run
+#define BACKFLUSH_FILL_TIME      5.0               // time in seconds the pump is running during backflush
+#define BACKFLUSH_FLUSH_TIME     10.0              // time in seconds the 3-way valve is open during backflush
+#define POST_BREW_TIMER_DURATION 3.0               // time in seconds that brew timer will be shown after brew finished
+#define MAXWIFIRECONNECTS        5                 // maximum number of reconnection attempts, use -1 to deactivate
+#define WIFICONNECTIONDELAY      10000             // delay between reconnects in ms
+#define MQTT_USERNAME            "rancilio"        // default MQTT username
+#define MQTT_PASSWORD            "silvia"          // default MQTT password
+#define MQTT_TOPIC               "custom/kitchen/" // default MQTT topic prefix
+#define MQTT_HASSIO_PREFIX       "homeassistant"   // default MQTT prefix for Home Assistant
+#define SCREEN_WIDTH             128               // OLED display width, in pixels
+#define SCREEN_HEIGHT            64                // OLED display height, in pixels
+#define AUTH_PASSWORD            "admin"           // default password for web authentication
+#define AUTH_USERNAME            "admin"           // default username for web authentication
 
 #define PID_KP_REGULAR_MIN            0.0
 #define PID_KP_REGULAR_MAX            200.0
@@ -96,10 +95,10 @@
 #define BACKFLUSH_FLUSH_TIME_MAX      20.0
 #define POST_BREW_TIMER_DURATION_MIN  0.0
 #define POST_BREW_TIMER_DURATION_MAX  60.0
-#define SCALE_CALIBRATION_MIN         -999999.0
+#define SCALE_SAMPLES_MIN             1
+#define SCALE_SAMPLES_MAX             20
+#define SCALE_CALIBRATION_MIN         (-999999.0)
 #define SCALE_CALIBRATION_MAX         999999.0
-#define SCALE2_CALIBRATION_MIN        -999999.0
-#define SCALE2_CALIBRATION_MAX        999999.0
 #define SCALE_KNOWN_WEIGHT_MIN        1.0
 #define SCALE_KNOWN_WEIGHT_MAX        2000.0
 #define MQTT_BROKER_MAX_LENGTH        64

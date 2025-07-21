@@ -1073,7 +1073,7 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareSensorSection,
         2433,
         nullptr,
-        1, 20,
+        SCALE_SAMPLES_MIN, SCALE_SAMPLES_MAX,
         "Number of samples to average for scale readings (higher = more stable but slower)",
         [&config] { return config.get<int>("hardware.sensors.scale.type") < 2; }
     );
@@ -1085,7 +1085,7 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareSensorSection,
         2434,
         nullptr,
-        -10000.0, 10000.0,
+        SCALE_CALIBRATION_MIN, SCALE_CALIBRATION_MAX,
         "Primary scale calibration factor (adjust during calibration process)",
         [&config] { return config.get<int>("hardware.sensors.scale.type") < 2; }
     );
@@ -1097,7 +1097,7 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareSensorSection,
         2435,
         nullptr,
-        -10000.0, 10000.0,
+        SCALE_CALIBRATION_MIN, SCALE_CALIBRATION_MAX,
         "Secondary scale calibration factor (for dual load cell setups)",
         [&config] { return config.get<int>("hardware.sensors.scale.type") < 2; }
     );
@@ -1109,7 +1109,7 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareSensorSection,
         2436,
         nullptr,
-        1.0, 5000.0,
+        SCALE_KNOWN_WEIGHT_MIN, SCALE_KNOWN_WEIGHT_MAX,
         "Weight in grams of the known calibration weight used for scale setup",
         [&config] { return config.get<int>("hardware.sensors.scale.type") < 2; }
     );
