@@ -97,7 +97,14 @@ inline void displayWiFiStatus(const int x, const int y) {
     }
     else {
         u8g2->drawXBMP(x, y, 8, 8, Antenna_NOK_Icon);
-        u8g2->setCursor(x + 36, y - 1);
+
+        if (config.get<int>("display.template") == 4) {
+            u8g2->setCursor(x + 12, y - 1);
+        }
+        else {
+            u8g2->setCursor(x + 36, y - 1);
+        }
+
         u8g2->setFont(u8g2_font_profont11_tf);
         u8g2->print("RC: ");
         u8g2->print(wifiReconnects);
