@@ -54,27 +54,32 @@ This document describes all configuration parameters available in the `config.js
   - `1`: Automatic
 - **Description**: Manual mode gives you full control over the brew time while Automatic mode allows you to activate brew-by-time and/or brew-by-weight. The brew will then stop at whatever target is reached first.
 
-### `brew.by_time`
+### `brew.by_time.enabled`
 - **Type**: Boolean
 - **Default**: `false`
 - **Description**: Enables brew by time, so the pump stops automatically when the target brew time is reached
 
-### `brew.target_time`
+### `brew.by_time.target_time`
 - **Type**: Double (seconds)
 - **Default**: `25.0`
 - **Range**: 1.0-120.0
 - **Description**: Target brew time for automatic brewing
 
-### `brew.by_weight`
+### `brew.by_weight.enabled`
 - **Type**: Boolean
 - **Default**: `false`
 - **Description**: Enables brew by weight, so the pump stops automatically when the target weight is reached
 
-### `brew.target_weight`
+### `brew.by_weight.target_weight`
 - **Type**: Double (grams)
 - **Default**: `36.0`
 - **Range**: 0.0-500.0
 - **Description**: Target output weight for automatic brewing (requires scale)
+
+### `brew.by_weight.auto_tare`
+- **Type**: Boolean
+- **Default**: `false`
+- **Description**: Enables auto-tare of a connected BLE scale
 
 ## Pre-Infusion Settings
 
@@ -268,6 +273,7 @@ For each LED type (status, brew, steam):
 - **Valid Values**:
     - `0`: 2 load cells
     - `1`: 1 load cell
+    - `2`: Bluetooth
 - **Description**: Scale configuration
 
 ## Water Tank

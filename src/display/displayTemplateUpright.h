@@ -190,7 +190,7 @@ inline void printScreen() {
 
                     // Show brew time
                     if (shouldDisplayBrewTimer()) {
-                        if (automaticBrewingEnabled && config.get<bool>("brew.by_time")) {
+                        if (automaticBrewingEnabled && config.get<bool>("brew.by_time.enabled")) {
                             displayBrewTime(1, 34, langstring_brew_ur, currBrewTime, totalTargetBrewTime);
                         }
                         else {
@@ -198,8 +198,8 @@ inline void printScreen() {
                         }
 
                         if (scaleEnabled) {
-                            if (automaticBrewingEnabled && config.get<bool>("brew.by_weight")) {
-                                const auto targetBrewWeight = ParameterRegistry::getInstance().getParameterById("brew.target_weight")->getValueAs<float>();
+                            if (automaticBrewingEnabled && config.get<bool>("brew.by_weight.enabled")) {
+                                const auto targetBrewWeight = ParameterRegistry::getInstance().getParameterById("brew.by_weight.target_weight")->getValueAs<float>();
                                 displayBrewWeight(1, 44, currBrewWeight, targetBrewWeight, scaleFailure);
                             }
                             else {

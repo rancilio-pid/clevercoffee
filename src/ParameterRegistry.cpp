@@ -223,7 +223,7 @@ void ParameterRegistry::initialize(Config& config) {
         );
 
         addBoolConfigParam(
-            "brew.by_time",
+            "brew.by_time.enabled",
             "Brew by Time",
             sBrewSection,
             311,
@@ -233,7 +233,7 @@ void ParameterRegistry::initialize(Config& config) {
         );
 
         addNumericConfigParam<double>(
-            "brew.target_time",
+            "brew.by_time.target_time",
             "Target Brew Time (s)",
             kDouble,
             sBrewSection,
@@ -247,7 +247,7 @@ void ParameterRegistry::initialize(Config& config) {
 
         if (config.get<bool>("hardware.sensors.scale.enabled")) {
             addBoolConfigParam(
-                "brew.by_weight",
+                "brew.by_weight.enabled",
                 "Brew by Weight",
                 sBrewSection,
                 321,
@@ -257,7 +257,7 @@ void ParameterRegistry::initialize(Config& config) {
             );
 
             addNumericConfigParam<double>(
-                "brew.target_weight",
+                "brew.by_weight.target_weight",
                 "Target Brew Weight (g)",
                 kDouble,
                 sBrewSection,
@@ -267,6 +267,16 @@ void ParameterRegistry::initialize(Config& config) {
                 TARGET_BREW_WEIGHT_MAX,
                 "Brew is running until this weight has been measured",
                 [&config] { return config.get<int>("brew.mode") == 1; }
+            );
+
+            addBoolConfigParam(
+                "brew.by_weight.auto_tare",
+                "Auto-tare",
+                sBrewSection,
+                323,
+                nullptr,
+                "Enables auto-tare of a connected Bluetooth scale when a brew is started",
+                [&config] { return config.get<int>("brew.mode") == 1 && config.get<int>("hardware.sensors.scale.type") == 2; }
             );
         }
 

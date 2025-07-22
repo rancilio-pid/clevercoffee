@@ -231,8 +231,8 @@ inline bool brew() {
     }
 
     const int brewMode = config.get<int>("brew.mode");
-    const bool brewByTimeEnabled = brewMode != 0 && config.get<bool>("brew.by_time");
-    const bool brewByWeightEnabled = brewMode != 0 && config.get<bool>("brew.by_weight");
+    const bool brewByTimeEnabled = brewMode != 0 && config.get<bool>("brew.by_time.enabled");
+    const bool brewByWeightEnabled = brewMode != 0 && config.get<bool>("brew.by_weight.enabled");
     const bool preinfusionEnabled = config.get<bool>("brew.pre_infusion.enabled");
 
     // check if brewswitch was turned off after a brew; Brew only runs once even brewswitch is still pressed
@@ -271,6 +271,18 @@ inline bool brew() {
                     LOG(INFO, "Preinfusion running");
                     currBrewState = kPreinfusion;
                 }
+
+                if (config.get<bool>("hardware.sensors.scale.enabled") && config.get<int>("hardware.sensors.scale.type") == 2 && config.get<bool>("brew.by_weight.enabled") && config.get<bool>("brew.by_weight.auto_tare")) {
+                    LOG(INFO, "Tare scale");
+
+                    if (scale) {
+                        scale->tare();
+
+                        // Mark that auto-tare is in progress for Bluetooth scales
+                        autoTareInProgress = true;
+                        autoTareStartTime = millis();
+                    }
+                }
             }
 
             break;
@@ -305,7 +317,7 @@ inline bool brew() {
                 pumpRelay->on();
                 debugPumpState("BrewRunning", "on");
 
-                const auto targetBrewWeight = ParameterRegistry::getInstance().getParameterById("brew.target_weight")->getValueAs<float>();
+                const auto targetBrewWeight = ParameterRegistry::getInstance().getParameterById("brew.by_weight.target_weight")->getValueAs<float>();
 
                 if (currBrewTime > totalTargetBrewTime && brewByTimeEnabled) {
                     LOG(INFO, "Brew reached time target");

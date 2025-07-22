@@ -22,6 +22,8 @@ inline float prewBrewWeight = 0;    // weight before brew started
 inline float currBrewWeight = 0;    // weight of current brew
 inline float scaleDelayValue = 2.5; // delay compensation in grams
 inline bool scaleFailure = false;
+inline bool autoTareInProgress = false;
+inline unsigned long autoTareStartTime = 0;
 
 // Bluetooth scale connection handling
 inline unsigned long lastScaleConnectionCheck = 0;
@@ -64,8 +66,8 @@ inline void checkBluetoothScaleConnection() {
 
                 // During active brew, activate fallback mechanism
                 if (currBrewState != kBrewIdle && currBrewState != kBrewFinished) {
-                    const bool brewByWeightEnabled = config.get<bool>("brew.by_weight");
-                    const bool brewByTimeEnabled = config.get<bool>("brew.by_time");
+                    const bool brewByWeightEnabled = config.get<bool>("brew.by_weight.enabled");
+                    const bool brewByTimeEnabled = config.get<bool>("brew.by_time.enabled");
 
                     if (brewByWeightEnabled && brewByTimeEnabled) {
                         LOG(INFO, "Activating brew-by-time fallback due to scale connection loss");
@@ -129,7 +131,7 @@ inline float getScaleWeight() {
  * @brief Check if brew-by-weight should be used (considering fallback state)
  */
 inline bool shouldUseBrewByWeight() {
-    const bool brewByWeightEnabled = config.get<bool>("brew.by_weight");
+    const bool brewByWeightEnabled = config.get<bool>("brew.by_weight.enabled");
     return brewByWeightEnabled && !brewByWeightFallbackActive && !scaleConnectionLost;
 }
 
@@ -174,12 +176,10 @@ inline void scaleCalibrate(const int cellNumber, const int pin) {
     // increase scale samples temporarily to ensure a stable reading
     loadCell->setSamplesInUse(128);
     loadCell->refreshDataSet();
-    float calibration = loadCell->getNewCalibration(scaleKnownWeight);
+    const float calibration = loadCell->getNewCalibration(scaleKnownWeight);
     loadCell->setSamplesInUse(scaleSamples);
 
     LOGF(INFO, "New calibration: %f", calibration);
-
-    u8g2->sendBuffer();
 
     hx711Scale->setCalibrationFactor(calibration, cellNumber);
 
@@ -210,14 +210,12 @@ inline void checkWeight() {
         return;
     }
 
-    if (scaleCalibrationOn) {
+    if (scaleCalibrationOn && !isBluetoothScale) {
         scaleCalibrate(1, PIN_HXDAT);
 
-        // Calibrate second cell if dual HX711 scale
-        if (!isBluetoothScale) {
-            if (const int scaleType = config.get<int>("hardware.sensors.scale.type"); scaleType == 0) {
-                scaleCalibrate(2, PIN_HXDAT2);
-            }
+        // Calibrate second cell
+        if (const int scaleType = config.get<int>("hardware.sensors.scale.type"); scaleType == 0) {
+            scaleCalibrate(2, PIN_HXDAT2);
         }
 
         scaleCalibrationOn = false;
@@ -303,10 +301,23 @@ inline void initScale() {
 /**
  * @brief Scale with shot timer and connection handling
  */
+/**
+ * @brief Scale with shot timer and connection handling
+ */
 inline void shotTimerScale() {
     switch (shottimerCounter) {
         case 10: // waiting step for brew switch turning on
             if (currBrewState != kBrewIdle) {
+                // For Bluetooth scales with auto-tare, wait a bit before capturing pre-brew weight
+                if (isBluetoothScale && autoTareInProgress) {
+                    // Wait at least 2 seconds for Bluetooth tare to complete
+                    if (millis() - autoTareStartTime < 2000) {
+                        break;
+                    }
+
+                    autoTareInProgress = false;
+                }
+
                 prewBrewWeight = currReadingWeight;
                 shottimerCounter = 20;
 

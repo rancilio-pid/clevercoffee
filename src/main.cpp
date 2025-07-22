@@ -1038,7 +1038,7 @@ void setup() {
                 mqttVars["pidUseBD"] = "pid.bd.enabled";
                 mqttVars["brewPidDelay"] = "brew.pid_delay";
                 mqttSensors["currBrewTime"] = [] { return currBrewTime / 1000; };
-                mqttVars["targetBrewTime"] = "brew.target_time";
+                mqttVars["targetBrewTime"] = "brew.by_time.target_time";
                 mqttVars["preinfusion"] = "brew.pre_infusion.time";
                 mqttVars["preinfusionPause"] = "brew.pre_infusion.pause";
                 mqttVars["backflushOn"] = "BACKFLUSH_ON";
@@ -1048,7 +1048,7 @@ void setup() {
             }
 
             if (config.get<bool>("hardware.sensors.scale.enabled")) {
-                mqttVars["targetBrewWeight"] = "brew.target_weight";
+                mqttVars["targetBrewWeight"] = "brew.by_weight.target_weight";
                 mqttVars["scaleCalibration"] = "hardware.sensors.scale.calibration";
 
                 if (config.get<int>("hardware.sensors.scale.type") == 0) {
