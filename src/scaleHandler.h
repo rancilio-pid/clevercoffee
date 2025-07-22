@@ -18,7 +18,7 @@ inline bool scaleCalibrationOn = false;
 inline bool scaleTareOn = false;
 inline int shottimerCounter = 10;
 inline float currReadingWeight = 0; // current weight reading
-inline float prewBrewWeight = 0;    // weight before brew started
+inline float preBrewWeight = 0;     // weight before brew started
 inline float currBrewWeight = 0;    // weight of current brew
 inline float scaleDelayValue = 2.5; // delay compensation in grams
 inline bool scaleFailure = false;
@@ -318,7 +318,7 @@ inline void shotTimerScale() {
                     autoTareInProgress = false;
                 }
 
-                prewBrewWeight = currReadingWeight;
+                preBrewWeight = currReadingWeight;
                 shottimerCounter = 20;
 
                 // Reset fallback state at start of new brew
@@ -327,7 +327,7 @@ inline void shotTimerScale() {
             break;
 
         case 20:
-            currBrewWeight = currReadingWeight - prewBrewWeight;
+            currBrewWeight = currReadingWeight - preBrewWeight;
 
             if (currBrewState == kBrewIdle) {
                 shottimerCounter = 10;
