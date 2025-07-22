@@ -89,6 +89,7 @@ String hostname = "silvia";
 auto pass = WM_PASS;
 unsigned long lastWifiConnectionAttempt = millis();
 unsigned int wifiReconnects = 0; // actual number of reconnects
+bool restartAfterAP = false;
 
 // OTA
 String otaPass;
@@ -792,8 +793,7 @@ char const* machinestateEnumToString(const MachineState machineState) {
  */
 void wiFiSetup() {
     wm.setCleanConnect(true);
-    wm.setConfigPortalTimeout(60); // sec timeout for captive portal
-    wm.setConnectTimeout(10);      // using 10s to connect to WLAN, 5s is sometimes too short!
+    wm.setConnectTimeout(10); // using 10s to connect to WLAN, 5s is sometimes too short!
     wm.setBreakAfterConfig(true);
     wm.setConnectRetries(3);
 
@@ -802,16 +802,28 @@ void wiFiSetup() {
     if (wm.getWiFiIsSaved()) {
         LOG(INFO, "Connecting to WiFi");
     }
+
     wm.setHostname(hostname.c_str());
     wm.setEnableConfigPortal(false); // doesnt start config portal within autoconnect
     wm.setDisableConfigPortal(true); // disables config portal on wifi save
     bool wifiConnected = wm.autoConnect(hostname.c_str(), pass);
+
     if (!wifiConnected) {
+        wm.setConfigPortalTimeout(1);  // prompt config portal to update password
+        wifiConnected = wm.startConfigPortal(hostname.c_str(), pass);
+        wm.setConfigPortalTimeout(60); // sec timeout for captive portal
+
         if (oledEnabled) {
             displayLogo("Starting Portal AP", hostname.c_str());
         }
+
         wifiConnected = wm.startConfigPortal(hostname.c_str(), pass);
+
+        if (wifiConnected) {
+            restartAfterAP = true;
+        }
     }
+
     if (wifiConnected) {
         if (!config.save()) {
             LOG(ERROR, "Failed to save config to filesystem!");
@@ -830,8 +842,15 @@ void wiFiSetup() {
         const String completemac = macaddr0 + macaddr1 + macaddr2 + macaddr3 + macaddr4 + macaddr5;
 
         LOGF(DEBUG, "MAC-ADDRESS: %s", completemac.c_str());
+
         if (oledEnabled) {
             displayLogo(langstring_connectwifi1, wm.getWiFiSSID(true));
+        }
+
+        if (restartAfterAP) {
+            LOG(INFO, "Restarting after successful Wifi configuration");
+            delay(1000);
+            ESP.restart();
         }
     }
     else {
