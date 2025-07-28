@@ -6,10 +6,13 @@
 
 #pragma once
 
+#include "Config.h"
 #include "brewStates.h"
 #include "display/languages.h"
 #include "hardware/scales/BluetoothScale.h"
 #include "hardware/scales/HX711Scale.h"
+
+extern Config& config;
 
 void displayScaleFailed();
 void displayWrappedMessage(const String& msg);
@@ -66,8 +69,8 @@ inline void checkBluetoothScaleConnection() {
 
                 // During active brew, activate fallback mechanism
                 if (currBrewState != kBrewIdle && currBrewState != kBrewFinished) {
-                    const bool brewByWeightEnabled = config.get<bool>("brew.by_weight.enabled");
-                    const bool brewByTimeEnabled = config.get<bool>("brew.by_time.enabled");
+                    const bool brewByWeightEnabled = Config::getInstance().get<bool>("brew.by_weight.enabled");
+                    const bool brewByTimeEnabled = Config::getInstance().get<bool>("brew.by_time.enabled");
 
                     if (brewByWeightEnabled && brewByTimeEnabled) {
                         LOG(INFO, "Activating brew-by-time fallback due to scale connection loss");
@@ -131,7 +134,7 @@ inline float getScaleWeight() {
  * @brief Check if brew-by-weight should be used (considering fallback state)
  */
 inline bool shouldUseBrewByWeight() {
-    const bool brewByWeightEnabled = config.get<bool>("brew.by_weight.enabled");
+    const bool brewByWeightEnabled = Config::getInstance().get<bool>("brew.by_weight.enabled");
     return brewByWeightEnabled && !brewByWeightFallbackActive && !scaleConnectionLost;
 }
 
@@ -143,7 +146,7 @@ inline void scaleCalibrate(const int cellNumber, const int pin) {
         return;
     }
 
-    const int scaleSamples = config.get<int>("hardware.sensors.scale.samples");
+    const int scaleSamples = Config::getInstance().get<int>("hardware.sensors.scale.samples");
 
     auto* hx711Scale = static_cast<HX711Scale*>(scale);
     HX711_ADC* loadCell = hx711Scale->getLoadCell(cellNumber);
@@ -165,7 +168,7 @@ inline void scaleCalibrate(const int cellNumber, const int pin) {
 
     LOGF(INFO, "Put load on scale %d within the next 10 seconds", pin);
 
-    const auto scaleKnownWeight = ParameterRegistry::getInstance().getParameterById("hardware.sensors.scale.known_weight")->getValueAs<float>();
+    const auto scaleKnownWeight = Config::getInstance().get<double>("hardware.sensors.scale.known_weight");
 
     msg = langstring_calibrate_in_progress + String(number2string(scaleKnownWeight)) + "g\n";
     displayWrappedMessage(msg);
@@ -183,12 +186,12 @@ inline void scaleCalibrate(const int cellNumber, const int pin) {
 
     hx711Scale->setCalibrationFactor(calibration, cellNumber);
 
-    // Save calibration to parameter registry
+    // Save calibration to config system
     if (cellNumber == 2) {
-        ParameterRegistry::getInstance().setParameterValue("hardware.sensors.scale.calibration2", calibration);
+        Config::getInstance().set<double>("hardware.sensors.scale.calibration2", calibration);
     }
     else {
-        ParameterRegistry::getInstance().setParameterValue("hardware.sensors.scale.calibration", calibration);
+        Config::getInstance().set<double>("hardware.sensors.scale.calibration", calibration);
     }
 
     msg = langstring_calibrate_complete + String(number2string(calibration)) + "\n";
@@ -214,7 +217,7 @@ inline void checkWeight() {
         scaleCalibrate(1, PIN_HXDAT);
 
         // Calibrate second cell
-        if (const int scaleType = config.get<int>("hardware.sensors.scale.type"); scaleType == 0) {
+        if (const int scaleType = Config::getInstance().get<int>("hardware.sensors.scale.type"); scaleType == 0) {
             scaleCalibrate(2, PIN_HXDAT2);
         }
 
@@ -239,8 +242,8 @@ inline void checkWeight() {
 }
 
 inline void initScale() {
-    const int scaleType = config.get<int>("hardware.sensors.scale.type");
-    const int scaleSamples = config.get<int>("hardware.sensors.scale.samples");
+    const int scaleType = Config::getInstance().get<int>("hardware.sensors.scale.type");
+    const int scaleSamples = Config::getInstance().get<int>("hardware.sensors.scale.samples");
 
     // Clean up existing scale
     if (scale) {
@@ -258,8 +261,8 @@ inline void initScale() {
     }
     else {
         // HX711 scale types
-        const float cal1 = ParameterRegistry::getInstance().getParameterById("hardware.sensors.scale.calibration")->getValueAs<float>();
-        const float cal2 = ParameterRegistry::getInstance().getParameterById("hardware.sensors.scale.calibration2")->getValueAs<float>();
+        const float cal1 = Config::getInstance().get<double>("hardware.sensors.scale.calibration");
+        const float cal2 = Config::getInstance().get<double>("hardware.sensors.scale.calibration2");
 
         if (scaleType == 0) { // Dual load cell
             scale = new HX711Scale(PIN_HXDAT, PIN_HXDAT2, PIN_HXCLK, cal1, cal2);

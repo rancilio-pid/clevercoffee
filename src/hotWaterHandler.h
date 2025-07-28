@@ -4,6 +4,11 @@
  * @brief Handler for digital hot water switch
  */
 
+#include "Config.h"
+
+// Backward compatibility reference
+extern Config& config;
+
 uint8_t currStateHotWaterSwitch;
 
 MachineState lastMachineStateHotWaterDebug = kInit;
@@ -102,7 +107,7 @@ inline void checkHotWaterSwitch() {
     loggedEmptyWaterTank = false;
 
     // Convert toggle hot water switch input to hot water switch state
-    if (const int hotWaterSwitchType = config.get<int>("hardware.switches.hot_water.type"); hotWaterSwitchType == Switch::TOGGLE) {
+    if (const int hotWaterSwitchType = Config::getInstance().get<int>("hardware.switches.hot_water.type"); hotWaterSwitchType == Switch::TOGGLE) {
         if (currReadingHotWaterSwitch != hotWaterSwitchReading) {
             currReadingHotWaterSwitch = hotWaterSwitchReading;
         }
@@ -203,7 +208,7 @@ inline void checkHotWaterSwitch() {
  * @return pumps state
  */
 inline bool hotWaterHandler(void) {
-    if (!config.get<bool>("hardware.switches.hot_water.enabled") || hotWaterSwitch == nullptr) {
+    if (!Config::getInstance().get<bool>("hardware.switches.hot_water.enabled") || hotWaterSwitch == nullptr) {
         return false; // hot water switch is not enabled
     }
 

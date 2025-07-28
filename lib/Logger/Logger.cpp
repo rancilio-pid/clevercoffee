@@ -3,7 +3,8 @@
 
 #include "Logger.h"
 
-int logLevel;
+// Initialize logLevel to INFO (level 2) instead of 0 (TRACE)
+int logLevel = static_cast<int>(Logger::Level::INFO);
 
 Logger::Logger(const uint16_t port) :
     port_(port), server_(port) {

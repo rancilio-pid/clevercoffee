@@ -8,6 +8,8 @@
 
 #include "Config.h"
 
+extern Config& config;
+
 static const char* langstring_set_temp;
 static const char* langstring_current_temp;
 static const char* langstring_brew;

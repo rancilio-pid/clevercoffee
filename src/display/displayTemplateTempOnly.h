@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "../Config.h"
+
 // Define some Displayoptions
 inline constexpr int blinkingTemp = 1;          // 0: blinking near setpoint, 1: blinking far away from setpoint
 inline constexpr float blinkingTempDelta = 0.3; // Delta from setpoint for blinking temperature display

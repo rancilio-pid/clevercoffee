@@ -7,12 +7,15 @@
 
 #pragma once
 
-#include "Parameter.h"
+#include "Config.h"
 #include <Arduino.h>
 #include <PubSubClient.h>
 #include <map>
 #include <os.h>
 #include <string>
+
+// Backward compatibility reference
+extern Config& config;
 
 std::map<const char*, std::string> mqttLastSent;
 
@@ -51,26 +54,22 @@ struct DiscoveryObject {
 };
 
 inline void setupMqtt() {
-    ParameterRegistry& registry = ParameterRegistry::getInstance();
+    // MQTT setup - config system is always ready after Config::getInstance().begin()
+    LOGF(INFO, "Setting up MQTT with unified config system");
 
-    if (!registry.isReady()) {
-        LOGF(ERROR, "ParameterRegistry not ready, cannot initialize MQTT");
-        return;
-    }
-
-    mqtt_enabled = registry.getParameterById("mqtt.enabled")->getValueAs<bool>();
+    mqtt_enabled = config.get<bool>("mqtt.enabled");
 
     if (!mqtt_enabled) {
         return;
     }
 
-    mqtt_server_ip = registry.getParameterById("mqtt.broker")->getValueAs<String>();
-    mqtt_server_port = registry.getParameterById("mqtt.port")->getValueAs<int>();
-    mqtt_username = registry.getParameterById("mqtt.username")->getValueAs<String>();
-    mqtt_password = registry.getParameterById("mqtt.password")->getValueAs<String>();
-    mqtt_topic_prefix = registry.getParameterById("mqtt.topic")->getValueAs<String>();
-    mqtt_hassio_enabled = registry.getParameterById("mqtt.hassio.enabled")->getValueAs<bool>();
-    mqtt_hassio_discovery_prefix = registry.getParameterById("mqtt.hassio.prefix")->getValueAs<String>();
+    mqtt_server_ip = config.get<::String>("mqtt.broker");
+    mqtt_server_port = config.get<int>("mqtt.port");
+    mqtt_username = config.get<::String>("mqtt.username");
+    mqtt_password = config.get<::String>("mqtt.password");
+    mqtt_topic_prefix = config.get<::String>("mqtt.topic");
+    mqtt_hassio_enabled = config.get<bool>("mqtt.hassio.enabled");
+    mqtt_hassio_discovery_prefix = config.get<::String>("mqtt.hassio.prefix");
 }
 
 /**
@@ -168,49 +167,52 @@ inline void assignMQTTParam(char* param, double value) {
         }
 
         const char* parameterId = it->second;
+        auto& config = Config::getInstance();
 
-        auto& registry = ParameterRegistry::getInstance();
-        const std::shared_ptr<Parameter> var = registry.getParameterById(parameterId);
+        LOGF(DEBUG, "Getting MQTT parameter: %s", parameterId);
 
-        if (!var) {
-            LOGF(WARNING, "Parameter %s not found in ParameterRegistry", parameterId);
-            return;
+        // Try to determine parameter type and update accordingly
+        bool success = false;
+
+        // Try different types until one succeeds
+        // Try boolean first (common case)
+        if (value == 0.0 || value == 1.0) {
+            bool boolValue = (value == 1.0);
+            success = config.set<bool>(parameterId, boolValue);
         }
 
-        if (value >= var->getMinValue() && value <= var->getMaxValue()) {
-            bool success = false;
+        // Try integer if boolean failed
+        if (!success && value == static_cast<int>(value)) {
+            int intValue = static_cast<int>(value);
+            success = config.set<int>(parameterId, intValue);
+        }
 
-            switch (var->getType()) {
-                case kDouble:
-                    success = registry.setParameterValue(parameterId, value);
-                    break;
-                case kFloat:
-                    success = registry.setParameterValue(parameterId, static_cast<float>(value));
-                    break;
-                case kUInt8:
-                    success = registry.setParameterValue(parameterId, static_cast<uint8_t>(value));
-                    if (success && strcasecmp(param, "steamON") == 0) {
-                        steamFirstON = value;
-                    }
-                    break;
-                case kInteger:
-                    success = registry.setParameterValue(parameterId, static_cast<int>(value));
-                    break;
-                default:
-                    LOGF(WARNING, "%s is not a recognized type for this MQTT parameter.", var->getType());
-                    return;
+        // Try uint8 if integer failed
+        if (!success && value >= 0 && value <= 255 && value == static_cast<uint8_t>(value)) {
+            uint8_t uint8Value = static_cast<uint8_t>(value);
+            success = config.set<uint8_t>(parameterId, uint8Value);
+            if (success && strcasecmp(param, "steamON") == 0) {
+                steamFirstON = uint8Value;
             }
+        }
 
-            if (success) {
-                mqtt_publish(param, number2string(value), true); // Publish back with MQTT topic name
-                LOGF(DEBUG, "MQTT parameter %s (ID: %s) updated to %f", param, parameterId, value);
-            }
-            else {
-                LOGF(WARNING, "Failed to update MQTT parameter %s", param);
-            }
+        // Try float if uint8 failed
+        if (!success) {
+            float floatValue = static_cast<float>(value);
+            success = config.set<float>(parameterId, floatValue);
+        }
+
+        // Try double if float failed
+        if (!success) {
+            success = config.set<double>(parameterId, value);
+        }
+
+        if (success) {
+            mqtt_publish(param, number2string(value), true); // Publish back with MQTT topic name
+            LOGF(DEBUG, "MQTT parameter %s (ID: %s) updated to %f", param, parameterId, value);
         }
         else {
-            LOGF(WARNING, "Value %f is out of range for MQTT parameter %s (min: %f, max: %f)", value, param, var->getMinValue(), var->getMaxValue());
+            LOGF(WARNING, "Failed to update MQTT parameter %s", param);
         }
     } catch (const std::exception& e) {
         LOGF(WARNING, "Error processing MQTT parameter %s: %s", param, e.what());
@@ -275,52 +277,78 @@ inline int writeSysParamsToMQTT(const bool continueOnError = true) {
 
     char data[256];
     int errorState = 0;
-    auto& registry = ParameterRegistry::getInstance();
+    auto& config = Config::getInstance();
 
+    // Use unified config system for MQTT parameter publishing
     if (!inSensors) {
         // Iterate through the mqttVars mapping to publish parameters
         while (mqttVarsIt != mqttVars.end()) {
             const char* mqttTopic = mqttVarsIt->first;
             const char* parameterId = mqttVarsIt->second;
 
-            std::shared_ptr<Parameter> param = registry.getParameterById(parameterId);
+            // Try to get parameter value from unified config system
+            // Since we don't know the exact type, try different approaches
+            bool paramFound = false;
 
-            if (param == nullptr) {
+            // Try to get as different types and format accordingly
+            try {
+                // Try boolean first
+                if (config.hasParameter(parameterId)) {
+                    // Try different types until one works
+                    bool boolVal;
+                    if (config.tryGet<bool>(parameterId, boolVal)) {
+                        snprintf(data, sizeof(data), "%d", boolVal ? 1 : 0);
+                        paramFound = true;
+                    }
+                    else {
+                        int intVal;
+                        if (config.tryGet<int>(parameterId, intVal)) {
+                            snprintf(data, sizeof(data), "%d", intVal);
+                            paramFound = true;
+                        }
+                        else {
+                            uint8_t uint8Val;
+                            if (config.tryGet<uint8_t>(parameterId, uint8Val)) {
+                                snprintf(data, sizeof(data), "%u", uint8Val);
+                                paramFound = true;
+                            }
+                            else {
+                                double doubleVal;
+                                if (config.tryGet<double>(parameterId, doubleVal)) {
+                                    snprintf(data, sizeof(data), "%.2f", doubleVal);
+                                    paramFound = true;
+                                }
+                                else {
+                                    float floatVal;
+                                    if (config.tryGet<float>(parameterId, floatVal)) {
+                                        snprintf(data, sizeof(data), "%.2f", floatVal);
+                                        paramFound = true;
+                                    }
+                                    else {
+                                        ::String stringVal;
+                                        if (config.tryGet<::String>(parameterId, stringVal)) {
+                                            snprintf(data, sizeof(data), "%s", stringVal.c_str());
+                                            paramFound = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (const std::exception& e) {
+                LOGF(WARNING, "Error getting parameter %s: %s", parameterId, e.what());
+            }
+
+            if (!paramFound) {
                 if (!continueOnError) {
                     LOGF(ERROR, "Parameter %s not found for MQTT topic %s", parameterId, mqttTopic);
                     return 1;
                 }
 
                 LOGF(WARNING, "Parameter %s not found for MQTT topic %s, skipping", parameterId, mqttTopic);
+                ++mqttVarsIt;
                 continue;
-            }
-
-            // Get value based on parameter type and format as string
-            switch (param->getType()) {
-                case kInteger:
-                    snprintf(data, sizeof(data), "%d", param->getValueAs<int>());
-                    break;
-                case kUInt8:
-                    snprintf(data, sizeof(data), "%u", param->getValueAs<uint8_t>());
-                    break;
-                case kDouble:
-                    snprintf(data, sizeof(data), "%.2f", param->getValueAs<double>());
-                    break;
-                case kFloat:
-                    snprintf(data, sizeof(data), "%.2f", param->getValueAs<float>());
-                    break;
-                case kCString:
-                    snprintf(data, sizeof(data), "%s", param->getValueAs<String>().c_str());
-                    break;
-                default:
-
-                    if (!continueOnError) {
-                        LOGF(ERROR, "Unknown parameter type for topic %s", mqttTopic);
-                        return 1;
-                    }
-
-                    LOGF(WARNING, "Skipping unknown parameter type for topic %s", mqttTopic);
-                    continue;
             }
 
             std::string value = std::string(data);

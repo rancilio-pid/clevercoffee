@@ -2,651 +2,531 @@
 /**
  * @file Config.h
  *
- * @brief Centralized configuration management with JSON storage
+ * @brief Unified configuration management system
  */
 
 #pragma once
 
-#include "ConfigDef.h"
+#include "GlobalVariables.h"
 #include "Logger.h"
 #include "defaults.h"
-#include "hardware/Relay.h"
-#include "hardware/Switch.h"
+#include "utils/helperUtils.h"
 #include <ArduinoJson.h>
-#include <LittleFS.h>
+#include <Preferences.h>
+#include <cmath>
+#include <functional>
 #include <map>
+#include <optional>
+
+enum class ParamType {
+    INT = 0,
+    UINT8 = 1,
+    DOUBLE = 2,
+    FLOAT = 3,
+    STRING = 4,
+    ENUM = 5,
+    BOOL = 6
+};
+
+// Structure for enum options with explicit value mapping
+struct EnumOption {
+        int value;
+        const char* label;
+};
+
+struct ParamDef {
+        ParamType type;
+        double minValue = 0.0;
+        double maxValue = 0.0;
+        size_t maxLength = 0;
+        void* globalVar = nullptr;
+        std::function<bool()> showCondition = []() { return true; };
+        const char* displayName = "";
+        const char* helpText = "";
+        int section = 0;
+        int position = 0;
+
+        // Default values stored as variants
+        bool defaultBool = false;
+        int defaultInt = 0;
+        uint8_t defaultUInt8 = 0;
+        double defaultDouble = 0.0;
+        float defaultFloat = 0.0f;
+        ::String defaultString = "";
+
+        // Enum support
+        const EnumOption* enumOptions = nullptr;
+        size_t enumCount = 0;
+
+        static ParamDef Bool(bool* var, bool defaultVal, const char* name = "", int sec = 0, int pos = 0, const char* help = "") {
+            ParamDef def;
+            def.type = ParamType::BOOL;
+            def.minValue = 0.0;
+            def.maxValue = 1.0;
+            def.globalVar = var;
+            def.defaultBool = defaultVal;
+            def.displayName = name;
+            def.helpText = help;
+            def.section = sec;
+            def.position = pos;
+            return def;
+        }
+
+        static ParamDef Int(int* var, int defaultVal, int min, int max, const char* name = "", int sec = 0, int pos = 0, const char* help = "") {
+            ParamDef def;
+            def.type = ParamType::INT;
+            def.minValue = min;
+            def.maxValue = max;
+            def.globalVar = var;
+            def.defaultInt = defaultVal;
+            def.displayName = name;
+            def.helpText = help;
+            def.section = sec;
+            def.position = pos;
+            return def;
+        }
+
+        static ParamDef Double(double* var, double defaultVal, double min, double max, const char* name = "", int sec = 0, int pos = 0, const char* help = "") {
+            ParamDef def;
+            def.type = ParamType::DOUBLE;
+            def.minValue = min;
+            def.maxValue = max;
+            def.globalVar = var;
+            def.defaultDouble = defaultVal;
+            def.displayName = name;
+            def.helpText = help;
+            def.section = sec;
+            def.position = pos;
+            return def;
+        }
+
+        static ParamDef UInt8(uint8_t* var, uint8_t defaultVal, uint8_t min, uint8_t max, const char* name = "", int sec = 0, int pos = 0, const char* help = "") {
+            ParamDef def;
+            def.type = ParamType::UINT8;
+            def.minValue = min;
+            def.maxValue = max;
+            def.globalVar = var;
+            def.defaultUInt8 = defaultVal;
+            def.displayName = name;
+            def.helpText = help;
+            def.section = sec;
+            def.position = pos;
+            return def;
+        }
+
+        static ParamDef Float(float* var, float defaultVal, float min, float max, const char* name = "", int sec = 0, int pos = 0, const char* help = "") {
+            ParamDef def;
+            def.type = ParamType::FLOAT;
+            def.minValue = min;
+            def.maxValue = max;
+            def.globalVar = var;
+            def.defaultFloat = defaultVal;
+            def.displayName = name;
+            def.helpText = help;
+            def.section = sec;
+            def.position = pos;
+            return def;
+        }
+
+        static ParamDef String(::String* var, const ::String& defaultVal, size_t maxLen, const char* name = "", int sec = 0, int pos = 0, const char* help = "") {
+            ParamDef def;
+            def.type = ParamType::STRING;
+            def.maxLength = maxLen;
+            def.globalVar = var;
+            def.defaultString = defaultVal;
+            def.displayName = name;
+            def.helpText = help;
+            def.section = sec;
+            def.position = pos;
+            return def;
+        }
+
+        static ParamDef Enum(int* var, int defaultVal, const EnumOption* options, size_t optionCount, const char* name = "", int sec = 0, int pos = 0, const char* help = "") {
+            ParamDef def;
+            def.type = ParamType::ENUM;
+            def.globalVar = var;
+            def.defaultInt = defaultVal;
+            def.enumOptions = options;
+            def.enumCount = optionCount;
+            def.displayName = name;
+            def.helpText = help;
+            def.section = sec;
+            def.position = pos;
+            return def;
+        }
+
+        // Method to add show condition
+        ParamDef& condition(std::function<bool()> cond) {
+            showCondition = cond;
+            return *this;
+        }
+
+        // Method to convert parameter to JSON format
+        JsonObject toJson(JsonObject& obj, const ::String& name) const {
+            obj["name"] = name;
+            obj["displayName"] = displayName;
+            obj["section"] = section;
+            obj["position"] = position;
+            obj["hasHelpText"] = (helpText != nullptr && strlen(helpText) > 0);
+            obj["show"] = showCondition();
+            obj["type"] = static_cast<int>(type);
+
+            // Add type-specific values and constraints
+            switch (type) {
+                case ParamType::BOOL:
+                    obj["value"] = globalVar ? *static_cast<bool*>(globalVar) : false;
+                    obj["min"] = 0;
+                    obj["max"] = 1;
+                    break;
+                case ParamType::INT:
+                    obj["value"] = globalVar ? *static_cast<int*>(globalVar) : 0;
+                    obj["min"] = minValue;
+                    obj["max"] = maxValue;
+                    break;
+                case ParamType::UINT8:
+                    obj["value"] = globalVar ? *static_cast<uint8_t*>(globalVar) : 0;
+                    obj["min"] = minValue;
+                    obj["max"] = maxValue;
+                    break;
+                case ParamType::DOUBLE:
+                    obj["value"] = globalVar ? round2(*static_cast<double*>(globalVar)) : 0.0;
+                    obj["min"] = minValue;
+                    obj["max"] = maxValue;
+                    break;
+                case ParamType::FLOAT:
+                    obj["value"] = globalVar ? round2(*static_cast<float*>(globalVar)) : 0.0f;
+                    obj["min"] = minValue;
+                    obj["max"] = maxValue;
+                    break;
+                case ParamType::STRING:
+                    obj["value"] = globalVar ? static_cast<::String*>(globalVar)->c_str() : "";
+                    obj["maxLength"] = maxLength;
+                    break;
+                case ParamType::ENUM:
+                    obj["value"] = globalVar ? *static_cast<int*>(globalVar) : 0;
+                    // Add enum options with proper value/label structure
+                    if (enumOptions != nullptr && enumCount > 0) {
+                        JsonArray options = obj["options"].to<JsonArray>();
+                        for (size_t i = 0; i < enumCount; i++) {
+                            JsonObject option = options.add<JsonObject>();
+                            option["value"] = enumOptions[i].value;
+                            option["label"] = enumOptions[i].label;
+                        }
+                    }
+                    break;
+                default:
+                    obj["value"] = 0;
+                    break;
+            }
+
+            return obj;
+        }
+};
 
 class Config {
     public:
-        /**
-         * @brief Initialize the configuration system
-         *
-         * @return true if successful, false otherwise
-         */
+        static Config& getInstance() {
+            static Config instance;
+            return instance;
+        }
+
         bool begin() {
-            if (!LittleFS.begin(true)) {
-                LOG(ERROR, "Failed to initialize LittleFS");
-                return false;
-            }
-
-            // Check if config file exists
-            if (!LittleFS.exists(CONFIG_FILE)) {
-                LOG(INFO, "Config file not found, creating from defaults");
-
-                createDefaults();
-
-                return save();
-            }
-
-            // Try to load existing config
-            if (!load()) {
-                LOG(WARNING, "Failed to load config, creating from defaults");
-
-                createDefaults();
-
-                return save();
-            }
-
-            initializeConfigDefs();
-
+            initializeParams();
+            loadFromNVS();
+            LOG(INFO, "Configuration system initialized");
             return true;
         }
 
-        /**
-         * @brief Load configuration from file
-         *
-         * @return true if successful, false otherwise
-         */
-        bool load() {
-            if (!LittleFS.exists(CONFIG_FILE)) {
-                LOG(INFO, "Config file does not exist");
-
-                return false;
-            }
-
-            File file = LittleFS.open(CONFIG_FILE, "r");
-
-            if (!file) {
-                LOG(ERROR, "Failed to open config file for reading");
-
-                return false;
-            }
-
-            const DeserializationError error = deserializeJson(_doc, file);
-            file.close();
-
-            if (error) {
-                LOG(ERROR, "Failed to parse config file");
-                return false;
-            }
-
-            LOG(INFO, "Configuration loaded successfully");
-
-            return true;
-        }
-
-        /**
-         * @brief Save configuration to file
-         *
-         * @return true if successful, false otherwise
-         */
-        [[nodiscard]] bool save() const {
-            File file = LittleFS.open(CONFIG_FILE, "w");
-
-            if (!file) {
-                LOG(ERROR, "Failed to open config file for writing");
-                return false;
-            }
-
-            if (serializeJson(_doc, file) == 0) {
-                LOG(ERROR, "Failed to write config to file");
-                file.close();
-                return false;
-            }
-
-            file.close();
-            LOG(INFO, "Configuration saved successfully");
-
-            return true;
-        }
-
-        bool validateAndApplyFromJson(const String& jsonString) {
-            JsonDocument doc;
-            const DeserializationError error = deserializeJson(doc, jsonString);
-
-            if (error) {
-                LOGF(ERROR, "JSON parsing failed: %s", error.c_str());
-                return false;
-            }
-
-            if (!validateAndApplyConfig(doc)) {
-                return false;
-            }
-
-            return true;
-        }
-
+        // Type-safe parameter access
         template <typename T>
-        T get(const String& path) const {
-            auto current = _doc.as<JsonVariantConst>();
-            int startIndex = 0;
-            int dotIndex;
-
-            while ((dotIndex = path.indexOf('.', startIndex)) != -1) {
-                char segment[64]; // Stack-allocated buffer
-                const int segmentLen = dotIndex - startIndex;
-
-                if (segmentLen >= 64) {
-                    return T{};
+        T get(const ::String& path) const {
+            auto it = _params.find(path.c_str());
+            if (it != _params.end()) {
+                const ParamDef& def = it->second;
+                if (def.globalVar) {
+                    if constexpr (std::is_same_v<T, bool>) {
+                        return *static_cast<bool*>(def.globalVar);
+                    }
+                    else if constexpr (std::is_same_v<T, int>) {
+                        return *static_cast<int*>(def.globalVar);
+                    }
+                    else if constexpr (std::is_same_v<T, uint8_t>) {
+                        return *static_cast<uint8_t*>(def.globalVar);
+                    }
+                    else if constexpr (std::is_same_v<T, double>) {
+                        return *static_cast<double*>(def.globalVar);
+                    }
+                    else if constexpr (std::is_same_v<T, float>) {
+                        return *static_cast<float*>(def.globalVar);
+                    }
+                    else if constexpr (std::is_same_v<T, ::String>) {
+                        return *static_cast<::String*>(def.globalVar);
+                    }
                 }
+            }
+            return T{};
+        }
 
-                path.substring(startIndex, dotIndex).toCharArray(segment, segmentLen + 1);
-                segment[segmentLen] = '\0';
+        // Type-safe parameter setting with validation and NVS save
+        template <typename T>
+        bool set(const ::String& path, const T& value) {
+            auto it = _params.find(path.c_str());
+            if (it == _params.end()) return false;
 
-                if (!current[segment].isNull()) {
-                    current = current[segment];
+            const ParamDef& def = it->second;
+
+            // Validate numeric ranges
+            if constexpr (std::is_arithmetic_v<T>) {
+                if (def.minValue != def.maxValue) { // Only validate if range is set
+                    if (value < static_cast<T>(def.minValue) || value > static_cast<T>(def.maxValue)) return false;
                 }
-                else {
-                    return T{};
+            }
+            if constexpr (std::is_same_v<T, ::String>) {
+                if (def.maxLength > 0 && value.length() > def.maxLength) return false;
+            }
+
+            // Update global variable
+            if (def.globalVar) {
+                LOGF(DEBUG, "Config::set(%s): Updating global var from current value to %s", path.c_str(), String(value).c_str());
+                *static_cast<T*>(def.globalVar) = value;
+                LOGF(DEBUG, "Config::set(%s): Global var updated, now saving to NVS", path.c_str());
+                saveToNVS(path.c_str(), value);
+                LOGF(DEBUG, "Config::set(%s): NVS save completed", path.c_str());
+                return true;
+            }
+            return false;
+        }
+
+        // JSON import/export
+        bool loadFromJson(const ::String& jsonString);
+        ::String exportToJson() const;
+
+        // API support
+        JsonDocument getParametersForAPI(const ::String& section = "") const;
+
+        // Compatibility methods for existing webserver
+        bool validateAndApplyFromJson(const ::String& jsonString) {
+            return loadFromJson(jsonString);
+        }
+        void syncGlobalVariables() { /* Already handled by direct binding */
+        }
+        ::String generateJsonConfig() const {
+            return exportToJson();
+        }
+
+        // NVS operations
+        void loadFromNVS();
+        void saveToNVS();
+
+        // Reset parameter to default value
+        bool resetToDefault(const ::String& path);
+
+        // Reset all parameters to defaults
+        void resetAllToDefaults();
+
+        // Check if parameter exists
+        bool hasParameter(const ::String& key) const {
+            return _params.find(key.c_str()) != _params.end();
+        }
+
+        // Try to get parameter value, returns false if parameter doesn't exist or type mismatch
+        template <typename T>
+        bool tryGet(const ::String& key, T& value) const {
+            auto it = _params.find(key.c_str());
+            if (it == _params.end()) {
+                return false;
+            }
+
+            const ParamDef& def = it->second;
+            if (!def.globalVar) {
+                return false;
+            }
+
+            try {
+                if constexpr (std::is_same_v<T, bool>) {
+                    if (def.type == ParamType::BOOL) {
+                        value = *static_cast<bool*>(def.globalVar);
+                        return true;
+                    }
                 }
-
-                startIndex = dotIndex + 1;
-            }
-
-            char finalSegment[64];
-            const unsigned int pathLen = path.length();
-            const unsigned int finalLen = pathLen - static_cast<unsigned int>(startIndex);
-
-            if (finalLen >= 64) {
-                return T{};
-            }
-
-            path.substring(startIndex).toCharArray(finalSegment, finalLen + 1);
-            finalSegment[finalLen] = '\0';
-
-            current = current[finalSegment];
-
-            if constexpr (std::is_same_v<T, bool>) {
-                return current.as<bool>();
-            }
-            else if constexpr (std::is_same_v<T, int>) {
-                return current.as<int>();
-            }
-            else if constexpr (std::is_same_v<T, uint8_t>) {
-                return current.as<uint8_t>();
-            }
-            else if constexpr (std::is_same_v<T, float>) {
-                return current.as<float>();
-            }
-            else if constexpr (std::is_same_v<T, double>) {
-                return current.as<double>();
-            }
-            else if constexpr (std::is_same_v<T, String>) {
-                return current.as<String>();
-            }
-            else {
-                static_assert(std::is_arithmetic_v<T> || std::is_same_v<T, String>, "Type must be arithmetic or String");
-                return current.as<T>();
+                else if constexpr (std::is_same_v<T, int>) {
+                    if (def.type == ParamType::INT) {
+                        value = *static_cast<int*>(def.globalVar);
+                        return true;
+                    }
+                }
+                else if constexpr (std::is_same_v<T, uint8_t>) {
+                    if (def.type == ParamType::UINT8) {
+                        value = *static_cast<uint8_t*>(def.globalVar);
+                        return true;
+                    }
+                }
+                else if constexpr (std::is_same_v<T, double>) {
+                    if (def.type == ParamType::DOUBLE) {
+                        value = *static_cast<double*>(def.globalVar);
+                        return true;
+                    }
+                }
+                else if constexpr (std::is_same_v<T, float>) {
+                    if (def.type == ParamType::FLOAT) {
+                        value = *static_cast<float*>(def.globalVar);
+                        return true;
+                    }
+                }
+                else if constexpr (std::is_same_v<T, ::String>) {
+                    if (def.type == ParamType::STRING) {
+                        value = *static_cast<::String*>(def.globalVar);
+                        return true;
+                    }
+                }
+                return false;
+            } catch (...) {
+                return false;
             }
         }
 
-        template <typename T>
-        void set(const String& path, const T& value) {
-            auto current = _doc.as<JsonVariant>();
-            int startIndex = 0;
-            int dotIndex;
+        // Get parameters map for webserver compatibility
+        const std::map<std::string, ParamDef>& getParameters() const {
+            return _params;
+        }
 
-            // Navigate to the parent object
-            while ((dotIndex = path.indexOf('.', startIndex)) != -1) {
-                char segment[64]; // Stack-allocated buffer
-                const int segmentLen = dotIndex - startIndex;
-
-                if (segmentLen >= 64) {
-                    return;
-                }
-
-                path.substring(startIndex, dotIndex).toCharArray(segment, segmentLen + 1);
-                segment[segmentLen] = '\0';
-
-                if (!current[segment].is<JsonObject>()) {
-                    current[segment] = current.add<JsonObject>();
-                }
-                current = current[segment];
-
-                startIndex = dotIndex + 1;
+        // Generate a short key for NVS storage (max 15 chars) - public for webserver use
+        String generateNvsKey(const char* path) const {
+            // Simple hash-based approach to create short unique keys
+            uint32_t hash = 0;
+            const char* str = path;
+            while (*str) {
+                hash = hash * 31 + *str++;
             }
 
-            char finalSegment[64];
-            const unsigned int pathLen = path.length();
-            const unsigned int finalLen = pathLen - static_cast<unsigned int>(startIndex);
-
-            if (finalLen >= 64) {
-                return;
+            // Create a key with prefix + hash (max 15 chars)
+            String key = "c" + String(hash, HEX);
+            if (key.length() > 15) {
+                key = key.substring(0, 15);
             }
 
-            path.substring(startIndex).toCharArray(finalSegment, finalLen + 1);
-            finalSegment[finalLen] = '\0';
-
-            current[finalSegment] = value;
+            LOGF(DEBUG, "Config::generateNvsKey(%s): Using NVS key '%s'", path, key.c_str());
+            return key;
         }
 
     private:
-        inline static auto CONFIG_FILE = "/config.json";
+        std::map<std::string, ParamDef> _params;
+        Preferences _prefs;
 
-        JsonDocument _doc;
+        // Local storage for parameters without global variables
+        // if NVS value exist will be overwritten during boot
+        int _brewMode = 0; // Default value for brew.mode
 
-        std::map<std::string, ConfigDef> _configDefs;
-
-        void initializeConfigDefs() {
-            _configDefs.clear();
-
-            // PID general
-            _configDefs.emplace("pid.enabled", ConfigDef::forBool(false));
-            _configDefs.emplace("pid.use_ponm", ConfigDef::forBool(false));
-            _configDefs.emplace("pid.ema_factor", ConfigDef::forDouble(EMA_FACTOR, PID_EMA_FACTOR_MIN, PID_EMA_FACTOR_MAX));
-
-            // PID regular
-            _configDefs.emplace("pid.regular.kp", ConfigDef::forDouble(AGGKP, PID_KP_REGULAR_MIN, PID_KP_REGULAR_MAX));
-            _configDefs.emplace("pid.regular.tn", ConfigDef::forDouble(AGGTN, PID_TN_REGULAR_MIN, PID_TN_REGULAR_MAX));
-            _configDefs.emplace("pid.regular.tv", ConfigDef::forDouble(AGGTV, PID_TV_REGULAR_MIN, PID_TV_REGULAR_MAX));
-            _configDefs.emplace("pid.regular.i_max", ConfigDef::forDouble(AGGIMAX, PID_I_MAX_REGULAR_MIN, PID_I_MAX_REGULAR_MAX));
-
-            // PID brew detection
-            _configDefs.emplace("pid.bd.enabled", ConfigDef::forBool(false));
-            _configDefs.emplace("pid.bd.kp", ConfigDef::forDouble(AGGBKP, PID_KP_BD_MIN, PID_KP_BD_MAX));
-            _configDefs.emplace("pid.bd.tn", ConfigDef::forDouble(AGGBTN, PID_TN_BD_MIN, PID_TN_BD_MAX));
-            _configDefs.emplace("pid.bd.tv", ConfigDef::forDouble(AGGBTV, PID_TV_BD_MIN, PID_TV_BD_MAX));
-
-            // PID steam
-            _configDefs.emplace("pid.steam.kp", ConfigDef::forDouble(STEAMKP, PID_KP_STEAM_MIN, PID_KP_STEAM_MAX));
-
-            // Brew settings
-            _configDefs.emplace("brew.setpoint", ConfigDef::forDouble(SETPOINT, BREW_SETPOINT_MIN, BREW_SETPOINT_MAX));
-            _configDefs.emplace("brew.temp_offset", ConfigDef::forDouble(TEMPOFFSET, BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX));
-            _configDefs.emplace("brew.pid_delay", ConfigDef::forDouble(BREW_PID_DELAY, BREW_PID_DELAY_MIN, BREW_PID_DELAY_MAX));
-            _configDefs.emplace("brew.mode", ConfigDef::forInt(0, 0, 2));
-            _configDefs.emplace("brew.by_time.enabled", ConfigDef::forBool(false));
-            _configDefs.emplace("brew.by_time.target_time", ConfigDef::forDouble(TARGET_BREW_TIME, TARGET_BREW_TIME_MIN, TARGET_BREW_TIME_MAX));
-            _configDefs.emplace("brew.by_weight.enabled", ConfigDef::forBool(false));
-            _configDefs.emplace("brew.by_weight.target_weight", ConfigDef::forDouble(TARGET_BREW_WEIGHT, TARGET_BREW_WEIGHT_MIN, TARGET_BREW_WEIGHT_MAX));
-            _configDefs.emplace("brew.by_weight.auto_tare", ConfigDef::forBool(false));
-
-            // Pre-infusion
-            _configDefs.emplace("brew.pre_infusion.enabled", ConfigDef::forBool(false));
-            _configDefs.emplace("brew.pre_infusion.time", ConfigDef::forDouble(PRE_INFUSION_TIME, PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX));
-            _configDefs.emplace("brew.pre_infusion.pause", ConfigDef::forDouble(PRE_INFUSION_PAUSE_TIME, PRE_INFUSION_PAUSE_MIN, PRE_INFUSION_PAUSE_MAX));
-
-            // Steam
-            _configDefs.emplace("steam.setpoint", ConfigDef::forDouble(STEAMSETPOINT, STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX));
-
-            // Backflushing
-            _configDefs.emplace("backflush.cycles", ConfigDef::forInt(BACKFLUSH_CYCLES, BACKFLUSH_CYCLES_MIN, BACKFLUSH_CYCLES_MAX));
-            _configDefs.emplace("backflush.fill_time", ConfigDef::forDouble(BACKFLUSH_FILL_TIME, BACKFLUSH_FILL_TIME_MIN, BACKFLUSH_FILL_TIME_MAX));
-            _configDefs.emplace("backflush.flush_time", ConfigDef::forDouble(BACKFLUSH_FLUSH_TIME, BACKFLUSH_FLUSH_TIME_MIN, BACKFLUSH_FLUSH_TIME_MAX));
-
-            // Standby
-            _configDefs.emplace("standby.enabled", ConfigDef::forBool(false));
-            _configDefs.emplace("standby.time", ConfigDef::forDouble(STANDBY_MODE_TIME, STANDBY_MODE_TIME_MIN, STANDBY_MODE_TIME_MAX));
-
-            // MQTT
-            _configDefs.emplace("mqtt.enabled", ConfigDef::forBool(false));
-            _configDefs.emplace("mqtt.broker", ConfigDef::forString("", MQTT_BROKER_MAX_LENGTH));
-            _configDefs.emplace("mqtt.port", ConfigDef::forInt(1883, 1, 65535));
-            _configDefs.emplace("mqtt.username", ConfigDef::forString(MQTT_USERNAME, USERNAME_MAX_LENGTH));
-            _configDefs.emplace("mqtt.password", ConfigDef::forString(MQTT_PASSWORD, PASSWORD_MAX_LENGTH));
-            _configDefs.emplace("mqtt.topic", ConfigDef::forString(MQTT_TOPIC, MQTT_TOPIC_MAX_LENGTH));
-            _configDefs.emplace("mqtt.hassio.enabled", ConfigDef::forBool(false));
-            _configDefs.emplace("mqtt.hassio.prefix", ConfigDef::forString(MQTT_HASSIO_PREFIX, MQTT_HASSIO_PREFIX_MAX_LENGTH));
-
-            // System
-            _configDefs.emplace("system.hostname", ConfigDef::forString(HOSTNAME, HOSTNAME_MAX_LENGTH));
-            _configDefs.emplace("system.ota_password", ConfigDef::forString(OTAPASS, PASSWORD_MAX_LENGTH));
-            _configDefs.emplace("system.offline_mode", ConfigDef::forBool(false));
-            _configDefs.emplace("system.log_level", ConfigDef::forInt(static_cast<int>(Logger::Level::INFO), 0, 5));
-            _configDefs.emplace("system.auth.enabled", ConfigDef::forBool(false));
-            _configDefs.emplace("system.auth.username", ConfigDef::forString(AUTH_USERNAME, USERNAME_MAX_LENGTH));
-            _configDefs.emplace("system.auth.password", ConfigDef::forString(AUTH_PASSWORD, PASSWORD_MAX_LENGTH));
-
-            // Debugging
-            _configDefs.emplace("system.timing_debug.enabled", ConfigDef::forBool(false));
-            _configDefs.emplace("system.showdisplay.enabled", ConfigDef::forBool(true));
-
-            // Display
-            _configDefs.emplace("display.template", ConfigDef::forInt(0, 0, 4));
-            _configDefs.emplace("display.inverted", ConfigDef::forBool(false));
-            _configDefs.emplace("display.language", ConfigDef::forInt(0, 0, 2));
-            _configDefs.emplace("display.fullscreen_brew_timer", ConfigDef::forBool(false));
-            _configDefs.emplace("display.fullscreen_manual_flush_timer", ConfigDef::forBool(false));
-            _configDefs.emplace("display.fullscreen_hot_water_timer", ConfigDef::forBool(false));
-            _configDefs.emplace("display.post_brew_timer_duration", ConfigDef::forDouble(POST_BREW_TIMER_DURATION, POST_BREW_TIMER_DURATION_MIN, POST_BREW_TIMER_DURATION_MAX));
-            _configDefs.emplace("display.heating_logo", ConfigDef::forBool(true));
-            _configDefs.emplace("display.pid_off_logo", ConfigDef::forBool(true));
-
-            // Hardware - OLED
-            _configDefs.emplace("hardware.oled.enabled", ConfigDef::forBool(true));
-            _configDefs.emplace("hardware.oled.type", ConfigDef::forInt(0, 0, 1));
-            _configDefs.emplace("hardware.oled.address", ConfigDef::forInt(0, 0, 1));
-
-            // Hardware - Relays
-            _configDefs.emplace("hardware.relays.heater.trigger_type", ConfigDef::forInt(Relay::HIGH_TRIGGER, 0, 1));
-            _configDefs.emplace("hardware.relays.valve.trigger_type", ConfigDef::forInt(Relay::HIGH_TRIGGER, 0, 1));
-            _configDefs.emplace("hardware.relays.pump.trigger_type", ConfigDef::forInt(Relay::HIGH_TRIGGER, 0, 1));
-
-            // Hardware - Switches
-            _configDefs.emplace("hardware.switches.brew.enabled", ConfigDef::forBool(false));
-            _configDefs.emplace("hardware.switches.brew.type", ConfigDef::forInt(Switch::TOGGLE, 0, 2));
-            _configDefs.emplace("hardware.switches.brew.mode", ConfigDef::forInt(Switch::NORMALLY_OPEN, 0, 1));
-            _configDefs.emplace("hardware.switches.steam.enabled", ConfigDef::forBool(false));
-            _configDefs.emplace("hardware.switches.steam.type", ConfigDef::forInt(Switch::TOGGLE, 0, 2));
-            _configDefs.emplace("hardware.switches.steam.mode", ConfigDef::forInt(Switch::NORMALLY_OPEN, 0, 1));
-            _configDefs.emplace("hardware.switches.power.enabled", ConfigDef::forBool(false));
-            _configDefs.emplace("hardware.switches.power.type", ConfigDef::forInt(Switch::TOGGLE, 0, 2));
-            _configDefs.emplace("hardware.switches.power.mode", ConfigDef::forInt(Switch::NORMALLY_OPEN, 0, 1));
-            _configDefs.emplace("hardware.switches.hot_water.enabled", ConfigDef::forBool(false));
-            _configDefs.emplace("hardware.switches.hot_water.type", ConfigDef::forInt(Switch::TOGGLE, 0, 2));
-            _configDefs.emplace("hardware.switches.hot_water.mode", ConfigDef::forInt(Switch::NORMALLY_OPEN, 0, 1));
-
-            // Hardware - LEDs
-            _configDefs.emplace("hardware.leds.status.enabled", ConfigDef::forBool(false));
-            _configDefs.emplace("hardware.leds.status.inverted", ConfigDef::forBool(false));
-            _configDefs.emplace("hardware.leds.brew.enabled", ConfigDef::forBool(false));
-            _configDefs.emplace("hardware.leds.brew.inverted", ConfigDef::forBool(false));
-            _configDefs.emplace("hardware.leds.steam.enabled", ConfigDef::forBool(false));
-            _configDefs.emplace("hardware.leds.steam.inverted", ConfigDef::forBool(false));
-
-            // Hardware - Sensors
-            _configDefs.emplace("hardware.sensors.temperature.type", ConfigDef::forInt(0, 0, 1));
-            _configDefs.emplace("hardware.sensors.pressure.enabled", ConfigDef::forBool(false));
-            _configDefs.emplace("hardware.sensors.watertank.enabled", ConfigDef::forBool(false));
-            _configDefs.emplace("hardware.sensors.watertank.mode", ConfigDef::forInt(Switch::NORMALLY_CLOSED, 0, 1));
-
-            // Scale
-            _configDefs.emplace("hardware.sensors.scale.enabled", ConfigDef::forBool(false));
-            _configDefs.emplace("hardware.sensors.scale.samples", ConfigDef::forInt(SCALE_SAMPLES, 1, 20));
-            _configDefs.emplace("hardware.sensors.scale.type", ConfigDef::forInt(0, 0, 5));
-            _configDefs.emplace("hardware.sensors.scale.calibration", ConfigDef::forDouble(SCALE_CALIBRATION_FACTOR, SCALE_CALIBRATION_MIN, SCALE_CALIBRATION_MAX));
-            _configDefs.emplace("hardware.sensors.scale.calibration2", ConfigDef::forDouble(SCALE_CALIBRATION_FACTOR, SCALE_CALIBRATION_MIN, SCALE_CALIBRATION_MAX));
-            _configDefs.emplace("hardware.sensors.scale.known_weight", ConfigDef::forDouble(SCALE_KNOWN_WEIGHT, SCALE_KNOWN_WEIGHT_MIN, SCALE_KNOWN_WEIGHT_MAX));
-        }
-
-        /**
-         * @brief Set a value in the JSON document using a dot-separated path
-         */
-        template <typename T>
-        static bool setJsonValue(JsonDocument& doc, const String& path, const T& value) {
-            if (path.isEmpty()) {
-                LOGF(ERROR, "Empty path provided to setJsonValue");
-                return false;
-            }
-
-            if (!doc.is<JsonObject>()) {
-                doc.to<JsonObject>();
-            }
-
-            auto current = doc.as<JsonObject>();
-
-            if (current.isNull()) {
-                LOGF(ERROR, "Failed to get root object");
-                return false;
-            }
-
-            // Split the path into segments
-            int startIndex = 0;
-            int dotIndex;
-
-            // Navigate through all segments except the last one
-            while ((dotIndex = path.indexOf('.', startIndex)) != -1) {
-                String segment = path.substring(startIndex, dotIndex);
-
-                if (segment.isEmpty()) {
-                    LOGF(ERROR, "Empty segment in path: %s", path.c_str());
-                    return false;
-                }
-
-                // Get or create the nested object for this segment
-                if (current[segment].isNull()) {
-                    // Create new nested object
-                    current = current[segment].to<JsonObject>();
-
-                    if (current.isNull()) {
-                        LOGF(ERROR, "Failed to create nested object for segment: %s", segment.c_str());
-                        return false;
-                    }
-                }
-                else if (current[segment].is<JsonObject>()) {
-                    // Use existing object
-                    current = current[segment];
-                }
-                else {
-                    // Existing value is not an object - need to replace it
-                    current.remove(segment);
-                    current = current[segment].to<JsonObject>();
-
-                    if (current.isNull()) {
-                        LOGF(ERROR, "Failed to replace value with nested object for segment: %s", segment.c_str());
-                        return false;
-                    }
-                }
-
-                startIndex = dotIndex + 1;
-            }
-
-            // Set the final value using the last segment as the key
-            const String leafKey = path.substring(startIndex);
-
-            if (leafKey.isEmpty()) {
-                LOGF(ERROR, "Empty leaf key in path: %s", path.c_str());
-                return false;
-            }
-
-            current[leafKey] = value;
-
-            LOGF(TRACE, "Successfully set %s = %s", path.c_str(), String(value).c_str());
-
-            return true;
-        }
-
-        /**
-         * @brief Create a new configuration with default values
-         */
-        void createDefaults() {
-            LOGF(INFO, "Starting createDefaults");
-
-            initializeConfigDefs();
-            _doc.clear();
-
-            LOGF(INFO, "Processing %d config definitions", _configDefs.size());
-
-            int successCount = 0;
-            for (const auto& [path, configDef] : _configDefs) {
-                const auto pathStr = String(path.c_str());
-
-                LOGF(DEBUG, "Processing path: '%s'", pathStr.c_str());
-
-                bool success = false;
-
-                switch (configDef.type) {
-                    case ConfigDef::BOOL:
-                        LOGF(DEBUG, "Setting bool %s = %s", pathStr.c_str(), configDef.boolVal ? "true" : "false");
-                        success = setJsonValue(_doc, pathStr, configDef.boolVal);
-                        break;
-
-                    case ConfigDef::INT:
-                        LOGF(DEBUG, "Setting int %s = %d", pathStr.c_str(), configDef.intVal);
-                        success = setJsonValue(_doc, pathStr, configDef.intVal);
-                        break;
-
-                    case ConfigDef::DOUBLE:
-                        LOGF(DEBUG, "Setting double %s = %f", pathStr.c_str(), configDef.doubleVal);
-                        success = setJsonValue(_doc, pathStr, configDef.doubleVal);
-                        break;
-
-                    case ConfigDef::STRING:
-                        LOGF(DEBUG, "Setting string %s = '%s'", pathStr.c_str(), configDef.stringVal.c_str());
-                        success = setJsonValue(_doc, pathStr, configDef.stringVal);
-                        break;
-
-                    default:
-                        LOGF(ERROR, "Unknown config type for path: %s", pathStr.c_str());
-                        continue;
-                }
-
-                if (success) {
-                    successCount++;
-                    LOGF(DEBUG, "Successfully set value for %s", pathStr.c_str());
-                }
-                else {
-                    LOGF(ERROR, "Failed to set value for %s", pathStr.c_str());
-                }
-
-                // Add a small delay to prevent overwhelming the system
-                delay(1);
-            }
-
-            LOGF(INFO, "createDefaults completed. Successfully set %d/%d values", successCount, _configDefs.size());
-
-            String jsonStr;
-            serializeJsonPretty(_doc, jsonStr);
-            LOGF(DEBUG, "Final JSON structure:\n%s", jsonStr.c_str());
-        }
-
-        bool validateAndApplyConfig(const JsonDocument& doc) {
-            LOGF(INFO, "Validating and applying configuration with %d parameters", _configDefs.size());
-
-            // Helper function to recursively extract all paths from JSON
-            std::function<void(JsonVariantConst, const String&, std::vector<std::pair<String, JsonVariantConst>>&)> extractPaths = [&](JsonVariantConst obj, const String& prefix,
-                                                                                                                                       std::vector<std::pair<String, JsonVariantConst>>& paths) {
-                if (obj.is<JsonObjectConst>()) {
-                    for (JsonPairConst pair : obj.as<JsonObjectConst>()) {
-                        String newPath = prefix.isEmpty() ? String(pair.key().c_str()) : prefix + "." + pair.key().c_str();
-                        extractPaths(pair.value(), newPath, paths);
-                    }
-                }
-                else {
-                    // Leaf value
-                    paths.emplace_back(prefix, obj);
-                }
-            };
-
-            // Extract all paths from the document
-            std::vector<std::pair<String, JsonVariantConst>> docPaths;
-            extractPaths(doc.as<JsonVariantConst>(), "", docPaths);
-
-            LOGF(DEBUG, "Found %d parameters in uploaded config", docPaths.size());
-
-            // Validate each path against _configDefs
-            for (const auto& [path, value] : docPaths) {
-                auto it = _configDefs.find(path.c_str());
-
-                if (it == _configDefs.end()) {
-                    LOGF(WARNING, "Unknown parameter in config: %s - skipping", path.c_str());
-                    continue;
-                }
-
-                const ConfigDef& def = it->second;
-
-                // Validate and apply based on type
-                bool validationSuccess = false;
-                switch (def.type) {
-                    case ConfigDef::BOOL:
-                        {
-                            if (value.is<bool>()) {
-                                bool boolVal = value.as<bool>();
-                                set<bool>(path.c_str(), boolVal);
-                                validationSuccess = true;
-                                LOGF(TRACE, "Applied bool %s = %s", path.c_str(), boolVal ? "true" : "false");
-                            }
-                            else {
-                                LOGF(ERROR, "Invalid type for boolean parameter %s", path.c_str());
-                            }
-                            break;
-                        }
-
-                    case ConfigDef::INT:
-                        {
-                            if (value.is<int>()) {
-                                if (auto intVal = value.as<int>(); intVal >= def.minValue && intVal <= def.maxValue) {
-                                    set<int>(path.c_str(), intVal);
-                                    validationSuccess = true;
-                                    LOGF(TRACE, "Applied int %s = %d", path.c_str(), intVal);
-                                }
-                                else {
-                                    LOGF(ERROR, "Value %d for %s outside range [%.2f, %.2f]", intVal, path.c_str(), def.minValue, def.maxValue);
-                                }
-                            }
-                            else {
-                                LOGF(ERROR, "Invalid type for integer parameter %s", path.c_str());
-                            }
-
-                            break;
-                        }
-
-                    case ConfigDef::DOUBLE:
-                        {
-                            if (value.is<double>() || value.is<float>()) {
-                                if (auto doubleVal = value.as<double>(); doubleVal >= def.minValue && doubleVal <= def.maxValue) {
-                                    set<double>(path.c_str(), doubleVal);
-                                    validationSuccess = true;
-                                    LOGF(TRACE, "Applied double %s = %.4f", path.c_str(), doubleVal);
-                                }
-                                else {
-                                    LOGF(ERROR, "Value %.4f for %s outside range [%.2f, %.2f]", doubleVal, path.c_str(), def.minValue, def.maxValue);
-                                }
-                            }
-                            else {
-                                LOGF(ERROR, "Invalid type for double parameter %s", path.c_str());
-                            }
-                            break;
-                        }
-
-                    case ConfigDef::STRING:
-                        {
-                            if (value.is<const char*>() || value.is<String>()) {
-                                auto stringVal = value.as<String>();
-
-                                if (stringVal.length() <= def.maxLength) {
-                                    set<String>(path.c_str(), stringVal);
-                                    validationSuccess = true;
-                                    LOGF(TRACE, "Applied string %s = %s", path.c_str(), stringVal.c_str());
-                                }
-                                else {
-                                    LOGF(ERROR, "String value for %s too long: %d > %d", path.c_str(), stringVal.length(), def.maxLength);
-                                }
-                            }
-                            else {
-                                LOGF(ERROR, "Invalid type for string parameter %s", path.c_str());
-                            }
-                            break;
-                        }
-                }
-
-                if (!validationSuccess) {
-                    LOGF(ERROR, "Failed to validate parameter: %s", path.c_str());
-                    return false;
-                }
-            }
-
-            LOGF(INFO, "Successfully validated and applied all configuration parameters");
-
-            return save();
-        }
+        void initializeParams();
 
         template <typename T>
-        static bool validateParameterRange(const char* paramName, T value, T min, T max) {
-            if (value < min || value > max) {
-                LOGF(ERROR, "Parameter %s value %.2f out of range [%.2f, %.2f]", paramName, static_cast<double>(value), static_cast<double>(min), static_cast<double>(max));
-                return false;
+        void saveToNVS(const char* path, const T& value) {
+            // Look up the parameter definition to get the correct type
+            auto it = _params.find(path);
+            if (it == _params.end()) {
+                LOGF(ERROR, "Config::saveToNVS(%s): Parameter not found in definition", path);
+                return;
             }
-            return true;
-        }
+            const ParamDef& def = it->second;
 
-        static String constrainStringParameter(const String& value, const size_t maxLength, const char* paramName = nullptr) {
-            if (value.length() <= maxLength) {
-                return value;
+            String nvsKey = generateNvsKey(path);
+            LOGF(INFO, "Config::saveToNVS(%s): Saving value '%s' with NVS key '%s'", path, String(value).c_str(), nvsKey.c_str());
+            _prefs.begin(STORAGE_NAMESPACE, false);
+            bool success = false;
+
+            // Use parameter definition type, not template type, for storage decisions
+            // But only cast when types are compatible
+            switch (def.type) {
+                case ParamType::BOOL:
+                    if constexpr (std::is_same_v<T, bool>) {
+                        success = _prefs.putBool(nvsKey.c_str(), value);
+                        LOGF(DEBUG, "Config::saveToNVS(%s): putBool(%s, %s) = %s", path, nvsKey.c_str(), value ? "true" : "false", success ? "success" : "failed");
+                    }
+                    else if constexpr (std::is_arithmetic_v<T>) {
+                        success = _prefs.putBool(nvsKey.c_str(), static_cast<bool>(value));
+                        LOGF(DEBUG, "Config::saveToNVS(%s): putBool(%s, %s) = %s", path, nvsKey.c_str(), static_cast<bool>(value) ? "true" : "false", success ? "success" : "failed");
+                    }
+                    else {
+                        LOGF(ERROR, "Config::saveToNVS(%s): Cannot convert non-arithmetic type to bool", path);
+                    }
+                    break;
+                case ParamType::INT:
+                case ParamType::ENUM: // ENUMs are stored as integers
+                    if constexpr (std::is_same_v<T, int>) {
+                        success = _prefs.putInt(nvsKey.c_str(), value);
+                        LOGF(DEBUG, "Config::saveToNVS(%s): putInt(%s, %d) = %s", path, nvsKey.c_str(), value, success ? "success" : "failed");
+                    }
+                    else if constexpr (std::is_arithmetic_v<T>) {
+                        success = _prefs.putInt(nvsKey.c_str(), static_cast<int>(value));
+                        LOGF(DEBUG, "Config::saveToNVS(%s): putInt(%s, %d) = %s", path, nvsKey.c_str(), static_cast<int>(value), success ? "success" : "failed");
+                    }
+                    else {
+                        LOGF(ERROR, "Config::saveToNVS(%s): Cannot convert non-arithmetic type to int", path);
+                    }
+                    break;
+                case ParamType::UINT8:
+                    if constexpr (std::is_same_v<T, uint8_t>) {
+                        success = _prefs.putUChar(nvsKey.c_str(), value);
+                        LOGF(DEBUG, "Config::saveToNVS(%s): putUChar(%s, %d) = %s", path, nvsKey.c_str(), value, success ? "success" : "failed");
+                    }
+                    else if constexpr (std::is_arithmetic_v<T>) {
+                        success = _prefs.putUChar(nvsKey.c_str(), static_cast<uint8_t>(value));
+                        LOGF(DEBUG, "Config::saveToNVS(%s): putUChar(%s, %d) = %s", path, nvsKey.c_str(), static_cast<uint8_t>(value), success ? "success" : "failed");
+                    }
+                    else {
+                        LOGF(ERROR, "Config::saveToNVS(%s): Cannot convert non-arithmetic type to uint8_t", path);
+                    }
+                    break;
+                case ParamType::DOUBLE:
+                    if constexpr (std::is_same_v<T, double>) {
+                        success = _prefs.putDouble(nvsKey.c_str(), value);
+                        LOGF(DEBUG, "Config::saveToNVS(%s): putDouble(%s, %.6f) = %s", path, nvsKey.c_str(), value, success ? "success" : "failed");
+                    }
+                    else if constexpr (std::is_arithmetic_v<T>) {
+                        success = _prefs.putDouble(nvsKey.c_str(), static_cast<double>(value));
+                        LOGF(DEBUG, "Config::saveToNVS(%s): putDouble(%s, %.6f) = %s", path, nvsKey.c_str(), static_cast<double>(value), success ? "success" : "failed");
+                    }
+                    else {
+                        LOGF(ERROR, "Config::saveToNVS(%s): Cannot convert non-arithmetic type to double", path);
+                    }
+                    break;
+                case ParamType::FLOAT:
+                    if constexpr (std::is_same_v<T, float>) {
+                        success = _prefs.putFloat(nvsKey.c_str(), value);
+                        LOGF(DEBUG, "Config::saveToNVS(%s): putFloat(%s, %.6f) = %s", path, nvsKey.c_str(), value, success ? "success" : "failed");
+                    }
+                    else if constexpr (std::is_arithmetic_v<T>) {
+                        success = _prefs.putFloat(nvsKey.c_str(), static_cast<float>(value));
+                        LOGF(DEBUG, "Config::saveToNVS(%s): putFloat(%s, %.6f) = %s", path, nvsKey.c_str(), static_cast<float>(value), success ? "success" : "failed");
+                    }
+                    else {
+                        LOGF(ERROR, "Config::saveToNVS(%s): Cannot convert non-arithmetic type to float", path);
+                    }
+                    break;
+                case ParamType::STRING:
+                    if constexpr (std::is_same_v<T, ::String>) {
+                        success = _prefs.putString(nvsKey.c_str(), value);
+                        LOGF(DEBUG, "Config::saveToNVS(%s): putString(%s, '%s') = %s", path, nvsKey.c_str(), value.c_str(), success ? "success" : "failed");
+                    }
+                    else {
+                        String strValue = String(value);
+                        success = _prefs.putString(nvsKey.c_str(), strValue);
+                        LOGF(DEBUG, "Config::saveToNVS(%s): putString(%s, '%s') = %s", path, nvsKey.c_str(), strValue.c_str(), success ? "success" : "failed");
+                    }
+                    break;
+                default:
+                    LOGF(ERROR, "Config::saveToNVS(%s): Unknown parameter type %d", path, static_cast<int>(def.type));
+                    break;
             }
+            _prefs.end();
 
-            LOGF(WARNING, "Parameter '%s' truncated from %d to %d characters", paramName, value.length(), maxLength);
-
-            return value.substring(0, maxLength);
+            if (!success) {
+                LOGF(ERROR, "Failed to save parameter '%s' to NVS (key: %s)", path, nvsKey.c_str());
+            }
+            else {
+                LOGF(INFO, "Successfully saved parameter '%s' to NVS (key: %s)", path, nvsKey.c_str());
+            }
         }
 };
+
+extern Config& config;

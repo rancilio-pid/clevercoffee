@@ -14,13 +14,17 @@
 #include <ArduinoOTA.h>
 #include <LittleFS.h>
 #include <PID_v1.h>  // for PID calculation
+#include <Preferences.h>
 #include <U8g2lib.h> // i2c display
 #include <WiFiManager.h>
 #include <os.h>
 
+// Defaults
+#include "defaults.h"
+
 // Includes
 #include "Config.h"
-#include "ParameterRegistry.h"
+#include "GlobalVariables.h"
 
 // Utilities
 #include "utils/Timer.h"
@@ -36,15 +40,12 @@
 #include "hardware/tempsensors/TempSensorDallas.h"
 #include "hardware/tempsensors/TempSensorTSIC.h"
 
-// User configuration & defaults
-#include "defaults.h"
-
 hw_timer_t* timer = nullptr;
 
 #include "hardware/pressureSensor.h"
 #include <Wire.h>
 
-Config config;
+extern Config& config;
 
 enum MachineState {
     kInit = 0,
@@ -66,7 +67,6 @@ MachineState machineState = kInit;
 MachineState lastmachinestate = kInit;
 int lastmachinestatepid = -1;
 
-bool offlineMode = false;
 int displayOffline = 0;
 
 inline bool systemInitialized = false;
@@ -74,18 +74,11 @@ inline bool systemInitialized = false;
 // Display
 U8G2* u8g2 = nullptr;
 
-bool featureFullscreenBrewTimer = false;
-bool featureFullscreenManualFlushTimer = false;
-bool featureFullscreenHotWaterTimer = false;
-double postBrewTimerDuration = POST_BREW_TIMER_DURATION;
-bool featureHeatingLogo = false;
-bool featurePidOffLogo = false;
-
 // WiFi
 WiFiManager wm;
+WiFiManagerParameter custom_hostname("hostname", "Device Hostname", hostname.c_str(), 32);
 constexpr unsigned long wifiConnectionDelay = WIFICONNECTIONDELAY;
 constexpr unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
-String hostname = "silvia";
 auto pass = WM_PASS;
 unsigned long lastWifiConnectionAttempt = millis();
 unsigned int wifiReconnects = 0; // actual number of reconnects
@@ -101,8 +94,6 @@ const unsigned long intervalPressure = 100;
 unsigned long previousMillisPressure; // initialisation at the end of init()
 
 // timing flags
-bool timingDebugActive = false;
-bool includeDisplayInLogs = false;
 bool displayBufferReady = false;
 bool displayUpdateRunning = false;
 bool websiteUpdateRunning = false;
@@ -166,39 +157,22 @@ String hotWaterStateDebug = "off";
 String lastHotWaterStateDebug = "off";
 
 // system parameters
-bool pidON = false;
-bool usePonM = false;
-double brewSetpoint = SETPOINT;
-double brewTempOffset = TEMPOFFSET;
 double setpoint = brewSetpoint;
-double steamSetpoint = STEAMSETPOINT;
-double steamKp = STEAMKP;
-double aggKp = AGGKP;
-double aggTn = AGGTN;
-double aggTv = AGGTV;
-double aggIMax = AGGIMAX;
-double emaFactor = EMA_FACTOR;
 
 // PID - values for offline brew detection
-bool useBDPID = false;
-double aggbKp = AGGBKP;
-double aggbTn = AGGBTN;
-double aggbTv = AGGBTV;
 double aggbKi = (aggbTn == 0) ? 0 : aggbKp / aggbTn;
 double aggbKd = aggbTv * aggbKp;
 double aggKi = (aggTn == 0) ? 0 : aggKp / aggTn;
 double aggKd = aggTv * aggKp;
 
-double brewPidDelay = BREW_PID_DELAY; // Time PID will be disabled after brew started
-
-bool standbyModeOn = false;
-double standbyModeTime = STANDBY_MODE_TIME;
+// Time PID will be disabled after brew started
 
 #include "standby.h"
 
 // Variables to hold PID values (Temp input, Heater output)
-double temperature, pidOutput;
-bool steamON = false;
+extern double temperature;
+double pidOutput;
+extern bool steamON;
 bool steamFirstON = false;
 
 PID bPID(&temperature, &pidOutput, &setpoint, aggKp, aggKi, aggKd, 1, DIRECT);
@@ -221,7 +195,6 @@ constexpr int waterTankCountsNeeded = 3;   // Number of same readings to change 
 // PID controller
 unsigned long previousMillistemp; // initialisation at the end of init()
 
-double setpointTemp;
 double previousInput = 0;
 
 // Embedded HTTP Server
@@ -305,7 +278,7 @@ void testEmergencyStop() {
  * @brief Switch to offline mode if maxWifiReconnects were exceeded during boot
  */
 void initOfflineMode() {
-    if (config.get<bool>("hardware.oled.enabled")) {
+    if (Config::getInstance().get<bool>("hardware.oled.enabled")) {
         displayOffline = 1;
     }
 
@@ -658,7 +631,7 @@ void handleMachineState() {
 
         case kStandby:
             {
-                bool oledEnabled = config.get<bool>("hardware.oled.enabled");
+                bool oledEnabled = Config::getInstance().get<bool>("hardware.oled.enabled");
 
                 if (standbyModeRemainingTimeDisplayOffMillis == 0 && oledEnabled) {
                     u8g2->setPowerSave(1);
@@ -792,12 +765,13 @@ char const* machinestateEnumToString(const MachineState machineState) {
  * @brief Set up internal WiFi hardware
  */
 void wiFiSetup() {
+    wm.addParameter(&custom_hostname);
     wm.setCleanConnect(true);
     wm.setConnectTimeout(10); // using 10s to connect to WLAN, 5s is sometimes too short!
     wm.setBreakAfterConfig(true);
     wm.setConnectRetries(3);
 
-    bool oledEnabled = config.get<bool>("hardware.oled.enabled");
+    bool oledEnabled = Config::getInstance().get<bool>("hardware.oled.enabled");
 
     if (wm.getWiFiIsSaved()) {
         LOG(INFO, "Connecting to WiFi");
@@ -818,17 +792,20 @@ void wiFiSetup() {
         }
 
         wifiConnected = wm.startConfigPortal(hostname.c_str(), pass);
-
         if (wifiConnected) {
             restartAfterAP = true;
+        }
+
+        // Read hostname from portal and store in config
+        String newHostname = String(custom_hostname.getValue());
+        if (newHostname.length() > 0 && newHostname != hostname) {
+            hostname = newHostname;
+            // Update the config system - this will automatically save to NVS
+            Config::getInstance().set<String>("system.hostname", hostname);
         }
     }
 
     if (wifiConnected) {
-        if (!config.save()) {
-            LOG(ERROR, "Failed to save config to filesystem!");
-        }
-
         LOGF(INFO, "WiFi connected - IP = %i.%i.%i.%i", WiFi.localIP()[0], WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3]);
 
         byte mac[6];
@@ -869,16 +846,11 @@ void wiFiSetup() {
 
 void wiFiReset() {
     wm.resetSettings();
-
-    if (!config.save()) {
-        LOG(ERROR, "Failed to save config to filesystem!");
-    }
-
     delay(500);
     ESP.restart();
 }
 
-extern const char sysVersion[] = STR(AUTO_VERSION);
+extern const char sysVersion[];
 
 void setup() {
     // Start serial console
@@ -887,26 +859,19 @@ void setup() {
     // Initialize the logger
     Logger::init(23);
 
-    if (!config.begin()) {
-        LOG(ERROR, "Failed to load config from filesystem!");
+    if (!Config::getInstance().begin()) {
+        LOG(ERROR, "Failed to initialize configuration system!");
     }
 
-    hostname = config.get<String>("system.hostname");
+    // Configuration system is now unified in Config class
+    LOG(INFO, "Configuration system ready");
 
-    ParameterRegistry::getInstance().initialize(config);
-
-    if (!ParameterRegistry::getInstance().isReady()) {
-        LOG(ERROR, "Failed to initialize ParameterRegistry!");
-        // TODO Error handling
-    }
-    else {
-        ParameterRegistry::getInstance().syncGlobalVariables();
-    }
+    hostname = Config::getInstance().get<String>("system.hostname");
 
     Wire.begin();
 
-    if (config.get<bool>("hardware.oled.enabled")) {
-        switch (config.get<int>("hardware.oled.type")) {
+    if (Config::getInstance().get<bool>("hardware.oled.enabled")) {
+        switch (Config::getInstance().get<int>("hardware.oled.type")) {
             case 0:
                 u8g2 = new U8G2_SH1106_128X64_NONAME_F_HW_I2C(U8G2_R0, U8X8_PIN_NONE, PIN_I2CSCL, PIN_I2CSDA);  // e.g. 1.3"
                 break;
@@ -918,7 +883,7 @@ void setup() {
         }
 
         if (u8g2 != nullptr) {
-            if (const int i2cAddress = config.get<int>("hardware.oled.i2c_address"); i2cAddress == 0) {
+            if (const int i2cAddress = Config::getInstance().get<int>("hardware.oled.address"); i2cAddress == 0) {
                 u8g2->setI2CAddress(0x3C * 2);
             }
             else {
@@ -932,14 +897,15 @@ void setup() {
 
             initLangStrings(config);
 
-            const int templateId = config.get<int>("display.template");
+            const int templateId = Config::getInstance().get<int>("display.template");
             DisplayTemplateManager::initializeDisplay(templateId);
 
             displayLogo(String("Version "), String(sysVersion));
         }
         else {
             LOG(ERROR, "Error initializing the display!");
-            config.set<bool>("hardware.oled.enabled", false);
+            // Update config system - this will automatically save to NVS
+            Config::getInstance().set<bool>("hardware.oled.enabled", false);
         }
     }
 
@@ -951,15 +917,15 @@ void setup() {
 
     initTimer1();
 
-    const auto heaterTriggerType = static_cast<Relay::TriggerType>(config.get<int>("hardware.relays.heater.trigger_type"));
+    const auto heaterTriggerType = static_cast<Relay::TriggerType>(Config::getInstance().get<int>("hardware.relays.heater.trigger_type"));
     heaterRelay = new Relay(heaterRelayPin, heaterTriggerType);
     heaterRelay->off();
 
-    const auto valveTriggerType = static_cast<Relay::TriggerType>(config.get<int>("hardware.relays.valve.trigger_type"));
+    const auto valveTriggerType = static_cast<Relay::TriggerType>(Config::getInstance().get<int>("hardware.relays.valve.trigger_type"));
     valveRelay = new Relay(valveRelayPin, valveTriggerType);
     valveRelay->off();
 
-    const auto pumpTriggerType = static_cast<Relay::TriggerType>(config.get<int>("hardware.relays.pump.trigger_type"));
+    const auto pumpTriggerType = static_cast<Relay::TriggerType>(Config::getInstance().get<int>("hardware.relays.pump.trigger_type"));
     pumpRelay = new Relay(pumpRelayPin, pumpTriggerType);
     pumpRelay->off();
 
@@ -1106,7 +1072,7 @@ void setup() {
 
     // Start the logger
     Logger::begin();
-    int level = ParameterRegistry::getInstance().getParameterById("system.log_level")->getValueAs<int>();
+    int level = Config::getInstance().get<int>("system.log_level");
     Logger::setLevel(static_cast<Logger::Level>(level));
 
     // Initialize PID controller
@@ -1190,9 +1156,6 @@ void loop() {
 
     // print timing related data to check what is causing stutters
     debugTimingLoop();
-
-    // Handle automatic config save
-    ParameterRegistry::getInstance().processPeriodicSave();
 }
 
 void loopPid() {
@@ -1277,6 +1240,19 @@ void loopPid() {
 
     websiteUpdateRunning = false;
 
+    if (config.get<bool>("hardware.sensors.scale.enabled")) {
+        checkWeight();    // Check Weight Scale in the loop
+        shotTimerScale(); // Calculation of weight of shot while brew is running
+    }
+
+    if (config.get<bool>("hardware.sensors.pressure.enabled")) {
+        if (const unsigned long currentMillisPressure = millis(); currentMillisPressure - previousMillisPressure >= intervalPressure) {
+            previousMillisPressure = currentMillisPressure;
+            inputPressure = measurePressure();
+            inputPressureFilter = filterPressureValue(inputPressure);
+        }
+    }
+
     // refresh website if loop does not have anoth long running process already
     if (((millis() - lastTempEvent) > tempEventInterval) && (!mqttUpdateRunning && !hassioUpdateRunning && !displayBufferReady && !temperatureUpdateRunning)) {
         websiteUpdateRunning = true;
@@ -1284,6 +1260,7 @@ void loopPid() {
         // send temperatures to website endpoint
         if (WiFi.status() == WL_CONNECTED && !offlineMode) {
             sendTempEvent(temperature, brewSetpoint, pidOutput / 10); // pidOutput is promill, so /10 to get percent value
+
         }
 
         lastTempEvent = millis();
@@ -1309,19 +1286,6 @@ void loopPid() {
             LOGF(TRACE, "currBrewTime %f", currBrewTime);
             LOGF(TRACE, "Brew detected %i", checkBrewActive());
             LOGF(TRACE, "brewPidDisabled %i", brewPidDisabled);
-        }
-    }
-
-    if (config.get<bool>("hardware.sensors.scale.enabled")) {
-        checkWeight();    // Check Weight Scale in the loop
-        shotTimerScale(); // Calculation of weight of shot while brew is running
-    }
-
-    if (config.get<bool>("hardware.sensors.pressure.enabled")) {
-        if (const unsigned long currentMillisPressure = millis(); currentMillisPressure - previousMillisPressure >= intervalPressure) {
-            previousMillisPressure = currentMillisPressure;
-            inputPressure = measurePressure();
-            inputPressureFilter = filterPressureValue(inputPressure);
         }
     }
 
@@ -1469,7 +1433,8 @@ void checkWaterTank() {
 
 void setRuntimePidState(const bool enabled) {
     pidON = enabled ? 1 : 0;
-    config.set<bool>("pid.enabled", enabled);
+    // Update via config system
+    Config::getInstance().set<bool>("pid.enabled", enabled);
 }
 
 void setSteamMode(bool steamMode) {

@@ -12,7 +12,11 @@
 
 #pragma once
 
+#include "Config.h"
 #include "brewStates.h"
+
+// Backward compatibility reference
+extern Config& config;
 #include "scaleHandler.h"
 
 // Brew control states
@@ -96,7 +100,7 @@ inline void checkBrewSwitch() {
     loggedEmptyWaterTank = false;
 
     // Convert toggle brew switch input to brew switch state
-    if (const int brewSwitchType = config.get<int>("hardware.switches.brew.type"); brewSwitchType == Switch::TOGGLE) {
+    if (const int brewSwitchType = Config::getInstance().get<int>("hardware.switches.brew.type"); brewSwitchType == Switch::TOGGLE) {
         if (currReadingBrewSwitch != brewSwitchReading) {
             currReadingBrewSwitch = brewSwitchReading;
         }
@@ -211,7 +215,7 @@ inline void debugPumpState(String label, String state) {
  * @return true if brew is running, false otherwise
  */
 inline bool brew() {
-    if (!config.get<bool>("hardware.switches.brew.enabled") || brewSwitch == nullptr) {
+    if (!Config::getInstance().get<bool>("hardware.switches.brew.enabled") || brewSwitch == nullptr) {
         return false; // brew switch is not enabled, so no brew process running
     }
 
@@ -230,10 +234,10 @@ inline bool brew() {
         currBrewTime = currentMillisTemp - startingTime;
     }
 
-    const int brewMode = config.get<int>("brew.mode");
-    const bool brewByTimeEnabled = brewMode != 0 && config.get<bool>("brew.by_time.enabled");
-    const bool brewByWeightEnabled = brewMode != 0 && config.get<bool>("brew.by_weight.enabled");
-    const bool preinfusionEnabled = config.get<bool>("brew.pre_infusion.enabled");
+    const int brewMode = Config::getInstance().get<int>("brew.mode");
+    const bool brewByTimeEnabled = brewMode != 0 && Config::getInstance().get<bool>("brew.by_time.enabled");
+    const bool brewByWeightEnabled = brewMode != 0 && Config::getInstance().get<bool>("brew.by_weight.enabled");
+    const bool preinfusionEnabled = Config::getInstance().get<bool>("brew.pre_infusion.enabled");
 
     // check if brewswitch was turned off after a brew; Brew only runs once even brewswitch is still pressed
     if (currBrewSwitchState == kBrewSwitchIdle) {
@@ -272,7 +276,8 @@ inline bool brew() {
                     currBrewState = kPreinfusion;
                 }
 
-                if (config.get<bool>("hardware.sensors.scale.enabled") && config.get<int>("hardware.sensors.scale.type") == 2 && config.get<bool>("brew.by_weight.enabled") && config.get<bool>("brew.by_weight.auto_tare")) {
+                if (Config::getInstance().get<bool>("hardware.sensors.scale.enabled") && Config::getInstance().get<int>("hardware.sensors.scale.type") == 2 && Config::getInstance().get<bool>("brew.by_weight.enabled") &&
+                    Config::getInstance().get<bool>("brew.by_weight.auto_tare")) {
                     LOG(INFO, "Tare scale");
 
                     if (scale) {
@@ -317,13 +322,13 @@ inline bool brew() {
                 pumpRelay->on();
                 debugPumpState("BrewRunning", "on");
 
-                const auto targetBrewWeight = ParameterRegistry::getInstance().getParameterById("brew.by_weight.target_weight")->getValueAs<float>();
+                const auto targetBrewWeight = Config::getInstance().get<double>("brew.by_weight.target_weight");
 
                 if (currBrewTime > totalTargetBrewTime && brewByTimeEnabled) {
                     LOG(INFO, "Brew reached time target");
                     currBrewState = kBrewFinished;
                 }
-                else if (config.get<bool>("hardware.sensors.scale.enabled") && currBrewWeight > targetBrewWeight && brewByWeightEnabled) {
+                else if (Config::getInstance().get<bool>("hardware.sensors.scale.enabled") && currBrewWeight > targetBrewWeight && brewByWeightEnabled) {
                     LOG(INFO, "Brew reached weight target");
                     currBrewState = kBrewFinished;
                 }
@@ -359,7 +364,7 @@ inline bool brew() {
  * @return true if manual flush is running, false otherwise
  */
 inline bool manualFlush() {
-    if (!config.get<bool>("hardware.switches.brew.enabled") || brewSwitch == nullptr) {
+    if (!Config::getInstance().get<bool>("hardware.switches.brew.enabled") || brewSwitch == nullptr) {
         return false; // brew switch is not enabled, so no brew process running
     }
 
@@ -407,7 +412,7 @@ inline bool manualFlush() {
  * @brief Backflush
  */
 inline void backflush() {
-    if (!config.get<bool>("hardware.switches.brew.enabled") || brewSwitch == nullptr) {
+    if (!Config::getInstance().get<bool>("hardware.switches.brew.enabled") || brewSwitch == nullptr) {
         return; // brew switch is not enabled, so no brew process running
     }
 

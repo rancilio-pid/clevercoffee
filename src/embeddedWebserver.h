@@ -18,6 +18,7 @@
 #include <ESPAsyncWebServer.h>
 
 #include "LittleFS.h"
+#include "Config.h"
 
 inline AsyncWebServer server(80);
 inline AsyncEventSource events("/events");
@@ -35,14 +36,14 @@ inline int historyValueCount = 0;
 void serverSetup();
 
 inline bool authenticate(AsyncWebServerRequest* request) {
-    if (!config.get<bool>("system.auth.enabled")) {
+    if (!Config::getInstance().get<bool>("system.auth.enabled")) {
         return true;
     }
 
     const auto clientIP = request->client()->remoteIP().toString();
     const auto requestedPath = request->url();
-    const auto username = config.get<String>("system.auth.username");
-    const auto password = config.get<String>("system.auth.password");
+    const auto username = Config::getInstance().get<String>("system.auth.username");
+    const auto password = Config::getInstance().get<String>("system.auth.password");
 
     if (request->authenticate(username.c_str(), password.c_str())) {
         LOGF(DEBUG, "Web auth OK: %s -> %s", clientIP.c_str(), requestedPath.c_str());
@@ -60,10 +61,6 @@ inline bool authenticate(AsyncWebServerRequest* request) {
     return false;
 }
 
-inline uint8_t flipUintValue(const uint8_t value) {
-    return (value + 3) % 2;
-}
-
 inline String getTempString() {
     JsonDocument doc;
 
@@ -77,88 +74,54 @@ inline String getTempString() {
     return jsonTemps;
 }
 
-// proper modulo function (% is remainder, so will return negatives)
-inline int mod(const int a, const int b) {
-    const int r = a % b;
-    return r < 0 ? r + b : r;
-}
-
-// rounds a number to 2 decimal places
-// example: round(3.14159) -> 3.14
-// (less characters when serialized to json)
-inline double round2(const double value) {
-    return std::round(value * 100.0) / 100.0;
-}
-
 inline String getValue(const String& varName) {
     try {
-        const auto e = ParameterRegistry::getInstance().getParameterById(varName.c_str());
+        auto& config = Config::getInstance();
 
-        if (e == nullptr) {
+        if (!config.hasParameter(varName)) {
             return "(unknown variable " + varName + ")";
         }
 
-        return e->getFormattedValue();
-    } catch (const std::out_of_range&) {
-        return "(unknown variable " + varName + ")";
+        // Try different types and return formatted value
+        bool boolValue;
+        if (config.tryGet(varName, boolValue)) {
+            return String(boolValue);
+        }
+
+        int intValue;
+        if (config.tryGet(varName, intValue)) {
+            return String(intValue);
+        }
+
+        uint8_t uint8Value;
+        if (config.tryGet(varName, uint8Value)) {
+            return String(uint8Value);
+        }
+
+        double doubleValue;
+        if (config.tryGet(varName, doubleValue)) {
+            return String(doubleValue, 2);
+        }
+
+        float floatValue;
+        if (config.tryGet(varName, floatValue)) {
+            return String(floatValue, 2);
+        }
+
+        String stringValue;
+        if (config.tryGet(varName, stringValue)) {
+            return stringValue;
+        }
+
+        return "(unknown type for " + varName + ")";
+    } catch (const std::exception& e) {
+        return "(error reading " + varName + ")";
     }
 }
 
-inline void paramToJson(const String& name, const std::shared_ptr<Parameter>& param, JsonVariant doc) {
-    doc["type"] = param->getType();
-    doc["name"] = name;
-    doc["displayName"] = param->getDisplayName();
-    doc["section"] = param->getSection();
-    doc["position"] = param->getPosition();
-    doc["hasHelpText"] = param->hasHelpText();
-    doc["show"] = param->shouldShow();
-
-    // Set parameter value using the appropriate method based on type
-    switch (param->getType()) {
-        case kInteger:
-            doc["value"] = static_cast<int>(param->getValue());
-            break;
-
-        case kUInt8:
-            doc["value"] = static_cast<uint8_t>(param->getValue());
-            break;
-
-        case kDouble:
-            doc["value"] = round2(param->getValue());
-            break;
-
-        case kFloat:
-            doc["value"] = round2(static_cast<float>(param->getValue()));
-            break;
-
-        case kCString:
-            doc["value"] = param->getStringValue();
-            break;
-
-        case kEnum:
-            {
-                doc["value"] = static_cast<int>(param->getValue());
-
-                const JsonArray options = doc["options"].to<JsonArray>();
-                const char* const* enumOptions = param->getEnumOptions();
-                const size_t enumCount = param->getEnumCount();
-
-                for (size_t i = 0; i < enumCount && enumOptions[i] != nullptr; i++) {
-                    auto optionObj = options.add<JsonObject>();
-                    optionObj["value"] = static_cast<int>(i);
-                    optionObj["label"] = enumOptions[i];
-                }
-
-                break;
-            }
-
-        default:
-            doc["value"] = param->getValue();
-            break;
-    }
-
-    doc["min"] = param->getMinValue();
-    doc["max"] = param->getMaxValue();
+inline void paramToJson(const String& name, const ParamDef& param, JsonVariant doc) {
+    JsonObject jsonObj = doc.to<JsonObject>();
+    param.toJson(jsonObj, name);
 }
 
 inline String getHeader(const String& varName) {
@@ -172,7 +135,7 @@ inline String getHeader(const String& varName) {
 }
 
 inline String staticProcessor(const String& var) {
-    // try replacing var for variables in ParameterRegistry
+    // try replacing var for variables in Config system
     if (var.startsWith("VAR_SHOW_")) {
         return getValue(var.substring(9)); // cut off "VAR_SHOW_"
     }
@@ -224,9 +187,9 @@ inline void serverSetup() {
 
         LOGF(DEBUG, "/togglePid requested, method: %d", request->method());
 
-        const auto pidParam = ParameterRegistry::getInstance().getParameterById("pid.enabled");
-        const bool newPidState = !pidParam->getValueAs<bool>();
-        ParameterRegistry::getInstance().setParameterValue("pid.enabled", newPidState);
+        const bool currentPidState = Config::getInstance().get<bool>("pid.enabled");
+        const bool newPidState = !currentPidState;
+        Config::getInstance().set("pid.enabled", newPidState);
 
         pidON = newPidState;
 
@@ -246,7 +209,7 @@ inline void serverSetup() {
         request->redirect("/");
     });
 
-    if (config.get<bool>("hardware.sensors.scale.enabled")) {
+    if (Config::getInstance().get<bool>("hardware.sensors.scale.enabled")) {
         server.on("/toggleTareScale", HTTP_POST, [](AsyncWebServerRequest* request) {
             if (!authenticate(request)) {
                 return request->requestAuthentication();
@@ -278,8 +241,8 @@ inline void serverSetup() {
         }
 
         if (request->method() == 1) { // HTTP_GET
-            const auto& registry = ParameterRegistry::getInstance();
-            const auto& parameters = registry.getParameters();
+            auto& config = Config::getInstance();
+            const auto& parameters = config.getParameters();
 
             // Check for filter parameter
             String filterType = "";
@@ -293,30 +256,33 @@ inline void serverSetup() {
             int filteredParameterCount = 0;
 
             // Get parameters based on filter
-            for (const auto& param : parameters) {
-                if (!param->shouldShow()) continue;
+            for (const auto& paramPair : parameters) {
+                const std::string& paramName = paramPair.first;
+                const ParamDef& param = paramPair.second;
+
+                if (!param.showCondition()) continue;
 
                 bool includeParam = false;
 
                 if (filterType == "hardware") {
-                    includeParam = param->getSection() >= 11 && param->getSection() <= 15;
+                    includeParam = param.section >= 11 && param.section <= 15;
                 }
                 else if (filterType == "behavior") {
-                    includeParam = param->getSection() >= 0 && param->getSection() <= 9;
+                    includeParam = param.section >= 0 && param.section <= 9;
                 }
                 else if (filterType == "other") {
-                    includeParam = param->getSection() == 10;
+                    includeParam = param.section == 10;
                 }
                 else if (filterType == "all") {
                     includeParam = true;
                 }
                 else {
-                    includeParam = param->getSection() == 0 || param->getSection() == 1 || param->getSection() == 10;
+                    includeParam = param.section == 0 || param.section == 1 || param.section == 10;
                 }
 
                 if (includeParam) {
                     JsonObject paramObj = array.add<JsonObject>();
-                    paramToJson(param->getId(), param, paramObj);
+                    paramToJson(String(paramName.c_str()), param, paramObj);
                     filteredParameterCount++;
                 }
             }
@@ -326,7 +292,7 @@ inline void serverSetup() {
             request->send(response);
         }
         else if (request->method() == 2) { // HTTP_POST
-            auto& registry = ParameterRegistry::getInstance();
+            auto& config = Config::getInstance();
 
             String responseMessage = "OK";
             bool hasErrors = false;
@@ -339,18 +305,49 @@ inline void serverSetup() {
                     const String& value = p->value();
 
                     try {
-                        std::shared_ptr<Parameter> paramPtr = registry.getParameterById(varName.c_str());
-
-                        if (paramPtr == nullptr || !paramPtr->shouldShow()) {
+                        if (!config.hasParameter(varName)) {
                             continue;
                         }
 
-                        if (paramPtr->getType() == kCString) {
-                            registry.setParameterValue(varName.c_str(), value);
+                        // Try to determine parameter type and set accordingly
+                        bool boolValue;
+                        if (config.tryGet(varName, boolValue)) {
+                            bool newValue = (value == "true" || value == "1");
+                            config.set(varName, newValue);
                         }
                         else {
-                            double newVal = std::stod(value.c_str());
-                            registry.setParameterValue(varName.c_str(), newVal);
+                            String stringValue;
+                            if (config.tryGet(varName, stringValue)) {
+                                config.set(varName, value);
+                            }
+                            else {
+                                // Try as numeric value
+                                double newVal = std::stod(value.c_str());
+
+                                // Try different numeric types
+                                int intValue;
+                                if (config.tryGet(varName, intValue)) {
+                                    config.set(varName, static_cast<int>(newVal));
+                                }
+                                else {
+                                    uint8_t uint8Value;
+                                    if (config.tryGet(varName, uint8Value)) {
+                                        config.set(varName, static_cast<uint8_t>(newVal));
+                                    }
+                                    else {
+                                        float floatValue;
+                                        if (config.tryGet(varName, floatValue)) {
+                                            config.set(varName, static_cast<float>(newVal));
+                                        }
+                                        else {
+                                            double doubleValue;
+                                            if (config.tryGet(varName, doubleValue)) {
+                                                config.set(varName, newVal);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     } catch (const std::exception& e) {
                         LOGF(INFO, "Parameter %s processing failed: %s", varName.c_str(), e.what());
@@ -359,7 +356,7 @@ inline void serverSetup() {
                 }
             }
 
-            registry.forceSave();
+            // Config automatically saves to NVS, but we still need to trigger MQTT updates
             writeSysParamsToMQTT(true);
 
             AsyncWebServerResponse* response = request->beginResponse(200, "text/plain", hasErrors ? "Partial Success" : "OK");
@@ -384,16 +381,22 @@ inline void serverSetup() {
         }
 
         const String& varValue = p->value();
+        auto& config = Config::getInstance();
 
-        const std::shared_ptr<Parameter> param = ParameterRegistry::getInstance().getParameterById(varValue.c_str());
-
-        if (param == nullptr) {
+        if (!config.hasParameter(varValue)) {
             request->send(404, "application/json", "parameter not found");
             return;
         }
 
-        doc["name"] = varValue;
-        doc["helpText"] = param->getHelpText();
+        const auto& parameters = config.getParameters();
+        auto it = parameters.find(varValue.c_str());
+        if (it != parameters.end()) {
+            doc["name"] = varValue;
+            doc["helpText"] = it->second.helpText;
+        } else {
+            doc["name"] = varValue;
+            doc["helpText"] = "";
+        }
 
         String helpJson;
         serializeJson(doc, helpJson);
@@ -451,33 +454,16 @@ inline void serverSetup() {
             return request->requestAuthentication();
         }
 
-        if (!LittleFS.exists("/config.json")) {
-            request->send(404, "text/plain", "Config file not found");
+        // Use the new config system to export current configuration
+        String configJson = Config::getInstance().exportToJson();
+
+        if (configJson.isEmpty()) {
+            request->send(500, "text/plain", "Failed to export configuration");
             return;
         }
 
-        File configFile = LittleFS.open("/config.json", "r");
-
-        if (!configFile) {
-            request->send(500, "text/plain", "Failed to open config file");
-            return;
-        }
-
-        JsonDocument doc;
-        const DeserializationError error = deserializeJson(doc, configFile);
-        configFile.close();
-
-        if (error) {
-            request->send(500, "text/plain", "Failed to parse config file");
-            return;
-        }
-
-        // Serialize as pretty JSON
-        String prettifiedJson;
-        serializeJsonPretty(doc, prettifiedJson);
-
-        // Send the prettified JSON
-        AsyncWebServerResponse* response = request->beginResponse(200, "application/json", prettifiedJson);
+        // Send the JSON configuration
+        AsyncWebServerResponse* response = request->beginResponse(200, "application/json", configJson);
         response->addHeader("Content-Disposition", "attachment; filename=\"config.json\"");
         request->send(response);
     });
@@ -511,7 +497,7 @@ inline void serverSetup() {
             if (final) {
                 LOGF(INFO, "Config upload finished: %s, total size: %u bytes", filename.c_str(), totalSize);
 
-                if (bool isValid = config.validateAndApplyFromJson(uploadBuffer)) {
+                if (bool isValid = Config::getInstance().validateAndApplyFromJson(uploadBuffer)) {
                     LOG(INFO, "Configuration validated and applied successfully");
 
                     AsyncWebServerResponse* response = request->beginResponse(200, "application/json", R"({"success": true, "message": "Configuration validated and applied successfully.", "restart": true})");
@@ -546,9 +532,10 @@ inline void serverSetup() {
             return request->requestAuthentication();
         }
 
-        const bool removed = LittleFS.remove("/config.json");
+        // Use the new config system to reset all parameters to defaults
+        Config::getInstance().resetAllToDefaults();
 
-        request->send(200, "text/plain", removed ? "Factory reset. Restarting..." : "Could not delete config.json. Restarting...");
+        request->send(200, "text/plain", "Factory reset completed. Restarting...");
 
         delay(100);
         ESP.restart();

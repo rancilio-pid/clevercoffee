@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "../Config.h"
+
 /**
  * @brief Send data to display
  */
