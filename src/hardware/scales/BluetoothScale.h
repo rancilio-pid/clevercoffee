@@ -23,6 +23,9 @@ class BluetoothScale : public Scale {
         void tare() override;
         void setSamples(int samples) override;
         [[nodiscard]] bool isConnected() const override;
+        void startTimer() const;
+        void stopTimer() const;
+        void resetTimer() const;
 
         void updateConnection();
         [[nodiscard]] bool isConnecting() const;

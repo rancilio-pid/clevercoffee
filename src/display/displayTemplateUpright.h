@@ -44,7 +44,7 @@ inline void printScreen() {
         u8g2->setFont(u8g2_font_profont11_tf);
         displayMessage(langstring_error_tsensor_ur[0], langstring_error_tsensor_ur[1], String(temperature), langstring_error_tsensor_ur[2], langstring_error_tsensor_ur[3], langstring_error_tsensor_ur[4]);
     }
-    else if (config.get<bool>("display.pid_off_logo") && machineState == kStandby) {
+    else if (machineState == kStandby) {
         u8g2->drawXBMP(6, 50, Off_Logo_width, Off_Logo_height, Off_Logo);
         u8g2->setCursor(1, 110);
         u8g2->setFont(u8g2_font_profont10_tf);
@@ -72,7 +72,7 @@ inline void printScreen() {
         u8g2->drawLine(1, 126, pidOutput / 16.13 + 1, 126);
 
         // logos that only fill the lower half leaving temperatures, top and bottom boxes
-        if (config.get<bool>("display.pid_off_logo") && machineState == kPidDisabled) {
+        if (machineState == kPidDisabled) {
             u8g2->drawXBMP(6, 50, Off_Logo_width, Off_Logo_height, Off_Logo);
             u8g2->setCursor(1, 110);
             u8g2->setFont(u8g2_font_profont10_tf);

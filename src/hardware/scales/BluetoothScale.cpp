@@ -118,6 +118,24 @@ void BluetoothScale::tare() {
     }
 }
 
+void BluetoothScale::startTimer() const {
+    if (connected) {
+        return bleScale->startTimer();
+    }
+}
+
+void BluetoothScale::stopTimer() const {
+    if (connected) {
+        return bleScale->stopTimer();
+    }
+}
+
+void BluetoothScale::resetTimer() const {
+    if (connected) {
+        return bleScale->resetTimer();
+    }
+}
+
 void BluetoothScale::setSamples(int samples) {
     // Most BLE scales handle sampling internally
 }

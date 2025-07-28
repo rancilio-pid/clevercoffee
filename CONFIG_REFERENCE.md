@@ -109,6 +109,11 @@ This document describes all configuration parameters available in the `config.js
 - **Default**: `false`
 - **Description**: Show brew timer in fullscreen mode
 
+### `display.blescale_brew_timer`
+- **Type**: Boolean
+- **Default**: `false`
+- **Description**: Enable starting and stopping the brew timer on a connected BLE scale
+
 ### `display.fullscreen_manual_flush_timer`
 - **Type**: Boolean
 - **Default**: `false`
@@ -127,11 +132,6 @@ This document describes all configuration parameters available in the `config.js
     - `1`: Deutsch
     - `2`: Español
 - **Description**: OLED display language selection
-
-### `display.pid_off_logo`
-- **Type**: Boolean
-- **Default**: `true`
-- **Description**: Display fullscreen logo when PID is disabled
 
 ### `display.post_brew_timer_duration`
 - **Type**: Double (seconds)

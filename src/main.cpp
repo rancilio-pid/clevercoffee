@@ -79,7 +79,6 @@ bool featureFullscreenManualFlushTimer = false;
 bool featureFullscreenHotWaterTimer = false;
 double postBrewTimerDuration = POST_BREW_TIMER_DURATION;
 bool featureHeatingLogo = false;
-bool featurePidOffLogo = false;
 
 // WiFi
 WiFiManager wm;

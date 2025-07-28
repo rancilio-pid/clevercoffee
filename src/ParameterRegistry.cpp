@@ -36,7 +36,6 @@ extern bool featureFullscreenManualFlushTimer;
 extern bool featureFullscreenHotWaterTimer;
 extern double postBrewTimerDuration;
 extern bool featureHeatingLogo;
-extern bool featurePidOffLogo;
 extern bool steamON;
 extern bool backflushOn;
 extern double temperature;
@@ -551,10 +550,22 @@ void ParameterRegistry::initialize(Config& config) {
     );
 
     addBoolConfigParam(
+        "display.blescale_brew_timer",
+        "Enable BLE Scale Brew Timer",
+        sDisplaySection,
+        905,
+        nullptr,
+        "Enable starting and stopping the brew timer on a connected BLE scale."
+            "Note that there might be a certain delay between the command being sent and the timer on the scale actually starting."
+            "Consider disabling the internal brew timer if you want to use this feature.",
+        [&config] { return config.get<int>("hardware.sensors.scale.type") == 2; }
+    );
+
+    addBoolConfigParam(
         "display.fullscreen_manual_flush_timer",
         "Enable Fullscreen Manual Flush Timer",
         sDisplaySection,
-        905,
+        906,
         &featureFullscreenManualFlushTimer,
         "Enable fullscreen overlay during manual flush"
     );
@@ -563,7 +574,7 @@ void ParameterRegistry::initialize(Config& config) {
         "display.fullscreen_hot_water_timer",
         "Enable Fullscreen Hot Water Timer",
         sDisplaySection,
-        906,
+        907,
         &featureFullscreenHotWaterTimer,
         "Enable fullscreen overlay during hot water mode"
     );
@@ -573,7 +584,7 @@ void ParameterRegistry::initialize(Config& config) {
         "Post Brew Timer Duration (s)",
         kDouble,
         sDisplaySection,
-        907,
+        908,
         &postBrewTimerDuration,
         POST_BREW_TIMER_DURATION_MIN,
         POST_BREW_TIMER_DURATION_MAX,
@@ -584,18 +595,9 @@ void ParameterRegistry::initialize(Config& config) {
         "display.heating_logo",
         "Enable Heating Logo",
         sDisplaySection,
-        908,
+        909,
         &featureHeatingLogo,
         "full screen logo will be shown if temperature is 5°C below setpoint"
-    );
-
-    addBoolConfigParam(
-        "display.pid_off_logo",
-        "Enable 'PID Disabled' Logo",
-        sDisplaySection,
-        909,
-        &featurePidOffLogo,
-        "full screen logo will be shown if pid is disabled"
     );
 
     // MQTT section

@@ -316,11 +316,11 @@ class Config {
             _configDefs.emplace("display.inverted", ConfigDef::forBool(false));
             _configDefs.emplace("display.language", ConfigDef::forInt(0, 0, 2));
             _configDefs.emplace("display.fullscreen_brew_timer", ConfigDef::forBool(false));
+            _configDefs.emplace("display.blescale_brew_timer", ConfigDef::forBool(false));
             _configDefs.emplace("display.fullscreen_manual_flush_timer", ConfigDef::forBool(false));
             _configDefs.emplace("display.fullscreen_hot_water_timer", ConfigDef::forBool(false));
             _configDefs.emplace("display.post_brew_timer_duration", ConfigDef::forDouble(POST_BREW_TIMER_DURATION, POST_BREW_TIMER_DURATION_MIN, POST_BREW_TIMER_DURATION_MAX));
             _configDefs.emplace("display.heating_logo", ConfigDef::forBool(true));
-            _configDefs.emplace("display.pid_off_logo", ConfigDef::forBool(true));
 
             // Hardware - OLED
             _configDefs.emplace("hardware.oled.enabled", ConfigDef::forBool(true));

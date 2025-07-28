@@ -633,7 +633,7 @@ inline bool displayMachineState() {
     }
 
     // Offline logo
-    if (featurePidOffLogo == 1 && machineState == kPidDisabled) {
+    if (machineState == kPidDisabled) {
         u8g2->clearBuffer();
         u8g2->drawXBMP(38, 0, Off_Logo_width, Off_Logo_height, Off_Logo);
         u8g2->setCursor(0, 55);
@@ -643,7 +643,7 @@ inline bool displayMachineState() {
         return true;
     }
 
-    if (featurePidOffLogo == 1 && machineState == kStandby) {
+    if (machineState == kStandby) {
         u8g2->clearBuffer();
         u8g2->drawXBMP(38, 0, Off_Logo_width, Off_Logo_height, Off_Logo);
         u8g2->setCursor(36, 55);
