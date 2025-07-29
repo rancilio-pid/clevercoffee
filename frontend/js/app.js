@@ -7,7 +7,7 @@ const vueApp = Vue.createApp({
             parametersHelpTexts: [],
             isPostingForm: false,
             showPostSucceeded: false,
-            filter: 'behavior',
+            filter: '',
 
             // Config upload properties
             selectedFile: null,
@@ -40,21 +40,44 @@ const vueApp = Vue.createApp({
     },
 
     methods: {
-        fetchParameters(filter = 'behavior') {
-            let url = "/parameters";
+        async fetchParameters(filter = '') {
+            this.parameters = [];
+            let offset = 0;
+            const limit = 20;
+            let moreData = true;
+
+            while (moreData) {
+                // Build URL with dynamic filter, offset, and limit
+                let url = `/parameters?offset=${offset}&limit=${limit}`;
 
             if (filter) {
-                url += "?filter=" + filter;
-            }
+                    url += `&filter=${encodeURIComponent(filter)}`;
+                }
 
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    this.parameters = data.sort((a,b) => a["position"] - b["position"]);
-                })
-                .catch(err => {
-                    console.error("Error fetching parameters:", err);
-                })
+                try {
+                    const response = await fetch(url);
+                    const json = await response.json();
+
+                    if (!json.parameters || json.parameters.length === 0) {
+                        moreData = false; // no more data
+                        break;
+                    }
+
+                    // Append new parameters to the existing array
+                    this.parameters.push(...json.parameters);
+
+                    if (json.parameters.length < limit) {
+                        moreData = false; // last page reached
+                    } 
+                    else {
+                        offset += limit; // increment offset for next batch
+                    }
+                } 
+                catch (err) {
+                    console.error('Error fetching parameters:', err);
+                    moreData = false;
+                }
+            }
         },
         postParameters() {
             // Only post parameters that are currently displayed (filtered parameters)

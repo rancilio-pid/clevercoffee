@@ -163,9 +163,9 @@ inline void paramToJson(const String& name, const std::shared_ptr<Parameter>& pa
 
 inline String getHeader(const String& varName) {
     static const std::unordered_map<std::string, const char*> headers = {
-        {"FONTAWESOME", R"(<link href="/css/fontawesome-6.2.1.min.css" rel="stylesheet">)"}, {"BOOTSTRAP", R"(<link href="/css/bootstrap-5.2.3.min.css" rel="stylesheet">)"},
-        {"BOOTSTRAP_BUNDLE", "<script src=\"/js/bootstrap.bundle.5.2.3.min.js\"></script>"}, {"VUEJS", "<script src=\"/js/vue.3.2.47.min.js\"></script>"},
-        {"VUE_NUMBER_INPUT", "<script src=\"/js/vue-number-input.min.js\"></script>"},       {"UPLOT", R"(<script src="/js/uPlot.1.6.28.min.js"></script><link rel="stylesheet" href="/css/uPlot.min.css">)"}};
+        {"FONTAWESOME", R"(<link href="/css/fontawesome-6.2.1.min.css" rel="stylesheet">)"},       {"BOOTSTRAP", R"(<link href="/css/bootstrap-5.2.3.min.css" rel="stylesheet">)"},
+        {"BOOTSTRAP_BUNDLE", "<script src=\"/js/bootstrap.bundle.5.2.3.min.js\" defer></script>"}, {"VUEJS", "<script src=\"/js/vue.3.2.47.min.js\" defer></script>"},
+        {"VUE_NUMBER_INPUT", "<script src=\"/js/vue-number-input.min.js\" defer></script>"},       {"UPLOT", R"(<script src="/js/uPlot.1.6.28.min.js" defer></script><link rel="stylesheet" href="/css/uPlot.min.css">)"}};
 
     const auto it = headers.find(varName.c_str());
     return it != headers.end() ? String(it->second) : String("");
@@ -273,6 +273,10 @@ inline void serverSetup() {
     }
 
     server.on("/parameters", [](AsyncWebServerRequest* request) {
+        if (!request->client() || !request->client()->connected()) {
+            return;
+        }
+
         if (!authenticate(request)) {
             return request->requestAuthentication();
         }
@@ -287,14 +291,30 @@ inline void serverSetup() {
                 filterType = request->getParam("filter")->value();
             }
 
-            AsyncJsonResponse* response = new AsyncJsonResponse(false);
-            JsonArray array = response->getRoot().to<JsonArray>();
+            // Defaults
+            int offset = 0;
+            int limit = 20;
 
+            if (request->hasParam("offset")) {
+                offset = request->getParam("offset")->value().toInt();
+            }
+
+            if (request->hasParam("limit")) {
+                limit = request->getParam("limit")->value().toInt();
+            }
+
+            AsyncResponseStream* response = request->beginResponseStream("application/json");
+            response->print("{\"parameters\":[");
+
+            bool first = true;
             int filteredParameterCount = 0;
+            int sent = 0;
 
             // Get parameters based on filter
             for (const auto& param : parameters) {
-                if (!param->shouldShow()) continue;
+                if (!param->shouldShow()) {
+                    continue;
+                }
 
                 bool includeParam = false;
 
@@ -315,14 +335,30 @@ inline void serverSetup() {
                 }
 
                 if (includeParam) {
-                    JsonObject paramObj = array.add<JsonObject>();
-                    paramToJson(param->getId(), param, paramObj);
-                    filteredParameterCount++;
+                    if (filteredParameterCount++ < offset) {
+                        continue;
+                    }
+
+                    if (sent >= limit) {
+                        break;
+                    }
+
+                    if (!first) {
+                        response->print(",");
+                    }
+
+                    first = false;
+
+                    JsonDocument doc;
+                    paramToJson(param->getId(), param, doc.to<JsonVariant>());
+                    serializeJson(doc, *response);
+
+                    sent++;
+                    LOGF(DEBUG, "[Heap] Free: %u  MaxAlloc: %u, Param: %d", ESP.getFreeHeap(), heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT), filteredParameterCount);
                 }
             }
 
-            LOGF(DEBUG, "/parameters returning %d parameters", filteredParameterCount);
-            response->setLength();
+            response->printf("],\"offset\":%d,\"limit\":%d,\"returned\":%d}", offset, limit, sent);
             request->send(response);
         }
         else if (request->method() == 2) { // HTTP_POST
