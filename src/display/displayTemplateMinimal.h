@@ -52,18 +52,18 @@ inline void printScreen() {
         if (isrCounter < 500) {
             // limit to 4 characters
             u8g2->setCursor(2, 20);
-            u8g2->setFont(u8g2_font_profont22_tf);
+            u8g2->setFont(u8g2_font_profont22_tr);
             u8g2->print(temperature, numDecimalsInput);
             u8g2->setFont(u8g2_font_open_iconic_arrow_2x_t);
             u8g2->print(static_cast<char>(78));
             u8g2->setCursor(78, 20);
-            u8g2->setFont(u8g2_font_profont22_tf);
+            u8g2->setFont(u8g2_font_profont22_tr);
             u8g2->print(setpoint, numDecimalsSetpoint);
         }
     }
     else {
         u8g2->setCursor(2, 20);
-        u8g2->setFont(u8g2_font_profont22_tf);
+        u8g2->setFont(u8g2_font_profont22_tr);
         u8g2->print(temperature, numDecimalsInput);
         u8g2->setFont(u8g2_font_open_iconic_arrow_2x_t);
         u8g2->setCursor(56, 24);
@@ -76,7 +76,7 @@ inline void printScreen() {
         }
 
         u8g2->setCursor(79, 20);
-        u8g2->setFont(u8g2_font_profont22_tf);
+        u8g2->setFont(u8g2_font_profont22_tr);
         u8g2->print(setpoint, numDecimalsSetpoint);
     }
 

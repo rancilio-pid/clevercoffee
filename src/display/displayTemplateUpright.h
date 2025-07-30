@@ -88,7 +88,7 @@ inline void printScreen() {
         else if (config.get<bool>("display.heating_logo") && machineState == kPidNormal && setpoint - temperature > 5.0) {
             // For status info
             u8g2->drawXBMP(12, 50, Heating_Logo_width, Heating_Logo_height, Heating_Logo);
-            u8g2->setFont(u8g2_font_fub17_tf);
+            u8g2->setFont(u8g2_font_fub17_tr);
             u8g2->setCursor(8, 90);
             u8g2->print(temperature, 1);
         }
@@ -104,7 +104,7 @@ inline void printScreen() {
                 u8g2->setCursor(1, 55);
             }
 
-            u8g2->setFont(u8g2_font_profont22_tf);
+            u8g2->setFont(u8g2_font_profont22_tr);
 
             if (machineState == kManualFlush) {
                 u8g2->print("FLUSH");

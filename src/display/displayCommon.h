@@ -171,7 +171,7 @@ inline void drawTemperaturebar(const int x, const int heightRange) {
  * @brief Draw the temperature in big font at given position
  */
 inline void displayTemperature(const int x, const int y) {
-    u8g2->setFont(u8g2_font_fub30_tf);
+    u8g2->setFont(u8g2_font_fub30_tn);
 
     if (temperature < 99.499) {
         u8g2->setCursor(x + 20, y);
@@ -340,7 +340,7 @@ inline void displayBrewWeight(const int x, const int y, const float weight, cons
  */
 inline void displayBrewtimeFs(const int x, const int y, const double brewtime) {
     if (config.get<int>("display.template") == 4) {
-        u8g2->setFont(u8g2_font_fub20_tf);
+        u8g2->setFont(u8g2_font_fub20_tn);
         if (brewtime < 9950.000) {
             u8g2->setCursor(x + 15, y);
         }
@@ -353,7 +353,7 @@ inline void displayBrewtimeFs(const int x, const int y, const double brewtime) {
         u8g2->print("s");
     }
     else {
-        u8g2->setFont(u8g2_font_fub25_tf);
+        u8g2->setFont(u8g2_font_fub25_tn);
 
         if (brewtime < 9950.000) {
             u8g2->setCursor(x + 16, y);
@@ -363,13 +363,13 @@ inline void displayBrewtimeFs(const int x, const int y, const double brewtime) {
         }
 
         u8g2->print(brewtime / 1000, 1);
-        u8g2->setFont(u8g2_font_profont15_tf);
+        u8g2->setFont(u8g2_font_profont12_tf);
 
         if (brewtime < 9950.000) {
-            u8g2->setCursor(x + 67, y + 14);
+            u8g2->setCursor(x + 67, y + 16);
         }
         else {
-            u8g2->setCursor(x + 69, y + 14);
+            u8g2->setCursor(x + 69, y + 16);
         }
 
         u8g2->print("s");
@@ -502,7 +502,7 @@ inline bool displayFullscreenBrewTimer() {
             u8g2->drawXBMP(12, 12, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
 
             if (config.get<bool>("hardware.sensors.scale.enabled")) {
-                u8g2->setFont(u8g2_font_profont22_tf);
+                u8g2->setFont(u8g2_font_profont22_tr);
                 u8g2->setCursor(5, 70);
                 u8g2->print(currBrewTime / 1000, 1);
                 u8g2->print("s");
@@ -519,7 +519,7 @@ inline bool displayFullscreenBrewTimer() {
             u8g2->drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
 
             if (config.get<bool>("hardware.sensors.scale.enabled")) {
-                u8g2->setFont(u8g2_font_profont22_tf);
+                u8g2->setFont(u8g2_font_profont22_tr);
                 u8g2->setCursor(64, 15);
                 u8g2->print(currBrewTime / 1000, 1);
                 u8g2->print("s");
@@ -623,7 +623,7 @@ inline bool displayMachineState() {
         displayStatusbar();
 
         u8g2->drawXBMP(0, 20, Heating_Logo_width, Heating_Logo_height, Heating_Logo);
-        u8g2->setFont(u8g2_font_fub25_tf);
+        u8g2->setFont(u8g2_font_fub25_tn);
         u8g2->setCursor(50, 30);
         u8g2->print(temperature, 1);
         u8g2->drawCircle(122, 32, 3);
@@ -676,7 +676,7 @@ inline bool displayMachineState() {
     // Backflush
     if (machineState == kBackflush) {
         u8g2->clearBuffer();
-        u8g2->setFont(u8g2_font_fub17_tf);
+        u8g2->setFont(u8g2_font_fub17_tr);
         u8g2->setCursor(2, 10);
         u8g2->print("Backflush");
 
@@ -698,7 +698,7 @@ inline bool displayMachineState() {
                 break;
 
             default:
-                u8g2->setFont(u8g2_font_fub17_tf);
+                u8g2->setFont(u8g2_font_fub17_tr);
                 u8g2->setCursor(42, 42);
                 u8g2->print(currBackflushCycles, 0);
                 u8g2->print("/");

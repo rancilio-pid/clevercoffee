@@ -322,15 +322,17 @@ inline bool brew() {
                 pumpRelay->on();
                 debugPumpState("BrewRunning", "on");
 
-                const auto targetBrewWeight = ParameterRegistry::getInstance().getParameterById("brew.by_weight.target_weight")->getValueAs<float>();
-
                 if (currBrewTime > totalTargetBrewTime && brewByTimeEnabled) {
                     LOG(INFO, "Brew reached time target");
                     currBrewState = kBrewFinished;
                 }
-                else if (config.get<bool>("hardware.sensors.scale.enabled") && currBrewWeight > targetBrewWeight && brewByWeightEnabled) {
-                    LOG(INFO, "Brew reached weight target");
-                    currBrewState = kBrewFinished;
+                else if (config.get<bool>("hardware.sensors.scale.enabled")) {
+                    const auto targetBrewWeight = ParameterRegistry::getInstance().getParameterById("brew.by_weight.target_weight")->getValueAs<float>();
+
+                    if (currBrewWeight > targetBrewWeight && brewByWeightEnabled) {
+                        LOG(INFO, "Brew reached weight target");
+                        currBrewState = kBrewFinished;
+                    }
                 }
 
                 break;
