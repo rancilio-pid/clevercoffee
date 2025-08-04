@@ -12,6 +12,7 @@ TempSensorDallas::TempSensorDallas(const int GPIOPin) {
     dallasSensor_->begin();
     dallasSensor_->getAddress(sensorDeviceAddress_, 0);
     dallasSensor_->setResolution(sensorDeviceAddress_, 10);
+    dallasSensor_->setWaitForConversion(false);
 
     // Request first temperature conversion directly:
     dallasSensor_->requestTemperaturesByAddress(sensorDeviceAddress_);
