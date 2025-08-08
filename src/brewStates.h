@@ -30,5 +30,6 @@ enum BackflushState {
     kBackflushIdle = 10,
     kBackflushFilling = 20,
     kBackflushFlushing = 30,
-    kBackflushFinished = 40
+    kBackflushEnding = 40,
+    kBackflushFinished = 50
 };

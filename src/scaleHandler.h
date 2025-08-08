@@ -12,7 +12,7 @@
 #include "hardware/scales/HX711Scale.h"
 
 void displayScaleFailed();
-void displayWrappedMessage(const String& msg);
+void displayWrappedMessage(const String& message, int x = 0, int startY = 0, int spacing = 2, boolean clearSend = true, boolean wrapWord = false);
 
 inline bool scaleCalibrationOn = false;
 inline bool scaleTareOn = false;
@@ -223,17 +223,10 @@ inline void checkWeight() {
 
     if (scaleTareOn) {
         scaleTareOn = false;
-        u8g2->clearBuffer();
-        u8g2->drawStr(0, 2, "Taring scale,");
-        u8g2->drawStr(0, 12, "remove any load!");
-        u8g2->drawStr(0, 22, "....");
-        u8g2->sendBuffer();
+        displayWrappedMessage("Taring scale,\nremove any load!\n....", 0, 2);
         delay(2000);
-
         scale->tare();
-
-        u8g2->drawStr(0, 32, "done");
-        u8g2->sendBuffer();
+        displayWrappedMessage("Taring scale,\nremove any load!\n....\ndone", 0, 2);
         delay(2000);
     }
 }

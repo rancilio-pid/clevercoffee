@@ -277,8 +277,6 @@ int getSignalStrength() {
     return 0;
 }
 
-void displayMessage(const String& text1, const String& text2, const String& text3, const String& text4, const String& text5, const String& text6);
-void displayLogo(const String& displaymessagetext, const String& displaymessagetext2);
 bool shouldDisplayBrewTimer();
 void u8g2_prepare();
 
@@ -813,7 +811,7 @@ void wiFiSetup() {
         wm.setConfigPortalTimeout(60); // sec timeout for captive portal
 
         if (oledEnabled) {
-            displayLogo("Starting Portal AP", hostname.c_str());
+            displayLogo("Starting Portal AP\n" + hostname);
         }
 
         wifiConnected = wm.startConfigPortal(hostname.c_str(), pass);
@@ -828,22 +826,26 @@ void wiFiSetup() {
             LOG(ERROR, "Failed to save config to filesystem!");
         }
 
-        LOGF(INFO, "WiFi connected - IP = %i.%i.%i.%i", WiFi.localIP()[0], WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3]);
+        char ipStr[16];
+        IPAddress ip = WiFi.localIP();
+        snprintf(ipStr, sizeof(ipStr), "%u.%u.%u.%u", ip[0], ip[1], ip[2], ip[3]);
+        LOGF(INFO, "WiFi connected - IP = %s", ipStr);
 
         byte mac[6];
         WiFi.macAddress(mac);
-        const String macaddr0 = number2string(mac[0]);
-        const String macaddr1 = number2string(mac[1]);
-        const String macaddr2 = number2string(mac[2]);
-        const String macaddr3 = number2string(mac[3]);
-        const String macaddr4 = number2string(mac[4]);
-        const String macaddr5 = number2string(mac[5]);
-        const String completemac = macaddr0 + macaddr1 + macaddr2 + macaddr3 + macaddr4 + macaddr5;
-
-        LOGF(DEBUG, "MAC-ADDRESS: %s", completemac.c_str());
+        char fullMac[18];
+        snprintf(fullMac, sizeof(fullMac), "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+        LOGF(INFO, "MAC-ADDRESS: %s", fullMac);
 
         if (oledEnabled) {
-            displayLogo(langstring_connectwifi1, wm.getWiFiSSID(true));
+            displayLogo(String(langstring_connectwifi1) + '\n' + wm.getWiFiSSID(true));
+            delay(1500);
+
+            if (config.get<int>("display.template") == 4) {
+                snprintf(ipStr, sizeof(ipStr), "%u\n%u\n%u\n%u", ip[0], ip[1], ip[2], ip[3]);
+            }
+
+            displayLogo(String(langstring_connectip) + '\n' + String(ipStr));
         }
 
         if (restartAfterAP) {
@@ -856,7 +858,7 @@ void wiFiSetup() {
         LOG(INFO, "WiFi connection timed out...");
 
         if (oledEnabled) {
-            displayLogo(langstring_nowifi[0], langstring_nowifi[1]);
+            displayLogo(String(langstring_nowifi[0]) + '\n' + String(langstring_nowifi[1]));
         }
 
         wm.disconnect();
@@ -934,7 +936,12 @@ void setup() {
             const int templateId = config.get<int>("display.template");
             DisplayTemplateManager::initializeDisplay(templateId);
 
-            displayLogo(String("Version "), String(sysVersion));
+            if (u8g2->getUTF8Width(sysVersion) > u8g2->getDisplayWidth()) {
+                displayLogo(String("Version ") + String(sysVersion), true);
+            }
+            else {
+                displayLogo(String("Version ") + '\n' + String(sysVersion), true);
+            }
         }
         else {
             LOG(ERROR, "Error initializing the display!");
@@ -1140,6 +1147,9 @@ void setup() {
     // Init Scale
     if (config.get<bool>("hardware.sensors.scale.enabled")) {
         initScale();
+    }
+    else if (config.get<bool>("hardware.oled.enabled")) {
+        delay(2000); // give time to display IP address
     }
 
     if (config.get<bool>("hardware.sensors.pressure.enabled")) {

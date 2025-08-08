@@ -41,8 +41,7 @@ inline void printScreen() {
         u8g2->drawXBMP(8, 50, Water_Tank_Empty_Logo_width, Water_Tank_Empty_Logo_height, Water_Tank_Empty_Logo);
     }
     else if (machineState == kSensorError) {
-        u8g2->setFont(u8g2_font_profont11_tf);
-        displayMessage(langstring_error_tsensor_ur[0], langstring_error_tsensor_ur[1], String(temperature), langstring_error_tsensor_ur[2], langstring_error_tsensor_ur[3], langstring_error_tsensor_ur[4]);
+        displayWrappedMessage(String(langstring_error_tsensor[0]) + String(temperature) + '\n' + String(langstring_error_tsensor[1]));
     }
     else if (machineState == kStandby) {
         u8g2->drawXBMP(6, 50, Off_Logo_width, Off_Logo_height, Off_Logo);
@@ -108,6 +107,10 @@ inline void printScreen() {
 
             if (machineState == kManualFlush) {
                 u8g2->print("FLUSH");
+            }
+            else if (machineState == kBackflush) {
+                u8g2->setFont(u8g2_font_profont15_tr);
+                u8g2->print("BACKFLUSH");
             }
             else if (shouldDisplayBrewTimer()) {
                 u8g2->print("BREW");

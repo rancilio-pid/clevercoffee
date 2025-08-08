@@ -93,7 +93,7 @@ inline void checkPowerSwitch() {
             u8g2->setPowerSave(0);
 
             // Display reboot message
-            displayMessage("REBOOTING", "Please wait...", "", "", "", "");
+            displayWrappedMessage("REBOOTING\nPlease wait...");
             delay(1000);
 
             performSafeShutdown();
