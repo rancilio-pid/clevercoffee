@@ -119,6 +119,11 @@ This document describes all configuration parameters available in the `config.js
 - **Default**: `false`
 - **Description**: Show manual flush timer in fullscreen mode
 
+### `display.fullscreen_hot_water_timer`
+- **Type**: Boolean
+- **Default**: `false`
+- **Description**: Show hot water timer in fullscreen mode
+
 ### `display.heating_logo`
 - **Type**: Boolean
 - **Default**: `true`
@@ -154,6 +159,21 @@ This document describes all configuration parameters available in the `config.js
 - **Type**: Boolean
 - **Default**: `false`
 - **Description**: Display rotation
+
+### `display.blinking.mode`
+- **Type**: Integer (enum)
+- **Default**: `1`
+- **Valid Values**:
+    - `0`: Off
+    - `1`: Near Setpoint
+    - `2`: Away From Setpoint
+- **Description**: Set temperature display blinking mode
+
+### `display.blinking.delta`
+- **Type**: Double
+- **Default**: `0.3`
+- **Range**: 0.2-10.0
+- **Description**: Difference from setpoint for blinking temperature display
 
 ---
 
@@ -354,7 +374,7 @@ For each switch type (brew, power, steam):
 - **Max Length**: 180 characters
 - **Description**: Base MQTT topic prefix
 
-### Home Assistant Integration
+## Home Assistant Integration
 
 ### `mqtt.hassio.enabled`
 - **Type**: Boolean
@@ -392,25 +412,25 @@ For each switch type (brew, power, steam):
 ### `pid.regular.kp`
 - **Type**: Double
 - **Default**: `62.0`
-- **Range**: 0.0-200.0
+- **Range**: 0.0-999.0
 - **Description**: Proportional gain
 
 ### `pid.regular.tn`
 - **Type**: Double (seconds)
 - **Default**: `52.0`
-- **Range**: 0.0-200.0
+- **Range**: 0.0-999.0
 - **Description**: Integral time constant
 
 ### `pid.regular.tv`
 - **Type**: Double (seconds)
 - **Default**: `11.5`
-- **Range**: 0.0-200.0
+- **Range**: 0.0-999.0
 - **Description**: Derivative time constant
 
 ### `pid.regular.i_max`
 - **Type**: Double
 - **Default**: `55.0`
-- **Range**: 0.0-100.0
+- **Range**: 0.0-999.0
 - **Description**: Maximum integral term contribution
 
 ## Brew Detection PID Parameters
@@ -423,19 +443,19 @@ For each switch type (brew, power, steam):
 ### `pid.bd.kp`
 - **Type**: Double
 - **Default**: `50.0`
-- **Range**: 0.0-200.0
+- **Range**: 0.0-999.0
 - **Description**: Brew detection proportional gain
 
 ### `pid.bd.tn`
 - **Type**: Double (seconds)
 - **Default**: `0.0`
-- **Range**: 0.0-200.0
+- **Range**: 0.0-999.0
 - **Description**: Brew detection integral time constant
 
 ### `pid.bd.tv`
 - **Type**: Double (seconds)
 - **Default**: `20.0`
-- **Range**: 0.0-200.0
+- **Range**: 0.0-999.0
 - **Description**: Brew detection derivative time constant
 
 ## Steam PID Parameters
@@ -443,7 +463,7 @@ For each switch type (brew, power, steam):
 ### `pid.steam.kp`
 - **Type**: Double
 - **Default**: `150.0`
-- **Range**: 0.0-500.0
+- **Range**: 0.0-999.0
 - **Description**: Steam mode proportional gain
 
 ---
@@ -493,6 +513,16 @@ For each switch type (brew, power, steam):
     - `5`: CRITICAL (least verbose)
 - **Description**: Logging verbosity level
 
+### `system.timing_debug.enabled`
+- **Type**: Boolean
+- **Default**: `false`
+- **Description**: When DEBUG log level is enabled select whether to also show loop timing information
+
+### `system.showdisplay.enabled`
+- **Type**: Boolean
+- **Default**: `true`
+- **Description**: When DEBUG log level is enabled select whether to include display refresh in the timing information
+
 ### `system.offline_mode`
 - **Type**: Boolean
 - **Default**: `false`
@@ -503,6 +533,23 @@ For each switch type (brew, power, steam):
 - **Default**: `"otapass"`
 - **Max Length**: 64 characters
 - **Description**: Password for over-the-air firmware updates
+
+### `system.auth.enabled`
+- **Type**: Boolean
+- **Default**: `false`
+- **Description**: Enables prompt for username and password
+
+### `system.auth.username`
+- **Type**: String
+- **Default**: `"admin"`
+- **Max Length**: 32 characters
+- **Description**: Username for accessing webpages
+
+### `system.auth.password`
+- **Type**: String
+- **Default**: `"admin"`
+- **Max Length**: 64 characters
+- **Description**: Password for accessing webpages
 
 ---
 

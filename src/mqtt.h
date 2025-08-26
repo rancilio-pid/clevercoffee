@@ -46,8 +46,8 @@ extern std::map<const char*, const char*, cmp_str> mqttVars;
 extern std::map<const char*, std::function<double()>, cmp_str> mqttSensors;
 
 struct DiscoveryObject {
-        String discovery_topic;
-        String payload_json;
+        char discovery_topic[160];
+        char payload_json[650];
 };
 
 inline void setupMqtt() {
@@ -88,6 +88,10 @@ inline void checkMQTT() {
             MQTTReCnctCount++;                    // Increment reconnection Counter
             LOGF(DEBUG, "Attempting MQTT reconnection: %i", MQTTReCnctCount);
 
+            // First clean up previous connection
+            mqtt.disconnect(); // graceful disconnect, frees sockets
+            delay(20);         // tiny delay to allow LWIP to reclaim resources
+
             if (mqtt.connect(hostname.c_str(), mqtt_username.c_str(), mqtt_password.c_str(), topic_will, 0, true, "offline")) {
                 mqtt.subscribe(topic_set);
                 LOGF(DEBUG, "Subscribed to MQTT Topic: %s", topic_set);
@@ -122,22 +126,20 @@ inline bool mqtt_publish(const char* reading, const char* payload, const boolean
  * @param largeMessage The large message to be published.
  * @return 0 if the message was successfully published, otherwise an MQTT error code.
  */
-inline int PublishLargeMessage(const String& topic, const String& largeMessage) {
+inline int PublishLargeMessage(const char* topic, const char* largeMessage) {
     constexpr size_t splitSize = 128; // Maximum Message Size
 
-    if (const size_t messageLength = largeMessage.length(); messageLength > splitSize) {
+    if (const size_t messageLength = strlen(largeMessage); messageLength > splitSize) {
         const size_t count = messageLength / splitSize;
-        mqtt.beginPublish(topic.c_str(), messageLength, true);
+        mqtt.beginPublish(topic, messageLength, true);
 
         for (size_t i = 0; i < count; i++) {
-            const size_t startIndex = i * splitSize;
-            const size_t endIndex = startIndex + splitSize;
-            mqtt.print(largeMessage.substring(startIndex, endIndex));
+            mqtt.print(String(largeMessage + i * splitSize).substring(0, splitSize));
         }
 
-        mqtt.print(largeMessage.substring(count * splitSize));
+        mqtt.print(String(largeMessage + count * splitSize));
 
-        if (const int publishResult = mqtt.endPublish(); publishResult == 0) {
+        if (int publishResult = mqtt.endPublish(); publishResult == 0) {
             LOG(WARNING, "[MQTT] PublishLargeMessage sent failed");
             return 1;
         }
@@ -146,9 +148,7 @@ inline int PublishLargeMessage(const String& topic, const String& largeMessage) 
         }
     }
     else {
-        boolean publishResult = mqtt.publish(topic.c_str(), largeMessage.c_str());
-
-        return publishResult ? 0 : -1; // Return 0 for success, -1 for failure
+        return mqtt.publish(topic, largeMessage) ? 0 : -1; // Return 0 for success, -1 for failure
     }
 }
 
@@ -170,7 +170,7 @@ inline void assignMQTTParam(char* param, double value) {
         const char* parameterId = it->second;
 
         auto& registry = ParameterRegistry::getInstance();
-        const std::shared_ptr<Parameter> var = registry.getParameterById(parameterId);
+        auto var = registry.getParameterById(parameterId);
 
         if (!var) {
             LOGF(WARNING, "Parameter %s not found in ParameterRegistry", parameterId);
@@ -179,22 +179,44 @@ inline void assignMQTTParam(char* param, double value) {
 
         if (value >= var->getMinValue() && value <= var->getMaxValue()) {
             bool success = false;
+            char buf[12];
 
             switch (var->getType()) {
                 case kDouble:
                     success = registry.setParameterValue(parameterId, value);
+
+                    if (success) {
+                        snprintf(buf, sizeof(buf), "%.2f", value);
+                    }
+
                     break;
                 case kFloat:
                     success = registry.setParameterValue(parameterId, static_cast<float>(value));
+
+                    if (success) {
+                        snprintf(buf, sizeof(buf), "%.2f", static_cast<float>(value));
+                    }
+
                     break;
                 case kUInt8:
                     success = registry.setParameterValue(parameterId, static_cast<uint8_t>(value));
-                    if (success && strcasecmp(param, "steamON") == 0) {
-                        steamFirstON = value;
+
+                    if (success) {
+                        snprintf(buf, sizeof(buf), "%u", static_cast<uint8_t>(value));
+
+                        if (strcasecmp(param, "steamON") == 0) {
+                            steamFirstON = value;
+                        }
                     }
+
                     break;
                 case kInteger:
                     success = registry.setParameterValue(parameterId, static_cast<int>(value));
+
+                    if (success) {
+                        snprintf(buf, sizeof(buf), "%d", static_cast<int>(value));
+                    }
+
                     break;
                 default:
                     LOGF(WARNING, "%s is not a recognized type for this MQTT parameter.", var->getType());
@@ -202,7 +224,7 @@ inline void assignMQTTParam(char* param, double value) {
             }
 
             if (success) {
-                mqtt_publish(param, number2string(value), true); // Publish back with MQTT topic name
+                mqtt_publish(param, buf, true);
                 LOGF(DEBUG, "MQTT parameter %s (ID: %s) updated to %f", param, parameterId, value);
             }
             else {
@@ -273,7 +295,7 @@ inline int writeSysParamsToMQTT(const bool continueOnError = true) {
     mqttUpdateRunning = true;
     unsigned long start = millis();
 
-    char data[256];
+    char data[12];
     int errorState = 0;
     auto& registry = ParameterRegistry::getInstance();
 
@@ -323,9 +345,7 @@ inline int writeSysParamsToMQTT(const bool continueOnError = true) {
                     continue;
             }
 
-            std::string value = std::string(data);
-
-            if (mqttLastSent[mqttTopic] != value) {
+            if (mqttLastSent[mqttTopic].compare(data) != 0) {
                 if (!mqtt_publish(mqttTopic, data, true)) {
                     errorState = mqtt.state();
 
@@ -337,10 +357,8 @@ inline int writeSysParamsToMQTT(const bool continueOnError = true) {
                     LOGF(WARNING, "Failed to publish parameter %s to MQTT, error: %d", mqttTopic, errorState);
                 }
                 else {
-                    mqttLastSent[mqttTopic] = value; // Update only if sent successfully
-                    IFLOG(DEBUG) {
-                        LOGF(DEBUG, "Published %s = %s to MQTT", mqttTopic, data);
-                    }
+                    mqttLastSent[mqttTopic].assign(data); // Update only if sent successfully
+                    LOGF(DEBUG, "Published %s = %s to MQTT, length: %i", mqttTopic, data, strlen(data) + 1);
                 }
             }
 
@@ -360,11 +378,19 @@ inline int writeSysParamsToMQTT(const bool continueOnError = true) {
     while (mqttSensorsIt != mqttSensors.end()) {
         const char* topic = mqttSensorsIt->first;
         const auto& sensorFunc = mqttSensorsIt->second;
-        std::string value = number2string(sensorFunc());
 
-        if (mqttLastSent[topic] != value) {
+        char buf[20];
 
-            if (!mqtt_publish(topic, value.c_str())) {
+        if (strcmp(topic, "machineState") == 0) {
+            snprintf(buf, sizeof(buf), "%s", machinestateEnumToString(machineState));
+        }
+        else {
+            snprintf(buf, sizeof(buf), "%.2f", sensorFunc());
+        }
+
+        if (mqttLastSent[topic].compare(buf) != 0) {
+
+            if (!mqtt_publish(topic, buf)) {
                 errorState = mqtt.state();
 
                 if (!continueOnError) {
@@ -372,7 +398,7 @@ inline int writeSysParamsToMQTT(const bool continueOnError = true) {
                 }
             }
             else {
-                mqttLastSent[topic] = value;
+                mqttLastSent[topic].assign(buf);
             }
         }
 
@@ -401,43 +427,38 @@ inline int writeSysParamsToMQTT(const bool continueOnError = true) {
  * @param payload_off The payload value to turn the switch off (default: "0")
  * @return A `DiscoveryObject` containing the switch device configuration
  */
-inline DiscoveryObject GenerateSwitchDevice(const String& name, const String& displayName, const String& payload_on = "1", const String& payload_off = "0") {
-    String mqtt_topic = String(mqtt_topic_prefix) + hostname;
+inline DiscoveryObject GenerateSwitchDevice(const char* name, const char* displayName, const char* payload_on = "1", const char* payload_off = "0") {
     DiscoveryObject switch_device;
-    String unique_id = "clevercoffee-" + hostname;
-    String SwitchDiscoveryTopic = mqtt_hassio_discovery_prefix + "/switch/";
 
-    String switch_command_topic = mqtt_topic + "/" + name + "/set";
-    String switch_state_topic = mqtt_topic + "/" + name;
+    char mqtt_topic[128];
+    char unique_id[80];
+    char topic_buffer[160];
 
-    switch_device.discovery_topic = SwitchDiscoveryTopic + unique_id + "/" + name + "/config";
-
-    JsonDocument deviceMapDoc;
-    deviceMapDoc["identifiers"] = hostname;
-    deviceMapDoc["manufacturer"] = "CleverCoffee";
-    deviceMapDoc["name"] = hostname;
+    snprintf(mqtt_topic, sizeof(mqtt_topic), "%s%s", mqtt_topic_prefix.c_str(), hostname.c_str());
+    snprintf(unique_id, sizeof(unique_id), "clevercoffee-%s", hostname);
+    snprintf(switch_device.discovery_topic, sizeof(switch_device.discovery_topic), "%s/switch/%s/%s/config", mqtt_hassio_discovery_prefix, unique_id, name);
 
     JsonDocument switchConfigDoc;
     switchConfigDoc["name"] = displayName;
-    switchConfigDoc["command_topic"] = switch_command_topic;
-    switchConfigDoc["state_topic"] = switch_state_topic;
-    switchConfigDoc["unique_id"] = unique_id + "-" + name;
+    snprintf(topic_buffer, sizeof(topic_buffer), "%s/%s/set", mqtt_topic, name);
+    switchConfigDoc["command_topic"] = String(topic_buffer);
+    snprintf(topic_buffer, sizeof(topic_buffer), "%s/%s", mqtt_topic, name);
+    switchConfigDoc["state_topic"] = String(topic_buffer);
+    snprintf(topic_buffer, sizeof(topic_buffer), "%s-%s", unique_id, name);
+    switchConfigDoc["unique_id"] = String(topic_buffer);
     switchConfigDoc["payload_on"] = payload_on;
     switchConfigDoc["payload_off"] = payload_off;
     switchConfigDoc["payload_available"] = "online";
     switchConfigDoc["payload_not_available"] = "offline";
-    switchConfigDoc["availability_topic"] = mqtt_topic + "/status";
+    snprintf(topic_buffer, sizeof(topic_buffer), "%s/status", mqtt_topic);
+    switchConfigDoc["availability_topic"] = String(topic_buffer);
 
-    auto switchDeviceField = switchConfigDoc["device"].to<JsonObject>();
+    JsonObject device = switchConfigDoc["device"].to<JsonObject>();
+    device["identifiers"] = hostname;
+    device["manufacturer"] = "CleverCoffee";
+    device["name"] = hostname;
 
-    for (JsonPair keyValue : deviceMapDoc.as<JsonObject>()) {
-        switchDeviceField[keyValue.key()] = keyValue.value();
-    }
-
-    String switchConfigDocBuffer;
-    serializeJson(switchConfigDoc, switchConfigDocBuffer);
-
-    switch_device.payload_json = switchConfigDocBuffer;
+    serializeJson(switchConfigDoc, switch_device.payload_json, sizeof(switch_device.payload_json));
 
     return switch_device;
 }
@@ -452,42 +473,37 @@ inline DiscoveryObject GenerateSwitchDevice(const String& name, const String& di
  * @param payload_press The payload value to turn the button is pressed (default: "1")
  * @return A `DiscoveryObject` containing the switch device configuration
  */
-inline DiscoveryObject GenerateButtonDevice(const String& name, const String& displayName, const String& payload_press = "1") {
-    String mqtt_topic = String(mqtt_topic_prefix) + hostname;
+inline DiscoveryObject GenerateButtonDevice(const char* name, const char* displayName, const char* payload_press = "1") {
     DiscoveryObject button_device;
-    String unique_id = "clevercoffee-" + hostname;
-    String buttonDiscoveryTopic = mqtt_hassio_discovery_prefix + "/button/";
 
-    String button_command_topic = mqtt_topic + "/" + name + "/set";
-    String button_state_topic = mqtt_topic + "/" + name;
+    char mqtt_topic[128];
+    char unique_id[80];
+    char topic_buffer[160];
 
-    button_device.discovery_topic = buttonDiscoveryTopic + unique_id + "/" + name + "/config";
-
-    JsonDocument deviceMapDoc;
-    deviceMapDoc["identifiers"] = hostname;
-    deviceMapDoc["manufacturer"] = "CleverCoffee";
-    deviceMapDoc["name"] = hostname;
+    snprintf(mqtt_topic, sizeof(mqtt_topic), "%s%s", mqtt_topic_prefix.c_str(), hostname.c_str());
+    snprintf(unique_id, sizeof(unique_id), "clevercoffee-%s", hostname);
+    snprintf(button_device.discovery_topic, sizeof(button_device.discovery_topic), "%s/button/%s/%s/config", mqtt_hassio_discovery_prefix, unique_id, name);
 
     JsonDocument buttonConfigDoc;
     buttonConfigDoc["name"] = displayName;
-    buttonConfigDoc["command_topic"] = button_command_topic;
-    buttonConfigDoc["state_topic"] = button_state_topic;
-    buttonConfigDoc["unique_id"] = unique_id + "-" + name;
+    snprintf(topic_buffer, sizeof(topic_buffer), "%s/%s/set", mqtt_topic, name);
+    buttonConfigDoc["command_topic"] = String(topic_buffer);
+    snprintf(topic_buffer, sizeof(topic_buffer), "%s/%s", mqtt_topic, name);
+    buttonConfigDoc["state_topic"] = String(topic_buffer);
+    snprintf(topic_buffer, sizeof(topic_buffer), "%s-%s", unique_id, name);
+    buttonConfigDoc["unique_id"] = String(topic_buffer);
     buttonConfigDoc["payload_press"] = payload_press;
     buttonConfigDoc["payload_available"] = "online";
     buttonConfigDoc["payload_not_available"] = "offline";
-    buttonConfigDoc["availability_topic"] = mqtt_topic + "/status";
+    snprintf(topic_buffer, sizeof(topic_buffer), "%s/status", mqtt_topic);
+    buttonConfigDoc["availability_topic"] = String(topic_buffer);
 
-    auto buttonDeviceField = buttonConfigDoc["device"].to<JsonObject>();
+    JsonObject device = buttonConfigDoc["device"].to<JsonObject>();
+    device["identifiers"] = hostname;
+    device["manufacturer"] = "CleverCoffee";
+    device["name"] = hostname;
 
-    for (JsonPair keyValue : deviceMapDoc.as<JsonObject>()) {
-        buttonDeviceField[keyValue.key()] = keyValue.value();
-    }
-
-    String buttonConfigDocBuffer;
-    serializeJson(buttonConfigDoc, buttonConfigDocBuffer);
-    LOG(DEBUG, "Generated button device");
-    button_device.payload_json = buttonConfigDocBuffer;
+    serializeJson(buttonConfigDoc, button_device.payload_json, sizeof(button_device.payload_json));
 
     return button_device;
 }
@@ -503,40 +519,43 @@ inline DiscoveryObject GenerateButtonDevice(const String& name, const String& di
  * @param device_class
  * @return A `DiscoveryObject` containing the sensor device configuration
  */
-inline DiscoveryObject GenerateSensorDevice(const String& name, const String& displayName, const String& unit_of_measurement, const String& device_class) {
-    String mqtt_topic = String(mqtt_topic_prefix) + hostname;
+inline DiscoveryObject GenerateSensorDevice(const char* name, const char* displayName, const char* unit_of_measurement, const char* device_class, const std::vector<const char*>& options = {}) {
     DiscoveryObject sensor_device;
-    String unique_id = "clevercoffee-" + hostname;
-    String SensorDiscoveryTopic = mqtt_hassio_discovery_prefix + "/sensor/";
 
-    String sensor_state_topic = mqtt_topic + "/" + name;
-    sensor_device.discovery_topic = SensorDiscoveryTopic + unique_id + "/" + name + "/config";
+    char mqtt_topic[128];
+    char unique_id[80];
+    char topic_buffer[160];
 
-    JsonDocument deviceMapDoc;
-    deviceMapDoc["identifiers"] = hostname;
-    deviceMapDoc["manufacturer"] = "CleverCoffee";
-    deviceMapDoc["name"] = hostname;
+    snprintf(mqtt_topic, sizeof(mqtt_topic), "%s%s", mqtt_topic_prefix.c_str(), hostname.c_str());
+    snprintf(unique_id, sizeof(unique_id), "clevercoffee-%s", hostname);
+    snprintf(sensor_device.discovery_topic, sizeof(sensor_device.discovery_topic), "%s/sensor/%s/%s/config", mqtt_hassio_discovery_prefix, unique_id, name);
 
     JsonDocument sensorConfigDoc;
     sensorConfigDoc["name"] = displayName;
-    sensorConfigDoc["state_topic"] = sensor_state_topic;
-    sensorConfigDoc["unique_id"] = unique_id + "-" + name;
+    snprintf(topic_buffer, sizeof(topic_buffer), "%s/%s", mqtt_topic, name);
+    sensorConfigDoc["state_topic"] = String(topic_buffer);
+    snprintf(topic_buffer, sizeof(topic_buffer), "%s-%s", unique_id, name);
+    sensorConfigDoc["unique_id"] = String(topic_buffer);
     sensorConfigDoc["unit_of_measurement"] = unit_of_measurement;
     sensorConfigDoc["device_class"] = device_class;
     sensorConfigDoc["payload_available"] = "online";
     sensorConfigDoc["payload_not_available"] = "offline";
-    sensorConfigDoc["availability_topic"] = mqtt_topic + "/status";
+    snprintf(topic_buffer, sizeof(topic_buffer), "%s/status", mqtt_topic);
+    sensorConfigDoc["availability_topic"] = String(topic_buffer);
 
-    auto sensorDeviceField = sensorConfigDoc["device"].to<JsonObject>();
-
-    for (JsonPair keyValue : deviceMapDoc.as<JsonObject>()) {
-        sensorDeviceField[keyValue.key()] = keyValue.value();
+    if (!options.empty()) {
+        sensorConfigDoc["options"] = JsonArray();
+        for (auto& opt : options) {
+            sensorConfigDoc["options"].add(opt);
+        }
     }
 
-    String sensorConfigDocBuffer;
-    serializeJson(sensorConfigDoc, sensorConfigDocBuffer);
+    JsonObject device = sensorConfigDoc["device"].to<JsonObject>();
+    device["identifiers"] = hostname;
+    device["manufacturer"] = "CleverCoffee";
+    device["name"] = hostname;
 
-    sensor_device.payload_json = sensorConfigDocBuffer;
+    serializeJson(sensorConfigDoc, sensor_device.payload_json, sizeof(sensor_device.payload_json));
 
     return sensor_device;
 }
@@ -555,43 +574,42 @@ inline DiscoveryObject GenerateSensorDevice(const String& name, const String& di
  * @param ui_mode Control how the number should be displayed in the UI
  * @return A `DiscoveryObject` containing the number device configuration
  */
-inline DiscoveryObject GenerateNumberDevice(const String& name, const String& displayName, int min_value, int max_value, float steps_value, const String& unit_of_measurement, const String& ui_mode = "box") {
-    String mqtt_topic = String(mqtt_topic_prefix) + hostname;
+inline DiscoveryObject GenerateNumberDevice(const char* name, const char* displayName, int min_value, int max_value, float steps_value, const char* unit_of_measurement, const char* ui_mode = "box") {
     DiscoveryObject number_device;
-    String unique_id = "clevercoffee-" + hostname;
 
-    String NumberDiscoveryTopic = String(mqtt_hassio_discovery_prefix) + "/number/";
-    number_device.discovery_topic = NumberDiscoveryTopic + unique_id + "/" + name + "/config";
+    char mqtt_topic[128];
+    char unique_id[80];
+    char topic_buffer[160];
 
-    JsonDocument deviceMapDoc;
-    deviceMapDoc["identifiers"] = hostname;
-    deviceMapDoc["manufacturer"] = "CleverCoffee";
-    deviceMapDoc["name"] = hostname;
+    snprintf(mqtt_topic, sizeof(mqtt_topic), "%s%s", mqtt_topic_prefix.c_str(), hostname.c_str());
+    snprintf(unique_id, sizeof(unique_id), "clevercoffee-%s", hostname);
+    snprintf(number_device.discovery_topic, sizeof(number_device.discovery_topic), "%s/number/%s/%s/config", mqtt_hassio_discovery_prefix, unique_id, name);
 
     JsonDocument numberConfigDoc;
     numberConfigDoc["name"] = displayName;
-    numberConfigDoc["command_topic"] = mqtt_topic + "/" + name + "/set";
-    numberConfigDoc["state_topic"] = mqtt_topic + "/" + name;
-    numberConfigDoc["unique_id"] = unique_id + "-" + name;
+    snprintf(topic_buffer, sizeof(topic_buffer), "%s/%s/set", mqtt_topic, name);
+    numberConfigDoc["command_topic"] = String(topic_buffer);
+    snprintf(topic_buffer, sizeof(topic_buffer), "%s/%s", mqtt_topic, name);
+    numberConfigDoc["state_topic"] = String(topic_buffer);
+    snprintf(topic_buffer, sizeof(topic_buffer), "%s-%s", unique_id, name);
+    numberConfigDoc["unique_id"] = String(topic_buffer);
     numberConfigDoc["min"] = min_value;
     numberConfigDoc["max"] = max_value;
-    numberConfigDoc["step"] = String(steps_value, 2);
+    snprintf(topic_buffer, sizeof(topic_buffer), "%.2f", steps_value);
+    numberConfigDoc["step"] = String(topic_buffer);
     numberConfigDoc["unit_of_measurement"] = unit_of_measurement;
     numberConfigDoc["mode"] = ui_mode;
     numberConfigDoc["payload_available"] = "online";
     numberConfigDoc["payload_not_available"] = "offline";
-    numberConfigDoc["availability_topic"] = mqtt_topic + "/status";
+    snprintf(topic_buffer, sizeof(topic_buffer), "%s/status", mqtt_topic);
+    numberConfigDoc["availability_topic"] = String(topic_buffer);
 
-    auto numberDeviceField = numberConfigDoc["device"].to<JsonObject>();
+    JsonObject device = numberConfigDoc["device"].to<JsonObject>();
+    device["identifiers"] = hostname;
+    device["manufacturer"] = "CleverCoffee";
+    device["name"] = hostname;
 
-    for (JsonPair keyValue : deviceMapDoc.as<JsonObject>()) {
-        numberDeviceField[keyValue.key()] = keyValue.value();
-    }
-
-    String numberConfigDocBuffer;
-    serializeJson(numberConfigDoc, numberConfigDocBuffer);
-
-    number_device.payload_json = numberConfigDocBuffer;
+    serializeJson(numberConfigDoc, number_device.payload_json, sizeof(number_device.payload_json));
 
     return number_device;
 }
@@ -601,21 +619,20 @@ inline DiscoveryObject GenerateNumberDevice(const String& name, const String& di
  * @return 0 if successful, MQTT connection error code if failed to send messages
  */
 inline int publishDiscovery(const DiscoveryObject& obj) {
-    if (obj.discovery_topic.isEmpty() || obj.payload_json.isEmpty()) {
+    if (obj.discovery_topic == nullptr || obj.discovery_topic[0] == '\0' || obj.payload_json == nullptr || obj.payload_json[0] == '\0') {
         LOGF(WARNING, "[MQTT] Skipping invalid discovery message: topic or payload is empty");
         return 1;
     }
 
-    IFLOG(DEBUG) {
-        LOGF(DEBUG, "Publishing topic: %s, payload length: %d", obj.discovery_topic.c_str(), obj.payload_json.length());
-    }
+    LOGF(DEBUG, "Publishing topic: %s, payload length: %d", obj.discovery_topic, strlen(obj.payload_json));
 
-    int result = PublishLargeMessage(obj.discovery_topic.c_str(), obj.payload_json.c_str());
+    int result = PublishLargeMessage(obj.discovery_topic, obj.payload_json);
 
     if (result != 0) {
         LOGF(ERROR, "[MQTT] Failed to publish discovery message. Error code: %d", result);
         return 1;
     }
+
     return 0;
 }
 
@@ -629,13 +646,14 @@ inline int sendHASSIODiscoveryMsg() {
     if (!mqtt.connected()) {
         LOG(DEBUG, "[MQTT] Failed to send Hassio Discover, MQTT Client is not connected");
         hassioFailed = true;
+        hassioUpdateRunning = false;
         return -1;
     }
 
     int failures = 0;
 
     // Always published devices
-    failures += publishDiscovery(GenerateSensorDevice("machineState", "Machine State", "", "enum"));
+    failures += publishDiscovery(GenerateSensorDevice("machineState", "Machine State", "", "enum", getMachineStateOptions()));
     failures += publishDiscovery(GenerateSensorDevice("temperature", "Boiler Temperature", "°C", "temperature"));
     failures += publishDiscovery(GenerateSensorDevice("heaterPower", "Heater Power", "%", "power_factor"));
 

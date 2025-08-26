@@ -103,61 +103,58 @@ void debugTimingLoop() {
     static unsigned int loopCount = 0;
     static unsigned long maxLoop = 0;
 
-    IFLOG(DEBUG) {
+    if (timingDebugActive) {
+        loopCount += 1;
+        unsigned long loopDuration = millis() - previousMillisDebug;
+        previousMillisDebug = millis();
 
-        if (timingDebugActive) {
-            loopCount += 1;
-            unsigned long loopDuration = millis() - previousMillisDebug;
-            previousMillisDebug = millis();
+        // the loopDuration > 45 check is in case there is a long loop caused by something unknown
+        // only record if one of these flags are set or loop has taken a long time
+        if ((loopDuration > 45) || ((displayUpdateRunning && includeDisplayInLogs) || websiteUpdateRunning || mqttUpdateRunning || hassioUpdateRunning || temperatureUpdateRunning)) {
 
-            // the loopDuration > 45 check is in case there is a long loop caused by something unknown
-            // only record if one of these flags are set or loop has taken a long time
-            if ((loopDuration > 45) || ((displayUpdateRunning && includeDisplayInLogs) || websiteUpdateRunning || mqttUpdateRunning || hassioUpdateRunning || temperatureUpdateRunning)) {
+            if (loopDuration >= maxLoop) {
+                maxLoop = loopDuration;
+            }
 
-                if (loopDuration >= maxLoop) {
-                    maxLoop = loopDuration;
-                }
+            loopTiming[loopIndex] = loopDuration;
+            activityType[loopIndex] = 0;
 
-                loopTiming[loopIndex] = loopDuration;
-                activityType[loopIndex] = 0;
+            // tag activityType with any activities that occured this loop
+            if (displayBufferReady) {
+                activityType[loopIndex] |= ACT_DISPLAY_READY;
+            }
 
-                // tag activityType with any activities that occured this loop
-                if (displayBufferReady) {
-                    activityType[loopIndex] |= ACT_DISPLAY_READY;
-                }
+            if (displayUpdateRunning) {
+                activityType[loopIndex] |= ACT_DISPLAY_RUNNING;
+            }
 
-                if (displayUpdateRunning) {
-                    activityType[loopIndex] |= ACT_DISPLAY_RUNNING;
-                }
+            if (websiteUpdateRunning) {
+                activityType[loopIndex] |= ACT_WEBSITE_RUNNING;
+            }
 
-                if (websiteUpdateRunning) {
-                    activityType[loopIndex] |= ACT_WEBSITE_RUNNING;
-                }
+            if (mqttUpdateRunning) {
+                activityType[loopIndex] |= ACT_MQTT_RUNNING;
+            }
 
-                if (mqttUpdateRunning) {
-                    activityType[loopIndex] |= ACT_MQTT_RUNNING;
-                }
+            if (hassioUpdateRunning) {
+                activityType[loopIndex] |= ACT_HASSIO_RUNNING;
+            }
 
-                if (hassioUpdateRunning) {
-                    activityType[loopIndex] |= ACT_HASSIO_RUNNING;
-                }
+            if (temperatureUpdateRunning) {
+                activityType[loopIndex] |= ACT_TEMPERATURE_RUNNING;
+            }
 
-                if (temperatureUpdateRunning) {
-                    activityType[loopIndex] |= ACT_TEMPERATURE_RUNNING;
-                }
+            loopIndex = (loopIndex + 1) % LOOP_HISTORY_SIZE;
 
-                loopIndex = (loopIndex + 1) % LOOP_HISTORY_SIZE;
-
-                // print to the last 20 entries to console
-                if (loopIndex == 0) {
-                    printTimingAndActivityBatch(loopTiming, activityType, LOOP_HISTORY_SIZE);
-                    unsigned long reportTime = millis() - lastSendMillisDebug;
-                    float avgLoopMs = loopCount > 0 ? ((float)reportTime / loopCount) : 0;
-                    LOGF(DEBUG, "Max time %lu (ms) -- %i entries report time %lu (ms) -- average %0.2f (ms)", maxLoop, LOOP_HISTORY_SIZE, reportTime, avgLoopMs);
-                    lastSendMillisDebug = millis();
-                    loopCount = 0;
-                    maxLoop = 0;
-                }
+            // print to the last 20 entries to console
+            if (loopIndex == 0) {
+                printTimingAndActivityBatch(loopTiming, activityType, LOOP_HISTORY_SIZE);
+                unsigned long reportTime = millis() - lastSendMillisDebug;
+                float avgLoopMs = loopCount > 0 ? ((float)reportTime / loopCount) : 0;
+                LOGF(DEBUG, "Max time %lu (ms) -- %i entries report time %lu (ms) -- average %0.2f (ms)", maxLoop, LOOP_HISTORY_SIZE, reportTime, avgLoopMs);
+                lastSendMillisDebug = millis();
+                loopCount = 0;
+                maxLoop = 0;
             }
         }
     }

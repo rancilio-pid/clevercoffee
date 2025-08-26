@@ -7,21 +7,29 @@
     <link rel="icon" href="data:image/svg+xml,%%3Csvg%%20xmlns='http://www.w3.org/2000/svg'%%20viewBox='0%%200%%2016%%2016'%%3E%%3Ctext%%20x='0'%%20y='14'%%3E☕%%3C/text%%3E%%3C/svg%%3E" type="image/svg+xml" />
     <link rel="manifest" href="manifest.json" />
 
-    %VAR_HEADER_FONTAWESOME%
-    %VAR_HEADER_BOOTSTRAP%
-    %VAR_HEADER_BOOTSTRAP_BUNDLE%
-
-    %VAR_HEADER_VUEJS%
+    <script src="/js/load-libs.js" defer></script>
 
     <script>
         //delay loading app js until html has been loaded (to reduce concurrent requests)
         document.addEventListener("DOMContentLoaded", function(event) {
-            import('/js/app.js?v=1')
+            const fb = document.getElementById("fallback-warning");
+            if (fb) fb.style.display = "none";
         })
     </script>
 </head>
 
 <body>
+<noscript>
+  <div style="padding:1em; background:#6c757d; color:#ffffff; font-weight:bold;">
+    JavaScript is disabled — please enable it to use this interface.
+  </div>
+</noscript>
+
+<div id="fallback-warning" style="padding:1em; background:#6c757d; color:#ffffff; font-weight:bold;">
+  If you are seeing plain text or an unstyled page, the resources may not have loaded.<br>
+  Please try refreshing the page. If that doesn’t help, reboot the device.
+</div>
+
 <div id="page-container">
     <div id="navigation">
         <nav class="navbar navbar-expand-xl navbar-dark bg-secondary">

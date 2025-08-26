@@ -321,6 +321,8 @@ class Config {
             _configDefs.emplace("display.fullscreen_hot_water_timer", ConfigDef::forBool(false));
             _configDefs.emplace("display.post_brew_timer_duration", ConfigDef::forDouble(POST_BREW_TIMER_DURATION, POST_BREW_TIMER_DURATION_MIN, POST_BREW_TIMER_DURATION_MAX));
             _configDefs.emplace("display.heating_logo", ConfigDef::forBool(true));
+            _configDefs.emplace("display.blinking.mode", ConfigDef::forInt(1, 0, 2));
+            _configDefs.emplace("display.blinking.delta", ConfigDef::forDouble(BLINKING_DELTA, BLINKING_DELTA_MIN, BLINKING_DELTA_MAX));
 
             // Hardware - OLED
             _configDefs.emplace("hardware.oled.enabled", ConfigDef::forBool(true));

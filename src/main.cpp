@@ -62,6 +62,25 @@ enum MachineState {
     kEepromError = 110,
 };
 
+struct EnumOption {
+        MachineState state;
+        const char* name;
+};
+
+constexpr EnumOption machineStateOptions[] = {{kInit, "Init"},
+                                              {kPidNormal, "PID Normal"},
+                                              {kBrew, "Brew"},
+                                              {kManualFlush, "Manual Flush"},
+                                              {kHotWater, "Hot Water"},
+                                              {kSteam, "Steam"},
+                                              {kBackflush, "Backflush"},
+                                              {kWaterTankEmpty, "Water Tank Empty"},
+                                              {kEmergencyStop, "Emergency Stop"},
+                                              {kPidDisabled, "PID Disabled"},
+                                              {kStandby, "Standby Mode"},
+                                              {kSensorError, "Sensor Error"},
+                                              {kEepromError, "EEPROM Error"}};
+
 MachineState machineState = kInit;
 MachineState lastmachinestate = kInit;
 int lastmachinestatepid = -1;
@@ -108,6 +127,7 @@ bool websiteUpdateRunning = false;
 bool mqttUpdateRunning = false;
 bool hassioUpdateRunning = false;
 bool temperatureUpdateRunning = false;
+unsigned long lastDisplayUpdate = 0;
 
 #include "utils/timingDebug.h"
 
@@ -150,10 +170,7 @@ void loopLED();
 void checkWaterTank();
 void printMachineState();
 char const* machinestateEnumToString(MachineState machineState);
-char* number2string(double in);
-char* number2string(float in);
-char* number2string(int in);
-char* number2string(unsigned int in);
+inline std::vector<const char*> getMachineStateOptions();
 float filterPressureValue(float input);
 int writeSysParamsToMQTT(bool continueOnError);
 void updateStandbyTimer();
@@ -302,12 +319,23 @@ void testEmergencyStop() {
  * @brief Switch to offline mode if maxWifiReconnects were exceeded during boot
  */
 void initOfflineMode() {
-    if (config.get<bool>("hardware.oled.enabled")) {
-        displayOffline = 1;
-    }
-
     LOG(INFO, "Start offline mode with eeprom values, no wifi :(");
     offlineMode = true;
+    mqtt_enabled = false;
+    mqtt_hassio_enabled = false;
+    WiFi.softAP(hostname.c_str(), pass);
+
+    if ("hardware.oled.enabled") {
+        if (!config.get<bool>("system.offline_mode")) {
+            displayOffline = 1; // don't block, this may have happened at any time
+        }
+        else {
+            displayLogo(String(langstring_offlineAP) + "\n" + hostname);
+            delay(2000); // blocking ok as this happens during boot
+            displayLogo(hostname + "\n" + WiFi.softAPIP().toString());
+            delay(2000);
+        }
+    }
 }
 
 /**
@@ -361,38 +389,6 @@ void checkWifi() {
             wifiReconnects = 0;
         }
     }
-}
-
-char number2string_double[22];
-
-char* number2string(const double in) {
-    snprintf(number2string_double, sizeof(number2string_double), "%0.2f", in);
-
-    return number2string_double;
-}
-
-char number2string_float[22];
-
-char* number2string(const float in) {
-    snprintf(number2string_float, sizeof(number2string_float), "%0.2f", in);
-
-    return number2string_float;
-}
-
-char number2string_int[22];
-
-char* number2string(const int in) {
-    snprintf(number2string_int, sizeof(number2string_int), "%d", in);
-
-    return number2string_int;
-}
-
-char number2string_uint[22];
-
-char* number2string(const unsigned int in) {
-    snprintf(number2string_uint, sizeof(number2string_uint), "%u", in);
-
-    return number2string_uint;
 }
 
 /**
@@ -752,37 +748,24 @@ void printMachineState() {
     LOGF(DEBUG, "new machineState: %s -> %s", machinestateEnumToString(lastmachinestate), machinestateEnumToString(machineState));
 }
 
-char const* machinestateEnumToString(const MachineState machineState) {
-    switch (machineState) {
-        case kInit:
-            return "Init";
-        case kPidNormal:
-            return "PID Normal";
-        case kBrew:
-            return "Brew";
-        case kManualFlush:
-            return "Manual Flush";
-        case kHotWater:
-            return "Hot Water";
-        case kSteam:
-            return "Steam";
-        case kBackflush:
-            return "Backflush";
-        case kWaterTankEmpty:
-            return "Water Tank Empty";
-        case kEmergencyStop:
-            return "Emergency Stop";
-        case kPidDisabled:
-            return "PID Disabled";
-        case kStandby:
-            return "Standby Mode";
-        case kSensorError:
-            return "Sensor Error";
-        case kEepromError:
-            return "EEPROM Error";
+inline const char* machinestateEnumToString(MachineState state) {
+    for (auto& opt : machineStateOptions) {
+        if (opt.state == state) {
+            return opt.name;
+        }
     }
 
     return "Unknown";
+}
+
+inline std::vector<const char*> getMachineStateOptions() {
+    std::vector<const char*> options;
+
+    for (auto& opt : machineStateOptions) {
+        options.push_back(opt.name);
+    }
+
+    return options;
 }
 
 /**
@@ -811,7 +794,7 @@ void wiFiSetup() {
         wm.setConfigPortalTimeout(60); // sec timeout for captive portal
 
         if (oledEnabled) {
-            displayLogo("Starting Portal AP\n" + hostname);
+            displayLogo(String(langstring_portalAP) + "\n" + hostname);
         }
 
         wifiConnected = wm.startConfigPortal(hostname.c_str(), pass);
@@ -838,7 +821,7 @@ void wiFiSetup() {
         LOGF(INFO, "MAC-ADDRESS: %s", fullMac);
 
         if (oledEnabled) {
-            displayLogo(String(langstring_connectwifi1) + '\n' + wm.getWiFiSSID(true));
+            displayLogo(String(langstring_connectwifi) + '\n' + wm.getWiFiSSID(true));
             delay(1500);
 
             if (config.get<int>("display.template") == 4) {
@@ -864,7 +847,7 @@ void wiFiSetup() {
         wm.disconnect();
         delay(1000);
 
-        offlineMode = true;
+        initOfflineMode();
     }
 }
 
@@ -1106,8 +1089,10 @@ void setup() {
     }
     else {
         wm.disconnect();
-        offlineMode = true;
         setRuntimePidState(true);
+        delay(2000);
+        initOfflineMode();
+        serverSetup();
     }
 
     // Start the logger
@@ -1148,12 +1133,15 @@ void setup() {
     if (config.get<bool>("hardware.sensors.scale.enabled")) {
         initScale();
     }
-    else if (config.get<bool>("hardware.oled.enabled")) {
-        delay(2000); // give time to display IP address
-    }
 
     if (config.get<bool>("hardware.sensors.pressure.enabled")) {
         previousMillisPressure = currentTime;
+    }
+
+    if (config.get<bool>("hardware.oled.enabled")) {
+        if (!(config.get<bool>("hardware.sensors.scale.enabled") && config.get<int>("hardware.sensors.scale.type") < 2)) {
+            delay(2000); // add delay if not hx711 to give time to display IP address
+        }
     }
 
     setupDone = true;
@@ -1359,18 +1347,28 @@ void loopPid() {
     if (config.get<bool>("hardware.oled.enabled")) {
 
         // update display on loops that have not had other major tasks running, if blocked it will send in the next loop (average 0.5ms)
-        if (!websiteUpdateRunning && !mqttUpdateRunning && !hassioUpdateRunning && !temperatureUpdateRunning && (standbyModeRemainingTimeDisplayOffMillis > 0)) {
+        if ((!websiteUpdateRunning && !mqttUpdateRunning && !hassioUpdateRunning && !temperatureUpdateRunning) || (millis() - lastDisplayUpdate > 500)) {
 
-            // displayUpdateRunning currently doesn't block anything as it is near the end of the loop, but if this code block moves it can be used to block other processes
-            // sendBuffer() takes around 35ms so it flags that it has happened
-            if (displayBufferReady) {
-                u8g2->sendBuffer();
-                displayBufferReady = false;
-                displayUpdateRunning = true;
+            if (standbyModeRemainingTimeDisplayOffMillis > 0) {
+
+                // displayUpdateRunning currently doesn't block anything as it is near the end of the loop, but if this code block moves it can be used to block other processes
+                // sendBuffer() takes around 35ms so it flags that it has happened
+                if (displayBufferReady) {
+                    u8g2->sendBuffer();
+                    displayBufferReady = false;
+                    displayUpdateRunning = true;
+                }
+                else {
+                    printDisplayTimer();
+
+                    if (millis() - lastDisplayUpdate > 500) {
+                        u8g2->sendBuffer();
+                        displayBufferReady = false;
+                        displayUpdateRunning = true;
+                    }
+                }
             }
-            else {
-                printDisplayTimer();
-            }
+            lastDisplayUpdate = millis();
         }
     }
 

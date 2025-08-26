@@ -35,12 +35,10 @@ inline unsigned long pumpStartingTime = 0; // start time of pump
  * @return void
  */
 void debugHotWaterState(String state) {
-    IFLOG(DEBUG) {
-        if (machineState != lastMachineStateHotWaterDebug || hotWaterStateDebug != lastHotWaterStateDebug) {
-            LOGF(DEBUG, "Hot water state: %s, MachineState=%s", state, machinestateEnumToString(machineState));
-            lastMachineStateHotWaterDebug = machineState;
-            lastHotWaterStateDebug = hotWaterStateDebug;
-        }
+    if (machineState != lastMachineStateHotWaterDebug || hotWaterStateDebug != lastHotWaterStateDebug) {
+        LOGF(DEBUG, "Hot water state: %s, MachineState=%s", state, machinestateEnumToString(machineState));
+        lastMachineStateHotWaterDebug = machineState;
+        lastHotWaterStateDebug = hotWaterStateDebug;
     }
 }
 

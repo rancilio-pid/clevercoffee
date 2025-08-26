@@ -161,24 +161,10 @@ inline void paramToJson(const String& name, const std::shared_ptr<Parameter>& pa
     doc["max"] = param->getMaxValue();
 }
 
-inline String getHeader(const String& varName) {
-    static const std::unordered_map<std::string, const char*> headers = {
-        {"FONTAWESOME", R"(<link href="/css/fontawesome-6.2.1.min.css" rel="stylesheet">)"},       {"BOOTSTRAP", R"(<link href="/css/bootstrap-5.2.3.min.css" rel="stylesheet">)"},
-        {"BOOTSTRAP_BUNDLE", "<script src=\"/js/bootstrap.bundle.5.2.3.min.js\" defer></script>"}, {"VUEJS", "<script src=\"/js/vue.3.2.47.min.js\" defer></script>"},
-        {"VUE_NUMBER_INPUT", "<script src=\"/js/vue-number-input.min.js\" defer></script>"},       {"UPLOT", R"(<script src="/js/uPlot.1.6.28.min.js" defer></script><link rel="stylesheet" href="/css/uPlot.min.css">)"}};
-
-    const auto it = headers.find(varName.c_str());
-    return it != headers.end() ? String(it->second) : String("");
-}
-
 inline String staticProcessor(const String& var) {
     // try replacing var for variables in ParameterRegistry
     if (var.startsWith("VAR_SHOW_")) {
         return getValue(var.substring(9)); // cut off "VAR_SHOW_"
-    }
-
-    if (var.startsWith("VAR_HEADER_")) {
-        return getHeader(var.substring(11)); // cut off "VAR_HEADER_"
     }
 
     // var didn't start with above names, try opening var as fragment file and use contents if it exists
@@ -293,7 +279,7 @@ inline void serverSetup() {
 
             // Defaults
             int offset = 0;
-            int limit = 20;
+            int limit = 5;
 
             if (request->hasParam("offset")) {
                 offset = request->getParam("offset")->value().toInt();
@@ -614,7 +600,12 @@ inline void serverSetup() {
 
     server.begin();
 
-    LOG(INFO, ("Server started at " + WiFi.localIP().toString()).c_str());
+    if (offlineMode) {
+        LOG(INFO, ("Server started at " + WiFi.softAPIP().toString()).c_str());
+    }
+    else {
+        LOG(INFO, ("Server started at " + WiFi.localIP().toString()).c_str());
+    }
 }
 
 // skip counter so we don't keep a value every second

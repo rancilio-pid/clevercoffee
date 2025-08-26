@@ -40,6 +40,7 @@
 #define BACKFLUSH_FILL_TIME      5.0               // time in seconds the pump is running during backflush
 #define BACKFLUSH_FLUSH_TIME     10.0              // time in seconds the 3-way valve is open during backflush
 #define POST_BREW_TIMER_DURATION 3.0               // time in seconds that brew timer will be shown after brew finished
+#define BLINKING_DELTA           0.3               // distance between measured temperature and setpoint to enable display blinking
 #define MAXWIFIRECONNECTS        5                 // maximum number of reconnection attempts, use -1 to deactivate
 #define WIFICONNECTIONDELAY      10000             // delay between reconnects in ms
 #define MQTT_USERNAME            "rancilio"        // default MQTT username
@@ -52,19 +53,19 @@
 #define AUTH_USERNAME            "admin"           // default username for web authentication
 
 #define PID_KP_REGULAR_MIN            0.0
-#define PID_KP_REGULAR_MAX            200.0
+#define PID_KP_REGULAR_MAX            999.0
 #define PID_TN_REGULAR_MIN            0.0
-#define PID_TN_REGULAR_MAX            200.0
+#define PID_TN_REGULAR_MAX            999.0
 #define PID_TV_REGULAR_MIN            0.0
-#define PID_TV_REGULAR_MAX            200.0
+#define PID_TV_REGULAR_MAX            999.0
 #define PID_I_MAX_REGULAR_MIN         0.0
-#define PID_I_MAX_REGULAR_MAX         100.0
+#define PID_I_MAX_REGULAR_MAX         999.0
 #define PID_KP_BD_MIN                 0.0
-#define PID_KP_BD_MAX                 200.0
+#define PID_KP_BD_MAX                 999.0
 #define PID_TN_BD_MIN                 0.0
-#define PID_TN_BD_MAX                 200.0
+#define PID_TN_BD_MAX                 999.0
 #define PID_TV_BD_MIN                 0.0
-#define PID_TV_BD_MAX                 200.0
+#define PID_TV_BD_MAX                 999.0
 #define PID_EMA_FACTOR_MIN            0.0
 #define PID_EMA_FACTOR_MAX            1.0
 #define BREW_SETPOINT_MIN             20.0
@@ -84,7 +85,7 @@
 #define TARGET_BREW_WEIGHT_MIN        0.0
 #define TARGET_BREW_WEIGHT_MAX        500.0
 #define PID_KP_STEAM_MIN              0.0
-#define PID_KP_STEAM_MAX              500.0
+#define PID_KP_STEAM_MAX              999.0
 #define STANDBY_MODE_TIME_MIN         1.0
 #define STANDBY_MODE_TIME_MAX         120.0
 #define BACKFLUSH_CYCLES_MIN          2
@@ -95,6 +96,8 @@
 #define BACKFLUSH_FLUSH_TIME_MAX      20.0
 #define POST_BREW_TIMER_DURATION_MIN  0.0
 #define POST_BREW_TIMER_DURATION_MAX  60.0
+#define BLINKING_DELTA_MIN            0.2
+#define BLINKING_DELTA_MAX            10.0
 #define SCALE_SAMPLES_MIN             1
 #define SCALE_SAMPLES_MAX             20
 #define SCALE_CALIBRATION_MIN         (-999999.0)

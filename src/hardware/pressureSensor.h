@@ -19,7 +19,7 @@ inline uint8_t ABP2_data[7];                     // holds output data
 inline uint8_t ABP2_cmd[3] = {0xAA, 0x00, 0x00}; // command to be sent
 inline double ABP2_press_counts = 0.0;           // digital pressure reading [counts]
 inline double ABP2_temp_counts = 0.0;            // digital temperature reading [counts]
-inline double ABP2_pressure = 0.0;               // pressure reading [bar, psi, kPa, etc.]
+inline double ABP2_pressure = -1.0;              // pressure reading [bar, psi, kPa, etc.]
 inline double ABP2_temperature = 0.0;            // temperature reading in deg C
 inline double ABP2_outputmax = 15099494.0;       // output at maximum pressure [counts]
 inline double ABP2_outputmin = 1677722.0;        // output at minimum pressure [counts]
@@ -30,7 +30,24 @@ inline double ABP2_percentage = 0.0;             // holds percentage of full sca
 inline float measurePressure() {
     Wire.beginTransmission(ABP2_id);
     int stat = Wire.write(ABP2_cmd, 3); // write command to the sensor
-    stat |= Wire.endTransmission();
+
+    if (stat != 3) {
+        LOG(ERROR, "Write Error");
+
+        return static_cast<float>(ABP2_pressure);
+    }
+
+    stat = Wire.endTransmission();
+
+    if (stat > 0) {
+        if (const unsigned long currentMillisPressureDebug = millis(); currentMillisPressureDebug - previousMillisPressureDebug >= intervalPressureDebug) {
+            LOGF(ERROR, "Could not communicate with pressure sensor, error code %i", stat);
+            previousMillisPressureDebug = currentMillisPressureDebug;
+        }
+
+        return static_cast<float>(ABP2_pressure);
+    }
+
     delay(ABP2_READ_DELAY_MS);
 
     // read back Sensor data 7 bytes
@@ -55,11 +72,9 @@ inline float measurePressure() {
     // calculation of pressure value according to equation 2 of datasheet
     ABP2_pressure = (ABP2_press_counts - ABP2_outputmin) * (ABP2_pmax - ABP2_pmin) / (ABP2_outputmax - ABP2_outputmin) + ABP2_pmin;
 
-    IFLOG(TRACE) {
-        if (const unsigned long currentMillisPressureDebug = millis(); currentMillisPressureDebug - previousMillisPressureDebug >= intervalPressureDebug) {
-            LOGF(TRACE, "Counts: %f, Percent: %f, Pressure: %f, Temp: %f", ABP2_press_counts, ABP2_percentage, ABP2_pressure, ABP2_temperature);
-            previousMillisPressureDebug = currentMillisPressureDebug;
-        }
+    if (const unsigned long currentMillisPressureDebug = millis(); currentMillisPressureDebug - previousMillisPressureDebug >= intervalPressureDebug) {
+        LOGF(TRACE, "Counts: %f, Percent: %f, Pressure: %f, Temp: %f", ABP2_press_counts, ABP2_percentage, ABP2_pressure, ABP2_temperature);
+        previousMillisPressureDebug = currentMillisPressureDebug;
     }
 
     return static_cast<float>(ABP2_pressure);

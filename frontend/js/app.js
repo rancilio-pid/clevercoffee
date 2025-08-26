@@ -43,7 +43,7 @@ const vueApp = Vue.createApp({
         async fetchParameters(filter = '') {
             this.parameters = [];
             let offset = 0;
-            const limit = 20;
+            const limit = 5;
             let moreData = true;
 
             while (moreData) {

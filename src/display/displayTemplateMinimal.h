@@ -37,45 +37,38 @@ inline void printScreen() {
 
     int numDecimalsInput = 1;
 
-    if (temperature > 99.999) {
+    if (temperature >= 99.95) {
         numDecimalsInput = 0;
     }
 
     int numDecimalsSetpoint = 1;
 
-    if (setpoint > 99.999) {
+    if (setpoint >= 99.95) {
         numDecimalsSetpoint = 0;
     }
 
     // Draw temp, blink if feature STATUS_LED is not enabled
-    if (fabs(temperature - setpoint) < 0.3 && !config.get<bool>("hardware.leds.status.enabled")) {
-        if (isrCounter < 500) {
-            // limit to 4 characters
-            u8g2->setCursor(2, 20);
-            u8g2->setFont(u8g2_font_profont22_tr);
-            u8g2->print(temperature, numDecimalsInput);
-            u8g2->setFont(u8g2_font_open_iconic_arrow_2x_t);
-            u8g2->print(static_cast<char>(78));
-            u8g2->setCursor(78, 20);
-            u8g2->setFont(u8g2_font_profont22_tr);
-            u8g2->print(setpoint, numDecimalsSetpoint);
-        }
-    }
-    else {
+    bool nearSetpoint = fabs(temperature - setpoint) <= config.get<float>("display.blinking.delta");
+
+    if (!(isrCounter < 500 && ((nearSetpoint && config.get<int>("display.blinking.mode") == 1) || (!nearSetpoint && config.get<int>("display.blinking.mode") == 2)))) {
+        // limit to 4 characters
         u8g2->setCursor(2, 20);
         u8g2->setFont(u8g2_font_profont22_tr);
         u8g2->print(temperature, numDecimalsInput);
         u8g2->setFont(u8g2_font_open_iconic_arrow_2x_t);
         u8g2->setCursor(56, 24);
 
-        if (bPID.GetMode() == 1) {
+        if (nearSetpoint) {
+            u8g2->print(static_cast<char>(78));
+        }
+        else if (bPID.GetMode() == 1) {
             u8g2->print(static_cast<char>(74));
         }
         else {
             u8g2->print(static_cast<char>(70));
         }
 
-        u8g2->setCursor(79, 20);
+        u8g2->setCursor(78, 20);
         u8g2->setFont(u8g2_font_profont22_tr);
         u8g2->print(setpoint, numDecimalsSetpoint);
     }

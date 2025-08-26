@@ -600,6 +600,29 @@ void ParameterRegistry::initialize(Config& config) {
         "full screen logo will be shown if temperature is 5°C below setpoint"
     );
 
+    addEnumConfigParam(
+        "display.blinking.mode",
+        "Set temperature display blinking",
+        sDisplaySection,
+        910,
+        nullptr,
+        (const char* const[]){"Off", "Near Setpoint", "Away From Setpoint"},
+        3,
+        "Enable blinking of temperature based on distance to setpoint"
+    );
+
+    addNumericConfigParam<double>(
+        "display.blinking.delta",
+        "Delta to activate blinking",
+        kDouble,
+        sDisplaySection,
+        911,
+        nullptr,
+        0.2,
+        10,
+        "Delta from setpoint for blinking temperature display"
+    );
+
     // MQTT section
     addBoolConfigParam(
         "mqtt.enabled",
@@ -729,7 +752,7 @@ void ParameterRegistry::initialize(Config& config) {
         1202,
         nullptr,
         USERNAME_MAX_LENGTH,
-        "Username for accessing the website and authenticating web requests. "
+        "Username for accessing the website and authenticating web requests"
     );
 
     addStringConfigParam(
@@ -739,7 +762,16 @@ void ParameterRegistry::initialize(Config& config) {
         1203,
         nullptr,
         PASSWORD_MAX_LENGTH,
-        "Password for accessing the website and authenticating web requests."
+        "Password for accessing the website and authenticating web requests"
+    );
+
+    addBoolConfigParam(
+        "system.offline_mode",
+        "Offline Mode",
+        sSystemSection,
+        1204,
+        nullptr,
+        "Disable wifi and start an access point to display the website"
     );
 
     // Debugging Checkboxes

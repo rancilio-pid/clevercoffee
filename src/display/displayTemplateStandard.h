@@ -61,12 +61,9 @@ inline void printScreen() {
     displayThermometerOutline(4, 62);
 
     // Draw current temp in thermometer
-    if (fabs(temperature - setpoint) < 0.3) {
-        if (isrCounter < 500) {
-            drawTemperaturebar(8, 30);
-        }
-    }
-    else {
+    bool nearSetpoint = fabs(temperature - setpoint) <= config.get<float>("display.blinking.delta");
+
+    if (!(isrCounter < 500 && ((nearSetpoint && config.get<int>("display.blinking.mode") == 1) || (!nearSetpoint && config.get<int>("display.blinking.mode") == 2)))) {
         drawTemperaturebar(8, 30);
     }
 

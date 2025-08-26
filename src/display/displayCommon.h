@@ -680,8 +680,8 @@ inline bool displayFullscreenHotWaterTimer() {
  */
 inline bool displayOfflineMode() {
 
-    if (displayOffline > 0 && displayOffline < 20) {
-        displayWrappedMessage("Begin Fallback,\nNo Wifi");
+    if (displayOffline > 0 && displayOffline < 50) {
+        displayWrappedMessage(String(langstring_nowifi[0]) + String(langstring_nowifi[1]) + "\n" + String(langstring_offlineAP) + "\n" + hostname + "\n" + WiFi.softAPIP().toString());
         displayOffline++;
         return true;
     }
@@ -699,7 +699,7 @@ inline bool displayMachineState() {
     }
 
     // Show the heating logo when we are in regular PID mode and more than 5degC below the set point
-    if (featureHeatingLogo > 0 && (machineState == kPidNormal || machineState == kSteam) && setpoint - temperature > 5.) {
+    if (featureHeatingLogo && (machineState == kPidNormal || machineState == kSteam) && setpoint - temperature > 5.) {
         // For status info
         u8g2->clearBuffer();
 
@@ -707,8 +707,16 @@ inline bool displayMachineState() {
 
         u8g2->drawXBMP(0, 20, Heating_Logo_width, Heating_Logo_height, Heating_Logo);
         u8g2->setFont(u8g2_font_fub25_tn);
-        u8g2->setCursor(50, 30);
-        u8g2->print(temperature, 1);
+
+        if (temperature < 99.95) {
+            u8g2->setCursor(50, 30);
+            u8g2->print(temperature, 1);
+        }
+        else {
+            u8g2->setCursor(58, 30);
+            u8g2->print(temperature, 0);
+        }
+
         u8g2->drawCircle(122, 32, 3);
 
         u8g2->sendBuffer();

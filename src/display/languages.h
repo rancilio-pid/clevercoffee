@@ -18,9 +18,11 @@ static const char* langstring_pressure;
 static const char* langstring_uptime;
 static const char* langstring_offlinemode;
 static const char* langstring_wifirecon;
-static const char* langstring_connectwifi1;
+static const char* langstring_connectwifi;
 static const char* langstring_connectip;
 static const char* langstring_nowifi[2];
+static const char* langstring_offlineAP;
+static const char* langstring_portalAP;
 static const char* langstring_error_tsensor[2];
 static const char* langstring_scale_Failure;
 static const char* langstring_backflush_press;
@@ -60,10 +62,12 @@ inline void initLangStrings(const Config& config) {
 
         langstring_offlinemode = "Offline";
         langstring_wifirecon = "Wifi reconnect:";
-        langstring_connectwifi1 = "Connecting to WiFi:";
+        langstring_connectwifi = "Connecting to WiFi:";
         langstring_connectip = "IP Address:";
         langstring_nowifi[0] = "No ";
         langstring_nowifi[1] = "WiFi";
+        langstring_offlineAP = "Starting Offline AP";
+        langstring_portalAP = "Starting Portal AP";
 
         langstring_error_tsensor[0] = "Error, Temp: ";
         langstring_error_tsensor[1] = "Check temperature sensor!";
@@ -98,10 +102,12 @@ inline void initLangStrings(const Config& config) {
 
         langstring_offlinemode = "Offline";
         langstring_wifirecon = "Reconecta wifi:";
-        langstring_connectwifi1 = "Wifi conectado:";
+        langstring_connectwifi = "Wifi conectado:";
         langstring_connectip = "Dirección IP:";
         langstring_nowifi[0] = "No ";
         langstring_nowifi[1] = "WIFI";
+        langstring_offlineAP = "Iniciando AP offline";
+        langstring_portalAP = "Iniciando Portal AP";
 
         langstring_error_tsensor[0] = "Error, Temp: ";
         langstring_error_tsensor[1] = "¡Revisa el sensor de temperatura!";
@@ -136,10 +142,13 @@ inline void initLangStrings(const Config& config) {
 
         langstring_offlinemode = "Offline";
         langstring_wifirecon = "Wifi reconnect:";
-        langstring_connectwifi1 = "Verbinde WLAN:";
+        langstring_connectwifi = "Verbinde WLAN:";
         langstring_connectip = "IP-Adresse:";
         langstring_nowifi[0] = "Kein ";
         langstring_nowifi[1] = "WLAN";
+        langstring_offlineAP = "Offline AP starten";
+        langstring_portalAP = "Portal AP starten";
+
         langstring_error_tsensor[0] = "Fehler, Temp: ";
         langstring_error_tsensor[1] = "Temp.-Sensor ueberpruefen!";
         langstring_scale_Failure = "Fehler";

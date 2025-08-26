@@ -197,11 +197,9 @@ inline void checkBrewSwitch() {
  */
 inline void debugPumpState(String label, String state) {
     hotWaterStateDebug = state;
-    IFLOG(DEBUG) {
-        if (hotWaterStateDebug != lastHotWaterStateDebug) {
-            LOGF(DEBUG, "Hot water state: %s - BrewHandler: %s", hotWaterStateDebug, label);
-            lastHotWaterStateDebug = hotWaterStateDebug;
-        }
+    if (hotWaterStateDebug != lastHotWaterStateDebug) {
+        LOGF(DEBUG, "Hot water state: %s - BrewHandler: %s", hotWaterStateDebug, label);
+        lastHotWaterStateDebug = hotWaterStateDebug;
     }
 }
 

@@ -105,6 +105,8 @@ inline void printScreen() {
 
             u8g2->setFont(u8g2_font_profont22_tr);
 
+            bool nearSetpoint = fabs(temperature - setpoint) <= config.get<float>("display.blinking.delta");
+
             if (machineState == kManualFlush) {
                 u8g2->print("FLUSH");
             }
@@ -115,17 +117,13 @@ inline void printScreen() {
             else if (shouldDisplayBrewTimer()) {
                 u8g2->print("BREW");
             }
-            else if (fabs(temperature - setpoint) < 0.3) {
-
-                if (isrCounter < 500) {
+            else if (!(isrCounter < 500 && ((nearSetpoint && config.get<int>("display.blinking.mode") == 1) || (!nearSetpoint && config.get<int>("display.blinking.mode") == 2)))) {
+                if (nearSetpoint) {
                     u8g2->print("OK");
                 }
                 else {
-                    u8g2->print("");
+                    u8g2->print("WAIT");
                 }
-            }
-            else {
-                u8g2->print("WAIT");
             }
 
             u8g2->setFont(u8g2_font_profont11_tf);
