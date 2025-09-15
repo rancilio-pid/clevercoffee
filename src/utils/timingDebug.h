@@ -20,8 +20,8 @@ enum ActivityType : uint16_t {
  * @brief print what has caused the long loop time
  * @return void
  */
-void printActivityFlags(const uint16_t* activity, int size) {
-    char activityBuffer[512];
+void printActivityFlags(const uint16_t* activity, uint16_t size) {
+    char activityBuffer[180];
     int len = 0;
 
     len += snprintf(activityBuffer + len, sizeof(activityBuffer) - len, "Activity (short): [");
@@ -65,27 +65,27 @@ void printActivityFlags(const uint16_t* activity, int size) {
     }
 
     len += snprintf(activityBuffer + len, sizeof(activityBuffer) - len, "]");
-    LOGF(DEBUG, "%s", activityBuffer);
+    LOGF(DEBUG, "%s -- length %i", activityBuffer, len);
 }
 
 /**
  * @brief Print both timing and compact activity in one batch
  * @return void
  */
-void printTimingAndActivityBatch(const unsigned long* timing, const uint16_t* activity, int size) {
-    char timingBuffer[512];
+void printTimingAndActivityBatch(const uint16_t* timing, const uint16_t* activity, uint16_t size) {
+    char timingBuffer[180];
     int tLen = 0;
 
     tLen += snprintf(timingBuffer + tLen, sizeof(timingBuffer) - tLen, "Loop timing (ms): [");
 
     for (int i = 0; i < size; ++i) {
-        tLen += snprintf(timingBuffer + tLen, sizeof(timingBuffer) - tLen, "%lu", timing[i]);
+        tLen += snprintf(timingBuffer + tLen, sizeof(timingBuffer) - tLen, "%u", timing[i]);
         if (i < size - 1) tLen += snprintf(timingBuffer + tLen, sizeof(timingBuffer) - tLen, ",");
     }
     tLen += snprintf(timingBuffer + tLen, sizeof(timingBuffer) - tLen, "]");
 
     // Only two log lines total
-    LOGF(DEBUG, "%s", timingBuffer);
+    LOGF(DEBUG, "%s -- length %i", timingBuffer, tLen);
     printActivityFlags(activity, size);
 }
 
@@ -94,18 +94,24 @@ void printTimingAndActivityBatch(const unsigned long* timing, const uint16_t* ac
  * @return void
  */
 void debugTimingLoop() {
-    static const int LOOP_HISTORY_SIZE = 20;
-    static unsigned long loopTiming[LOOP_HISTORY_SIZE];
+    static const uint16_t LOOP_HISTORY_SIZE = 20;
+    static uint16_t loopTiming[LOOP_HISTORY_SIZE];
     static uint16_t activityType[LOOP_HISTORY_SIZE];
     static unsigned long previousMillisDebug = millis();
     static unsigned long lastSendMillisDebug = millis();
-    static unsigned int loopIndex = 0;
-    static unsigned int loopCount = 0;
-    static unsigned long maxLoop = 0;
+    static uint16_t loopIndex = 0;
+    static uint16_t loopCount = 0;
+    static uint16_t maxLoop = 0;
+    static unsigned long lastHeapSent = millis();
+
+    if (millis() - lastHeapSent > 5000) {
+        LOGF(DEBUG, "[Heap] Free: %u  MaxAlloc: %u", ESP.getFreeHeap(), heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT));
+        lastHeapSent += 5000;
+    }
 
     if (timingDebugActive) {
         loopCount += 1;
-        unsigned long loopDuration = millis() - previousMillisDebug;
+        uint16_t loopDuration = static_cast<uint16_t>(millis() - previousMillisDebug);
         previousMillisDebug = millis();
 
         // the loopDuration > 45 check is in case there is a long loop caused by something unknown
@@ -149,9 +155,9 @@ void debugTimingLoop() {
             // print to the last 20 entries to console
             if (loopIndex == 0) {
                 printTimingAndActivityBatch(loopTiming, activityType, LOOP_HISTORY_SIZE);
-                unsigned long reportTime = millis() - lastSendMillisDebug;
+                uint16_t reportTime = static_cast<uint16_t>(millis() - lastSendMillisDebug);
                 float avgLoopMs = loopCount > 0 ? ((float)reportTime / loopCount) : 0;
-                LOGF(DEBUG, "Max time %lu (ms) -- %i entries report time %lu (ms) -- average %0.2f (ms)", maxLoop, LOOP_HISTORY_SIZE, reportTime, avgLoopMs);
+                LOGF(DEBUG, "Max time %u (ms) -- %u entries report time %u (ms) -- average %0.2f (ms)", maxLoop, LOOP_HISTORY_SIZE, reportTime, avgLoopMs);
                 lastSendMillisDebug = millis();
                 loopCount = 0;
                 maxLoop = 0;

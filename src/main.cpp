@@ -875,6 +875,10 @@ void setup() {
         LOG(ERROR, "Failed to load config from filesystem!");
     }
 
+    if (config.get<bool>("hardware.leds.steam.enabled")) {
+        LOG(WARNING, "Steam LED interferes with USB console communication");
+    }
+
     hostname = config.get<String>("system.hostname");
 
     ParameterRegistry::getInstance().initialize(config);
@@ -1056,7 +1060,10 @@ void setup() {
             }
 
             if (config.get<bool>("hardware.sensors.scale.enabled")) {
-                mqttVars["targetBrewWeight"] = "brew.by_weight.target_weight";
+                if (config.get<bool>("brew.mode") == 1) {
+                    mqttVars["targetBrewWeight"] = "brew.by_weight.target_weight";
+                }
+
                 mqttVars["scaleCalibration"] = "hardware.sensors.scale.calibration";
 
                 if (config.get<int>("hardware.sensors.scale.type") == 0) {
@@ -1279,9 +1286,7 @@ void loopPid() {
         websiteUpdateRunning = true;
 
         // send temperatures to website endpoint
-        if (WiFi.status() == WL_CONNECTED && !offlineMode) {
-            sendTempEvent(temperature, brewSetpoint, pidOutput / 10); // pidOutput is promill, so /10 to get percent value
-        }
+        sendTempEvent(temperature, brewSetpoint, pidOutput / 10); // pidOutput is promill, so /10 to get percent value
 
         lastTempEvent = millis();
 

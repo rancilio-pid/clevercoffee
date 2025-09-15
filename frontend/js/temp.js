@@ -198,10 +198,11 @@ const tzdateOptions = {
 };
 
 function makeTempChart(data) {
+    const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const opts = {
         title: "Temperature History",
         ...getSize(chartDiv),
-        tzDate: ts => uPlot.tzDate(new Date(ts * 1e3), 'Europe/Berlin'),
+        tzDate: ts => uPlot.tzDate(new Date(ts * 1e3), localTz),
         series: [
             {
                 value: "{YYYY}-{MM}-{DD} {HH}:{mm}:{ss}"
@@ -236,7 +237,7 @@ function makeTempChart(data) {
         ],
         axes: [
             {
-                values: (u, vals, space) => vals.map(v => uPlot.tzDate(new Date(v * 1e3), 'Europe/Berlin').toLocaleString("de-DE", tzdateOptions)),
+                values: (u, vals, space) => vals.map(v => uPlot.tzDate(new Date(v * 1e3), localTz).toLocaleString("de-DE", tzdateOptions)),
             },
             {
                 scale: 'C',
@@ -249,10 +250,11 @@ function makeTempChart(data) {
 }
 
 function makeHeaterChart(data) {
+    const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const opts = {
         title: "Heater Power History",
         ...getSize(heaterDiv),
-        tzDate: ts => uPlot.tzDate(new Date(ts * 1e3), 'Europe/Berlin'),
+        tzDate: ts => uPlot.tzDate(new Date(ts * 1e3), localTz),
         scales: {
             "%": {
                 auto: false,
@@ -279,7 +281,7 @@ function makeHeaterChart(data) {
         ],
         axes: [
             {
-                values: (u, vals, space) => vals.map(v => uPlot.tzDate(new Date(v * 1e3), 'Europe/Berlin').toLocaleString("de-DE", tzdateOptions)),
+                values: (u, vals, space) => vals.map(v => uPlot.tzDate(new Date(v * 1e3), localTz).toLocaleString("de-DE", tzdateOptions)),
             },
             {
                 side: 3,
