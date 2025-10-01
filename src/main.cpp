@@ -1669,8 +1669,8 @@ void looppid() {
     updateStandbyTimer();
     handleMachineState();
 
-    // Check if brew timer should be shown
-#if (FEATURE_BREWSWITCH == 1)
+    // Check if brew timer should be shown, only if Display is activated.
+#if (FEATURE_BREWSWITCH == 1 && OLED_DISPLAY != 0)
     shouldDisplayBrewTimer();
 #endif
 
