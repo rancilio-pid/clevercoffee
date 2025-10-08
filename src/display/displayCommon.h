@@ -694,6 +694,10 @@ inline bool displayOfflineMode() {
  */
 inline bool displayMachineState() {
 
+    if (shouldDisplayBrewTimer()) {
+        return false;
+    }
+
     if (displayOfflineMode()) {
         return true;
     }

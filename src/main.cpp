@@ -586,6 +586,12 @@ void handleMachineState() {
                 machineState = kPidNormal;
             }
 
+            if (currBackflushState == kBackflushIdle) {
+                if (manualFlush()) {
+                    machineState = kManualFlush;
+                }
+            }
+
             if (emergencyStop) {
                 machineState = kEmergencyStop;
             }
