@@ -235,6 +235,7 @@ constexpr int waterTankCountsNeeded = 3;   // Number of same readings to change 
 
 // PID controller
 unsigned long previousMillistemp; // initialisation at the end of init()
+unsigned long previousMillisTimer;
 
 double setpointTemp;
 double previousInput = 0;
@@ -863,6 +864,23 @@ void wiFiReset() {
     ESP.restart();
 }
 
+void testTimer(void) {
+    static unsigned int lastIsrWatchdog = 0;
+
+    if (millis() - previousMillisTimer > 2000) {
+        if ((isrWatchdog == lastIsrWatchdog) && (isTimer1Enabled())) {
+            LOG(ERROR, "Timer1 stopped, restarting timer");
+            heaterRelay->off();
+            disableTimer1();
+            delay(10);
+            enableTimer1();
+        }
+
+        previousMillisTimer = millis();
+        lastIsrWatchdog = isrWatchdog;
+    }
+}
+
 extern const char sysVersion[] = STR(AUTO_VERSION);
 
 void setup() {
@@ -1139,6 +1157,7 @@ void setup() {
     windowStartTime = currentTime;
     previousMillisMQTT = currentTime;
     lastMQTTConnectionAttempt = currentTime;
+    previousMillisTimer = currentTime;
 
     // Init Scale
     if (config.get<bool>("hardware.sensors.scale.enabled")) {
@@ -1346,6 +1365,7 @@ void loopPid() {
     handleMachineState();
     hotWaterHandler();
     valveSafetyShutdownCheck();
+    testTimer();
 
     if (config.get<bool>("hardware.switches.brew.enabled")) {
         shouldDisplayBrewTimer();
