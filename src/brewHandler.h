@@ -264,6 +264,10 @@ inline bool brew() {
                     LOG(INFO, "Brew running");
                     currBrewState = kBrewRunning;
                 }
+                else if (preinfusion == 0) {
+                    LOG(INFO, "Preinfusion was zero, Preinfusion pause running");
+                    currBrewState = kPreinfusionPause;
+                }
                 else {
                     LOG(INFO, "Preinfusion running");
                     currBrewState = kPreinfusion;
