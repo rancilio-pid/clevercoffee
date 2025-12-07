@@ -242,7 +242,10 @@ inline void initScale() {
     }
 
     if (scaleType == 2) { // Bluetooth scale
-        scale = new BluetoothScale();
+
+        const bool bleDebug = config.get<int>("system.log_level") == static_cast<int>(Logger::Level::TRACE);
+        scale = new BluetoothScale(bleDebug);
+
         isBluetoothScale = true;
 
         LOG(INFO, "Initializing Bluetooth scale");

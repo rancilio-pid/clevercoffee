@@ -7,9 +7,9 @@
 #include "Logger.h"
 #include <Arduino.h>
 
-BluetoothScale::BluetoothScale() :
+BluetoothScale::BluetoothScale(bool debug) :
     currentWeight(0.0), lastUpdateTime(0), connected(false), bleInitialized(false), lastConnectionAttempt(0), connectionAttemptInterval(5000), isUpdatingConnection(false), maxConnectionAttemptInterval(30000) {
-    bleScale = new AcaiaArduinoBLE(false);
+    bleScale = new AcaiaArduinoBLE(debug);
 }
 
 BluetoothScale::~BluetoothScale() {

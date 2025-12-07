@@ -13,7 +13,7 @@
  */
 class BluetoothScale : public Scale {
     public:
-        BluetoothScale();
+        explicit BluetoothScale(bool debug = false);
 
         ~BluetoothScale() override;
 
