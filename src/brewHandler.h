@@ -328,7 +328,7 @@ inline bool brew() {
                     LOG(INFO, "Brew reached time target");
                     currBrewState = kBrewFinished;
                 }
-                else if (config.get<bool>("hardware.sensors.scale.enabled")) {
+                else if (scale && config.get<bool>("hardware.sensors.scale.enabled")) {
                     const auto targetBrewWeight = ParameterRegistry::getInstance().getParameterById("brew.by_weight.target_weight")->getValueAs<float>();
 
                     if (currBrewWeight > targetBrewWeight && brewByWeightEnabled) {

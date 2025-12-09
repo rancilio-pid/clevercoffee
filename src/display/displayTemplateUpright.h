@@ -11,7 +11,6 @@
  * @brief Send data to display
  */
 inline void printScreen() {
-    const bool scaleEnabled = config.get<bool>("hardware.sensors.scale.enabled");
     const bool pressureEnabled = config.get<bool>("hardware.sensors.pressure.enabled");
     const bool brewEnabled = config.get<bool>("hardware.switches.brew.enabled");
 
@@ -93,10 +92,10 @@ inline void printScreen() {
         }
         else {
             // print status
-            if (scaleEnabled && pressureEnabled) {
+            if (scale && pressureEnabled) {
                 u8g2->setCursor(1, 65);
             }
-            else if (scaleEnabled || pressureEnabled) {
+            else if (scale || pressureEnabled) {
                 u8g2->setCursor(1, 60);
             }
             else {
@@ -157,14 +156,14 @@ inline void printScreen() {
             u8g2->print("%");
 
             // Brew
-            if (scaleEnabled) {
+            if (scale) {
                 displayBrewWeight(1, 44, currReadingWeight, -1, scaleFailure);
             }
 
             if (pressureEnabled) {
                 u8g2->setFont(u8g2_font_profont11_tf);
 
-                if (scaleEnabled) {
+                if (scale) {
                     u8g2->setCursor(1, 54);
                 }
                 else {
@@ -198,7 +197,7 @@ inline void printScreen() {
                             displayBrewTime(1, 34, langstring_brew_ur, currBrewTime);
                         }
 
-                        if (scaleEnabled) {
+                        if (scale) {
                             if (automaticBrewingEnabled && config.get<bool>("brew.by_weight.enabled")) {
                                 const auto targetBrewWeight = ParameterRegistry::getInstance().getParameterById("brew.by_weight.target_weight")->getValueAs<float>();
                                 displayBrewWeight(1, 44, currBrewWeight, targetBrewWeight, scaleFailure);
@@ -224,9 +223,7 @@ inline void printScreen() {
             u8g2->print(langstring_offlinemode);
         }
 
-        if (config.get<bool>("hardware.sensors.scale.enabled") && config.get<int>("hardware.sensors.scale.type") == 2) {
-            displayBluetoothStatus(54, 1);
-        }
+        displayBluetoothStatus(54, 1);
     }
 
     displayBufferReady = true;

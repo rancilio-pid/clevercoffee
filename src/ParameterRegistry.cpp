@@ -1105,7 +1105,7 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareSensorSection,
         2432,
         nullptr,
-        (const char* const[]){"HX711 (2 load cells)", "HX711 (1 load cell)", "Bluetooth"},
+        (const char* const[]){"HX711 (2 load cell controllers)", "HX711 (1 load cell controller)", "Bluetooth"},
         3,
         "Integrated HX711-based scale with different load cell configurations or Bluetooth Low Energy scales"
     );
@@ -1143,7 +1143,7 @@ void ParameterRegistry::initialize(Config& config) {
         nullptr,
         SCALE_CALIBRATION_MIN, SCALE_CALIBRATION_MAX,
         "Secondary scale calibration factor (for dual load cell setups)",
-        [&config] { return config.get<int>("hardware.sensors.scale.type") < 2; }
+        [&config] { return config.get<int>("hardware.sensors.scale.type") == 0; }
     );
 
     addNumericConfigParam<double>(

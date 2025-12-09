@@ -61,9 +61,7 @@ inline void printScreen() {
     u8g2->print(static_cast<char>(176));
     u8g2->print("C");
 
-    const bool scaleEnabled = config.get<bool>("hardware.sensors.scale.enabled");
-
-    if (scaleEnabled) {
+    if (scale) {
         // Show current weight if scale has no error
         displayBrewWeight(32, 26, currReadingWeight, -1, scaleFailure);
     }
@@ -89,7 +87,7 @@ inline void printScreen() {
             }
 
             // Weight
-            if (scaleEnabled) {
+            if (scale) {
                 if (automaticBrewingEnabled && config.get<bool>("brew.by_weight.enabled")) {
                     const auto targetBrewWeight = ParameterRegistry::getInstance().getParameterById("brew.by_weight.target_weight")->getValueAs<float>();
                     displayBrewWeight(32, 26, currBrewWeight, targetBrewWeight, scaleFailure);

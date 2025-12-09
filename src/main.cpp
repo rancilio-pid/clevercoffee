@@ -1337,7 +1337,7 @@ void loopPid() {
         }
     }
 
-    if (config.get<bool>("hardware.sensors.scale.enabled")) {
+    if (scale) {
         checkWeight();    // Check Weight Scale in the loop
         shotTimerScale(); // Calculation of weight of shot while brew is running
     }
