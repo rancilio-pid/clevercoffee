@@ -565,6 +565,15 @@ void handleMachineState() {
                 machineState = kPidNormal;
             }
 
+            if (checkHotWaterStates() && standbyModeOn) {
+                resetStandbyTimer(machineState);
+            }
+
+            if (standbyModeOn && standbyModeRemainingTimeMillis == 0) {
+                machineState = kStandby;
+                setRuntimePidState(false);
+            }
+
             if (emergencyStop) {
                 machineState = kEmergencyStop;
             }
@@ -590,6 +599,16 @@ void handleMachineState() {
                 if (manualFlush()) {
                     machineState = kManualFlush;
                 }
+            }
+            else {
+                if (standbyModeOn) {
+                    resetStandbyTimer(machineState);
+                }
+            }
+
+            if (standbyModeOn && standbyModeRemainingTimeMillis == 0) {
+                machineState = kStandby;
+                setRuntimePidState(false);
             }
 
             if (emergencyStop) {
@@ -647,6 +666,11 @@ void handleMachineState() {
         case kPidDisabled:
             if (pidON) {
                 machineState = kPidNormal;
+            }
+
+            if (standbyModeOn && standbyModeRemainingTimeMillis == 0) {
+                machineState = kStandby;
+                setRuntimePidState(false);
             }
 
             if (tempSensor != nullptr && tempSensor->hasError()) {
