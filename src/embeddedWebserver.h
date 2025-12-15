@@ -232,7 +232,7 @@ inline void serverSetup() {
         request->redirect("/");
     });
 
-    if (scale && config.get<bool>("hardware.sensors.scale.enabled")) {
+    if (config.get<bool>("hardware.sensors.scale.enabled")) {
         server.on("/toggleTareScale", HTTP_POST, [](AsyncWebServerRequest* request) {
             if (!authenticate(request)) {
                 return request->requestAuthentication();
