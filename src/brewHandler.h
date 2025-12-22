@@ -282,12 +282,14 @@ inline bool brew() {
                     }
 
                     if (config.get<bool>("brew.by_weight.enabled") && config.get<bool>("brew.by_weight.auto_tare")) {
-                        LOG(INFO, "Tare scale");
-                        bleScale->tare();
-
-                        // Mark that auto-tare is in progress for Bluetooth scales
-                        autoTareInProgress = true;
-                        autoTareStartTime = millis();
+                        // only send tare command if not already close to zero
+                        if (abs(currReadingWeight) > 0.2) {
+                            LOG(INFO, "Tare scale");
+                            bleScale->tare();
+                            // Mark that auto-tare is in progress for Bluetooth scales
+                            autoTareInProgress = true;
+                            autoTareStartTime = millis();
+                        }
                     }
                 }
             }
