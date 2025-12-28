@@ -50,6 +50,16 @@ const char* switchTypes[2] = {"Momentary", "Toggle"};
 const char* switchModes[2] = {"Normally Open", "Normally Closed"};
 const char* relayTriggerTypes[2] = {"Low Trigger", "High Trigger"};
 
+static constexpr const char* const brewModes[] = {"Manual", "Automatic"};
+static constexpr const char* const displayTemplates[] = {"Standard", "Minimal", "Temp only", "Scale", "Upright"};
+static constexpr const char* const displayLanguages[] = {"Deutsch", "English", "Español"};
+static constexpr const char* const blinkingModes[] = {"Off", "Near Setpoint", "Away From Setpoint"};
+static constexpr const char* const logLevels[] = {"TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "FATAL", "SILENT"};
+static constexpr const char* const oledTypes[] = {"SH1106 (1.3\")", "SSD1306 (0.96\")"};
+static constexpr const char* const oledAddresses[] = {"0x3C", "0x3D"};
+static constexpr const char* const tempSensorTypes[] = {"TSIC306", "Dallas DS18B20"};
+static constexpr const char* const scaleTypes[] = {"HX711 (2 load cell controllers)", "HX711 (1 load cell controller)", "Bluetooth"};
+
 void ParameterRegistry::initialize(Config& config) {
     if (_ready) {
         return;
@@ -216,7 +226,7 @@ void ParameterRegistry::initialize(Config& config) {
             sBrewSection,
             301,
             nullptr,
-            (const char* const[]){"Manual", "Automatic"},
+            brewModes,
             2,
             "Manual mode gives you full control over the brew time while Automatic mode allows you to activate brew-by-time and/or brew-by-weight. The brew will then stop at whatever target is reached first."
         );
@@ -515,9 +525,11 @@ void ParameterRegistry::initialize(Config& config) {
         sDisplaySection,
         901,
         nullptr,
-        (const char* const[]){"Standard", "Minimal", "Temp only", "Scale", "Upright"},
+        displayTemplates,
         5,
-        "Set the display template, changes require a reboot"
+        "Set the display template",
+        [] { return true; },
+        true
     );
 
     addBoolConfigParam(
@@ -526,7 +538,9 @@ void ParameterRegistry::initialize(Config& config) {
         sDisplaySection,
         902,
         nullptr,
-        "Set the display rotation, changes require a reboot"
+        "Set the display rotation",
+        [] { return true; },
+        true
     );
 
     addEnumConfigParam(
@@ -535,9 +549,11 @@ void ParameterRegistry::initialize(Config& config) {
         sDisplaySection,
         903,
         nullptr,  // No global variable for this parameter
-        (const char* const[]){"Deutsch", "English", "Español"},
+        displayLanguages,
         3,
-        "Set the language for the OLED display, changes requre a reboot"
+        "Set the language for the OLED display",
+        [] { return true; },
+    true
     );
 
     addBoolConfigParam(
@@ -606,7 +622,7 @@ void ParameterRegistry::initialize(Config& config) {
         sDisplaySection,
         910,
         nullptr,
-        (const char* const[]){"Off", "Near Setpoint", "Away From Setpoint"},
+        blinkingModes,
         3,
         "Enable blinking of temperature based on distance to setpoint"
     );
@@ -630,7 +646,9 @@ void ParameterRegistry::initialize(Config& config) {
         sMqttSection,
         1001,
         nullptr,
-        "Enables MQTT, change requires a restart"
+        "Enables MQTT connectivity",
+        [] { return true; },
+        true
     );
 
     addStringConfigParam(
@@ -640,7 +658,9 @@ void ParameterRegistry::initialize(Config& config) {
         1011,
         nullptr,
         MQTT_BROKER_MAX_LENGTH,
-        "IP addresss or hostname of your MQTT broker, changes require a restart"
+        "IP addresss or hostname of your MQTT broker",
+        [] { return true; },
+        true
     );
 
     addNumericConfigParam<int>(
@@ -652,7 +672,9 @@ void ParameterRegistry::initialize(Config& config) {
         nullptr,
         1,
         65535,
-        "Port number of your MQTT broker, changes require a restart"
+        "Port number of your MQTT broker",
+        [] { return true; },
+        true
     );
 
     addStringConfigParam(
@@ -662,7 +684,9 @@ void ParameterRegistry::initialize(Config& config) {
         1013,
         nullptr,
         USERNAME_MAX_LENGTH,
-        "Username for your MQTT broker, changes require a restart"
+        "Username for your MQTT broker",
+        [] { return true; },
+        true
     );
 
     addStringConfigParam(
@@ -672,7 +696,9 @@ void ParameterRegistry::initialize(Config& config) {
         1014,
         nullptr,
         PASSWORD_MAX_LENGTH,
-        "Password for your MQTT broker, changes require a restart"
+        "Password for your MQTT broker",
+        [] { return true; },
+        true
     );
 
     addStringConfigParam(
@@ -682,7 +708,9 @@ void ParameterRegistry::initialize(Config& config) {
         1015,
         nullptr,
         MQTT_TOPIC_MAX_LENGTH,
-        "Custom MQTT topic prefix, changes require a restart"
+        "Custom MQTT topic prefix",
+        [] { return true; },
+        true
     );
 
     addBoolConfigParam(
@@ -691,7 +719,9 @@ void ParameterRegistry::initialize(Config& config) {
         sMqttSection,
         1021,
         nullptr,
-        "Enables Home Assistant integration, requires a restart"
+        "Enables Home Assistant integration",
+        [] { return true; },
+        true
     );
 
     addStringConfigParam(
@@ -701,7 +731,9 @@ void ParameterRegistry::initialize(Config& config) {
         1022,
         nullptr,
         MQTT_HASSIO_PREFIX_MAX_LENGTH,
-        "Custom MQTT topic prefix, changes require a restart"
+        "Custom MQTT topic prefix",
+        [] { return true; },
+        true
     );
 
     addStringConfigParam(
@@ -711,7 +743,9 @@ void ParameterRegistry::initialize(Config& config) {
         1101,
         nullptr,
         HOSTNAME_MAX_LENGTH,
-        "Hostname of your machine, changes require a restart"
+        "Hostname of your machine",
+        [] { return true; },
+        true
     );
 
     addStringConfigParam(
@@ -721,7 +755,9 @@ void ParameterRegistry::initialize(Config& config) {
         1102,
         nullptr,
         PASSWORD_MAX_LENGTH,
-        "Password for over-the-air updates, changes require a restart"
+        "Password for over-the-air updates",
+        [] { return true; },
+        true
     );
 
     addEnumConfigParam(
@@ -730,7 +766,7 @@ void ParameterRegistry::initialize(Config& config) {
         sSystemSection,
         1103,
         &logLevel,
-        (const char* const[]){"TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "FATAL", "SILENT"},
+        logLevels,
         7,
         "Set the logging verbosity level"
     );
@@ -810,7 +846,9 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareOledSection,
         2001,
         nullptr,
-        "Enable or disable the OLED display"
+        "Enable or disable the OLED display",
+        [] { return true; },
+        true
     );
 
     addEnumConfigParam(
@@ -819,9 +857,11 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareOledSection,
         2002,
         nullptr,
-        (const char* const[]){"SH1106", "SSD1306"},
+        oledTypes,
         2,
-        "Select your OLED display type"
+        "Select your OLED display type",
+        [] { return true; },
+        true
     );
 
     addEnumConfigParam(
@@ -830,9 +870,11 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareOledSection,
         2003,
         nullptr,
-        (const char* const[]){"0x3C", "0x3D"},
+        oledAddresses,
         2,
-        "I2C address of the OLED display, should be 0x3C in most cases, if in doubt check the datasheet"
+        "I2C address of the OLED display, should be 0x3C in most cases, if in doubt check the datasheet",
+        [] { return true; },
+        true
     );
 
     // Relays
@@ -844,7 +886,9 @@ void ParameterRegistry::initialize(Config& config) {
         nullptr,
         relayTriggerTypes,
         2,
-        "Relay trigger type for heater control"
+        "Relay trigger type for heater control",
+        [] { return true; },
+        true
     );
 
     addEnumConfigParam(
@@ -855,7 +899,9 @@ void ParameterRegistry::initialize(Config& config) {
         nullptr,
         relayTriggerTypes,
         2,
-        "Relay trigger type for valve control"
+        "Relay trigger type for valve control",
+        [] { return true; },
+        true
     );
 
     addEnumConfigParam(
@@ -866,7 +912,9 @@ void ParameterRegistry::initialize(Config& config) {
         nullptr,
         (const char* const[]){"Low Trigger", "High Trigger"},
         2,
-        "Relay trigger type for pump control"
+        "Relay trigger type for pump control",
+        [] { return true; },
+        true
     );
 
     // Switches
@@ -876,7 +924,9 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareSwitchSection,
         2201,
         nullptr,
-        "Enable physical brew switch"
+        "Enable physical brew switch",
+        [] { return true; },
+        true
     );
 
     addEnumConfigParam(
@@ -887,7 +937,9 @@ void ParameterRegistry::initialize(Config& config) {
         nullptr,
         switchTypes,
         2,
-        "Type of brew switch connected"
+        "Type of brew switch connected",
+        [] { return true; },
+        true
     );
 
     addEnumConfigParam(
@@ -898,7 +950,9 @@ void ParameterRegistry::initialize(Config& config) {
         nullptr,
         switchModes,
         2,
-        "Electrical configuration of brew switch<br>Normally Open is active high<br>Normally Closed is active low"
+        "Electrical configuration of brew switch<br>Normally Open is active high<br>Normally Closed is active low",
+        [] { return true; },
+        true
     );
 
     addBoolConfigParam(
@@ -907,7 +961,9 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareSwitchSection,
         2211,
         nullptr,
-        "Enable physical steam switch"
+        "Enable physical steam switch",
+        [] { return true; },
+        true
     );
 
     addEnumConfigParam(
@@ -918,7 +974,9 @@ void ParameterRegistry::initialize(Config& config) {
         nullptr,
         switchTypes,
         2,
-        "Type of steam switch connected"
+        "Type of steam switch connected",
+        [] { return true; },
+        true
     );
 
     addEnumConfigParam(
@@ -929,7 +987,9 @@ void ParameterRegistry::initialize(Config& config) {
         nullptr,
         switchModes,
         2,
-        "Electrical configuration of steam switch<br>Normally Open is active high<br>Normally Closed is active low"
+        "Electrical configuration of steam switch<br>Normally Open is active high<br>Normally Closed is active low",
+        [] { return true; },
+        true
     );
 
     addBoolConfigParam(
@@ -938,7 +998,9 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareSwitchSection,
         2221,
         nullptr,
-        "Enable physical power switch"
+        "Enable physical power switch",
+        [] { return true; },
+        true
     );
 
     addEnumConfigParam(
@@ -949,7 +1011,9 @@ void ParameterRegistry::initialize(Config& config) {
         nullptr,
         switchTypes,
         2,
-        "Type of power switch connected"
+        "Type of power switch connected",
+        [] { return true; },
+        true
     );
 
     addEnumConfigParam(
@@ -960,7 +1024,9 @@ void ParameterRegistry::initialize(Config& config) {
         nullptr,
         switchModes,
         2,
-        "Electrical configuration of power switch<br>Normally Open is active high<br>Normally Closed is active low"
+        "Electrical configuration of power switch<br>Normally Open is active high<br>Normally Closed is active low",
+        [] { return true; },
+        true
     );
 
     addBoolConfigParam(
@@ -969,7 +1035,9 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareSwitchSection,
         2231,
         nullptr,
-        "Enable physical water switch"
+        "Enable physical water switch",
+        [] { return true; },
+        true
     );
 
     addEnumConfigParam(
@@ -978,9 +1046,11 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareSwitchSection,
         2232,
         nullptr,
-        (const char* const[]){"Momentary", "Toggle"},
+        switchTypes,
         2,
-        "Type of water switch connected"
+        "Type of water switch connected",
+        [] { return true; },
+        true
     );
 
     addEnumConfigParam(
@@ -989,9 +1059,11 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareSwitchSection,
         2233,
         nullptr,
-        (const char* const[]){"Normally Open", "Normally Closed"},
+        switchModes,
         2,
-        "Electrical configuration of water switch<br>Normally Open is active high<br>Normally Closed is active low"
+        "Electrical configuration of water switch<br>Normally Open is active high<br>Normally Closed is active low",
+        [] { return true; },
+        true
     );
 
     // LEDs
@@ -1001,7 +1073,9 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareLedSection,
         2301,
         nullptr,
-        "Enable status indicator LED"
+        "Enable status indicator LED",
+        [] { return true; },
+        true
     );
 
     addBoolConfigParam(
@@ -1010,7 +1084,9 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareLedSection,
         2302,
         nullptr,
-        "Invert the status LED logic (for common anode LEDs)"
+        "Invert the status LED logic (for common anode LEDs)",
+        [] { return true; },
+        true
     );
 
     addBoolConfigParam(
@@ -1019,7 +1095,9 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareLedSection,
         2311,
         nullptr,
-        "Enable brew indicator LED"
+        "Enable brew indicator LED",
+        [] { return true; },
+        true
     );
 
     addBoolConfigParam(
@@ -1028,7 +1106,9 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareLedSection,
         2312,
         nullptr,
-        "Invert the brew LED logic (for common anode LEDs)"
+        "Invert the brew LED logic (for common anode LEDs)",
+        [] { return true; },
+        true
     );
 
     addBoolConfigParam(
@@ -1037,7 +1117,9 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareLedSection,
         2321,
         nullptr,
-        "Enable steam indicator LED"
+        "Enable steam indicator LED",
+        [] { return true; },
+        true
     );
 
     addBoolConfigParam(
@@ -1046,7 +1128,9 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareLedSection,
         2322,
         nullptr,
-        "Invert the steam LED logic (for common anode LEDs)"
+        "Invert the steam LED logic (for common anode LEDs)",
+        [] { return true; },
+        true
     );
 
     // Sensors
@@ -1056,9 +1140,11 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareSensorSection,
         2401,
         nullptr,
-        (const char* const[]){"TSIC306", "Dallas DS18B20"},
+        tempSensorTypes,
         2,
-        "Type of temperature sensor connected"
+        "Type of temperature sensor connected",
+        [] { return true; },
+        true
     );
 
     addBoolConfigParam(
@@ -1067,7 +1153,9 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareSensorSection,
         2411,
         nullptr,
-        "Enable pressure sensor for monitoring brew pressure"
+        "Enable pressure sensor for monitoring brew pressure",
+        [] { return true; },
+        true
     );
 
     addBoolConfigParam(
@@ -1076,7 +1164,9 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareSensorSection,
         2421,
         nullptr,
-        "Enable water tank level sensor"
+        "Enable water tank level sensor",
+        [] { return true; },
+        true
     );
 
     addEnumConfigParam(
@@ -1087,7 +1177,9 @@ void ParameterRegistry::initialize(Config& config) {
         nullptr,
         switchModes,
         2,
-        "Electrical configuration of water tank sensor"
+        "Electrical configuration of water tank sensor",
+        [] { return true; },
+        true
     );
 
     addBoolConfigParam(
@@ -1096,7 +1188,9 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareSensorSection,
         2431,
         nullptr,
-        "Enable integrated scale for weight-based brewing"
+        "Enable integrated scale for weight-based brewing",
+        [] { return true; },
+        true
     );
 
     addEnumConfigParam(
@@ -1105,9 +1199,11 @@ void ParameterRegistry::initialize(Config& config) {
         sHardwareSensorSection,
         2432,
         nullptr,
-        (const char* const[]){"HX711 (2 load cell controllers)", "HX711 (1 load cell controller)", "Bluetooth"},
+        scaleTypes,
         3,
-        "Integrated HX711-based scale with different load cell configurations or Bluetooth Low Energy scales"
+        "Integrated HX711-based scale with different load cell configurations or Bluetooth Low Energy scales",
+        [] { return true; },
+        true
     );
 
     addNumericConfigParam<int>(

@@ -15,6 +15,7 @@
 #include <ArduinoJson.h>
 #include <LittleFS.h>
 #include <map>
+#include <utility>
 
 class Config {
     public:
@@ -128,109 +129,102 @@ class Config {
 
         template <typename T>
         T get(const String& path) const {
-            auto current = _doc.as<JsonVariantConst>();
-            int startIndex = 0;
-            int dotIndex;
-
-            while ((dotIndex = path.indexOf('.', startIndex)) != -1) {
-                char segment[64]; // Stack-allocated buffer
-                const int segmentLen = dotIndex - startIndex;
-
-                if (segmentLen >= 64) {
+            return navigatePath(path, [](JsonVariantConst parent, const String& leafKey) -> T {
+                if (leafKey.isEmpty() || parent.isNull()) {
                     return T{};
                 }
 
-                path.substring(startIndex, dotIndex).toCharArray(segment, segmentLen + 1);
-                segment[segmentLen] = '\0';
+                auto current = parent[leafKey];
 
-                if (!current[segment].isNull()) {
-                    current = current[segment];
+                if constexpr (std::is_same_v<T, bool>) {
+                    return current.as<bool>();
+                }
+                else if constexpr (std::is_same_v<T, int>) {
+                    return current.as<int>();
+                }
+                else if constexpr (std::is_same_v<T, uint8_t>) {
+                    return current.as<uint8_t>();
+                }
+                else if constexpr (std::is_same_v<T, float>) {
+                    return current.as<float>();
+                }
+                else if constexpr (std::is_same_v<T, double>) {
+                    return current.as<double>();
+                }
+                else if constexpr (std::is_same_v<T, String>) {
+                    return current.as<String>();
                 }
                 else {
-                    return T{};
+                    static_assert(std::is_arithmetic_v<T> || std::is_same_v<T, String>, "Type must be arithmetic or String");
+                    return current.as<T>();
                 }
-
-                startIndex = dotIndex + 1;
-            }
-
-            char finalSegment[64];
-            const unsigned int pathLen = path.length();
-            const unsigned int finalLen = pathLen - static_cast<unsigned int>(startIndex);
-
-            if (finalLen >= 64) {
-                return T{};
-            }
-
-            path.substring(startIndex).toCharArray(finalSegment, finalLen + 1);
-            finalSegment[finalLen] = '\0';
-
-            current = current[finalSegment];
-
-            if constexpr (std::is_same_v<T, bool>) {
-                return current.as<bool>();
-            }
-            else if constexpr (std::is_same_v<T, int>) {
-                return current.as<int>();
-            }
-            else if constexpr (std::is_same_v<T, uint8_t>) {
-                return current.as<uint8_t>();
-            }
-            else if constexpr (std::is_same_v<T, float>) {
-                return current.as<float>();
-            }
-            else if constexpr (std::is_same_v<T, double>) {
-                return current.as<double>();
-            }
-            else if constexpr (std::is_same_v<T, String>) {
-                return current.as<String>();
-            }
-            else {
-                static_assert(std::is_arithmetic_v<T> || std::is_same_v<T, String>, "Type must be arithmetic or String");
-                return current.as<T>();
-            }
+            });
         }
 
         template <typename T>
         void set(const String& path, const T& value) {
-            auto current = _doc.as<JsonVariant>();
-            int startIndex = 0;
-            int dotIndex;
-
-            // Navigate to the parent object
-            while ((dotIndex = path.indexOf('.', startIndex)) != -1) {
-                char segment[64]; // Stack-allocated buffer
-                const int segmentLen = dotIndex - startIndex;
-
-                if (segmentLen >= 64) {
-                    return;
-                }
-
-                path.substring(startIndex, dotIndex).toCharArray(segment, segmentLen + 1);
-                segment[segmentLen] = '\0';
-
-                if (!current[segment].is<JsonObject>()) {
-                    current[segment] = current.add<JsonObject>();
-                }
-                current = current[segment];
-
-                startIndex = dotIndex + 1;
-            }
-
-            char finalSegment[64];
-            const unsigned int pathLen = path.length();
-            const unsigned int finalLen = pathLen - static_cast<unsigned int>(startIndex);
-
-            if (finalLen >= 64) {
-                return;
-            }
-
-            path.substring(startIndex).toCharArray(finalSegment, finalLen + 1);
-            finalSegment[finalLen] = '\0';
-
-            current[finalSegment] = value;
+            navigatePath(
+                path,
+                [&value](JsonVariant parent, const String& leafKey) {
+                    if (!leafKey.isEmpty()) {
+                        parent[leafKey] = value;
+                    }
+                },
+                true);
         }
 
     private:
+        template <typename Func>
+        static auto navigatePath(JsonVariantConst root, const String& path, Func&& leafHandler) {
+            auto current = root;
+            int startIndex = 0;
+            int dotIndex;
+
+            while ((dotIndex = path.indexOf('.', startIndex)) != -1) {
+                String segment = path.substring(startIndex, dotIndex);
+                if (current[segment].isNull()) {
+                    return leafHandler(JsonVariantConst(), "");
+                }
+                current = current[segment];
+                startIndex = dotIndex + 1;
+            }
+
+            return leafHandler(current, path.substring(startIndex));
+        }
+
+        template <typename Func>
+        static auto navigatePath(JsonVariant root, const String& path, Func&& leafHandler, bool createMissing = false) {
+            auto current = root;
+            int startIndex = 0;
+            int dotIndex;
+
+            while ((dotIndex = path.indexOf('.', startIndex)) != -1) {
+                String segment = path.substring(startIndex, dotIndex);
+                if (createMissing) {
+                    if (!current[segment].is<JsonObject>()) {
+                        current[segment].to<JsonObject>();
+                    }
+                }
+                else if (current[segment].isNull()) {
+                    return leafHandler(JsonVariant(), "");
+                }
+                current = current[segment];
+                startIndex = dotIndex + 1;
+            }
+
+            return leafHandler(current, path.substring(startIndex));
+        }
+
+        template <typename Func>
+        auto navigatePath(const String& path, Func&& leafHandler) const {
+            return navigatePath(_doc.as<JsonVariantConst>(), path, std::forward<Func>(leafHandler));
+        }
+
+        template <typename Func>
+        auto navigatePath(const String& path, Func&& leafHandler, bool createMissing = false) {
+            return navigatePath(_doc.as<JsonVariant>(), path, std::forward<Func>(leafHandler), createMissing);
+        }
+
         inline static auto CONFIG_FILE = "/config.json";
 
         JsonDocument _doc;
@@ -314,7 +308,7 @@ class Config {
             // Display
             _configDefs.emplace("display.template", ConfigDef::forInt(0, 0, 4));
             _configDefs.emplace("display.inverted", ConfigDef::forBool(false));
-            _configDefs.emplace("display.language", ConfigDef::forInt(0, 0, 2));
+            _configDefs.emplace("display.language", ConfigDef::forInt(1, 0, 2));
             _configDefs.emplace("display.fullscreen_brew_timer", ConfigDef::forBool(false));
             _configDefs.emplace("display.blescale_brew_timer", ConfigDef::forBool(false));
             _configDefs.emplace("display.fullscreen_manual_flush_timer", ConfigDef::forBool(false));
@@ -381,71 +375,21 @@ class Config {
                 return false;
             }
 
-            if (!doc.is<JsonObject>()) {
-                doc.to<JsonObject>();
-            }
-
-            auto current = doc.as<JsonObject>();
-
-            if (current.isNull()) {
-                LOGF(ERROR, "Failed to get root object");
-                return false;
-            }
-
-            // Split the path into segments
-            int startIndex = 0;
-            int dotIndex;
-
-            // Navigate through all segments except the last one
-            while ((dotIndex = path.indexOf('.', startIndex)) != -1) {
-                String segment = path.substring(startIndex, dotIndex);
-
-                if (segment.isEmpty()) {
-                    LOGF(ERROR, "Empty segment in path: %s", path.c_str());
-                    return false;
-                }
-
-                // Get or create the nested object for this segment
-                if (current[segment].isNull()) {
-                    // Create new nested object
-                    current = current[segment].to<JsonObject>();
-
-                    if (current.isNull()) {
-                        LOGF(ERROR, "Failed to create nested object for segment: %s", segment.c_str());
+            return navigatePath(
+                doc.as<JsonVariant>(), path,
+                [&path, &value](JsonVariant parent, const String& leafKey) {
+                    if (leafKey.isEmpty() || parent.isNull()) {
+                        LOGF(ERROR, "Failed to navigate to path: %s", path.c_str());
                         return false;
                     }
-                }
-                else if (current[segment].is<JsonObject>()) {
-                    // Use existing object
-                    current = current[segment];
-                }
-                else {
-                    // Existing value is not an object - need to replace it
-                    current.remove(segment);
-                    current = current[segment].to<JsonObject>();
 
-                    if (current.isNull()) {
-                        LOGF(ERROR, "Failed to replace value with nested object for segment: %s", segment.c_str());
-                        return false;
-                    }
-                }
+                    parent[leafKey] = value;
 
-                startIndex = dotIndex + 1;
-            }
+                    LOGF(TRACE, "Successfully set %s = %s", path.c_str(), String(value).c_str());
 
-            // Set the final value using the last segment as the key
-            const String leafKey = path.substring(startIndex);
-
-            if (leafKey.isEmpty()) {
-                LOGF(ERROR, "Empty leaf key in path: %s", path.c_str());
-                return false;
-            }
-
-            current[leafKey] = value;
-
-            LOGF(TRACE, "Successfully set %s = %s", path.c_str(), String(value).c_str());
-
-            return true;
+                    return true;
+                },
+                true);
         }
 
         /**
@@ -500,9 +444,6 @@ class Config {
                 else {
                     LOGF(ERROR, "Failed to set value for %s", pathStr.c_str());
                 }
-
-                // Add a small delay to prevent overwhelming the system
-                delay(1);
             }
 
             LOGF(INFO, "createDefaults completed. Successfully set %d/%d values", successCount, _configDefs.size());

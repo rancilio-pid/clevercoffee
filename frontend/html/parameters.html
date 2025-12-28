@@ -60,7 +60,7 @@
                                             <template v-if="param.show">
                                                 <div class="col mb-3">
                                                     <label class="form-label me-1" :for="'var'+param.name">{{param.displayName}}</label>
-                                                    <template v-if="param.hasHelpText">
+                                                    <template v-if="param.hasHelpText || param.reboot">
                                                         <a href="#" role="button" @mouseover="fetchHelpText(param.name)" data-bs-toggle="popover" data-bs-html="true" :data-bs-original-title="parametersHelpTexts[param.name]">
                                                             <span class="fa-solid fa-question-circle"></span>
                                                         </a>

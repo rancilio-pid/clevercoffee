@@ -150,9 +150,22 @@ const vueApp = Vue.createApp({
 
         fetchHelpText(paramName) {
             if (!(paramName in this.parametersHelpTexts)) {
+                // Find the parameter to check if it requires reboot
+                const param = this.parameters.find(p => p.name === paramName);
+                const requiresReboot = param && param.reboot;
+
                 fetch("/parameterHelp/?param="+paramName)
                     .then(response => response.json())
-                    .then(data => { this.parametersHelpTexts[paramName] = data['helpText'] })
+                    .then(data => {
+                        let helpText = data['helpText'] || '';
+
+                        if (requiresReboot) {
+                            const rebootMsg = '<br><strong>Changes require a reboot</strong>';
+                            helpText = helpText ? helpText + rebootMsg : rebootMsg.substring(4);
+                        }
+
+                        this.parametersHelpTexts[paramName] = helpText;
+                    })
             }
         },
 

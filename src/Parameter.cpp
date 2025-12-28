@@ -32,7 +32,8 @@ Parameter::Parameter(const char* id,
     _showCondition(std::move(showCondition)),
     _stringGetter(std::move(stringGetter)),
     _stringSetter(std::move(stringSetter)),
-    _globalVariablePointer(globalVariablePointer) {
+    _globalVariablePointer(globalVariablePointer),
+    _requiresReboot(false) {
 }
 
 // Constructor for string parameters
@@ -64,7 +65,8 @@ Parameter::Parameter(const char* id,
     _showCondition(showCondition),
     _stringGetter(stringGetter),
     _stringSetter(stringSetter),
-    _globalVariablePointer(globalVariablePointer) {
+    _globalVariablePointer(globalVariablePointer),
+    _requiresReboot(false) {
 }
 
 // Constructor for numeric parameters (no string getter/setter)
@@ -97,7 +99,8 @@ Parameter::Parameter(const char* id,
     _showCondition(std::move(showCondition)),
     _stringGetter(nullptr),
     _stringSetter(nullptr),
-    _globalVariablePointer(globalVariablePointer) {
+    _globalVariablePointer(globalVariablePointer),
+    _requiresReboot(false) {
 }
 
 // Constructor for boolean parameters (using kUInt8 type with 0/1 values)
@@ -128,7 +131,8 @@ Parameter::Parameter(const char* id,
     _showCondition(showCondition),
     _stringGetter(nullptr),
     _stringSetter(nullptr),
-    _globalVariablePointer(globalVariablePointer) {
+    _globalVariablePointer(globalVariablePointer),
+    _requiresReboot(false) {
 }
 
 // Constructor for enum parameters
@@ -161,7 +165,8 @@ Parameter::Parameter(const char* id,
     _showCondition(showCondition),
     _stringGetter(nullptr),
     _stringSetter(nullptr),
-    _globalVariablePointer(globalVariablePointer) {
+    _globalVariablePointer(globalVariablePointer),
+    _requiresReboot(false) {
 }
 
 const char* Parameter::getId() const {
@@ -224,7 +229,7 @@ const char* Parameter::getHelpText() const {
 }
 
 bool Parameter::shouldShow() const {
-    return _showCondition();
+    return _showCondition ? _showCondition() : true;
 }
 
 String Parameter::getFormattedValue() const {
@@ -319,4 +324,12 @@ void Parameter::syncToGlobalVariable(const String& value) const {
     if (_type == kCString) {
         *static_cast<String*>(_globalVariablePointer) = value;
     }
+}
+
+bool Parameter::requiresReboot() const {
+    return _requiresReboot;
+}
+
+void Parameter::setRequiresReboot(bool required) {
+    _requiresReboot = required;
 }

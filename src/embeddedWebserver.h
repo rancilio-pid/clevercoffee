@@ -112,6 +112,7 @@ inline void paramToJson(const String& name, const std::shared_ptr<Parameter>& pa
     doc["position"] = param->getPosition();
     doc["hasHelpText"] = param->hasHelpText();
     doc["show"] = param->shouldShow();
+    doc["reboot"] = param->requiresReboot();
 
     // Set parameter value using the appropriate method based on type
     switch (param->getType()) {
@@ -344,7 +345,7 @@ inline void serverSetup() {
                 }
             }
 
-            response->printf("],\"offset\":%d,\"limit\":%d,\"returned\":%d}", offset, limit, sent);
+            response->printf(R"(],"offset":%d,"limit":%d,"returned":%d})", offset, limit, sent);
             request->send(response);
         }
         else if (request->method() == 2) { // HTTP_POST
@@ -558,7 +559,7 @@ inline void serverSetup() {
             if (final) {
                 LOGF(INFO, "Config upload finished: %s, total size: %u bytes", filename.c_str(), totalSize);
 
-                if (bool isValid = config.validateAndApplyFromJson(uploadBuffer)) {
+                if (config.validateAndApplyFromJson(uploadBuffer)) {
                     LOG(INFO, "Configuration validated and applied successfully");
 
                     AsyncWebServerResponse* response = request->beginResponse(200, "application/json", R"({"success": true, "message": "Configuration validated and applied successfully.", "restart": true})");

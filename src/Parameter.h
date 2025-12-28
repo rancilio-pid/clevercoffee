@@ -116,6 +116,8 @@ class Parameter {
         void setGlobalVariablePointer(void* ptr);
         void syncToGlobalVariable(double value) const;
         void syncToGlobalVariable(const String& value) const;
+        [[nodiscard]] bool requiresReboot() const;
+        void setRequiresReboot(bool required);
 
         template <typename T>
         T getValueAs() const {
@@ -161,4 +163,5 @@ class Parameter {
         std::function<String()> _stringGetter;
         std::function<void(const String&)> _stringSetter;
         void* _globalVariablePointer;
+        bool _requiresReboot;
 };

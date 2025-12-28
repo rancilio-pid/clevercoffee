@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "Config.h"
@@ -171,7 +170,15 @@ class ParameterRegistry {
 
         // Convenience method for adding string config parameters
         void addStringConfigParam(
-            const char* configPath, const char* displayName, int section, int position, String* globalVar, double maxLength, const char* helpText = "", const std::function<bool()>& showCondition = [] { return true; }) {
+            const char* configPath,
+            const char* displayName,
+            int section,
+            int position,
+            String* globalVar,
+            double maxLength,
+            const char* helpText = "",
+            const std::function<bool()>& showCondition = [] { return true; },
+            bool requiresReboot = false) {
 
             const auto param = std::make_shared<Parameter>(
                 configPath, displayName, kCString, section, position, [this, configPath]() -> String { return _config->get<String>(configPath); },
@@ -181,11 +188,20 @@ class ParameterRegistry {
                 },
                 maxLength, !String(helpText).isEmpty(), helpText, showCondition, globalVar);
 
+            param->setRequiresReboot(requiresReboot);
             addParam(param);
         }
 
         // Convenience method for adding boolean config parameters
-        void addBoolConfigParam(const char* configPath, const char* displayName, int section, int position, bool* globalVar, const char* helpText = "", const std::function<bool()>& showCondition = [] { return true; }) {
+        void addBoolConfigParam(
+            const char* configPath,
+            const char* displayName,
+            int section,
+            int position,
+            bool* globalVar,
+            const char* helpText = "",
+            const std::function<bool()>& showCondition = [] { return true; },
+            bool requiresReboot = false) {
 
             const auto param = std::make_shared<Parameter>(
                 configPath, displayName, kUInt8, section, position, [this, configPath]() -> bool { return _config->get<bool>(configPath); },
@@ -195,15 +211,24 @@ class ParameterRegistry {
                 },
                 !String(helpText).isEmpty(), helpText, showCondition, globalVar);
 
+            param->setRequiresReboot(requiresReboot);
             addParam(param);
         }
 
         // Convenience method for adding numeric config parameters
         template <typename T>
         void addNumericConfigParam(
-            const char* configPath, const char* displayName, EditableKind type, int section, int position, T* globalVar, double minValue, double maxValue, const char* helpText = "", std::function<bool()> showCondition = [] {
-                return true;
-            }) {
+            const char* configPath,
+            const char* displayName,
+            EditableKind type,
+            int section,
+            int position,
+            T* globalVar,
+            double minValue,
+            double maxValue,
+            const char* helpText = "",
+            std::function<bool()> showCondition = [] { return true; },
+            bool requiresReboot = false) {
 
             auto param = std::make_shared<Parameter>(
                 configPath, displayName, type, section, position, [this, configPath]() -> double { return static_cast<double>(_config->get<T>(configPath)); },
@@ -214,6 +239,7 @@ class ParameterRegistry {
                 },
                 minValue, maxValue, !String(helpText).isEmpty(), helpText, showCondition, globalVar);
 
+            param->setRequiresReboot(requiresReboot);
             addParam(param);
         }
 
@@ -227,7 +253,8 @@ class ParameterRegistry {
             const char* const options[],
             int optionCount,
             const char* helpText = "",
-            const std::function<bool()>& showCondition = [] { return true; }) {
+            const std::function<bool()>& showCondition = [] { return true; },
+            bool requiresReboot = false) {
 
             const auto param = std::make_shared<Parameter>(
                 configPath, displayName, kEnum, section, position, [this, configPath]() -> double { return _config->get<int>(configPath); },
@@ -238,6 +265,7 @@ class ParameterRegistry {
                 },
                 options, optionCount, !String(helpText).isEmpty(), helpText, showCondition, globalVar);
 
+            param->setRequiresReboot(requiresReboot);
             addParam(param);
         }
 };
