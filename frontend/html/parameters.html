@@ -1,166 +1,188 @@
 
 %HEADER%
 
-    <script type="module">
-        (window.appCreated ? Promise.resolve() : new Promise(resolve => window.addEventListener('appCreated', resolve)))
-            .then(() => vueApp.mount('#content'));
-    </script>
+<script type="module">
+    (window.appCreated ? Promise.resolve() : new Promise(resolve => window.addEventListener('appCreated', resolve)))
+        .then(() => vueApp.mount('#content'));
+</script>
 
-    <div class="content-wrapper">
-        <div class="container my-5">
-            <div id="content">
-                <!-- Hardware Configuration Warning - Only shown when filter=hardware -->
-                <div v-if="filter === 'hardware'" class="alert alert-warning alert-dismissible mb-4 shadow-sm" role="alert">
-                    <div class="d-flex align-items-center">
-                        <span class="fa-solid fa-triangle-exclamation me-2 fs-4"></span>
-                        <div class="flex-grow-1">
-                            <h5 class="alert-heading mb-2">
-                                <strong>Hardware Configuration Warning</strong>
-                            </h5>
-                            <div>
-                                <p class="mb-2">
-                                    <strong>Incorrect hardware settings can cause dangerous behavior!</strong>
-                                </p>
-                                <div class="collapse" id="hardwareWarningDetails">
-                                    <div class="small">
-                                        <ul class="mb-2">
-                                            <li><strong>Wrong relay or switch configurations</strong> could cause the pump, heater, or valve to activate unexpectedly</li>
-                                            <li><strong>Incorrect sensor configuration </strong>may prevent the machine from starting up normally</li>
-                                            <li>Using the <strong>wrong OLED type or i2c address</strong> may lead to graphics errors or the display not working at all</li>
-                                        </ul>
-                                        <p class="mb-2">
-                                            <strong>Before saving and restarting:</strong> Double-check all your settings, only enable features if you understand their
-                                            functionality and hardware-related prerequisites
-                                        </p>
-                                        <p class="mb-0">
-                                            <strong>When in doubt:</strong> Read or re-read the documentation or consult the community via our <a href="https://discord.gg/Kq5RFznuU4">Discord server</a>.
-                                        </p>
-                                    </div>
+<div class="content-wrapper">
+    <div class="container my-5">
+        <div id="content">
+            <!-- Reboot Required Banner -->
+            <div v-if="showRebootBanner" class="alert alert-info alert-dismissible mb-4 shadow-sm" role="alert">
+                <div class="d-flex align-items-center">
+                    <span class="fa-solid fa-rotate me-3 fs-4"></span>
+                    <div class="flex-grow-1">
+                        <strong>Reboot required</strong>
+                        <p class="mb-2 small">
+                            The following settings require a reboot to take effect:
+                            <em>{{ changedRebootParams.join(', ') }}</em>
+                        </p>
+                        <button class="btn btn-primary btn-sm me-2" @click="confirmRestart">
+                            <span class="fa-solid fa-power-off me-1"></span>
+                            Reboot Now
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" @click="dismissRebootBanner">
+                            Later
+                        </button>
+                    </div>
+                    <button type="button" class="btn-close" @click="dismissRebootBanner" aria-label="Close"></button>
+                </div>
+            </div>
+
+            <!-- Hardware Configuration Warning - Only shown when filter=hardware -->
+            <div v-if="filter === 'hardware'" class="alert alert-warning alert-dismissible mb-4 shadow-sm" role="alert">
+                <div class="d-flex align-items-center">
+                    <span class="fa-solid fa-triangle-exclamation me-2 fs-4"></span>
+                    <div class="flex-grow-1">
+                        <h5 class="alert-heading mb-2">
+                            <strong>Hardware Configuration Warning</strong>
+                        </h5>
+                        <div>
+                            <p class="mb-2">
+                                <strong>Incorrect hardware settings can cause dangerous behavior!</strong>
+                            </p>
+                            <div class="collapse" id="hardwareWarningDetails">
+                                <div class="small">
+                                    <ul class="mb-2">
+                                        <li><strong>Wrong relay or switch configurations</strong> could cause the pump, heater, or valve to activate unexpectedly</li>
+                                        <li><strong>Incorrect sensor configuration </strong>may prevent the machine from starting up normally</li>
+                                        <li>Using the <strong>wrong OLED type or i2c address</strong> may lead to graphics errors or the display not working at all</li>
+                                    </ul>
+                                    <p class="mb-2">
+                                        <strong>Before saving and restarting:</strong> Double-check all your settings, only enable features if you understand their
+                                        functionality and hardware-related prerequisites
+                                    </p>
+                                    <p class="mb-0">
+                                        <strong>When in doubt:</strong> Read or re-read the documentation or consult the community via our <a href="https://discord.gg/Kq5RFznuU4">Discord server</a>.
+                                    </p>
                                 </div>
-                                <button class="btn btn-outline-dark btn-sm mt-2" type="button" data-bs-toggle="collapse" data-bs-target="#hardwareWarningDetails" aria-expanded="false" aria-controls="hardwareWarningDetails">
-                                    <span class="collapse-toggle-text">Show Details</span>
-                                    <span class="fa-solid fa-chevron-down ms-1"></span>
-                                </button>
                             </div>
+                            <button class="btn btn-outline-dark btn-sm mt-2" type="button" data-bs-toggle="collapse" data-bs-target="#hardwareWarningDetails" aria-expanded="false" aria-controls="hardwareWarningDetails">
+                                <span class="collapse-toggle-text">Show Details</span>
+                                <span class="fa-solid fa-chevron-down ms-1"></span>
+                            </button>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="card card-accent-dark mb-5 shadow-sm rounded">
-                    <form @submit.prevent="postParameters">
-                        <template v-for="(section, sectionKey) in parameterSectionsComputed">
-                            <div class="card-body bg-light pb-1 rounded">
-                                <h5 class="card-title"> {{ sectionName(sectionKey) }} </h5>
-                            </div>
-                            <div class="card-body">
-                                <template v-for="(group, groupKey) in section">
-                                    <!-- Start a new row for each group -->
-                                    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 mb-3">
-                                        <template v-for="param in group">
-                                            <template v-if="param.show">
-                                                <div class="col mb-3">
-                                                    <label class="form-label me-1" :for="'var'+param.name">{{param.displayName}}</label>
-                                                    <template v-if="param.hasHelpText || param.reboot">
-                                                        <a href="#" role="button" @mouseover="fetchHelpText(param.name)" data-bs-toggle="popover" data-bs-html="true" :data-bs-original-title="parametersHelpTexts[param.name]">
-                                                            <span class="fa-solid fa-question-circle"></span>
-                                                        </a>
-                                                    </template>
-
-                                                    <div v-if="isBoolean(param)">
-                                                        <input type="hidden" :id="'var'+param.name" :name="'var'+param.name" :value="0">
-                                                        <input type="checkbox"
-                                                               class="form-check-input form-control-lg"
-                                                               :id="'var'+param.name"
-                                                               :name="'var'+param.name"
-                                                               value="1"
-                                                               @change="param.value = 1-param.value"
-                                                               :checked="param.value != 0 ? 'checked' : null">
-                                                    </div>
-
-                                                    <div v-else-if="param.type === 5 && param.options">
-                                                        <select class="form-select form-control-lg"
-                                                                :id="'var'+param.name"
-                                                                :name="'var'+param.name"
-                                                                v-model="param.value">
-                                                            <option v-for="option in param.options"
-                                                                    :key="option.value"
-                                                                    :value="option.value">
-                                                                {{ option.label }}
-                                                            </option>
-                                                        </select>
-                                                        <span v-if="param.value < param.min" class="text-danger small">Value is too small!</span>
-                                                        <span v-if="param.value > param.max" class="text-danger small">Value is too large!</span>
-                                                    </div>
-
-                                                    <!-- String parameters -->
-                                                    <div v-else-if="param.type === 4">
-                                                        <input class="form-control form-control-lg"
-                                                               :type="param.name.toLowerCase().includes('password') ? 'password' : 'text'"
-                                                               :id="'var'+param.name"
-                                                               :name="'var'+param.name"
-                                                               v-model="param.value"
-                                                               :maxlength="param.max > 0 ? param.max : 64">
-                                                        <span v-if="param.max > 0 && param.value && param.value.length > param.max" class="text-danger small">Value is too long!</span>
-                                                    </div>
-
-                                                    <!-- Numeric parameters (integer, uint8, double, float) -->
-                                                    <div v-else>
-                                                        <input class="form-control form-control-lg"
-                                                               :type="getInputType(param)"
-                                                               :step="getNumberStep(param)"
-                                                               :min="param.min"
-                                                               :max="param.max"
-                                                               :id="'var'+param.name"
-                                                               :name="'var'+param.name"
-                                                               v-model="param.value">
-                                                        <span v-if="param.value < param.min" class="text-danger small">Value is too small!</span>
-                                                        <span v-if="param.value > param.max" class="text-danger small">Value is too large!</span>
-                                                    </div>
-                                                </div>
-                                            </template>
-                                        </template>
-                                    </div>
-                                </template>
-                            </div>
-                        </template>
-
-                        <div class="card-body clearfix">
-                            <div class="float-end me-2">
-                                <button type="submit" class="btn btn-primary" :disabled="isPostingForm">
-                                    <span v-show="showPostSucceeded" class="fa-solid fa-check me-1"></span>
-                                    <span v-show="isPostingForm" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                    Save
-                                </button>
-                            </div>
+            <div class="card card-accent-dark mb-5 shadow-sm rounded">
+                <form @submit.prevent="postParameters">
+                    <template v-for="(section, sectionKey) in parameterSectionsComputed">
+                        <div class="card-body bg-light pb-1 rounded">
+                            <h5 class="card-title"> {{ sectionName(sectionKey) }} </h5>
                         </div>
-                    </form>
-                </div>
+                        <div class="card-body">
+                            <template v-for="(group, groupKey) in section">
+                                <!-- Start a new row for each group -->
+                                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 mb-3">
+                                    <template v-for="param in group">
+                                        <template v-if="param.show">
+                                            <div class="col mb-3">
+                                                <label class="form-label me-1" :for="'var'+param.name">{{param.displayName}}</label>
+                                                <template v-if="param.hasHelpText || param.reboot">
+                                                    <a href="#" role="button" @mouseover="fetchHelpText(param.name)" data-bs-toggle="popover" data-bs-html="true" :data-bs-original-title="parametersHelpTexts[param.name]">
+                                                        <span class="fa-solid fa-question-circle"></span>
+                                                    </a>
+                                                </template>
+
+                                                <div v-if="isBoolean(param)">
+                                                    <input type="hidden" :id="'var'+param.name" :name="'var'+param.name" :value="0">
+                                                    <input type="checkbox"
+                                                           class="form-check-input form-control-lg"
+                                                           :id="'var'+param.name"
+                                                           :name="'var'+param.name"
+                                                           value="1"
+                                                           @change="param.value = 1-param.value"
+                                                           :checked="param.value != 0 ? 'checked' : null">
+                                                </div>
+
+                                                <div v-else-if="param.type === 5 && param.options">
+                                                    <select class="form-select form-control-lg"
+                                                            :id="'var'+param.name"
+                                                            :name="'var'+param.name"
+                                                            v-model="param.value">
+                                                        <option v-for="option in param.options"
+                                                                :key="option.value"
+                                                                :value="option.value">
+                                                            {{ option.label }}
+                                                        </option>
+                                                    </select>
+                                                    <span v-if="param.value < param.min" class="text-danger small">Value is too small!</span>
+                                                    <span v-if="param.value > param.max" class="text-danger small">Value is too large!</span>
+                                                </div>
+
+                                                <!-- String parameters -->
+                                                <div v-else-if="param.type === 4">
+                                                    <input class="form-control form-control-lg"
+                                                           :type="param.name.toLowerCase().includes('password') ? 'password' : 'text'"
+                                                           :id="'var'+param.name"
+                                                           :name="'var'+param.name"
+                                                           v-model="param.value"
+                                                           :maxlength="param.max > 0 ? param.max : 64">
+                                                    <span v-if="param.max > 0 && param.value && param.value.length > param.max" class="text-danger small">Value is too long!</span>
+                                                </div>
+
+                                                <!-- Numeric parameters (integer, uint8, double, float) -->
+                                                <div v-else>
+                                                    <input class="form-control form-control-lg"
+                                                           :type="getInputType(param)"
+                                                           :step="getNumberStep(param)"
+                                                           :min="param.min"
+                                                           :max="param.max"
+                                                           :id="'var'+param.name"
+                                                           :name="'var'+param.name"
+                                                           v-model="param.value">
+                                                    <span v-if="param.value < param.min" class="text-danger small">Value is too small!</span>
+                                                    <span v-if="param.value > param.max" class="text-danger small">Value is too large!</span>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    <div class="card-body clearfix">
+                        <div class="float-end me-2">
+                            <button type="submit" class="btn btn-primary" :disabled="isPostingForm">
+                                <span v-show="showPostSucceeded" class="fa-solid fa-check me-1"></span>
+                                <span v-show="isPostingForm" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
+</div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const collapseElement = document.getElementById('hardwareWarningDetails');
-            if (collapseElement) {
-                collapseElement.addEventListener('show.bs.collapse', function () {
-                    const button = document.querySelector('[data-bs-target="#hardwareWarningDetails"]');
-                    if (button) {
-                        button.querySelector('.collapse-toggle-text').textContent = 'Hide Details';
-                        button.querySelector('.fa-chevron-down').classList.replace('fa-chevron-down', 'fa-chevron-up');
-                    }
-                });
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const collapseElement = document.getElementById('hardwareWarningDetails');
+        if (collapseElement) {
+            collapseElement.addEventListener('show.bs.collapse', function () {
+                const button = document.querySelector('[data-bs-target="#hardwareWarningDetails"]');
+                if (button) {
+                    button.querySelector('.collapse-toggle-text').textContent = 'Hide Details';
+                    button.querySelector('.fa-chevron-down').classList.replace('fa-chevron-down', 'fa-chevron-up');
+                }
+            });
 
-                collapseElement.addEventListener('hide.bs.collapse', function () {
-                    const button = document.querySelector('[data-bs-target="#hardwareWarningDetails"]');
-                    if (button) {
-                        button.querySelector('.collapse-toggle-text').textContent = 'Show Details';
-                        button.querySelector('.fa-chevron-up').classList.replace('fa-chevron-up', 'fa-chevron-down');
-                    }
-                });
-            }
-        });
-    </script>
+            collapseElement.addEventListener('hide.bs.collapse', function () {
+                const button = document.querySelector('[data-bs-target="#hardwareWarningDetails"]');
+                if (button) {
+                    button.querySelector('.collapse-toggle-text').textContent = 'Show Details';
+                    button.querySelector('.fa-chevron-up').classList.replace('fa-chevron-up', 'fa-chevron-down');
+                }
+            });
+        }
+    });
+</script>
 
 </div>
 

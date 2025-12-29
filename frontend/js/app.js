@@ -4,10 +4,15 @@ const vueApp = Vue.createApp({
     data() {
         return {
             parameters: [],
+            originalValues: {},
             parametersHelpTexts: [],
             isPostingForm: false,
             showPostSucceeded: false,
             filter: '',
+
+            // Reboot notification
+            showRebootBanner: false,
+            changedRebootParams: [],
 
             // Config upload properties
             selectedFile: null,
@@ -42,6 +47,7 @@ const vueApp = Vue.createApp({
     methods: {
         async fetchParameters(filter = '') {
             this.parameters = [];
+            this.originalValues = {}; // Reset original values
             let offset = 0;
             const limit = 5;
             let moreData = true;
@@ -50,7 +56,7 @@ const vueApp = Vue.createApp({
                 // Build URL with dynamic filter, offset, and limit
                 let url = `/parameters?offset=${offset}&limit=${limit}`;
 
-            if (filter) {
+                if (filter) {
                     url += `&filter=${encodeURIComponent(filter)}`;
                 }
 
@@ -63,22 +69,27 @@ const vueApp = Vue.createApp({
                         break;
                     }
 
-                    // Append new parameters to the existing array
-                    this.parameters.push(...json.parameters);
+                    // Append new parameters and store original values
+                    json.parameters.forEach(param => {
+                        this.parameters.push(param);
+                        // Store a copy of the original value for change detection
+                        this.originalValues[param.name] = param.value;
+                    });
 
                     if (json.parameters.length < limit) {
                         moreData = false; // last page reached
-                    } 
+                    }
                     else {
                         offset += limit; // increment offset for next batch
                     }
-                } 
+                }
                 catch (err) {
                     console.error('Error fetching parameters:', err);
                     moreData = false;
                 }
             }
         },
+
         postParameters() {
             // Only post parameters that are currently displayed (filtered parameters)
             const formBody = [];
@@ -97,6 +108,17 @@ const vueApp = Vue.createApp({
                     });
                 });
             });
+
+            // Track which reboot-required parameters actually changed
+            const rebootParamsChanged = displayedParameters
+                .filter(param => {
+                    if (!param.reboot) return false;
+
+                    const originalValue = this.originalValues[param.name];
+                    // Compare as strings to handle type coercion (e.g., "1" vs 1)
+                    return String(param.value) !== String(originalValue);
+                })
+                .map(param => param.displayName);
 
             // Build form data from displayed parameters
             displayedParameters.forEach(param => {
@@ -135,6 +157,12 @@ const vueApp = Vue.createApp({
                 .then(data => {
                     // Parameters saved successfully - now re-fetch to get updated show conditions
                     this.fetchParameters(this.filter);
+
+                    // Show reboot banner only if reboot-required params actually changed
+                    if (rebootParamsChanged.length > 0) {
+                        this.changedRebootParams = rebootParamsChanged;
+                        this.showRebootBanner = true;
+                    }
                 })
                 .catch(err => {
                     console.error("Error saving parameters:", err);
@@ -411,6 +439,11 @@ const vueApp = Vue.createApp({
             } catch (err) {
                 console.log('Machine restarting after factory reset...');
             }
+        },
+
+        dismissRebootBanner() {
+            this.showRebootBanner = false;
+            this.changedRebootParams = [];
         },
 
         async restartMachine() {
