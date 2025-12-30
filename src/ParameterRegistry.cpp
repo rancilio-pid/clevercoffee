@@ -1215,7 +1215,8 @@ void ParameterRegistry::initialize(Config& config) {
         nullptr,
         SCALE_SAMPLES_MIN, SCALE_SAMPLES_MAX,
         "Number of samples to average for scale readings (higher = more stable but slower)",
-        [&config] { return config.get<int>("hardware.sensors.scale.type") < 2; }
+        [&config] { return config.get<int>("hardware.sensors.scale.type") < 2; },
+        true
     );
 
     addNumericConfigParam<double>(
