@@ -39,7 +39,7 @@
 #define BACKFLUSH_CYCLES         5                 // number of cycles the backflush should run
 #define BACKFLUSH_FILL_TIME      5.0               // time in seconds the pump is running during backflush
 #define BACKFLUSH_FLUSH_TIME     10.0              // time in seconds the 3-way valve is open during backflush
-#define POST_BREW_TIMER_DURATION 3.0               // time in seconds that brew timer will be shown after brew finished
+#define POST_BREW_TIMER_DURATION 6.0               // time in seconds that brew timer will be shown after brew finished
 #define BLINKING_DELTA           0.3               // distance between measured temperature and setpoint to enable display blinking
 #define MAXWIFIRECONNECTS        5                 // maximum number of reconnection attempts, use -1 to deactivate
 #define WIFICONNECTIONDELAY      10000             // delay between reconnects in ms
@@ -82,7 +82,7 @@
 #define PRE_INFUSION_TIME_MAX         60.0
 #define PRE_INFUSION_PAUSE_MIN        0.0
 #define PRE_INFUSION_PAUSE_MAX        60.0
-#define TARGET_BREW_WEIGHT_MIN        0.0
+#define TARGET_BREW_WEIGHT_MIN        10.0
 #define TARGET_BREW_WEIGHT_MAX        500.0
 #define PID_KP_STEAM_MIN              0.0
 #define PID_KP_STEAM_MAX              999.0
@@ -104,6 +104,8 @@
 #define SCALE_CALIBRATION_MAX         999999.0
 #define SCALE_KNOWN_WEIGHT_MIN        1.0
 #define SCALE_KNOWN_WEIGHT_MAX        2000.0
+#define FLOW_RATE_MIN                 0.0
+#define FLOW_RATE_MAX                 15.0
 #define MQTT_BROKER_MAX_LENGTH        64
 #define USERNAME_MAX_LENGTH           32
 #define PASSWORD_MAX_LENGTH           64

@@ -332,9 +332,15 @@ inline bool brew() {
                 }
                 else if (scale && config.get<bool>("hardware.sensors.scale.enabled")) {
                     const auto targetBrewWeight = ParameterRegistry::getInstance().getParameterById("brew.by_weight.target_weight")->getValueAs<float>();
+                    const float weightOffset = constrain(0.83743 * flowRate + 0.36623, 0, 3);
+                    const float predictedBrewWeight = currBrewWeight + flowRate * float((millis() - lastWeightTime)) / 1000;
+                    const float blockWeight = flowRate * 0.035;
 
-                    if (currBrewWeight > targetBrewWeight && brewByWeightEnabled) {
-                        LOG(INFO, "Brew reached weight target");
+                    // if end is within the expected weight added in 35ms then dont refresh the display until after relays have switched off
+                    blockDisplayRefresh = predictedBrewWeight >= targetBrewWeight - weightOffset - blockWeight;
+
+                    if (predictedBrewWeight >= (targetBrewWeight - weightOffset) && brewByWeightEnabled) {
+                        LOGF(INFO, "Brew reached weight target of %0.2fg, measured %0.2fg, predicted %0.2fg, flow rate used %0.2fg/s", targetBrewWeight - weightOffset, currBrewWeight, predictedBrewWeight, flowRate);
                         currBrewState = kBrewFinished;
                     }
                 }
@@ -353,6 +359,7 @@ inline bool brew() {
                 LOGF(INFO, "Shot time: %4.1f s", currBrewTime / 1000);
                 LOG(INFO, "Brew idle");
                 currBrewState = kBrewIdle;
+                blockDisplayRefresh = false;
 
                 if (scale && config.get<bool>("hardware.sensors.scale.enabled") && config.get<int>("hardware.sensors.scale.type") == 2 && config.get<bool>("display.blescale_brew_timer")) {
                     static_cast<BluetoothScale*>(scale)->stopTimer();
