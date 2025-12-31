@@ -839,10 +839,5 @@ inline bool displayMachineState() {
         return true;
     }
 
-    if (machineState == kEepromError) {
-        displayWrappedMessage("EEPROM Error,\nPlease set values");
-        return true;
-    }
-
     return false;
 }

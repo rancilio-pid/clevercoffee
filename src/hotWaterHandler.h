@@ -67,7 +67,7 @@ bool checkHotWaterStops() {
         debugHotWaterState(hotWaterStateDebug);
         return true;
     }
-    else if (machineState == kEmergencyStop || machineState == kSensorError || machineState == kEepromError) {
+    else if (machineState == kEmergencyStop || machineState == kSensorError) {
         hotWaterStateDebug = "off-error"; // turn off due to error
         debugHotWaterState(hotWaterStateDebug);
         return true;
@@ -200,7 +200,7 @@ inline void checkHotWaterSwitch() {
  * @brief Control the pump based on machine state
  * @return pumps state
  */
-inline bool hotWaterHandler(void) {
+inline bool hotWaterHandler() {
     if (!config.get<bool>("hardware.switches.hot_water.enabled") || hotWaterSwitch == nullptr) {
         return false; // hot water switch is not enabled
     }
@@ -240,7 +240,6 @@ inline bool hotWaterHandler(void) {
             break;
 
         case kHotWaterRunning:
-
             if (currHotWaterSwitchState == kHotWaterSwitchIdle && !checkBrewStates()) { // switch turned off and not in brew or flush
                 currHotWaterState = kHotWaterStopped;
                 hotWaterStateDebug = "off-sw";
