@@ -571,6 +571,7 @@ void handleMachineState() {
             if (standbyModeOn && standbyModeRemainingTimeMillis == 0) {
                 machineState = kStandby;
                 setRuntimePidState(false);
+                setSteamMode(false);
             }
 
             if (emergencyStop) {

@@ -21,13 +21,21 @@ inline void checkSteamSwitch() {
     if (config.get<int>("hardware.switches.steam.type") == Switch::TOGGLE) {
         // Set steamON to 1 when steamswitch is HIGH
         if (steamSwitchReading == HIGH) {
-            steamON = true;
+            if (machineState != kStandby) {
+                steamON = true;
+            }
+            else if (currStateSteamSwitch == LOW) {
+                // only enable steam if we detected a transition from LOW to HIGH
+                steamON = true;
+            }
         }
 
         // if activated via web interface then steamFirstON == 1, prevent override
         if (steamSwitchReading == LOW && !steamFirstON) {
             steamON = false;
         }
+
+        currStateSteamSwitch = steamSwitchReading;
     }
     else if (config.get<int>("hardware.switches.steam.type") == Switch::MOMENTARY) {
         if (steamSwitchReading != currStateSteamSwitch) {
