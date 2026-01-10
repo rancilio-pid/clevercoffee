@@ -18,30 +18,31 @@
 
 #ifdef TARGET_BOARD_ESP32_S3
 // ESP32-S3 Pin Mapping (16MB Flash, 8MB PSRAM)
-#define PIN_POWERSWITCH 15
-#define PIN_BREWSWITCH  16
-#define PIN_STEAMSWITCH 17
-#define PIN_WATERSWITCH 18
+#define PIN_POWERSWITCH 38
+#define PIN_BREWSWITCH  39
+#define PIN_STEAMSWITCH 40
+#define PIN_WATERSWITCH 41
 
 #define PIN_ROTARY_DT  4
 #define PIN_ROTARY_CLK 5
 #define PIN_ROTARY_SW  6
 
 #define PIN_TEMPSENSOR      7
-#define PIN_WATERTANKSENSOR 41
-#define PIN_HXDAT           42
-#define PIN_HXDAT2          8
-#define PIN_HXCLK           9
+#define PIN_WATERTANKSENSOR 15
+#define PIN_HXDAT           16
+#define PIN_HXDAT2          17
+#define PIN_HXCLK           18
 
 #define PIN_VALVE  12
 #define PIN_PUMP   13
 #define PIN_HEATER 14
 
-#define PIN_STATUSLED 38
-#define PIN_BREWLED   39
-#define PIN_STEAMLED  40
+#define PIN_STATUSLED   1
+#define PIN_BREWLED     2
+#define PIN_STEAMLED    8
+#define PIN_HOTWATERLED 21
 
-#define PIN_ZC 21
+#define PIN_ZC 9
 
 #define PIN_I2CSCL 10
 #define PIN_I2CSDA 11

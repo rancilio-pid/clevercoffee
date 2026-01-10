@@ -1133,6 +1133,30 @@ void ParameterRegistry::initialize(Config& config) {
         true
     );
 
+#ifdef BOARD_ESP32_S3
+    addBoolConfigParam(
+        "hardware.leds.hotwater.enabled",
+        "Enable Hot Water LED",
+        sHardwareLedSection,
+        2331,
+        nullptr,
+        "Enable hot water indicator LED",
+        [] { return true; },
+        true
+    );
+
+    addBoolConfigParam(
+        "hardware.leds.hotwater.inverted",
+        "Invert Hot Water LED",
+        sHardwareLedSection,
+        2332,
+        nullptr,
+        "Invert the hot water LED logic (for common anode LEDs)",
+        [] { return true; },
+        true
+    );
+#endif
+
     // Sensors
     addEnumConfigParam(
         "hardware.sensors.temperature.type",
