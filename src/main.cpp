@@ -134,10 +134,12 @@ Switch* waterTankSensor = nullptr;
 GPIOPin* statusLedPin = nullptr;
 GPIOPin* brewLedPin = nullptr;
 GPIOPin* steamLedPin = nullptr;
+GPIOPin* hotwaterLedPin = nullptr;
 
 LED* statusLed = nullptr;
 LED* brewLed = nullptr;
 LED* steamLed = nullptr;
+LED* hotwaterLed = nullptr;
 
 GPIOPin* heaterRelayPin = nullptr;
 GPIOPin* pumpRelayPin = nullptr;
@@ -927,18 +929,16 @@ void setup() {
         ParameterRegistry::getInstance().syncGlobalVariables();
     }
 
-    Wire.begin();
+    Wire.begin(PIN_I2CSDA, PIN_I2CSCL, 400000);
 
     if (config.get<bool>("hardware.oled.enabled")) {
         switch (config.get<int>("hardware.oled.type")) {
             case 0:
-                u8g2 = new U8G2_SH1106_128X64_NONAME_F_HW_I2C(U8G2_R0, U8X8_PIN_NONE, PIN_I2CSCL, PIN_I2CSDA);  // e.g. 1.3"
+                u8g2 = new U8G2_SH1106_128X64_NONAME_F_HW_I2C(U8G2_R0, U8X8_PIN_NONE);  // e.g. 1.3"
                 break;
             case 1:
-                u8g2 = new U8G2_SSD1306_128X64_NONAME_F_HW_I2C(U8G2_R0, U8X8_PIN_NONE, PIN_I2CSCL, PIN_I2CSDA); // e.g. 0.96"
-                break;
-            default:
-                break;
+                u8g2 = new U8G2_SSD1306_128X64_NONAME_F_HW_I2C(U8G2_R0, U8X8_PIN_NONE); // e.g. 0.96"
+            default:;
         }
 
         if (u8g2 != nullptr) {
@@ -1032,12 +1032,22 @@ void setup() {
         brewLed = new StandardLED(*brewLedPin, inverted);
         brewLed->turnOff();
     }
+
     if (config.get<bool>("hardware.leds.steam.enabled")) {
         const bool inverted = config.get<bool>("hardware.leds.steam.inverted");
         steamLedPin = new GPIOPin(PIN_STEAMLED, GPIOPin::OUT);
         steamLed = new StandardLED(*steamLedPin, inverted);
         steamLed->turnOff();
     }
+
+#ifdef BOARD_ESP32_S3
+    if (config.get<bool>("hardware.leds.hotwater.enabled")) {
+        const bool inverted = config.get<bool>("hardware.leds.hotwater.inverted");
+        hotwaterLedPin = new GPIOPin(PIN_HOTWATERLED, GPIOPin::OUT);
+        hotwaterLed = new StandardLED(*hotwaterLedPin, inverted);
+        hotwaterLed->turnOff();
+    }
+#endif
 
     if (config.get<bool>("hardware.sensors.watertank.enabled")) {
         const auto mode = static_cast<Switch::Mode>(config.get<int>("hardware.sensors.watertank.mode"));
@@ -1194,6 +1204,16 @@ void setup() {
     setupDone = true;
 
     enableTimer1();
+
+#ifdef BOARD_ESP32_S3
+    if (psramFound()) {
+        LOGF(INFO, "PSRAM: %d MB available\n", ESP.getPsramSize() / (1024 * 1024));
+        LOGF(INFO, "PSRAM: %d bytes free\n", ESP.getFreePsram());
+    }
+    else {
+        LOG(ERROR, "WARNING: PSRAM not found!");
+    }
+#endif
 
     double fsUsage = ((double)LittleFS.usedBytes() / LittleFS.totalBytes()) * 100;
     LOGF(INFO, "LittleFS: %d%% (used %ld bytes from %ld bytes)", (int)ceil(fsUsage), LittleFS.usedBytes(), LittleFS.totalBytes());
@@ -1502,6 +1522,12 @@ void loopLED() {
     if (config.get<bool>("hardware.leds.steam.enabled") && steamLed != nullptr) {
         steamLed->setGPIOState(machineState == kSteam);
     }
+
+#ifdef BOARD_ESP32_S3
+    if (config.get<bool>("hardware.leds.hotwater.enabled") && hotwaterLed != nullptr) {
+        hotwaterLed->setGPIOState(machineState == kHotWater);
+    }
+#endif
 }
 
 void checkWaterTank() {
