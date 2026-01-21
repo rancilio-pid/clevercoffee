@@ -51,6 +51,8 @@
 #define SCREEN_HEIGHT            64                // OLED display height, in pixels
 #define AUTH_PASSWORD            "admin"           // default password for web authentication
 #define AUTH_USERNAME            "admin"           // default username for web authentication
+#define WIFI_SSID_DEFAULT        ""                // default wifi ssid (empty = use portal)
+#define WIFI_PASSWORD_DEFAULT    ""                // default wifi password (empty = open)
 
 #define PID_KP_REGULAR_MIN            0.0
 #define PID_KP_REGULAR_MAX            999.0
@@ -110,3 +112,5 @@
 #define MQTT_TOPIC_MAX_LENGTH         48
 #define MQTT_HASSIO_PREFIX_MAX_LENGTH 24
 #define HOSTNAME_MAX_LENGTH           64
+#define WIFI_SSID_MAX_LENGTH          32
+#define WIFI_PASSWORD_MAX_LENGTH      64

@@ -802,6 +802,23 @@ void wiFiSetup() {
         LOG(INFO, "Connecting to WiFi");
     }
 
+    const String wifiSsid = config.get<String>("system.wifi.ssid");
+    const String wifiPassword = config.get<String>("system.wifi.password");
+    if (!wifiSsid.isEmpty()) {
+        LOGF(INFO, "Connecting to WiFi from config: %s", wifiSsid.c_str());
+        if (wifiPassword.isEmpty()) {
+            WiFi.begin(wifiSsid.c_str());
+        }
+        else {
+            WiFi.begin(wifiSsid.c_str(), wifiPassword.c_str());
+        }
+
+        const unsigned long start = millis();
+        while (WiFi.status() != WL_CONNECTED && (millis() - start) < 10000) {
+            delay(100);
+        }
+    }
+
     wm.setHostname(hostname.c_str());
     wm.setEnableConfigPortal(false); // doesnt start config portal within autoconnect
     wm.setDisableConfigPortal(true); // disables config portal on wifi save
