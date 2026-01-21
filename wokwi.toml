@@ -1,0 +1,7 @@
+[wokwi]
+version = 1
+firmware = '.pio/build/esp32_usb/firmware_merged.bin'
+elf = '.pio/build/esp32_usb/firmware.elf'
+[[net.forward]]
+from = "localhost:8180"
+to = "target:80"

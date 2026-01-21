@@ -27,7 +27,7 @@ You can find our project website here: [Clever Coffee Website](https://clevercof
 
 This software is free and open source and can be customized to your personal needs.
 
-We recommend you have a look at the manual before starting a build, you can find the German one [here](https://rancilio-pid.github.io/ranciliopid-handbook/). It is currently being reworked to include all the latest features. 
+We recommend you have a look at the manual before starting a build, you can find the German one [here](https://rancilio-pid.github.io/ranciliopid-handbook/). It is currently being reworked to include all the latest features.
 
 ## Chat and Support
 You will find more information, discussions, and support on our [Discord](https://discord.gg/Kq5RFznuU4) server.
@@ -97,7 +97,7 @@ Improved MQTT discovery message generation for better stability and reliability.
  * Automatic backflush program
  * Programmable standby timer
  * Supports toggle or momentary switches for brew, steam, hot water delivery and power/standby
- * Allows brew switch detection via an optocoupler module for a minimally invasive installation  
+ * Allows brew switch detection via an optocoupler module for a minimally invasive installation
  * MQTT support to monitor and manipulate all important parameters
  * Choose from multiple templates for the display (including vertical), possibility to integrate custom designs
  * Over-the-air updates of the firmware via WiFi (requires OTA Flasher or espota.py)

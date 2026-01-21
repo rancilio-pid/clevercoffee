@@ -52,7 +52,7 @@ In the following, the chosen coding standards are briefly summarized. The corres
   ```cpp
   // Example
   int myVariable;
-  
+
   void myFunction() {
       // code
   }
@@ -61,7 +61,7 @@ In the following, the chosen coding standards are briefly summarized. The corres
   ```cpp
   // Example
   int sum = a + b;
-  
+
   if (x == y) {
       // code
   }
@@ -111,13 +111,17 @@ In the following, the chosen coding standards are briefly summarized. The corres
 2. Ensure your code follows the outlined style guidelines.
 3. Make sure to include clear commit messages explaining the purpose of the changes.
 4. Open a pull request with a descriptive title and detailed information about the changes made.
-5. **Choose the correct target branch for your pull request:**  
-   - For new features or improvements, open the PR against the `develop` branch.  
+5. **Choose the correct target branch for your pull request:**
+   - For new features or improvements, open the PR against the `develop` branch.
    - If the bug is in `develop`, target the `develop` branch.
-   - If fixing a bug found in `master`, open the PR against `master`.  
-   
+   - If fixing a bug found in `master`, open the PR against `master`.
+
 ## Code Review Process
 
 All contributions will be reviewed to ensure compliance with the project's guidelines. Be prepared to address any feedback or suggestions for improvement during the review process.
 
 Thank you for your contributions to CleverCoffee!
+
+## Wokwi Emulator (VS Code)
+
+See [docs/wokwi.md](docs/wokwi.md) for the full setup and WiFi configuration steps.

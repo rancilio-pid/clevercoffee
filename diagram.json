@@ -1,0 +1,213 @@
+{
+  "version": 1,
+  "author": "r3vile",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": 76.8,
+      "left": 4.84,
+      "attrs": { "flashSize": "4", "psramSize": "0" }
+    },
+    { "type": "board-ssd1306", "id": "oled1", "top": 271.94, "left": 336.23, "attrs": {} },
+    {
+      "type": "board-ds18b20",
+      "id": "temp1",
+      "top": 325.27,
+      "left": 157.68,
+      "attrs": { "deviceId": "28FF6789AB000001", "temperature": "95" }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "btnBrew",
+      "top": -389.2,
+      "left": -150.5,
+      "attrs": { "label": "BREW", "value": "1" }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "btnSteam",
+      "top": -176.2,
+      "left": -153.6,
+      "attrs": { "label": "STEAM", "value": "1" }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "btnWater",
+      "top": -274,
+      "left": -150.5,
+      "attrs": { "label": "WATER", "value": "1" }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "swWaterTank",
+      "top": 62,
+      "left": 310.3,
+      "attrs": { "label": "WATER_TANK" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rBrew",
+      "top": -341.35,
+      "left": 75.4,
+      "rotate": 180,
+      "attrs": { "value": "47000" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rSteam",
+      "top": -130.15,
+      "left": 75.4,
+      "rotate": 180,
+      "attrs": { "value": "47000" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rWater",
+      "top": -235.75,
+      "left": 75.4,
+      "rotate": 180,
+      "attrs": { "value": "47000" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "ledPump",
+      "top": 63.6,
+      "left": -380.2,
+      "attrs": { "color": "blue", "label": "PUMP" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rLedPump",
+      "top": 119.45,
+      "left": -308.6,
+      "rotate": 180,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "ledValve",
+      "top": 140.4,
+      "left": -380.2,
+      "attrs": { "color": "orange", "label": "VALVE" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rLedValve",
+      "top": 195.95,
+      "left": -307.2,
+      "rotate": 180,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "ledHeater",
+      "top": 217.2,
+      "left": -380.2,
+      "attrs": { "color": "red", "label": "HEATER" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rLedHeater",
+      "top": 273.05,
+      "left": -308.6,
+      "rotate": 180,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "ledStatus",
+      "top": 303.6,
+      "left": -380.2,
+      "attrs": { "color": "green", "label": "STATUS" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rLedStatus",
+      "top": 359.15,
+      "left": -307.2,
+      "rotate": 180,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "ledBrew",
+      "top": 380.4,
+      "left": -380.2,
+      "attrs": { "color": "purple", "label": "BREW_LED" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rLedBrew",
+      "top": 436.25,
+      "left": -308.6,
+      "rotate": 180,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "ledSteam",
+      "top": 466.8,
+      "left": -389.8,
+      "attrs": { "color": "yellow", "label": "STEAM_LED" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rLedSteam",
+      "top": 522.65,
+      "left": -308.6,
+      "rotate": 180,
+      "attrs": { "value": "220" }
+    },
+    { "type": "wokwi-hx711", "id": "hx711", "top": 473, "left": -103, "attrs": { "type": "5kg" } }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "oled1:SCL", "esp:22", "green", [ "h0.3", "v-67.2" ] ],
+    [ "oled1:SDA", "esp:21", "blue", [ "h0.07", "v-38.4" ] ],
+    [ "oled1:GND", "esp:GND.2", "black", [ "v-86.4", "h-153.6" ] ],
+    [ "oled1:VCC", "esp:3V3", "red", [ "h0.15", "v-240", "h-403.2", "v67.2" ] ],
+    [ "temp1:VCC", "esp:3V3", "red", [ "v38.4", "h-201.6", "v-307.2" ] ],
+    [ "temp1:GND", "esp:GND.2", "black", [ "v9.6", "h-28.8", "v-278.4" ] ],
+    [ "temp1:DQ", "esp:16", "orange", [ "v28.8", "h-48", "v-192" ] ],
+    [ "btnBrew:2", "esp:34", "green", [ "v19.2", "h-95.9", "v480" ] ],
+    [ "btnBrew:1", "esp:3V3", "red", [ "h-48", "v288.2" ] ],
+    [ "rBrew:1", "esp:GND.2", "black", [ "h105.6", "v307.2" ] ],
+    [ "rBrew:2", "btnBrew:2", "green", [ "h-210", "v-19.2" ] ],
+    [ "btnSteam:2", "esp:35", "orange", [ "v17.4", "h-73.6", "v278.4" ] ],
+    [ "btnSteam:1", "esp:3V3", "red", [ "h-54.5", "v247.8" ] ],
+    [ "rSteam:1", "esp:GND.2", "black", [ "h48", "v124.8" ] ],
+    [ "rSteam:2", "btnSteam:2", "orange", [ "h-171.6", "v0", "h-60.8" ] ],
+    [ "btnWater:2", "esp:VP", "blue", [ "v9.6", "h-86.3", "v355.2" ] ],
+    [ "btnWater:1", "esp:3V3", "red", [ "h-57.6", "v345.6" ] ],
+    [ "rWater:1", "esp:GND.2", "black", [ "h76.8", "v211.2" ] ],
+    [ "rWater:2", "btnWater:2", "blue", [ "h-162", "v0", "h-48.1" ] ],
+    [ "swWaterTank:2", "esp:23", "cyan", [ "h0.1", "v19.2" ] ],
+    [ "swWaterTank:1", "esp:GND.2", "black", [ "v9.6", "h-211.2" ] ],
+    [ "rLedPump:1", "esp:27", "blue", [ "h67.2", "v38.4", "h-1.4", "v48.3" ] ],
+    [ "rLedPump:2", "ledPump:A", "blue", [ "h0" ] ],
+    [ "ledPump:C", "esp:GND.1", "black", [ "v9.6", "h125.2", "v115.2" ] ],
+    [ "rLedValve:1", "esp:17", "orange", [ "h9.6", "v0.3", "h344.2" ] ],
+    [ "rLedValve:2", "ledValve:A", "orange", [ "h0" ] ],
+    [ "ledValve:C", "esp:GND.1", "black", [ "v9.6", "h125.2", "v38.4" ] ],
+    [ "rLedHeater:1", "esp:2", "red", [ "h19.2", "v-38.4" ] ],
+    [ "rLedHeater:2", "ledHeater:A", "red", [ "v0.3", "h-67.4" ] ],
+    [ "ledHeater:C", "esp:GND.1", "black", [ "v9.6", "h125.2", "v-38.4" ] ],
+    [ "rLedStatus:1", "esp:26", "green", [ "h37", "v-172.5" ] ],
+    [ "rLedStatus:2", "ledStatus:A", "green", [ "v0.3", "h-48.2" ] ],
+    [ "ledStatus:C", "esp:GND.1", "black", [ "v9.6", "h125.2", "v-124.8" ] ],
+    [ "rLedBrew:1", "esp:19", "purple", [ "h28.8", "v-268.8" ] ],
+    [ "rLedBrew:2", "ledBrew:A", "purple", [ "h0" ] ],
+    [ "ledBrew:C", "esp:GND.1", "black", [ "v9.6", "h125.2", "v-201.6" ] ],
+    [ "rLedSteam:1", "esp:TX", "yellow", [ "h19.2", "v-393.6" ] ],
+    [ "rLedSteam:2", "ledSteam:A", "yellow", [ "h-56.4", "v-19.2" ] ],
+    [ "ledSteam:C", "esp:GND.1", "black", [ "v9.6", "h134.8", "v-288" ] ],
+    [ "hx711:VCC", "esp:3V3", "red", [ "h-67.2", "v-220.8", "h144", "v-201.6" ] ],
+    [ "hx711:GND", "esp:GND.1", "black", [ "h-38.4", "v-134.7", "h105.6", "v-134.4" ] ],
+    [ "hx711:DT", "esp:32", "purple", [ "h-48", "v-346.1" ] ],
+    [ "hx711:SCK", "esp:33", "yellow", [ "h-57.6", "v-192.8", "h163.05" ] ]
+  ],
+  "dependencies": {}
+}

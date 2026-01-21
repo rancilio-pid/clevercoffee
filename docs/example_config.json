@@ -1,0 +1,163 @@
+{
+  "backflush": {
+    "cycles": 5,
+    "fill_time": 5,
+    "flush_time": 10
+  },
+  "brew": {
+    "by_time": {
+      "enabled": false,
+      "target_time": 25
+    },
+    "by_weight": {
+      "auto_tare": false,
+      "enabled": true,
+      "target_weight": 36
+    },
+    "mode": 1,
+    "pid_delay": 10,
+    "pre_infusion": {
+      "enabled": true,
+      "pause": 5,
+      "time": 2
+    },
+    "setpoint": 95,
+    "temp_offset": 0
+  },
+  "display": {
+    "blescale_brew_timer": false,
+    "fullscreen_brew_timer": true,
+    "fullscreen_hot_water_timer": true,
+    "fullscreen_manual_flush_timer": true,
+    "heating_logo": true,
+    "inverted": false,
+    "language": 0,
+    "post_brew_timer_duration": 3,
+    "template": 0
+  },
+  "hardware": {
+    "leds": {
+      "brew": {
+        "enabled": true,
+        "inverted": false
+      },
+      "status": {
+        "enabled": true,
+        "inverted": false
+      },
+      "steam": {
+        "enabled": true,
+        "inverted": false
+      }
+    },
+    "oled": {
+      "address": 0,
+      "enabled": true,
+      "type": 1
+    },
+    "relays": {
+      "heater": {
+        "trigger_type": 1
+      },
+      "pump": {
+        "trigger_type": 1
+      },
+      "valve": {
+        "trigger_type": 1
+      }
+    },
+    "sensors": {
+      "pressure": {
+        "enabled": false
+      },
+      "scale": {
+        "calibration": 1000.00,
+        "calibration2": 1000.00,
+        "enabled": true,
+        "known_weight": 250,
+        "samples": 2,
+        "type": 1
+      },
+      "temperature": {
+        "type": 1
+      },
+      "watertank": {
+        "enabled": true,
+        "mode": 1
+      }
+    },
+    "switches": {
+      "brew": {
+        "enabled": true,
+        "mode": 0,
+        "type": 1
+      },
+      "hot_water": {
+        "enabled": true,
+        "mode": 0,
+        "type": 1
+      },
+      "power": {
+        "enabled": false,
+        "mode": 0,
+        "type": 0
+      },
+      "steam": {
+        "enabled": true,
+        "mode": 0,
+        "type": 1
+      }
+    }
+  },
+  "mqtt": {
+    "enabled": false
+  },
+  "pid": {
+    "bd": {
+      "enabled": false,
+      "kp": 50,
+      "tn": 0,
+      "tv": 20
+    },
+    "ema_factor": 0.6,
+    "enabled": true,
+    "regular": {
+      "i_max": 55,
+      "kp": 62,
+      "tn": 52,
+      "tv": 11.5
+    },
+    "steam": {
+      "kp": 150
+    },
+    "use_ponm": false
+  },
+  "standby": {
+    "enabled": true,
+    "time": 35
+  },
+  "steam": {
+    "setpoint": 120
+  },
+  "system": {
+    "auth": {
+      "enabled": false,
+      "password": "admin",
+      "username": "admin"
+    },
+    "hostname": "silvia",
+    "log_level": 2,
+    "offline_mode": false,
+    "ota_password": "otapass",
+    "showdisplay": {
+      "enabled": true
+    },
+    "wifi": {
+      "ssid": "Wokwi-GUEST",
+      "password": ""
+    },
+    "timing_debug": {
+      "enabled": false
+    }
+  }
+}
