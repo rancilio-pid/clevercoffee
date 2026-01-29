@@ -214,6 +214,16 @@ double temperature, pidOutput;
 bool steamON = false;
 bool steamFirstON = false;
 
+// Steam usage detection and auto-refill state tracking
+// Detects if steam was actually used (via unmonitored valve) by tracking temperature drop
+bool steamReachedOperatingTemp = false; // True if temperature reached operating range (near setpoint)
+double steamPeakTemp = 0.0;             // Highest temperature reached during steam session
+double steamMinTemp = 200.0;            // Lowest temperature during steam session (high initial value)
+bool steamAutoRefillActive = false;
+unsigned long steamRefillStartTime = 0;
+bool steamAutoRefillEnabled = false;
+double steamAutoRefillDuration = STEAM_AUTO_REFILL_DURATION;
+
 PID bPID(&temperature, &pidOutput, &setpoint, aggKp, aggKi, aggKd, 1, DIRECT);
 
 #include "brewHandler.h"
@@ -446,6 +456,14 @@ void handleMachineState() {
             if (steamON) {
                 machineState = kSteam;
 
+                // Initialize steam usage tracking when entering steam mode
+                // Only initialize once per session (check if already tracking)
+                if (steamPeakTemp == 0.0 && steamMinTemp == 200.0) {
+                    steamReachedOperatingTemp = false;
+                    steamPeakTemp = temperature; // Start tracking from current temperature
+                    steamMinTemp = temperature;  // Initialize min to current temp
+                }
+
                 if (standbyModeOn) {
                     resetStandbyTimer(machineState);
                 }
@@ -552,7 +570,42 @@ void handleMachineState() {
             break;
 
         case kSteam:
+            // Monitor temperature during steam mode to detect steam usage
+            // Steam usage is detected by temperature drop when user opens steam valve (not monitored)
+
+            // Check if temperature reached operating range (system was ready for steam)
+            if (temperature >= (steamSetpoint - 3.0)) {
+                steamReachedOperatingTemp = true;
+            }
+
+            // Track peak temperature (highest point reached, indicates system was ready)
+            if (temperature > steamPeakTemp) {
+                steamPeakTemp = temperature;
+            }
+
+            // Track minimum temperature (lowest point, shows drop from peak if steam was used)
+            if (temperature < steamMinTemp) {
+                steamMinTemp = temperature;
+            }
+
             if (!steamON) {
+                // Steam mode is being disabled - check if steam was actually used
+                if (steamAutoRefillEnabled && steamReachedOperatingTemp) {
+                    // Calculate temperature drop from peak (actual drop that occurred)
+                    const double tempDrop = steamPeakTemp - steamMinTemp;
+                    if (tempDrop > 5.0) {
+                        // Significant temperature drop detected - steam was used via valve
+                        steamAutoRefillActive = true;
+                        steamRefillStartTime = millis();
+                        LOGF(INFO, "Steam usage detected: temperature dropped %.1f°C from peak (%.1f°C to %.1f°C), triggering auto-refill", tempDrop, steamPeakTemp, steamMinTemp);
+                    }
+                }
+
+                // Reset tracking variables for next steam session
+                steamReachedOperatingTemp = false;
+                steamPeakTemp = 0.0;
+                steamMinTemp = 200.0;
+
                 machineState = kPidNormal;
             }
 
@@ -1380,6 +1433,17 @@ void loopPid() {
 
     updateStandbyTimer();
     handleMachineState();
+    // Handle steam auto-refill timer
+    if (steamAutoRefillActive) {
+        const unsigned long elapsedTime = millis() - steamRefillStartTime;
+        if (elapsedTime >= static_cast<unsigned long>(steamAutoRefillDuration * 1000)) {
+            // Refill duration completed, stop the refill
+            steamAutoRefillActive = false;
+            steamRefillStartTime = 0;
+            LOG(INFO, "Steam auto-refill completed");
+        }
+    }
+
     hotWaterHandler();
     valveSafetyShutdownCheck();
     testTimer();

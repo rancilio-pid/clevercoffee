@@ -39,6 +39,8 @@ extern bool featureHeatingLogo;
 extern bool steamON;
 extern bool backflushOn;
 extern double temperature;
+extern bool steamAutoRefillEnabled;
+extern double steamAutoRefillDuration;
 extern bool scaleTareOn;
 extern bool scaleCalibrationOn;
 extern int logLevel;
@@ -216,6 +218,28 @@ void ParameterRegistry::initialize(Config& config) {
         STEAM_SETPOINT_MIN,
         STEAM_SETPOINT_MAX,
         "The temperature that the PID will use for steam mode"
+    );
+
+    addBoolConfigParam(
+        "steam.auto_refill.enabled",
+        "Enable Steam Auto-Refill",
+        sTempSection,
+        204,
+        &steamAutoRefillEnabled,
+        "Automatically refill boiler after steam usage by detecting temperature drops"
+    );
+
+    addNumericConfigParam<double>(
+        "steam.auto_refill.duration",
+        "Steam Refill Duration (s)",
+        kDouble,
+        sTempSection,
+        205,
+        &steamAutoRefillDuration,
+        STEAM_AUTO_REFILL_DURATION_MIN,
+        STEAM_AUTO_REFILL_DURATION_MAX,
+        "Duration to run hot water pump for boiler refill after steam usage",
+        [&config] { return config.get<bool>("steam.auto_refill.enabled"); }
     );
 
     // Brew Section
