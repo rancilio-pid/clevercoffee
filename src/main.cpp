@@ -223,6 +223,7 @@ bool steamAutoRefillActive = false;
 unsigned long steamRefillStartTime = 0;
 bool steamAutoRefillEnabled = false;
 double steamAutoRefillDuration = STEAM_AUTO_REFILL_DURATION;
+double steamAutoRefillPressure = STEAM_AUTO_REFILL_PRESSURE;
 
 PID bPID(&temperature, &pidOutput, &setpoint, aggKp, aggKi, aggKd, 1, DIRECT);
 
@@ -1433,14 +1434,29 @@ void loopPid() {
 
     updateStandbyTimer();
     handleMachineState();
-    // Handle steam auto-refill timer
+    // Handle steam auto-refill timer and pressure
     if (steamAutoRefillActive) {
         const unsigned long elapsedTime = millis() - steamRefillStartTime;
-        if (elapsedTime >= static_cast<unsigned long>(steamAutoRefillDuration * 1000)) {
-            // Refill duration completed, stop the refill
+        bool stopDueToTime = elapsedTime >= static_cast<unsigned long>(steamAutoRefillDuration * 1000);
+        bool stopDueToPressure = false;
+
+        // Check pressure if sensor is enabled and target pressure is set
+        if (config.get<bool>("hardware.sensors.pressure.enabled") && steamAutoRefillPressure > 0) {
+            if (inputPressureFilter >= steamAutoRefillPressure) {
+                stopDueToPressure = true;
+            }
+        }
+
+        if (stopDueToTime || stopDueToPressure) {
             steamAutoRefillActive = false;
             steamRefillStartTime = 0;
-            LOG(INFO, "Steam auto-refill completed");
+
+            if (stopDueToPressure) {
+                LOGF(INFO, "Steam auto-refill completed: target pressure %.2f bar reached", inputPressureFilter);
+            }
+            else {
+                LOG(INFO, "Steam auto-refill completed: duration reached");
+            }
         }
     }
 

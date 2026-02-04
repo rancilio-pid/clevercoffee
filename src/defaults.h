@@ -42,6 +42,7 @@
 #define POST_BREW_TIMER_DURATION   3.0               // time in seconds that brew timer will be shown after brew finished
 #define BLINKING_DELTA             0.3               // distance between measured temperature and setpoint to enable display blinking
 #define STEAM_AUTO_REFILL_DURATION 5.0               // default duration in seconds for steam auto-refill
+#define STEAM_AUTO_REFILL_PRESSURE 0.0               // default target pressure in bar for steam auto-refill (0 = disabled)
 #define MAXWIFIRECONNECTS          5                 // maximum number of reconnection attempts, use -1 to deactivate
 #define WIFICONNECTIONDELAY        10000             // delay between reconnects in ms
 #define MQTT_USERNAME              "rancilio"        // default MQTT username
@@ -101,6 +102,8 @@
 #define BLINKING_DELTA_MAX             10.0
 #define STEAM_AUTO_REFILL_DURATION_MIN 1.0
 #define STEAM_AUTO_REFILL_DURATION_MAX 60.0
+#define STEAM_AUTO_REFILL_PRESSURE_MIN 0.0
+#define STEAM_AUTO_REFILL_PRESSURE_MAX 3.0
 #define SCALE_SAMPLES_MIN              1
 #define SCALE_SAMPLES_MAX              20
 #define SCALE_CALIBRATION_MIN          (-999999.0)

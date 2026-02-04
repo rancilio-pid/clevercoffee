@@ -41,6 +41,7 @@ extern bool backflushOn;
 extern double temperature;
 extern bool steamAutoRefillEnabled;
 extern double steamAutoRefillDuration;
+extern double steamAutoRefillPressure;
 extern bool scaleTareOn;
 extern bool scaleCalibrationOn;
 extern int logLevel;
@@ -240,6 +241,19 @@ void ParameterRegistry::initialize(Config& config) {
         STEAM_AUTO_REFILL_DURATION_MAX,
         "Duration to run hot water pump for boiler refill after steam usage",
         [&config] { return config.get<bool>("steam.auto_refill.enabled"); }
+    );
+
+    addNumericConfigParam<double>(
+        "steam.auto_refill.pressure",
+        "Steam Refill Target Pressure (bar)",
+        kDouble,
+        sTempSection,
+        206,
+        &steamAutoRefillPressure,
+        STEAM_AUTO_REFILL_PRESSURE_MIN,
+        STEAM_AUTO_REFILL_PRESSURE_MAX,
+        "Stop refill when this pressure is reached (0 = disabled, requires pressure sensor)",
+        [&config] { return config.get<bool>("steam.auto_refill.enabled") && config.get<bool>("hardware.sensors.pressure.enabled"); }
     );
 
     // Brew Section
