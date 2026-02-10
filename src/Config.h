@@ -274,6 +274,7 @@ class Config {
             _configDefs.emplace("steam.setpoint", ConfigDef::forDouble(STEAMSETPOINT, STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX));
             _configDefs.emplace("steam.auto_refill.enabled", ConfigDef::forBool(false));
             _configDefs.emplace("steam.auto_refill.duration", ConfigDef::forDouble(STEAM_AUTO_REFILL_DURATION, STEAM_AUTO_REFILL_DURATION_MIN, STEAM_AUTO_REFILL_DURATION_MAX));
+            _configDefs.emplace("steam.auto_refill.pressure", ConfigDef::forDouble(STEAM_AUTO_REFILL_PRESSURE, STEAM_AUTO_REFILL_PRESSURE_MIN, STEAM_AUTO_REFILL_PRESSURE_MAX));
 
             // Backflushing
             _configDefs.emplace("backflush.cycles", ConfigDef::forInt(BACKFLUSH_CYCLES, BACKFLUSH_CYCLES_MIN, BACKFLUSH_CYCLES_MAX));
