@@ -84,7 +84,7 @@ MachineState lastmachinestate = kInit;
 int lastmachinestatepid = -1;
 
 bool offlineMode = false;
-int displayOffline = 0;
+uint8_t displayOffline = 0;
 
 inline bool systemInitialized = false;
 
@@ -104,7 +104,7 @@ constexpr unsigned int maxWifiReconnects = MAXWIFIRECONNECTS;
 String hostname = "silvia";
 auto pass = WM_PASS;
 unsigned long lastWifiConnectionAttempt = millis();
-unsigned int wifiReconnects = 0; // actual number of reconnects
+uint8_t wifiReconnects = 0; // actual number of reconnects
 bool restartAfterAP = false;
 
 // OTA
@@ -228,8 +228,6 @@ boolean setupDone = false;
 // Water tank sensor
 boolean waterTankFull = true;
 Timer loopWaterTank(&checkWaterTank, 200); // Check water tank level every 200 ms
-int waterTankCheckConsecutiveReads = 0;    // Counter for consecutive readings of water tank sensor
-constexpr int waterTankCountsNeeded = 3;   // Number of same readings to change water tank sensing
 
 // PID controller
 unsigned long previousMillistemp; // initialisation at the end of init()
@@ -340,7 +338,7 @@ void initOfflineMode() {
  * @brief Check if Wifi is connected, if not reconnect abort function if offline, or brew is running
  */
 void checkWifi() {
-    static int wifiConnectCounter = 1;
+    static uint8_t wifiConnectCounter = 1;
     static bool wifiConnectedHandled = false;
     if (offlineMode || checkBrewActive()) return;
 
@@ -1486,8 +1484,11 @@ void loopPid() {
 }
 
 void loopLED() {
+    // status LED active when not in error state and temperature is in setpoint range
     if (config.get<bool>("hardware.leds.status.enabled") && statusLed != nullptr) {
-        if ((machineState == kPidNormal && (fabs(temperature - setpoint) < 0.3)) || (temperature > 115 && fabs(temperature - setpoint) < 5)) {
+        bool nearSetpoint = fabs(temperature - setpoint) <= (machineState == kSteam ? 5 : config.get<float>("display.blinking.delta"));
+
+        if (machineState <= kBackflush && nearSetpoint) {
             statusLed->turnOn();
         }
         else {
@@ -1495,10 +1496,12 @@ void loopLED() {
         }
     }
 
+    // brew LED on during brew and blinking during manual flush and backflush
     if (config.get<bool>("hardware.leds.brew.enabled") && brewLed != nullptr) {
-        brewLed->setGPIOState(machineState == kBrew);
+        brewLed->setGPIOState((machineState == kBrew) || (isrCounter < 500 && (machineState == kManualFlush || (machineState == kBackflush && currBackflushState != kBackflushIdle))));
     }
 
+    // steam LED on if in steam mode
     if (config.get<bool>("hardware.leds.steam.enabled") && steamLed != nullptr) {
         steamLed->setGPIOState(machineState == kSteam);
     }

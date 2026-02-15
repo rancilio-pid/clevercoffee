@@ -28,7 +28,7 @@ inline const u8g2_cb_t* getU8G2Rotation(const int rotationValue) {
  * @brief initialize display
  */
 inline void u8g2_prepare() {
-    int rotation = 0;
+    uint8_t rotation = 0;
     u8g2->clearBuffer();
     u8g2->setFont(u8g2_font_profont11_tf);
     u8g2->setFontRefHeightExtendedText();
