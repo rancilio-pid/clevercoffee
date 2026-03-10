@@ -1615,7 +1615,7 @@ void setPIDTunings(const bool usePonM) {
     }
 
     if (usePonM) {
-        bPID.SetTunings(aggbKp, aggbKi, aggbKd, P_ON_M);
+        bPID.SetTunings(aggKp, aggKi, aggKd, P_ON_M);
     }
     else {
         bPID.SetTunings(aggKp, aggKi, aggKd, 1);
