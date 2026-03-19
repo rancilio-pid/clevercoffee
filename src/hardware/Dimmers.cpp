@@ -1,4 +1,8 @@
 #include "Dimmers.h"
+#include "Adafruit_MCP4725.h"
+#include "Logger.h"
+
+Adafruit_MCP4725 dac;
 
 unsigned int delayLowLut[9] = {5695, 5343, 4992, 4673, 4365, 4030, 3607, 3149, 2630};
 unsigned int delayHighLut[21] = {2630, 2578, 2514, 2440, 2367, 2293, 2219, 2146, 2072, 1998, 1924, 1851, 1777, 1641, 1498, 1355, 1213, 1070, 853, 526, 200};
@@ -11,6 +15,9 @@ const char* controlMethodToString(PumpDimmer::ControlMethod method) {
         case PumpDimmer::ControlMethod::PHASE:
             return "PHASE";
 
+        case PumpDimmer::ControlMethod::DAC_VELOFUSO:
+            return "DAC_VELOFUSO";
+
         default:
             return "Unknown";
     }
@@ -18,29 +25,19 @@ const char* controlMethodToString(PumpDimmer::ControlMethod method) {
 
 PumpDimmer* PumpDimmer::instance = nullptr;
 
-PumpDimmer::PumpDimmer(GPIOPin& outputPin, GPIOPin& zeroCrossPin, int timerNum, bool hz) :
-    _out(outputPin), _zc(zeroCrossPin), _timerNum(timerNum), _60hz(hz), _power(0), _psmAccumulated(0), _state(false), _lastZC(0), _method(ControlMethod::PSM), _timer(nullptr) {
+PumpDimmer::PumpDimmer(GPIOPin& outputPin, GPIOPin& zeroCrossPin, int timerNum) :
+    _out(outputPin), _zc(zeroCrossPin), _timerNum(timerNum), _power(0), _psmAccumulated(0), _state(false), _lastZC(0), _method(ControlMethod::PSM), _timer(nullptr) {
     instance = this;
 }
 
 void PumpDimmer::begin() {
-    _out.write(LOW);
+    dac.begin(0x60);
 
-    static bool adjusted = false; // flag to ensure scaling only happens once
-
-    if (_60hz && adjusted == false) {
-
-        for (int i = 0; i < 9; i++) {
-            delayLowLut[i] = (unsigned int)(delayLowLut[i] * 0.8333f);
-        }
-
-        for (int i = 0; i < 21; i++) {
-            delayHighLut[i] = (unsigned int)(delayHighLut[i] * 0.8333f);
-        }
-
-        adjusted = true;
+    if (_method == ControlMethod::DAC_VELOFUSO) {
+        dac.setVoltage(0, true); // Set initial value and save to EEPROM
     }
 
+    _out.write(LOW);
     _timer = timerBegin(_timerNum, 80, true); // 80 prescaler = 1 µs ticks (assuming 80 MHz APB clock)
 
     timerAttachInterrupt(
@@ -63,7 +60,7 @@ void PumpDimmer::begin() {
     if (_method == ControlMethod::PHASE) {
         attachInterrupt(_zc.getPin(), onZeroCrossPhaseStatic, RISING);
     }
-    else {
+    else if (_method == ControlMethod::PSM) {
         attachInterrupt(_zc.getPin(), onZeroCrossPSMStatic, RISING);
     }
 }
@@ -107,6 +104,10 @@ void PumpDimmer::setPower(int power) {
         _scaledPower = pressureScaler + (100 - pressureScaler) * (_power * 0.01f);
         _delayMicros = instance->getInterpolatedDelay(_scaledPower); // Lower delay = more power (fired earlier)
     }
+    else if (_method == ControlMethod::DAC_VELOFUSO && _power != power) {
+        float value = _power * 40.95f;
+        dac.setVoltage((uint16_t)value, false);
+    }
 }
 
 void PumpDimmer::setPressure(float pressure) {
@@ -127,7 +128,12 @@ void PumpDimmer::on() {
 
 void PumpDimmer::off() {
     _state = false;
-    _out.write(LOW);
+    if (_method == ControlMethod::DAC_VELOFUSO) {
+        dac.setVoltage(0, false);
+    }
+    else {
+        _out.write(LOW);
+    }
 }
 
 bool PumpDimmer::getState() const {
@@ -135,7 +141,7 @@ bool PumpDimmer::getState() const {
 }
 
 float PumpDimmer::getFrequency() const {
-    return _60hz ? 60 : 50;
+    return _avg_cycle > 0 ? 1000000.0f / _avg_cycle : 0.0f;
 }
 
 void PumpDimmer::setCalibration(float flowRate1, float flowRate2, float opvPressure) {
@@ -148,16 +154,75 @@ void PumpDimmer::setCalibration(float flowRate1, float flowRate2, float opvPress
 float PumpDimmer::getFlow(float pressure) const {
     float result = 0.0f;
 
+    if (pressure <= 0.0f) {
+        pressure = 0.0f;
+    }
+
     if (_method == ControlMethod::PSM) {
         float powerMultiplier = _state ? float(_power) * 0.01f : 0.0f;
         result = powerMultiplier * (_deltaFlow * _opvPressureInv * pressure + _flowRate1);
     }
-    else {
+    else if (_method == ControlMethod::PHASE) {
         float powerMultiplier = _state ? _scaledPower * 0.01f : 0.0f;
         result = powerMultiplier * _flowRate1 - 0.06f * (1 - powerMultiplier) * pressure * _flowRate1 + pressure * _deltaFlow * _opvPressureInv;
     }
+    else if (_method == ControlMethod::DAC_VELOFUSO) {
+        float powerMultiplier = _state ? float(_power) * 0.01f : 0.0f;
+        result = powerMultiplier * _flowRate1 - 0.06f * (1 - powerMultiplier) * pressure * _flowRate1 + (powf(pressure * 0.17f, 4.4f)) * _deltaFlow * _opvPressureInv;
+    }
 
     return result > 0.0f ? result : 0.0f;
+}
+
+void PumpDimmer::measure_frequency(unsigned long current_time, unsigned long last_cross_time) {
+    static bool adjusted = false; // flag to ensure scaling only happens once
+    static int _measurement_count = 0;
+    static int _restart_count = 0;
+    static unsigned long _total_period = 0;
+
+    if (_restart_count >= 5) {
+        return;
+    }
+
+    if (last_cross_time > 0) {
+        _total_period += current_time - last_cross_time; // >= 15000
+        _measurement_count++;
+
+        if (_measurement_count >= 20) {
+            // calculate average cycle duration
+            _avg_cycle = _total_period / _measurement_count;
+
+            if (_avg_cycle > 18181 && _avg_cycle <= 22222) {
+                _60hz = false;
+                _frequency_measured = true;
+            }
+            else if (_avg_cycle >= 15384 && _avg_cycle <= 18181) {
+                _60hz = true;
+                _frequency_measured = true;
+            }
+            else {
+                // restart measurements
+                _total_period = 0;
+                _measurement_count = 0;
+                _restart_count++;
+            }
+
+            if (_frequency_measured) {
+                if (_60hz && adjusted == false) {
+
+                    for (int i = 0; i < 9; i++) {
+                        delayLowLut[i] = (delayLowLut[i] * 5) / 6;
+                    }
+
+                    for (int i = 0; i < 21; i++) {
+                        delayHighLut[i] = (delayHighLut[i] * 5) / 6;
+                    }
+
+                    adjusted = true;
+                }
+            }
+        }
+    }
 }
 
 void PumpDimmer::setControlMethod(ControlMethod method) {
@@ -171,13 +236,18 @@ void PumpDimmer::setControlMethod(ControlMethod method) {
     if (_method == ControlMethod::PHASE) {
         attachInterrupt(_zc.getPin(), onZeroCrossPhaseStatic, RISING);
     }
-    else {
+    else if (_method == ControlMethod::PSM) {
         attachInterrupt(_zc.getPin(), onZeroCrossPSMStatic, RISING);
     }
+    // DAC doesn't require zero-cross interrupt
 }
 
 PumpDimmer::ControlMethod PumpDimmer::getControlMethod() const {
     return _method;
+}
+
+PumpControlType PumpDimmer::getType() const {
+    return PumpControlType::DIMMER;
 }
 
 // PSM method
@@ -186,10 +256,14 @@ void PumpDimmer::resetPSMCounter() {
 }
 
 void PumpDimmer::handlePSMZeroCross() {
-    unsigned long now = millis();
+    unsigned long now = micros();
 
-    if (now - _lastZC < 15) {
+    if (now - _lastZC < 15000) {
         return; // Debounce
+    }
+
+    if (!_frequency_measured) {
+        measure_frequency(now, _lastZC);
     }
 
     _lastZC = now;
@@ -218,24 +292,34 @@ void IRAM_ATTR PumpDimmer::onZeroCrossPSMStatic() {
 
 // Phase method
 void PumpDimmer::handlePhaseZeroCross() {
+    unsigned long now = micros();
+
+    if (now - _lastZC < 15000) {
+        return; // Debounce
+    }
+
+    if (!_frequency_measured) {
+        measure_frequency(now, _lastZC);
+    }
+
+    _lastZC = now;
+
     if (_power <= 0 || !_state) {
         _out.write(LOW);
         return;
     }
 
-    _phaseState = TimerPhase::DELAY;
-    timerWrite(_timer, 0);
-    timerAlarmDisable(_timer);
-    timerAlarmWrite(_timer, _delayMicros, false);
-    timerAlarmEnable(_timer);
+    if (_frequency_measured) {
+        _phaseState = TimerPhase::DELAY;
+        timerWrite(_timer, 0);
+        timerAlarmDisable(_timer);
+        timerAlarmWrite(_timer, _delayMicros, false);
+        timerAlarmEnable(_timer);
+    }
 }
 
 void IRAM_ATTR PumpDimmer::onZeroCrossPhaseStatic() {
     if (instance) {
         instance->handlePhaseZeroCross();
     }
-}
-
-PumpControlType PumpDimmer::getType() const {
-    return PumpControlType::DIMMER;
 }

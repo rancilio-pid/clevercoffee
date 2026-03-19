@@ -7,10 +7,11 @@ class PumpDimmer : public PumpControl {
     public:
         enum class ControlMethod {
             PHASE,
-            PSM
+            PSM,
+            DAC_VELOFUSO
         };
 
-        PumpDimmer(GPIOPin& outputPin, GPIOPin& zeroCrossPin, int timerNum, bool hz);
+        PumpDimmer(GPIOPin& outputPin, GPIOPin& zeroCrossPin, int timerNum);
 
         void begin();
         int getInterpolatedDelay(float powerPercent);
@@ -23,6 +24,7 @@ class PumpDimmer : public PumpControl {
         float getFrequency() const;
         float getFlow(float pressure) const;
         void setCalibration(float flowRate1, float flowRate2, float opvPressure);
+        void measure_frequency(unsigned long current_time, unsigned long last_cross_time);
 
         void setControlMethod(ControlMethod method);
         ControlMethod getControlMethod() const;
@@ -36,7 +38,9 @@ class PumpDimmer : public PumpControl {
         float _scaledPower;
         int _psmAccumulated;
         float _pressure;
-        bool _60hz = false;
+        volatile bool _60hz = false;
+        volatile unsigned long _avg_cycle = 0;
+        volatile bool _frequency_measured = false;
         int _maxDelay = 5660;
         int _minDelay = 200;
         bool _state;

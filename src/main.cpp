@@ -33,8 +33,10 @@
 #include "hardware/Relay.h"
 #include "hardware/StandardLED.h"
 #include "hardware/Switch.h"
+#include "hardware/flowSensor.h"
 #include "hardware/pinmapping.h"
 #include "hardware/pumpControl.h"
+
 #include "hardware/tempsensors/TempSensorDallas.h"
 #include "hardware/tempsensors/TempSensorTSIC.h"
 
@@ -118,6 +120,9 @@ float inputPressure = 0;
 float inputPressureFilter = 0;
 const unsigned long intervalPressure = 20;
 unsigned long previousMillisPressure; // initialisation at the end of init()
+
+// Flow rate sensor or calculation
+float pumpFlowRate = 0;
 float pumpFlowRateFilter = 0;
 
 // timing flags
@@ -158,7 +163,8 @@ std::unique_ptr<PumpControl> pumpRelay = nullptr;
 Relay* heaterRelay = nullptr;
 Relay* valveRelay = nullptr;
 
-GPIOPin pumpZCPin(PIN_ZC, GPIOPin::IN_HARDWARE);
+GPIOPin pumpZCPin(PIN_ZC, GPIOPin::IN_PULLDOWN);
+GPIOPin* flowSensorPin = nullptr;
 
 Switch* powerSwitch = nullptr;
 Switch* brewSwitch = nullptr;
@@ -282,10 +288,14 @@ bool mqtt_was_connected = false;
 std::map<const char*, const char*, cmp_str> mqttVars;
 std::map<const char*, std::function<double()>, cmp_str> mqttSensors = {};
 
+// Graph page timing
 unsigned long lastTempEvent = 0;
 unsigned long tempEventInterval = 1000;
 unsigned long lastBrewEvent = 0;
 unsigned long brewEventInterval = 100;
+
+// Flow sensor
+unsigned long lastFlowTime = 0;
 
 Timer hassioDiscoveryTimer(&sendHASSIODiscoveryMsg, 300000);
 
@@ -1036,12 +1046,19 @@ void setup() {
     const auto pumpTriggerType = static_cast<Relay::TriggerType>(config.get<int>("hardware.relays.pump.trigger_type"));
 
     if (config.get<bool>("dimmer.enabled")) {
-        pumpRelay = std::make_unique<PumpDimmer>(*pumpRelayPin, pumpZCPin, 1, config.get<bool>("dimmer.frequency"));
+        pumpRelay = std::make_unique<PumpDimmer>(*pumpRelayPin, pumpZCPin, 1);
         auto* dimmer = static_cast<PumpDimmer*>(pumpRelay.get());
         dimmer->begin();
         dimmer->setPower(0);
-        dimmer->setControlMethod((config.get<int>("dimmer.type") == 1) ? PumpDimmer::ControlMethod::PHASE : PumpDimmer::ControlMethod::PSM);
-        LOGF(INFO, "Frequency: %0.01f Hz", dimmer->getFrequency());
+        dimmerTypeHandler();
+
+        unsigned long frequencyStartTime = millis();
+
+        while (dimmer->getFrequency() == 0 && millis() - frequencyStartTime < 2000) {
+            delay(100);
+        }
+
+        LOGF(INFO, "Frequency: %0.2f Hz", dimmer->getFrequency());
 
         // this shouldnt ever be needed, need to test it gets initialised
         if (!config.get<float>("dimmer.calibration.flow_rate1") || !config.get<float>("dimmer.calibration.flow_rate2") || !config.get<float>("dimmer.calibration.opv_pressure")) {
@@ -1106,6 +1123,11 @@ void setup() {
     if (config.get<bool>("hardware.sensors.watertank.enabled")) {
         const auto mode = static_cast<Switch::Mode>(config.get<int>("hardware.sensors.watertank.mode"));
         waterTankSensor = new IOSwitch(PIN_WATERTANKSENSOR, (mode == Switch::NORMALLY_OPEN ? GPIOPin::IN_PULLDOWN : GPIOPin::IN_PULLUP), Switch::TOGGLE, mode, !mode);
+    }
+
+    if (config.get<bool>("hardware.sensors.flowsensor.enabled")) {
+        flowSensorPin = new GPIOPin(PIN_FLOW, GPIOPin::IN_HARDWARE);
+        initFlowSensor(*flowSensorPin, config.get<bool>("system.show_flowdata.enabled"));
     }
 
     if (!config.get<bool>("system.offline_mode")) { // WiFi Mode
@@ -1239,6 +1261,7 @@ void setup() {
     previousMillisMQTT = currentTime;
     lastMQTTConnectionAttempt = currentTime;
     previousMillisTimer = currentTime;
+    lastFlowTime = currentTime;
 
     // Init Scale
     if (config.get<bool>("hardware.sensors.scale.enabled")) {
@@ -1430,16 +1453,21 @@ void loopPid() {
     websiteUpdateRunning = false;
 
     if (updateMetadata) {
-        if (pumpRelay->getType() == PumpControlType::DIMMER && config.get<int>("dimmer.mode") == PROFILE) {
-            if (machineState == kBrew) {
-                sendBrewMetadata(profileName, phaseName, profileDescription, phaseDescription, dimmerModes[pumpControlMode], autoStop ? "true" : "false");
+        if (pumpRelay->getType() == PumpControlType::DIMMER) {
+            if (config.get<int>("dimmer.mode") == PROFILE) {
+                if (machineState == kBrew) {
+                    sendBrewMetadata(profileName, phaseName, profileDescription, phaseDescription, dimmerModes[pumpControlMode], autoStop ? "true" : "false");
+                }
+                else {
+                    sendBrewMetadata(profileName, " ", profileDescription, getPhaseDescriptions(currentProfile), dimmerModes[pumpControlMode], autoStop ? "true" : "false");
+                }
             }
             else {
-                sendBrewMetadata(profileName, " ", profileDescription, getPhaseDescriptions(currentProfile), dimmerModes[pumpControlMode], autoStop ? "true" : "false");
+                sendBrewMetadata(" ", " ", " ", " ", dimmerModes[pumpControlMode], " ");
             }
         }
         else {
-            sendBrewMetadata(" ", " ", " ", " ", dimmerModes[pumpControlMode], " ");
+            sendBrewMetadata(" ", " ", " ", " ", "Relay", " ");
         }
 
         updateMetadata = false;
@@ -1450,24 +1478,28 @@ void loopPid() {
         lastmachinestatehtml = machineState;
     }
 
-    if (pumpRelay->getType() == PumpControlType::DIMMER) {
-        if ((machineState != kBrew && lastmachinestatehtml == kBrew) ||
-            (((millis() - lastBrewEvent) > brewEventInterval) && (machineState == kBrew) && (!mqttUpdateRunning && !hassioUpdateRunning && !displayBufferReady && !temperatureUpdateRunning))) {
-            websiteUpdateRunning = true;
+    if ((machineState != kBrew && lastmachinestatehtml == kBrew) ||
+        (((millis() - lastBrewEvent) > brewEventInterval) && (machineState == kBrew) && (!mqttUpdateRunning && !hassioUpdateRunning && !displayBufferReady && !temperatureUpdateRunning))) {
+        websiteUpdateRunning = true;
 
-            // send brew data to website endpoint
+        // send brew data to website endpoint
+        if (pumpRelay->getType() == PumpControlType::DIMMER) {
             if (pumpControlMode == FLOW) {
-                sendBrewEvent(currBrewTime / 1000, inputPressureFilter, 0.0, pumpFlowRate, setPumpFlowRate, currBrewWeight, dimmerPower);
+                sendBrewEvent(currBrewTime / 1000, inputPressureFilter, 0.0, pumpFlowRate, setPumpFlowRate, currBrewWeight, dimmerPower, temperature);
             }
             else if (pumpControlMode == PRESSURE) {
-                sendBrewEvent(currBrewTime / 1000, inputPressureFilter, setPressure, pumpFlowRate, 0.0, currBrewWeight, dimmerPower);
+                sendBrewEvent(currBrewTime / 1000, inputPressureFilter, setPressure, pumpFlowRate, 0.0, currBrewWeight, dimmerPower, temperature);
             }
             else {
-                sendBrewEvent(currBrewTime / 1000, inputPressureFilter, 0.0, pumpFlowRate, 0.0, currBrewWeight, dimmerPower);
+                sendBrewEvent(currBrewTime / 1000, inputPressureFilter, 0.0, pumpFlowRate, 0.0, currBrewWeight, dimmerPower, temperature);
             }
-
-            lastBrewEvent = millis();
         }
+        else {
+            // pressure and weight will be zero if not enabled
+            sendBrewEvent(currBrewTime / 1000, inputPressureFilter, 0.0, pumpFlowRate, 0.0, currBrewWeight, pumpRelay->getState() ? 100 : 0, temperature);
+        }
+
+        lastBrewEvent = millis();
     }
 
     if ((machineState != kBrew) && (lastmachinestatehtml == kBrew)) {
@@ -1513,19 +1545,34 @@ void loopPid() {
         shotTimerScale(); // Calculation of weight of shot while brew is running
     }
 
-    if (config.get<bool>("hardware.sensors.pressure.enabled")) {
-        if (const unsigned long currentMillisPressure = millis(); currentMillisPressure - previousMillisPressure >= intervalPressure) {
-            previousMillisPressure = currentMillisPressure;
+    if (const unsigned long currentMillisPressure = millis(); currentMillisPressure - previousMillisPressure >= intervalPressure) {
+        previousMillisPressure = currentMillisPressure;
+
+        if (config.get<bool>("hardware.sensors.pressure.enabled")) {
             inputPressure = measurePressure();
             inputPressureFilter = filterPressureValue(inputPressure);
+        }
 
-            if (pumpRelay) {
-                if (pumpRelay->getType() == PumpControlType::DIMMER) {
-                    auto* dimmer = static_cast<PumpDimmer*>(pumpRelay.get());
-                    pumpFlowRate = dimmer->getFlow(inputPressure);
-                    pumpFlowRateFilter = filterFlowValue(pumpFlowRate);
+        if (pumpRelay) {
+            if (config.get<bool>("hardware.sensors.flowsensor.enabled")) {
+                pumpFlowRate = readFlowMLperSec();
+
+                if (config.get<bool>("system.show_flowdata.enabled")) {
+                    if (pumpFlowRate > 0 && millis() - lastFlowTime > 1000) {
+                        lastFlowTime = millis();
+                        float volume = readTotalVolumeML();
+                        float count = readPulseDelta();
+
+                        LOGF(DEBUG, "Flow: %.2f ml/s Volume: %.1f ml Count: %.1f", pumpFlowRate, volume, count);
+                    }
                 }
             }
+            else if (pumpRelay->getType() == PumpControlType::DIMMER) {
+                auto* dimmer = static_cast<PumpDimmer*>(pumpRelay.get());
+                pumpFlowRate = dimmer->getFlow(inputPressure);
+            }
+
+            pumpFlowRateFilter = filterFlowValue(pumpFlowRate);
         }
     }
 

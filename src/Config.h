@@ -272,8 +272,7 @@ class Config {
 
             // PID pump dimmer
             _configDefs.emplace("dimmer.enabled", ConfigDef::forBool(false));
-            _configDefs.emplace("dimmer.frequency", ConfigDef::forBool(false));
-            _configDefs.emplace("dimmer.type", ConfigDef::forInt(0, 0, 1));
+            _configDefs.emplace("dimmer.type", ConfigDef::forInt(0, 0, 2));
             _configDefs.emplace("dimmer.mode", ConfigDef::forInt(1, 0, 3));
             _configDefs.emplace("dimmer.profile", ConfigDef::forInt(1, 0, 9));
             _configDefs.emplace("dimmer.setpoint.power", ConfigDef::forDouble(PUMP_POWER_SETPOINT, PUMP_POWER_SETPOINT_MIN, PUMP_POWER_SETPOINT_MAX));
@@ -291,6 +290,12 @@ class Config {
             _configDefs.emplace("dimmer.phase.flow.kp", ConfigDef::forDouble(PHASE_FLOW_KP, PUMP_KP_MIN, PUMP_KP_MAX));
             _configDefs.emplace("dimmer.phase.flow.ki", ConfigDef::forDouble(PHASE_FLOW_KI, PUMP_KI_MIN, PUMP_KI_MAX));
             _configDefs.emplace("dimmer.phase.flow.kd", ConfigDef::forDouble(PHASE_FLOW_KD, PUMP_KD_MIN, PUMP_KD_MAX));
+            _configDefs.emplace("dimmer.velo.pressure.kp", ConfigDef::forDouble(VELO_PRESSURE_KP, PUMP_KP_MIN, PUMP_KP_MAX));
+            _configDefs.emplace("dimmer.velo.pressure.ki", ConfigDef::forDouble(VELO_PRESSURE_KI, PUMP_KI_MIN, PUMP_KI_MAX));
+            _configDefs.emplace("dimmer.velo.pressure.kd", ConfigDef::forDouble(VELO_PRESSURE_KD, PUMP_KD_MIN, PUMP_KD_MAX));
+            _configDefs.emplace("dimmer.velo.flow.kp", ConfigDef::forDouble(VELO_FLOW_KP, PUMP_KP_MIN, PUMP_KP_MAX));
+            _configDefs.emplace("dimmer.velo.flow.ki", ConfigDef::forDouble(VELO_FLOW_KI, PUMP_KI_MIN, PUMP_KI_MAX));
+            _configDefs.emplace("dimmer.velo.flow.kd", ConfigDef::forDouble(VELO_FLOW_KD, PUMP_KD_MIN, PUMP_KD_MAX));
             _configDefs.emplace("dimmer.i_max", ConfigDef::forDouble(PUMP_I_MAX, PUMP_I_MAX_MIN, PUMP_I_MAX_MAX));
             _configDefs.emplace("dimmer.calibration.flow_rate1", ConfigDef::forDouble(PUMP_CALIBRATE_FLOW1, PUMP_CALIBRATION_FLOW_MIN, PUMP_CALIBRATION_FLOW_MAX));
             _configDefs.emplace("dimmer.calibration.flow_rate2", ConfigDef::forDouble(PUMP_CALIBRATE_FLOW2, PUMP_CALIBRATION_FLOW_MIN, PUMP_CALIBRATION_FLOW_MAX));
@@ -331,6 +336,7 @@ class Config {
             _configDefs.emplace("system.timing_debug.enabled", ConfigDef::forBool(false));
             _configDefs.emplace("system.showdisplay.enabled", ConfigDef::forBool(true));
             _configDefs.emplace("system.show_brewdata.enabled", ConfigDef::forBool(true));
+            _configDefs.emplace("system.show_flowdata.enabled", ConfigDef::forBool(true));
 
             // Display
             _configDefs.emplace("display.template", ConfigDef::forInt(0, 0, 4));
@@ -380,6 +386,7 @@ class Config {
             // Hardware - Sensors
             _configDefs.emplace("hardware.sensors.temperature.type", ConfigDef::forInt(0, 0, 1));
             _configDefs.emplace("hardware.sensors.pressure.enabled", ConfigDef::forBool(false));
+            _configDefs.emplace("hardware.sensors.flowsensor.enabled", ConfigDef::forBool(false));
             _configDefs.emplace("hardware.sensors.watertank.enabled", ConfigDef::forBool(false));
             _configDefs.emplace("hardware.sensors.watertank.mode", ConfigDef::forInt(Switch::NORMALLY_CLOSED, 0, 1));
 

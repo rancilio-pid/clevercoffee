@@ -28,7 +28,6 @@ int loopIndexPid = 0;
 bool triggered = false;
 int triggerCountdown = 0;
 
-float pumpFlowRate = 0;
 float setPressure = PUMP_PRESSURE_SETPOINT;
 float setPumpFlowRate = PUMP_FLOW_SETPOINT;
 PumpMode pumpControlMode = PRESSURE;
@@ -100,7 +99,9 @@ void dimmerTypeHandler() {
     if (pumpRelay) {
         if (pumpRelay->getType() == PumpControlType::DIMMER) {
             auto* dimmer = static_cast<PumpDimmer*>(pumpRelay.get());
-            dimmer->setControlMethod((config.get<int>("dimmer.type") == 1) ? PumpDimmer::ControlMethod::PHASE : PumpDimmer::ControlMethod::PSM);
+            int type = config.get<int>("dimmer.type");
+            PumpDimmer::ControlMethod method = (type == 1) ? PumpDimmer::ControlMethod::PHASE : (type == 2) ? PumpDimmer::ControlMethod::DAC_VELOFUSO : PumpDimmer::ControlMethod::PSM;
+            dimmer->setControlMethod(method);
         }
     }
 }
@@ -433,21 +434,29 @@ void loopPump() {
                 }
 
                 // allow changes to PID parameters at any time
-                if (config.get<int>("dimmer.type") == 0) {
-                    pressureKp = config.get<float>("dimmer.psm.pressure.kp");
-                    pressureKi = config.get<float>("dimmer.psm.pressure.ki");
-                    pressureKd = config.get<float>("dimmer.psm.pressure.kd");
-                    flowKp = config.get<float>("dimmer.psm.flow.kp");
-                    flowKi = config.get<float>("dimmer.psm.flow.ki");
-                    flowKd = config.get<float>("dimmer.psm.flow.kd");
-                }
-                else {
+                if (config.get<int>("dimmer.type") == 1) {
                     pressureKp = config.get<float>("dimmer.phase.pressure.kp");
                     pressureKi = config.get<float>("dimmer.phase.pressure.ki");
                     pressureKd = config.get<float>("dimmer.phase.pressure.kd");
                     flowKp = config.get<float>("dimmer.phase.flow.kp");
                     flowKi = config.get<float>("dimmer.phase.flow.ki");
                     flowKd = config.get<float>("dimmer.phase.flow.kd");
+                }
+                else if (config.get<int>("dimmer.type") == 2) {
+                    pressureKp = config.get<float>("dimmer.velo.pressure.kp");
+                    pressureKi = config.get<float>("dimmer.velo.pressure.ki");
+                    pressureKd = config.get<float>("dimmer.velo.pressure.kd");
+                    flowKp = config.get<float>("dimmer.velo.flow.kp");
+                    flowKi = config.get<float>("dimmer.velo.flow.ki");
+                    flowKd = config.get<float>("dimmer.velo.flow.kd");
+                }
+                else {
+                    pressureKp = config.get<float>("dimmer.psm.pressure.kp");
+                    pressureKi = config.get<float>("dimmer.psm.pressure.ki");
+                    pressureKd = config.get<float>("dimmer.psm.pressure.kd");
+                    flowKp = config.get<float>("dimmer.psm.flow.kp");
+                    flowKi = config.get<float>("dimmer.psm.flow.ki");
+                    flowKd = config.get<float>("dimmer.psm.flow.kd");
                 }
 
                 PidResults[loopIndexPid][8] = currentMillisPumpControl - previousMillisPumpControl;

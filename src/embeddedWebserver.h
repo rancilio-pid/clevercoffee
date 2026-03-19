@@ -683,7 +683,7 @@ inline void sendTempEvent(const double currentTemp, const double targetTemp, con
     }
 }
 
-void sendBrewEvent(float time, float inputPressure, float setPressure, float pumpFlowRate, float setPumpFlowRate, float currBrewWeight, int dimmerPower) {
+void sendBrewEvent(float time, float inputPressure, float setPressure, float pumpFlowRate, float setPumpFlowRate, float currBrewWeight, int dimmerPower, float temperature) {
     JsonDocument doc;
 
     doc["currBrewTime"] = time;
@@ -693,11 +693,11 @@ void sendBrewEvent(float time, float inputPressure, float setPressure, float pum
     doc["setPumpFlowRate"] = setPumpFlowRate;
     doc["currBrewWeight"] = currBrewWeight;
     doc["dimmerPower"] = dimmerPower;
+    doc["temperature"] = temperature;
 
     char jsonBuf[256];
     size_t len = serializeJson(doc, jsonBuf, sizeof(jsonBuf));
     events.send(jsonBuf, "brew_event", millis());
-    // LOGF(DEBUG, "%s", jsonBuf);
 }
 
 void sendBrewMetadata(const char* profile, const char* phase, const char* profileDesc, const char* phaseDesc, const char* control, const char* autoStop) {
@@ -713,7 +713,6 @@ void sendBrewMetadata(const char* profile, const char* phase, const char* profil
     char jsonBuf[1024];
     size_t len = serializeJson(doc, jsonBuf, sizeof(jsonBuf));
     events.send(jsonBuf, "brew_meta", millis());
-    // LOGF(DEBUG, "%s", jsonBuf);
 }
 
 void startBrewEvent() {

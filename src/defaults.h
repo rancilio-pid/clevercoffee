@@ -63,6 +63,12 @@
 #define PHASE_FLOW_KP            2.0               // PID Phase control Flow target Kp
 #define PHASE_FLOW_KI            15.0              // PID Phase control Flow target Ki
 #define PHASE_FLOW_KD            0.0               // PID Phase control Flow target Kd
+#define VELO_PRESSURE_KP         10.0              // PID Velo control Pressure target Kp
+#define VELO_PRESSURE_KI         20.0              // PID Velo control Pressure target Ki
+#define VELO_PRESSURE_KD         1.0               // PID Velo control Pressure target Kd
+#define VELO_FLOW_KP             2.0               // PID Velo control Flow target Kp
+#define VELO_FLOW_KI             15.0              // PID Velo control Flow target Ki
+#define VELO_FLOW_KD             0.0               // PID Velo control Flow target Kd
 #define PUMP_I_MAX               100.0             // PID Dimmer integral anti windup
 #define PUMP_POWER_SETPOINT      100.0             // PID Power target
 #define PUMP_PRESSURE_SETPOINT   9.0               // PID Pressure target

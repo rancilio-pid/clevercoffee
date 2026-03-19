@@ -53,7 +53,7 @@
 
   <script>
     let data = [
-      [], [], [], [], [], [], []
+      [], [], [], [], [], [], [], []
     ];
     let chart; 
     let isBrewing = false;
@@ -81,6 +81,7 @@
         [0.0], // setPumpFlowRate
         [0.0], // currBrewWeight
         [0.0], // dimmerPower
+        [0.0]  // temperature
       ];
 
       const options = {
@@ -137,6 +138,14 @@
               show: false 
             }  
           },
+          { 
+            label: "Temperature", 
+            stroke: "orange", 
+            scale: "right", 
+            points: { 
+              show: false 
+            }  
+          },
         ],
         scales: {
           x: { 
@@ -164,7 +173,7 @@
             label: "Pressure/Flow"
           },                       
           { 
-            label: "Weight/Power Pct",
+            label: "Weight/Power Pct/Temperature",
             scale: "right", 
             side: 1 
           }, 
@@ -337,6 +346,7 @@
           data[4].push(json.setPumpFlowRate ?? null);
           data[5].push(json.currBrewWeight ?? null);
           data[6].push(json.dimmerPower ?? null);
+          data[7].push(json.temperature ?? null);
 
           // Keep only last 1000 points
           if (data[0].length > 1000) {
@@ -390,7 +400,8 @@
         "pumpFlowRate",
         "setPumpFlowRate",
         "currBrewWeight",
-        "dimmerPower"
+        "dimmerPower",
+        "temperature"
       ];
 
       let csv = header.join(",") + "\n";
@@ -417,6 +428,7 @@
           setPumpFlowRate: data[4][i],
           currBrewWeight: data[5][i],
           dimmerPower: data[6][i],
+          temperature: data[7][i],
         });
       }
 
