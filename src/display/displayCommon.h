@@ -692,6 +692,24 @@ inline bool displayOfflineMode() {
  */
 inline bool displayMachineState() {
 
+    // Show fullscreen brew timer:
+    if (displayFullscreenBrewTimer()) {
+        // Display was updated, end here
+        return true;
+    }
+
+    // Show fullscreen manual flush timer:
+    if (displayFullscreenManualFlushTimer()) {
+        // Display was updated, end here
+        return true;
+    }
+
+    // Show fullscreen hot water timer:
+    if (displayFullscreenHotWaterTimer()) {
+        // Display was updated, end here
+        return true;
+    }
+
     if (shouldDisplayBrewTimer()) {
         return false;
     }
