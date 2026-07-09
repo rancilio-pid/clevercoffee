@@ -13,14 +13,16 @@
 
 void displayScaleFailed();
 void displayWrappedMessage(const String& message, int x = 0, int startY = 0, int spacing = 2, boolean clearSend = true, boolean wrapWord = false);
+bool shouldDisplayBrewTimer();
 
 inline bool scaleCalibrationOn = false;
 inline bool scaleTareOn = false;
 inline int shottimerCounter = 10;
 inline float currReadingWeight = 0; // current weight reading
 inline float preBrewWeight = 0;     // weight before brew started
-inline float currBrewWeight = 0;    // weight of current brew
-inline float scaleDelayValue = 2.5; // delay compensation in grams
+inline float currBrewWeight = 0;    // weight of current brew including trickle
+inline float stoppedWeight = 0;     // weight the pump stopped at
+inline float stoppedFlowRate = 0;   // flow rate the pump stopped at
 inline bool scaleFailure = false;
 inline bool autoTareInProgress = false;
 inline unsigned long autoTareStartTime = 0;
@@ -41,6 +43,62 @@ inline Scale* scale = nullptr;
 inline bool isBluetoothScale = false;
 
 extern BrewState currBrewState;
+extern inline double currBrewTime;
+
+constexpr int N = 10;
+float w[N];
+float t[N];
+int idx = 0;
+int readIdx = 0;
+unsigned long lastWeightTime = 0;
+unsigned long lastFlowTime = 0;
+float flowRate = 0;
+float flowRatePrev = 0;
+float alpha = 0.3;
+
+/**
+ * @brief Calculate flow rate using scales and least squares method for N samples
+ */
+void updateFlow(float weight) {
+    unsigned long newMillis = millis();
+    float tAccum = 0;
+    float sumT = 0;
+    float sumW = 0;
+    float sumTT = 0;
+    float sumTW = 0;
+
+    if (newMillis - lastFlowTime < 150) {
+        return;
+    }
+
+    w[idx] = weight;
+    t[idx] = newMillis - lastFlowTime;
+    lastFlowTime = newMillis;
+    idx = (idx + 1) % N;
+
+    for (int i = 0; i < N; i++) {
+        int j = (idx + i) % N;
+        float wv = w[j];
+        float tv = tAccum * 0.001f; // seconds
+
+        sumT += tv;
+        sumW += wv;
+        sumTT += tv * tv;
+        sumTW += tv * wv;
+
+        if (i < N - 1) {
+            tAccum += t[(j + 1) % N];
+        }
+    }
+
+    float denom = N * sumTT - sumT * sumT;
+
+    if (denom > 0.1) {
+        float fR = constrain((N * sumTW - sumT * sumW) / denom, FLOW_RATE_MIN, FLOW_RATE_MAX);
+        flowRate = alpha * fR + (1.0f - alpha) * flowRatePrev;
+        flowRatePrev = flowRate;
+    }
+}
 
 /**
  * @brief Check Bluetooth scale connection status and handle failures
@@ -121,6 +179,8 @@ inline float getScaleWeight() {
     if (scale->update()) {
         const float weight = scale->getWeight();
         lastValidWeight = weight;
+        lastWeightTime = millis();
+        updateFlow(weight);
         return weight;
     }
 
@@ -333,12 +393,20 @@ inline void shotTimerScale() {
         case 20:
             currBrewWeight = currReadingWeight - preBrewWeight;
 
-            if (currBrewState == kBrewIdle) {
+            if (currBrewState != kBrewIdle) {
+                stoppedWeight = currBrewWeight; // updates until pump stops
+                stoppedFlowRate = flowRate;
+            }
+
+            if (!shouldDisplayBrewTimer()) {
                 shottimerCounter = 10;
 
                 // Reset fallback state when brew ends
                 brewByWeightFallbackActive = false;
+
+                LOGF(DEBUG, "Brew stats - Stopped Weight: %0.2fg, Final Weight: %0.2fg, Brew time: %0.2fs, End flow rate: %0.2fg/s", stoppedWeight, currBrewWeight, currBrewTime / 1000, stoppedFlowRate);
             }
+
             break;
 
         default:;
