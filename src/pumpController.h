@@ -157,11 +157,11 @@ void runProfile(int profileIndex) {
                 break;
 
             case EXIT_TYPE_FLOW_OVER:
-                exitReached = (pumpFlowRateFilter >= phase.exit_flow_over);
+                exitReached = (flowRateFilter >= phase.exit_flow_over);
                 break;
 
             case EXIT_TYPE_FLOW_UNDER:
-                exitReached = (pumpFlowRateFilter <= phase.exit_flow_under);
+                exitReached = (flowRateFilter <= phase.exit_flow_under);
                 break;
         }
 
@@ -176,7 +176,7 @@ void runProfile(int profileIndex) {
         if (exitReached || (currBrewTime > phase.seconds * 1000 + phaseTiming)) {
             lastPressure = inputPressureFilter;
             lastSetPressure = phase.pressure;
-            lastFlow = pumpFlowRateFilter;
+            lastFlow = flowRateFilter;
             lastSetFlow = phase.flow;
             currentPhaseIndex += 1;
             phaseTiming = currBrewTime;
@@ -478,7 +478,7 @@ void loopPump() {
                 }
                 else {
                     if (pumpControlMode == PRESSURE) {
-                        inputPID = inputPressureFilter; // inputPressure;
+                        inputPID = inputPressureFilter;                                                                      // inputPressure;
                         targetPID = setPressure;
                         // Smooth flow override, doesnt work well in pressure
                         targetPID = applySmoothOverride(targetPID, pumpFlowRate, flowPressureCeiling, flowPressureRange, 2); // 1 is linear reduction, 2 quadratic, 3 cubic
@@ -487,7 +487,7 @@ void loopPump() {
                         inputKd = pressureKd;
                     }
                     else if (pumpControlMode == FLOW) {
-                        inputPID = pumpFlowRateFilter;
+                        inputPID = flowRateFilter;
                         targetPID = setPumpFlowRate;
                         // Smooth pressure override
                         targetPID = applySmoothOverride(targetPID, inputPressureFilter, flowPressureCeiling, flowPressureRange, 2); // 1 is linear reduction, 2 quadratic, 3 cubic
