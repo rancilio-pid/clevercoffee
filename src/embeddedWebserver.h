@@ -168,26 +168,7 @@ inline String staticProcessor(const String& var) {
         return getValue(var.substring(9)); // cut off "VAR_SHOW_"
     }
 
-    // var didn't start with above names, try opening var as fragment file and use contents if it exists
-    // TODO: this seems to consume too much heap in some cases, probably better to remove fragment loading and only use one SPA in the long term (or only support ESP32 which has more RAM)
-    String varLower(var);
-    varLower.toLowerCase();
-
-    if (File file = LittleFS.open("/html_fragments/" + varLower + ".html", "r")) {
-        if (file.size() * 2 < ESP.getFreeHeap()) {
-            String ret = file.readString();
-            file.close();
-            return ret;
-        }
-
-        LOGF(DEBUG, "Can't open file %s, not enough memory available", file.name());
-    }
-    else {
-        LOGF(DEBUG, "Fragment %s not found", varLower.c_str());
-    }
-
-    // didn't find a value for the var, replace var with empty string
-    return {};
+    return String();                       // returns empty if not found
 }
 
 inline void serverSetup() {
@@ -683,14 +664,14 @@ inline void sendTempEvent(const double currentTemp, const double targetTemp, con
     }
 }
 
-void sendBrewEvent(float time, float inputPressure, float setPressure, float pumpFlowRate, float setPumpFlowRate, float currBrewWeight, int dimmerPower, float temperature) {
+void sendBrewEvent(float time, float inputPressure, float setPressure, float flowRate, float setFlowRate, float currBrewWeight, int dimmerPower, float temperature) {
     JsonDocument doc;
 
     doc["currBrewTime"] = time;
     doc["inputPressure"] = inputPressure;
     doc["setPressure"] = setPressure;
-    doc["pumpFlowRate"] = pumpFlowRate;
-    doc["setPumpFlowRate"] = setPumpFlowRate;
+    doc["flowRate"] = flowRate;
+    doc["setFlowRate"] = setFlowRate;
     doc["currBrewWeight"] = currBrewWeight;
     doc["dimmerPower"] = dimmerPower;
     doc["temperature"] = temperature;

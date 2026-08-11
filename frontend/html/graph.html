@@ -77,8 +77,8 @@
         [0.0], // time
         [0.0], // inputPressure
         [0.0], // setPressure
-        [0.0], // pumpFlowRate
-        [0.0], // setPumpFlowRate
+        [0.0], // flowRate
+        [0.0], // setFlowRate
         [0.0], // currBrewWeight
         [0.0], // dimmerPower
         [0.0]  // temperature
@@ -108,14 +108,14 @@
             }  
           },
           { 
-            label: "Pump Flow", 
+            label: "Flow", 
             stroke: "green", 
             points: { 
               show: false 
             }  
           },
           { 
-            label: "Set Pump Flow", 
+            label: "Set Flow", 
             stroke: "darkgreen", 
             dash: [5, 5], 
             points: { 
@@ -342,8 +342,8 @@
           data[0].push(json.currBrewTime ?? 0);
           data[1].push(json.inputPressure ?? null);
           data[2].push(json.setPressure ?? null);
-          data[3].push(json.pumpFlowRate ?? null);
-          data[4].push(json.setPumpFlowRate ?? null);
+          data[3].push(json.flowRate ?? null);
+          data[4].push(json.setFlowRate ?? null);
           data[5].push(json.currBrewWeight ?? null);
           data[6].push(json.dimmerPower ?? null);
           data[7].push(json.temperature ?? null);
@@ -397,8 +397,8 @@
         "time",
         "inputPressure",
         "setPressure",
-        "pumpFlowRate",
-        "setPumpFlowRate",
+        "flowRate",
+        "setFlowRate",
         "currBrewWeight",
         "dimmerPower",
         "temperature"
@@ -424,8 +424,8 @@
           time: data[0][i],
           inputPressure: data[1][i],
           setPressure: data[2][i],
-          pumpFlowRate: data[3][i],
-          setPumpFlowRate: data[4][i],
+          flowRate: data[3][i],
+          setFlowRate: data[4][i],
           currBrewWeight: data[5][i],
           dimmerPower: data[6][i],
           temperature: data[7][i],

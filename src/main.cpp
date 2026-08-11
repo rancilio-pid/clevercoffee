@@ -122,8 +122,10 @@ const unsigned long intervalPressure = 20;
 unsigned long previousMillisPressure; // initialisation at the end of init()
 
 // Flow rate sensor or calculation
+float flowRate = 0; // may not be required, currently used in the display and MQTT
+float flowRateFilter = 0;
 float pumpFlowRate = 0;
-float pumpFlowRateFilter = 0;
+float sensorFlowRate = 0;
 
 // timing flags
 bool timingDebugActive = false;
@@ -1209,6 +1211,10 @@ void setup() {
                 mqttSensors["pressure"] = [] { return inputPressureFilter; };
             }
 
+            if (config.get<bool>("hardware.sensors.flowsensor.enabled") || config.get<bool>("dimmer.enabled")) {
+                mqttSensors["flowRate"] = [] { return flowRate; };
+            }
+
             snprintf(topic_will, sizeof(topic_will), "%s%s/%s", mqtt_topic_prefix.c_str(), hostname.c_str(), "status");
             snprintf(topic_set, sizeof(topic_set), "%s%s/+/%s", mqtt_topic_prefix.c_str(), hostname.c_str(), "set");
             mqtt.setServer(mqtt_server_ip.c_str(), mqtt_server_port);
@@ -1487,18 +1493,18 @@ void loopPid() {
         // send brew data to website endpoint
         if (pumpRelay->getType() == PumpControlType::DIMMER) {
             if (pumpControlMode == FLOW) {
-                sendBrewEvent(currBrewTime / 1000, inputPressureFilter, 0.0, pumpFlowRate, setPumpFlowRate, currBrewWeight, dimmerPower, temperature);
+                sendBrewEvent(currBrewTime / 1000, inputPressureFilter, 0.0, flowRate, setPumpFlowRate, currBrewWeight, dimmerPower, temperature);
             }
             else if (pumpControlMode == PRESSURE) {
-                sendBrewEvent(currBrewTime / 1000, inputPressureFilter, setPressure, pumpFlowRate, 0.0, currBrewWeight, dimmerPower, temperature);
+                sendBrewEvent(currBrewTime / 1000, inputPressureFilter, setPressure, flowRate, 0.0, currBrewWeight, dimmerPower, temperature);
             }
             else {
-                sendBrewEvent(currBrewTime / 1000, inputPressureFilter, 0.0, pumpFlowRate, 0.0, currBrewWeight, dimmerPower, temperature);
+                sendBrewEvent(currBrewTime / 1000, inputPressureFilter, 0.0, flowRate, 0.0, currBrewWeight, dimmerPower, temperature);
             }
         }
         else {
             // pressure and weight will be zero if not enabled
-            sendBrewEvent(currBrewTime / 1000, inputPressureFilter, 0.0, pumpFlowRate, 0.0, currBrewWeight, pumpRelay->getState() ? 100 : 0, temperature);
+            sendBrewEvent(currBrewTime / 1000, inputPressureFilter, 0.0, flowRate, 0.0, currBrewWeight, pumpRelay->getState() ? 100 : 0, temperature);
         }
 
         lastBrewEvent = millis();
@@ -1557,24 +1563,30 @@ void loopPid() {
 
         if (pumpRelay) {
             if (config.get<bool>("hardware.sensors.flowsensor.enabled")) {
-                pumpFlowRate = readFlowMLperSec();
+                sensorFlowRate = readFlowMLperSec();
+                flowRate = sensorFlowRate;
+                flowRateFilter = filterFlowValue(flowRate);
 
                 if (config.get<bool>("system.show_flowdata.enabled")) {
-                    if (pumpFlowRate > 0 && millis() - lastFlowTime > 1000) {
+                    if (sensorFlowRate > 0 && millis() - lastFlowTime > 1000) {
                         lastFlowTime = millis();
                         float volume = readTotalVolumeML();
                         float count = readPulseDelta();
 
-                        LOGF(DEBUG, "Flow: %.2f ml/s Volume: %.1f ml Count: %.1f", pumpFlowRate, volume, count);
+                        LOGF(DEBUG, "Flow: %.2f ml/s Volume: %.1f ml Count: %.1f", sensorFlowRate, volume, count);
                     }
                 }
             }
-            else if (pumpRelay->getType() == PumpControlType::DIMMER) {
+
+            if (pumpRelay->getType() == PumpControlType::DIMMER) {
                 auto* dimmer = static_cast<PumpDimmer*>(pumpRelay.get());
                 pumpFlowRate = dimmer->getFlow(inputPressure);
-            }
 
-            pumpFlowRateFilter = filterFlowValue(pumpFlowRate);
+                if (!config.get<bool>("hardware.sensors.flowsensor.enabled")) { // prioritise flow sensor if enabled, otherwise use calculated flow from dimmer
+                    flowRate = pumpFlowRate;
+                    flowRateFilter = filterFlowValue(flowRate);
+                }
+            }
         }
     }
 
@@ -1625,6 +1637,7 @@ void loopPid() {
                     }
                 }
             }
+
             lastDisplayUpdate = millis();
         }
     }

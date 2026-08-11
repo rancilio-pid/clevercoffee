@@ -107,7 +107,7 @@
 #define PRE_INFUSION_TIME_MAX         60.0
 #define PRE_INFUSION_PAUSE_MIN        0.0
 #define PRE_INFUSION_PAUSE_MAX        60.0
-#define TARGET_BREW_WEIGHT_MIN        0.0
+#define TARGET_BREW_WEIGHT_MIN        10.0
 #define TARGET_BREW_WEIGHT_MAX        500.0
 #define PID_KP_STEAM_MIN              0.0
 #define PID_KP_STEAM_MAX              999.0
@@ -129,6 +129,8 @@
 #define SCALE_CALIBRATION_MAX         999999.0
 #define SCALE_KNOWN_WEIGHT_MIN        1.0
 #define SCALE_KNOWN_WEIGHT_MAX        2000.0
+#define FLOW_RATE_MIN                 0.0
+#define FLOW_RATE_MAX                 25.0
 #define MQTT_BROKER_MAX_LENGTH        64
 #define USERNAME_MAX_LENGTH           32
 #define PASSWORD_MAX_LENGTH           64
