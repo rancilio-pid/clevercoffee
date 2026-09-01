@@ -40,8 +40,8 @@ inline void printScreen() {
 
     if (!(isrCounter < 500 && ((nearSetpoint && config.get<int>("display.blinking.mode") == 1) || (!nearSetpoint && config.get<int>("display.blinking.mode") == 2)))) {
         // limit to 4 characters
-        u8g2->setCursor(2, 20);
-        u8g2->setFont(u8g2_font_profont22_tr);
+        u8g2->setCursor(5, 20);
+        u8g2->setFont(custom_helvB18);
         u8g2->print(temperature, numDecimalsInput);
         u8g2->setFont(u8g2_font_open_iconic_arrow_2x_t);
         u8g2->setCursor(56, 24);
@@ -56,12 +56,13 @@ inline void printScreen() {
             u8g2->print(static_cast<char>(70));
         }
 
-        u8g2->setCursor(78, 20);
-        u8g2->setFont(u8g2_font_profont22_tr);
+        const int startX = 85 - (numDecimalsSetpoint * 8);
+        u8g2->setCursor(startX, 20);
+        u8g2->setFont(custom_helvB18);
         u8g2->print(setpoint, numDecimalsSetpoint);
     }
 
-    u8g2->setFont(u8g2_font_profont11_tf);
+    u8g2->setFont(custom_profont11);
 
     // Brew time
     if (config.get<bool>("hardware.switches.brew.enabled")) {
