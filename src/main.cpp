@@ -1130,6 +1130,10 @@ void setup() {
             mqttSensors["currentKi"] = [] { return bPID.GetKi(); };
             mqttSensors["currentKd"] = [] { return bPID.GetKd(); };
             mqttSensors["machineState"] = [] { return machineState; };
+            // Link quality is useful to have in HA: the ESP often sits inside the
+            // machine's metal body, where the signal can be marginal, and dropouts
+            // are otherwise hard to tell apart from other MQTT problems.
+            mqttSensors["rssi"] = [] { return (double)WiFi.RSSI(); };
 
             // Same two values ESPHome's debug component exposes: total free heap plus the
             // largest allocatable block. The pair is what makes a leak diagnosable -- free
