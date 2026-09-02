@@ -51,6 +51,7 @@ const char* switchModes[2] = {"Normally Open", "Normally Closed"};
 const char* relayTriggerTypes[2] = {"Low Trigger", "High Trigger"};
 
 static constexpr const char* const brewModes[] = {"Manual", "Automatic"};
+static constexpr const char* const powerOnBehaviours[] = {"Standby", "Heat up", "Restore last state"};
 static constexpr const char* const displayTemplates[] = {"Standard", "Minimal", "Temp only", "Scale", "Upright"};
 static constexpr const char* const displayLanguages[] = {"Deutsch", "English", "Español"};
 static constexpr const char* const blinkingModes[] = {"Off", "Near Setpoint", "Away From Setpoint"};
@@ -497,6 +498,19 @@ void ParameterRegistry::initialize(Config& config) {
     }
 
     // Power Section
+    addEnumConfigParam(
+        "pid.power_on_behaviour",
+        "Power-On Behaviour",
+        sPowerSection,
+        800,
+        nullptr,
+        powerOnBehaviours,
+        3,
+        "What the machine does when it powers up: stay in standby, start heating right away "
+        "(e.g. when it is switched on by a smart plug or a timer), or restore the state it "
+        "was in before it lost power"
+    );
+
     addBoolConfigParam(
         "standby.enabled",
         "Enable Standby Timer",

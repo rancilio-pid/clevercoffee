@@ -896,6 +896,17 @@ void testTimer(void) {
     }
 }
 
+/**
+ * @enum PowerOnBehaviour
+ * @brief What the machine does when it powers up
+ * @details Values must match the order of powerOnBehaviours[] in ParameterRegistry.cpp.
+ */
+enum PowerOnBehaviour {
+    kPowerOnStandby = 0, ///< Stay in standby, do not heat (default)
+    kPowerOnHeat = 1,    ///< Start heating right away (smart plug / timer setups)
+    kPowerOnRestore = 2, ///< Restore the state the machine was in before it lost power
+};
+
 extern const char sysVersion[] = STR(AUTO_VERSION);
 
 void setup() {
@@ -1198,10 +1209,36 @@ void setup() {
 
     systemInitialized = true;
 
-    // For momentary switches, start in normal operation mode
-    if (config.get<bool>("hardware.switches.power.enabled") && config.get<int>("hardware.switches.power.type") == Switch::MOMENTARY) {
-        machineState = kPidNormal;
-        setRuntimePidState(true);
+    // Apply the configured power-on behaviour. Toggle switches are handled below,
+    // where the machine state follows the physical switch position instead.
+    if (!(config.get<bool>("hardware.switches.power.enabled") && config.get<int>("hardware.switches.power.type") == Switch::TOGGLE)) {
+        switch (config.get<int>("pid.power_on_behaviour")) {
+            case kPowerOnHeat:
+                machineState = kPidNormal;
+                // Required: standbyModeRemainingTimeMillis is statically initialised
+                // from standbyModeTime, which is still 0 at that point, and the state
+                // machine treats 0 as "standby timeout elapsed" -- without this the
+                // machine would drop straight back into kStandby.
+                resetStandbyTimer(kPidNormal);
+                setRuntimePidState(true);
+                break;
+
+            case kPowerOnRestore:
+                // pidON was restored from the config by syncGlobalVariables() above
+                machineState = pidON ? kPidNormal : kStandby;
+
+                if (pidON) {
+                    resetStandbyTimer(kPidNormal);
+                }
+
+                break;
+
+            case kPowerOnStandby:
+            default:
+                machineState = kStandby;
+                setRuntimePidState(false);
+                break;
+        }
     }
 
     // For toggle switches, force PidOn to switch state mode

@@ -236,6 +236,7 @@ class Config {
 
             // PID general
             _configDefs.emplace("pid.enabled", ConfigDef::forBool(false));
+            _configDefs.emplace("pid.power_on_behaviour", ConfigDef::forInt(0, 0, 2));
             _configDefs.emplace("pid.use_ponm", ConfigDef::forBool(false));
             _configDefs.emplace("pid.ema_factor", ConfigDef::forDouble(EMA_FACTOR, PID_EMA_FACTOR_MIN, PID_EMA_FACTOR_MAX));
 
