@@ -543,7 +543,12 @@ inline DiscoveryObject GenerateSensorDevice(const char* name, const char* displa
         sensorConfigDoc["unit_of_measurement"] = unit_of_measurement;
     }
 
-    sensorConfigDoc["device_class"] = device_class;
+    // Home Assistant rejects the entire discovery message when device_class is an
+    // empty string ("expected SensorDeviceClass or one of ..."), which silently
+    // drops the sensor. Only set it when we actually have one.
+    if (device_class != nullptr && strlen(device_class) > 0) {
+        sensorConfigDoc["device_class"] = device_class;
+    }
     sensorConfigDoc["payload_available"] = "online";
     sensorConfigDoc["payload_not_available"] = "offline";
     snprintf(topic_buffer, sizeof(topic_buffer), "%s/status", mqtt_topic);
