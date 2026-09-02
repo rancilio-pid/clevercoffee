@@ -64,7 +64,12 @@ inline void checkPowerSwitch() {
                     trackingPressTime = true;
                 }
 
-                if (machineState == kStandby) {
+                // The TOGGLE branch above checks `kStandby || kPidDisabled`, but this
+                // one only looked at kStandby. Switching the machine off via MQTT or
+                // the web UI (pidON = false) lands in kPidDisabled (display on,
+                // showing "Standby"), so a button press fell through to the else
+                // branch and shut down into kStandby instead of waking the machine.
+                if (machineState == kStandby || machineState == kPidDisabled) {
                     machineState = kPidNormal;
                     resetStandbyTimer(kPidNormal);
                     setRuntimePidState(true);
@@ -76,8 +81,26 @@ inline void checkPowerSwitch() {
                 else {
                     performSafeShutdown();
                     machineState = kStandby;
+
+                    // Blanking the display immediately (both timers forced to 0) is
+                    // inconsistent with switching the machine off via MQTT or the web
+                    // UI, which leaves the standby screen up and lets the regular
+                    // TIME_TO_DISPLAY_OFF countdown blank it. Do the same here: enter
+                    // standby now, blank the display after TIME_TO_DISPLAY_OFF.
+                    // Backdating standbyModeStartTimeMillis by the standby timeout makes
+                    // updateStandbyTimer() count down exactly TIME_TO_DISPLAY_OFF from
+                    // now; the unsigned wrap-around is safe because
+                    // currentTime - (currentTime - X) == X holds either way.
                     standbyModeRemainingTimeMillis = 0;
-                    standbyModeRemainingTimeDisplayOffMillis = 0;
+
+                    if (standbyModeOn) {
+                        standbyModeRemainingTimeDisplayOffMillis = TIME_TO_DISPLAY_OFF_MILLIS;
+                        standbyModeStartTimeMillis = millis() - getStandbyTimeoutMillis();
+                    }
+                    else {
+                        // standby timer disabled -> nothing would count down, blank now
+                        standbyModeRemainingTimeDisplayOffMillis = 0;
+                    }
                 }
             }
             else if (!currStatePowerSwitchPressed) {
