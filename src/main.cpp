@@ -119,6 +119,13 @@ unsigned long previousMillisPressure; // initialisation at the end of init()
 
 // timing flags
 bool timingDebugActive = false;
+
+// Worst-case duration of a single main loop pass, in milliseconds. Diagnostic for
+// loop stalls: anything blocking in the loop (network I/O, flash writes) shows up
+// here as a spike. debugTimingLoop() already measures the loop, but only while
+// timingDebugActive is set and only into the telnet log, which is gone after a
+// reboot. Read-and-reset on publish, so each value is the peak since the last one.
+volatile unsigned long maxLoopTime = 0;
 bool includeDisplayInLogs = false;
 bool displayBufferReady = false;
 bool displayUpdateRunning = false;
@@ -1144,6 +1151,12 @@ void setup() {
             mqttSensors["freeHeap"] = [] { return (double)ESP.getFreeHeap(); };
             mqttSensors["maxAllocHeap"] = [] { return (double)heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT); };
 
+            mqttSensors["maxLoopTime"] = [] {
+                const unsigned long peak = maxLoopTime;
+                maxLoopTime = 0;
+                return (double)peak;
+            };
+
             if (config.get<bool>("hardware.switches.brew.enabled")) {
                 mqttVars["aggbKp"] = "pid.bd.kp";
                 mqttVars["aggbTn"] = "pid.bd.tn";
@@ -1282,6 +1295,19 @@ void setup() {
 }
 
 void loop() {
+    {
+        static unsigned long lastLoopStart = 0;
+        const unsigned long now = millis();
+
+        if (lastLoopStart != 0) {
+            if (const unsigned long duration = now - lastLoopStart; duration > maxLoopTime) {
+                maxLoopTime = duration;
+            }
+        }
+
+        lastLoopStart = now;
+    }
+
     // Accept potential connections for remote logging
     Logger::update();
 
