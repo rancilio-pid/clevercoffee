@@ -377,8 +377,19 @@ void checkWifi() {
     }
 
     if (wifiReconnects >= maxWifiReconnects && WiFi.status() != WL_CONNECTED) {
-        // no wifi connection after trying connection, initiate offline mode
-        initOfflineMode();
+        // Deliberately not initOfflineMode() here. That call belongs to startup -- as
+        // the comment on the function itself says -- and it is not reversible: it sets
+        // mqtt_enabled = false, brings up a SoftAP, and nothing ever clears offlineMode
+        // again. checkWifi() returns immediately while offlineMode is set, so a
+        // returning connection is never even noticed.
+        //
+        // With 5 attempts at 10 s apart, roughly a minute of interference was therefore
+        // enough to lose MQTT until the next reboot, on a machine that had long since
+        // reconnected. Pause and start a fresh round of attempts instead.
+        LOGF(INFO, "WiFi still down after %i attempts, pausing before the next round", wifiReconnects);
+        wifiReconnects = 0;
+        wifiConnectCounter = 1; // so the next round actually issues WiFi.begin() again
+        lastWifiConnectionAttempt = millis();
     }
     else {
         if (WiFi.status() == WL_CONNECTED) {
