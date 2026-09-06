@@ -16,6 +16,7 @@
 #include <PID_v1.h>  // for PID calculation
 #include <U8g2lib.h> // i2c display
 #include <WiFiManager.h>
+#include <esp_system.h>
 #include <os.h>
 
 // Includes
@@ -898,12 +899,48 @@ void testTimer(void) {
 
 extern const char sysVersion[] = STR(AUTO_VERSION);
 
+/**
+ * @brief Translate the reset reason into something readable
+ *
+ * Without this the log gives no clue why the machine restarted, which makes a
+ * spontaneous reboot nearly impossible to tell apart from a crash, a watchdog
+ * or a brownout after the fact.
+ */
+static const char* resetReasonToString(const esp_reset_reason_t reason) {
+    switch (reason) {
+        case ESP_RST_POWERON:
+            return "power-on";
+        case ESP_RST_EXT:
+            return "external reset pin";
+        case ESP_RST_SW:
+            return "software restart";
+        case ESP_RST_PANIC:
+            return "panic or unhandled exception";
+        case ESP_RST_INT_WDT:
+            return "interrupt watchdog";
+        case ESP_RST_TASK_WDT:
+            return "task watchdog";
+        case ESP_RST_WDT:
+            return "other watchdog";
+        case ESP_RST_DEEPSLEEP:
+            return "wake from deep sleep";
+        case ESP_RST_BROWNOUT:
+            return "brownout";
+        case ESP_RST_SDIO:
+            return "SDIO";
+        default:
+            return "unknown";
+    }
+}
+
 void setup() {
     // Start serial console
     Serial.begin(115200);
 
     // Initialize the logger
     Logger::init(23);
+
+    LOGF(INFO, "Reset reason: %s", resetReasonToString(esp_reset_reason()));
 
     if (!config.begin()) {
         LOG(ERROR, "Failed to load config from filesystem!");
