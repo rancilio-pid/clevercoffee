@@ -168,6 +168,7 @@ void loopLED();
 void checkWaterTank();
 void printMachineState();
 char const* machinestateEnumToString(MachineState machineState);
+const char* bootResetReasonString();
 inline std::vector<const char*> getMachineStateOptions();
 float filterPressureValue(float input);
 int writeSysParamsToMQTT(bool continueOnError);
@@ -906,7 +907,12 @@ extern const char sysVersion[] = STR(AUTO_VERSION);
  * spontaneous reboot nearly impossible to tell apart from a crash, a watchdog
  * or a brownout after the fact.
  */
-static const char* resetReasonToString(const esp_reset_reason_t reason) {
+// Kept so it can be published once MQTT is up: the log line alone is unreachable,
+// because the telnet logger only serves an already-connected client and keeps no
+// backlog -- by the time anyone can connect, the boot message is long gone.
+esp_reset_reason_t bootResetReason = ESP_RST_UNKNOWN;
+
+const char* resetReasonToString(const esp_reset_reason_t reason) {
     switch (reason) {
         case ESP_RST_POWERON:
             return "power-on";
@@ -933,6 +939,13 @@ static const char* resetReasonToString(const esp_reset_reason_t reason) {
     }
 }
 
+/**
+ * @brief Reset reason of this boot, as text -- published once MQTT is up
+ */
+const char* bootResetReasonString() {
+    return resetReasonToString(bootResetReason);
+}
+
 void setup() {
     // Start serial console
     Serial.begin(115200);
@@ -940,7 +953,8 @@ void setup() {
     // Initialize the logger
     Logger::init(23);
 
-    LOGF(INFO, "Reset reason: %s", resetReasonToString(esp_reset_reason()));
+    bootResetReason = esp_reset_reason();
+    LOGF(INFO, "Reset reason: %s", resetReasonToString(bootResetReason));
 
     if (!config.begin()) {
         LOG(ERROR, "Failed to load config from filesystem!");

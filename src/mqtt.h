@@ -674,6 +674,12 @@ inline int sendHASSIODiscoveryMsg() {
 
     // Always published devices
     failures += publishDiscovery(GenerateSensorDevice("machineState", "Machine State", "", "enum", getMachineStateOptions()));
+    // Why the machine last restarted. Published retained and only from here, i.e. once
+    // per connection: the value never changes while running, and the log line at boot is
+    // unreachable in practice -- the telnet logger keeps no backlog and only serves an
+    // already-connected client, so nobody is listening that early.
+    failures += publishDiscovery(GenerateSensorDevice("resetReason", "Reset Reason", "", ""));
+    mqtt_publish("resetReason", bootResetReasonString(), true);
     failures += publishDiscovery(GenerateSensorDevice("temperature", "Boiler Temperature", "°C", "temperature", {}, "measurement"));
     failures += publishDiscovery(GenerateSensorDevice("heaterPower", "Heater Power", "%", "power_factor", {}, "measurement"));
 
