@@ -539,7 +539,7 @@ inline DiscoveryObject GenerateSensorDevice(const char* name, const char* displa
     snprintf(topic_buffer, sizeof(topic_buffer), "%s-%s", unique_id, name);
     sensorConfigDoc["unique_id"] = String(topic_buffer);
 
-    if (device_class != "enum") {
+    if (device_class == nullptr || strcmp(device_class, "enum") != 0) {
         sensorConfigDoc["unit_of_measurement"] = unit_of_measurement;
     }
 
