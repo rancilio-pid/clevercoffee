@@ -1120,7 +1120,7 @@ void setup() {
             }
 
             if (config.get<bool>("hardware.sensors.watertank.enabled")) {
-                mqttSensors["waterTankFull"] = [] { return waterTankFull ? 1.0 : 0.0; };
+                mqttSensors["waterTankEmpty"] = [] { return waterTankFull ? 0.0 : 1.0; };
             }
 
             snprintf(topic_will, sizeof(topic_will), "%s%s/%s", mqtt_topic_prefix.c_str(), hostname.c_str(), "status");
