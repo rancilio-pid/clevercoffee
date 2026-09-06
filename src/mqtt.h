@@ -751,7 +751,7 @@ inline int sendHASSIODiscoveryMsg() {
     }
 
     if (config.get<bool>("hardware.sensors.watertank.enabled")) {
-        failures += publishDiscovery(GenerateBinarySensorDevice("waterTankFull", "Water Tank", "moisture", "1.00", "0.00"));
+        failures += publishDiscovery(GenerateBinarySensorDevice("waterTankEmpty", "Water Tank", "problem", "1.00", "0.00"));
     }
 
     if (failures > 0) {
