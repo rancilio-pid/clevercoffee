@@ -1131,6 +1131,15 @@ void setup() {
             mqttSensors["currentKd"] = [] { return bPID.GetKd(); };
             mqttSensors["machineState"] = [] { return machineState; };
 
+            // Same two values ESPHome's debug component exposes: total free heap plus the
+            // largest allocatable block. The pair is what makes a leak diagnosable -- free
+            // heap alone falls under fragmentation too, while a shrinking largest block at
+            // constant free heap points at fragmentation rather than a leak. Until now
+            // these only went to the telnet log, which keeps no backlog and is therefore
+            // gone exactly when it would be needed.
+            mqttSensors["freeHeap"] = [] { return (double)ESP.getFreeHeap(); };
+            mqttSensors["maxAllocHeap"] = [] { return (double)heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT); };
+
             if (config.get<bool>("hardware.switches.brew.enabled")) {
                 mqttVars["aggbKp"] = "pid.bd.kp";
                 mqttVars["aggbTn"] = "pid.bd.tn";
