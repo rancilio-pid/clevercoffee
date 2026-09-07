@@ -16,6 +16,7 @@
 #include <PID_v1.h>  // for PID calculation
 #include <U8g2lib.h> // i2c display
 #include <WiFiManager.h>
+#include <esp_core_dump.h>
 #include <esp_system.h>
 #include <os.h>
 
@@ -176,6 +177,7 @@ void checkWaterTank();
 void printMachineState();
 char const* machinestateEnumToString(MachineState machineState);
 const char* bootResetReasonString();
+const char* bootCrashInfoString();
 inline std::vector<const char*> getMachineStateOptions();
 float filterPressureValue(float input);
 int writeSysParamsToMQTT(bool continueOnError);
@@ -953,6 +955,61 @@ const char* bootResetReasonString() {
     return resetReasonToString(bootResetReason);
 }
 
+// Panic details, read back from the core dump the panic handler wrote to flash.
+// On an installed machine the serial console is not reachable -- the board sits
+// inside the case -- so the backtrace that a panic normally prints is lost. The
+// partition table already reserves a coredump partition and the Arduino sdkconfig
+// enables CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH, so the data is there; it just was
+// never read back. Kept short on purpose: the MQTT packet limit is 256 bytes.
+char bootCrashInfo[176] = "";
+
+/**
+ * @brief Read the stored core dump summary into bootCrashInfo, if there is one
+ *
+ * Deliberately not erasing the dump afterwards, so it survives reboots and can be
+ * re-read after an update. That also means the value describes the last panic, not
+ * necessarily the last boot -- pair it with the reset reason to tell them apart.
+ */
+void readCoreDumpSummary() {
+#if CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH && CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF
+    if (esp_core_dump_image_check() != ESP_OK) {
+        // no dump stored, or its checksum does not match
+        return;
+    }
+
+    auto* summary = static_cast<esp_core_dump_summary_t*>(malloc(sizeof(esp_core_dump_summary_t)));
+
+    if (summary == nullptr) {
+        LOG(WARNING, "Not enough memory to read the core dump summary");
+        return;
+    }
+
+    if (esp_core_dump_get_summary(summary) == ESP_OK) {
+        // Task, cause and PC only -- deliberately no backtrace. The summary API caps
+        // it at 16 frames anyway, and an abort() (failed allocation, assert) burns the
+        // first eight on panic_abort/abort/__cxa_throw before anything useful appears,
+        // so a payload-sized excerpt is unreliable by construction. This is triage:
+        // which task died and roughly why. The full dump is available over HTTP.
+        snprintf(bootCrashInfo, sizeof(bootCrashInfo), "task=%s cause=%u pc=0x%08x vaddr=0x%08x", summary->exc_task, static_cast<unsigned>(summary->ex_info.exc_cause), static_cast<unsigned>(summary->exc_pc),
+                 static_cast<unsigned>(summary->ex_info.exc_vaddr));
+
+        LOGF(INFO, "Core dump found: %s", bootCrashInfo);
+    }
+    else {
+        LOG(WARNING, "Core dump present but the summary could not be read");
+    }
+
+    free(summary);
+#endif
+}
+
+/**
+ * @brief Panic details of the last stored core dump, as text
+ */
+const char* bootCrashInfoString() {
+    return bootCrashInfo[0] != '\0' ? bootCrashInfo : "none";
+}
+
 void setup() {
     // Start serial console
     Serial.begin(115200);
@@ -962,6 +1019,8 @@ void setup() {
 
     bootResetReason = esp_reset_reason();
     LOGF(INFO, "Reset reason: %s", resetReasonToString(bootResetReason));
+
+    readCoreDumpSummary();
 
     if (!config.begin()) {
         LOG(ERROR, "Failed to load config from filesystem!");

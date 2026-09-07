@@ -681,6 +681,12 @@ inline int sendHASSIODiscoveryMsg() {
     failures += publishDiscovery(GenerateSensorDevice("resetReason", "Reset Reason", "", ""));
     mqtt_publish("resetReason", bootResetReasonString(), true);
 
+    // Panic details from the stored core dump, or "none". Retained for the same
+    // reason as the reset reason above -- it is a boot-time value, and nobody is
+    // watching a log that early.
+    failures += publishDiscovery(GenerateSensorDevice("crashInfo", "Last Crash", "", ""));
+    mqtt_publish("crashInfo", bootCrashInfoString(), true);
+
     failures += publishDiscovery(GenerateSensorDevice("freeHeap", "Free Heap", "B", "data_size", {}, "measurement"));
     failures += publishDiscovery(GenerateSensorDevice("maxAllocHeap", "Largest Free Block", "B", "data_size", {}, "measurement"));
     failures += publishDiscovery(GenerateSensorDevice("rssi", "WiFi Signal", "dBm", "signal_strength", {}, "measurement"));
