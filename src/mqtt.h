@@ -539,7 +539,11 @@ inline DiscoveryObject GenerateSensorDevice(const char* name, const char* displa
     snprintf(topic_buffer, sizeof(topic_buffer), "%s-%s", unique_id, name);
     sensorConfigDoc["unique_id"] = String(topic_buffer);
 
-    if (device_class != "enum") {
+    // Enum sensors must not carry a unit_of_measurement -- HA rejects that combination.
+    // Compare the contents: device_class is a const char*, so != "enum" compared the
+    // pointers, which only happened to work because the caller passes the identical
+    // literal from the same translation unit and the compiler pools those.
+    if (device_class == nullptr || strcmp(device_class, "enum") != 0) {
         sensorConfigDoc["unit_of_measurement"] = unit_of_measurement;
     }
 
