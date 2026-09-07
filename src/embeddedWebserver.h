@@ -290,7 +290,29 @@ inline void serverSetup() {
                 limit = request->getParam("limit")->value().toInt();
             }
 
-            AsyncResponseStream* response = request->beginResponseStream("application/json");
+            // Asking for more than the registry holds cannot return more, and the
+            // response buffer below is sized from this value -- so clamp it.
+            if (limit > static_cast<int>(parameters.size())) {
+                limit = static_cast<int>(parameters.size());
+            }
+
+            if (limit < 0) {
+                limit = 0;
+            }
+
+            // Pre-size the buffer. cbuf::resizeAdd() grows by exactly the number of
+            // missing bytes, so once the buffer is full every further character
+            // reallocates the whole thing and copies it: a large response means
+            // thousands of allocations of steadily increasing size and tens of
+            // megabytes of memcpy. That fragments the heap badly enough that a
+            // several-kilobyte allocation fails even with plenty of free heap, and
+            // since operator new throws here rather than returning null, the failure
+            // aborts instead of being caught by cbuf's null check.
+            //
+            // A generous estimate per parameter; if it is still too small the old
+            // grow-by-one behaviour just resumes for the remainder, so erring high
+            // costs a little RAM for the duration of the request and nothing else.
+            AsyncResponseStream* response = request->beginResponseStream("application/json", limit * 384 + 256);
             response->print("{\"parameters\":[");
 
             bool first = true;
@@ -437,7 +459,13 @@ inline void serverSetup() {
     });
 
     server.on("/timeseries", HTTP_GET, [](AsyncWebServerRequest* request) {
-        AsyncResponseStream* response = request->beginResponseStream("application/json");
+        // Three arrays of HISTORY_LENGTH values, each at most seven characters plus a
+        // separator, plus the keys. Sizing this up front matters: see the comment on
+        // the buffer in /parameters -- writing ~11 kB one character at a time into the
+        // default 1460-byte buffer reallocates roughly 9000 times and was crashing
+        // machines whose web UI was left open, because the chart polls this endpoint.
+        constexpr size_t timeseriesBufferSize = 3 * HISTORY_LENGTH * 8 + 64;
+        AsyncResponseStream* response = request->beginResponseStream("application/json", timeseriesBufferSize);
         response->addHeader("Connection", "close"); // Force connection close
 
         response->print('{');
