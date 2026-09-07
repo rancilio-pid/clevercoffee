@@ -521,7 +521,8 @@ inline DiscoveryObject GenerateButtonDevice(const char* name, const char* displa
  * @param device_class
  * @return A `DiscoveryObject` containing the sensor device configuration
  */
-inline DiscoveryObject GenerateSensorDevice(const char* name, const char* displayName, const char* unit_of_measurement, const char* device_class, const std::vector<const char*>& options = {}) {
+inline DiscoveryObject
+GenerateSensorDevice(const char* name, const char* displayName, const char* unit_of_measurement, const char* device_class, const std::vector<const char*>& options = {}, const char* state_class = nullptr) {
     DiscoveryObject sensor_device;
 
     char mqtt_topic[128];
@@ -543,7 +544,20 @@ inline DiscoveryObject GenerateSensorDevice(const char* name, const char* displa
         sensorConfigDoc["unit_of_measurement"] = unit_of_measurement;
     }
 
-    sensorConfigDoc["device_class"] = device_class;
+    // Home Assistant rejects the entire discovery message when device_class is an
+    // empty string ("expected SensorDeviceClass or one of ..."), which silently
+    // drops the sensor. Only set it when we actually have one.
+    if (device_class != nullptr && strlen(device_class) > 0) {
+        sensorConfigDoc["device_class"] = device_class;
+    }
+
+    // Without a state_class Home Assistant keeps no long-term statistics for a
+    // sensor: values only exist for as long as the recorder retains them (10 days
+    // by default) and cannot be aggregated into hourly min/max/mean. Optional, so
+    // sensors that pass nothing keep their current behaviour.
+    if (state_class != nullptr && strlen(state_class) > 0) {
+        sensorConfigDoc["state_class"] = state_class;
+    }
     sensorConfigDoc["payload_available"] = "online";
     sensorConfigDoc["payload_not_available"] = "offline";
     snprintf(topic_buffer, sizeof(topic_buffer), "%s/status", mqtt_topic);
@@ -660,8 +674,26 @@ inline int sendHASSIODiscoveryMsg() {
 
     // Always published devices
     failures += publishDiscovery(GenerateSensorDevice("machineState", "Machine State", "", "enum", getMachineStateOptions()));
-    failures += publishDiscovery(GenerateSensorDevice("temperature", "Boiler Temperature", "°C", "temperature"));
-    failures += publishDiscovery(GenerateSensorDevice("heaterPower", "Heater Power", "%", "power_factor"));
+    // Why the machine last restarted. Published retained and only from here, i.e. once
+    // per connection: the value never changes while running, and the log line at boot is
+    // unreachable in practice -- the telnet logger keeps no backlog and only serves an
+    // already-connected client, so nobody is listening that early.
+    failures += publishDiscovery(GenerateSensorDevice("resetReason", "Reset Reason", "", ""));
+    mqtt_publish("resetReason", bootResetReasonString(), true);
+
+    // Panic details from the stored core dump, or "none". Retained for the same
+    // reason as the reset reason above -- it is a boot-time value, and nobody is
+    // watching a log that early.
+    failures += publishDiscovery(GenerateSensorDevice("crashInfo", "Last Crash", "", ""));
+    mqtt_publish("crashInfo", bootCrashInfoString(), true);
+
+    failures += publishDiscovery(GenerateSensorDevice("freeHeap", "Free Heap", "B", "data_size", {}, "measurement"));
+    failures += publishDiscovery(GenerateSensorDevice("maxAllocHeap", "Largest Free Block", "B", "data_size", {}, "measurement"));
+    failures += publishDiscovery(GenerateSensorDevice("rssi", "WiFi Signal", "dBm", "signal_strength", {}, "measurement"));
+    failures += publishDiscovery(GenerateSensorDevice("maxLoopTime", "Max Loop Time", "ms", "", {}, "measurement"));
+    failures += publishDiscovery(GenerateSensorDevice("standbyModeTimeRemaining", "Standby Time Remaining", "s", "duration", {}, "measurement"));
+    failures += publishDiscovery(GenerateSensorDevice("temperature", "Boiler Temperature", "°C", "temperature", {}, "measurement"));
+    failures += publishDiscovery(GenerateSensorDevice("heaterPower", "Heater Power", "%", "power_factor", {}, "measurement"));
 
     failures += publishDiscovery(GenerateNumberDevice("brewSetpoint", "Brew setpoint", BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, 0.1, "°C"));
     failures += publishDiscovery(GenerateNumberDevice("steamSetpoint", "Steam setpoint", STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, 0.1, "°C"));
@@ -678,7 +710,7 @@ inline int sendHASSIODiscoveryMsg() {
 
     // Conditional devices
     if (config.get<bool>("hardware.switches.brew.enabled")) {
-        failures += publishDiscovery(GenerateSensorDevice("currBrewTime", "Current Brew Time ", "s", "duration"));
+        failures += publishDiscovery(GenerateSensorDevice("currBrewTime", "Current Brew Time ", "s", "duration", {}, "measurement"));
         failures += publishDiscovery(GenerateNumberDevice("brewPidDelay", "Brew Pid Delay", BREW_PID_DELAY_MIN, BREW_PID_DELAY_MAX, 0.1, "s"));
         failures += publishDiscovery(GenerateNumberDevice("targetBrewTime", "Target Brew time", TARGET_BREW_TIME_MIN, TARGET_BREW_TIME_MAX, 0.1, "s"));
         failures += publishDiscovery(GenerateNumberDevice("preinfusion", "Preinfusion filling time", PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX, 0.1, "s"));
@@ -690,15 +722,15 @@ inline int sendHASSIODiscoveryMsg() {
     }
 
     if (config.get<bool>("hardware.sensors.scale.enabled")) {
-        failures += publishDiscovery(GenerateSensorDevice("currReadingWeight", "Weight", "g", "weight"));
-        failures += publishDiscovery(GenerateSensorDevice("currBrewWeight", "current Brew Weight", "g", "weight"));
+        failures += publishDiscovery(GenerateSensorDevice("currReadingWeight", "Weight", "g", "weight", {}, "measurement"));
+        failures += publishDiscovery(GenerateSensorDevice("currBrewWeight", "current Brew Weight", "g", "weight", {}, "measurement"));
         failures += publishDiscovery(GenerateButtonDevice("scaleCalibrationOn", "Calibrate Scale"));
         failures += publishDiscovery(GenerateButtonDevice("scaleTareOn", "Tare Scale"));
         failures += publishDiscovery(GenerateNumberDevice("targetBrewWeight", "Brew Weight Target", TARGET_BREW_WEIGHT_MIN, TARGET_BREW_WEIGHT_MAX, 0.1, "g"));
     }
 
     if (config.get<bool>("hardware.sensors.pressure.enabled")) {
-        failures += publishDiscovery(GenerateSensorDevice("pressure", "Pressure", "bar", "pressure"));
+        failures += publishDiscovery(GenerateSensorDevice("pressure", "Pressure", "bar", "pressure", {}, "measurement"));
     }
 
     if (failures > 0) {

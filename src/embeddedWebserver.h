@@ -18,6 +18,8 @@
 #include <ESPAsyncWebServer.h>
 
 #include "LittleFS.h"
+#include <esp_core_dump.h>
+#include <esp_partition.h>
 
 inline AsyncWebServer server(80);
 inline AsyncEventSource events("/events");
@@ -528,6 +530,58 @@ inline void serverSetup() {
         AsyncWebServerResponse* response = request->beginResponse(200, "application/json", prettifiedJson);
         response->addHeader("Content-Disposition", "attachment; filename=\"config.json\"");
         request->send(response);
+    });
+
+    // Hand out the raw core dump the panic handler stored in flash, for offline
+    // analysis with esp-coredump/gdb. The MQTT summary only carries task, cause and
+    // PC; the interesting part -- the full backtrace of every task, plus registers --
+    // is in here. Without this endpoint the only way to it is a serial cable, which
+    // on a built-in board means taking the machine apart.
+    //
+    // Gated by authenticate(), same as the config download.
+    server.on("/download/coredump", HTTP_GET, [](AsyncWebServerRequest* request) {
+        if (!authenticate(request)) {
+            return request->requestAuthentication();
+        }
+
+#if CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH
+        size_t dumpAddr = 0;
+        size_t dumpSize = 0;
+
+        if (esp_core_dump_image_get(&dumpAddr, &dumpSize) != ESP_OK || dumpSize == 0) {
+            request->send(404, "text/plain", "No core dump stored");
+            return;
+        }
+
+        const esp_partition_t* part = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_COREDUMP, nullptr);
+
+        if (part == nullptr) {
+            request->send(500, "text/plain", "No coredump partition");
+            return;
+        }
+
+        LOGF(INFO, "Serving core dump, %u bytes", static_cast<unsigned>(dumpSize));
+
+        // Chunked, because the dump is far larger than anything we can hold in RAM.
+        AsyncWebServerResponse* response = request->beginChunkedResponse("application/octet-stream", [part, dumpSize](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
+            if (index >= dumpSize) {
+                return 0;
+            }
+
+            const size_t chunk = maxLen < (dumpSize - index) ? maxLen : (dumpSize - index);
+
+            if (esp_partition_read(part, index, buffer, chunk) != ESP_OK) {
+                return 0;
+            }
+
+            return chunk;
+        });
+
+        response->addHeader("Content-Disposition", "attachment; filename=\"coredump.bin\"");
+        request->send(response);
+#else
+        request->send(501, "text/plain", "Core dump to flash is not enabled in this build");
+#endif
     });
 
     server.on(
