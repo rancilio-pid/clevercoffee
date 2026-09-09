@@ -1199,12 +1199,16 @@ void setup() {
             mqtt.setServer(mqtt_server_ip.c_str(), mqtt_server_port);
             mqtt.setCallback(mqtt_callback);
 
-            // PubSubClient defaults to a 15 s socket timeout. 8 s instead: long enough to
-            // ride out a latency spike on a weak link, short enough that an unreachable
-            // broker does not hold publishes for the full default. Going much lower is a
-            // mistake -- at 2 s every spike costs the connection. The keep-alive is raised
-            // so the connection survives a slow pass.
-            mqtt.setSocketTimeout(8);
+            // Workaround for knolleary/pubsubclient#670: connect() busy-waits for CONNACK
+            // without ever sleeping, so the idle task on this core never runs. This task
+            // is pinned to core 0, whose idle task is watchdog-checked, so a silent broker
+            // aborts the firmware. The socket timeout is the only bound on that spin and
+            // must stay below the watchdog. yield() would not help -- it picks the highest
+            // ready priority, and this task outranks idle.
+            static constexpr int mqttSocketTimeoutS = 3;
+            static_assert(mqttSocketTimeoutS < CONFIG_ESP_TASK_WDT_TIMEOUT_S,
+                          "MQTT socket timeout must stay below the core 0 task watchdog");
+            mqtt.setSocketTimeout(mqttSocketTimeoutS);
             mqtt.setKeepAlive(30);
 
             mqttCmdQueue = xQueueCreate(10, sizeof(MqttCommand));
