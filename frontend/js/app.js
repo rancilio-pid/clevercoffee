@@ -203,18 +203,19 @@ const vueApp = Vue.createApp({
                 1: 'Temperature',
                 2: 'Brew PID Parameters',
                 3: 'Brew Control',
-                4: 'Scale Parameters',
-                5: 'Display Settings',
-                6: 'Maintenance',
-                7: 'Power Settings',
-                8: 'MQTT Settings',
-                9: 'System Settings',
-                10: 'Other',
-                11: 'OLED Display',
-                12: 'Relays',
-                13: 'Switches',
-                14: 'LEDs',
-                15: 'Sensors'
+                4: 'Pump PID Parameters',
+                5: 'Scale Parameters',
+                6: 'Display Settings',
+                7: 'Maintenance',
+                8: 'Power Settings',
+                9: 'MQTT Settings',
+                10: 'System Settings',
+                11: 'Other',
+                12: 'OLED Display',
+                13: 'Relays',
+                14: 'Switches',
+                15: 'LEDs',
+                16: 'Sensors'
             }
 
             return sectionNames[sectionId]
@@ -506,7 +507,7 @@ const vueApp = Vue.createApp({
 
     computed: {
         parameterSectionsComputed() {
-            const excludedSections = [10]
+            const excludedSections = [11]
             const filteredParameters = this.parameters.filter(param => !excludedSections.includes(param.section))
 
             // First group by section

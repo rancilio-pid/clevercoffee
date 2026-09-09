@@ -5,6 +5,8 @@
  */
 #pragma once
 
+#include "pumpControl.h"
+
 // Forward declaration of GPIOPin class
 class GPIOPin;
 
@@ -12,7 +14,7 @@ class GPIOPin;
  * @file Relay.h Relay control class
  * @brief This class provides control for relay switches
  */
-class Relay {
+class Relay : public PumpControl {
     public:
         /**
          * @enum TriggerType
@@ -35,12 +37,21 @@ class Relay {
         /**
          * @brief Switch relay on
          */
-        void on() const;
+        void on();
 
         /**
          * @brief Switch relay off
          */
-        void off() const;
+        void off();
+
+        /**
+         * @brief read current state of output
+         */
+        bool getState() const override {
+            return lastState;
+        }
+
+        PumpControlType getType() const override;
 
         /**
          * @brief Get the GPIO pin this relay is connected to
@@ -51,4 +62,5 @@ class Relay {
     private:
         GPIOPin& gpio;
         TriggerType relayTrigger;
+        bool lastState = false;
 };

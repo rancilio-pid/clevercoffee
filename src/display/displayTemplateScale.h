@@ -99,16 +99,34 @@ inline void printScreen() {
         }
     }
 
-    if (config.get<bool>("hardware.sensors.pressure.enabled")) {
+    if (config.get<bool>("hardware.sensors.pressure.enabled") && config.get<bool>("dimmer.enabled")) {
+        u8g2->setFont(u8g2_font_profont10_tf);
+        u8g2->setCursor(32, 46);
+        u8g2->print("P:");
+        u8g2->print(inputPressure, 1);
+        u8g2->print(" ");
+        u8g2->print(dimmerPower, 0);
+        drawEncoderControlLabel();
+        u8g2->setCursor(32, 55);
+        u8g2->print(pumpFlowRate, 1);
+        u8g2->print(" mL/s ");
+        drawEncoderControlValue();
+        u8g2->setFont(u8g2_font_profont11_tf);
+    }
+    else if (config.get<bool>("hardware.sensors.pressure.enabled")) {
         u8g2->setCursor(32, 46);
         u8g2->drawUTF8(32, 46, langstring_pressure);
         int labelWidth = u8g2->getUTF8Width(langstring_pressure);
         u8g2->setCursor(32 + labelWidth, 46);
         u8g2->print(inputPressure, 1);
-    }
 
-    // Show heater output in %
-    displayProgressbar(pidOutput / 10, 30, 60, 98);
+        // Show heater output in %
+        displayProgressbar(pidOutput / 10, 30, 60, 98);
+    }
+    else {
+        // Show heater output in %
+        displayProgressbar(pidOutput / 10, 30, 60, 98);
+    }
 
     displayBufferReady = true;
 }

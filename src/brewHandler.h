@@ -41,6 +41,9 @@ inline double backflushFlushTime = BACKFLUSH_FLUSH_TIME;
 inline bool backflushOn = false;
 inline int currBackflushCycles = 1;
 
+// Profiles
+extern bool brewProfileComplete;
+
 bool isPowerSwitchOperationAllowed();
 
 /**
@@ -230,7 +233,7 @@ inline bool brew() {
     const int brewMode = config.get<int>("brew.mode");
     const bool brewByTimeEnabled = brewMode != 0 && config.get<bool>("brew.by_time.enabled");
     const bool brewByWeightEnabled = brewMode != 0 && config.get<bool>("brew.by_weight.enabled");
-    const bool preinfusionEnabled = config.get<bool>("brew.pre_infusion.enabled");
+    const bool preinfusionEnabled = config.get<bool>("brew.pre_infusion.enabled") && !(config.get<int>("dimmer.mode") == 3); // force off if running profile
 
     // check if brewswitch was turned off after a brew; Brew only runs once even brewswitch is still pressed
     if (currBrewSwitchState == kBrewSwitchIdle) {
@@ -338,6 +341,10 @@ inline bool brew() {
                         currBrewState = kBrewFinished;
                     }
                 }
+                else if (config.get<int>("dimmer.mode") == 3 && brewProfileComplete) {
+                    LOG(INFO, "Brew profile finished");
+                    currBrewState = kBrewFinished;
+                }
 
                 break;
             }
@@ -353,6 +360,7 @@ inline bool brew() {
                 LOGF(INFO, "Shot time: %4.1f s", currBrewTime / 1000);
                 LOG(INFO, "Brew idle");
                 currBrewState = kBrewIdle;
+                brewProfileComplete = false;
 
                 if (scale && config.get<bool>("hardware.sensors.scale.enabled") && config.get<int>("hardware.sensors.scale.type") == 2 && config.get<bool>("display.blescale_brew_timer")) {
                     static_cast<BluetoothScale*>(scale)->stopTimer();

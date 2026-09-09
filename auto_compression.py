@@ -22,8 +22,17 @@ FILES_TO_COMPRESS = [
     "js/uPlot.1.6.28.min.js",
     "js/vue-number-input.min.js",
     "js/temp.js",
+    "js/load-libs.js",
     "webfonts/fa-solid-900.woff2",
     "webfonts/fa-regular-400.woff2",
+]
+
+FILES_TO_SKIP = [
+    "html/about.html",
+    "html/index.html",
+    "html/parameters.html",
+    "html/system.html",
+    "html_fragments/header.html",
 ]
 
 FRONTEND_DIR = "frontend"
@@ -61,6 +70,7 @@ def copy_file(src_path, dest_path):
 
 def main():
     compress_set = set(FILES_TO_COMPRESS)
+    skip_set = set(FILES_TO_SKIP)
     found_files = set()
 
     for root, dirs, files in os.walk(FRONTEND_DIR):
@@ -79,10 +89,11 @@ def main():
                 ensure_dir_exists(os.path.dirname(dest_path))
                 compress_file(src_path, dest_path)
             else:
-                dest_path = os.path.join(DATA_DIR, rel_file)
-                print(f"Copying {rel_file}")
-                ensure_dir_exists(os.path.dirname(dest_path))
-                copy_file(src_path, dest_path)
+                if rel_file not in skip_set:
+                    dest_path = os.path.join(DATA_DIR, rel_file)
+                    print(f"Copying {rel_file}")
+                    ensure_dir_exists(os.path.dirname(dest_path))
+                    copy_file(src_path, dest_path)
 
     # Check for missing files
     missing_files = compress_set - found_files

@@ -115,19 +115,41 @@ inline void displayWiFiStatus(const int x, const int y) {
  * @brief Draw an MQTT status indicator at the given coordinates if MQTT is enabled
  */
 inline void displayMQTTStatus(const int x, const int y) {
-    if (mqtt_enabled) {
-        if (mqtt.connected() == 1) {
-            u8g2->setCursor(x, y);
-            u8g2->setFont(u8g2_font_profont11_tf);
-            u8g2->print("MQTT");
+    if (config.get<int>("system.log_level") == 1) {
+        u8g2->setCursor(x, y);
+        u8g2->setFont(u8g2_font_profont11_tf);
 
-            if (getSignalStrength() <= 1) {
-                u8g2->print("!");
+        if (mqtt_enabled) {
+            if (mqtt.connected() == 1) {
+                u8g2->print("M ");
             }
         }
-        else {
-            u8g2->setCursor(x, y);
-            u8g2->print("");
+        u8g2->print(ESP.getFreeHeap());
+        u8g2->print(" ");
+        u8g2->print(heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT));
+
+        if (getSignalStrength() <= 1) {
+            u8g2->print("!");
+        }
+        if (heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT) < 10000) {
+            u8g2->print("-");
+        }
+    }
+    else {
+        if (mqtt_enabled) {
+            if (mqtt.connected() == 1) {
+                u8g2->setCursor(x, y);
+                u8g2->setFont(u8g2_font_profont11_tf);
+                u8g2->print("MQTT");
+
+                if (getSignalStrength() <= 1) {
+                    u8g2->print("!");
+                }
+            }
+            else {
+                u8g2->setCursor(x, y);
+                u8g2->print("");
+            }
         }
     }
 }
@@ -237,9 +259,11 @@ inline bool shouldDisplayBrewTimer() {
  * @param totalTargetBrewTime  Target brew time in milliseconds (optional, default -1)
  */
 inline void displayBrewTime(const int x, const int y, const char* label, const double currBrewTime, const double totalTargetBrewTime = -1) {
+    int display = config.get<int>("display.template");
+
     u8g2->setDrawColor(0);
 
-    if (config.get<int>("display.template") == 1) {
+    if (display == 1) {
         u8g2->drawBox(x, y, 100, 15);
     }
     else {
@@ -248,7 +272,7 @@ inline void displayBrewTime(const int x, const int y, const char* label, const d
 
     u8g2->setDrawColor(1);
 
-    if (config.get<int>("display.template") == 4) {
+    if (display == 4) {
         u8g2->setCursor(x, y);
         u8g2->print(label);
         u8g2->print(currBrewTime / 1000, 0);
@@ -418,8 +442,10 @@ inline void displayStatusbar() {
 
     displayBluetoothStatus(24, 1);
 
-    const auto format = "%02luh %02lum";
-    displayUptime(84, 0, format);
+    if (config.get<int>("system.log_level") != 1) {
+        const auto format = "%02luh %02lum";
+        displayUptime(84, 0, format);
+    }
 }
 
 /**
@@ -579,38 +605,103 @@ inline bool displayFullscreenBrewTimer() {
     if (shouldDisplayBrewTimer()) {
         u8g2->clearBuffer();
 
+        const bool scaleEnabled = config.get<bool>("hardware.sensors.scale.enabled") && scale;
+        const bool brewByTimeEnabled = config.get<bool>("brew.by_time.enabled") && config.get<int>("brew.mode") == 1;
+        const bool brewByWeightEnabled = config.get<bool>("brew.by_weight.enabled") && config.get<int>("brew.mode") == 1;
+        const bool pressureEnabled = config.get<bool>("hardware.sensors.pressure.enabled");
+
         if (config.get<int>("display.template") == 4) {
             u8g2->drawXBMP(12, 12, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
 
-            if (scale && config.get<bool>("hardware.sensors.scale.enabled")) {
+            if (scaleEnabled) {
+                int xOffset = 5;
+                int yOffset = 70;
+                int yStep = 30;
+
+                if (pressureEnabled) {
+                    yOffset = 60;
+                    yStep = 24;
+                }
+
                 u8g2->setFont(u8g2_font_profont22_tr);
-                u8g2->setCursor(5, 70);
+                u8g2->setCursor(xOffset, yOffset);
                 u8g2->print(currBrewTime / 1000, 1);
                 u8g2->print("s");
-                u8g2->setCursor(5, 100);
+                yOffset += yStep;
+                u8g2->setCursor(xOffset, yOffset);
                 u8g2->print(currBrewWeight, 1);
                 u8g2->print("g");
-                u8g2->setFont(u8g2_font_profont11_tf);
+
+                if (pressureEnabled) {
+                    yOffset += yStep;
+                    u8g2->setCursor(xOffset, yOffset);
+                    u8g2->setFont(u8g2_font_profont15_tr);
+                    u8g2->print(inputPressureFilter, 1);
+                    u8g2->print(" bar");
+                }
             }
             else {
-                displayBrewtimeFs(1, 80, currBrewTime);
+                if (pressureEnabled) {
+                    displayBrewtimeFs(1, 80, currBrewTime);
+                    u8g2->setFont(u8g2_font_profont15_tr);
+
+                    if (inputPressureFilter < 9.95 && inputPressureFilter > -0.05) {
+                        u8g2->setCursor(14, 110);
+                    }
+                    else {
+                        u8g2->setCursor(7, 110);
+                    }
+
+                    u8g2->print(inputPressureFilter, 1);
+                    u8g2->print(" bar");
+                }
+                else {
+                    displayBrewtimeFs(1, 80, currBrewTime);
+                }
             }
         }
         else {
             u8g2->drawXBMP(-1, 11, Brew_Cup_Logo_width, Brew_Cup_Logo_height, Brew_Cup_Logo);
 
-            if (scale && config.get<bool>("hardware.sensors.scale.enabled")) {
+            if (scaleEnabled) {
+                int xOffset = 48;
+                int yOffset = 15;
+                int yStep = 23;
+
+                if (pressureEnabled) {
+                    yOffset = 5;
+                    yStep = 21;
+                }
+
+                u8g2->setCursor(xOffset, yOffset);
                 u8g2->setFont(u8g2_font_profont22_tr);
-                u8g2->setCursor(64, 15);
                 u8g2->print(currBrewTime / 1000, 1);
                 u8g2->print("s");
-                u8g2->setCursor(64, 38);
+                yOffset += yStep;
+                u8g2->setCursor(xOffset, yOffset);
+                u8g2->setFont(u8g2_font_profont22_tr);
                 u8g2->print(currBrewWeight, 1);
                 u8g2->print("g");
-                u8g2->setFont(u8g2_font_profont11_tf);
+
+                if (pressureEnabled) {
+                    yOffset += yStep;
+                    u8g2->setFont(u8g2_font_profont15_tr);
+                    u8g2->setCursor(xOffset, yOffset);
+                    u8g2->print(inputPressureFilter, 1);
+                    u8g2->print(" bar");
+                }
             }
             else {
-                displayBrewtimeFs(48, 25, currBrewTime);
+                if (pressureEnabled) {
+                    displayBrewtimeFs(48, 12, currBrewTime);
+                    u8g2->setFont(u8g2_font_profont15_tr);
+                    u8g2->setCursor(68, 45);
+                    u8g2->print(inputPressureFilter, 1);
+                    u8g2->print(" bar");
+                }
+                else {
+                    displayBrewtimeFs(48, 25, currBrewTime);
+                }
             }
         }
 
@@ -840,4 +931,109 @@ inline bool displayMachineState() {
     }
 
     return false;
+}
+
+void displayScrollingSubstring(int x, int y, int displayWidth, const char* text, bool bounce) {
+    static int offset = 0;
+    static int direction = 1;
+    static unsigned long lastUpdate = 0;
+    static unsigned long interval = 100;
+    static const char* lastText = nullptr;
+
+    if (text == nullptr) return;
+
+    // Reset if text has changed
+    if (lastText != text) {
+        offset = 0;
+        direction = 1;
+        lastText = text;
+        interval = 500;
+        lastUpdate = millis();
+    }
+    else if (offset > 0) {
+        interval = 100;
+    }
+
+    int textLen = strlen(text);
+    int fullTextWidth = u8g2->getStrWidth(text);
+
+    // limit display width
+    if ((displayWidth == 0) || (displayWidth + x > SCREEN_WIDTH)) {
+        displayWidth = SCREEN_WIDTH - x;
+    }
+
+    // No scrolling needed
+    if (fullTextWidth <= displayWidth) {
+        u8g2->drawStr(x, y, text);
+        return;
+    }
+
+    // Scroll logic
+    if (millis() - lastUpdate > interval) {
+        lastUpdate = millis();
+        if (bounce) {
+            offset += direction;
+            if (offset < 0 || u8g2->getStrWidth(&text[offset]) < displayWidth) {
+                direction = -direction;
+                offset += direction;
+            }
+        }
+        else {
+            offset++;
+            if (offset >= u8g2->getStrWidth(&text[offset])) {
+                offset = 0;
+            }
+        }
+    }
+
+    // Determine how many characters fit
+    int visibleWidth = 0;
+    int end = offset;
+    while (end < textLen && visibleWidth < displayWidth) {
+        char buf[2] = {text[end], '\0'};
+        visibleWidth += u8g2->getStrWidth(buf);
+        if (visibleWidth > displayWidth) break;
+        end++;
+    }
+
+    // Copy visible substring
+    char visible[64] = {0};
+    strncpy(visible, &text[offset], end - offset);
+    visible[end - offset] = '\0';
+
+    u8g2->drawStr(x, y, visible);
+}
+
+void drawEncoderControlLabel() {
+    int mode = config.get<int>("dimmer.mode");
+    // u8g2->print(menuLevel == 1 ? ">" : " ");
+    u8g2->print(" ");
+    u8g2->print((machineState == kBrew) && (mode == PROFILE) ? (autoStop ? "Auto Stop" : "Manual") : dimmerModes[mode]);
+}
+
+void drawEncoderControlValue() {
+    // u8g2->print(menuLevel == 2 ? ">" : " ");
+    switch (config.get<int>("dimmer.mode")) {
+        case POWER:
+            u8g2->print(config.get<float>("dimmer.setpoint.power"), 0);
+            break;
+
+        case PRESSURE:
+            u8g2->print(config.get<float>("dimmer.setpoint.pressure"), 1);
+            break;
+
+        case FLOW:
+            u8g2->print(config.get<float>("dimmer.setpoint.flow"), 1);
+            break;
+
+        case PROFILE:
+            {
+                const char* name = (machineState == kBrew) ? phaseName : profileName;
+                displayScrollingSubstring(83, 55, 38, name, false);
+                break;
+            }
+
+        default:
+            break;
+    }
 }
