@@ -20,7 +20,6 @@ inline unsigned long previousMillisMQTT;
 const unsigned long intervalMQTT = 5000;
 const unsigned long intervalMQTTbrew = 500;
 const unsigned long intervalMQTTstandby = 10000;
-unsigned long timeBudget = 10; // milliseconds per loop until all data is sent
 
 inline WiFiClient net;
 inline PubSubClient mqtt(net);
@@ -74,11 +73,24 @@ inline void setupMqtt() {
 }
 
 /**
- * @brief Check if MQTT is connected, if not reconnect. Abort function if offline or brew is running
+ * @brief Ask the MQTT task to publish on its next pass instead of publishing here.
+ *
+ * Callers outside the MQTT task (e.g. the AsyncWebServer) must not touch PubSubClient.
+ * Clearing the rate-limit stamp makes the task publish on its next pass.
+ */
+inline void requestMqttPublish() {
+    previousMillisMQTT = 0;
+}
+
+/**
+ * @brief Check if MQTT is connected, if not reconnect. Abort function if offline
  *      MQTT is also using maxWifiReconnects!
  */
 inline void checkMQTT() {
-    if (offlineMode || checkBrewActive()) {
+    // No brew guard needed anymore: it only existed because mqtt.connect() is
+    // blocking and would have stalled the main loop during a shot. This runs in
+    // the MQTT task now, so reconnecting mid-shot does not affect the loop.
+    if (offlineMode) {
         return;
     }
 
@@ -239,6 +251,20 @@ inline void assignMQTTParam(char* param, double value) {
     }
 }
 
+// Incoming MQTT commands are handed to the main loop through this queue rather than
+// being applied in the MQTT task: mqtt.loop() invokes mqtt_callback() in the task's
+// context, and assignMQTTParam() writes ParameterRegistry state from there, which must
+// not happen concurrently with the main loop reading it. Outgoing telemetry is fine to
+// read directly from the task -- those are plain numbers, published rounded and only on
+// change, so a torn read would at worst be a single wrong displayed value.
+struct MqttCommand {
+        char param[120];
+        double value;
+};
+
+inline QueueHandle_t mqttCmdQueue = nullptr;
+inline TaskHandle_t mqttTaskHandle = nullptr;
+
 /**
  * @brief MQTT Callback Function: set Parameters through MQTT
  */
@@ -265,7 +291,37 @@ inline void mqtt_callback(const char* topic, const byte* data, const unsigned in
 
     // convert received string value to double assuming it's a number
     sscanf(data_str, "%lf", &data_double);
-    assignMQTTParam(configVar, data_double);
+
+    // Runs in the MQTT task -> hand the command over to the main loop instead of
+    // writing ParameterRegistry state here. Timeout 0, so this never blocks.
+    if (mqttCmdQueue != nullptr) {
+        MqttCommand cmd_msg;
+        snprintf(cmd_msg.param, sizeof(cmd_msg.param), "%s", configVar);
+        cmd_msg.value = data_double;
+
+        if (xQueueSend(mqttCmdQueue, &cmd_msg, 0) != pdTRUE) {
+            LOGF(WARNING, "MQTT command queue full, dropped: %s", configVar);
+        }
+    }
+    else {
+        // Queue not created (task not running) -- apply directly
+        assignMQTTParam(configVar, data_double);
+    }
+}
+
+/**
+ * @brief Apply the MQTT commands received by the task. Must be called from the main loop.
+ */
+inline void processMqttCommands() {
+    if (mqttCmdQueue == nullptr) {
+        return;
+    }
+
+    MqttCommand cmd_msg;
+
+    while (xQueueReceive(mqttCmdQueue, &cmd_msg, 0) == pdTRUE) {
+        assignMQTTParam(cmd_msg.param, cmd_msg.value);
+    }
 }
 
 /**
@@ -276,9 +332,8 @@ inline void mqtt_callback(const char* topic, const byte* data, const unsigned in
  */
 
 inline int writeSysParamsToMQTT(const bool continueOnError = true) {
-    static auto mqttVarsIt = mqttVars.begin();
-    static auto mqttSensorsIt = mqttSensors.begin();
-    static bool inSensors = false;
+    auto mqttVarsIt = mqttVars.begin();
+    auto mqttSensorsIt = mqttSensors.begin();
 
     unsigned long currentMillisMQTT = millis();
     unsigned long interval = (machineState == kBrew) ? intervalMQTTbrew : (machineState == kStandby) ? intervalMQTTstandby : intervalMQTT;
@@ -287,94 +342,80 @@ inline int writeSysParamsToMQTT(const bool continueOnError = true) {
         return 0;
     }
 
-    if (!inSensors && mqttVarsIt == mqttVars.begin()) {
-        previousMillisMQTT = currentMillisMQTT;
-        mqtt_publish("status", (char*)"online");
-    }
+    previousMillisMQTT = currentMillisMQTT;
+    mqtt_publish("status", (char*)"online");
 
     mqttUpdateRunning = true;
-    unsigned long start = millis();
 
     char data[12];
     int errorState = 0;
     auto& registry = ParameterRegistry::getInstance();
 
-    if (!inSensors) {
-        // Iterate through the mqttVars mapping to publish parameters
-        while (mqttVarsIt != mqttVars.end()) {
-            const char* mqttTopic = mqttVarsIt->first;
-            const char* parameterId = mqttVarsIt->second;
+    // Iterate through the mqttVars mapping to publish parameters
+    while (mqttVarsIt != mqttVars.end()) {
+        const char* mqttTopic = mqttVarsIt->first;
+        const char* parameterId = mqttVarsIt->second;
 
-            std::shared_ptr<Parameter> param = registry.getParameterById(parameterId);
+        std::shared_ptr<Parameter> param = registry.getParameterById(parameterId);
 
-            if (param == nullptr) {
+        if (param == nullptr) {
+            if (!continueOnError) {
+                LOGF(ERROR, "Parameter %s not found for MQTT topic %s", parameterId, mqttTopic);
+                return 1;
+            }
+
+            LOGF(WARNING, "Parameter %s not found for MQTT topic %s, skipping", parameterId, mqttTopic);
+            ++mqttVarsIt;
+            continue;
+        }
+
+        // Get value based on parameter type and format as string
+        switch (param->getType()) {
+            case kInteger:
+                snprintf(data, sizeof(data), "%d", param->getValueAs<int>());
+                break;
+            case kUInt8:
+                snprintf(data, sizeof(data), "%u", param->getValueAs<uint8_t>());
+                break;
+            case kDouble:
+                snprintf(data, sizeof(data), "%.2f", param->getValueAs<double>());
+                break;
+            case kFloat:
+                snprintf(data, sizeof(data), "%.2f", param->getValueAs<float>());
+                break;
+            case kCString:
+                snprintf(data, sizeof(data), "%s", param->getValueAs<String>().c_str());
+                break;
+            default:
+
                 if (!continueOnError) {
-                    LOGF(ERROR, "Parameter %s not found for MQTT topic %s", parameterId, mqttTopic);
+                    LOGF(ERROR, "Unknown parameter type for topic %s", mqttTopic);
                     return 1;
                 }
 
-                LOGF(WARNING, "Parameter %s not found for MQTT topic %s, skipping", parameterId, mqttTopic);
+                LOGF(WARNING, "Skipping unknown parameter type for topic %s", mqttTopic);
                 ++mqttVarsIt;
                 continue;
-            }
+        }
 
-            // Get value based on parameter type and format as string
-            switch (param->getType()) {
-                case kInteger:
-                    snprintf(data, sizeof(data), "%d", param->getValueAs<int>());
-                    break;
-                case kUInt8:
-                    snprintf(data, sizeof(data), "%u", param->getValueAs<uint8_t>());
-                    break;
-                case kDouble:
-                    snprintf(data, sizeof(data), "%.2f", param->getValueAs<double>());
-                    break;
-                case kFloat:
-                    snprintf(data, sizeof(data), "%.2f", param->getValueAs<float>());
-                    break;
-                case kCString:
-                    snprintf(data, sizeof(data), "%s", param->getValueAs<String>().c_str());
-                    break;
-                default:
+        if (mqttLastSent[mqttTopic].compare(data) != 0) {
+            if (!mqtt_publish(mqttTopic, data, true)) {
+                errorState = mqtt.state();
 
-                    if (!continueOnError) {
-                        LOGF(ERROR, "Unknown parameter type for topic %s", mqttTopic);
-                        return 1;
-                    }
-
-                    LOGF(WARNING, "Skipping unknown parameter type for topic %s", mqttTopic);
-                    ++mqttVarsIt;
-                    continue;
-            }
-
-            if (mqttLastSent[mqttTopic].compare(data) != 0) {
-                if (!mqtt_publish(mqttTopic, data, true)) {
-                    errorState = mqtt.state();
-
-                    if (!continueOnError) {
-                        LOGF(ERROR, "Failed to publish parameter %s to MQTT, error: %d", mqttTopic, errorState);
-                        return errorState;
-                    }
-
-                    LOGF(WARNING, "Failed to publish parameter %s to MQTT, error: %d", mqttTopic, errorState);
+                if (!continueOnError) {
+                    LOGF(ERROR, "Failed to publish parameter %s to MQTT, error: %d", mqttTopic, errorState);
+                    return errorState;
                 }
-                else {
-                    mqttLastSent[mqttTopic].assign(data); // Update only if sent successfully
-                    LOGF(DEBUG, "Published %s = %s to MQTT, length: %i", mqttTopic, data, strlen(data) + 1);
-                }
+
+                LOGF(WARNING, "Failed to publish parameter %s to MQTT, error: %d", mqttTopic, errorState);
             }
-
-            ++mqttVarsIt;
-
-            // Return early, continue next time
-            if (millis() - start >= timeBudget) {
-                return 0;
+            else {
+                mqttLastSent[mqttTopic].assign(data); // Update only if sent successfully
+                LOGF(DEBUG, "Published %s = %s to MQTT, length: %i", mqttTopic, data, strlen(data) + 1);
             }
         }
 
-        // Done with mqttVars, start sensors
-        mqttVarsIt = mqttVars.begin();
-        inSensors = true;
+        ++mqttVarsIt;
     }
 
     while (mqttSensorsIt != mqttSensors.end()) {
@@ -405,15 +446,7 @@ inline int writeSysParamsToMQTT(const bool continueOnError = true) {
         }
 
         ++mqttSensorsIt;
-
-        if (millis() - start >= timeBudget) {
-            return 0; // Return early, continue next time
-        }
     }
-
-    // Done with both loops
-    mqttSensorsIt = mqttSensors.begin();
-    inSensors = false;
 
     return 0;
 }

@@ -170,6 +170,7 @@ char const* machinestateEnumToString(MachineState machineState);
 inline std::vector<const char*> getMachineStateOptions();
 float filterPressureValue(float input);
 int writeSysParamsToMQTT(bool continueOnError);
+void requestMqttPublish();
 void updateStandbyTimer();
 void resetStandbyTimer();
 void wiFiReset();
@@ -211,6 +212,14 @@ double standbyModeTime = STANDBY_MODE_TIME;
 
 // Variables to hold PID values (Temp input, Heater output)
 double temperature, pidOutput;
+
+// 32-bit snapshots of the 64-bit values the MQTT task publishes. A double is two
+// separate accesses on this core, so a reader on the other core could observe a
+// half-updated value; a float is a single aligned 32-bit access and therefore
+// atomic. The lost precision does not matter -- these are published as "%.2f".
+volatile float mqttTemperature = 0.0f;
+volatile float mqttHeaterPower = 0.0f;
+volatile float mqttBrewTime = 0.0f;
 bool steamON = false;
 bool steamFirstON = false;
 
@@ -352,6 +361,7 @@ void checkWifi() {
                 LOGF(INFO, "Attempting WIFI (re-)connection: %i", wifiReconnects);
                 wm.disconnect();
                 WiFi.begin();
+                WiFi.setSleep(false); // keep power save off across reconnects
             }
 
             delay(20);                // give WIFI some time to connect
@@ -831,6 +841,15 @@ void wiFiSetup() {
         snprintf(ipStr, sizeof(ipStr), "%u.%u.%u.%u", ip[0], ip[1], ip[2], ip[3]);
         LOGF(INFO, "WiFi connected - IP = %s", ipStr);
 
+        // Disable WiFi power save. With the Arduino default (WIFI_PS_MIN_MODEM) the ESP
+        // sleeps between DTIM beacons, so the AP buffers packets and round-trip times
+        // climb into the hundreds of milliseconds. Measured on one machine: 446 ms
+        // average with peaks of 1.4 s, while the router itself answered in 3 ms. That is
+        // enough to run MQTT publishes into their socket timeout, which drops the
+        // connection -- the machine then sits offline for minutes and remote commands
+        // are lost. Costs roughly 25 mA, which is nothing next to a 1100 W boiler.
+        WiFi.setSleep(false);
+
         byte mac[6];
         WiFi.macAddress(mac);
         char fullMac[18];
@@ -897,6 +916,62 @@ void testTimer(void) {
 }
 
 extern const char sysVersion[] = STR(AUTO_VERSION);
+
+// Blocking socket I/O does not belong in the control loop: PubSubClient has a socket
+// timeout (15 s by default), so on a weak link a single publish or connect can stall
+// the main loop for seconds. That freezes temperature sampling, the PID update and the
+// brew timer -- the brew timer visibly sticking and then jumping is how this was found.
+//
+// The ESP32 has two cores: the Arduino loop() runs on core 1 while LWIP/WiFi runs on
+// core 0, so MQTT gets its own task pinned to core 0. This task is then the only place
+// PubSubClient is used, which matters because the library is not thread-safe and
+// writeSysParamsToMQTT() keeps static iterators -- the AsyncWebServer used to call it
+// from its own task, so saving a parameter in the web UI could corrupt them.
+void mqttTask(void* pvParameters) {
+    for (;;) {
+        if (mqtt_enabled && !offlineMode && WiFi.status() == WL_CONNECTED) {
+            // set inside writeSysParamsToMQTT()/sendHASSIODiscoveryMsg() and read by
+            // debugTimingLoop(); the main loop used to clear them
+            mqttUpdateRunning = false;
+            hassioUpdateRunning = false;
+
+            checkMQTT();
+
+            if (mqtt.connected()) {
+                previousMqttConnection = millis();
+
+                // processes incoming messages -> mqtt_callback() -> mqttCmdQueue
+                mqtt.loop();
+
+                // may block on a weak link; the main loop keeps running regardless
+                writeSysParamsToMQTT(true);
+
+                if (mqtt_hassio_enabled && !(machineState >= kBrew && machineState <= kBackflush)) {
+                    if (!mqtt_was_connected) {
+                        // Send discovery as soon as the connection is up -- deliberately
+                        // not via hassioDiscoveryTimer(), which only fires every 300 s and
+                        // therefore delayed the entities by minutes after a boot.
+                        sendHASSIODiscoveryMsg();
+                    }
+                    else if (hassioFailed) {
+                        // Retry a failed send, but rate-limited: this task runs every
+                        // 100 ms and would otherwise hammer the broker.
+                        hassioDiscoveryTimer();
+                    }
+                }
+
+                mqtt_was_connected = true;
+            }
+            // Suppress debug messages until we have a connection established
+            else if (mqtt_was_connected) {
+                LOG(INFO, "MQTT disconnected");
+                mqtt_was_connected = false;
+            }
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+}
 
 void setup() {
     // Start serial console
@@ -1072,8 +1147,8 @@ void setup() {
             mqttVars["standbyModeOn"] = "standby.enabled";
 
             // Values reported to MQTT
-            mqttSensors["temperature"] = [] { return temperature; };
-            mqttSensors["heaterPower"] = [] { return pidOutput / 10; };
+            mqttSensors["temperature"] = [] { return static_cast<double>(mqttTemperature); };
+            mqttSensors["heaterPower"] = [] { return static_cast<double>(mqttHeaterPower) / 10; };
             mqttSensors["standbyModeTimeRemaining"] = [] { return standbyModeRemainingTimeMillis / 1000; };
             mqttSensors["currentKp"] = [] { return bPID.GetKp(); };
             mqttSensors["currentKi"] = [] { return bPID.GetKi(); };
@@ -1086,7 +1161,7 @@ void setup() {
                 mqttVars["aggbTv"] = "pid.bd.tv";
                 mqttVars["pidUseBD"] = "pid.bd.enabled";
                 mqttVars["brewPidDelay"] = "brew.pid_delay";
-                mqttSensors["currBrewTime"] = [] { return currBrewTime / 1000; };
+                mqttSensors["currBrewTime"] = [] { return static_cast<double>(mqttBrewTime) / 1000; };
                 mqttVars["targetBrewTime"] = "brew.by_time.target_time";
                 mqttVars["preinfusion"] = "brew.pre_infusion.time";
                 mqttVars["preinfusionPause"] = "brew.pre_infusion.pause";
@@ -1124,10 +1199,38 @@ void setup() {
             mqtt.setServer(mqtt_server_ip.c_str(), mqtt_server_port);
             mqtt.setCallback(mqtt_callback);
 
-            checkMQTT();
+            // Workaround for knolleary/pubsubclient#670: connect() busy-waits for CONNACK
+            // without ever sleeping, so the idle task on this core never runs. This task
+            // is pinned to core 0, whose idle task is watchdog-checked, so a silent broker
+            // aborts the firmware. The socket timeout is the only bound on that spin and
+            // must stay below the watchdog. yield() would not help -- it picks the highest
+            // ready priority, and this task outranks idle.
+            static constexpr int mqttSocketTimeoutS = 3;
+            static_assert(mqttSocketTimeoutS < CONFIG_ESP_TASK_WDT_TIMEOUT_S,
+                          "MQTT socket timeout must stay below the core 0 task watchdog");
+            mqtt.setSocketTimeout(mqttSocketTimeoutS);
+            mqtt.setKeepAlive(30);
 
-            if (mqtt_hassio_enabled) {
-                sendHASSIODiscoveryMsg();
+            mqttCmdQueue = xQueueCreate(10, sizeof(MqttCommand));
+
+            if (mqttCmdQueue == nullptr) {
+                LOG(ERROR, "Failed to create MQTT command queue");
+            }
+
+            // No checkMQTT() or sendHASSIODiscoveryMsg() here: both are blocking and
+            // would delay the boot (connect() waits for the socket timeout when the
+            // broker is unreachable), and at this point mqtt.connected() is still false,
+            // so the discovery would be sent into the void anyway. The task does both as
+            // soon as it is up, which also makes it the only user of PubSubClient.
+            if (mqttCmdQueue != nullptr) {
+                xTaskCreatePinnedToCore(mqttTask, "mqtt", 8192, nullptr, 1, &mqttTaskHandle, 0);
+
+                if (mqttTaskHandle == nullptr) {
+                    LOG(ERROR, "Failed to start MQTT task");
+                }
+                else {
+                    LOG(INFO, "MQTT task started on core 0");
+                }
             }
         }
     }
@@ -1261,37 +1364,16 @@ void loopPid() {
         }
 
         if (mqtt_enabled) {
-            mqttUpdateRunning = false;
+            // Hand the 64-bit values to the MQTT task as atomic 32-bit snapshots, so it
+            // can never read one while it is half updated.
+            mqttTemperature = static_cast<float>(temperature);
+            mqttHeaterPower = static_cast<float>(pidOutput);
+            mqttBrewTime = static_cast<float>(currBrewTime);
 
-            if (getSignalStrength() > 1) {
-                checkMQTT();
-
-                // if screen is ready to refresh wait for next loop
-                if (!displayBufferReady && !temperatureUpdateRunning) {
-                    writeSysParamsToMQTT(true); // Continue on error
-                }
-            }
-
-            hassioUpdateRunning = false;
-
-            if (mqtt.connected() == 1) {
-                mqtt.loop();
-                previousMqttConnection = millis();
-
-                if (mqtt_hassio_enabled) {
-                    // resend discovery messages if not during a main function and MQTT has been disconnected but has now reconnected, or if last send failed
-                    if (!(machineState >= kBrew && machineState <= kBackflush) && ((!mqtt_was_connected || hassioFailed) && !displayBufferReady && !temperatureUpdateRunning)) {
-                        hassioDiscoveryTimer();
-                    }
-                }
-
-                mqtt_was_connected = true;
-            }
-            // Supress debug messages until we have a connection etablished
-            else if (mqtt_was_connected) {
-                LOG(INFO, "MQTT disconnected");
-                mqtt_was_connected = false;
-            }
+            // MQTT itself runs in mqttTask() on core 0. The loop only applies the
+            // commands the task received, because assignMQTTParam() writes
+            // ParameterRegistry state, which has to stay on this core.
+            processMqttCommands();
         }
 
         ArduinoOTA.handle(); // For OTA
@@ -1320,7 +1402,7 @@ void loopPid() {
     websiteUpdateRunning = false;
 
     // refresh website if loop does not have anoth long running process already
-    if (((millis() - lastTempEvent) > tempEventInterval) && (!mqttUpdateRunning && !hassioUpdateRunning && !displayBufferReady && !temperatureUpdateRunning)) {
+    if (((millis() - lastTempEvent) > tempEventInterval) && (!displayBufferReady && !temperatureUpdateRunning)) {
         websiteUpdateRunning = true;
 
         // send temperatures to website endpoint
@@ -1391,7 +1473,7 @@ void loopPid() {
     if (u8g2 != nullptr) {
 
         // update display on loops that have not had other major tasks running, if blocked it will send in the next loop (average 0.5ms)
-        if ((!websiteUpdateRunning && !mqttUpdateRunning && !hassioUpdateRunning && !temperatureUpdateRunning) || (millis() - lastDisplayUpdate > 500)) {
+        if ((!websiteUpdateRunning && !temperatureUpdateRunning) || (millis() - lastDisplayUpdate > 500)) {
 
             if (standbyModeRemainingTimeDisplayOffMillis > 0) {
 
