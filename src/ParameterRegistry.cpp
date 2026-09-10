@@ -1183,6 +1183,17 @@ void ParameterRegistry::initialize(Config& config) {
     );
 
     addBoolConfigParam(
+        "hardware.sensors.watertank.heaterKeepOn",
+        "Keep Heater On When Tank Empty",
+        sHardwareSensorSection,
+        2423,
+        nullptr,
+        "Warning: this keeps PID and heater active even when the water tank is reported as empty",
+        [&config] { return config.get<bool>("hardware.sensors.watertank.enabled"); },
+        false
+    );
+
+    addBoolConfigParam(
         "hardware.sensors.scale.enabled",
         "Enable Scale",
         sHardwareSensorSection,

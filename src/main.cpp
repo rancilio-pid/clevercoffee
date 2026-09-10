@@ -1119,6 +1119,10 @@ void setup() {
                 mqttSensors["pressure"] = [] { return inputPressureFilter; };
             }
 
+            if (config.get<bool>("hardware.sensors.watertank.enabled")) {
+                mqttSensors["waterTankEmpty"] = [] { return waterTankFull ? 0.0 : 1.0; };
+            }
+
             snprintf(topic_will, sizeof(topic_will), "%s%s/%s", mqtt_topic_prefix.c_str(), hostname.c_str(), "status");
             snprintf(topic_set, sizeof(topic_set), "%s%s/+/%s", mqtt_topic_prefix.c_str(), hostname.c_str(), "set");
             mqtt.setServer(mqtt_server_ip.c_str(), mqtt_server_port);
@@ -1417,7 +1421,8 @@ void loopPid() {
     }
 
     // Check if PID should run or not. If not, set to manual and force output to zero
-    if (machineState == kPidDisabled || machineState == kWaterTankEmpty || machineState == kSensorError || machineState == kEmergencyStop || machineState == kStandby || machineState == kBackflush || brewPidDisabled) {
+    if (machineState == kPidDisabled || (machineState == kWaterTankEmpty && !config.get<bool>("hardware.sensors.watertank.heaterKeepOn")) || machineState == kSensorError || machineState == kEmergencyStop ||
+        machineState == kStandby || machineState == kBackflush || brewPidDisabled) {
         if (bPID.GetMode() == 1) {
             // Force PID shutdown
             bPID.SetMode(0);
