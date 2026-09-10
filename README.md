@@ -24,6 +24,7 @@ The hardware has a small footprint and can easily fit into most compact espresso
 The project has been in active development and supported for over 5 years with continuous improvements. Hundreds of machines have been successfully modded already.
 
 You can find our project website here: [Clever Coffee Website](https://clevercoffee.de).
+You can buy our pcb and some parts in the [Clever Coffee Shop](https://shop.clevercoffee.de/).
 
 This software is free and open source and can be customized to your personal needs.
 
