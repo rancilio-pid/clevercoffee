@@ -462,7 +462,7 @@ inline void displayWrappedMessage(const String& message, int x, int startY, int 
         u8g2->clearBuffer();
     }
 
-    u8g2->setFont(custom_profont11);
+    u8g2->setFont(custom_helvB08);
 
     int lineHeight = u8g2->getMaxCharHeight() + spacing;
     int charWidth = u8g2->getMaxCharWidth();
@@ -745,19 +745,25 @@ inline bool displayMachineState() {
     // Offline logo
     if (machineState == kPidDisabled) {
         u8g2->clearBuffer();
-        u8g2->drawXBMP(38, 0, Off_Logo_width, Off_Logo_height, Off_Logo);
-        u8g2->setCursor(0, 55);
-        u8g2->setFont(custom_profont11);
-        u8g2->print("PID is disabled manually");
+        u8g2->setFont(custom_iconic_embedded_4x);
+        u8g2->setCursor(48, 34);
+        u8g2->print(static_cast<char>(67));
+        u8g2->setFont(custom_helvB08);
+        u8g2->setCursor(27, 39);
+        u8g2->print("PID is disabled");
+        u8g2->setCursor(41, 51);
+        u8g2->print("manually");
         u8g2->sendBuffer();
         return true;
     }
 
     if (machineState == kStandby) {
         u8g2->clearBuffer();
-        u8g2->drawXBMP(38, 0, Off_Logo_width, Off_Logo_height, Off_Logo);
-        u8g2->setCursor(36, 55);
-        u8g2->setFont(custom_profont11);
+        u8g2->setFont(custom_iconic_embedded_4x);
+        u8g2->setCursor(48, 40);
+        u8g2->print(static_cast<char>(78));
+        u8g2->setCursor(28, 45);
+        u8g2->setFont(custom_helvB08);
         u8g2->print("Standby mode");
         u8g2->sendBuffer();
         return true;
@@ -823,7 +829,7 @@ inline bool displayMachineState() {
     // PID Off
     if (machineState == kEmergencyStop) {
         u8g2->clearBuffer();
-        u8g2->setFont(custom_profont11);
+        u8g2->setFont(custom_helvB08);
         u8g2->setCursor(32, 24);
         u8g2->print(langstring_current_temp);
         u8g2->print(temperature, 1);

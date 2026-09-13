@@ -43,10 +43,15 @@ inline void printScreen() {
         displayWrappedMessage(String(langstring_error_tsensor[0]) + String(temperature) + '\n' + String(langstring_error_tsensor[1]));
     }
     else if (machineState == kStandby) {
-        u8g2->drawXBMP(6, 50, Off_Logo_width, Off_Logo_height, Off_Logo);
-        u8g2->setCursor(1, 110);
-        u8g2->setFont(custom_profont11);
-        u8g2->print("Standby mode");
+        u8g2->setFont(custom_iconic_embedded_4x);
+        u8g2->setCursor(16, 64);
+        u8g2->print(static_cast<char>(78));
+
+        u8g2->setFont(custom_helvB08);
+        u8g2->setCursor(11, 80);
+        u8g2->print("Standby");
+        u8g2->setCursor(18, 92);
+        u8g2->print("mode");
     }
     else {
         // no fullscreen states
@@ -75,10 +80,15 @@ inline void printScreen() {
 
         // logos that only fill the lower half leaving temperatures, top and bottom boxes
         if (machineState == kPidDisabled) {
-            u8g2->drawXBMP(6, 50, Off_Logo_width, Off_Logo_height, Off_Logo);
-            u8g2->setCursor(1, 110);
-            u8g2->setFont(custom_profont11);
+            u8g2->setFont(custom_iconic_embedded_4x);
+            u8g2->setCursor(16, 77);
+            u8g2->print(static_cast<char>(67));
+
+            u8g2->setFont(custom_helvB08);
+            u8g2->setCursor(2, 85);
             u8g2->print("PID disabled");
+            u8g2->setCursor(10, 97);
+            u8g2->print("manually");
         }
 
         // Steam
