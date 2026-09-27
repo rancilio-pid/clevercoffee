@@ -6,6 +6,52 @@
         .then(() => vueApp.mount('#content'));
 </script>
 
+<style>
+    .form-control-lg.form-select {
+        font-size: 1.25rem;
+    }
+    
+    /* Custom CSS for larger form switches */
+    .form-switch-lg .form-check-input {
+        width: 5rem;
+        height: 2.5rem;
+    }
+    .form-switch-lg .form-check-input:focus {
+        border-color: rgba(13, 110, 253, 0.25);
+        outline: 0;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+
+    /* Green color for checked switches */
+    .form-switch-lg .form-check-input:checked {
+        background-color: #198754;
+        border-color: #198754;
+    }
+    .form-switch-lg .form-check-input:checked:focus {
+        border-color: rgba(25, 135, 84, 0.25);
+        box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
+    }
+
+    #save-card {
+        container-type: scroll-state;
+        container-name: content-container;
+
+        .card-body {
+            border-top-width: var(--bs-card-border-width);
+            border-color: none;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+    }
+
+    @container content-container scroll-state(stuck: bottom) {
+        .card-body {
+            --bs-bg-opacity: 1;
+            background-color: rgba(var(--bs-light-rgb), var(--bs-bg-opacity)) !important;
+            border-color: var(--bs-card-border-color) !important;            
+        }
+    }
+</style>
+
 <div class="content-wrapper">
     <div class="container my-5">
         <div id="content">
@@ -77,24 +123,28 @@
                                     <template v-for="param in group">
                                         <template v-if="param.show">
                                             <div class="col mb-3">
-                                                <label class="form-label me-1" :for="'var'+param.name">{{param.displayName}}</label>
-                                                <template v-if="param.hasHelpText || param.reboot">
-                                                    <a href="#" role="button" @mouseover="fetchHelpText(param.name)" data-bs-toggle="popover" data-bs-html="true" :data-bs-original-title="parametersHelpTexts[param.name]">
-                                                        <span class="fa-solid fa-question-circle"></span>
-                                                    </a>
-                                                </template>
+                                                <label class="form-label me-1" :for="'var'+param.name">{{param.displayName}}
+                                                    <template v-if="param.hasHelpText || param.reboot">
+                                                        &nbsp;<a href="#" role="button" @mouseover="fetchHelpText(param.name)" data-bs-toggle="popover" data-bs-html="true" :data-bs-original-title="parametersHelpTexts[param.name]">
+                                                            <span class="fa-solid fa-question-circle"></span>
+                                                        </a>
+                                                    </template>
+                                                </label>
 
                                                 <div v-if="isBoolean(param)">
                                                     <input type="hidden" :id="'var'+param.name" :name="'var'+param.name" :value="0">
-                                                    <input type="checkbox"
-                                                           class="form-check-input form-control-lg"
+                                                    <div class="form-check form-switch form-switch-lg">
+                                                    <input class="form-check-input"
+                                                           type="checkbox"
+                                                           role="switch"
                                                            :id="'var'+param.name"
                                                            :name="'var'+param.name"
                                                            value="1"
                                                            @change="param.value = 1-param.value"
                                                            :checked="param.value != 0 ? 'checked' : null">
+                                                    <label class="form-check-label" for="pid_toggle"></label>
+                                                    </div>
                                                 </div>
-
                                                 <div v-else-if="param.type === 5 && param.options">
                                                     <select class="form-select form-control-lg"
                                                             :id="'var'+param.name"
@@ -106,8 +156,8 @@
                                                             {{ option.label }}
                                                         </option>
                                                     </select>
-                                                    <span v-if="param.value < param.min" class="text-danger small">Value is too small!</span>
-                                                    <span v-if="param.value > param.max" class="text-danger small">Value is too large!</span>
+                                                    <span v-if="param.value < param.min" class="text-danger small">Value is too low!</span>
+                                                    <span v-if="param.value > param.max" class="text-danger small">Value is too high!</span>
                                                 </div>
 
                                                 <!-- String parameters -->
@@ -131,8 +181,8 @@
                                                            :id="'var'+param.name"
                                                            :name="'var'+param.name"
                                                            v-model="param.value">
-                                                    <span v-if="param.value < param.min" class="text-danger small">Value is too small!</span>
-                                                    <span v-if="param.value > param.max" class="text-danger small">Value is too large!</span>
+                                                    <span v-if="param.value < param.min" class="text-danger small">Value is too high!</span>
+                                                    <span v-if="param.value > param.max" class="text-danger small">Value is too low!</span>
                                                 </div>
                                             </div>
                                         </template>
@@ -142,13 +192,15 @@
                         </div>
                     </template>
 
-                    <div class="card-body clearfix">
-                        <div class="float-end me-2">
-                            <button type="submit" class="btn btn-primary" :disabled="isPostingForm">
-                                <span v-show="showPostSucceeded" class="fa-solid fa-check me-1"></span>
-                                <span v-show="isPostingForm" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                Save
-                            </button>
+                    <div id="save-card" class="sticky-bottom">
+                        <div class="card-body clearfix">
+                            <div class="float-end me-2">
+                                <button type="submit" class="btn btn-primary" :disabled="isPostingForm">
+                                    <span v-show="showPostSucceeded" class="fa-solid fa-check me-1"></span>
+                                    <span v-show="isPostingForm" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                    Save
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </form>
