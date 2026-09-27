@@ -3,6 +3,19 @@ import gzip
 import shutil
 
 import sys
+import subprocess
+
+try:
+    import minify_html
+    import rjsmin
+    import rcssmin
+except ImportError:
+    print("Bibliotheken fehlen. Installiere minify_html, rjsmin, rcssmin...")
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'minify_html', 'rjsmin', 'rcssmin'])
+    import minify_html
+    import rjsmin
+    import rcssmin
+    print("Installation erfolgreich!")
 
 
 """
@@ -37,8 +50,40 @@ def ensure_dir_exists(path):
 
 def compress_file(src_path, dest_path):
     try:
-        with open(src_path, "rb") as f_in, gzip.open(dest_path, "wb") as f_out:
-            shutil.copyfileobj(f_in, f_out)
+        content_to_compress = None
+        
+        # Check if we should minify before compressing
+        if src_path.endswith((".html", ".htm")):
+            with open(src_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            original_size = len(content)
+            minified = minify_html.minify(content, minify_js=True, minify_css=True)
+            content_to_compress = minified.encode('utf-8')
+            print(f"Minified & Compressed {os.path.basename(src_path)}: {original_size} -> minified -> gz")
+            
+        elif src_path.endswith(".js") and not src_path.endswith(".min.js"):
+            with open(src_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            original_size = len(content)
+            minified = rjsmin.jsmin(content)
+            content_to_compress = minified.encode('utf-8')
+            print(f"Minified & Compressed {os.path.basename(src_path)}: {original_size} -> minified -> gz")
+            
+        elif src_path.endswith(".css") and not src_path.endswith(".min.css"):
+            with open(src_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            original_size = len(content)
+            minified = rcssmin.cssmin(content)
+            content_to_compress = minified.encode('utf-8')
+            print(f"Minified & Compressed {os.path.basename(src_path)}: {original_size} -> minified -> gz")
+            
+        if content_to_compress is not None:
+            with gzip.open(dest_path, "wb") as f_out:
+                f_out.write(content_to_compress)
+        else:
+            with open(src_path, "rb") as f_in, gzip.open(dest_path, "wb") as f_out:
+                shutil.copyfileobj(f_in, f_out)
+                
     except (IOError, OSError) as e:
         print(f"Error compressing {src_path}: {e}")
 
@@ -53,7 +98,37 @@ def compress_file(src_path, dest_path):
 
 def copy_file(src_path, dest_path):
     try:
-        shutil.copy2(src_path, dest_path)
+        if src_path.endswith((".html", ".htm")):
+            with open(src_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            original_size = len(content)
+            minified = minify_html.minify(content, minify_js=True, minify_css=True)
+            
+        elif src_path.endswith(".js") and not src_path.endswith(".min.js"):
+            with open(src_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            original_size = len(content)
+            minified = rjsmin.jsmin(content)
+            
+        elif src_path.endswith(".css") and not src_path.endswith(".min.css"):
+            with open(src_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            original_size = len(content)
+            minified = rcssmin.cssmin(content)
+            
+        else:
+            # Für alle anderen Dateien: Normaler Copy
+            shutil.copy2(src_path, dest_path)
+            return True
+
+        # Wenn wir hier sind, wurde die Datei minifiziert (html, js oder css)
+        new_size = len(minified)
+        with open(dest_path, 'w', encoding='utf-8') as f:
+            f.write(minified)
+            
+        print(f"Minified {os.path.basename(src_path)}: {original_size} -> {new_size} bytes")
+        return True
+            
     except (IOError, OSError) as e:
         print(f"Error copying {src_path}: {e}")
         return False

@@ -50,6 +50,9 @@ const char* switchTypes[2] = {"Momentary", "Toggle"};
 const char* switchModes[2] = {"Normally Open", "Normally Closed"};
 const char* relayTriggerTypes[2] = {"Low Trigger", "High Trigger"};
 
+const char* menuInput[2] = {"Buttons", "Rotary Encoder"};
+const char* menuEncoder[3] = {"Full Quad", "Half Quad", "Single Edge"};
+
 static constexpr const char* const brewModes[] = {"Manual", "Automatic"};
 static constexpr const char* const displayTemplates[] = {"Standard", "Minimal", "Temp only", "Scale", "Upright"};
 static constexpr const char* const displayLanguages[] = {"Deutsch", "English", "Español"};
@@ -638,6 +641,58 @@ void ParameterRegistry::initialize(Config& config) {
         10,
         "Delta from setpoint for blinking temperature display"
     );
+    addBoolConfigParam(
+        "display.menu.enabled",
+        "Enable OLED Display Menu",
+        sDisplaySection,
+        921,
+        nullptr,
+        "Enable menu. Selecting this option will enable the menu on the OLED display.",
+        [&config] { return config.get<bool>("hardware.oled.enabled"); },
+        false
+    );
+    addBoolConfigParam(
+        "display.menu.input.inverted",
+        "Invert OLED Display Menu Input",
+        sDisplaySection,
+        922,
+        nullptr,
+        "Invert menu input. Selecting this option will invert the input (rotation direction) for the OLED display within menu items.",
+        [&config] { return config.get<bool>("hardware.oled.enabled") && config.get<bool>("display.menu.enabled"); }
+    );
+    addBoolConfigParam(
+        "display.menu.scroll.inverted",
+        "Invert OLED Display Menu Scroll direction",
+        sDisplaySection,
+        923,
+        nullptr,
+        "Invert menu scroll direction. Selecting this option will invert the scroll direction for the OLED display within the menu tree.",
+        [&config] { return config.get<bool>("hardware.oled.enabled") && config.get<bool>("display.menu.enabled"); }
+    );
+
+    addBoolConfigParam(
+        "display.menu.idle_timeout.enabled",
+        "Enable Display Menu Idle Timeout",
+        sDisplaySection,
+        931,
+        nullptr,
+        "Enable menu idle timeout. Selecting this option will enable the menu idle timeout on the OLED display.",
+        [&config] { return config.get<bool>("hardware.oled.enabled") && config.get<bool>("display.menu.enabled"); }
+    );
+
+    addNumericConfigParam<int>(
+        "display.menu.idle_timeout.time",
+        "Menu Idle Timeout",
+        kInteger,
+        sDisplaySection,
+        932,
+        nullptr,
+        1,
+        600,
+        "Sets the idle timeout for the OLED display menu in seconds. If the menu is idle for this duration, it will automatically close.",
+        [&config] { return config.get<bool>("display.menu.idle_timeout.enabled") && config.get<bool>("hardware.oled.enabled") && config.get<bool>("display.menu.enabled"); }
+    );
+
 
     // MQTT section
     addBoolConfigParam(
@@ -876,6 +931,31 @@ void ParameterRegistry::initialize(Config& config) {
         [] { return true; },
         true
     );
+    addEnumConfigParam(
+       "hardware.oled.menu.input",
+       "OLED Display Menu Input Type",
+       sHardwareOledSection,
+       2011,
+       nullptr,
+       menuInput,
+       2,
+       "Select your OLED display menu input type (3 buttons or rotary encoder)",
+       [] { return true; },
+       true
+   );
+
+    addEnumConfigParam(
+   "hardware.oled.menu.encoder_type",
+   "OLED Display Menu Input Type",
+   sHardwareOledSection,
+   2012,
+   nullptr,
+   menuEncoder,
+   3,
+   "Select your rotary encoder qudrature",
+   [&config] { return config.get<int>("hardware.oled.menu.input") == 1; },
+   true
+);
 
     // Relays
     addEnumConfigParam(
