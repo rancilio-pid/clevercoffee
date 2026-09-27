@@ -567,6 +567,55 @@ inline DiscoveryObject GenerateSensorDevice(const char* name, const char* displa
 }
 
 /**
+ * @brief Generate a binary sensor device for Home Assistant MQTT discovery
+ *
+ * @param name The name of the sensor (used in MQTT topics)
+ * @param displayName The display name of the sensor (shown in Home Assistant)
+ * @param device_class HA binary_sensor device class (e.g. "moisture", "problem", "")
+ * @param payload_on Payload that represents the on/true state (default: "1")
+ * @param payload_off Payload that represents the off/false state (default: "0")
+ * @return A `DiscoveryObject` containing the binary sensor device configuration
+ */
+inline DiscoveryObject GenerateBinarySensorDevice(const char* name, const char* displayName, const char* device_class = "", const char* payload_on = "1", const char* payload_off = "0") {
+    DiscoveryObject sensor_device;
+
+    char mqtt_topic[128];
+    char unique_id[80];
+    char topic_buffer[160];
+
+    snprintf(mqtt_topic, sizeof(mqtt_topic), "%s%s", mqtt_topic_prefix.c_str(), hostname.c_str());
+    snprintf(unique_id, sizeof(unique_id), "clevercoffee-%s", hostname);
+    snprintf(sensor_device.discovery_topic, sizeof(sensor_device.discovery_topic), "%s/binary_sensor/%s/%s/config", mqtt_hassio_discovery_prefix, unique_id, name);
+
+    JsonDocument sensorConfigDoc;
+    sensorConfigDoc["name"] = displayName;
+    snprintf(topic_buffer, sizeof(topic_buffer), "%s/%s", mqtt_topic, name);
+    sensorConfigDoc["state_topic"] = String(topic_buffer);
+    snprintf(topic_buffer, sizeof(topic_buffer), "%s-%s", unique_id, name);
+    sensorConfigDoc["unique_id"] = String(topic_buffer);
+    sensorConfigDoc["payload_on"] = payload_on;
+    sensorConfigDoc["payload_off"] = payload_off;
+
+    if (device_class[0] != '\0') {
+        sensorConfigDoc["device_class"] = device_class;
+    }
+
+    sensorConfigDoc["payload_available"] = "online";
+    sensorConfigDoc["payload_not_available"] = "offline";
+    snprintf(topic_buffer, sizeof(topic_buffer), "%s/status", mqtt_topic);
+    sensorConfigDoc["availability_topic"] = String(topic_buffer);
+
+    JsonObject device = sensorConfigDoc["device"].to<JsonObject>();
+    device["identifiers"] = hostname;
+    device["manufacturer"] = "CleverCoffee";
+    device["name"] = hostname;
+
+    serializeJson(sensorConfigDoc, sensor_device.payload_json, sizeof(sensor_device.payload_json));
+
+    return sensor_device;
+}
+
+/**
  * @brief Generate a number device for Home Assistant MQTT discovery
  *
  * This function generates a number device configuration for Home Assistant MQTT discovery. It creates a `DiscoveryObject` containing the necessary information for Home Assistant to discover and control the number device.
@@ -699,6 +748,10 @@ inline int sendHASSIODiscoveryMsg() {
 
     if (config.get<bool>("hardware.sensors.pressure.enabled")) {
         failures += publishDiscovery(GenerateSensorDevice("pressure", "Pressure", "bar", "pressure"));
+    }
+
+    if (config.get<bool>("hardware.sensors.watertank.enabled")) {
+        failures += publishDiscovery(GenerateBinarySensorDevice("waterTankEmpty", "Water Tank", "problem", "1.00", "0.00"));
     }
 
     if (failures > 0) {

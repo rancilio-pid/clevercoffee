@@ -310,6 +310,11 @@ For each LED type (status, brew, steam):
     - `1`: Normally closed
 - **Description**: Water tank sensor switch mode
 
+### `hardware.sensors.watertank.heaterKeepOn`
+- **Type**: Boolean
+- **Default**: `false`
+- **Description**: Keep heater on when tank is empty
+
 ## Switches
 
 For each switch type (brew, power, steam):

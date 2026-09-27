@@ -355,6 +355,7 @@ class Config {
             _configDefs.emplace("hardware.sensors.pressure.enabled", ConfigDef::forBool(false));
             _configDefs.emplace("hardware.sensors.watertank.enabled", ConfigDef::forBool(false));
             _configDefs.emplace("hardware.sensors.watertank.mode", ConfigDef::forInt(Switch::NORMALLY_CLOSED, 0, 1));
+            _configDefs.emplace("hardware.sensors.watertank.heaterKeepOn", ConfigDef::forBool(false));
 
             // Scale
             _configDefs.emplace("hardware.sensors.scale.enabled", ConfigDef::forBool(false));
