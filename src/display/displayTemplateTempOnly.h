@@ -24,17 +24,14 @@ inline void printScreen() {
     bool nearSetpoint = fabs(temperature - setpoint) <= config.get<float>("display.blinking.delta");
 
     if (!(isrCounter < 500 && ((nearSetpoint && config.get<int>("display.blinking.mode") == 1) || (!nearSetpoint && config.get<int>("display.blinking.mode") == 2)))) {
-        u8g2->setFont(u8g2_font_fub35_tn);
-        u8g2->drawCircle(116, 27, 4);
+        u8g2->setFont(custom_helvB24);
 
-        if (temperature < 99.95) {
-            u8g2->setCursor(8, 22);
-            u8g2->print(temperature, 1);
-        }
-        else {
-            u8g2->setCursor(24, 22);
-            u8g2->print(temperature, 0);
-        }
+        const int decimals = (temperature >= 99.95) ? 0 : 1;
+        const int startX = decimals ? 26 : 30;
+
+        u8g2->setCursor(startX, 24);
+        u8g2->print(temperature, decimals);
+        u8g2->print(static_cast<char>(176));
     }
 
     displayStatusbar();
