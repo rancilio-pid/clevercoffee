@@ -16,6 +16,7 @@
 #include <PID_v1.h>  // for PID calculation
 #include <U8g2lib.h> // i2c display
 #include <WiFiManager.h>
+#include <esp_core_dump.h>
 #include <esp_system.h>
 #include <os.h>
 
@@ -119,6 +120,9 @@ unsigned long previousMillisPressure; // initialisation at the end of init()
 
 // timing flags
 bool timingDebugActive = false;
+
+// Longest main loop pass in ms since the last MQTT publish
+volatile unsigned long maxLoopTime = 0;
 bool includeDisplayInLogs = false;
 bool displayBufferReady = false;
 bool displayUpdateRunning = false;
@@ -168,6 +172,8 @@ void loopLED();
 void checkWaterTank();
 void printMachineState();
 char const* machinestateEnumToString(MachineState machineState);
+const char* bootResetReasonString();
+const char* bootCrashInfoString();
 inline std::vector<const char*> getMachineStateOptions();
 float filterPressureValue(float input);
 int writeSysParamsToMQTT(bool continueOnError);
@@ -899,10 +905,13 @@ void testTimer(void) {
 
 extern const char sysVersion[] = STR(AUTO_VERSION);
 
+// kept for MQTT, the telnet log has no backlog
+esp_reset_reason_t bootResetReason = ESP_RST_UNKNOWN;
+
 /**
  * @brief Translate the reset reason into something readable
  */
-static const char* resetReasonToString(const esp_reset_reason_t reason) {
+const char* resetReasonToString(const esp_reset_reason_t reason) {
     switch (reason) {
         case ESP_RST_POWERON:
             return "power-on";
@@ -929,6 +938,57 @@ static const char* resetReasonToString(const esp_reset_reason_t reason) {
     }
 }
 
+/**
+ * @brief Reset reason of this boot, as text
+ */
+const char* bootResetReasonString() {
+    return resetReasonToString(bootResetReason);
+}
+
+// Summary of the stored core dump, short enough for the 256 byte MQTT packet limit
+char bootCrashInfo[176] = "";
+
+/**
+ * @brief Read the stored core dump summary into bootCrashInfo, if there is one
+ *
+ * The dump is not erased, so this describes the last panic, not necessarily the last boot.
+ */
+void readCoreDumpSummary() {
+#if CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH && CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF
+    if (esp_core_dump_image_check() != ESP_OK) {
+        // no dump stored, or its checksum does not match
+        return;
+    }
+
+    auto* summary = static_cast<esp_core_dump_summary_t*>(malloc(sizeof(esp_core_dump_summary_t)));
+
+    if (summary == nullptr) {
+        LOG(WARNING, "Not enough memory to read the core dump summary");
+        return;
+    }
+
+    if (esp_core_dump_get_summary(summary) == ESP_OK) {
+        // No backtrace, the full dump is available over HTTP
+        snprintf(bootCrashInfo, sizeof(bootCrashInfo), "task=%s cause=%u pc=0x%08x vaddr=0x%08x", summary->exc_task, static_cast<unsigned>(summary->ex_info.exc_cause), static_cast<unsigned>(summary->exc_pc),
+                 static_cast<unsigned>(summary->ex_info.exc_vaddr));
+
+        LOGF(INFO, "Core dump found: %s", bootCrashInfo);
+    }
+    else {
+        LOG(WARNING, "Core dump present but the summary could not be read");
+    }
+
+    free(summary);
+#endif
+}
+
+/**
+ * @brief Panic details of the last stored core dump, as text
+ */
+const char* bootCrashInfoString() {
+    return bootCrashInfo[0] != '\0' ? bootCrashInfo : "none";
+}
+
 void setup() {
     // Start serial console
     Serial.begin(115200);
@@ -936,7 +996,10 @@ void setup() {
     // Initialize the logger
     Logger::init(23);
 
-    LOGF(INFO, "Reset reason: %s", resetReasonToString(esp_reset_reason()));
+    bootResetReason = esp_reset_reason();
+    LOGF(INFO, "Reset reason: %s", resetReasonToString(bootResetReason));
+
+    readCoreDumpSummary();
 
     if (!config.begin()) {
         LOG(ERROR, "Failed to load config from filesystem!");
@@ -1112,6 +1175,17 @@ void setup() {
             mqttSensors["currentKi"] = [] { return bPID.GetKi(); };
             mqttSensors["currentKd"] = [] { return bPID.GetKd(); };
             mqttSensors["machineState"] = [] { return machineState; };
+            mqttSensors["rssi"] = [] { return (double)WiFi.RSSI(); };
+
+            // Free heap alone cannot tell a leak from fragmentation
+            mqttSensors["freeHeap"] = [] { return (double)ESP.getFreeHeap(); };
+            mqttSensors["maxAllocHeap"] = [] { return (double)heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT); };
+
+            mqttSensors["maxLoopTime"] = [] {
+                const unsigned long peak = maxLoopTime;
+                maxLoopTime = 0;
+                return (double)peak;
+            };
 
             if (config.get<bool>("hardware.switches.brew.enabled")) {
                 mqttVars["aggbKp"] = "pid.bd.kp";
@@ -1251,6 +1325,19 @@ void setup() {
 }
 
 void loop() {
+    {
+        static unsigned long lastLoopStart = 0;
+        const unsigned long now = millis();
+
+        if (lastLoopStart != 0) {
+            if (const unsigned long duration = now - lastLoopStart; duration > maxLoopTime) {
+                maxLoopTime = duration;
+            }
+        }
+
+        lastLoopStart = now;
+    }
+
     // Accept potential connections for remote logging
     Logger::update();
 

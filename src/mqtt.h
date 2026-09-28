@@ -668,6 +668,17 @@ inline int sendHASSIODiscoveryMsg() {
 
     // Always published devices
     failures += publishDiscovery(GenerateSensorDevice("machineState", "Machine State", "", "enum", getMachineStateOptions()));
+    // Boot-time values, published retained once per connection
+    failures += publishDiscovery(GenerateSensorDevice("resetReason", "Reset Reason", "", ""));
+    mqtt_publish("resetReason", bootResetReasonString(), true);
+    failures += publishDiscovery(GenerateSensorDevice("crashInfo", "Last Crash", "", ""));
+    mqtt_publish("crashInfo", bootCrashInfoString(), true);
+
+    failures += publishDiscovery(GenerateSensorDevice("freeHeap", "Free Heap", "B", "data_size", {}, "measurement"));
+    failures += publishDiscovery(GenerateSensorDevice("maxAllocHeap", "Largest Free Block", "B", "data_size", {}, "measurement"));
+    failures += publishDiscovery(GenerateSensorDevice("rssi", "WiFi Signal", "dBm", "signal_strength", {}, "measurement"));
+    failures += publishDiscovery(GenerateSensorDevice("maxLoopTime", "Max Loop Time", "ms", "", {}, "measurement"));
+    failures += publishDiscovery(GenerateSensorDevice("standbyModeTimeRemaining", "Standby Time Remaining", "s", "duration", {}, "measurement"));
     failures += publishDiscovery(GenerateSensorDevice("temperature", "Boiler Temperature", "°C", "temperature", {}, "measurement"));
     failures += publishDiscovery(GenerateSensorDevice("heaterPower", "Heater Power", "%", "power_factor", {}, "measurement"));
 
