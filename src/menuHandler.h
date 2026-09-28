@@ -39,8 +39,8 @@ inline std::vector<std::function<void()>>& getMenuVarUpdaters() {
 template <typename T>
 T& getMenuVar(const char* paramId) {
     struct Entry {
-        const char* id;
-        T value;
+            const char* id;
+            T value;
     };
     static Entry menuVars[100];
     static int count = 0;
@@ -56,9 +56,7 @@ T& getMenuVar(const char* paramId) {
         menuVars[count].value = config.get<T>(paramId);
 
         T& ref = menuVars[count].value;
-        getMenuVarUpdaters().push_back([paramId, &ref]() {
-            ref = config.get<T>(paramId);
-        });
+        getMenuVarUpdaters().push_back([paramId, &ref]() { ref = config.get<T>(paramId); });
 
         return menuVars[count++].value;
     }
@@ -232,7 +230,6 @@ void initMenu(U8G2& display) {
             if (ev.pin == menuEnterPin->getPinNumber()) {
                 LOG(DEBUG, "Menu: Enter");
 
-
                 if (ev.event == EventState::STATE_DOWN) {}
                 menu->Event(EVENT_ENTER, EventState(ev.event));
             }
@@ -361,12 +358,12 @@ void initMenu(U8G2& display) {
 
     Menu* m_hw_relay = new Menu(display);
     m_hw_relay
-        ->AddEnumItem("Heater Trigger", "Heater Trigger", getMenuEnumOptions("hardware.relays.heater.trigger_type"), getMenuEnumCount("hardware.relays.heater.trigger_type"), getMenuVar<uint8_t>("hardware.relays.heater.trigger_type"),
-                      makeSaveCallback<uint8_t>("hardware.relays.heater.trigger_type"))
+        ->AddEnumItem("Heater Trigger", "Heater Trigger", getMenuEnumOptions("hardware.relays.heater.trigger_type"), getMenuEnumCount("hardware.relays.heater.trigger_type"),
+                      getMenuVar<uint8_t>("hardware.relays.heater.trigger_type"), makeSaveCallback<uint8_t>("hardware.relays.heater.trigger_type"))
         ->SetConfirm("Change need reboot!", reboot);
     m_hw_relay
-        ->AddEnumItem("Valve Trigger", "Valve Trigger", getMenuEnumOptions("hardware.relays.valve.trigger_type"), getMenuEnumCount("hardware.relays.valve.trigger_type"), getMenuVar<uint8_t>("hardware.relays.valve.trigger_type"),
-                      makeSaveCallback<uint8_t>("hardware.relays.valve.trigger_type"))
+        ->AddEnumItem("Valve Trigger", "Valve Trigger", getMenuEnumOptions("hardware.relays.valve.trigger_type"), getMenuEnumCount("hardware.relays.valve.trigger_type"),
+                      getMenuVar<uint8_t>("hardware.relays.valve.trigger_type"), makeSaveCallback<uint8_t>("hardware.relays.valve.trigger_type"))
         ->SetConfirm("Change need reboot!", reboot);
     m_hw_relay
         ->AddEnumItem("Pump Trigger", "Pump Trigger", getMenuEnumOptions("hardware.relays.pump.trigger_type"), getMenuEnumCount("hardware.relays.pump.trigger_type"), getMenuVar<uint8_t>("hardware.relays.pump.trigger_type"),
@@ -435,8 +432,8 @@ void initMenu(U8G2& display) {
         ->SetConfirm("Change need reboot!", reboot);
     m_sensors->AddToggleItem("Watertank Sensor", makeSaveCallback("hardware.sensors.watertank.enabled", getMenuVar<bool>("hardware.sensors.watertank.enabled")), getMenuVar<bool>("hardware.sensors.watertank.enabled"))
         ->SetConfirm("Change need reboot!", reboot);
-    m_sensors->AddEnumItem("Watertank Mode", "Watertank Mode", getMenuEnumOptions("hardware.sensors.watertank.mode"), getMenuEnumCount("hardware.sensors.watertank.mode"), getMenuVar<uint8_t>("hardware.sensors.watertank.mode"),
-                           makeSaveCallback<uint8_t>("hardware.sensors.watertank.mode"));
+    m_sensors->AddEnumItem("Watertank Mode", "Watertank Mode", getMenuEnumOptions("hardware.sensors.watertank.mode"), getMenuEnumCount("hardware.sensors.watertank.mode"),
+                           getMenuVar<uint8_t>("hardware.sensors.watertank.mode"), makeSaveCallback<uint8_t>("hardware.sensors.watertank.mode"));
     m_sensors->AddToggleItem("Scale", makeSaveCallback("hardware.sensors.scale.enabled", getMenuVar<bool>("hardware.sensors.scale.enabled")), getMenuVar<bool>("hardware.sensors.scale.enabled"));
     m_sensors
         ->AddEnumItem("Scale Type", "Scale Type", getMenuEnumOptions("hardware.sensors.scale.type"), getMenuEnumCount("hardware.sensors.scale.type"), getMenuVar<uint8_t>("hardware.sensors.scale.type"),
