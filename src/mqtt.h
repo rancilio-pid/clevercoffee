@@ -74,11 +74,18 @@ inline void setupMqtt() {
 }
 
 /**
- * @brief Check if MQTT is connected, if not reconnect. Abort function if offline or brew is running
+ * @brief Make the MQTT task publish on its next pass, for callers outside the task
+ */
+inline void requestMqttPublish() {
+    previousMillisMQTT = 0;
+}
+
+/**
+ * @brief Check if MQTT is connected, if not reconnect. Abort function if offline
  *      MQTT is also using maxWifiReconnects!
  */
 inline void checkMQTT() {
-    if (offlineMode || checkBrewActive()) {
+    if (offlineMode) {
         return;
     }
 
@@ -239,6 +246,15 @@ inline void assignMQTTParam(char* param, double value) {
     }
 }
 
+// Commands received in the MQTT task, applied by the main loop
+struct MqttCommand {
+        char param[120];
+        double value;
+};
+
+inline QueueHandle_t mqttCmdQueue = nullptr;
+inline TaskHandle_t mqttTaskHandle = nullptr;
+
 /**
  * @brief MQTT Callback Function: set Parameters through MQTT
  */
@@ -265,7 +281,36 @@ inline void mqtt_callback(const char* topic, const byte* data, const unsigned in
 
     // convert received string value to double assuming it's a number
     sscanf(data_str, "%lf", &data_double);
-    assignMQTTParam(configVar, data_double);
+
+    // hand over to the main loop, never blocks
+    if (mqttCmdQueue != nullptr) {
+        MqttCommand cmd_msg;
+        snprintf(cmd_msg.param, sizeof(cmd_msg.param), "%s", configVar);
+        cmd_msg.value = data_double;
+
+        if (xQueueSend(mqttCmdQueue, &cmd_msg, 0) != pdTRUE) {
+            LOGF(WARNING, "MQTT command queue full, dropped: %s", configVar);
+        }
+    }
+    else {
+        // no MQTT task, apply directly
+        assignMQTTParam(configVar, data_double);
+    }
+}
+
+/**
+ * @brief Apply the MQTT commands received by the task. Must be called from the main loop.
+ */
+inline void processMqttCommands() {
+    if (mqttCmdQueue == nullptr) {
+        return;
+    }
+
+    MqttCommand cmd_msg;
+
+    while (xQueueReceive(mqttCmdQueue, &cmd_msg, 0) == pdTRUE) {
+        assignMQTTParam(cmd_msg.param, cmd_msg.value);
+    }
 }
 
 /**
