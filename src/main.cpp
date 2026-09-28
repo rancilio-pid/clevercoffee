@@ -358,6 +358,7 @@ void checkWifi() {
                 LOGF(INFO, "Attempting WIFI (re-)connection: %i", wifiReconnects);
                 wm.disconnect();
                 WiFi.begin();
+                WiFi.setSleep(false); // keep power save off across reconnects
             }
 
             delay(20);                // give WIFI some time to connect
@@ -836,6 +837,9 @@ void wiFiSetup() {
         IPAddress ip = WiFi.localIP();
         snprintf(ipStr, sizeof(ipStr), "%u.%u.%u.%u", ip[0], ip[1], ip[2], ip[3]);
         LOGF(INFO, "WiFi connected - IP = %s", ipStr);
+
+        // Power save delays packets by up to a second, which drops MQTT on weak links
+        WiFi.setSleep(false);
 
         byte mac[6];
         WiFi.macAddress(mac);
