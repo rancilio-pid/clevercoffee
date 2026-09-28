@@ -77,7 +77,16 @@ inline void checkPowerSwitch() {
                     performSafeShutdown();
                     machineState = kStandby;
                     standbyModeRemainingTimeMillis = 0;
-                    standbyModeRemainingTimeDisplayOffMillis = 0;
+
+                    if (standbyModeOn) {
+                        standbyModeRemainingTimeDisplayOffMillis = TIME_TO_DISPLAY_OFF_MILLIS;
+                        // millis() - getStandbyTimeoutMillis() may wrap around, the unsigned elapsed time still holds
+                        standbyModeStartTimeMillis = millis() - getStandbyTimeoutMillis();
+                    }
+                    else {
+                        // standby timer disabled -> nothing would count down, blank now
+                        standbyModeRemainingTimeDisplayOffMillis = 0;
+                    }
                 }
             }
             else if (!currStatePowerSwitchPressed) {
