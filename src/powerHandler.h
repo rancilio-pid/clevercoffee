@@ -64,7 +64,7 @@ inline void checkPowerSwitch() {
                     trackingPressTime = true;
                 }
 
-                if (machineState == kStandby) {
+                if (machineState == kStandby || machineState == kPidDisabled) {
                     machineState = kPidNormal;
                     resetStandbyTimer(kPidNormal);
                     setRuntimePidState(true);
