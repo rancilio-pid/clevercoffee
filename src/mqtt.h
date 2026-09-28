@@ -521,7 +521,8 @@ inline DiscoveryObject GenerateButtonDevice(const char* name, const char* displa
  * @param device_class
  * @return A `DiscoveryObject` containing the sensor device configuration
  */
-inline DiscoveryObject GenerateSensorDevice(const char* name, const char* displayName, const char* unit_of_measurement, const char* device_class, const std::vector<const char*>& options = {}) {
+inline DiscoveryObject
+GenerateSensorDevice(const char* name, const char* displayName, const char* unit_of_measurement, const char* device_class, const std::vector<const char*>& options = {}, const char* state_class = nullptr) {
     DiscoveryObject sensor_device;
 
     char mqtt_topic[128];
@@ -546,6 +547,10 @@ inline DiscoveryObject GenerateSensorDevice(const char* name, const char* displa
     // HA rejects the whole discovery message on an empty device_class
     if (device_class != nullptr && strlen(device_class) > 0) {
         sensorConfigDoc["device_class"] = device_class;
+    }
+
+    if (state_class != nullptr && strlen(state_class) > 0) {
+        sensorConfigDoc["state_class"] = state_class;
     }
     sensorConfigDoc["payload_available"] = "online";
     sensorConfigDoc["payload_not_available"] = "offline";
@@ -663,8 +668,8 @@ inline int sendHASSIODiscoveryMsg() {
 
     // Always published devices
     failures += publishDiscovery(GenerateSensorDevice("machineState", "Machine State", "", "enum", getMachineStateOptions()));
-    failures += publishDiscovery(GenerateSensorDevice("temperature", "Boiler Temperature", "°C", "temperature"));
-    failures += publishDiscovery(GenerateSensorDevice("heaterPower", "Heater Power", "%", "power_factor"));
+    failures += publishDiscovery(GenerateSensorDevice("temperature", "Boiler Temperature", "°C", "temperature", {}, "measurement"));
+    failures += publishDiscovery(GenerateSensorDevice("heaterPower", "Heater Power", "%", "power_factor", {}, "measurement"));
 
     failures += publishDiscovery(GenerateNumberDevice("brewSetpoint", "Brew setpoint", BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, 0.1, "°C"));
     failures += publishDiscovery(GenerateNumberDevice("steamSetpoint", "Steam setpoint", STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, 0.1, "°C"));
@@ -681,7 +686,7 @@ inline int sendHASSIODiscoveryMsg() {
 
     // Conditional devices
     if (config.get<bool>("hardware.switches.brew.enabled")) {
-        failures += publishDiscovery(GenerateSensorDevice("currBrewTime", "Current Brew Time ", "s", "duration"));
+        failures += publishDiscovery(GenerateSensorDevice("currBrewTime", "Current Brew Time ", "s", "duration", {}, "measurement"));
         failures += publishDiscovery(GenerateNumberDevice("brewPidDelay", "Brew Pid Delay", BREW_PID_DELAY_MIN, BREW_PID_DELAY_MAX, 0.1, "s"));
         failures += publishDiscovery(GenerateNumberDevice("targetBrewTime", "Target Brew time", TARGET_BREW_TIME_MIN, TARGET_BREW_TIME_MAX, 0.1, "s"));
         failures += publishDiscovery(GenerateNumberDevice("preinfusion", "Preinfusion filling time", PRE_INFUSION_TIME_MIN, PRE_INFUSION_TIME_MAX, 0.1, "s"));
@@ -693,15 +698,15 @@ inline int sendHASSIODiscoveryMsg() {
     }
 
     if (config.get<bool>("hardware.sensors.scale.enabled")) {
-        failures += publishDiscovery(GenerateSensorDevice("currReadingWeight", "Weight", "g", "weight"));
-        failures += publishDiscovery(GenerateSensorDevice("currBrewWeight", "current Brew Weight", "g", "weight"));
+        failures += publishDiscovery(GenerateSensorDevice("currReadingWeight", "Weight", "g", "weight", {}, "measurement"));
+        failures += publishDiscovery(GenerateSensorDevice("currBrewWeight", "current Brew Weight", "g", "weight", {}, "measurement"));
         failures += publishDiscovery(GenerateButtonDevice("scaleCalibrationOn", "Calibrate Scale"));
         failures += publishDiscovery(GenerateButtonDevice("scaleTareOn", "Tare Scale"));
         failures += publishDiscovery(GenerateNumberDevice("targetBrewWeight", "Brew Weight Target", TARGET_BREW_WEIGHT_MIN, TARGET_BREW_WEIGHT_MAX, 0.1, "g"));
     }
 
     if (config.get<bool>("hardware.sensors.pressure.enabled")) {
-        failures += publishDiscovery(GenerateSensorDevice("pressure", "Pressure", "bar", "pressure"));
+        failures += publishDiscovery(GenerateSensorDevice("pressure", "Pressure", "bar", "pressure", {}, "measurement"));
     }
 
     if (failures > 0) {
