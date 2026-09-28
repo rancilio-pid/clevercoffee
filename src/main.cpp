@@ -1552,8 +1552,13 @@ void checkWaterTank() {
 }
 
 void setRuntimePidState(const bool enabled) {
+    if (pidON == enabled) {
+        return;
+    }
+
     pidON = enabled ? 1 : 0;
     config.set<bool>("pid.enabled", enabled);
+    ParameterRegistry::getInstance().markChanged();
 }
 
 void setSteamMode(bool steamMode) {
