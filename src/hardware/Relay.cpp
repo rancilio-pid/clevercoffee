@@ -8,27 +8,23 @@
 #include "GPIOPin.h"
 
 Relay::Relay(GPIOPin& gpioInstance, const TriggerType trigger) :
-    gpio(gpioInstance), relayTrigger(trigger) {
+    gpio(gpioInstance), relayTrigger(trigger), lastState(false) {
 }
 
-void Relay::on() const {
-    if (relayTrigger == HIGH_TRIGGER) {
-        gpio.write(HIGH);
-    }
-    else {
-        gpio.write(LOW);
-    }
+void Relay::on() {
+    gpio.write(relayTrigger == HIGH_TRIGGER ? HIGH : LOW);
+    lastState = true;
 }
 
-void Relay::off() const {
-    if (relayTrigger == HIGH_TRIGGER) {
-        gpio.write(LOW);
-    }
-    else {
-        gpio.write(HIGH);
-    }
+void Relay::off() {
+    gpio.write(relayTrigger == HIGH_TRIGGER ? LOW : HIGH);
+    lastState = false;
 }
 
 GPIOPin& Relay::getGPIOInstance() const {
     return gpio;
+}
+
+PumpControlType Relay::getType() const {
+    return PumpControlType::RELAY;
 }

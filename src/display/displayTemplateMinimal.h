@@ -12,20 +12,8 @@
  */
 inline void printScreen() {
 
-    // Show fullscreen brew timer:
-    if (displayFullscreenBrewTimer()) {
-        // Display was updated, end here
-        return;
-    }
-
-    // Show fullscreen manual flush timer:
-    if (displayFullscreenManualFlushTimer()) {
-        // Display was updated, end here
-        return;
-    }
-
-    // Show fullscreen hot water timer:
-    if (displayFullscreenHotWaterTimer()) {
+    // Print the machine state
+    if (displayMachineState()) {
         // Display was updated, end here
         return;
     }
