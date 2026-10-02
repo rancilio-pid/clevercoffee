@@ -69,10 +69,17 @@ inline void updateStandbyTimer() {
 }
 
 inline void resetStandbyTimer(const MachineState state) {
+    static MachineState lastState = kInit;
     standbyModeRemainingTimeMillis = getStandbyTimeoutMillis();
     standbyModeRemainingTimeDisplayOffMillis = TIME_TO_DISPLAY_OFF_MILLIS;
-    standbyModeStartTimeMillis = millis();
 
-    LOGF(INFO, "Resetting standby timer to %i minutes", static_cast<int>(standbyModeTime));
-    LOGF(DEBUG, "New machine state: %s", machinestateEnumToString(state));
+    // If state == kBackflush, start the timer 1 second in the past to avoid "Standby time remaining:" messages
+    standbyModeStartTimeMillis = millis() - (state == kBackflush ? 1000 : 0);
+
+    if (state != lastState) {
+        LOGF(INFO, "Resetting standby timer to %i minutes", static_cast<int>(standbyModeTime));
+        LOGF(DEBUG, "New machine state: %s", machinestateEnumToString(state));
+    }
+
+    lastState = state;
 }
