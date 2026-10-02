@@ -896,6 +896,17 @@ void testTimer(void) {
     }
 }
 
+/**
+ * @enum PowerOnBehaviour
+ * @brief What the machine does when it powers up
+ * @details Values must match the order of powerOnBehaviours[] in ParameterRegistry.cpp.
+ */
+enum PowerOnBehaviour {
+    kPowerOnStandby = 0, ///< Stay in standby, do not heat (default)
+    kPowerOnHeat = 1,    ///< Start heating right away (smart plug / timer setups)
+    kPowerOnRestore = 2, ///< Restore the state the machine was in before it lost power
+};
+
 extern const char sysVersion[] = STR(AUTO_VERSION);
 
 void setup() {
@@ -1133,7 +1144,6 @@ void setup() {
     }
     else {
         wm.disconnect();
-        setRuntimePidState(true);
         delay(2000);
         initOfflineMode();
         serverSetup();
@@ -1198,12 +1208,6 @@ void setup() {
 
     systemInitialized = true;
 
-    // For momentary switches, start in normal operation mode
-    if (config.get<bool>("hardware.switches.power.enabled") && config.get<int>("hardware.switches.power.type") == Switch::MOMENTARY) {
-        machineState = kPidNormal;
-        setRuntimePidState(true);
-    }
-
     // For toggle switches, force PidOn to switch state mode
     if (config.get<bool>("hardware.switches.power.enabled") && config.get<int>("hardware.switches.power.type") == Switch::TOGGLE) {
         if (powerSwitch->isPressed()) {
@@ -1213,6 +1217,31 @@ void setup() {
         else {
             setRuntimePidState(false);
             machineState = kPidDisabled;
+        }
+    }
+    else {
+        switch (config.get<int>("pid.power_on_behaviour")) {
+            case kPowerOnHeat:
+                machineState = kPidNormal;
+                resetStandbyTimer(kPidNormal);
+                setRuntimePidState(true);
+                break;
+
+            case kPowerOnRestore:
+                // pidON was restored from the config by syncGlobalVariables() above
+                machineState = pidON ? kPidNormal : kStandby;
+
+                if (pidON) {
+                    resetStandbyTimer(kPidNormal);
+                }
+
+                break;
+
+            case kPowerOnStandby:
+            default:
+                machineState = kStandby;
+                setRuntimePidState(false);
+                break;
         }
     }
 }
@@ -1523,8 +1552,13 @@ void checkWaterTank() {
 }
 
 void setRuntimePidState(const bool enabled) {
+    if (pidON == enabled) {
+        return;
+    }
+
     pidON = enabled ? 1 : 0;
     config.set<bool>("pid.enabled", enabled);
+    ParameterRegistry::getInstance().markChanged();
 }
 
 void setSteamMode(bool steamMode) {
