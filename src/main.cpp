@@ -127,6 +127,9 @@ bool hassioUpdateRunning = false;
 bool temperatureUpdateRunning = false;
 unsigned long lastDisplayUpdate = 0;
 
+// blocking flags
+bool blockDisplayRefresh = false;
+
 #include "utils/timingDebug.h"
 
 Switch* waterTankSensor = nullptr;
@@ -1113,6 +1116,7 @@ void setup() {
 
                 mqttSensors["currReadingWeight"] = [] { return currReadingWeight; };
                 mqttSensors["currBrewWeight"] = [] { return currBrewWeight; };
+                mqttSensors["flowRate"] = [] { return flowRate; };
             }
 
             if (config.get<bool>("hardware.sensors.pressure.enabled")) {
@@ -1267,7 +1271,7 @@ void loopPid() {
                 checkMQTT();
 
                 // if screen is ready to refresh wait for next loop
-                if (!displayBufferReady && !temperatureUpdateRunning) {
+                if (!displayBufferReady && !temperatureUpdateRunning && currBrewState != kBrewFinished) {
                     writeSysParamsToMQTT(true); // Continue on error
                 }
             }
@@ -1320,7 +1324,7 @@ void loopPid() {
     websiteUpdateRunning = false;
 
     // refresh website if loop does not have anoth long running process already
-    if (((millis() - lastTempEvent) > tempEventInterval) && (!mqttUpdateRunning && !hassioUpdateRunning && !displayBufferReady && !temperatureUpdateRunning)) {
+    if (((millis() - lastTempEvent) > tempEventInterval) && (!mqttUpdateRunning && !hassioUpdateRunning && !displayBufferReady && !temperatureUpdateRunning) && currBrewState != kBrewFinished) {
         websiteUpdateRunning = true;
 
         // send temperatures to website endpoint
@@ -1391,7 +1395,7 @@ void loopPid() {
     if (u8g2 != nullptr) {
 
         // update display on loops that have not had other major tasks running, if blocked it will send in the next loop (average 0.5ms)
-        if ((!websiteUpdateRunning && !mqttUpdateRunning && !hassioUpdateRunning && !temperatureUpdateRunning) || (millis() - lastDisplayUpdate > 500)) {
+        if ((!websiteUpdateRunning && !mqttUpdateRunning && !hassioUpdateRunning && !temperatureUpdateRunning && currBrewState != kBrewFinished && !blockDisplayRefresh) || (millis() - lastDisplayUpdate > 500)) {
 
             if (standbyModeRemainingTimeDisplayOffMillis > 0) {
 

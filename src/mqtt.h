@@ -281,7 +281,7 @@ inline int writeSysParamsToMQTT(const bool continueOnError = true) {
     static bool inSensors = false;
 
     unsigned long currentMillisMQTT = millis();
-    unsigned long interval = (machineState == kBrew) ? intervalMQTTbrew : (machineState == kStandby) ? intervalMQTTstandby : intervalMQTT;
+    unsigned long interval = shouldDisplayBrewTimer() ? intervalMQTTbrew : (machineState == kStandby) ? intervalMQTTstandby : intervalMQTT;
 
     if ((currentMillisMQTT - previousMillisMQTT < interval) || !mqtt_enabled || !mqtt.connected()) {
         return 0;
@@ -695,6 +695,7 @@ inline int sendHASSIODiscoveryMsg() {
         failures += publishDiscovery(GenerateButtonDevice("scaleCalibrationOn", "Calibrate Scale"));
         failures += publishDiscovery(GenerateButtonDevice("scaleTareOn", "Tare Scale"));
         failures += publishDiscovery(GenerateNumberDevice("targetBrewWeight", "Brew Weight Target", TARGET_BREW_WEIGHT_MIN, TARGET_BREW_WEIGHT_MAX, 0.1, "g"));
+        failures += publishDiscovery(GenerateNumberDevice("flowRate", "Flow Rate", FLOW_RATE_MIN, FLOW_RATE_MAX, 0.1, "g/s"));
     }
 
     if (config.get<bool>("hardware.sensors.pressure.enabled")) {
