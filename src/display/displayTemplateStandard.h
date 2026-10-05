@@ -21,7 +21,7 @@ inline void printScreen() {
     // If no specific machine state was printed, print default:
 
     u8g2->clearBuffer();
-    u8g2->setFont(u8g2_font_profont11_tf); // set font
+    u8g2->setFont(custom_profont11); // set font
 
     displayStatusbar();
 
