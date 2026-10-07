@@ -50,6 +50,8 @@ struct DiscoveryObject {
         char payload_json[650];
 };
 
+bool shouldDisplayBrewTimer();
+
 inline void setupMqtt() {
     ParameterRegistry& registry = ParameterRegistry::getInstance();
 
@@ -281,7 +283,7 @@ inline int writeSysParamsToMQTT(const bool continueOnError = true) {
     static bool inSensors = false;
 
     unsigned long currentMillisMQTT = millis();
-    unsigned long interval = (machineState == kBrew) ? intervalMQTTbrew : (machineState == kStandby) ? intervalMQTTstandby : intervalMQTT;
+    unsigned long interval = shouldDisplayBrewTimer() ? intervalMQTTbrew : (machineState == kStandby) ? intervalMQTTstandby : intervalMQTT;
 
     if ((currentMillisMQTT - previousMillisMQTT < interval) || !mqtt_enabled || !mqtt.connected()) {
         return 0;
@@ -699,6 +701,10 @@ inline int sendHASSIODiscoveryMsg() {
 
     if (config.get<bool>("hardware.sensors.pressure.enabled")) {
         failures += publishDiscovery(GenerateSensorDevice("pressure", "Pressure", "bar", "pressure"));
+    }
+
+    if (config.get<bool>("hardware.sensors.flowsensor.enabled") || config.get<bool>("dimmer.enabled")) {
+        failures += publishDiscovery(GenerateNumberDevice("flowRate", "Flow Rate", FLOW_RATE_MIN, FLOW_RATE_MAX, 0.1, "g/s"));
     }
 
     if (failures > 0) {

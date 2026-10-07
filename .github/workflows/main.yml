@@ -12,5 +12,4 @@ jobs:
           uses: karniv00l/platformio-run-action@v1
           with:
             silent: false
-            verbose: true
             disable-auto-clean: false

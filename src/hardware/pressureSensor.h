@@ -28,8 +28,10 @@ inline double ABP2_pmin = 0.0;                   // minimum value of pressure ra
 inline double ABP2_percentage = 0.0;             // holds percentage of full scale data
 
 inline float measurePressure() {
+    static uint8_t errorCount = 0;
+
     Wire.beginTransmission(ABP2_id);
-    int stat = Wire.write(ABP2_cmd, 3); // write command to the sensor
+    uint8_t stat = Wire.write(ABP2_cmd, 3); // write command to the sensor
 
     if (stat != 3) {
         LOG(ERROR, "Write Error");
@@ -40,13 +42,16 @@ inline float measurePressure() {
     stat = Wire.endTransmission();
 
     if (stat > 0) {
-        if (const unsigned long currentMillisPressureDebug = millis(); currentMillisPressureDebug - previousMillisPressureDebug >= intervalPressureDebug) {
+        if (const unsigned long currentMillisPressureDebug = millis(); currentMillisPressureDebug - previousMillisPressureDebug >= intervalPressureDebug && errorCount < 10) {
             LOGF(ERROR, "Could not communicate with pressure sensor, error code %i", stat);
             previousMillisPressureDebug = currentMillisPressureDebug;
+            errorCount++;
         }
 
         return static_cast<float>(ABP2_pressure);
     }
+
+    errorCount = 0;
 
     delay(ABP2_READ_DELAY_MS);
 
