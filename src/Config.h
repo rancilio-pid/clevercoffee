@@ -15,6 +15,7 @@
 #include <ArduinoJson.h>
 #include <LittleFS.h>
 #include <map>
+#include <mutex>
 #include <utility>
 
 class Config {
@@ -59,6 +60,7 @@ class Config {
          * @return true if successful, false otherwise
          */
         bool load() {
+            std::lock_guard<std::recursive_mutex> lock(_mutex);
             if (!LittleFS.exists(CONFIG_FILE)) {
                 LOG(INFO, "Config file does not exist");
 
@@ -92,6 +94,7 @@ class Config {
          * @return true if successful, false otherwise
          */
         [[nodiscard]] bool save() const {
+            std::lock_guard<std::recursive_mutex> lock(_mutex);
             File file = LittleFS.open(CONFIG_FILE, "w");
 
             if (!file) {
@@ -129,6 +132,7 @@ class Config {
 
         template <typename T>
         T get(const String& path) const {
+            std::lock_guard<std::recursive_mutex> lock(_mutex);
             return navigatePath(path, [](JsonVariantConst parent, const String& leafKey) -> T {
                 if (leafKey.isEmpty() || parent.isNull()) {
                     return T{};
@@ -163,6 +167,7 @@ class Config {
 
         template <typename T>
         void set(const String& path, const T& value) {
+            std::lock_guard<std::recursive_mutex> lock(_mutex);
             navigatePath(
                 path,
                 [&value](JsonVariant parent, const String& leafKey) {
@@ -174,6 +179,8 @@ class Config {
         }
 
     private:
+        mutable std::recursive_mutex _mutex;
+
         template <typename Func>
         static auto navigatePath(JsonVariantConst root, const String& path, Func&& leafHandler) {
             auto current = root;
@@ -317,11 +324,18 @@ class Config {
             _configDefs.emplace("display.heating_logo", ConfigDef::forBool(true));
             _configDefs.emplace("display.blinking.mode", ConfigDef::forInt(1, 0, 2));
             _configDefs.emplace("display.blinking.delta", ConfigDef::forDouble(BLINKING_DELTA, BLINKING_DELTA_MIN, BLINKING_DELTA_MAX));
+            _configDefs.emplace("display.menu.enabled", ConfigDef::forBool(true));
+            _configDefs.emplace("display.menu.input.inverted", ConfigDef::forBool(false));
+            _configDefs.emplace("display.menu.scroll.inverted", ConfigDef::forBool(false));
+            _configDefs.emplace("display.menu.idle_timeout.enabled", ConfigDef::forBool(true));
+            _configDefs.emplace("display.menu.idle_timeout.time", ConfigDef::forInt(60, 1, 600));
 
             // Hardware - OLED
             _configDefs.emplace("hardware.oled.enabled", ConfigDef::forBool(true));
             _configDefs.emplace("hardware.oled.type", ConfigDef::forInt(0, 0, 1));
             _configDefs.emplace("hardware.oled.address", ConfigDef::forInt(0, 0, 1));
+            _configDefs.emplace("hardware.oled.menu.input", ConfigDef::forInt(1, 0, 1));
+            _configDefs.emplace("hardware.oled.menu.encoder_type", ConfigDef::forInt(1, 0, 2));
 
             // Hardware - Relays
             _configDefs.emplace("hardware.relays.heater.trigger_type", ConfigDef::forInt(Relay::HIGH_TRIGGER, 0, 1));
@@ -396,6 +410,7 @@ class Config {
          * @brief Create a new configuration with default values
          */
         void createDefaults() {
+            std::lock_guard<std::recursive_mutex> lock(_mutex);
             LOGF(INFO, "Starting createDefaults");
 
             initializeConfigDefs();
@@ -454,6 +469,7 @@ class Config {
         }
 
         bool validateAndApplyConfig(const JsonDocument& doc) {
+            std::lock_guard<std::recursive_mutex> lock(_mutex);
             LOGF(INFO, "Validating and applying configuration with %d parameters", _configDefs.size());
 
             // Helper function to recursively extract all paths from JSON

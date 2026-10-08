@@ -219,6 +219,11 @@ PID bPID(&temperature, &pidOutput, &setpoint, aggKp, aggKi, aggKd, 1, DIRECT);
 #include "brewHandler.h"
 #include "hotWaterHandler.h"
 
+// TODO menu
+// SysPara<uint8_t> sysParaFeaturePidOffLogo(&featurePidOffLogo, 0, 1, STO_ITEM_FEATURE_PID_OFF_LOGO);
+// SysPara<uint8_t> sysParaDisplayMenuInvert(&menuInputInvert, 0, 1, STO_ITEM_MENU_INPUT_INVERT);
+// SysPara<uint8_t> sysParaDisplayMenuScrollInvert(&menuScrollInvert, 0, 1, STO_ITEM_MENU_SCROLL_INVERT);
+
 // Other variables
 boolean emergencyStop = false;                // Emergency stop if temperature is too high
 constexpr double EmergencyStopTemp = 145;     // Temp EmergencyStopTemp
@@ -238,6 +243,7 @@ double previousInput = 0;
 
 // Embedded HTTP Server
 #include "embeddedWebserver.h"
+#include "menuHandler.h"
 
 struct cmp_str {
         bool operator()(char const* a, char const* b) const {
@@ -675,7 +681,7 @@ void handleMachineState() {
 
         case kStandby:
             {
-                if (standbyModeRemainingTimeDisplayOffMillis == 0 && u8g2 != nullptr) {
+                if (standbyModeRemainingTimeDisplayOffMillis == 0 && u8g2 != nullptr && !menu->IsOpen()) {
                     u8g2->setPowerSave(1);
                 }
 
@@ -963,6 +969,12 @@ void setup() {
             else {
                 displayLogo(String("Version ") + '\n' + String(sysVersion), true);
             }
+
+            // Display Menu
+            if (config.get<bool>("display.menu.enabled")) {
+                LOG(DEBUG, "Display menu enabled");
+                initMenu(*u8g2);
+            }
         }
         else {
             LOG(ERROR, "Error initializing the display!");
@@ -1238,7 +1250,6 @@ void loop() {
 }
 
 void loopPid() {
-
     // Update the temperature:
     temperatureUpdateRunning = false;
 
@@ -1376,7 +1387,10 @@ void loopPid() {
         setpoint = brewSetpoint;
     }
 
-    updateStandbyTimer();
+    if (u8g2 == nullptr || menu == nullptr || !menu->IsOpen()) {
+        updateStandbyTimer();
+    }
+
     handleMachineState();
     hotWaterHandler();
     valveSafetyShutdownCheck();
@@ -1390,29 +1404,37 @@ void loopPid() {
 
     if (u8g2 != nullptr) {
 
-        // update display on loops that have not had other major tasks running, if blocked it will send in the next loop (average 0.5ms)
-        if ((!websiteUpdateRunning && !mqttUpdateRunning && !hassioUpdateRunning && !temperatureUpdateRunning) || (millis() - lastDisplayUpdate > 500)) {
+        if (menu != nullptr) {
+            if (!websiteUpdateRunning && !mqttUpdateRunning && !hassioUpdateRunning && !temperatureUpdateRunning) {
+                menuLoop();
+            }
+        }
 
-            if (standbyModeRemainingTimeDisplayOffMillis > 0) {
+        if (menu == nullptr || !menu->IsOpen()) {
+            // update display on loops that have not had other major tasks running, if blocked it will send in the next loop (average 0.5ms)
+            if ((!websiteUpdateRunning && !mqttUpdateRunning && !hassioUpdateRunning && !temperatureUpdateRunning) || (millis() - lastDisplayUpdate > 500)) {
 
-                // displayUpdateRunning currently doesn't block anything as it is near the end of the loop, but if this code block moves it can be used to block other processes
-                // sendBuffer() takes around 35ms so it flags that it has happened
-                if (displayBufferReady) {
-                    u8g2->sendBuffer();
-                    displayBufferReady = false;
-                    displayUpdateRunning = true;
-                }
-                else {
-                    printDisplayTimer();
+                if (standbyModeRemainingTimeDisplayOffMillis > 0) {
 
-                    if (millis() - lastDisplayUpdate > 500) {
+                    // displayUpdateRunning currently doesn't block anything as it is near the end of the loop, but if this code block moves it can be used to block other processes
+                    // sendBuffer() takes around 35ms so it flags that it has happened
+                    if (displayBufferReady) {
                         u8g2->sendBuffer();
                         displayBufferReady = false;
                         displayUpdateRunning = true;
                     }
+                    else {
+                        printDisplayTimer();
+
+                        if (millis() - lastDisplayUpdate > 500) {
+                            u8g2->sendBuffer();
+                            displayBufferReady = false;
+                            displayUpdateRunning = true;
+                        }
+                    }
                 }
+                lastDisplayUpdate = millis();
             }
-            lastDisplayUpdate = millis();
         }
     }
 
