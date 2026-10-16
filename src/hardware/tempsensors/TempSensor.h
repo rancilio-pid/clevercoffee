@@ -77,6 +77,9 @@ class TempSensor {
                 LOGF(TRACE, "Temperature reading successful: %.1f", last_temperature_);
 
                 // Reset error counter and error state
+                if (bad_readings_ > 0) {
+                    LOGF(DEBUG, "Temperature reading successful: %.1f, cleared error counter", last_temperature_);
+                }
                 bad_readings_ = 0;
                 error_ = false;
                 temperatureUpdateRunning = true;
@@ -86,8 +89,8 @@ class TempSensor {
             }
             else if (!error_) {
                 // Increment error counter
-                LOGF(DEBUG, "Error during temperature reading, incrementing error counter to %i", bad_readings_);
                 bad_readings_++;
+                LOGF(WARNING, "Error during temperature reading, incrementing error counter to %i", bad_readings_);
             }
 
             if (bad_readings_ >= max_bad_treadings_ && !error_) {
