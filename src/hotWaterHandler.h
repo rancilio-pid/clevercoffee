@@ -3,6 +3,10 @@
  *
  * @brief Handler for digital hot water switch
  */
+#pragma once
+
+// Forward declarations for steam auto-refill
+extern bool steamAutoRefillActive;
 
 uint8_t currStateHotWaterSwitch;
 
@@ -27,8 +31,9 @@ inline HotWaterState currHotWaterState = kHotWaterIdle;
 
 inline uint8_t hotWaterSwitchReading = LOW;
 inline uint8_t currReadingHotWaterSwitch = LOW;
-inline double currPumpOnTime = 0;          // current running total pump on time
-inline unsigned long pumpStartingTime = 0; // start time of pump
+inline double currPumpOnTime = 0;             // current running total pump on time
+inline unsigned long pumpStartingTime = 0;    // start time of pump
+inline bool hotWaterPumpIsAutoRefill = false; // True if pump is running due to steam auto-refill
 
 /**
  * @brief If set to publish debug messages then list what the current action is and what triggered it
@@ -227,20 +232,39 @@ inline bool hotWaterHandler() {
     switch (currHotWaterState) {
         case kHotWaterIdle: // waiting step for hot water switch turning on
 
+            // Check for auto-refill activation
+            if (steamAutoRefillActive && currHotWaterSwitchState == kHotWaterSwitchIdle) {
+                // Trigger pump start for auto-refill
+                currHotWaterSwitchState = kHotWaterSwitchShortPressed;
+                hotWaterPumpIsAutoRefill = true;
+                hotWaterStateDebug = "on-auto-refill";
+            }
+
             if (currHotWaterSwitchState == kHotWaterSwitchShortPressed) {
                 pumpRelay->on();
                 pumpStartingTime = millis();
                 currHotWaterState = kHotWaterRunning;
-                currPumpOnTime = 0;           // reset currPumpOnTime
+                currPumpOnTime = 0;               // reset currPumpOnTime
                 LOG(INFO, "Hot water pump started");
-                hotWaterStateDebug = "on-sw"; // turned on due to switch input
+                if (!hotWaterPumpIsAutoRefill) {
+                    hotWaterStateDebug = "on-sw"; // turned on due to switch input
+                }
                 debugHotWaterState(hotWaterStateDebug);
             }
 
             break;
 
         case kHotWaterRunning:
-            if (currHotWaterSwitchState == kHotWaterSwitchIdle && !checkBrewStates()) { // switch turned off and not in brew or flush
+            // Check if auto-refill should stop (timer expired in main.cpp sets steamAutoRefillActive = false)
+            if (steamAutoRefillActive == false && hotWaterPumpIsAutoRefill) {
+                // Auto-refill was stopped, turn off pump
+                currHotWaterState = kHotWaterStopped;
+                hotWaterPumpIsAutoRefill = false;
+                hotWaterStateDebug = "off-auto-refill";
+                debugHotWaterState(hotWaterStateDebug);
+            }
+            // Only check switch state if NOT in auto-refill mode (otherwise switch being idle would prematurely stop the pump)
+            else if (!hotWaterPumpIsAutoRefill && currHotWaterSwitchState == kHotWaterSwitchIdle && !checkBrewStates()) {
                 currHotWaterState = kHotWaterStopped;
                 hotWaterStateDebug = "off-sw";
                 debugHotWaterState(hotWaterStateDebug);
@@ -250,6 +274,7 @@ inline bool hotWaterHandler() {
 
         case kHotWaterStopped:
             pumpRelay->off();
+            hotWaterPumpIsAutoRefill = false; // Reset auto-refill flag when pump stops
 
             if (!checkHotWaterStops()) {
                 currHotWaterState = kHotWaterIdle;
