@@ -170,6 +170,7 @@ char const* machinestateEnumToString(MachineState machineState);
 inline std::vector<const char*> getMachineStateOptions();
 float filterPressureValue(float input);
 int writeSysParamsToMQTT(bool continueOnError);
+void requestMqttPublish();
 void updateStandbyTimer();
 void resetStandbyTimer();
 void wiFiReset();
@@ -211,6 +212,11 @@ double standbyModeTime = STANDBY_MODE_TIME;
 
 // Variables to hold PID values (Temp input, Heater output)
 double temperature, pidOutput;
+
+// Float copies for the MQTT task, doubles are not read atomically on this core
+volatile float mqttTemperature = 0.0f;
+volatile float mqttHeaterPower = 0.0f;
+volatile float mqttBrewTime = 0.0f;
 bool steamON = false;
 bool steamFirstON = false;
 
@@ -352,6 +358,7 @@ void checkWifi() {
                 LOGF(INFO, "Attempting WIFI (re-)connection: %i", wifiReconnects);
                 wm.disconnect();
                 WiFi.begin();
+                WiFi.setSleep(false); // keep power save off across reconnects
             }
 
             delay(20);                // give WIFI some time to connect
@@ -831,6 +838,9 @@ void wiFiSetup() {
         snprintf(ipStr, sizeof(ipStr), "%u.%u.%u.%u", ip[0], ip[1], ip[2], ip[3]);
         LOGF(INFO, "WiFi connected - IP = %s", ipStr);
 
+        // Power save delays packets by up to a second, which drops MQTT on weak links
+        WiFi.setSleep(false);
+
         byte mac[6];
         WiFi.macAddress(mac);
         char fullMac[18];
@@ -897,6 +907,49 @@ void testTimer(void) {
 }
 
 extern const char sysVersion[] = STR(AUTO_VERSION);
+
+// MQTT runs in its own task on core 0, so blocking socket I/O cannot stall the
+// control loop. This task is the only user of PubSubClient.
+void mqttTask(void* pvParameters) {
+    for (;;) {
+        if (mqtt_enabled && !offlineMode && WiFi.status() == WL_CONNECTED) {
+            // set by writeSysParamsToMQTT()/sendHASSIODiscoveryMsg(), read by debugTimingLoop()
+            mqttUpdateRunning = false;
+            hassioUpdateRunning = false;
+
+            checkMQTT();
+
+            if (mqtt.connected()) {
+                previousMqttConnection = millis();
+
+                // processes incoming messages -> mqtt_callback() -> mqttCmdQueue
+                mqtt.loop();
+
+                writeSysParamsToMQTT(true);
+
+                if (mqtt_hassio_enabled && !(machineState >= kBrew && machineState <= kBackflush)) {
+                    if (!mqtt_was_connected) {
+                        // right away, hassioDiscoveryTimer() would wait up to 300 s
+                        sendHASSIODiscoveryMsg();
+                    }
+                    else if (hassioFailed) {
+                        // rate-limited retry
+                        hassioDiscoveryTimer();
+                    }
+                }
+
+                mqtt_was_connected = true;
+            }
+            // Suppress debug messages until we have a connection established
+            else if (mqtt_was_connected) {
+                LOG(INFO, "MQTT disconnected");
+                mqtt_was_connected = false;
+            }
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+}
 
 void setup() {
     // Start serial console
@@ -1072,8 +1125,8 @@ void setup() {
             mqttVars["standbyModeOn"] = "standby.enabled";
 
             // Values reported to MQTT
-            mqttSensors["temperature"] = [] { return temperature; };
-            mqttSensors["heaterPower"] = [] { return pidOutput / 10; };
+            mqttSensors["temperature"] = [] { return static_cast<double>(mqttTemperature); };
+            mqttSensors["heaterPower"] = [] { return static_cast<double>(mqttHeaterPower) / 10; };
             mqttSensors["standbyModeTimeRemaining"] = [] { return standbyModeRemainingTimeMillis / 1000; };
             mqttSensors["currentKp"] = [] { return bPID.GetKp(); };
             mqttSensors["currentKi"] = [] { return bPID.GetKi(); };
@@ -1086,7 +1139,7 @@ void setup() {
                 mqttVars["aggbTv"] = "pid.bd.tv";
                 mqttVars["pidUseBD"] = "pid.bd.enabled";
                 mqttVars["brewPidDelay"] = "brew.pid_delay";
-                mqttSensors["currBrewTime"] = [] { return currBrewTime / 1000; };
+                mqttSensors["currBrewTime"] = [] { return static_cast<double>(mqttBrewTime) / 1000; };
                 mqttVars["targetBrewTime"] = "brew.by_time.target_time";
                 mqttVars["preinfusion"] = "brew.pre_infusion.time";
                 mqttVars["preinfusionPause"] = "brew.pre_infusion.pause";
@@ -1124,10 +1177,26 @@ void setup() {
             mqtt.setServer(mqtt_server_ip.c_str(), mqtt_server_port);
             mqtt.setCallback(mqtt_callback);
 
-            checkMQTT();
+            // Default is 15 s. Much lower drops the connection on every latency spike.
+            mqtt.setSocketTimeout(8);
+            mqtt.setKeepAlive(30);
 
-            if (mqtt_hassio_enabled) {
-                sendHASSIODiscoveryMsg();
+            mqttCmdQueue = xQueueCreate(10, sizeof(MqttCommand));
+
+            if (mqttCmdQueue == nullptr) {
+                LOG(ERROR, "Failed to create MQTT command queue");
+            }
+
+            // Connecting and discovery happen in the MQTT task
+            if (mqttCmdQueue != nullptr) {
+                xTaskCreatePinnedToCore(mqttTask, "mqtt", 8192, nullptr, 1, &mqttTaskHandle, 0);
+
+                if (mqttTaskHandle == nullptr) {
+                    LOG(ERROR, "Failed to start MQTT task");
+                }
+                else {
+                    LOG(INFO, "MQTT task started on core 0");
+                }
             }
         }
     }
@@ -1261,37 +1330,12 @@ void loopPid() {
         }
 
         if (mqtt_enabled) {
-            mqttUpdateRunning = false;
+            mqttTemperature = static_cast<float>(temperature);
+            mqttHeaterPower = static_cast<float>(pidOutput);
+            mqttBrewTime = static_cast<float>(currBrewTime);
 
-            if (getSignalStrength() > 1) {
-                checkMQTT();
-
-                // if screen is ready to refresh wait for next loop
-                if (!displayBufferReady && !temperatureUpdateRunning) {
-                    writeSysParamsToMQTT(true); // Continue on error
-                }
-            }
-
-            hassioUpdateRunning = false;
-
-            if (mqtt.connected() == 1) {
-                mqtt.loop();
-                previousMqttConnection = millis();
-
-                if (mqtt_hassio_enabled) {
-                    // resend discovery messages if not during a main function and MQTT has been disconnected but has now reconnected, or if last send failed
-                    if (!(machineState >= kBrew && machineState <= kBackflush) && ((!mqtt_was_connected || hassioFailed) && !displayBufferReady && !temperatureUpdateRunning)) {
-                        hassioDiscoveryTimer();
-                    }
-                }
-
-                mqtt_was_connected = true;
-            }
-            // Supress debug messages until we have a connection etablished
-            else if (mqtt_was_connected) {
-                LOG(INFO, "MQTT disconnected");
-                mqtt_was_connected = false;
-            }
+            // Commands received by mqttTask() are applied here
+            processMqttCommands();
         }
 
         ArduinoOTA.handle(); // For OTA
@@ -1320,7 +1364,7 @@ void loopPid() {
     websiteUpdateRunning = false;
 
     // refresh website if loop does not have anoth long running process already
-    if (((millis() - lastTempEvent) > tempEventInterval) && (!mqttUpdateRunning && !hassioUpdateRunning && !displayBufferReady && !temperatureUpdateRunning)) {
+    if (((millis() - lastTempEvent) > tempEventInterval) && (!displayBufferReady && !temperatureUpdateRunning)) {
         websiteUpdateRunning = true;
 
         // send temperatures to website endpoint
@@ -1391,7 +1435,7 @@ void loopPid() {
     if (u8g2 != nullptr) {
 
         // update display on loops that have not had other major tasks running, if blocked it will send in the next loop (average 0.5ms)
-        if ((!websiteUpdateRunning && !mqttUpdateRunning && !hassioUpdateRunning && !temperatureUpdateRunning) || (millis() - lastDisplayUpdate > 500)) {
+        if ((!websiteUpdateRunning && !temperatureUpdateRunning) || (millis() - lastDisplayUpdate > 500)) {
 
             if (standbyModeRemainingTimeDisplayOffMillis > 0) {
 
