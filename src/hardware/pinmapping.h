@@ -18,8 +18,8 @@
 #define PIN_WATERSWITCH 36
 
 #define PIN_ROTARY_DT  4 // Rotary encoder data pin
-#define PIN_ROTARY_CLK 3 // Rotary encoder clock pin
-#define PIN_ROTARY_SW  5 // Rotary encoder switch
+#define PIN_ROTARY_CLK 5 // Rotary encoder clock pin
+#define PIN_ROTARY_SW  3 // Rotary encoder switch
 
 // Sensors
 #define PIN_TEMPSENSOR      16
