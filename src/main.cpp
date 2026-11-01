@@ -377,8 +377,11 @@ void checkWifi() {
     }
 
     if (wifiReconnects >= maxWifiReconnects && WiFi.status() != WL_CONNECTED) {
-        // no wifi connection after trying connection, initiate offline mode
-        initOfflineMode();
+        // Not initOfflineMode(), it is meant for startup and cannot be undone
+        LOGF(INFO, "WiFi still down after %i attempts, pausing before the next round", wifiReconnects);
+        wifiReconnects = 0;
+        wifiConnectCounter = 1; // otherwise the next round skips WiFi.begin()
+        lastWifiConnectionAttempt = millis();
     }
     else {
         if (WiFi.status() == WL_CONNECTED) {
