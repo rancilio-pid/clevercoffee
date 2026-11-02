@@ -364,7 +364,8 @@ inline void serverSetup() {
             }
 
             registry.forceSave();
-            writeSysParamsToMQTT(true);
+            // PubSubClient is not thread-safe, let the MQTT task publish
+            requestMqttPublish();
 
             AsyncWebServerResponse* response = request->beginResponse(200, "text/plain", hasErrors ? "Partial Success" : "OK");
             response->addHeader("Connection", "close");
