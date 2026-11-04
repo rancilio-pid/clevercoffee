@@ -14,6 +14,7 @@
 #include "hardware/Switch.h"
 #include <ArduinoJson.h>
 #include <LittleFS.h>
+#include <esp_partition.h>
 #include <map>
 #include <utility>
 
@@ -25,9 +26,23 @@ class Config {
          * @return true if successful, false otherwise
          */
         bool begin() {
-            if (!LittleFS.begin(true)) {
-                LOG(ERROR, "Failed to initialize LittleFS");
-                return false;
+            // Never format on mount failure: the partition also holds the web interface, which only a filesystem upload can restore
+            if (!LittleFS.begin(false)) {
+                if (!isPartitionBlank()) {
+                    LOG(ERROR, "Failed to mount LittleFS, partition is not formatted to preserve its contents. Please re-upload the filesystem image");
+
+                    // Keep running with defaults held in RAM only
+                    createDefaults();
+
+                    return false;
+                }
+
+                LOG(INFO, "LittleFS partition is blank, formatting");
+
+                if (!LittleFS.begin(true)) {
+                    LOG(ERROR, "Failed to initialize LittleFS");
+                    return false;
+                }
             }
 
             // Check if config file exists
@@ -92,7 +107,8 @@ class Config {
          * @return true if successful, false otherwise
          */
         [[nodiscard]] bool save() const {
-            File file = LittleFS.open(CONFIG_FILE, "w");
+            // Write to a temporary file first and rename it, so an interrupted write never leaves a truncated config behind
+            File file = LittleFS.open(CONFIG_TMP_FILE, "w");
 
             if (!file) {
                 LOG(ERROR, "Failed to open config file for writing");
@@ -102,10 +118,18 @@ class Config {
             if (serializeJson(_doc, file) == 0) {
                 LOG(ERROR, "Failed to write config to file");
                 file.close();
+                LittleFS.remove(CONFIG_TMP_FILE);
                 return false;
             }
 
             file.close();
+
+            if (!LittleFS.rename(CONFIG_TMP_FILE, CONFIG_FILE)) {
+                LOG(ERROR, "Failed to replace config file");
+                LittleFS.remove(CONFIG_TMP_FILE);
+                return false;
+            }
+
             LOG(INFO, "Configuration saved successfully");
 
             return true;
@@ -226,6 +250,39 @@ class Config {
         }
 
         inline static auto CONFIG_FILE = "/config.json";
+        inline static auto CONFIG_TMP_FILE = "/config.json.tmp";
+        inline static auto FS_PARTITION_LABEL = "spiffs";
+
+        /**
+         * @brief Check whether the filesystem partition has never been written, i.e. its superblocks are still erased
+         *
+         * @return true if the first two blocks contain only 0xFF, false otherwise
+         */
+        static bool isPartitionBlank() {
+            const esp_partition_t* partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_SPIFFS, FS_PARTITION_LABEL);
+
+            if (partition == nullptr) {
+                LOG(ERROR, "Filesystem partition not found");
+                return false;
+            }
+
+            // LittleFS keeps its superblock pair in the first two 4 KB blocks
+            uint8_t buf[256];
+
+            for (size_t offset = 0; offset < 2 * 4096; offset += sizeof(buf)) {
+                if (esp_partition_read(partition, offset, buf, sizeof(buf)) != ESP_OK) {
+                    return false;
+                }
+
+                for (const uint8_t byte : buf) {
+                    if (byte != 0xFF) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
 
         JsonDocument _doc;
 
