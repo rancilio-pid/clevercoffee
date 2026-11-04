@@ -822,10 +822,6 @@ void wiFiSetup() {
     }
 
     if (wifiConnected) {
-        if (!config.save()) {
-            LOG(ERROR, "Failed to save config to filesystem!");
-        }
-
         char ipStr[16];
         IPAddress ip = WiFi.localIP();
         snprintf(ipStr, sizeof(ipStr), "%u.%u.%u.%u", ip[0], ip[1], ip[2], ip[3]);
