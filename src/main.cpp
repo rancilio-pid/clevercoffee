@@ -1074,7 +1074,7 @@ void setup() {
             mqttVars["brewTempOffset"] = "brew.temp_offset";
             mqttVars["steamON"] = "STEAM_MODE";
             mqttVars["steamSetpoint"] = "steam.setpoint";
-            mqttVars["pidUsePonM"] = "pid.use_ponm";
+            mqttVars["usePonM"] = "pid.use_ponm";
             mqttVars["aggKp"] = "pid.regular.kp";
             mqttVars["aggTn"] = "pid.regular.tn";
             mqttVars["aggTv"] = "pid.regular.tv";
