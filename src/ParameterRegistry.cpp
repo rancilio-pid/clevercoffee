@@ -658,7 +658,8 @@ void ParameterRegistry::initialize(Config& config) {
         922,
         nullptr,
         "Invert menu input. Selecting this option will invert the input (rotation direction) for the OLED display within menu items.",
-        [&config] { return config.get<bool>("hardware.oled.enabled") && config.get<bool>("display.menu.enabled"); }
+        [&config] { return config.get<bool>("hardware.oled.enabled") && config.get<bool>("display.menu.enabled"); },
+        true
     );
     addBoolConfigParam(
         "display.menu.scroll.inverted",
@@ -667,7 +668,8 @@ void ParameterRegistry::initialize(Config& config) {
         923,
         nullptr,
         "Invert menu scroll direction. Selecting this option will invert the scroll direction for the OLED display within the menu tree.",
-        [&config] { return config.get<bool>("hardware.oled.enabled") && config.get<bool>("display.menu.enabled"); }
+        [&config] { return config.get<bool>("hardware.oled.enabled") && config.get<bool>("display.menu.enabled"); },
+        true
     );
 
     addBoolConfigParam(

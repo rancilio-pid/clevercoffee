@@ -140,15 +140,15 @@ auto timeoutIdleTimeout() {
 }
 
 auto scrollInvertActive() {
-    makeSaveCallback<bool>("display.scroll.invert")();
-    LOGF(DEBUG, "scrollInvertActive() invert: %d", getMenuVar<bool>("display.scroll.invert"));
-    menu->InvertScrollInput(getMenuVar<bool>("display.scroll.invert"));
+    makeSaveCallback<bool>("display.menu.scroll.inverted")();
+    LOGF(DEBUG, "scrollInvertActive() invert: %d", getMenuVar<bool>("display.menu.scroll.inverted"));
+    menu->InvertScrollInput(getMenuVar<bool>("display.menu.scroll.inverted"));
 }
 
 auto inputInvertActive() {
-    makeSaveCallback<bool>("display.input.invert")();
-    LOGF(DEBUG, "inputInvertActive() invert: %d", getMenuVar<bool>("display.input.invert"));
-    menu->InvertMenuInput(getMenuVar<bool>("display.input.invert"));
+    makeSaveCallback<bool>("display.menu.input.inverted")();
+    LOGF(DEBUG, "inputInvertActive() invert: %d", getMenuVar<bool>("display.menu.input.inverted"));
+    menu->InvertMenuInput(getMenuVar<bool>("display.menu.input.inverted"));
 }
 
 const auto reboot = []() {
@@ -217,8 +217,8 @@ void initMenu(U8G2& display) {
 
     menuInputInit();
 
-    menu->InvertScrollInput(getMenuVar<bool>("display.menu.input.inverted"));
-    menu->InvertMenuInput(getMenuVar<bool>("display.menu.scroll.inverted"));
+    menu->InvertScrollInput(getMenuVar<bool>("display.menu.scroll.inverted"));
+    menu->InvertMenuInput(getMenuVar<bool>("display.menu.input.inverted"));
 
     /* Main Menu */
     menu->AddInputItem("Brew Temp.", "Brew Temperature", "", "°C", BREW_SETPOINT_MIN, BREW_SETPOINT_MAX, makeSaveCallback<double>("brew.setpoint"), getMenuVar<double>("brew.setpoint"), bitmap_icon_temp, 0.1, 0.5);
@@ -352,8 +352,8 @@ void initMenu(U8G2& display) {
     Menu* m_menu = new Menu(display);
     m_menu->AddToggleItem("Menu Idle", timeoutIdleActive, getMenuVar<bool>("display.menu.idle_timeout.enabled"));
     m_menu->AddInputItem("Menu Idle Time", "Menu Idle Time", "", "s", 1, 600, timeoutIdleTimeout, getMenuVar<double>("display.menu.idle_timeout.time"), 1.0, 10.0, true);
-    m_menu->AddToggleItem("Invert Scroll", scrollInvertActive, getMenuVar<bool>("display.scroll.invert"));
-    m_menu->AddToggleItem("Invert Input", inputInvertActive, getMenuVar<bool>("display.input.invert"));
+    m_menu->AddToggleItem("Invert Scroll", scrollInvertActive, getMenuVar<bool>("display.menu.scroll.inverted"));
+    m_menu->AddToggleItem("Invert Input", inputInvertActive, getMenuVar<bool>("display.menu.input.inverted"));
     m_menu->AddBackItem("Back", bitmap_icon_back);
 
     Menu* m_hw_relay = new Menu(display);
