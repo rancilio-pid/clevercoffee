@@ -11,8 +11,11 @@
 #define RUNTIME_CHANGERATE 5
 
 TempSensorTSIC::TempSensorTSIC(const int GPIOPin) {
-    // Set pin to receive signal from the TSic 306
-    tsicSensor_ = new ZACwire(GPIOPin, 306);
+    // ZACwire 2.0.0 has uninitialized member variables (like backUP) on ESP32,
+    // which causes its ISR to write out of bounds and corrupt the heap (e.g. mDNS).
+    // Allocate zeroed memory to prevent this buffer overflow.
+    void* mem = calloc(1, sizeof(ZACwire));
+    tsicSensor_ = new (mem) ZACwire(GPIOPin, 306);
     // Start sampling the TSic sensor
     tsicSensor_->begin();
 }
