@@ -54,6 +54,7 @@ const char* menuInput[2] = {"Buttons", "Rotary Encoder"};
 const char* menuEncoder[3] = {"Full Quad", "Half Quad", "Single Edge"};
 
 static constexpr const char* const brewModes[] = {"Manual", "Automatic"};
+static constexpr const char* const powerOnBehaviours[] = {"Standby", "Heat up", "Restore last state"};
 static constexpr const char* const displayTemplates[] = {"Standard", "Minimal", "Temp only", "Scale", "Upright"};
 static constexpr const char* const displayLanguages[] = {"Deutsch", "English", "Español"};
 static constexpr const char* const blinkingModes[] = {"Off", "Near Setpoint", "Away From Setpoint"};
@@ -500,11 +501,24 @@ void ParameterRegistry::initialize(Config& config) {
     }
 
     // Power Section
+    addEnumConfigParam(
+        "pid.power_on_behaviour",
+        "Power-On Behaviour",
+        sPowerSection,
+        801,
+        nullptr,
+        powerOnBehaviours,
+        3,
+        "What the machine does when it powers up: stay in standby, start heating right away "
+        "(e.g. when it is switched on by a smart plug or a timer), or restore the state it "
+        "was in before it lost power"
+    );
+
     addBoolConfigParam(
         "standby.enabled",
         "Enable Standby Timer",
         sPowerSection,
-        801,
+        802,
         &standbyModeOn,
         "Turn heater off after standby time has elapsed."
     );
@@ -514,7 +528,7 @@ void ParameterRegistry::initialize(Config& config) {
         "Standby Time",
         kDouble,
         sPowerSection,
-        802,
+        803,
         &standbyModeTime,
         STANDBY_MODE_TIME_MIN,
         STANDBY_MODE_TIME_MAX,

@@ -17,10 +17,9 @@
 #define PIN_STEAMSWITCH 35
 #define PIN_WATERSWITCH 36
 
-// Menu Input
-#define PIN_MENU_OUT_A 5 // Menu Input - Rotary encoder Output A / Data pin or down button
-#define PIN_MENU_OUT_B 4 // Menu Input - Rotary encoder Output B / CLK pin or up button
-#define PIN_MENU_ENTER 3 // Menu Input - Rotary encoder switch or enter button
+#define PIN_ROTARY_DT  4 // Rotary encoder data pin
+#define PIN_ROTARY_CLK 5 // Rotary encoder clock pin
+#define PIN_ROTARY_SW  3 // Rotary encoder switch
 
 // Sensors
 #define PIN_TEMPSENSOR      16
