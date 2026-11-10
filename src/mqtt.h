@@ -667,6 +667,7 @@ inline int sendHASSIODiscoveryMsg() {
     failures += publishDiscovery(GenerateNumberDevice("steamSetpoint", "Steam setpoint", STEAM_SETPOINT_MIN, STEAM_SETPOINT_MAX, 0.1, "°C"));
     failures += publishDiscovery(GenerateNumberDevice("brewTempOffset", "Brew Temp. Offset", BREW_TEMP_OFFSET_MIN, BREW_TEMP_OFFSET_MAX, 0.1, "°C"));
     failures += publishDiscovery(GenerateNumberDevice("steamKp", "Steam Kp", PID_KP_STEAM_MIN, PID_KP_STEAM_MAX, 0.1, ""));
+    failures += publishDiscovery(GenerateNumberDevice("steamTv", "Steam Tv", PID_TV_STEAM_MIN, PID_TV_STEAM_MAX, 0.1, "s"));
     failures += publishDiscovery(GenerateNumberDevice("aggKp", "aggKp", PID_KP_REGULAR_MIN, PID_KP_REGULAR_MAX, 0.1, ""));
     failures += publishDiscovery(GenerateNumberDevice("aggTn", "aggTn", PID_TN_REGULAR_MIN, PID_TN_REGULAR_MAX, 0.1, ""));
     failures += publishDiscovery(GenerateNumberDevice("aggTv", "aggTv", PID_TV_REGULAR_MIN, PID_TV_REGULAR_MAX, 0.1, ""));

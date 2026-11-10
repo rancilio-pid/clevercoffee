@@ -186,6 +186,7 @@ double brewTempOffset = TEMPOFFSET;
 double setpoint = brewSetpoint;
 double steamSetpoint = STEAMSETPOINT;
 double steamKp = STEAMKP;
+double steamTv = STEAMTV;
 double aggKp = AGGKP;
 double aggTn = AGGTN;
 double aggTv = AGGTV;
@@ -1080,6 +1081,7 @@ void setup() {
             mqttVars["aggTv"] = "pid.regular.tv";
             mqttVars["aggIMax"] = "pid.regular.i_max";
             mqttVars["steamKp"] = "pid.steam.kp";
+            mqttVars["steamTv"] = "pid.steam.tv";
             mqttVars["standbyModeOn"] = "standby.enabled";
 
             // Values reported to MQTT
@@ -1504,11 +1506,11 @@ void loopPid() {
     // Steam on
     if (machineState == kSteam) {
         if (lastmachinestatepid != machineState) {
-            LOGF(DEBUG, "new PID-Values: P=%.1f  I=%.1f  D=%.1f", 150.0, 0.0, 0.0);
+            LOGF(DEBUG, "new PID-Values: P=%.1f  I=%.1f  D=%.1f", steamKp, 0.0, steamKp * steamTv);
             lastmachinestatepid = machineState;
         }
 
-        bPID.SetTunings(steamKp, 0, 0, 1);
+        bPID.SetTunings(steamKp, 0, steamKp * steamTv, 1);
     }
 }
 

@@ -14,6 +14,7 @@ extern double aggTn;
 extern double aggTv;
 extern double aggIMax;
 extern double steamKp;
+extern double steamTv;
 extern double brewSetpoint;
 extern double brewTempOffset;
 extern double brewPidDelay;
@@ -166,7 +167,19 @@ void ParameterRegistry::initialize(Config& config) {
         &steamKp,
         PID_KP_STEAM_MIN,
         PID_KP_STEAM_MAX,
-        "Proportional gain for the steaming mode (I or D are not used)"
+        "Proportional gain for the steaming mode (the I part is not used, see Steam Tv for the D part)"
+    );
+
+    addNumericConfigParam<double>(
+        "pid.steam.tv",
+        "Steam Tv (=Kd/Kp)",
+        kDouble,
+        sPIDSection,
+        117,
+        &steamTv,
+        PID_TV_STEAM_MIN,
+        PID_TV_STEAM_MAX,
+        "Derivative time constant (in seconds) for the steaming mode (Kd = Kp * Tv). Brakes the heater while the boiler heats up, which reduces the overshoot caused by sensor lag, and adds power as soon as the temperature starts to drop when the steam valve is opened. 0 = P-only (previous behaviour)."
     );
 
     // Temperature Section
