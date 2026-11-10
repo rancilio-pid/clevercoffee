@@ -466,6 +466,12 @@ For each switch type (brew, power, steam):
 - **Range**: 0.0-999.0
 - **Description**: Steam mode proportional gain
 
+### `pid.steam.tv`
+- **Type**: Double (seconds)
+- **Default**: `0.0`
+- **Range**: 0.0-999.0
+- **Description**: Steam mode derivative time constant (Kd = Kp * Tv). Reduces the overshoot when heating up to the steam setpoint and reacts faster when the steam valve is opened. `0` keeps the P-only behaviour.
+
 ---
 
 ## Standby Settings

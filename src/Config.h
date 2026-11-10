@@ -254,6 +254,7 @@ class Config {
 
             // PID steam
             _configDefs.emplace("pid.steam.kp", ConfigDef::forDouble(STEAMKP, PID_KP_STEAM_MIN, PID_KP_STEAM_MAX));
+            _configDefs.emplace("pid.steam.tv", ConfigDef::forDouble(STEAMTV, PID_TV_STEAM_MIN, PID_TV_STEAM_MAX));
 
             // Brew settings
             _configDefs.emplace("brew.setpoint", ConfigDef::forDouble(SETPOINT, BREW_SETPOINT_MIN, BREW_SETPOINT_MAX));

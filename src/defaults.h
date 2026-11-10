@@ -26,6 +26,7 @@
 #define AGGTV                    11.5              // PID Tv (regular phase)
 #define AGGIMAX                  55.0              // PID Integrator Max (regular phase)
 #define STEAMKP                  150.0             // PID kp (steam phase)
+#define STEAMTV                  0.0               // PID Tv (steam phase), 0 = P-only
 #define AGGBKP                   50.0              // PID Kp (brew detection phase)
 #define AGGBTN                   0.0               // PID Tn (brew detection phase)
 #define AGGBTV                   20.0              // PID Tv (brew detection phase)
@@ -86,6 +87,8 @@
 #define TARGET_BREW_WEIGHT_MAX        500.0
 #define PID_KP_STEAM_MIN              0.0
 #define PID_KP_STEAM_MAX              999.0
+#define PID_TV_STEAM_MIN              0.0
+#define PID_TV_STEAM_MAX              999.0
 #define STANDBY_MODE_TIME_MIN         1.0
 #define STANDBY_MODE_TIME_MAX         120.0
 #define BACKFLUSH_CYCLES_MIN          2
