@@ -43,24 +43,33 @@ inline void printScreen() {
         displayWrappedMessage(String(langstring_error_tsensor[0]) + String(temperature) + '\n' + String(langstring_error_tsensor[1]));
     }
     else if (machineState == kStandby) {
-        u8g2->drawXBMP(6, 50, Off_Logo_width, Off_Logo_height, Off_Logo);
-        u8g2->setCursor(1, 110);
-        u8g2->setFont(u8g2_font_profont10_tf);
-        u8g2->print("Standby mode");
+        u8g2->setFont(custom_iconic_embedded_4x);
+        u8g2->setCursor(16, 64);
+        u8g2->print(static_cast<char>(78));
+
+        u8g2->setFont(custom_helvB08);
+        u8g2->setCursor(11, 80);
+        u8g2->print("Standby");
+        u8g2->setCursor(18, 92);
+        u8g2->print("mode");
     }
     else {
         // no fullscreen states
-        u8g2->setFont(u8g2_font_profont11_tf);
+        u8g2->setFont(custom_profont11);
         u8g2->setCursor(1, 14);
         u8g2->print(langstring_current_temp_ur);
         u8g2->print(temperature, 1);
-        u8g2->print(" ");
+        if (temperature < 100.0) {
+            u8g2->print(" ");
+        }
         u8g2->print(static_cast<char>(176));
         u8g2->print("C");
         u8g2->setCursor(1, 24);
         u8g2->print(langstring_set_temp_ur);
         u8g2->print(setpoint, 1);
-        u8g2->print(" ");
+        if (setpoint < 100.0) {
+            u8g2->print(" ");
+        }
         u8g2->print(static_cast<char>(176));
         u8g2->print("C");
 
@@ -71,10 +80,15 @@ inline void printScreen() {
 
         // logos that only fill the lower half leaving temperatures, top and bottom boxes
         if (machineState == kPidDisabled) {
-            u8g2->drawXBMP(6, 50, Off_Logo_width, Off_Logo_height, Off_Logo);
-            u8g2->setCursor(1, 110);
-            u8g2->setFont(u8g2_font_profont10_tf);
+            u8g2->setFont(custom_iconic_embedded_4x);
+            u8g2->setCursor(16, 77);
+            u8g2->print(static_cast<char>(67));
+
+            u8g2->setFont(custom_helvB08);
+            u8g2->setCursor(2, 85);
             u8g2->print("PID disabled");
+            u8g2->setCursor(10, 97);
+            u8g2->print("manually");
         }
 
         // Steam
@@ -86,7 +100,7 @@ inline void printScreen() {
         else if (config.get<bool>("display.heating_logo") && machineState == kPidNormal && setpoint - temperature > 5.0) {
             // For status info
             u8g2->drawXBMP(12, 50, Heating_Logo_width, Heating_Logo_height, Heating_Logo);
-            u8g2->setFont(u8g2_font_fub17_tr);
+            u8g2->setFont(custom_helvB18);
             u8g2->setCursor(8, 90);
             u8g2->print(temperature, 1);
         }
@@ -102,7 +116,7 @@ inline void printScreen() {
                 u8g2->setCursor(1, 55);
             }
 
-            u8g2->setFont(u8g2_font_profont22_tr);
+            u8g2->setFont(custom_helvB08);
 
             bool nearSetpoint = fabs(temperature - setpoint) <= config.get<float>("display.blinking.delta");
 
@@ -110,7 +124,6 @@ inline void printScreen() {
                 u8g2->print("FLUSH");
             }
             else if (machineState == kBackflush) {
-                u8g2->setFont(u8g2_font_profont15_tr);
                 u8g2->print("BACKFLUSH");
             }
             else if (shouldDisplayBrewTimer()) {
@@ -125,7 +138,7 @@ inline void printScreen() {
                 }
             }
 
-            u8g2->setFont(u8g2_font_profont11_tf);
+            u8g2->setFont(custom_profont11);
 
             // PID values above heater output bar
             u8g2->setCursor(1, 84);
@@ -155,13 +168,8 @@ inline void printScreen() {
 
             u8g2->print("%");
 
-            // Brew
-            if (scale) {
-                displayBrewWeight(1, 44, currReadingWeight, -1, scaleFailure);
-            }
-
             if (pressureEnabled) {
-                u8g2->setFont(u8g2_font_profont11_tf);
+                u8g2->setFont(custom_profont11);
 
                 if (scale) {
                     u8g2->setCursor(1, 54);
@@ -173,6 +181,10 @@ inline void printScreen() {
                 u8g2->print(langstring_pressure_ur);
                 u8g2->print(inputPressure, 1);
                 u8g2->print(" bar");
+            }
+            // Brew
+            if (scale) {
+                displayBrewWeight(1, 44, currReadingWeight, -1, scaleFailure);
             }
 
             // Brew time
@@ -219,7 +231,7 @@ inline void printScreen() {
         }
         else {
             u8g2->setCursor(4, 1);
-            u8g2->setFont(u8g2_font_profont11_tf);
+            u8g2->setFont(custom_profont11);
             u8g2->print(langstring_offlinemode);
         }
 

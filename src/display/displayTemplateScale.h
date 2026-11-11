@@ -33,7 +33,7 @@ inline void printScreen() {
     }
 
     // Draw current temp and temp setpoint
-    u8g2->setFont(u8g2_font_profont11_tf);
+    u8g2->setFont(custom_profont11);
 
     u8g2->setCursor(32, 16);
     u8g2->print("T: ");
